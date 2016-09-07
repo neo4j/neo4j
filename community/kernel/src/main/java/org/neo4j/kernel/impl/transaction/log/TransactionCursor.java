@@ -17,14 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-public interface RecoverableTransaction
+/**
+ * {@link IOCursor} over {@link CommittedTransactionRepresentation} i.e. already committed transactions.
+ */
+public interface TransactionCursor extends IOCursor<CommittedTransactionRepresentation>
 {
-    CommittedTransactionRepresentation representation();
-
-    LogPosition positionAfterTx();
+    /**
+     * @return {@link LogPosition} representing position after most recent transaction, i.e. after
+     * transaction read from most recent {@link #next()} (which returned true) call.
+     */
+    LogPosition position();
 }

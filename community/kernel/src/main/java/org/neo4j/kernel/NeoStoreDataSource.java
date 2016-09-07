@@ -27,7 +27,6 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
@@ -36,7 +35,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -101,11 +99,9 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -136,7 +132,6 @@ import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
-import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -148,7 +143,6 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -287,7 +281,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final StartupStatisticsProvider startupStatistics;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
-    private final AtomicInteger recoveredCount = new AtomicInteger();
     private final Guard guard;
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
@@ -411,7 +404,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     @Override
     public void init()
-    { // We do our own internal life management:
+    {   // We do our own internal life management:
         // start() does life.init() and life.start(),
         // stop() does life.stop() and life.shutdown().
     }
@@ -433,7 +426,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // Monitor listeners
         LoggingLogFileMonitor loggingLogMonitor = new LoggingLogFileMonitor( msgLog );
         monitors.addMonitorListener( loggingLogMonitor );
-        monitors.addMonitorListener( (RecoveryVisitor.Monitor) txId -> recoveredCount.incrementAndGet() );
 
         life.add( new Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
@@ -468,9 +460,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             buildRecovery( fs,
                     transactionIdStore,
                     logVersionRepository,
-                    monitors.newMonitor( RecoveryVisitor.Monitor.class ), monitors.newMonitor( Recovery.Monitor.class ),
+                    monitors.newMonitor( Recovery.Monitor.class ),
                     transactionLogModule.logFiles(), startupStatistics,
-                    storageEngine, logEntryReader );
+                    storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore() );
 
             final KernelModule kernelModule = buildKernel(
                     transactionLogModule.transactionAppender(),
@@ -736,37 +728,28 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             final FileSystemAbstraction fileSystemAbstraction,
             TransactionIdStore transactionIdStore,
             LogVersionRepository logVersionRepository,
-            RecoveryVisitor.Monitor recoveryVisitorMonitor,
             Recovery.Monitor recoveryMonitor,
             final PhysicalLogFiles logFiles,
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
+            LogicalTransactionStore logicalTransactionStore )
     {
-        RecoveryVisitor recoveryVisitor = new RecoveryVisitor( transactionIdStore, storageEngine,
-                recoveryVisitorMonitor );
-
-        final Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer =
-                new LogFileRecoverer( logEntryReader, recoveryVisitor );
-
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
         Recovery.SPI spi = new DefaultRecoverySPI(
-                storageEngine, logFileRecoverer, logFiles, fileSystemAbstraction, logVersionRepository,
-                checkPointFinder );
+                storageEngine, logFiles, fileSystemAbstraction, logVersionRepository,
+                checkPointFinder, transactionIdStore, logicalTransactionStore );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
-
-        life.add( recovery );
-
-        life.add( new LifecycleAdapter()
+        monitors.addMonitorListener( new Recovery.Monitor()
         {
             @Override
-            public void init() throws Throwable
+            public void recoveryCompleted( int numberOfRecoveredTransactions )
             {
-                startupStatistics.setNumberOfRecoveredTransactions( recoveredCount.get() );
-                recoveredCount.set( 0 );
+                startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );
             }
         } );
+        life.add( recovery );
     }
 
     private KernelModule buildKernel( TransactionAppender appender,

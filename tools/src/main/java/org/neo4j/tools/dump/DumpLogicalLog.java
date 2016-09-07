@@ -21,14 +21,10 @@ package org.neo4j.tools.dump;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.TimeZone;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -39,11 +35,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.FilteringIOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -51,9 +49,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static java.util.TimeZone.getTimeZone;
+
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.getLogVersion;
+import static org.neo4j.kernel.impl.transaction.log.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
@@ -72,52 +71,80 @@ public class DumpLogicalLog
         this.fileSystem = fileSystem;
     }
 
-    public int dump( String filenameOrDirectory, String logPrefix, PrintStream out,
+    public void dump( String filenameOrDirectory, PrintStream out,
                      TimeZone timeZone, String regex ) throws IOException
     {
-        int logsFound = 0;
-        for ( String fileName : filenamesOf( filenameOrDirectory, logPrefix ) )
+        File file = new File( filenameOrDirectory );
+        printFile( file, out );
+        File firstFile;
+        LogVersionBridge bridge;
+        if ( file.isDirectory() )
         {
-            logsFound++;
-            out.println( "=== " + fileName + " ===" );
-            StoreChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
-            ByteBuffer buffer = ByteBuffer.allocateDirect( LOG_HEADER_SIZE );
-
-            LogHeader logHeader;
-            try
+            // Use natural log version bridging if a directory is supplied
+            final PhysicalLogFiles logFiles = new PhysicalLogFiles( file, fileSystem );
+            bridge = new ReaderLogVersionBridge( fileSystem, logFiles )
             {
-                logHeader = readLogHeader( buffer, fileChannel, false );
-            }
-            catch ( IOException ex )
-            {
-                out.println( "Unable to read timestamp information, no records in logical log." );
-                out.println( ex.getMessage() );
-                fileChannel.close();
-                throw ex;
-            }
-            out.println( "Logical log format: " + logHeader.logFormatVersion + " version: " + logHeader.logVersion +
-                    " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
-
-            PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
-                    fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
-            ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
-            LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
-
-            IOCursor<LogEntry> entryCursor = new LogEntryCursor( entryReader, logChannel );
-            TransactionLogEntryCursor transactionCursor = new TransactionLogEntryCursor( entryCursor );
-            try ( IOCursor<LogEntry[]> cursor = regex == null ? transactionCursor :
-                    new FilteringIOCursor<>( transactionCursor, new TransactionRegexCriteria( regex, timeZone ) ) )
-            {
-                while ( cursor.next() )
+                @Override
+                public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
                 {
-                    for ( LogEntry entry : cursor.get() )
+                    LogVersionedStoreChannel next = super.next( channel );
+                    if ( next != channel )
                     {
-                        out.println( entry.toString( timeZone ) );
+                        printFile( logFiles.getLogFileForVersion( next.getVersion() ), out );
                     }
+                    return next;
+                }
+            };
+            firstFile = logFiles.getLogFileForVersion( logFiles.getLowestLogVersion() );
+        }
+        else
+        {
+            // Use no bridging, simple reading this single log file if a file is supplied
+            firstFile = file;
+            bridge = NO_MORE_CHANNELS;
+        }
+
+        StoreChannel fileChannel = fileSystem.open( firstFile, "r" );
+        ByteBuffer buffer = ByteBuffer.allocateDirect( LOG_HEADER_SIZE );
+
+        LogHeader logHeader;
+        try
+        {
+            logHeader = readLogHeader( buffer, fileChannel, false );
+        }
+        catch ( IOException ex )
+        {
+            out.println( "Unable to read timestamp information, no records in logical log." );
+            out.println( ex.getMessage() );
+            fileChannel.close();
+            throw ex;
+        }
+        out.println( "Logical log format: " + logHeader.logFormatVersion + " version: " + logHeader.logVersion +
+                " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
+
+        PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
+                fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
+        ReadableClosablePositionAwareChannel logChannel = new ReadAheadLogChannel( channel, bridge, DEFAULT_READ_AHEAD_SIZE );
+        LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
+
+        IOCursor<LogEntry> entryCursor = new LogEntryCursor( entryReader, logChannel );
+        TransactionLogEntryCursor transactionCursor = new TransactionLogEntryCursor( entryCursor );
+        try ( IOCursor<LogEntry[]> cursor = regex == null ? transactionCursor :
+                new FilteringIOCursor<>( transactionCursor, new TransactionRegexCriteria( regex, timeZone ) ) )
+        {
+            while ( cursor.next() )
+            {
+                for ( LogEntry entry : cursor.get() )
+                {
+                    out.println( entry.toString( timeZone ) );
                 }
             }
         }
-        return logsFound;
+    }
+
+    private static void printFile( File file, PrintStream out )
+    {
+        out.println( "=== " + file.getAbsolutePath() + " ===" );
     }
 
     private static class TransactionRegexCriteria implements Predicate<LogEntry[]>
@@ -166,8 +193,7 @@ public class DumpLogicalLog
             for ( String fileAsString : arguments.orphans() )
             {
                 new DumpLogicalLog( new DefaultFileSystemAbstraction() )
-                        .dump( fileAsString, PhysicalLogFile.DEFAULT_NAME, printer.getFor( fileAsString ), timeZone,
-                                regex );
+                        .dump( fileAsString, printer.getFor( fileAsString ), timeZone, regex );
             }
         }
     }
@@ -239,57 +265,5 @@ public class DumpLogicalLog
     public static TimeZone parseTimeZoneConfig( Args arguments )
     {
         return getTimeZone( arguments.get( "timezone", DEFAULT_TIME_ZONE.getID() ) );
-    }
-
-    protected String[] filenamesOf( String filenameOrDirectory, final String prefix )
-    {
-
-        File file = new File( filenameOrDirectory );
-        if ( fileSystem.isDirectory(file) )
-        {
-            File[] files = fileSystem.listFiles( file , new FilenameFilter()
-            {
-                @Override
-                public boolean accept( File dir, String name )
-                {
-                    return name.contains( prefix ) && !name.contains( "active" );
-                }
-            } );
-            Collection<String> result = new TreeSet<String>( sequentialComparator() );
-            for ( int i = 0; i < files.length; i++ )
-            {
-                result.add( files[i].getPath() );
-            }
-            return result.toArray( new String[result.size()] );
-        }
-        else
-        {
-            return new String[] { filenameOrDirectory };
-        }
-    }
-
-    private static Comparator<? super String> sequentialComparator()
-
-    {
-        return new Comparator<String>()
-        {
-            @Override
-            public int compare( String o1, String o2 )
-            {
-                return versionOf( o1 ).compareTo( versionOf( o2 ) );
-            }
-
-            private Long versionOf( String string )
-            {
-                try
-                {
-                    return getLogVersion( string );
-                }
-                catch ( RuntimeException ignored )
-                {
-                    return Long.MAX_VALUE;
-                }
-            }
-        };
     }
 }

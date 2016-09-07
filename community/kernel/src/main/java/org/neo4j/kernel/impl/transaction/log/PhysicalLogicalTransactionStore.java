@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -51,7 +52,13 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     }
 
     @Override
-    public IOCursor<CommittedTransactionRepresentation> getTransactions( final long transactionIdToStartFrom )
+    public TransactionCursor getTransactions( LogPosition position ) throws NoSuchTransactionException, IOException
+    {
+        return new PhysicalTransactionCursor<>( logFile.getReader( position ), new VersionAwareLogEntryReader<>() );
+    }
+
+    @Override
+    public TransactionCursor getTransactions( final long transactionIdToStartFrom )
             throws IOException
     {
         // look up in position cache
