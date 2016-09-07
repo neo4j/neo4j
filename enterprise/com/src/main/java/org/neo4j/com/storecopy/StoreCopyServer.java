@@ -159,7 +159,9 @@ public class StoreCopyServer
             {
                 while ( files.hasNext() )
                 {
-                    File file = files.next().file();
+                    StoreFileMetadata meta = files.next();
+                    File file = meta.file();
+                    int recordSize = meta.recordSize();
 
                     // Read from paged file if mapping exists. Otherwise read through file system.
                     final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
@@ -169,7 +171,7 @@ public class StoreCopyServer
                     {
                         monitor.startStreamingStoreFile( file );
                         writer.write( relativePath( storeDirectory, file ), fileChannel,
-                                temporaryBuffer, file.length() > 0 );
+                                temporaryBuffer, file.length() > 0, recordSize );
                         monitor.finishStreamingStoreFile( file );
                     }
                     finally

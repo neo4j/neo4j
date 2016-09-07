@@ -333,10 +333,10 @@ public class StoreCopyClient
 
             @Override
             public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
-                              boolean hasData ) throws IOException
+                              boolean hasData, int recordSize ) throws IOException
             {
                 log.info( "Copying %s", path );
-                long written = actual.write( path, data, temporaryBuffer, hasData );
+                long written = actual.write( path, data, temporaryBuffer, hasData, recordSize );
                 log.info( "Copied %s %s", path, bytes( written ) );
                 totalFiles++;
                 return written;
