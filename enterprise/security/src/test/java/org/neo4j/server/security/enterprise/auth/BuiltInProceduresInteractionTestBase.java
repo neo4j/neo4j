@@ -430,6 +430,50 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         }
     }
 
+    @Test
+    public void shouldKillMultipleUserQueries() throws Throwable
+    {
+        DoubleLatch latch = new DoubleLatch( 5 );
+        ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransactionCreate<S> read3 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
+        String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
+        String q2 = read2.execute( threading, readSubject, "UNWIND [4,5,6] AS y RETURN y" );
+        read3.execute( threading, readSubject, "UNWIND [7,8,9] AS z RETURN z" );
+        write.execute( threading, writeSubject, "UNWIND [11,12,13] AS q RETURN q" );
+        latch.startAndWaitForAllToStart();
+
+        String id1 = extractQueryId( q1 );
+        String id2 = extractQueryId( q2 );
+
+        String idParam = "['" + id1 + "', '" + id2 + "']";
+
+        assertSuccess(
+                adminSubject,
+                "CALL dbms.killQueries(" + idParam + ") YIELD username " +
+                "RETURN count(username) AS count, username", r ->
+                {
+                    List<Map<String,Object>> actual = r.stream().collect( toList() );
+                    Matcher<Map<String,Object>> mapMatcher = allOf(
+                            (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 2 ), equalTo( 2L ) ) ),
+                            (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
+                    );
+                    assertThat( actual, matchesOneToOneInAnyOrder( mapMatcher ) );
+                }
+        );
+
+        latch.finishAndWaitForAllToFinish();
+        read1.closeAndAssertTransactionTermination();
+        read2.closeAndAssertTransactionTermination();
+        read3.closeAndAssertSuccess();
+        write.closeAndAssertSuccess();
+
+        assertEmpty(
+            adminSubject,
+            "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
+    }
+
     protected String extractQueryId( String writeQuery )
     {
         return single( collectSuccessResult( adminSubject, "CALL dbms.listQueries()" )

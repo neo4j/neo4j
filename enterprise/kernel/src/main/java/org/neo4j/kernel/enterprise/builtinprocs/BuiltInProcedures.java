@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -145,11 +146,36 @@ public class BuiltInProcedures
             throws InvalidArgumentsException, IOException
     {
         long queryId = parseQueryId( idText ).kernelQueryId();
+
         Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
             getKernelTransactions().activeTransactions( tx -> executingQueriesWithId( queryId, tx ) );
+
         return executingQueries
             .stream()
             .map(this::killQueryTransaction);
+    }
+
+    @Procedure( name = "dbms.killQueries", mode = DBMS )
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts )
+            throws InvalidArgumentsException, IOException
+    {
+        Set<Long> queryIds =
+            idTexts.stream()
+                   .map( QueryId::parseQueryId )
+                   .map( QueryId::kernelQueryId )
+                   .collect( Collectors.toSet() );
+
+        Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
+                getKernelTransactions().activeTransactions( tx -> executingQueriesWithIds( queryIds, tx ) );
+
+        return executingQueries
+                .stream()
+                .map(this::killQueryTransaction);
+    }
+
+    private Stream<ExecutingQuery> executingQueriesWithIds( Set<Long> ids, KernelTransactionHandle txHandle )
+    {
+        return txHandle.executingQueries().filter( q -> ids.contains( q.kernelQueryId() ) );
     }
 
     private Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
@@ -313,6 +339,18 @@ public class BuiltInProcedures
         }
     }
 
+    public static class QueryTerminationResult
+    {
+        public final String queryId;
+        public final String username;
+
+        public QueryTerminationResult( QueryId queryId, String username )
+        {
+            this.queryId = queryId.toString();
+            this.username = username;
+        }
+    }
+
     public static class TransactionResult
     {
         public final String username;
@@ -334,18 +372,6 @@ public class BuiltInProcedures
         {
             this.username = username;
             this.transactionsTerminated = transactionsTerminated;
-        }
-    }
-
-    public static class QueryTerminationResult
-    {
-        public final String queryId;
-        public final String username;
-
-        public QueryTerminationResult( QueryId queryId, String username )
-        {
-            this.queryId = queryId.toString();
-            this.username = username;
         }
     }
 
