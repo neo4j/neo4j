@@ -144,7 +144,9 @@ Function Get-Neo4jServer
       if ($setting -ne $null) { $value = $setting.Value }
       Set-Neo4jEnv $_.Name $value
     }
+    #  NEO4J_CONF and NEO4J_HOME are used by the Neo4j Admin Tool
     if ( (Get-Neo4jEnv 'NEO4J_CONF') -eq $null) { Set-Neo4jEnv "NEO4J_CONF" $ConfDir }
+    if ( (Get-Neo4jEnv 'NEO4J_HOME') -eq $null) { Set-Neo4jEnv "NEO4J_HOME" $Neo4jHome }
 
     Write-Output $serverObject
   }

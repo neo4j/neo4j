@@ -110,5 +110,25 @@ InModuleScope Neo4j-Management {
          $neoServer.ConfDir | Should Be 'TestDrive:\neo4j-conf'
       }
     }
+
+    Context "NEO4J_HOME environment variable is not set" {
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j'
+      Mock Get-Neo4jEnv { } -ParameterFilter { $Name -eq 'NEO4J_HOME' }
+ 
+      It "Creates NEO4J_HOME if not set" {
+         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\' -ErrorAction Stop
+         Assert-MockCalled Set-Neo4jEnv -Times 1 -ParameterFilter { $Name -eq 'NEO4J_HOME' }
+      }
+    }
+
+    Context "NEO4J_HOME environment variable is already set" {
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j'
+      Mock Get-Neo4jEnv { 'TestDrive:\bad-location' } -ParameterFilter { $Name -eq 'NEO4J_HOME' }
+ 
+      It "Does not modify NEO4J_HOME if already set" {
+         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\' -ErrorAction Stop
+         Assert-MockCalled Set-Neo4jEnv -Times 0 -ParameterFilter { $Name -eq 'NEO4J_HOME' }
+      }
+    }
   }
 }
