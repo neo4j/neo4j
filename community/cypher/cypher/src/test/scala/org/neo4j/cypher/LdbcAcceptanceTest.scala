@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.EstimatedRows
-import org.neo4j.kernel.impl.query.QueryEngineProvider
 
 /**
  * Runs the 14 LDBC queries and checks so that the result is what is expected.

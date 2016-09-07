@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.spi.v3_1
 
+import java.util.Collections
+
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Cardinality
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, RelTypeId}
@@ -36,7 +38,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     val graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     val transaction = graph.beginTransaction(explicit, FULL)
     val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-    val transactionalContext = new Neo4jTransactionalContext(graph, transaction, bridge.get(), null)
+    val transactionalContext = new Neo4jTransactionalContext(graph, transaction, bridge.get(), "X", Collections.emptyMap(), null)
     val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext))
     val statistics = planContext.statistics
 
@@ -61,7 +63,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     val transaction = graph.beginTransaction(explicit, FULL)
     val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-    val transactionalContext = new Neo4jTransactionalContext(graph, transaction, bridge.get(), null)
+    val transactionalContext = new Neo4jTransactionalContext(graph, transaction, bridge.get(), "X", Collections.emptyMap(), null)
     val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext))
     val statistics = planContext.statistics
 

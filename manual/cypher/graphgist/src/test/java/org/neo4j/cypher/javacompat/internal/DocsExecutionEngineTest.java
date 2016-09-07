@@ -87,7 +87,7 @@ public class DocsExecutionEngineTest
         ThreadToStatementContextBridge bridge =
                 database.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         Neo4jTransactionalContext context =
-                new Neo4jTransactionalContext( database, transaction, bridge.get(), new PropertyContainerLocker() );
+                new Neo4jTransactionalContext( database, transaction, bridge.get(), "X", Collections.emptyMap(), new PropertyContainerLocker() );
         return QueryEngineProvider.embeddedSession( context );
     }
 }

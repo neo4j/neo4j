@@ -141,7 +141,7 @@ class IncomparableValuesException(lhs: String, rhs: String, cause: Throwable)
 }
 
 class PeriodicCommitInOpenTransactionException(cause: Throwable)
-  extends InvalidSemanticsException("Executing queries that use periodic commit in an open transaction is not possible.", cause) {
+  extends InvalidSemanticsException("Executing stream that use periodic commit in an open transaction is not possible.", cause) {
   def this() = this(null)
 }
 

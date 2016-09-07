@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1
 
 import java.time.Clock
+import java.util.Collections
 import java.util.concurrent._
 
 import org.junit.Assert._
@@ -65,7 +66,7 @@ class RuleExecutablePlanBuilderTest
   val locker: PropertyContainerLocker = new PropertyContainerLocker
   val ast = mock[Statement]
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
+  val queryPlanner = DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
   val planner = CostBasedPipeBuilderFactory.create(
     monitors = mock[Monitors],
     metricsFactory = SimpleMetricsFactory,
@@ -94,7 +95,7 @@ class RuleExecutablePlanBuilderTest
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
-      val pipeBuilder = new LegacyExecutablePlanBuilderWithCustomPlanBuilders(Seq(new BadBuilder), new WrappedMonitors3_1(kernelMonitors), config)
+      val pipeBuilder = new LegacyExecutablePlanBuilderWithCustomPlanBuilders(Seq(new BadBuilder), WrappedMonitors3_1(kernelMonitors), config)
       val query = new FakePreparedSemanticQuery(q)
       pipeBuilder.producePipe(query, planContext, CompilationPhaseTracer.NO_TRACING)
     })
@@ -119,7 +120,7 @@ class RuleExecutablePlanBuilderTest
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
         RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
 
-      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, statement, locker))
+      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, statement, "X", Collections.emptyMap(), locker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedSemanticQuery(q)
@@ -145,9 +146,9 @@ class RuleExecutablePlanBuilderTest
         .where(HasLabel(Variable("x"), Label("Person")))
         .returns(ReturnItem(Variable("x"), "x"))
 
-      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
-        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
-      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, statement, locker))
+      val execPlanBuilder = new LegacyExecutablePlanBuilder(WrappedMonitors3_1(kernelMonitors), config,
+                                                            RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
+      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, statement, "X", Collections.emptyMap(), locker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedSemanticQuery(q)
@@ -177,9 +178,8 @@ class RuleExecutablePlanBuilderTest
         .returns(AllVariables())
       val parsedQ = new FakePreparedSemanticQuery(q)
 
-
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
-        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
+      val pipeBuilder = new LegacyExecutablePlanBuilder(WrappedMonitors3_1(kernelMonitors), config, RewriterStepSequencer.newValidating,
+        typeConverter = IdentityTypeConverter)
       val pipe = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -207,9 +207,8 @@ class RuleExecutablePlanBuilderTest
         .returns(AllVariables())
       val parsedQ = new FakePreparedSemanticQuery(q)
 
-
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
-        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
+      val pipeBuilder = new LegacyExecutablePlanBuilder(WrappedMonitors3_1(kernelMonitors), config, RewriterStepSequencer.newValidating,
+        typeConverter = IdentityTypeConverter)
       val pipe = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -227,7 +226,7 @@ class RuleExecutablePlanBuilderTest
     graph.inTx {
       // LOAD CSV "file:///tmp/foo.csv" AS line CREATE ()
       val q = Query
-        .start(LoadCSV(withHeaders = false, new Literal("file:///tmp/foo.csv"), "line", None))
+        .start(LoadCSV(withHeaders = false, Literal("file:///tmp/foo.csv"), "line", None))
         .tail(Query
           .updates(CreateNode("  UNNAMED3456", Map.empty, Seq.empty))
           .returns()
@@ -236,9 +235,8 @@ class RuleExecutablePlanBuilderTest
       val parsedQ = new FakePreparedSemanticQuery(q)
 
 
-
-      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
-        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
+      val execPlanBuilder = new LegacyExecutablePlanBuilder(WrappedMonitors3_1(kernelMonitors), config, RewriterStepSequencer.newValidating,
+        typeConverter = IdentityTypeConverter)
       val pipe = execPlanBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -262,9 +260,8 @@ class RuleExecutablePlanBuilderTest
       )
       val parsedQ = new FakePreparedSemanticQuery(q)
 
-
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
-        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
+      val pipeBuilder = new LegacyExecutablePlanBuilder(WrappedMonitors3_1(kernelMonitors), config, RewriterStepSequencer.newValidating,
+        typeConverter = IdentityTypeConverter)
 
       // when
       val periodicCommit = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).periodicCommit
@@ -303,7 +300,7 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
 
   class ExplodingPipe extends Pipe {
     def internalCreateResults(state: QueryState) = throw new ExplodingException
-    def symbols: SymbolTable = new SymbolTable()
+    def symbols: SymbolTable = SymbolTable()
     def planDescription: InternalPlanDescription = null
     def exists(pred: Pipe => Boolean) = ???
     val monitor = mock[PipeMonitor]

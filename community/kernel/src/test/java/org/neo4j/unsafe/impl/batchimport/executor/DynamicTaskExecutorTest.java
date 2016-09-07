@@ -62,12 +62,14 @@ public class DynamicTaskExecutorTest
 
         // WHEN
         executor.submit( task1 );
-        task1.latch.awaitStart();
+        task1.latch.waitForAllToStart();
         executor.submit( task2 );
+        //noinspection StatementWithEmptyBody
         while ( task2.executed == 0 )
         {   // Busy loop
         }
         task1.latch.finish();
+        //noinspection StatementWithEmptyBody
         while ( task1.executed == 0 )
         {   // Busy loop
         }
@@ -89,13 +91,15 @@ public class DynamicTaskExecutorTest
 
         // WHEN
         executor.submit( task1 );
-        task1.latch.awaitStart();
+        task1.latch.waitForAllToStart();
         executor.submit( task2 );
         executor.processors( 1 ); // now at 2
+        //noinspection StatementWithEmptyBody
         while ( task2.executed == 0 )
         {   // With one additional worker, the second task can execute even if task one is still executing
         }
         task1.latch.finish();
+        //noinspection StatementWithEmptyBody
         while ( task1.executed == 0 )
         {   // Busy loop
         }
@@ -120,14 +124,14 @@ public class DynamicTaskExecutorTest
         // WHEN
         executor.submit( task1 );
         executor.submit( task2 );
-        task1.latch.awaitStart();
-        task2.latch.awaitStart();
+        task1.latch.waitForAllToStart();
+        task2.latch.waitForAllToStart();
         executor.submit( task3 );
         executor.submit( task4 );
         executor.processors( -1 ); // it started at 2 ^^^
         task1.latch.finish();
         task2.latch.finish();
-        task3.latch.awaitStart();
+        task3.latch.waitForAllToStart();
         Thread.sleep( 200 ); // gosh, a Thread.sleep...
         assertEquals( 0, task4.executed );
         task3.latch.finish();
@@ -191,8 +195,8 @@ public class DynamicTaskExecutorTest
         ControlledTask secondBlockingTask = new ControlledTask();
         executor.submit( firstBlockingTask );
         executor.submit( secondBlockingTask );
-        firstBlockingTask.latch.awaitStart();
-        secondBlockingTask.latch.awaitStart();
+        firstBlockingTask.latch.waitForAllToStart();
+        secondBlockingTask.latch.waitForAllToStart();
 
         FailingTask failingTask = new FailingTask( exception );
         executor.submit( failingTask );
@@ -363,7 +367,7 @@ public class DynamicTaskExecutorTest
         private final Exception exception;
         private final Barrier.Control latch = new Barrier.Control();
 
-        public FailingTask( Exception exception )
+        FailingTask( Exception exception )
         {
             this.exception = exception;
         }
@@ -413,7 +417,7 @@ public class DynamicTaskExecutorTest
         @Override
         public void run( Void nothing )
         {
-            latch.startAndAwaitFinish();
+            latch.startAndWaitForAllToStartAndFinish();
             super.run( nothing );
         }
     }

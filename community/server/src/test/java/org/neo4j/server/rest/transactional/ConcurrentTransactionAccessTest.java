@@ -59,7 +59,7 @@ public class ConcurrentTransactionAccessTest
 
         final StatementDeserializer statements = mock( StatementDeserializer.class );
         when( statements.hasNext() ).thenAnswer( invocation -> {
-            latch.startAndAwaitFinish();
+            latch.startAndWaitForAllToStartAndFinish();
             return false;
         } );
 
@@ -69,7 +69,7 @@ public class ConcurrentTransactionAccessTest
                     HttpServletRequest.class ) );
         } ).start();
 
-        latch.awaitStart();
+        latch.waitForAllToStart();
 
         try
         {

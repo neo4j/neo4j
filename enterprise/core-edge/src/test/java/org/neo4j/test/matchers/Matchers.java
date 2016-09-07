@@ -21,7 +21,12 @@ package org.neo4j.test.matchers;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.hamcrest.Description;
@@ -30,6 +35,9 @@ import org.hamcrest.TypeSafeMatcher;
 
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public final class Matchers
 {

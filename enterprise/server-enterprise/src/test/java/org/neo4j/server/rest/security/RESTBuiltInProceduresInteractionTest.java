@@ -21,18 +21,18 @@ package org.neo4j.server.rest.security;
 
 import org.junit.Rule;
 
-import org.neo4j.server.security.enterprise.auth.AuthProceduresTestLogic;
+import org.neo4j.server.security.enterprise.auth.BuiltInProceduresInteractionTestBase;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
-public class NeoFullRESTProceduresIT extends AuthProceduresTestLogic<RESTSubject>
+public class RESTBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<RESTSubject>
 {
     @Rule
     public SuppressOutput suppressOutput = suppressAll();
 
-    public NeoFullRESTProceduresIT()
+    public RESTBuiltInProceduresInteractionTest()
     {
         super();
         CHANGE_PWD_ERR_MSG = "User is required to change their password.";
@@ -43,6 +43,6 @@ public class NeoFullRESTProceduresIT extends AuthProceduresTestLogic<RESTSubject
     @Override
     public NeoInteractionLevel<RESTSubject> setUpNeoServer() throws Throwable
     {
-        return new NeoFullRESTInteraction();
+        return new RESTInteraction();
     }
 }

@@ -76,6 +76,13 @@
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-security</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
@@ -158,7 +165,6 @@
       <version>2.0.0-M21</version>
       <scope>test</scope>
     </dependency>
-    <!-- http://mvnrepository.com/artifact/org.slf4j/slf4j-nop -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-nop</artifactId>
@@ -173,6 +179,11 @@
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

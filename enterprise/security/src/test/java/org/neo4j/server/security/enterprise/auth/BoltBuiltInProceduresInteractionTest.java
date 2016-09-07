@@ -28,24 +28,22 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 
-public class BoltScenariosIT extends AuthScenariosLogic<BoltInteraction.BoltSubject>
+public class BoltBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<BoltInteraction.BoltSubject>
 {
     private Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(),
-            settings -> {
-                settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            } );
+            settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" ) );
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( server );
 
-    public BoltScenariosIT()
+    public BoltBuiltInProceduresInteractionTest()
     {
         super();
         IS_EMBEDDED = false;
         IS_BOLT = true;
     }
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    private TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         return new TestEnterpriseGraphDatabaseFactory();
     }

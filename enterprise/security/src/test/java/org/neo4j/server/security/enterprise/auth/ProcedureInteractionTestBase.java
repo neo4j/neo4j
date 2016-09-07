@@ -28,30 +28,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
+import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Result;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.either;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.procedure.Procedure.Mode.READ;
 import static org.neo4j.procedure.Procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
@@ -59,25 +68,25 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.A
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
-abstract class AuthTestBase<S>
+abstract class ProcedureInteractionTestBase<S>
 {
     protected boolean PWD_CHANGE_CHECK_FIRST = false;
     protected String CHANGE_PWD_ERR_MSG = AuthProcedures.PERMISSION_DENIED;
-    protected String BOLT_PWD_ERR_MSG =
+    private String BOLT_PWD_ERR_MSG =
             "The credentials you provided were valid, but must be changed before you can use this instance.";
-    protected String READ_OPS_NOT_ALLOWED = "Read operations are not allowed";
-    protected String WRITE_OPS_NOT_ALLOWED = "Write operations are not allowed";
-    protected String SCHEMA_OPS_NOT_ALLOWED = "Schema operations are not allowed";
+    String READ_OPS_NOT_ALLOWED = "Read operations are not allowed";
+    String WRITE_OPS_NOT_ALLOWED = "Write operations are not allowed";
+    String SCHEMA_OPS_NOT_ALLOWED = "Schema operations are not allowed";
 
     protected boolean IS_EMBEDDED = true;
-    protected boolean IS_BOLT = false;
+    boolean IS_BOLT = false;
 
-    protected String pwdReqErrMsg( String errMsg )
+    String pwdReqErrMsg( String errMsg )
     {
         return PWD_CHANGE_CHECK_FIRST ? CHANGE_PWD_ERR_MSG : IS_EMBEDDED ? errMsg : BOLT_PWD_ERR_MSG;
     }
 
-    final String EMPTY_ROLE = "empty";
+    private final String EMPTY_ROLE = "empty";
 
     S adminSubject;
     S schemaSubject;
@@ -90,7 +99,9 @@ abstract class AuthTestBase<S>
         "writeSubject", "pwdSubject", "noneSubject", "neo4j" };
     String[] initialRoles = { ADMIN, ARCHITECT, PUBLISHER, READER, EMPTY_ROLE };
 
-    protected EnterpriseUserManager userManager;
+    protected abstract ThreadingRule threading();
+
+    EnterpriseUserManager userManager;
 
     protected NeoInteractionLevel<S> neo;
 
@@ -99,9 +110,9 @@ abstract class AuthTestBase<S>
     {
         Neo4jWithSocket.cleanupTemporaryTestFiles();
         neo = setUpNeoServer();
-        neo.getGraph().getDependencyResolver().resolveDependency( Procedures.class )
+        neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class )
                 .register( ClassWithProcedures.class );
-        userManager = neo.getManager();
+        userManager = neo.getLocalUserManager();
 
         userManager.newUser( "noneSubject", "abc", false );
         userManager.newUser( "pwdSubject", "abc", true );
@@ -138,7 +149,7 @@ abstract class AuthTestBase<S>
         return Stream.concat( Arrays.stream(strs), Arrays.stream( moreStr ) ).toArray( String[]::new );
     }
 
-    protected List<String> listOf( String... values )
+    List<String> listOf( String... values )
     {
         return Stream.of( values ).collect( toList() );
     }
@@ -321,7 +332,7 @@ abstract class AuthTestBase<S>
         assertThat( err, containsString( partOfErrorMsg ) );
     }
 
-    void assertFail( S subject, String call, String partOfErrorMsg1, String partOfErrorMsg2 )
+    private void assertFail( S subject, String call, String partOfErrorMsg1, String partOfErrorMsg2 )
     {
         String err = assertCallEmpty( subject, call );
         assertThat( err, not( equalTo( "" ) ) );
@@ -367,16 +378,17 @@ abstract class AuthTestBase<S>
         assertKeyIsArray( r, key, items );
     }
 
-    void assertKeyIsArray( ResourceIterator<Map<String, Object>> r, String key, String[] items )
+    private void assertKeyIsArray( ResourceIterator<Map<String,Object>> r, String key, String[] items )
     {
         List<Object> results = getObjectsAsList( r, key );
         assertEquals( Arrays.asList( items ).size(), results.size() );
         Assert.assertThat( results, containsInAnyOrder( items ) );
     }
 
-    protected void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
+    @SuppressWarnings( "unchecked" )
+    public static void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
     {
-        List<Map<String, Object>> result = r.stream().collect( toList() );
+        List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
 
         assertEquals( "Results for should have size " + expected.size() + " but was " + result.size(),
                 expected.size(), result.size() );
@@ -384,28 +396,60 @@ abstract class AuthTestBase<S>
         for ( Map<String, Object> row : result )
         {
             String key = (String) row.get( keyKey );
-            assertTrue( "Unexpected key '" + key + "'", expected.containsKey( key ) );
+            assertThat( expected, hasKey( key ) );
+            assertThat( row, hasKey( valueKey ) );
 
-            assertTrue( "Value key '" + valueKey + "' not found in results", row.containsKey( valueKey ) );
             Object objectValue = row.get( valueKey );
             if ( objectValue instanceof List )
             {
                 List<String> value = (List<String>) objectValue;
                 List<String> expectedValues = (List<String>) expected.get( key );
-                assertEquals( "Results for '" + key + "' should have size " + expectedValues.size() + " but was " +
-                        value.size(), value.size(), expectedValues.size() );
+                assertEquals( "sizes", value.size(), expectedValues.size() );
                 assertThat( value, containsInAnyOrder( expectedValues.toArray() ) );
             }
             else
             {
                 String value = objectValue.toString();
                 String expectedValue = expected.get( key ).toString();
-                assertTrue(
-                        String.format( "Wrong value for '%s', expected '%s', got '%s'", key, expectedValue, value),
-                        value.equals( expectedValue )
-                    );
+                assertThat( value, equalTo( expectedValue ) );
             }
         }
+    }
+
+    // --------------------- helpers -----------------------
+
+    void shouldTerminateTransactionsForUser( S subject, String procedure ) throws Throwable
+    {
+        DoubleLatch latch = new DoubleLatch( 2 );
+        ThreadedTransactionCreate<S> userThread = new ThreadedTransactionCreate<>( neo, latch );
+        userThread.execute( threading(), subject );
+        latch.startAndWaitForAllToStart();
+
+        assertEmpty( adminSubject, "CALL " + format(procedure, neo.nameOf( subject ) ) );
+
+        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
+                r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
+
+        latch.finishAndWaitForAllToFinish();
+
+        userThread.closeAndAssertTransactionTermination();
+
+        assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    TransportConnection startBoltSession( String username, String password ) throws Exception
+    {
+        TransportConnection connection = new SocketConnection();
+        HostnamePort address = new HostnamePort( "localhost:7687" );
+        Map<String,Object> authToken = map( "principal", username, "credentials", password, "scheme", "basic" );
+
+        connection.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk( init( "TestClient/1.1", authToken ) ) );
+
+        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, eventuallyReceives( msgSuccess() ) );
+        return connection;
     }
 
     public static class CountResult
@@ -472,7 +516,7 @@ abstract class AuthTestBase<S>
             }
             finally
             {
-                testLatch.get().doubleLatch.start();
+                testLatch.get().doubleLatch.startAndWaitForAllToStart();
             }
             try
             {
@@ -480,8 +524,7 @@ abstract class AuthTestBase<S>
             }
             finally
             {
-                testLatch.get().doubleLatch.finish();
-                testLatch.get().doubleLatch.awaitFinish();
+                testLatch.get().doubleLatch.finishAndWaitForAllToFinish();
             }
         }
 
@@ -491,7 +534,7 @@ abstract class AuthTestBase<S>
             Runnable runBefore;
             Runnable runAfter;
 
-            public LatchedRunnables( DoubleLatch doubleLatch, Runnable runBefore, Runnable runAfter )
+            LatchedRunnables( DoubleLatch doubleLatch, Runnable runBefore, Runnable runAfter )
             {
                 this.doubleLatch = doubleLatch;
                 this.runBefore = runBefore;
@@ -505,7 +548,7 @@ abstract class AuthTestBase<S>
             }
         }
 
-        public static void setTestLatch( LatchedRunnables testLatch )
+        static void setTestLatch( LatchedRunnables testLatch )
         {
             ClassWithProcedures.testLatch.set( testLatch );
         }

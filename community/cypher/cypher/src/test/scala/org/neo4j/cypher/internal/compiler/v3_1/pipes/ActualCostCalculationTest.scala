@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import java.io.File
 import java.nio.file.Files
+import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 import org.apache.commons.math3.stat.regression.{OLSMultipleLinearRegression, SimpleRegression}
@@ -230,7 +231,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def runSimulation(graph: GraphDatabaseQueryService, pipes: Seq[Pipe]) = {
     val results = new ListBuffer[DataPoint]
     graph.withTx { tx =>
-      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
+      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
@@ -277,25 +278,25 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 
-  private def labelScan = new NodeByLabelScanPipe("x", LazyLabel(LABEL.name()))()
+  private def labelScan = NodeByLabelScanPipe("x", LazyLabel(LABEL.name()))()
 
-  private def labelScan(label: String) = new NodeByLabelScanPipe("x", LazyLabel(label))()
+  private def labelScan(label: String) = NodeByLabelScanPipe("x", LazyLabel(label))()
 
-  private def hashJoin(l: Pipe, r: Pipe) = new NodeHashJoinPipe(Set("x"), l, r)()
+  private def hashJoin(l: Pipe, r: Pipe) = NodeHashJoinPipe(Set("x"), l, r)()
 
-  private def expand(l: Pipe, t: String) = new ExpandAllPipe(l, "x", "r", "n", SemanticDirection.OUTGOING, LazyTypes(Seq(t)))()
+  private def expand(l: Pipe, t: String) = ExpandAllPipe(l, "x", "r", "n", SemanticDirection.OUTGOING, LazyTypes(Seq(t)))()
 
-  private def allNodes = new AllNodesScanPipe("x")()
+  private def allNodes = AllNodesScanPipe("x")()
 
-  private def nodeById(id: Long) = new NodeByIdSeekPipe("x", SingleSeekArg(Literal(id)))()
+  private def nodeById(id: Long) = NodeByIdSeekPipe("x", SingleSeekArg(Literal(id)))()
 
-  private def relById(id: Long) = new UndirectedRelationshipByIdSeekPipe("r", SingleSeekArg(Literal(id)), "to", "from")()
+  private def relById(id: Long) = UndirectedRelationshipByIdSeekPipe("r", SingleSeekArg(Literal(id)), "to", "from")()
 
-  private def eager(pipe: Pipe) = new EagerPipe(pipe)()
+  private def eager(pipe: Pipe) = EagerPipe(pipe)()
 
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
-      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
+      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
       val ctx = new TransactionBoundPlanContext(transactionalContext)
       val literal = Literal(42)
 
@@ -304,13 +305,13 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
       val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
 
-      new NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
+      NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
     }
   }
 
   private def indexScan(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
-      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
+      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
       val ctx = new TransactionBoundPlanContext(transactionalContext)
       val literal = Literal(42)
 
@@ -319,7 +320,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
       val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
 
-      new NodeIndexScanPipe(LABEL.name(), labelToken, propertyKeyToken)()
+      NodeIndexScanPipe(LABEL.name(), labelToken, propertyKeyToken)()
     }
   }
 

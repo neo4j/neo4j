@@ -212,6 +212,7 @@ public class IndexingServiceTest
         waitForIndexesToComeOnline( indexingService, 0 );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldDeliverUpdatesThatOccurDuringPopulationToPopulator() throws Exception
     {
@@ -651,6 +652,7 @@ public class IndexingServiceTest
         return true;
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void recoveredUpdatesShouldBeApplied() throws Exception
     {
@@ -739,6 +741,7 @@ public class IndexingServiceTest
     /*
      * See comments in IndexingService#createIndex
      */
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldNotLoseIndexDescriptorDueToOtherSimilarIndexDuringRecovery() throws Exception
     {
@@ -796,7 +799,7 @@ public class IndexingServiceTest
                 // When we see that we start to await the index to populate, notify the slow-as-heck
                 // populator that it can actually go and complete its job.
                 indexId.set( index );
-                latch.start();
+                latch.startAndWaitForAllToStart();
             }
         };
         // leaving out the IndexRule here will have the index being populated from scratch
@@ -912,7 +915,7 @@ public class IndexingServiceTest
                 ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
     }
 
-    static Matcher<? extends Throwable> causedBy( final Throwable exception )
+    private static Matcher<? extends Throwable> causedBy( final Throwable exception )
     {
         return new TypeSafeMatcher<Throwable>()
         {
@@ -957,7 +960,7 @@ public class IndexingServiceTest
         @Override
         public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
         {
-            latch.awaitStart();
+            latch.waitForAllToStart();
         }
 
         @Override
@@ -1006,7 +1009,7 @@ public class IndexingServiceTest
         when( indexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) ) )
                 .thenReturn( accessor );
-        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.<File>emptyIterator() );
+        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.emptyIterator() );
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ),
                 any( LabelScanStoreProvider.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
@@ -1043,6 +1046,7 @@ public class IndexingServiceTest
             this.updates = updates;
         }
 
+        @SuppressWarnings( "unchecked" )
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
             when( mock.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
@@ -1107,7 +1111,7 @@ public class IndexingServiceTest
     {
         private final String kind;
 
-        public NameLookupAnswer( String kind )
+        NameLookupAnswer( String kind )
         {
 
             this.kind = kind;
@@ -1171,6 +1175,7 @@ public class IndexingServiceTest
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     private Answer nodeUpdatesAnswer( NodePropertyUpdate... updates )
     {
         return invocation -> {

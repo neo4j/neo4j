@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import scala.collection.JavaConverters._
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 

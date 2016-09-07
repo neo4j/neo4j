@@ -79,7 +79,7 @@ public class ExecutionEngineTests
         ThreadToStatementContextBridge txBridge =
                 graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         PropertyContainerLocker locker = new PropertyContainerLocker();
-        TransactionalContext transactionalContext = new Neo4jTransactionalContext( graph, tx, txBridge.get(), locker );
+        TransactionalContext transactionalContext = new Neo4jTransactionalContext( graph, tx, txBridge.get(), "X", Collections.emptyMap(), locker );
         return QueryEngineProvider.embeddedSession( transactionalContext );
     }
 }

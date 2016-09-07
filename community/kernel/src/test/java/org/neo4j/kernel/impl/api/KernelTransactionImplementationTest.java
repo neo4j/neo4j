@@ -73,7 +73,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 @RunWith( Parameterized.class )
 public class KernelTransactionImplementationTest extends KernelTransactionTestBase
 {
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter()
     public Consumer<KernelTransaction> transactionInitializer;
 
     @Parameterized.Parameter( 1 )
@@ -329,14 +329,14 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Future<?> terminationFuture = Executors.newSingleThreadExecutor().submit( () ->
         {
-            latch.awaitStart();
+            latch.waitForAllToStart();
             transaction.markForTermination( Status.General.UnknownError );
             latch.finish();
         } );
 
         // WHEN
         transaction.success();
-        latch.startAndAwaitFinish();
+        latch.startAndWaitForAllToStartAndFinish();
 
         assertNull( terminationFuture.get( 1, TimeUnit.MINUTES ) );
 
@@ -356,6 +356,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldUseStartTimeAndTxIdFromWhenStartingTxAsHeader() throws Exception
     {
@@ -364,6 +365,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         when( legacyIndexState.hasChanges() ).thenReturn( true );
         doAnswer( invocation ->
         {
+            @SuppressWarnings( "unchecked" )
             Collection<StorageCommand> commands = invocation.getArgumentAt( 0, Collection.class );
             commands.add( mock( Command.class ) );
             return null;

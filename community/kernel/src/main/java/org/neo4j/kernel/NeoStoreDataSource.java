@@ -60,12 +60,14 @@ import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -612,26 +614,21 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 transactionIdStore::getLastCommittedTransactionId, logVersionRepository, physicalLogMonitor,
                 logHeaderCache ) );
 
-        final PhysicalLogFileInformation.LogVersionToTimestamp
-                logInformation = new PhysicalLogFileInformation.LogVersionToTimestamp()
+        final PhysicalLogFileInformation.LogVersionToTimestamp logInformation = version ->
         {
-            @Override
-            public long getTimestampForVersion( long version ) throws IOException
+            LogPosition position = LogPosition.start( version );
+            try ( ReadableLogChannel channel = logFile.getReader( position ) )
             {
-                LogPosition position = LogPosition.start( version );
-                try ( ReadableLogChannel channel = logFile.getReader( position ) )
+                LogEntry entry;
+                while ( (entry = logEntryReader.readLogEntry( channel )) != null )
                 {
-                    LogEntry entry;
-                    while ( (entry = logEntryReader.readLogEntry( channel )) != null )
+                    if ( entry instanceof LogEntryStart )
                     {
-                        if ( entry instanceof LogEntryStart )
-                        {
-                            return entry.<LogEntryStart>as().getTimeWritten();
-                        }
+                        return entry.<LogEntryStart>as().getTimeWritten();
                     }
                 }
-                return -1;
             }
+            return -1;
         };
         final LogFileInformation logFileInformation =
                 new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId, logInformation );
@@ -981,10 +978,14 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeReadLayer,
                 autoIndexing, constraintIndexCreator,
                 legacyIndexStore );
+
+        QueryRegistrationOperations queryRegistrationOperations =
+                new StackingQueryRegistrationOperations( StackingQueryRegistrationOperations.LAST_QUERY_ID, Clocks.systemClock() );
+
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
                 new SchemaStateConcern( updateableSchemaState ), null, stateHandlingContext, stateHandlingContext,
-                stateHandlingContext );
+                stateHandlingContext, queryRegistrationOperations );
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
                 new ConstraintEnforcingEntityOperations( constraintSemantics, parts.entityWriteOperations(), parts.entityReadOperations(),
@@ -994,20 +995,20 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 new DataIntegrityValidatingStatementOperations(
                         parts.keyWriteOperations(), parts.schemaReadOperations(), constraintEnforcingEntityOperations );
         parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
-                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null, null );
+                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null, null, null );
         // + Locking
         LockingStatementOperations lockingContext = new LockingStatementOperations( parts.entityReadOperations(),
                 parts.entityWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations(),
                 parts.schemaStateOperations() );
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
-                lockingContext, null, null, null );
+                lockingContext, null, null, null, null );
         // + Guard
         if ( guard != null )
         {
             GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
                     parts.entityWriteOperations(), parts.entityReadOperations(), guard );
             parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null,
-                    null, null, null );
+                    null, null, null, null );
         }
 
         return parts;

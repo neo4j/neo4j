@@ -127,9 +127,9 @@ public class IndexSamplingControllerTest
             }
             totalCount.incrementAndGet();
 
-            jobLatch.awaitStart();
-            testLatch.start();
-            jobLatch.awaitFinish();
+            jobLatch.waitForAllToStart();
+            testLatch.startAndWaitForAllToStart();
+            jobLatch.waitForAllToFinish();
 
             concurrentCount.decrementAndGet();
 
@@ -146,8 +146,8 @@ public class IndexSamplingControllerTest
         // when running once
         new Thread( runController( controller, BACKGROUND_REBUILD_UPDATED ) ).start();
 
-        jobLatch.start();
-        testLatch.awaitStart();
+        jobLatch.startAndWaitForAllToStart();
+        testLatch.waitForAllToStart();
 
         // then blocking on first job
         assertEquals( 1, concurrentCount.get() );
@@ -158,7 +158,7 @@ public class IndexSamplingControllerTest
 
         // then no concurrent job execution
         jobLatch.finish();
-        testLatch.awaitFinish();
+        testLatch.waitForAllToFinish();
 
         // and finally exactly one job has run to completion
         assertEquals( 0, concurrentCount.get() );
@@ -224,9 +224,9 @@ public class IndexSamplingControllerTest
                 throw new IllegalStateException( "count !== 0 on create" );
             }
             totalCount.incrementAndGet();
-            jobLatch.awaitStart();
-            testLatch.start();
-            jobLatch.awaitFinish();
+            jobLatch.waitForAllToStart();
+            testLatch.startAndWaitForAllToStart();
+            jobLatch.waitForAllToFinish();
             concurrentCount.decrementAndGet();
             testLatch.finish();
             return null;
@@ -241,8 +241,8 @@ public class IndexSamplingControllerTest
         // when running once
         new Thread( runController( controller, TRIGGER_REBUILD_UPDATED ) ).start();
 
-        jobLatch.start();
-        testLatch.awaitStart();
+        jobLatch.startAndWaitForAllToStart();
+        testLatch.waitForAllToStart();
 
         // then blocking on first job
         assertEquals( 1, concurrentCount.get() );
@@ -252,7 +252,7 @@ public class IndexSamplingControllerTest
 
         // then no concurrent job execution
         jobLatch.finish();
-        testLatch.awaitFinish();
+        testLatch.waitForAllToFinish();
 
         // and finally exactly one job has run to completion
         assertEquals( 0, concurrentCount.get() );

@@ -19,11 +19,13 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-public class NeoShallowEmbeddedProceduresTest extends AuthProceduresTestLogic<EnterpriseAuthSubject>
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+
+public class EmbeddedBuiltInProceduresTest extends BuiltInProceduresInteractionTestBase<EnterpriseAuthSubject>
 {
     @Override
     protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer() throws Throwable
     {
-        return new NeoShallowEmbeddedInteraction();
+        return new EmbeddedInteraction();
     }
 }

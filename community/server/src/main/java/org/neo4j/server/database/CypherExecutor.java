@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.database;
 
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
@@ -72,10 +73,12 @@ public class CypherExecutor extends LifecycleAdapter
         this.txBridge = null;
     }
 
-    public QuerySession createSession( HttpServletRequest request )
+    public QuerySession createSession( String query, Map<String, Object> parameters, HttpServletRequest request )
     {
         InternalTransaction transaction = service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
-        TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
+        TransactionalContext context = new Neo4jTransactionalContext(
+            service, transaction, txBridge.get(), query, parameters, locker
+        );
         return new ServerQuerySession( request, context );
     }
 }

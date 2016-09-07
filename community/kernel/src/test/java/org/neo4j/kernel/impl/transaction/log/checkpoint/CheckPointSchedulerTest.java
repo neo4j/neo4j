@@ -138,8 +138,8 @@ public class CheckPointSchedulerTest
             @Override
             public long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
             {
-                checkPointerLatch.start();
-                checkPointerLatch.awaitFinish();
+                checkPointerLatch.startAndWaitForAllToStart();
+                checkPointerLatch.waitForAllToFinish();
                 return 42;
             }
 
@@ -171,7 +171,7 @@ public class CheckPointSchedulerTest
         };
         runCheckPointer.start();
 
-        checkPointerLatch.awaitStart();
+        checkPointerLatch.waitForAllToStart();
 
         Thread stopper = new Thread()
         {

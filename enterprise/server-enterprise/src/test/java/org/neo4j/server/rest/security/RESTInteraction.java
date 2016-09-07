@@ -22,11 +22,13 @@ package org.neo4j.server.rest.security;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.IntNode;
+import org.codehaus.jackson.node.LongNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.codehaus.jackson.node.TextNode;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -56,14 +58,14 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.Encr
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
-public class NeoFullRESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
+class RESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
 {
-    String COMMIT_PATH = "db/data/transaction/commit";
-    String POST = "POST";
+    private String COMMIT_PATH = "db/data/transaction/commit";
+    private String POST = "POST";
 
     EnterpriseAuthManager authManager;
 
-    public NeoFullRESTInteraction() throws IOException
+    RESTInteraction() throws IOException
     {
         server = EnterpriseServerBuilder.server()
                 .withProperty( boltConnector( "0" ).enabled.name(), "true" )
@@ -80,22 +82,23 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     }
 
     @Override
-    public EnterpriseUserManager getManager()
+    public EnterpriseUserManager getLocalUserManager()
     {
         return authManager.getUserManager();
     }
 
     @Override
-    public GraphDatabaseFacade getGraph()
+    public GraphDatabaseFacade getLocalGraph()
     {
         return server.getDatabase().getGraph();
     }
 
     @Override
-    public InternalTransaction startTransactionAsUser( RESTSubject subject ) throws Throwable
+    public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject, KernelTransaction.Type txType ) throws
+            Throwable
     {
         AuthSubject authSubject = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
-        return getGraph().beginTransaction( KernelTransaction.Type.explicit, authSubject );
+        return getLocalGraph().beginTransaction( txType, authSubject );
     }
 
     @Override
@@ -208,18 +211,18 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
         return "";
     }
 
-    protected String commitURL()
+    private String commitURL()
     {
         return server.baseUri().resolve( COMMIT_PATH ).toString();
     }
 
-    class RESTResult implements ResourceIterator<Map<String,Object>>
+    private class RESTResult implements ResourceIterator<Map<String,Object>>
     {
         private JsonNode data;
         private JsonNode columns;
         private int index = 0;
 
-        public RESTResult( JsonNode fullResult )
+        RESTResult( JsonNode fullResult )
         {
             this.data = fullResult.get( "data" );
             this.columns = fullResult.get( "columns" );
@@ -241,41 +244,67 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
         public Map<String,Object> next()
         {
             JsonNode row = data.get( index++ ).get( "row" );
-            TreeMap<String,Object> map = new TreeMap();
+            TreeMap<String,Object> map = new TreeMap<>();
             for ( int i = 0; i < columns.size(); i++ )
             {
                 String key = columns.get( i ).asText();
-                JsonNode value = row.get( i );
-                if ( value instanceof TextNode )
-                {
-                    map.put( key, row.get( i ).asText() );
-                }
-                else if ( value instanceof ArrayNode )
-                {
-                    ArrayNode aNode = (ArrayNode) value;
-                    ArrayList<String> listValue = new ArrayList( aNode.size() );
-                    for ( int j = 0; j < aNode.size(); j++ )
-                    {
-                        listValue.add( aNode.get( j ).asText() );
-                    }
-                    map.put( key, listValue );
-                }
-                else if ( value instanceof ObjectNode )
-                {
-                    map.put( key, value );
-                }
-                else if ( value instanceof IntNode )
-                {
-                    map.put( key, value.getIntValue() );
-                }
-                else
-                {
-                    throw new RuntimeException( "Unhandled REST value type '" + value.getClass() +
-                            "'. Need String (TextNode), List (ArrayNode), Object (ObjectNode) or int (IntNode)." );
-                }
+                Object value = getValue( row.get( i ) );
+                map.put( key, value );
             }
-
             return map;
         }
+    }
+
+    private Object getValue( JsonNode valueNode )
+    {
+        Object value;
+
+        if ( valueNode instanceof TextNode )
+        {
+            value = valueNode.asText();
+        }
+        else if ( valueNode instanceof ObjectNode )
+        {
+            value = mapValue( valueNode.getFieldNames(), valueNode );
+        }
+        else if ( valueNode instanceof ArrayNode )
+        {
+            ArrayNode aNode = (ArrayNode) valueNode;
+            ArrayList<String> listValue = new ArrayList<>( aNode.size() );
+            for ( int j = 0; j < aNode.size(); j++ )
+            {
+                listValue.add( aNode.get( j ).asText() );
+            }
+            value = listValue;
+        }
+        else if ( valueNode instanceof IntNode )
+        {
+            value = valueNode.getIntValue();
+        }
+        else if ( valueNode instanceof LongNode )
+        {
+            value = valueNode.getLongValue();
+        }
+        else
+        {
+            throw new RuntimeException( String.format(
+                "Unhandled REST value type '%s'. Need String (TextNode), List (ArrayNode), Object (ObjectNode), long (LongNode), or int (IntNode).",
+                valueNode.getClass()
+            ) );
+        }
+        return value;
+    }
+
+    private Map<String,Object> mapValue( Iterator<String> columns, JsonNode node )
+    {
+        TreeMap<String,Object> map = new TreeMap<>();
+        while ( columns.hasNext() )
+        {
+            String key = columns.next();
+            Object value = getValue( node.get( key ) );
+            map.put( key, value );
+        }
+
+        return map;
     }
 }

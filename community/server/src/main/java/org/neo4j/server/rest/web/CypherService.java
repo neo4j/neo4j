@@ -116,7 +116,7 @@ public class CypherService
                 handler.closeTransaction();
             }
 
-            QuerySession querySession = cypherExecutor.createSession( request );
+            QuerySession querySession = cypherExecutor.createSession( query, params, request );
 
             Result result;
             if ( profile )

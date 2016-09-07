@@ -238,35 +238,27 @@ public class PropertyExistenceConstraintVerificationIT
 
         private ThrowingFunction<Void,Void,RuntimeException> createOffender()
         {
-            return new ThrowingFunction<Void,Void,RuntimeException>()
+            return aVoid ->
             {
-                @Override
-                public Void apply( Void aVoid ) throws RuntimeException
+                try ( Transaction tx = db.beginTx() )
                 {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        createOffender( db, KEY );
-                        tx.success();
-                    }
-                    return null;
+                    createOffender( db, KEY );
+                    tx.success();
                 }
+                return null;
             };
         }
 
         private ThrowingFunction<Void,Void,RuntimeException> createConstraint()
         {
-            return new ThrowingFunction<Void,Void,RuntimeException>()
+            return aVoid ->
             {
-                @Override
-                public Void apply( Void aVoid ) throws RuntimeException
+                try ( Transaction tx = db.beginTx() )
                 {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        createConstraint( db, KEY, PROPERTY );
-                        tx.success();
-                    }
-                    return null;
+                    createConstraint( db, KEY, PROPERTY );
+                    tx.success();
                 }
+                return null;
             };
         }
     }

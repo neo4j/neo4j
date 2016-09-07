@@ -29,6 +29,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -49,6 +51,7 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -240,6 +243,12 @@ public class CommunityEditionModule extends EditionModule
                 doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
             }
         } );
+    }
+
+    @Override
+    public void registerProcedures( Procedures procedures ) throws KernelException
+    {
+        procedures.register( BuiltInProcedures.class );
     }
 
     @Override

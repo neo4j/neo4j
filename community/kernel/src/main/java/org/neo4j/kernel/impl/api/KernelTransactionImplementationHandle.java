@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -41,6 +43,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final KernelTransactionImplementation tx;
     private final AccessMode mode;
     private final Status terminationReason;
+    private final ExecutingQueryList executingQueries;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx )
     {
@@ -50,6 +53,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.localStartTime = tx.localStartTime();
         this.mode = tx.mode();
         this.terminationReason = tx.getReasonIfTerminated();
+        this.executingQueries = tx.executingQueries();
         this.tx = tx;
     }
 
@@ -99,6 +103,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public boolean isUnderlyingTransaction( KernelTransaction tx )
     {
         return this.tx == tx;
+    }
+
+    @Override
+    public Stream<ExecutingQuery> executingQueries()
+    {
+        return executingQueries.queries();
     }
 
     @Override

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.kernel.impl.query.QuerySession
 
 case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
-  def execute(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any], session: QuerySession) =
+  def execute(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any], session: QuerySession): ExecutionResult =
     plan.run(transactionalContext, executionMode, params ++ extractedParams, session)
 
-  def profile(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any], session: QuerySession) =
+  def profile(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any], session: QuerySession): ExecutionResult =
     plan.run(transactionalContext, CypherExecutionMode.profile, params ++ extractedParams, session)
 }

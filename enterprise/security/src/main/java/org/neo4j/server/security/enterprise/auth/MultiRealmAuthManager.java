@@ -34,6 +34,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.server.security.auth.UserManagerSupplier;
 
 public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplier
@@ -82,7 +83,7 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
             subject = new ShiroSubject( securityManager, AuthenticationResult.FAILURE );
         }
 
-        return new EnterpriseAuthSubject( this, subject );
+        return new StandardEnterpriseAuthSubject( this, subject );
     }
 
     @Override

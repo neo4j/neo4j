@@ -25,10 +25,12 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
@@ -39,18 +41,18 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.Encr
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
-public class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
+public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
 {
     private GraphDatabaseFacade db;
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
 
-    NeoShallowEmbeddedInteraction() throws Throwable
+    EmbeddedInteraction() throws Throwable
     {
         this(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder());
     }
 
-    public NeoShallowEmbeddedInteraction( GraphDatabaseBuilder builder ) throws Throwable
+    public EmbeddedInteraction( GraphDatabaseBuilder builder ) throws Throwable
     {
         builder.setConfig( boltConnector( "0" ).enabled, "true" );
         builder.setConfig( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
@@ -67,18 +69,19 @@ public class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<Enterp
     }
 
     @Override
-    public EnterpriseUserManager getManager()
+    public EnterpriseUserManager getLocalUserManager()
     {
         return userManager;
     }
 
     @Override
-    public GraphDatabaseFacade getGraph() { return db; }
+    public GraphDatabaseFacade getLocalGraph() { return db; }
 
     @Override
-    public InternalTransaction startTransactionAsUser( EnterpriseAuthSubject subject ) throws Throwable
+    public InternalTransaction beginLocalTransactionAsUser( EnterpriseAuthSubject subject,
+            KernelTransaction.Type txType ) throws Throwable
     {
-        return db.beginTransaction( KernelTransaction.Type.explicit, subject );
+        return db.beginTransaction( txType, subject );
     }
 
     @Override

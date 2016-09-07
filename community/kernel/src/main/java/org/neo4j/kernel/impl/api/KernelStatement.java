@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -63,15 +64,21 @@ public class KernelStatement implements TxStateHolder, Statement
     private final OperationsFacade facade;
     private StatementLocks statementLocks;
     private int referenceCount;
+    private volatile ExecutingQueryList executingQueryList;
 
-    public KernelStatement( KernelTransactionImplementation transaction,
-            TxStateHolder txStateHolder,
-            StatementOperationParts operations, StorageStatement storeStatement, Procedures procedures )
+    public KernelStatement(
+        KernelTransactionImplementation transaction,
+        TxStateHolder txStateHolder,
+        StatementOperationParts operations,
+        StorageStatement storeStatement,
+        Procedures procedures
+    )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
         this.facade = new OperationsFacade( transaction, this, operations, procedures );
+        this.executingQueryList = ExecutingQueryList.EMPTY;
     }
 
     @Override
@@ -114,6 +121,12 @@ public class KernelStatement implements TxStateHolder, Statement
                     String.format( "Schema operations are not allowed for '%s'.", transaction.mode().name() ) );
         }
         transaction.upgradeToSchemaWrites();
+        return facade;
+    }
+
+    @Override
+    public QueryRegistryOperations queryRegistration()
+    {
         return facade;
     }
 
@@ -170,12 +183,17 @@ public class KernelStatement implements TxStateHolder, Statement
         return statementLocks;
     }
 
-    final void acquire()
+    public final void acquire()
     {
         if ( referenceCount++ == 0 )
         {
             storeStatement.acquire();
         }
+    }
+
+    final boolean isAcquired()
+    {
+        return ( referenceCount > 0 );
     }
 
     final void forceClose()
@@ -187,14 +205,35 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    private void cleanupResources()
+    final String authSubjectName()
     {
-        storeStatement.release();
-        // closing is done by KTI
+        return transaction.mode().name();
     }
 
-    public StorageStatement getStoreStatement()
+    final ExecutingQueryList executingQueryList()
+    {
+        return executingQueryList;
+    }
+
+    final void startQueryExecution( ExecutingQuery query )
+    {
+        this.executingQueryList = executingQueryList.push( query );
+    }
+
+    final void stopQueryExecution( ExecutingQuery executingQuery )
+    {
+        this.executingQueryList = executingQueryList.remove( executingQuery );
+    }
+
+    /* only public for tests */ public StorageStatement getStoreStatement()
     {
         return storeStatement;
+    }
+
+    private void cleanupResources()
+    {
+        // closing is done by KTI
+        storeStatement.release();
+        executingQueryList = ExecutingQueryList.EMPTY;
     }
 }

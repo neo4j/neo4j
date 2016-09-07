@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -56,10 +57,18 @@ public class TransitionalPeriodTransactionMessContainer
         return txBridge;
     }
 
-    public QuerySession create(  GraphDatabaseQueryService service, Type type, AccessMode mode, HttpServletRequest request )
+    public QuerySession create(
+            String query,
+            Map<String, Object> parameters,
+            GraphDatabaseQueryService service,
+            Type type,
+            AccessMode mode,
+            HttpServletRequest request )
     {
         InternalTransaction transaction = db.beginTransaction( type, mode );
-        TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
+        TransactionalContext context = new Neo4jTransactionalContext(
+            service, transaction, txBridge.get(), query, parameters, locker
+        );
         return new ServerQuerySession( request, context );
     }
 }

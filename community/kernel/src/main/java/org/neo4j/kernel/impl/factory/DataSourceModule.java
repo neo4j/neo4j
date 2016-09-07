@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -31,9 +32,9 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
@@ -82,11 +84,11 @@ import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.api.proc.CallableProcedure.Context.AUTH_SUBJECT;
 import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPoint;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
@@ -386,13 +388,22 @@ public class DataSourceModule
 
         // Security procedures
         procedures.registerComponent( AuthSubject.class, ctx -> ctx.get( AUTH_SUBJECT ) );
+
         for ( ProceduresProvider candidate : Service.load( ProceduresProvider.class ) )
         {
             candidate.registerProcedures( procedures );
         }
 
         // Edition procedures
-        editionModule.registerProcedures(procedures);
+        try
+        {
+            editionModule.registerProcedures( procedures );
+        }
+        catch ( KernelException e )
+        {
+            internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
+            throw new RuntimeException( e );
+        }
 
         return procedures;
     }

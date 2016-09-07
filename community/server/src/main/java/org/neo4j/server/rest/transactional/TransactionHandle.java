@@ -314,7 +314,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                     }
 
                     hasPrevious = true;
-                    QuerySession querySession = txManagerFacade.create( queryService, type, mode, request );
+                    QuerySession querySession = txManagerFacade.create( statement.statement(), statement.parameters(), queryService, type, mode, request );
                     Result result = safelyExecute( statement, hasPeriodicCommit, querySession );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                     output.notifications( result.getNotifications() );

@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev3_1, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev3_1, PlannerName, ProfileMode => ProfileModev3_1, _}
+import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_1.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}
@@ -184,7 +184,7 @@ object exceptionHandlerFor3_1 extends MapToPublicExceptions[CypherException] {
 
   def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, cause)
 
-  def runSafely[T](body: => T)(implicit f: Throwable => Unit = (_) => ()) = {
+  def runSafely[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default) = {
     try {
       body
     }

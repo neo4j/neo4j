@@ -60,7 +60,7 @@ public class CypherStatementRunner implements StatementRunner
     {
         InternalTransaction transaction = queryService.beginTransaction( implicit, authSubject );
         TransactionalContext transactionalContext =
-                new Neo4jTransactionalContext( queryService, transaction, txBridge.get(), locker );
+                new Neo4jTransactionalContext( queryService, transaction, txBridge.get(), statement, params, locker );
         QuerySession session = new BoltQuerySession( transactionalContext, querySource );
         return queryExecutionEngine.executeQuery( statement, params, session );
     }

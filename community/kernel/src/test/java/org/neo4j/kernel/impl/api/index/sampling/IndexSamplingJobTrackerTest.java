@@ -69,7 +69,7 @@ public class IndexSamplingJobTrackerTest
             {
                 count.incrementAndGet();
 
-                latch.awaitStart();
+                latch.waitForAllToStart();
                 latch.finish();
             }
 
@@ -83,8 +83,8 @@ public class IndexSamplingJobTrackerTest
         jobTracker.scheduleSamplingJob( job );
         jobTracker.scheduleSamplingJob( job );
 
-        latch.start();
-        latch.awaitFinish();
+        latch.startAndWaitForAllToStart();
+        latch.waitForAllToFinish();
 
         assertEquals( 1, count.get() );
     }
@@ -111,8 +111,8 @@ public class IndexSamplingJobTrackerTest
             @Override
             public void run()
             {
-                latch.start();
-                latch.awaitFinish();
+                latch.startAndWaitForAllToStart();
+                latch.waitForAllToFinish();
             }
 
             @Override
@@ -123,31 +123,27 @@ public class IndexSamplingJobTrackerTest
         } );
 
         // then
-        latch.awaitStart();
+        latch.waitForAllToStart();
 
         assertFalse( jobTracker.canExecuteMoreSamplingJobs() );
 
         final AtomicBoolean waiting = new AtomicBoolean( false );
-        new Thread( new Runnable()
+        new Thread( () ->
         {
-            @Override
-            public void run()
-            {
-                waiting.set( true );
-                waitingLatch.start();
-                jobTracker.waitUntilCanExecuteMoreSamplingJobs();
-                waiting.set( false );
-                waitingLatch.finish();
-            }
-        }).start();
+            waiting.set( true );
+            waitingLatch.startAndWaitForAllToStart();
+            jobTracker.waitUntilCanExecuteMoreSamplingJobs();
+            waiting.set( false );
+            waitingLatch.finish();
+        } ).start();
 
-        waitingLatch.awaitStart();
+        waitingLatch.waitForAllToStart();
 
         assertTrue( waiting.get() );
 
         latch.finish();
 
-        waitingLatch.awaitFinish();
+        waitingLatch.waitForAllToFinish();
 
         assertFalse( waiting.get() );
 
@@ -183,38 +179,34 @@ public class IndexSamplingJobTrackerTest
             @Override
             public void run()
             {
-                latch.awaitStart();
+                latch.waitForAllToStart();
             }
         } );
 
         // When
-        Executors.newSingleThreadExecutor().execute( new Runnable()
+        Executors.newSingleThreadExecutor().execute( () ->
         {
-            @Override
-            public void run()
+            jobTracker.waitUntilCanExecuteMoreSamplingJobs();
+            jobTracker.scheduleSamplingJob( new IndexSamplingJob()
             {
-                jobTracker.waitUntilCanExecuteMoreSamplingJobs();
-                jobTracker.scheduleSamplingJob( new IndexSamplingJob()
+                @Override
+                public IndexDescriptor descriptor()
                 {
-                    @Override
-                    public IndexDescriptor descriptor()
-                    {
-                        return new IndexDescriptor( 2, 2 );
-                    }
+                    return new IndexDescriptor( 2, 2 );
+                }
 
-                    @Override
-                    public void run()
-                    {
-                        lastJobExecuted.set( true );
-                        latch.finish();
-                    }
-                } );
-            }
+                @Override
+                public void run()
+                {
+                    lastJobExecuted.set( true );
+                    latch.finish();
+                }
+            } );
         } );
 
         assertFalse( jobTracker.canExecuteMoreSamplingJobs() );
-        latch.start();
-        latch.awaitFinish();
+        latch.startAndWaitForAllToStart();
+        latch.waitForAllToFinish();
 
         // Then
         assertTrue( lastJobExecuted.get() );
@@ -267,14 +259,10 @@ public class IndexSamplingJobTrackerTest
         jobTracker.scheduleSamplingJob( job1 );
         jobTracker.scheduleSamplingJob( job2 );
 
-        Future<?> stopping = Executors.newSingleThreadExecutor().submit( new Runnable()
+        Future<?> stopping = Executors.newSingleThreadExecutor().submit( () ->
         {
-            @Override
-            public void run()
-            {
-                latch2.countDown();
-                jobTracker.stopAndAwaitAllJobs();
-            }
+            latch2.countDown();
+            jobTracker.stopAndAwaitAllJobs();
         } );
 
         // When
@@ -309,18 +297,14 @@ public class IndexSamplingJobTrackerTest
         jobTracker.scheduleSamplingJob( job1 );
         jobTracker.scheduleSamplingJob( job2 );
 
-        Future<?> stopping = Executors.newSingleThreadExecutor().submit( new Runnable()
+        Future<?> stopping = Executors.newSingleThreadExecutor().submit( () ->
         {
-            @Override
-            public void run()
+            latch2.countDown();
+            try {
+                jobTracker.awaitAllJobs( 10, TimeUnit.SECONDS );
+            } catch (InterruptedException e)
             {
-                latch2.countDown();
-                try {
-                    jobTracker.awaitAllJobs( 10, TimeUnit.SECONDS );
-                } catch (InterruptedException e)
-                {
-                    throw new RuntimeException( e );
-                }
+                throw new RuntimeException( e );
             }
         } );
 

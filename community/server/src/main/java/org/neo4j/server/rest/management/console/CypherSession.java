@@ -55,9 +55,9 @@ public class CypherSession implements ScriptSession
         String resultString;
         try
         {
-            QuerySession querySession = cypherExecutor.createSession( request );
+            QuerySession querySession = cypherExecutor.createSession( script, Collections.emptyMap(), request );
             ExecutionEngine engine = cypherExecutor.getExecutionEngine();
-            Result result = engine.executeQuery( script, Collections.<String,Object>emptyMap(), querySession );
+            Result result = engine.executeQuery( script, Collections.emptyMap(), querySession );
             resultString = result.resultAsString();
         }
         catch ( SyntaxException error )

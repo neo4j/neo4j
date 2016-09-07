@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.joda.time.{DateTimeZone, DateTime}
 
 /**
- * These are the 14 LDBC queries that runs in the LDBC projects. The queries are (semi-)generated so the idea is rather
+ * These are the 14 LDBC stream that runs in the LDBC projects. The stream are (semi-)generated so the idea is rather
  * to have them easy to generate than easy to read so refactor with caution.
  */
 object LdbcQueries {

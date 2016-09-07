@@ -61,7 +61,7 @@ import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE
 
 public class AuthProceduresIT
 {
-    static final String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
+    private static final String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
 
     protected GraphDatabaseAPI db;
     private EphemeralFileSystemAbstraction fs;
@@ -278,8 +278,8 @@ public class AuthProceduresIT
                 containsString( partOfErrorMsg ) );
     }
 
-    void assertSuccess( BasicAuthSubject subject, String query,
-            Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
+    private void assertSuccess( BasicAuthSubject subject, String query,
+            Consumer<ResourceIterator<Map<String,Object>>> resultConsumer )
     {
         assertThat(
                 execute( subject, query, resultConsumer ),
@@ -301,24 +301,35 @@ public class AuthProceduresIT
         }
     }
 
-    List<Object> getObjectsAsList( ResourceIterator<Map<String, Object>> r, String key )
+    private List<Object> getObjectsAsList( ResourceIterator<Map<String,Object>> r, String key )
     {
         return r.stream().map( s -> s.get( key ) ).collect( Collectors.toList() );
     }
 
-    void assertKeyIs( ResourceIterator<Map<String, Object>> r, String key, String... items )
+    private void assertKeyIs( ResourceIterator<Map<String,Object>> r, String key, String... items )
     {
         assertKeyIsArray( r, key, items );
     }
 
-    void assertKeyIsArray( ResourceIterator<Map<String, Object>> r, String key, String[] items )
+    private void assertKeyIsArray( ResourceIterator<Map<String,Object>> r, String key, String[] items )
     {
         List<Object> results = getObjectsAsList( r, key );
         assertEquals( Arrays.asList( items ).size(), results.size() );
         Assert.assertThat( results, containsInAnyOrder( items ) );
     }
 
-    protected void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
+    protected String[] with( String[] strs, String... moreStr )
+    {
+        return Stream.concat( Arrays.stream(strs), Arrays.stream( moreStr ) ).toArray( String[]::new );
+    }
+
+    private List<String> listOf( String... values )
+    {
+        return Stream.of( values ).collect( Collectors.toList() );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
     {
         List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
 
@@ -350,15 +361,5 @@ public class AuthProceduresIT
                 );
             }
         }
-    }
-
-    protected String[] with( String[] strs, String... moreStr )
-    {
-        return Stream.concat( Arrays.stream(strs), Arrays.stream( moreStr ) ).toArray( String[]::new );
-    }
-
-    protected List<String> listOf( String... values )
-    {
-        return Stream.of( values ).collect( Collectors.toList() );
     }
 }

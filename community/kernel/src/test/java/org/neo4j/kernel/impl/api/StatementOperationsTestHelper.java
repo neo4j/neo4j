@@ -26,7 +26,6 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
+import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
@@ -62,7 +62,8 @@ public abstract class StatementOperationsTestHelper
             mock( LockOperations.class ),
             mock( CountsOperations.class ),
             mock( LegacyIndexReadOperations.class ),
-            mock( LegacyIndexWriteOperations.class ) );
+            mock( LegacyIndexWriteOperations.class ),
+            mock( QueryRegistrationOperations.class ) );
     }
 
     public static KernelStatement mockedState()
@@ -79,7 +80,7 @@ public abstract class StatementOperationsTestHelper
             IndexReader indexReader = mock( IndexReader.class );
             when( indexReader.seek( Matchers.any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
             StorageStatement storageStatement = mock( StorageStatement.class );
-            when( storageStatement.getIndexReader( Matchers.<IndexDescriptor>any() ) ).thenReturn( indexReader );
+            when( storageStatement.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
             when( state.getStoreStatement() ).thenReturn( storageStatement );
         }
         catch ( IndexNotFoundKernelException e )

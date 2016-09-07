@@ -17,31 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.builtinprocs;
+package org.neo4j.kernel.impl.util;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.factory.ProceduresProvider;
-import org.neo4j.kernel.impl.proc.Procedures;
+import java.util.concurrent.atomic.AtomicLong;
 
-@Service.Implementation( ProceduresProvider.class )
-public class BuiltInProceduresProvider extends Service implements ProceduresProvider
+public interface MonotonicCounter
 {
-    public BuiltInProceduresProvider()
-    {
-        super( "built-in-procedures-provider" );
-    }
+    long incrementAndGet();
 
-    @Override
-    public void registerProcedures( Procedures procedures )
+    static MonotonicCounter newAtomicMonotonicCounter()
     {
-        try
+        return new MonotonicCounter()
         {
-            procedures.register( BuiltInProcedures.class );
-        }
-        catch ( KernelException e )
-        {
-            throw new RuntimeException( e );
-        }
+            private final AtomicLong value = new AtomicLong( 0L );
+
+            @Override
+            public long incrementAndGet()
+            {
+                return value.incrementAndGet();
+            }
+        };
     }
 }

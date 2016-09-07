@@ -311,7 +311,7 @@ public class SchemaIndexHaIT
         return slaveDown;
     }
 
-    public static final Predicate<GraphDatabaseService> IS_MASTER =
+    private static final Predicate<GraphDatabaseService> IS_MASTER =
             item -> item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
 
     private final String key = "key";
@@ -414,7 +414,7 @@ public class SchemaIndexHaIT
         private final DoubleLatch latch;
         private final IndexPopulator delegate;
 
-        public ControlledIndexPopulator( IndexPopulator delegate, DoubleLatch latch )
+        ControlledIndexPopulator( IndexPopulator delegate, DoubleLatch latch )
         {
             this.delegate = delegate;
             this.latch = latch;
@@ -437,7 +437,7 @@ public class SchemaIndexHaIT
                 throws IndexEntryConflictException, IOException
         {
             delegate.add( updates );
-            latch.startAndAwaitFinish();
+            latch.startAndWaitForAllToStartAndFinish();
         }
 
         @Override
@@ -480,7 +480,7 @@ public class SchemaIndexHaIT
         }
     }
 
-    public static final SchemaIndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
+    private static final SchemaIndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
             new SchemaIndexProvider.Descriptor( "controlled", "1.0" );
 
     private static class ControlledSchemaIndexProvider extends SchemaIndexProvider
@@ -488,7 +488,7 @@ public class SchemaIndexHaIT
         private final SchemaIndexProvider delegate;
         private final DoubleLatch latch = new DoubleLatch();
 
-        public ControlledSchemaIndexProvider(SchemaIndexProvider delegate)
+        ControlledSchemaIndexProvider( SchemaIndexProvider delegate )
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR, 100 /*we want it to always win*/ );
             this.delegate = delegate;
@@ -535,13 +535,13 @@ public class SchemaIndexHaIT
         Config config();
     }
 
-    public static class ControllingIndexProviderFactory extends KernelExtensionFactory<IndexProviderDependencies>
+    private static class ControllingIndexProviderFactory extends KernelExtensionFactory<IndexProviderDependencies>
     {
         private final Map<GraphDatabaseService, SchemaIndexProvider> perDbIndexProvider;
         private final Predicate<GraphDatabaseService> injectLatchPredicate;
 
-        public ControllingIndexProviderFactory( Map<GraphDatabaseService, SchemaIndexProvider> perDbIndexProvider,
-                                                Predicate<GraphDatabaseService> injectLatchPredicate)
+        ControllingIndexProviderFactory( Map<GraphDatabaseService,SchemaIndexProvider> perDbIndexProvider,
+                Predicate<GraphDatabaseService> injectLatchPredicate )
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR.getKey() );
             this.perDbIndexProvider = perDbIndexProvider;
@@ -574,9 +574,9 @@ public class SchemaIndexHaIT
         final Map<GraphDatabaseService,SchemaIndexProvider> perDbIndexProvider = new ConcurrentHashMap<>();
         private final KernelExtensionFactory<?> factory;
 
-        public ControlledGraphDatabaseFactory()
+        ControlledGraphDatabaseFactory()
         {
-            factory = new ControllingIndexProviderFactory(perDbIndexProvider, Predicates.<GraphDatabaseService>alwaysTrue());
+            factory = new ControllingIndexProviderFactory(perDbIndexProvider, Predicates.alwaysTrue());
         }
 
         private ControlledGraphDatabaseFactory( Predicate<GraphDatabaseService> dbsToControlIndexingOn )
@@ -587,14 +587,14 @@ public class SchemaIndexHaIT
         @Override
         public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File file )
         {
-            getCurrentState().addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( factory ) );
+            getCurrentState().addKernelExtensions( Arrays.asList( factory ) );
             return super.newEmbeddedDatabaseBuilder( file );
         }
 
         void awaitPopulationStarted( GraphDatabaseService db )
         {
             ControlledSchemaIndexProvider provider = (ControlledSchemaIndexProvider) perDbIndexProvider.get( db );
-            if(provider != null ) provider.latch.awaitStart();
+            if(provider != null ) provider.latch.waitForAllToStart();
         }
 
         void triggerFinish( GraphDatabaseService db )

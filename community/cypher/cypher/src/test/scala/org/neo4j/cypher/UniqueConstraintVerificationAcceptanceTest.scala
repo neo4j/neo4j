@@ -20,10 +20,10 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
-
-import collection.JavaConverters._
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
 import org.neo4j.kernel.impl.api.OperationsFacade
+
+import scala.collection.JavaConverters._
 
 class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CollectionSupport {
 

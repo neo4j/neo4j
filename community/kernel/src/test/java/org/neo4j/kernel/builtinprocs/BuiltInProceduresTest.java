@@ -260,7 +260,7 @@ public class BuiltInProceduresTest
     {
         procs.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
         new SpecialBuiltInProcedures("1.3.37", Edition.enterprise.toString() ).accept( procs );
-        new BuiltInProceduresProvider().registerProcedures( procs );
+        procs.register( BuiltInProcedures.class );
 
         when(tx.acquireStatement()).thenReturn( statement );
         when(statement.readOperations()).thenReturn( read );

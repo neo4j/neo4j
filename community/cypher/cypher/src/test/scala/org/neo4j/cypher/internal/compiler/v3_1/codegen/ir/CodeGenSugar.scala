@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir
 
+import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
@@ -72,7 +73,8 @@ trait CodeGenSugar extends MockitoSugar {
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
       val locker: PropertyContainerLocker = new PropertyContainerLocker
-      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graphDb, tx, statement, locker))
+      // TODO: Get query and parameters down here somehow
+      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graphDb, tx, statement, "X", Collections.emptyMap(), locker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val result = plan.executionResultBuilder(queryContext, mode, tracer(mode), params, taskCloser)
       tx.success()

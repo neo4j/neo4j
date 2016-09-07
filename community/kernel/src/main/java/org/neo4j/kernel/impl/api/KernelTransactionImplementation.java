@@ -331,12 +331,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement;
     }
 
-    public void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
+    KernelStatement tryAcquireStatement()
+    {
+        assertTransactionOpen();
+        return currentStatement.isAcquired() ? currentStatement : null;
+    }
+
+    ExecutingQueryList executingQueries()
+    {
+        return !closed && currentStatement.isAcquired() ?
+               currentStatement.executingQueryList() : ExecutingQueryList.EMPTY;
+    }
+
+    void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
     {
         writeState = writeState.upgradeToDataWrites();
     }
 
-    public void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
+    void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
     {
         schemaWriteGuard.assertSchemaWritesAllowed();
         writeState = writeState.upgradeToSchemaWrites();
