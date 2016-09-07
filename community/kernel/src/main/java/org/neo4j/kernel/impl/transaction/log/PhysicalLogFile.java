@@ -149,7 +149,13 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
          * current log file and replay everything. That's unnecessary but totally ok.
          */
         long newLogVersion = logVersionRepository.incrementAndGetVersion();
-        currentLog.flush();
+        /*
+         * Rotation can happen at any point, although not concurrently with an append,
+         * although an append may have (most likely actually) left at least some bytes left
+         * in the buffer for future flushing. Flushing that buffer now makes the last appended
+         * transaction complete in the log we're rotating away. Awesome.
+         */
+        writer.emptyBufferIntoChannelAndClearIt().flush();
         /*
          * The log version is now in the store, flushed and persistent. If we crash
          * now, on recovery we'll attempt to open the version we're about to create
