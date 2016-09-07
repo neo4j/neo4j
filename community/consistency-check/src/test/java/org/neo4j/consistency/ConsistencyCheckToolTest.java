@@ -59,7 +59,7 @@ import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 public class ConsistencyCheckToolTest
 {
-    private TestDirectory storeDirectory = TestDirectory.testDirectory();
+    private final TestDirectory storeDirectory = TestDirectory.testDirectory();
     private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Rule

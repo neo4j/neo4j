@@ -49,22 +49,6 @@ public class LogHeaderReaderTest
     private final long expectedTxId = 42;
 
     @Test
-    public void shouldReadALogHeaderFromALogChannel() throws IOException
-    {
-        // given
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
-
-        channel.putLong( encodeLogVersion( expectedLogVersion ) );
-        channel.putLong( expectedTxId );
-
-        // when
-        final LogHeader result = readLogHeader( channel );
-
-        // then
-        assertEquals( new LogHeader( CURRENT_LOG_VERSION, expectedLogVersion, expectedTxId ), result );
-    }
-
-    @Test
     public void shouldReadALogHeaderFromAByteChannel() throws IOException
     {
         // given

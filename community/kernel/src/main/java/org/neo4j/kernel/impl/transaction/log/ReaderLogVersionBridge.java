@@ -26,6 +26,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
 
+/**
+ * {@link LogVersionBridge} naturally transitioning from one {@link LogVersionedStoreChannel} to the next,
+ * i.e. to log version with one higher version than the current.
+ */
 public class ReaderLogVersionBridge implements LogVersionBridge
 {
     private final FileSystemAbstraction fileSystem;
