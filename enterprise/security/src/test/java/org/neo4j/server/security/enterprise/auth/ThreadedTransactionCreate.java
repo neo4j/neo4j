@@ -56,7 +56,6 @@ public class ThreadedTransactionCreate<S>
         return doExecute( threading, subject, KernelTransaction.Type.explicit, false, query );
     }
 
-
     String executeEarly( ThreadingRule threading, S subject, KernelTransaction.Type txType, String query )
     {
         return doExecute( threading, subject, txType, true, query );

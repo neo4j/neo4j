@@ -59,7 +59,6 @@ public class QueryIdTest
         parseQueryId( "query--12" );
     }
 
-
     @Test
     public void doesNotParseRandomText()
     {

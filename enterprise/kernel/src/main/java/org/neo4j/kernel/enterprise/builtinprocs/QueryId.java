@@ -21,7 +21,7 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 
 public final class QueryId
 {
-    public final static String QUERY_ID_PREFIX = "query-";
+    public static final String QUERY_ID_PREFIX = "query-";
     private final long kernelQueryId;
 
     public static QueryId queryId( long queryId )
