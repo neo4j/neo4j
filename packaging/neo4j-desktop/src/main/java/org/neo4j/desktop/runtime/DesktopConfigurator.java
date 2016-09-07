@@ -25,7 +25,7 @@ import java.util.Optional;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.server.CommunityBootstrapper;
@@ -82,7 +82,7 @@ public class DesktopConfigurator
         return dbDir.getAbsolutePath();
     }
 
-    public HostnamePort getServerAddress()
+    public ListenSocketAddress getServerAddress()
     {
         return ServerSettings.httpConnector( config, HttpConnector.Encryption.NONE ).get().address.from( config );
     }
