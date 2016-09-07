@@ -256,9 +256,10 @@ public class CommunityEditionModule extends EditionModule
     }
 
     @Override
-    public void registerProcedures( Procedures procedures ) throws KernelException
+    public void setupProcedures( Procedures procedures ) throws KernelException
     {
-        procedures.registerProcedure( BuiltInProcedures.class );
+        // If you change this, don't forget to update the HA and Core|Edge editions, too
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
         registerProceduresFromProvider( "auth-procedures-provider", procedures );
     }
 

@@ -19,7 +19,12 @@
  */
 package org.neo4j.kernel.enterprise.api.security;
 
+import java.io.IOException;
+
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 /**
  * A logged in user.
@@ -44,4 +49,92 @@ public interface EnterpriseAuthSubject extends AuthSubject
         }
         return clazz.cast( authSubject );
     }
+
+    EnterpriseAuthSubject AUTH_DISABLED = new EnterpriseAuthSubject()
+    {
+        @Override
+        public boolean allowsReads()
+        {
+            return AuthSubject.AUTH_DISABLED.allowsReads();
+        }
+
+        @Override
+        public boolean allowsWrites()
+        {
+            return AuthSubject.AUTH_DISABLED.allowsWrites();
+        }
+
+        @Override
+        public boolean allowsSchemaWrites()
+        {
+            return AuthSubject.AUTH_DISABLED.allowsSchemaWrites();
+        }
+
+        @Override
+        public boolean overrideOriginalMode()
+        {
+            return AuthSubject.AUTH_DISABLED.overrideOriginalMode();
+        }
+
+        @Override
+        public AuthorizationViolationException onViolation( String msg )
+        {
+            return AuthSubject.AUTH_DISABLED.onViolation( msg );
+        }
+
+        @Override
+        public String name()
+        {
+            return AuthSubject.AUTH_DISABLED.name();
+        }
+
+        @Override
+        public boolean isAdmin()
+        {
+            return true;
+        }
+
+        @Override
+        public void logout()
+        {
+            AuthSubject.AUTH_DISABLED.logout();
+        }
+
+        @Override
+        public AuthenticationResult getAuthenticationResult()
+        {
+            return AuthSubject.AUTH_DISABLED.getAuthenticationResult();
+        }
+
+        @Override
+        public void setPassword( String password, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
+        {
+            AuthSubject.AUTH_DISABLED.setPassword( password, requirePasswordChange );
+        }
+
+        @Override
+        public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
+        {
+            return AuthSubject.AUTH_DISABLED.allowsProcedureWith( roleNames );
+        }
+
+        @Override
+        public String username()
+        {
+            return AuthSubject.AUTH_DISABLED.username();
+        }
+
+        @Override
+        public boolean hasUsername( String username )
+        {
+            return AuthSubject.AUTH_DISABLED.hasUsername( username );
+        }
+
+        @Override
+        public void ensureUserExistsWithName( String username ) throws InvalidArgumentsException
+        {
+            AuthSubject.AUTH_DISABLED.ensureUserExistsWithName( username );
+        }
+    };
 }

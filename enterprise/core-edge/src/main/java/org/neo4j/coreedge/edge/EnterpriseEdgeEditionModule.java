@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.edge;
 
 import java.io.File;
-import java.io.IOException;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -52,7 +51,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
@@ -85,6 +83,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
@@ -103,9 +102,12 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     private SecurityLog securityLog;
 
     @Override
-    public void registerProcedures( Procedures procedures ) throws KernelException
+    public void setupProcedures( Procedures procedures ) throws KernelException
     {
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
+        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
         procedures.register( new EdgeRoleProcedure() );
+
         procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
         registerProceduresFromProvider( "auth-procedures-provider" , procedures );
         registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );

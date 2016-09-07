@@ -411,7 +411,7 @@ public class DataSourceModule
         // Edition procedures
         try
         {
-            editionModule.registerProcedures( procedures );
+            editionModule.setupProcedures( procedures );
         }
         catch ( KernelException e )
         {
