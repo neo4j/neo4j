@@ -55,6 +55,8 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.format.CapabilityType;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
@@ -169,7 +171,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );
-        if ( !oldFormat.equals( newFormat ) )
+        if ( FormatFamily.isHigherFamilyFormat( newFormat, oldFormat ) ||
+             (FormatFamily.isSameFamily( oldFormat, newFormat ) && isDifferentCapabilities( oldFormat, newFormat )) )
         {
             // TODO if this store has relationship indexes then warn user about that they will be incorrect
             // after migration, because now we're rewriting the relationship ids.
@@ -189,6 +192,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // contents of it, and since the record format has changed there would be a mismatch between the
         // commands in the log and the contents in the store. If log migration is to be performed there
         // must be a proper translation happening while doing so.
+    }
+
+    private boolean isDifferentCapabilities( RecordFormats oldFormat, RecordFormats newFormat )
+    {
+        return !oldFormat.hasSameCapabilities( newFormat, CapabilityType.FORMAT );
     }
 
     void writeLastTxInformation( File migrationDir, TransactionId txInfo ) throws IOException

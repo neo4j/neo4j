@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
@@ -48,13 +49,13 @@ public class HighLimit extends BaseRecordFormats
      */
     static final int DEFAULT_MAXIMUM_BITS_PER_ID = 50;
 
-    public static final String STORE_VERSION = StoreVersion.HIGH_LIMIT_V3_0.versionString();
+    public static final String STORE_VERSION = StoreVersion.HIGH_LIMIT_V3_1.versionString();
     public static final RecordFormats RECORD_FORMATS = new HighLimit();
     public static final String NAME = "high_limit";
 
     public HighLimit()
     {
-        super( STORE_VERSION, 8, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
+        super( STORE_VERSION, 2, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
     }
 
     @Override
@@ -103,5 +104,11 @@ public class HighLimit extends BaseRecordFormats
     public RecordFormat<DynamicRecord> dynamic()
     {
         return new DynamicRecordFormat();
+    }
+
+    @Override
+    public FormatFamily getFormatFamily()
+    {
+        return HighLimitFormatFamily.INSTANCE;
     }
 }

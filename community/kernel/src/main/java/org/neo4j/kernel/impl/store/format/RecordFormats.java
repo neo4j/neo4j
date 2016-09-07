@@ -49,15 +49,18 @@ public interface RecordFormats
     String storeVersion();
 
     /**
-     * Generation of this format, simply an increasing int which should be incrementing along with
-     * releases, e.g. store version, e.g. official versions of the product. This is for preventing downgrades.
-     * When implementing a new format or evolving an older format the generation of the new format should
-     * be higher than the format it evolves from, or in case of a new format - newer than the currently newest format.
+     * Generation of this format, format family local int value which should be incrementing along with
+     * releases, e.g. store version, e.g. official versions of the product. Use to determine generation of particular
+     * format and to be able to find newest of among them.
+     * When implementing new format generation can be assigned to any positive integer, but please take into account
+     * future version generations.
+     * When evolving an older format the generation of the new format version should
+     * be higher than the format it evolves from.
      * The generation value doesn't need to correlate to any other value, the only thing needed is to
      * determine "older" or "newer".
      *
      * @return format generation, with the intent of usage being that a store can migrate to a newer or
-     * same generation, but not to an older generation.
+     * same generation, but not to an older generation within same format family.
      */
     int generation();
 
@@ -91,6 +94,13 @@ public interface RecordFormats
      * @return whether or not this format has a certain {@link Capability}.
      */
     boolean hasCapability( Capability capability );
+
+    /**
+     * Get format family to which this format belongs to.
+     * @return format family
+     * @see FormatFamily
+     */
+    FormatFamily getFormatFamily();
 
     /**
      * Whether or not this format has the same capabilities of the specific {@code type} as the {@code other} format.

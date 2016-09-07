@@ -5,17 +5,17 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.kernel.impl.storemigration;
 
@@ -36,8 +36,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
+import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
@@ -50,6 +52,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
@@ -211,7 +214,7 @@ public class UpgradableDatabaseTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
         {
-            return Arrays.asList( "v0.9.5", "v0.A.4", StoreVersion.HIGH_LIMIT_V3_0.versionString() );
+            return Arrays.asList( "v0.A.4", StoreVersion.HIGH_LIMIT_V3_0.versionString() );
         }
 
         @Rule
@@ -260,14 +263,14 @@ public class UpgradableDatabaseTest
             catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
             {
                 // then
-                assertFalse( StoreVersion.isEnterpriseStoreVersion( version ) );
                 File expectedFile = new File( workingDirectory, neostoreFilename ).getAbsoluteFile();
                 assertEquals( String.format( MESSAGE, expectedFile, version ), e.getMessage() );
             }
             catch ( StoreUpgrader.UnexpectedUpgradingStoreFormatException e )
             {
                 // then
-                assertTrue( StoreVersion.isEnterpriseStoreVersion( version ) );
+                assertNotSame( StandardFormatFamily.INSTANCE,
+                        RecordFormatSelector.selectForVersion( version ).getFormatFamily());
                 assertEquals( String.format( StoreUpgrader.UnexpectedUpgradingStoreFormatException.MESSAGE,
                         GraphDatabaseSettings.record_format.name() ), e.getMessage() );
             }

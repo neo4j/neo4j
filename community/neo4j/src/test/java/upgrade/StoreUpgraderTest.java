@@ -32,6 +32,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -85,6 +88,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
@@ -139,7 +143,7 @@ public class StoreUpgraderTest
     {
         dbDirectory = directory.directory( "db_" + version );
         File prepareDirectory = directory.directory( "prepare_" + version );
-        prepareSampleLegacyDatabase( version, fileSystem, dbDirectory, prepareDirectory );
+        prepareSampleDatabase( version, fileSystem, dbDirectory, prepareDirectory );
     }
 
     @Test
@@ -150,7 +154,11 @@ public class StoreUpgraderTest
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
                 getRecordFormats() );
-        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
+        Set<String> versionSet = versionSet( StandardV2_0.STORE_VERSION,
+                                                       StandardV2_1.STORE_VERSION,
+                                                       StandardV2_2.STORE_VERSION );
+
+        assertEquals( versionSet.contains( version ),
                 allLegacyStoreFilesHaveVersion( fileSystem, dbDirectory, version ) );
 
         // When
@@ -194,7 +202,9 @@ public class StoreUpgraderTest
     public void shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound()
             throws IOException
     {
-        Assume.assumeFalse( StandardV2_3.STORE_VERSION.equals( version ) );
+        Set<String> applicableVersions =
+                versionSet( StandardV2_0.STORE_VERSION, StandardV2_1.STORE_VERSION, StandardV2_2.STORE_VERSION );
+        assumeTrue( "Applicable only to specified version set.", applicableVersions.contains( version ) );
 
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
                                              + "shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound-comparison" );
@@ -221,11 +231,11 @@ public class StoreUpgraderTest
     }
 
     @Test
-    public void shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly()
+    public void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly()
             throws IOException
     {
-        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
-                                             + "shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly-comparison" );
+        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() +
+                                             "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
         makeDbNotCleanlyShutdown( false );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
@@ -251,8 +261,8 @@ public class StoreUpgraderTest
     public void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly()
             throws IOException
     {
-        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
-                                             + "shouldRefuseToUpgradeIfAllOfTheStoresWeNotShutDownCleanly-comparison" );
+        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() +
+                                            "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
         makeDbNotCleanlyShutdown( true );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
@@ -390,6 +400,12 @@ public class StoreUpgraderTest
         assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
     }
 
+    protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, File dbDirectory,
+            File databaseDirectory ) throws IOException
+    {
+        prepareSampleLegacyDatabase( version, fileSystem, dbDirectory, databaseDirectory );
+    }
+
     private static void assertCorrectStoreVersion( String expectedStoreVersion, StoreVersionCheck check, File storeDir )
     {
         File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
@@ -449,11 +465,9 @@ public class StoreUpgraderTest
 
     private void makeDbNotCleanlyShutdown( boolean truncateAll ) throws IOException
     {
-        if ( StandardV2_3.STORE_VERSION.equals( version ) )
-        {
-            removeCheckPointFromTxLog( fileSystem, dbDirectory );
-        }
-        else
+        Set<String> truncateVersions = versionSet( StandardV2_0.STORE_VERSION, StandardV2_1.STORE_VERSION,
+                StandardV2_2.STORE_VERSION );
+        if (truncateVersions.contains( version ))
         {
             if ( truncateAll )
             {
@@ -465,6 +479,10 @@ public class StoreUpgraderTest
                 File storeFile = new File( dbDirectory, "neostore.propertystore.db.index.keys" );
                 truncateFile( fileSystem, storeFile, "StringPropertyStore " + version );
             }
+        }
+        else
+        {
+            removeCheckPointFromTxLog( fileSystem, dbDirectory );
         }
     }
 
@@ -481,6 +499,11 @@ public class StoreUpgraderTest
     protected String getRecordFormatsName()
     {
         return StandardV3_0.NAME;
+    }
+
+    private Set<String> versionSet(String... versions)
+    {
+        return Stream.of( versions ).collect( Collectors.toSet() );
     }
 
     private void startStopDatabase()

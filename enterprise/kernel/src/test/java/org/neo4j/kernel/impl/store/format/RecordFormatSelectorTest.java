@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.highlimit.v30.HighLimitV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
@@ -83,6 +84,7 @@ public class RecordFormatSelectorTest
         assertSame( StandardV2_2.RECORD_FORMATS, selectForVersion( StandardV2_2.STORE_VERSION ) );
         assertSame( StandardV2_3.RECORD_FORMATS, selectForVersion( StandardV2_3.STORE_VERSION ) );
         assertSame( StandardV3_0.RECORD_FORMATS, selectForVersion( StandardV3_0.STORE_VERSION ) );
+        assertSame( HighLimitV3_0.RECORD_FORMATS, selectForVersion( HighLimitV3_0.STORE_VERSION ) );
         assertSame( HighLimit.RECORD_FORMATS, selectForVersion( HighLimit.STORE_VERSION ) );
     }
 
@@ -136,6 +138,7 @@ public class RecordFormatSelectorTest
         verifySelectForStore( pageCache, StandardV2_2.RECORD_FORMATS );
         verifySelectForStore( pageCache, StandardV2_3.RECORD_FORMATS );
         verifySelectForStore( pageCache, StandardV3_0.RECORD_FORMATS );
+        verifySelectForStore( pageCache, HighLimitV3_0.RECORD_FORMATS );
         verifySelectForStore( pageCache, HighLimit.RECORD_FORMATS );
     }
 

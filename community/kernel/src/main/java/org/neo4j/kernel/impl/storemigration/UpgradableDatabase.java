@@ -25,9 +25,9 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.DatabaseNotCleanlyShutDownException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException;
@@ -88,19 +88,19 @@ public class UpgradableDatabase
             return format;
         }
 
-        // If we are trying to open an enterprise store when configured to use community format, then inform the user
-        // of the config setting to change since downgrades aren't possible but the store can still be opened.
-        if ( StoreVersion.isEnterpriseStoreVersion( result.actualVersion ) &&
-             StoreVersion.isCommunityStoreVersion( format.storeVersion() ) )
-        {
-            throw new StoreUpgrader.UnexpectedUpgradingStoreFormatException();
-        }
-
         RecordFormats fromFormat;
         try
         {
             fromFormat = RecordFormatSelector.selectForVersion( result.actualVersion );
-            if ( fromFormat.generation() > format.generation() )
+
+            // If we are trying to open an enterprise store when configured to use community format, then inform the user
+            // of the config setting to change since downgrades aren't possible but the store can still be opened.
+            if ( FormatFamily.isLowerFamilyFormat( format, fromFormat ) )
+            {
+                throw new StoreUpgrader.UnexpectedUpgradingStoreFormatException();
+            }
+
+            if ( FormatFamily.isSameFamily( fromFormat, format ) && (fromFormat.generation() > format.generation()) )
             {
                 // Tried to downgrade, that isn't supported
                 result = new Result( Outcome.unexpectedUpgradingStoreVersion, fromFormat.storeVersion(),

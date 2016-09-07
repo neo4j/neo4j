@@ -23,17 +23,22 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.highlimit.v30.HighLimitV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 
@@ -42,32 +47,45 @@ public class RecordFormatsGenerationTest
     @Test
     public void correctGenerations()
     {
-        List<Integer> expectedGenerations = Arrays.asList(
-                StandardV2_0.RECORD_FORMATS.generation(),
-                StandardV2_1.RECORD_FORMATS.generation(),
-                StandardV2_2.RECORD_FORMATS.generation(),
-                StandardV2_3.RECORD_FORMATS.generation(),
-                StandardV3_0.RECORD_FORMATS.generation(),
-                HighLimit.RECORD_FORMATS.generation()
+        List<RecordFormats> recordFormats = Arrays.asList(
+                StandardV2_0.RECORD_FORMATS,
+                StandardV2_1.RECORD_FORMATS,
+                StandardV2_2.RECORD_FORMATS,
+                StandardV2_3.RECORD_FORMATS,
+                StandardV3_0.RECORD_FORMATS,
+                HighLimitV3_0.RECORD_FORMATS,
+                HighLimit.RECORD_FORMATS
         );
 
-        assertEquals( expectedGenerations, distinct( allGenerations() ) );
+        Map<FormatFamily,List<Integer>> generationsForFamilies = recordFormats
+                                                            .stream()
+                                                            .collect( groupingBy( RecordFormats::getFormatFamily,
+                                                                mapping( RecordFormats::generation, toList() ) ) );
+        assertEquals( 2, generationsForFamilies.size() );
+        for ( Map.Entry<FormatFamily,List<Integer>> familyListGeneration : generationsForFamilies.entrySet() )
+        {
+            assertEquals(  "Generation inside format family should be unique.",
+                    familyListGeneration.getValue(), distinct( familyListGeneration.getValue() ) );
+        }
     }
 
     @Test
     public void uniqueGenerations()
     {
-        assertEquals( allGenerations(), distinct( allGenerations() ) );
+        Map<FormatFamily,List<Integer>> familyGenerations = allFamilyGenerations();
+        for ( Map.Entry<FormatFamily,List<Integer>> familyEntry : familyGenerations.entrySet() )
+        {
+            assertEquals( "Generation inside format family should be unique.",
+                    familyEntry.getValue(), distinct( familyEntry.getValue() ) );
+        }
     }
 
-    private static List<Integer> allGenerations()
+    private static Map<FormatFamily, List<Integer>> allFamilyGenerations()
     {
         return Arrays.stream( StoreVersion.values() )
                 .map( StoreVersion::versionString )
                 .map( RecordFormatSelector::selectForVersion )
-                .map( RecordFormats::generation )
-                .sorted()
-                .collect( toList() );
+                .collect( groupingBy( RecordFormats::getFormatFamily,  mapping( RecordFormats::generation, toList() ) ) );
     }
 
     private static List<Integer> distinct( List<Integer> integers )

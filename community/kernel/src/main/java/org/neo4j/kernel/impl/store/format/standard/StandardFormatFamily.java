@@ -17,31 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format;
+package org.neo4j.kernel.impl.store.format.standard;
+
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 
 /**
- * All known store formats are collected here.
+ * Standard format family.
+ * @see FormatFamily
  */
-public enum StoreVersion
+public class StandardFormatFamily extends FormatFamily
 {
-    STANDARD_V2_0( "v0.A.1" ),
-    STANDARD_V2_1( "v0.A.3" ),
-    STANDARD_V2_2( "v0.A.5" ),
-    STANDARD_V2_3( "v0.A.6" ),
-    STANDARD_V3_0( "v0.A.7" ),
+    public static final FormatFamily INSTANCE = new StandardFormatFamily();
 
-    HIGH_LIMIT_V3_0( "vE.H.0" ),
-    HIGH_LIMIT_V3_1( "vE.H.1" );
-
-    private final String versionString;
-
-    StoreVersion( String versionString )
+    private StandardFormatFamily()
     {
-        this.versionString = versionString;
     }
 
-    public String versionString()
+    @Override
+    public String getName()
     {
-        return versionString;
+        return "Standard format family";
     }
+
+    @Override
+    public int rank()
+    {
+        return 0;
+    }
+
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package upgrade;
+package org.neo4j.upgrade;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.highlimit.v30.HighLimitV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.logging.NullLogProvider;
@@ -65,20 +66,30 @@ public class RecordFormatsMigrationIT
     public final TestDirectory testDir = TestDirectory.testDirectory( fs );
 
     @Test
-    public void migrateStandardToHighLimit() throws IOException
+    public void migrateLatestStandardToLatestHighLimit() throws IOException
     {
         executeAndStopDb( startStandardFormatDb(), this::createNode );
-        assertStandardStore();
+        assertLatestStandardStore();
 
         executeAndStopDb( startHighLimitFormatDb(), this::assertNodeExists );
-        assertHighLimitStore();
+        assertLatestHighLimitStore();
+    }
+
+    @Test
+    public void migrateHighLimitV3_0ToLatestHighLimit() throws IOException
+    {
+        executeAndStopDb( startDb( HighLimitV3_0.NAME ), this::createNode );
+        assertStoreFormat( HighLimitV3_0.RECORD_FORMATS );
+
+        executeAndStopDb( startHighLimitFormatDb(), this::assertNodeExists );
+        assertLatestHighLimitStore();
     }
 
     @Test
     public void migrateHighLimitToStandard() throws IOException
     {
         executeAndStopDb( startHighLimitFormatDb(), this::createNode );
-        assertHighLimitStore();
+        assertLatestHighLimitStore();
 
         try
         {
@@ -89,7 +100,7 @@ public class RecordFormatsMigrationIT
         {
             assertThat( Exceptions.rootCause( e ), instanceOf( UnexpectedUpgradingStoreFormatException.class ) );
         }
-        assertHighLimitStore();
+        assertLatestHighLimitStore();
     }
 
     private void createNode( GraphDatabaseService db )
@@ -129,12 +140,12 @@ public class RecordFormatsMigrationIT
                 .newGraphDatabase();
     }
 
-    private void assertStandardStore() throws IOException
+    private void assertLatestStandardStore() throws IOException
     {
         assertStoreFormat( StandardV3_0.RECORD_FORMATS );
     }
 
-    private void assertHighLimitStore() throws IOException
+    private void assertLatestHighLimitStore() throws IOException
     {
         assertStoreFormat( HighLimit.RECORD_FORMATS );
     }

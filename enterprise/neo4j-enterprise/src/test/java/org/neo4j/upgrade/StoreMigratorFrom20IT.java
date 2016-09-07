@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package upgrade;
+package org.neo4j.upgrade;
 
 import org.junit.After;
 import org.junit.Before;
@@ -27,6 +27,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import upgrade.DatabaseContentVerifier;
+import upgrade.ListAccumulatorMigrationProgressMonitor;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +78,7 @@ import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
-import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
+import static org.neo4j.upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 @RunWith( Parameterized.class )
 public class StoreMigratorFrom20IT
