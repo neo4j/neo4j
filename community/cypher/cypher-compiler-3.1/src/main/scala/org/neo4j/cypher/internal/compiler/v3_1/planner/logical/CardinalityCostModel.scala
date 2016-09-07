@@ -25,43 +25,44 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.{HasLabels, Property}
 
 object CardinalityCostModel extends CostModel {
 
-  /*
-   * These constants are approximations derived from test runs,
-   * see ActualCostCalculationTest
-   */
-  private val CPU_BOUND: CostPerRow = 0.1
-  private val FAST_STORE: CostPerRow = 1.0
-  private val SLOW_STORE: CostPerRow = 12.0
   private val PROBE_BUILD_COST: CostPerRow = 3.1
   private val PROBE_SEARCH_COST: CostPerRow = 2.4
   private val EAGERNESS_MULTIPLIER: Multiplier = 2.0
 
   private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
+    /*
+     * These constants are approximations derived from test runs,
+     * see ActualCostCalculationTest
+     */
 
-    case  _: NodeByLabelScan |
-          _: NodeIndexScan |
-          _: ProjectEndpoints
-    => FAST_STORE
+    case _: NodeByLabelScan |
+         _: NodeIndexScan |
+         _: ProjectEndpoints
+    => 1.0
 
     // Filtering on labels and properties
     case Selection(predicates, _) if predicates.exists {
       case _: Property | _: HasLabels => true
       case _ => false
     }
-    => FAST_STORE
+    => 1.0
 
-    case _: AllNodesScan => 1.2
+    case _: AllNodesScan
+    => 1.2
 
     case _: Expand |
-         _: VarExpand  => 0.5
+         _: VarExpand
+    => 1.5
 
     case _: NodeUniqueIndexSeek |
          _: NodeIndexSeek |
          _: NodeIndexContainsScan |
-         _: NodeIndexEndsWithScan => 1.9
+         _: NodeIndexEndsWithScan
+    => 1.9
 
     case _: NodeByIdSeek |
-         _: DirectedRelationshipByIdSeek
+         _: DirectedRelationshipByIdSeek |
+         _: UndirectedRelationshipByIdSeek
     => 6.2
 
     case _: NodeHashJoin |
@@ -78,18 +79,18 @@ object CardinalityCostModel extends CostModel {
          _: Union |
          _: Selection |
          _: ValueHashJoin |
-         _: UnwindCollection|
+         _: UnwindCollection |
          _: ProcedureCall
-    => CPU_BOUND
+    => 0.1
 
     case _: FindShortestPaths |
          _: LegacyIndexSeek |
          _: DirectedRelationshipByIdSeek |
          _: UndirectedRelationshipByIdSeek
-    => SLOW_STORE
+    => 12.0
 
-    case _
-    => CPU_BOUND
+    case _ // Default
+    => 0.1
   }
 
   private def cardinalityForPlan(plan: LogicalPlan): Cardinality = plan match {
@@ -148,9 +149,14 @@ object CardinalityCostModel extends CostModel {
   object ApplyVariants {
     def unapply(x: Any): Option[(LogicalPlan, LogicalPlan)] = x match {
       case Apply(l, r) => Some(l -> r)
+      case RollUpApply(l, r, _, _, _) => Some(l -> r)
+      case ConditionalApply(l, r, _) => Some(l -> r)
+      case AntiConditionalApply(l, r, _) => Some(l -> r)
+      case ForeachApply(l, r, _, _) => Some(l -> r)
       case p: AbstractLetSelectOrSemiApply => Some(p.lhs.get -> p.rhs.get)
       case p: AbstractSelectOrSemiApply => Some(p.lhs.get -> p.rhs.get)
       case p: AbstractSemiApply => Some(p.lhs.get -> p.rhs.get)
+      case p: AbstractLetSemiApply => Some(p.lhs.get -> p.rhs.get)
       case _ => None
     }
   }
