@@ -20,7 +20,6 @@
 package org.neo4j.server;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -52,7 +51,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
     private NeoServer server;
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
-    private Log log;
+    // in case we have errors loading/validating the configuration log to stdout
+    private Log log = FormattedLogProvider.toOutputStream( System.out ).getLog( getClass() );
     private String serverAddress = "unknown address";
 
     public static int start( Bootstrapper boot, String... argv )
@@ -162,7 +162,6 @@ public abstract class ServerBootstrapper implements Bootstrapper
     }
 
     private Config createConfig( File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
-            throws IOException
     {
         return new ConfigLoader( this::settingsClasses ).loadConfig( Optional.of( homeDir ), file, configOverrides );
     }
