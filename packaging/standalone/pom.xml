@@ -306,19 +306,6 @@
       <artifactId>neo4j-import-tool</artifactId>
       <version>${neo4j.version}</version>
     </dependency>
-
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>manpages</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>manpagesenterprise</classifier>
-    </dependency>
   </dependencies>
 
   <profiles>

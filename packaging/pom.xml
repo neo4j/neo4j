@@ -92,18 +92,6 @@ terms of the relevant Commercial Agreement.
           <version>${project.version}</version>
           <type>pom</type>
         </dependency>
-        <dependency>
-          <groupId>org.neo4j.doc</groupId>
-          <artifactId>neo4j-manual-parent</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j.doc</groupId>
-          <artifactId>neo4j-manual</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
       </dependencies>
       <build>
         <plugins>
