@@ -137,7 +137,7 @@ class BackupService
         }
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
-        try ( PageCache pageCache = createPageCache( fileSystem ) )
+        try ( PageCache pageCache = createPageCache( fileSystem, tuningConfiguration ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration,
                     loadKernelExtensions(), logProvider, new DefaultFileSystemAbstraction(), pageCache,
