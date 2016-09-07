@@ -55,6 +55,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
+import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.parseQueryId;
+import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.queryId;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
 
@@ -139,11 +141,12 @@ public class BuiltInProcedures
     }
 
     @Procedure( name = "dbms.terminateQuery", mode = DBMS )
-    public Stream<QueryTerminationResult> terminateQuery( @Name( "id" ) long id )
+    public Stream<QueryTerminationResult> terminateQuery( @Name( "id" ) String idText )
             throws InvalidArgumentsException, IOException
     {
+        long queryId = parseQueryId( idText ).kernelQueryId();
         Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-            getKernelTransactions().activeTransactions( tx -> executingQueriesWithId( id, tx ) );
+            getKernelTransactions().activeTransactions( tx -> executingQueriesWithId( queryId, tx ) );
         return executingQueries
             .stream()
             .map(this::terminateQueryTransaction);
@@ -151,7 +154,7 @@ public class BuiltInProcedures
 
     private Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
     {
-        return txHandle.executingQueries().filter( q -> q.queryId() == id );
+        return txHandle.executingQueries().filter( q -> q.kernelQueryId() == id );
     }
 
     private QueryTerminationResult terminateQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )
@@ -160,7 +163,7 @@ public class BuiltInProcedures
         if ( isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.authSubjectName() ) )
         {
             pair.first().markForTermination( Status.Transaction.Terminated );
-            return new QueryTerminationResult( query.queryId(), query.authSubjectName() );
+            return new QueryTerminationResult( queryId( query.kernelQueryId() ), query.authSubjectName() );
         }
         else
         {
@@ -272,7 +275,7 @@ public class BuiltInProcedures
     private QueryStatusResult queryStatusResult( ExecutingQuery q )
     {
         return new QueryStatusResult(
-            q.queryId(),
+            queryId( q.kernelQueryId() ),
             q.authSubjectName(),
             q.queryText(),
             q.queryParameters(),
@@ -283,7 +286,7 @@ public class BuiltInProcedures
 
     public static class QueryStatusResult
     {
-        public final long queryId;
+        public final String queryId;
 
         public final String username;
         public final String query;
@@ -291,10 +294,10 @@ public class BuiltInProcedures
         public final String startTime;
         public final String elapsedTime;
 
-        QueryStatusResult( long queryId, String username, String query, Map<String,Object> parameters,
+        QueryStatusResult( QueryId queryId, String username, String query, Map<String,Object> parameters,
                 long startTime, long elapsedTime )
         {
-            this.queryId = queryId;
+            this.queryId = queryId.toString();
             this.username = username;
             this.query = query;
             this.parameters = parameters;
@@ -336,12 +339,12 @@ public class BuiltInProcedures
 
     public static class QueryTerminationResult
     {
-        public final Long queryId;
+        public final String queryId;
         public final String username;
 
-        public QueryTerminationResult( Long queryId, String username )
+        public QueryTerminationResult( QueryId queryId, String username )
         {
-            this.queryId = queryId;
+            this.queryId = queryId.toString();
             this.username = username;
         }
     }

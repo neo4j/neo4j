@@ -78,13 +78,12 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
 
         latch.startAndWaitForAllToStart();
 
-        Number id = getIdOfQuery( query );
-
+        String id = extractQueryId( query );
 
         try ( InternalTransaction tx = graph
                 .beginTransaction( KernelTransaction.Type.explicit, AuthSubject.ANONYMOUS ) )
         {
-            graph.execute( tx, "CALL dbms.terminateQuery(" + id + ")", Collections.emptyMap() );
+            graph.execute( tx, "CALL dbms.terminateQuery('" + id + "')", Collections.emptyMap() );
             throw new AssertionError( "Expected exception to be thrown" );
         }
         catch ( QueryExecutionException e )

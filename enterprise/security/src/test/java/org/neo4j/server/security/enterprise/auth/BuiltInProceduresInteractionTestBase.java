@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -259,11 +260,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String q2 = read2.execute( threading, readSubject, "UNWIND [4,5,6] AS y RETURN y" );
         latch.startAndWaitForAllToStart();
 
-        Number id1 = getIdOfQuery( q1 );
+        String id1 = extractQueryId( q1 );
 
         assertSuccess(
             adminSubject,
-            "CALL dbms.terminateQuery(" + id1 + ") YIELD username " +
+            "CALL dbms.terminateQuery('" + id1 + "') YIELD username " +
             "RETURN count(username) AS count, username", r ->
             {
                 List<Map<String,Object>> actual = r.stream().collect( toList() );
@@ -294,11 +295,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String q2 = write.execute( threading, writeSubject, "UNWIND [4,5,6] AS y RETURN y" );
         latch.startAndWaitForAllToStart();
 
-        Number id1 = getIdOfQuery( q1 );
+        String id1 = extractQueryId( q1 );
 
         assertSuccess(
                 readSubject,
-                "CALL dbms.terminateQuery(" + id1 + ") YIELD username " +
+                "CALL dbms.terminateQuery('" + id1 + "') YIELD username " +
                 "RETURN count(username) AS count, username", r ->
                 {
                     List<Map<String,Object>> actual = r.stream().collect( toList() );
@@ -350,11 +351,12 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         try
         {
-            Number id1 = getIdOfQuery( q1 );
+            String id1 = extractQueryId( q1 );
             assertFail(
                 writeSubject,
-                "CALL dbms.terminateQuery(" + id1.intValue() + ") YIELD username RETURN *",
-                PERMISSION_DENIED );
+                "CALL dbms.terminateQuery('" + id1 + "') YIELD username RETURN *",
+                PERMISSION_DENIED
+            );
             latch.finishAndWaitForAllToFinish();
             read.closeAndAssertSuccess();
             write.closeAndAssertSuccess();
@@ -399,11 +401,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 latch.startAndWaitForAllToStart();
 
                 // Then
-                Number writeQueryId = getIdOfQuery( writeQuery );
+                String writeQueryId = extractQueryId( writeQuery );
 
                 assertSuccess(
                         adminSubject,
-                        "CALL dbms.terminateQuery(" + writeQueryId + ") YIELD username " +
+                        "CALL dbms.terminateQuery('" + writeQueryId + "') YIELD username " +
                         "RETURN count(username) AS count, username", r ->
                         {
                             List<Map<String,Object>> actual = r.stream().collect( toList() );
@@ -428,13 +430,14 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         }
     }
 
-    protected Number getIdOfQuery( String writeQuery )
+    protected String extractQueryId( String writeQuery )
     {
-        return (Number) single( collectSuccessResult( adminSubject, "CALL dbms.listQueries()" )
+        return single( collectSuccessResult( adminSubject, "CALL dbms.listQueries()" )
                 .stream()
                 .filter( m -> m.get( "query" ).equals( writeQuery ) )
-                .collect( toList() )
-        ).get( "queryId" );
+                .collect( toList() ) )
+                .get( "queryId" )
+                .toString();
     }
 
     //---------- terminate transactions for user -----------
@@ -605,6 +608,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         }
     }
 
+    //---------- jetty helpers for serving CSV files -----------
+
     private int getLocalPort( Server server )
     {
         return ((ServerConnector) (server.getConnectors()[0])).getLocalPort();
@@ -680,7 +685,10 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQueryId()
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "queryId" ), anyOf( (Matcher) isA( Integer.class ), isA( Long.class ) ) );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry(
+            equalTo( "queryId" ),
+            allOf( (Matcher) isA( String.class ), (Matcher) containsString( QueryId.QUERY_ID_PREFIX ) )
+        );
     }
 
     @SuppressWarnings( "unchecked" )
