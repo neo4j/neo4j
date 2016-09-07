@@ -22,6 +22,7 @@ package org.neo4j.server.database;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -47,6 +49,7 @@ public class CypherExecutorTest
 {
 
     private static final long CUSTOM_TRANSACTION_TIMEOUT = 1000L;
+    private static final String QUERY = "create (n)";
 
     private Database database;
     private GraphDatabaseFacade databaseFacade;
@@ -72,7 +75,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createSession( request );
+        cypherExecutor.createSession( QUERY, Collections.emptyMap(), request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         logProvider.assertNoLoggingOccurred();
@@ -87,7 +90,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createSession( request );
+        cypherExecutor.createSession( QUERY, Collections.emptyMap(), request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
                 CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS );
@@ -103,7 +106,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createSession( request );
+        cypherExecutor.createSession( QUERY, Collections.emptyMap(), request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         logProvider.assertContainsMessageContaining( "Fail to parse `max-execution-time` header with value: 'not a " +
@@ -119,7 +122,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createSession( request );
+        cypherExecutor.createSession( QUERY, Collections.emptyMap(), request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         logProvider.assertNoLoggingOccurred();
@@ -146,6 +149,9 @@ public class CypherExecutorTest
 
         AccessMode.Static accessMode = AccessMode.Static.FULL;
         KernelTransaction.Type type = KernelTransaction.Type.implicit;
+        QueryRegistryOperations registryOperations = mock( QueryRegistryOperations.class );
+        when( statement.queryRegistration() ).thenReturn( registryOperations );
+        when( statementBridge.get() ).thenReturn( statement );
         when( kernelTransaction.mode() ).thenReturn( accessMode );
         when( kernelTransaction.transactionType() ).thenReturn( type  );
         when( database.getGraph() ).thenReturn( databaseFacade );

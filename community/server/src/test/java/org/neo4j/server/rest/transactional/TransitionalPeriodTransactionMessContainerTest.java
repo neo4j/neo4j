@@ -22,12 +22,15 @@ package org.neo4j.server.rest.transactional;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.QueryRegistryOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -44,6 +47,7 @@ public class TransitionalPeriodTransactionMessContainerTest
     private GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
     private HttpServletRequest request = mock( HttpServletRequest.class );
     private DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+    private Statement statement = mock( Statement.class );
     private ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
     private InternalTransaction internalTransaction = mock( InternalTransaction.class );
     private KernelTransaction.Type type = KernelTransaction.Type.implicit;
@@ -52,6 +56,8 @@ public class TransitionalPeriodTransactionMessContainerTest
     @Before
     public void setUp()
     {
+        when( statement.queryRegistration() ).thenReturn( mock( QueryRegistryOperations.class ) );
+        when( bridge.get() ).thenReturn( statement );
         when( internalTransaction.transactionType() ).thenReturn( type );
         when( internalTransaction.mode() ).thenReturn( accessMode );
         when( databaseFacade.getDependencyResolver() ).thenReturn( dependencyResolver );
@@ -66,7 +72,8 @@ public class TransitionalPeriodTransactionMessContainerTest
 
         TransitionalPeriodTransactionMessContainer transactionMessContainer =
                 new TransitionalPeriodTransactionMessContainer( databaseFacade );
-        transactionMessContainer.create( queryService, type, accessMode, 10, request );
+        transactionMessContainer.create( "create (n)", Collections.emptyMap(), queryService, type, accessMode, 10,
+                request );
 
         verify( databaseFacade ).beginTransaction( type, accessMode, 10, TimeUnit.MILLISECONDS );
     }
@@ -78,7 +85,7 @@ public class TransitionalPeriodTransactionMessContainerTest
 
         TransitionalPeriodTransactionMessContainer transactionMessContainer =
                 new TransitionalPeriodTransactionMessContainer( databaseFacade );
-        transactionMessContainer.create( queryService, type, accessMode, 0, request );
+        transactionMessContainer.create( "create (n)", Collections.emptyMap(), queryService, type, accessMode, 0, request );
 
         verify( databaseFacade ).beginTransaction( type, accessMode );
     }

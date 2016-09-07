@@ -168,7 +168,7 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    void initialize( StatementLocks statementLocks, StatementOperationParts operationParts )
+    public void initialize( StatementLocks statementLocks, StatementOperationParts operationParts )
     {
         this.statementLocks = statementLocks;
         facade.initialize( operationParts );

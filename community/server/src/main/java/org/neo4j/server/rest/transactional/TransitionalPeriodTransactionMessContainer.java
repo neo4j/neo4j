@@ -60,7 +60,6 @@ public class TransitionalPeriodTransactionMessContainer
         return txBridge;
     }
 
-
     public QuerySession create( String query, Map<String, Object> parameters, GraphDatabaseQueryService service,
             Type type, AccessMode mode, long customTransactionTimeout, HttpServletRequest request )
     {
