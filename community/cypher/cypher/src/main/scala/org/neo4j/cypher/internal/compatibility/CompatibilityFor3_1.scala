@@ -69,7 +69,7 @@ object typeConversionsFor3_1 extends RuntimeTypeConverter {
   }
 
   override def asPrivateType = {
-    case map: Map[String, Any] => asPrivateMap(map)
+    case map: Map[_, _] => asPrivateMap(map.asInstanceOf[Map[String, Any]])
     case seq: Seq[Any] => seq.map(asPrivateType)
     case arr: Array[Any] => arr.map(asPrivateType)
     case point: spatial.Point => asPrivatePoint(point)
