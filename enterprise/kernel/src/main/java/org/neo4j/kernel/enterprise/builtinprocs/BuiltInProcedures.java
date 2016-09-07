@@ -140,8 +140,8 @@ public class BuiltInProcedures
             .map( this::queryStatusResult );
     }
 
-    @Procedure( name = "dbms.terminateQuery", mode = DBMS )
-    public Stream<QueryTerminationResult> terminateQuery( @Name( "id" ) String idText )
+    @Procedure( name = "dbms.killQuery", mode = DBMS )
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
             throws InvalidArgumentsException, IOException
     {
         long queryId = parseQueryId( idText ).kernelQueryId();
@@ -149,7 +149,7 @@ public class BuiltInProcedures
             getKernelTransactions().activeTransactions( tx -> executingQueriesWithId( queryId, tx ) );
         return executingQueries
             .stream()
-            .map(this::terminateQueryTransaction);
+            .map(this::killQueryTransaction);
     }
 
     private Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
@@ -157,7 +157,7 @@ public class BuiltInProcedures
         return txHandle.executingQueries().filter( q -> q.kernelQueryId() == id );
     }
 
-    private QueryTerminationResult terminateQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )
+    private QueryTerminationResult killQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )
     {
         ExecutingQuery query = pair.other();
         if ( isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.authSubjectName() ) )

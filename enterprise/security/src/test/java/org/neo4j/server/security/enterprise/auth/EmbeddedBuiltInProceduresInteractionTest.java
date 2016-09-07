@@ -67,7 +67,7 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
     }
 
     @Test
-    public void shouldNotTerminateQueryIfNotAuthenticated() throws Throwable
+    public void shouldNotKillQueryIfNotAuthenticated() throws Throwable
     {
         EnterpriseAuthSubject authy = createFakeAnonymousEnterpriseAuthSubject();
 
@@ -83,7 +83,7 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
         try ( InternalTransaction tx = graph
                 .beginTransaction( KernelTransaction.Type.explicit, AuthSubject.ANONYMOUS ) )
         {
-            graph.execute( tx, "CALL dbms.terminateQuery('" + id + "')", Collections.emptyMap() );
+            graph.execute( tx, "CALL dbms.killQuery('" + id + "')", Collections.emptyMap() );
             throw new AssertionError( "Expected exception to be thrown" );
         }
         catch ( QueryExecutionException e )

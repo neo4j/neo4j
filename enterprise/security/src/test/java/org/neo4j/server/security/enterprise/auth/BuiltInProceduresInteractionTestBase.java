@@ -251,7 +251,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     //---------- terminate query -----------
 
     @Test
-    public void shouldTerminateQueryAsAdmin() throws Throwable
+    public void shouldKillQueryAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
         ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
@@ -264,7 +264,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         assertSuccess(
             adminSubject,
-            "CALL dbms.terminateQuery('" + id1 + "') YIELD username " +
+            "CALL dbms.killQuery('" + id1 + "') YIELD username " +
             "RETURN count(username) AS count, username", r ->
             {
                 List<Map<String,Object>> actual = r.stream().collect( toList() );
@@ -286,7 +286,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @Test
-    public void shouldTerminateQueryAsUser() throws Throwable
+    public void shouldKillQueryAsUser() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
         ThreadedTransactionCreate<S> read = new ThreadedTransactionCreate<>( neo, latch );
@@ -299,7 +299,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         assertSuccess(
                 readSubject,
-                "CALL dbms.terminateQuery('" + id1 + "') YIELD username " +
+                "CALL dbms.killQuery('" + id1 + "') YIELD username " +
                 "RETURN count(username) AS count, username", r ->
                 {
                     List<Map<String,Object>> actual = r.stream().collect( toList() );
@@ -321,12 +321,12 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @Test
-    public void shouldSelfTerminateQuery() throws Throwable
+    public void shouldSelfKillQuery() throws Throwable
     {
         String result = neo.executeQuery(
             readSubject,
             "WITH 'Hello' AS marker CALL dbms.listQueries() YIELD queryId AS id, query " +
-            "WITH * WHERE query CONTAINS 'Hello' CALL dbms.terminateQuery(id) YIELD username " +
+            "WITH * WHERE query CONTAINS 'Hello' CALL dbms.killQuery(id) YIELD username " +
             "RETURN count(username) AS count, username",
             Collections.emptyMap(),
             r -> {}
@@ -354,7 +354,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             String id1 = extractQueryId( q1 );
             assertFail(
                 writeSubject,
-                "CALL dbms.terminateQuery('" + id1 + "') YIELD username RETURN *",
+                "CALL dbms.killQuery('" + id1 + "') YIELD username RETURN *",
                 PERMISSION_DENIED
             );
             latch.finishAndWaitForAllToFinish();
@@ -405,7 +405,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
                 assertSuccess(
                         adminSubject,
-                        "CALL dbms.terminateQuery('" + writeQueryId + "') YIELD username " +
+                        "CALL dbms.killQuery('" + writeQueryId + "') YIELD username " +
                         "RETURN count(username) AS count, username", r ->
                         {
                             List<Map<String,Object>> actual = r.stream().collect( toList() );
