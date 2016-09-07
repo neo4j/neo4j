@@ -73,4 +73,34 @@ public class EnterpriseAuthenticationDocIT extends AuthenticationDocIT
                 hasItems( "admin", "architect", "publisher", "reader") );
 
     }
+
+    @Test
+    public void shouldAllowExecutingEnterpriseBuiltInProceduresWithAuthDisabled() throws Exception
+    {
+        // Given
+        startServerWithAuthDisabled();
+
+        // When
+        String method = "POST";
+        String path = "db/data/transaction/commit";
+        HTTP.RawPayload payload = HTTP.RawPayload.quotedJson(
+                "{'statements':[{'statement':'CALL dbms.listQueries()'}]}" );
+        HTTP.Response response = HTTP.request( method, server.baseUri().resolve( path ).toString(), payload );
+
+        // Then
+        assertThat(response.status(), equalTo(200));
+        ArrayNode errors = (ArrayNode) response.get("errors");
+        assertThat( "Should have no errors", errors.size(), equalTo( 0 ) );
+        ArrayNode results = (ArrayNode) response.get("results");
+        ArrayNode data = (ArrayNode) results.get(0).get("data");
+        assertThat( "Should see our own query", data.size(), equalTo( 1 ) );
+    }
+
+    private void startServerWithAuthDisabled() throws IOException
+    {
+        server = EnterpriseServerBuilder.server()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( false ) )
+                .build();
+        server.start();
+    }
 }

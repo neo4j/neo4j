@@ -79,7 +79,7 @@ public class CommunityNeoServer extends AbstractNeoServer
                 new ThirdPartyJAXRSModule( webServer, getConfig(), logProvider, this ),
                 new ConsoleModule( webServer, getConfig() ),
                 new Neo4jBrowserModule( webServer ),
-                new AuthorizationModule( webServer, authManagerSupplier, logProvider, getConfig(), getUriWhitelist() ),
+                createAuthorizationModule(),
                 new SecurityRulesModule( webServer, getConfig(), logProvider ) );
     }
 
@@ -97,5 +97,10 @@ public class CommunityNeoServer extends AbstractNeoServer
         toReturn.add( new JmxService( null, null ) );
 
         return toReturn;
+    }
+
+    protected AuthorizationModule createAuthorizationModule()
+    {
+        return new AuthorizationModule( webServer, authManagerSupplier, logProvider, getConfig(), getUriWhitelist() );
     }
 }

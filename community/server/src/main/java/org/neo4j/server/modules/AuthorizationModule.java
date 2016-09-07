@@ -60,7 +60,7 @@ public class AuthorizationModule implements ServerModule
         }
         else
         {
-            authorizationFilter = new AuthorizationDisabledFilter();
+            authorizationFilter = createAuthorizationDisabledFilter();
         }
 
         webServer.addFilter( authorizationFilter, "/*" );
@@ -69,5 +69,10 @@ public class AuthorizationModule implements ServerModule
     @Override
     public void stop()
     {
+    }
+
+    protected AuthorizationDisabledFilter createAuthorizationDisabledFilter()
+    {
+        return new AuthorizationDisabledFilter();
     }
 }
