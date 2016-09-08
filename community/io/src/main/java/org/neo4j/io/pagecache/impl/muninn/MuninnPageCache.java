@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.CannotMoveMappedFileException;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
@@ -370,7 +372,17 @@ public class MuninnPageCache implements PageCache
         ensureThreadsInitialised();
 
         file = file.getCanonicalFile();
+        MuninnPagedFile pagedFile = tryGetMappingOrNull( file );
+        if ( pagedFile != null )
+        {
+            pagedFile.incrementRefCount();
+            return Optional.of( pagedFile );
+        }
+        return Optional.empty();
+    }
 
+    private MuninnPagedFile tryGetMappingOrNull( File file ) throws IOException
+    {
         FileMapping current = mappedFiles;
 
         // find an existing mapping
@@ -378,15 +390,32 @@ public class MuninnPageCache implements PageCache
         {
             if ( current.file.equals( file ) )
             {
-                MuninnPagedFile pagedFile = current.pagedFile;
-                pagedFile.incrementRefCount();
-                return Optional.of( current.pagedFile );
+                return current.pagedFile;
             }
             current = current.next;
         }
 
         // no mapping exists
-        return Optional.empty();
+        return null;
+    }
+
+    @Override
+    public synchronized void moveFile( File sourceFile, File targetFile, CopyOption... copyOptions )
+            throws IOException
+    {
+        sourceFile = sourceFile.getCanonicalFile();
+        targetFile = targetFile.getCanonicalFile();
+        throwIfMapped( sourceFile );
+        throwIfMapped( targetFile );
+        swapperFactory.moveUnopenedFile( sourceFile, targetFile, copyOptions );
+    }
+
+    private void throwIfMapped( File file ) throws IOException
+    {
+        if ( tryGetMappingOrNull( file ) != null )
+        {
+            throw new CannotMoveMappedFileException( file );
+        }
     }
 
     /**

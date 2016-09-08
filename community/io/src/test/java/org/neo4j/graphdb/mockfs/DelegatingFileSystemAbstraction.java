@@ -86,9 +86,9 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
-        return delegate.move( from, to, copyOptions );
+        delegate.renameFile( from, to, copyOptions );
     }
 
     @Override

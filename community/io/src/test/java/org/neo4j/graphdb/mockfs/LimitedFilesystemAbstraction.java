@@ -89,10 +89,10 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     }
 
     @Override
-    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         ensureHasSpace();
-        return super.move( from, to, copyOptions );
+        super.renameFile( from, to, copyOptions );
     }
 
     public void runOutOfDiskSpace( boolean outOfSpace )

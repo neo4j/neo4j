@@ -43,6 +43,8 @@ import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.StandardCopyOption;
 import java.time.Clock;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -69,6 +71,7 @@ import org.neo4j.test.impl.ChannelOutputStream;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
@@ -381,30 +384,30 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         from = canonicalFile( from );
         to = canonicalFile( to );
 
-        boolean replaceExisting = false;
-        for ( CopyOption op : copyOptions )
-        {
-            if ( op == StandardCopyOption.REPLACE_EXISTING )
-            {
-                replaceExisting = true;
-            }
-        }
-
         if ( !files.containsKey( from ) )
         {
-            throw new IOException( "'" + from + "' doesn't exist" );
+            throw new NoSuchFileException( "'" + from + "' doesn't exist" );
         }
-        if ( !replaceExisting && files.containsKey( to ) )
+
+        boolean replaceExisting = false;
+        for ( CopyOption copyOption : copyOptions )
         {
-            throw new IOException( "'" + to + "' already exists" );
+            replaceExisting |= copyOption == REPLACE_EXISTING;
+        }
+        if ( files.containsKey( to ) && !replaceExisting )
+        {
+            throw new FileAlreadyExistsException( "'" + to + "' already exists" );
+        }
+        if ( !isDirectory( to.getParentFile() ) )
+        {
+            throw new NoSuchFileException( "Target directory[" + to.getParent() + "] does not exists" );
         }
         files.put( to, files.remove( from ) );
-        return true;
     }
 
     @Override

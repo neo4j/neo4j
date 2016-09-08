@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -57,6 +58,7 @@ import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.impl.CannotMoveMappedFileException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
@@ -67,8 +69,9 @@ import org.neo4j.test.RepeatRule;
 
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
-
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -4689,5 +4692,149 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             channel.write( ByteBuffer.allocate( recordSize ) );
             fail( "That read should have thrown" );
         }
+    }
+
+    @Test( expected = CannotMoveMappedFileException.class )
+    public void moveFileMustThrowIfSourceFileIsMapped() throws Exception
+    {
+        File a = file( "a" );
+        File b = file( "b" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile ignore = pageCache.map( a, filePageSize ) )
+        {
+            pageCache.moveFile( a, b );
+        }
+    }
+
+    @Test( expected = CannotMoveMappedFileException.class )
+    public void moveFileMustThrowIfTargetFileIsMapped() throws Exception
+    {
+        File a = file( "a" );
+        File b = existingFile( "b" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile ignore = pageCache.map( b, filePageSize ) )
+        {
+            pageCache.moveFile( a, b );
+        }
+    }
+
+    @Test( expected = FileAlreadyExistsException.class )
+    public void moveFileMustThrowIfTargetFileExistsAndReplaceExistingIsNotEnabled() throws Exception
+    {
+        File a = file( "a" );
+        File b = existingFile( "b" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        pageCache.moveFile( a, b );
+    }
+
+    @Test
+    public void moveFileMustThrowIfTargetDirectoryDoesNotExist() throws Exception
+    {
+        File a = file( "a" );
+        File b = new File( file( "targetDir" ), "targetFile" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try
+        {
+            pageCache.moveFile( a, b );
+            fail( "pageCache.moveFile should have thrown" );
+        }
+        catch ( NoSuchFileException e )
+        {
+            assertThat( e.getMessage(), containsString( "targetDir" ) );
+        }
+    }
+
+    @Test( expected = NoSuchFileException.class )
+    public void moveFileMustThrowIfSourceFileDoesNotExist() throws Exception
+    {
+        File a = file( "doesNotExist" );
+        File b = file( "b" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        pageCache.moveFile( a, b );
+    }
+
+    @Test
+    public void fileMustBeMappableAtNewLocationAfterMove() throws Exception
+    {
+        File a = file( "a" );
+        File b = file( "b" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        pageCache.moveFile( a, b );
+        pageCache.map( b, filePageSize ).close();
+    }
+
+    @Test( expected = NoSuchFileException.class )
+    public void sourceFileMustNotBeMappableAfterMove() throws Exception
+    {
+        File a = file( "a" );
+        File b = file( "b" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        pageCache.moveFile( a, b );
+        pageCache.map( a, filePageSize );
+        fail( "pageCache.map should have thrown" );
+    }
+
+    @Test
+    public void sourceFileContentsMustBeUnchangedAfterMove() throws Exception
+    {
+        File a = file( "a" );
+        File b = file( "b" );
+        generateFileWithRecords( a, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        pageCache.moveFile( a, b );
+        verifyRecordsInFile( b, recordCount );
+    }
+
+    @Test
+    public void sourceFileContentsMustBeUnchangedAfterMoveEvenIfReplacingExistingFile() throws Exception
+    {
+        File a = file( "a" );
+        File b = existingFile( "b" );
+        generateFileWithRecords( a, recordCount, recordSize );
+        generateFileWithRecords( b, recordCount + recordsPerFilePage, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        // Fill 'b' with random data
+        try ( PagedFile pf = pageCache.map( b, filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
+        {
+            ThreadLocalRandom rng = ThreadLocalRandom.current();
+            while ( cursor.next() )
+            {
+                int pageSize = cursor.getCurrentPageSize();
+                for ( int i = 0; i < pageSize; i++ )
+                {
+                    cursor.putByte( i, (byte) rng.nextInt() );
+                }
+            }
+        }
+
+        // Do the move
+        pageCache.moveFile( a, b, REPLACE_EXISTING );
+
+        // Then verify that the old random data we put in 'b' has been replaced with the contents of 'a'
+        verifyRecordsInFile( b, recordCount );
+    }
+
+    @Test
+    public void moveFileMustCanonicaliseSourceFile() throws Exception
+    {
+        File a = new File( new File( file( "a" ), "poke" ), ".." );
+        File b = file( "b" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        // File 'a' should canonicalise from 'a/poke/..' to 'a', which is a file that exists.
+        // Thus, this should not throw a NoSuchFileException.
+        pageCache.moveFile( a, b );
+    }
+
+    @Test
+    public void moveFileMustCanonicaliseTargetFile() throws Exception
+    {
+        File a = file( "a" );
+        File b = new File( new File( file( "b" ), "poke" ), ".." );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        // File 'b' should canonicalise from 'b/poke/..' to 'b', which is a file that doesn't exists.
+        // Thus, this should not throw a FileAlreadyExistsException.
+        pageCache.moveFile( a, b );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -68,6 +69,12 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     public void syncDevice()
     {
         // Nothing do to, since we `fsync` files individually in `force()`.
+    }
+
+    @Override
+    public void moveUnopenedFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException
+    {
+        fs.renameFile( sourceFile, targetFile, copyOptions );
     }
 
     @Override

@@ -58,7 +58,7 @@ public interface FileSystemAbstraction
 
     void deleteRecursively( File directory ) throws IOException;
 
-    boolean move( File from, File to, CopyOption... copyOptions ) throws IOException;
+    void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException;
 
     File[] listFiles( File directory );
 

@@ -307,7 +307,7 @@ public class TestBranchedData
             String fileName = file.getName();
             if ( !fileName.equals( StoreLogService.INTERNAL_LOG_NAME ) && !file.getName().startsWith( "branched-" ) )
             {
-                assertTrue( FileUtils.renameFile( file, new File( branchDir, file.getName() ) ) );
+                FileUtils.renameFile( file, new File( branchDir, file.getName() ) );
             }
         }
         return timestamp;

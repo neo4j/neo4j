@@ -38,11 +38,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
@@ -170,10 +168,9 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         Files.move( path( from ), path( to ), copyOptions );
-        return true;
     }
 
     @Override
