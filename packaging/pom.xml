@@ -131,18 +131,6 @@ terms of the relevant Commercial Agreement.
         </plugins>
       </build>
     </profile>
-    <profile>
-      <id>installer-qa</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>installerQA</name>
-        </property>
-      </activation>
-      <modules>
-        <module>installer-qa</module>
-      </modules>
-    </profile>
   </profiles>
 
 </project>
