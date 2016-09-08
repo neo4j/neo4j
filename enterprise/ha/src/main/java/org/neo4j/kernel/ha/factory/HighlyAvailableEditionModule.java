@@ -197,6 +197,8 @@ public class HighlyAvailableEditionModule
     public void registerProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
+        findProcedureProvider( "auth-procedures-provider" ).registerProcedures( procedures );
+        findProcedureProvider( "enterprise-auth-procedures-provider" ).registerProcedures( procedures );
     }
 
     public HighlyAvailableEditionModule( final PlatformModule platformModule )

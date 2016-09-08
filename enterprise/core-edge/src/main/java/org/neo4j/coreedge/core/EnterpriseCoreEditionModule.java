@@ -115,6 +115,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
         try
         {
             procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
+            findProcedureProvider( "auth-procedures-provider" ).registerProcedures( procedures );
+            findProcedureProvider( "enterprise-auth-procedures-provider" ).registerProcedures( procedures );
+
             procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );

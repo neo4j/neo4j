@@ -417,12 +417,6 @@ public class DataSourceModule
             throw new RuntimeException( e );
         }
 
-        // Security procedures
-        for ( ProceduresProvider candidate : Service.load( ProceduresProvider.class ) )
-        {
-            candidate.registerProcedures( procedures );
-        }
-
         return procedures;
     }
 

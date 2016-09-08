@@ -19,9 +19,23 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.proc.Procedures;
 
-public interface ProceduresProvider
+
+public abstract class ProceduresProvider extends Service
 {
-    void registerProcedures( Procedures procedures );
+    /**
+     * Create a new instance of a service implementation identified with the
+     * specified key(s).
+     *
+     * @param key the main key for identifying this service implementation
+     * @param altKeys alternative spellings of the identifier of this service
+     */
+    protected ProceduresProvider( String key, String... altKeys )
+    {
+        super( key, altKeys );
+    }
+
+    public abstract void registerProcedures( Procedures procedures );
 }

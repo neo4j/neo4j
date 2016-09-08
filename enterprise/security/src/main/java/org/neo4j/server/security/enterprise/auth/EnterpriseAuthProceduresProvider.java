@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.factory.ProceduresProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 
 @Service.Implementation( ProceduresProvider.class )
-public class EnterpriseAuthProceduresProvider extends Service implements ProceduresProvider
+public class EnterpriseAuthProceduresProvider extends ProceduresProvider
 {
     public EnterpriseAuthProceduresProvider()
     {

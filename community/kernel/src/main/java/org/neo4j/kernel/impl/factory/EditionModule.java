@@ -159,6 +159,18 @@ public abstract class EditionModule
         throw new IllegalArgumentException( "No auth manager factory detected!." );
     }
 
+    protected ProceduresProvider findProcedureProvider( String key )
+    {
+        for ( ProceduresProvider candidate : Service.load( ProceduresProvider.class ) )
+        {
+            if ( candidate.matches( key ) )
+            {
+                return candidate;
+            }
+        }
+        throw new IllegalArgumentException( "No procedure provider found with the key '" + key + "'." );
+    }
+
     protected BoltConnectionTracker createSessionTracker()
     {
         return BoltConnectionTracker.NOOP;
