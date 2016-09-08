@@ -73,7 +73,7 @@
         <exclude>**/*.ps1</exclude>
         <exclude>**/Neo4j-Management</exclude>
         <exclude>**/*.exe</exclude>
-        <exclude>**/config-migrator.jar</exclude>
+        <exclude>**/2.x-config-migrator.jar</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>
@@ -82,7 +82,7 @@
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
       <outputDirectory/>
       <includes>
-        <include>**/config-migrator.jar</include>
+        <include>**/2.x-config-migrator.jar</include>
       </includes>
     </fileSet>
     <!-- filter and chmod 755 cypher-shell -->

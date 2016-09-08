@@ -167,7 +167,7 @@
                     <include name="*.jar"/>
                   </fileset>
                 </copy>
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/tools/config-migrator.jar" todir="${project.build.directory}/shell-scripts/tools" />
+                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/tools/2.x-config-migrator.jar" todir="${project.build.directory}/shell-scripts/tools" />
 
                 <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management.psd1" todir="${project.build.directory}/shell-scripts" />
                 <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Get-Java.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
