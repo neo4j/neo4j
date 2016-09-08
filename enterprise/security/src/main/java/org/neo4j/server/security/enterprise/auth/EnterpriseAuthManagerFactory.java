@@ -63,7 +63,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     public AuthManager newInstance( Config config, LogProvider logProvider, Log securityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        StaticLoggerBinder.setNeo4jLogProvider( logProvider );
+//        StaticLoggerBinder.setNeo4jLogProvider( logProvider );
 
         List<Realm> realms = new ArrayList<>( 2 );
         SecurityLog castedSecurityLog = (SecurityLog) securityLog;
