@@ -54,7 +54,7 @@ public class BasicAuthentication implements Authentication
     {
         if ( !authManager.supports( authToken ) )
         {
-            throw new AuthenticationException( Status.Security.Unauthorized, "Missing username and password" );
+            throw new AuthenticationException( Status.Security.Unauthorized );
         }
 
         if ( authToken.containsKey( NEW_CREDENTIALS ) )

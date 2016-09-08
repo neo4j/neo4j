@@ -193,6 +193,26 @@ public class BasicAuthenticationTest
     }
 
     @Test
+    public void shouldThrowWithNoScheme() throws Exception
+    {
+        // Given
+        BasicAuthManager manager = mock( BasicAuthManager.class );
+        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        mockManagerSupportsScheme( manager, "basic" );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
+
+        // Expect
+        exception.expect( AuthenticationException.class );
+        exception.expect( hasStatus( Status.Security.Unauthorized ) );
+        exception.expectMessage( "The client is unauthorized due to authentication failure." );
+
+        // When
+        authentication.authenticate( map( "principal", "bob", "credentials", "secret" ) );
+    }
+
+    @Test
     public void shouldFailOnUnknownScheme() throws Exception
     {
         // Given
@@ -206,7 +226,7 @@ public class BasicAuthenticationTest
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
-        exception.expectMessage( "Missing username and password" );
+        exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
         authentication.authenticate( map( "scheme", "UNKNOWN", "principal", "bob", "credentials", "secret" ) );
@@ -233,16 +253,18 @@ public class BasicAuthenticationTest
                 .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", "secret" ) );
     }
 
-    private void mockManagerSupportsScheme(BasicAuthManager manager, String expectedScheme) {
-        doAnswer(new Answer<Boolean>(){
+    private void mockManagerSupportsScheme( BasicAuthManager manager, String expectedScheme )
+    {
+        doAnswer( new Answer<Boolean>()
+        {
             @Override
             public Boolean answer( InvocationOnMock invocation ) throws Throwable
             {
                 final Object[] args = invocation.getArguments();
-                Map<String, Object> token = (Map<String, Object>)args[0];
+                Map<String,Object> token = (Map<String,Object>) args[0];
                 return token.containsKey( "scheme" ) && token.get( "scheme" ).equals( expectedScheme );
             }
-        }).when( manager ).supports( anyMap() );
+        } ).when( manager ).supports( anyMap() );
     }
 
     private HasStatus hasStatus( Status status )
