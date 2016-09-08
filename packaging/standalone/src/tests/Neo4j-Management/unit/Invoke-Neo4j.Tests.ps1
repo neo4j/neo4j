@@ -5,13 +5,14 @@ $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
 
 Import-Module "$src\Neo4j-Management.psm1"
 
-InModuleScope Neo4j-Management {  
+InModuleScope Neo4j-Management {
   Describe "Invoke-Neo4j" {
 
     # Setup mocking environment
     #  Mock Java environment
     $javaHome = global:New-MockJavaHome
-    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+    Mock Set-Neo4jEnv { }
     Mock Test-Path { $false } -ParameterFilter {
       $Path -like 'Registry::*\JavaSoft\Java Runtime Environment'
     }
@@ -20,7 +21,7 @@ InModuleScope Neo4j-Management {
     }
     # Mock Neo4j environment
     $mockNeo4jHome = global:New-MockNeo4jInstall
-    Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' } 
+    Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' }
     Mock Start-Process { throw "Should not call Start-Process mock" }
     # Mock helper functions
     Mock Start-Neo4jServer { 2 } -ParameterFilter { $Console -eq $true }
@@ -32,7 +33,7 @@ InModuleScope Neo4j-Management {
 
     Context "No arguments" {
       $result = Invoke-Neo4j
-      
+
       It "returns 1 if no arguments" {
         $result | Should Be 1
       }
@@ -69,7 +70,7 @@ InModuleScope Neo4j-Management {
       It "returns exitcode from restart command" {
         Mock Start-Neo4jServer { 5 } -ParameterFilter { $Service -eq $true }
         Mock Stop-Neo4jServer { 0 }
-        
+
         Invoke-Neo4j 'restart' | Should Be 5
       }
 

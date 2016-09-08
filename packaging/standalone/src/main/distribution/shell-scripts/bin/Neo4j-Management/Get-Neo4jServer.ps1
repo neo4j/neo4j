@@ -47,7 +47,7 @@ System.Management.Automation.PSCustomObject
 This is a Neo4j Server Object
 
 .LINK
-Get-Neo4jHome  
+Get-Neo4jHome
 
 .NOTES
 This function is private to the powershell module
@@ -62,11 +62,11 @@ Function Get-Neo4jServer
     [AllowEmptyString()]
     [string]$Neo4jHome = ''
   )
-  
+
   Begin
   {
   }
-  
+
   Process
   {
     # Get and check the Neo4j Home directory
@@ -75,7 +75,7 @@ Function Get-Neo4jServer
       Write-Error "Could not detect the Neo4j Home directory"
       return
     }
-       
+
     if (-not (Test-Path -Path $Neo4jHome))
     {
       Write-Error "$Neo4jHome does not exist"
@@ -100,7 +100,7 @@ Function Get-Neo4jServer
       'ServerType' = 'Community';
       'DatabaseMode' = '';
     }
-    
+
     # Check if the lib dir exists
     $libPath = (Join-Path -Path $Neo4jHome -ChildPath 'lib')
     if (-not (Test-Path -Path $libPath))
@@ -108,7 +108,7 @@ Function Get-Neo4jServer
       Write-Error "$Neo4jHome is not a valid Neo4j installation.  Missing $libPath"
       return
     }
-    
+
     # Scan the lib dir...
     Get-ChildItem (Join-Path -Path $Neo4jHome -ChildPath 'lib') | Where-Object { $_.Name -like 'neo4j-server-*.jar' } | ForEach-Object -Process `
     {
@@ -126,14 +126,31 @@ Function Get-Neo4jServer
       Write-Error "Unable to determine the version of the installation at $Neo4jHome"
       return
     }
-    
+
     # Get additional settings...
     $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.mode' -Neo4jServer $serverObject)
     if ($setting -ne $null) { $serverObject.DatabaseMode = $setting.Value }
-    
+
+    # Set process level environment variables
+    #  These should mirror the same paths in neo4j-shared.sh
+    (@{'NEO4J_DATA'    = @{'config_var' = 'dbms.directores.data';    'default' = (Join-Path $Neo4jHome 'data')}
+       'NEO4J_LIB'     = @{'config_var' = 'dbms.directores.lib';     'default' = (Join-Path $Neo4jHome 'lib')}
+       'NEO4J_LOGS'    = @{'config_var' = 'dbms.directores.logs';    'default' = (Join-Path $Neo4jHome 'logs')}
+       'NEO4J_PLUGINS' = @{'config_var' = 'dbms.directores.plugins'; 'default' = (Join-Path $Neo4jHome 'plugins')}
+       'NEO4J_RUN'     = @{'config_var' = 'dbms.directores.run';     'default' = (Join-Path $Neo4jHome 'run')}
+    }).GetEnumerator() | % {
+      $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name $_.Value.config_var -Neo4jServer $serverObject)
+      $value = $_.Value.default
+      if ($setting -ne $null) { $value = $setting.Value }
+      Set-Neo4jEnv $_.Name $value
+    }
+    #  NEO4J_CONF and NEO4J_HOME are used by the Neo4j Admin Tool
+    if ( (Get-Neo4jEnv 'NEO4J_CONF') -eq $null) { Set-Neo4jEnv "NEO4J_CONF" $ConfDir }
+    if ( (Get-Neo4jEnv 'NEO4J_HOME') -eq $null) { Set-Neo4jEnv "NEO4J_HOME" $Neo4jHome }
+
     Write-Output $serverObject
   }
-  
+
   End
   {
   }

@@ -19,53 +19,47 @@
 
 <#
 .SYNOPSIS
-Invokes Neo4j core convert tool
+Sets a process-level environment variable value
 
 .DESCRIPTION
-Invokes Neo4j core convert tool
+Sets a process-level environment variable value.  This is a helper function which aids testing and mocking
 
-.PARAMETER Neo4jServer
-An object representing a valid Neo4j Server object
+.PARAMETER Name
+Name of the environment variable
 
-.PARAMETER CommandArgs
-Command line arguments to pass to core convert tool
+.PARAMETER Value
+Value of the environment variable
+
+.EXAMPLE
+Set-Neo4jEnv 'Neo4jHome' 'C:\neo4j'
+
+Sets the Neo4jHome environment variable to C:\neo4j
 
 .OUTPUTS
-System.Int32
-0 = Success
-non-zero = an error occurred
+System.String
+Value of the environment variable
 
 .NOTES
 This function is private to the powershell module
 
 #>
-Function Invoke-Neo4jAdmin_CoreConvert
+Function Set-Neo4jEnv
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
   param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$false,Position=0)]
-    [PSCustomObject]$Neo4jServer
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false,Position=0)]
+    [String]$Name
 
-    ,[parameter(Mandatory=$false,ValueFromRemainingArguments=$true)]
-    [object[]]$CommandArgs = @()
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,Position=1)]
+    [String]$Value
   )
 
   Begin
   {
   }
 
-  Process
-  {
-    # Do the core conversion
-    try {
-      $CommandArgs += '-config'
-      $CommandArgs += $($Neo4jServer.ConfDir)
-      Return [int](Invoke-Neo4jUtility -Command 'Core-Convert' -CommandArgs $CommandArgs -ErrorAction 'Stop')
-    }
-    catch {
-      Write-Error $_
-      Return 1
-    }
+  Process {
+    [Environment]::SetEnvironmentVariable($Name, $Value, "Process")
   }
 
   End
