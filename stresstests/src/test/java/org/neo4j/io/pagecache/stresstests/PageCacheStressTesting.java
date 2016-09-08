@@ -21,13 +21,17 @@ package org.neo4j.io.pagecache.stresstests;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import java.io.File;
+
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
-import static java.lang.System.getenv;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
+import static org.neo4j.StressTestingHelper.fromEnv;
 import static org.neo4j.io.pagecache.stress.Conditions.timePeriod;
 
 /**
@@ -45,21 +49,21 @@ public class PageCacheStressTesting
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Exception
     {
-        int durationInMinutes = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_DURATION", "1" ) );
-        int numberOfPages = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_NUMBER_OF_PAGES", "10000" ) );
-        int numberOfThreads = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_NUMBER_OF_THREADS", "8" ) );
-        int numberOfCachePages = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_NUMBER_OF_CACHE_PAGES", "1000" ) );
+        int durationInMinutes = parseInt( fromEnv( "PAGE_CACHE_STRESS_DURATION", "1" ) );
+        int numberOfPages = parseInt( fromEnv( "PAGE_CACHE_STRESS_NUMBER_OF_PAGES", "10000" ) );
+        int numberOfThreads = parseInt( fromEnv( "PAGE_CACHE_STRESS_NUMBER_OF_THREADS", "8" ) );
+        int numberOfCachePages = parseInt( fromEnv( "PAGE_CACHE_STRESS_NUMBER_OF_CACHE_PAGES", "1000" ) );
+        File baseDir = new File( fromEnv( "PAGE_CACHE_STRESS_WORKING_DIRECTORY", getProperty( "java.io.tmpdir" ) ) );
 
-        String workingDirectory = fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_WORKING_DIRECTORY", getProperty( "java.io.tmpdir" ) );
+        File workingDirectory = new File( baseDir,  "working" );
 
         DefaultPageCacheTracer monitor = new DefaultPageCacheTracer();
-
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .with( timePeriod( durationInMinutes, MINUTES ) )
                 .withNumberOfPages( numberOfPages )
                 .withNumberOfThreads( numberOfThreads )
                 .withNumberOfCachePages( numberOfCachePages )
-                .withWorkingDirectory( workingDirectory )
+                .withWorkingDirectory( ensureExistsAndEmpty( workingDirectory ) )
                 .with( monitor )
                 .build();
 
@@ -72,17 +76,8 @@ public class PageCacheStressTesting
         long flushes = monitor.flushes();
         System.out.printf( " - page faults: %d%n - evictions: %d%n - pins: %d%n - unpins: %d%n - flushes: %d%n",
                 faults, evictions, pins, unpins, flushes );
-    }
 
-    private static String fromEnvironmentOrDefault( String environmentVariableName, String defaultValue )
-    {
-        String environmentVariableValue = getenv( environmentVariableName );
-
-        if ( environmentVariableValue == null )
-        {
-            return defaultValue;
-        }
-
-        return environmentVariableValue;
+        // let's cleanup disk space when everything went well
+        FileUtils.deleteRecursively( workingDirectory );
     }
 }

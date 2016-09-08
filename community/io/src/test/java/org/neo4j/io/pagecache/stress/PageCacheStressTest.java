@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.stress;
 
+import java.io.File;
+
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -60,7 +62,7 @@ public class PageCacheStressTest
     private final PageCacheTracer tracer;
     private final Condition condition;
 
-    private final String workingDirectory;
+    private final File workingDirectory;
 
     private PageCacheStressTest( Builder builder )
     {
@@ -102,7 +104,7 @@ public class PageCacheStressTest
         PageCacheTracer tracer = NULL;
         Condition condition;
 
-        String workingDirectory = getProperty( "java.io.tmpdir" );
+        File workingDirectory;
 
         public PageCacheStressTest build()
         {
@@ -141,7 +143,7 @@ public class PageCacheStressTest
             return this;
         }
 
-        public Builder withWorkingDirectory( String workingDirectory )
+        public Builder withWorkingDirectory( File workingDirectory )
         {
             this.workingDirectory = workingDirectory;
             return this;

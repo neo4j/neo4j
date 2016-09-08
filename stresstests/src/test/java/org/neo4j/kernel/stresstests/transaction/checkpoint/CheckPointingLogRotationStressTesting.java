@@ -40,7 +40,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
-import static java.lang.System.getenv;
+import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
+import static org.neo4j.StressTestingHelper.fromEnv;
 import static org.neo4j.kernel.stresstests.transaction.checkpoint.mutation.RandomMutationFactory.defaultRandomMutation;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
@@ -63,20 +64,15 @@ public class CheckPointingLogRotationStressTesting
     {
         long durationInMinutes =
                 parseLong( fromEnv( "CHECK_POINT_LOG_ROTATION_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
-        File storeDir = ensureExists( fromEnv( "CHECK_POINT_LOG_ROTATION_STORE_DIRECTORY", DEFAULT_STORE_DIR ) );
+        File storeDir = new File( fromEnv( "CHECK_POINT_LOG_ROTATION_STORE_DIRECTORY", DEFAULT_STORE_DIR ) );
         long nodeCount = parseLong( fromEnv( "CHECK_POINT_LOG_ROTATION_NODE_COUNT", DEFAULT_NODE_COUNT ) );
         int threads = parseInt( fromEnv( "CHECK_POINT_LOG_ROTATION_WORKER_THREADS", DEFAULT_WORKER_THREADS ) );
         String pageCacheMemory = fromEnv( "CHECK_POINT_LOG_ROTATION_PAGE_CACHE_MEMORY", DEFAULT_PAGE_CACHE_MEMORY );
         String pageSize = fromEnv( "CHECK_POINT_LOG_ROTATION_PAGE_SIZE", DEFAULT_PAGE_SIZE );
 
-        if ( storeDir.exists() )
-        {
-            FileUtils.deleteRecursively( storeDir );
-        }
-
         System.out.println( "1/6\tBuilding initial store..." );
-        new ParallelBatchImporter( storeDir, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.defaultVisible(),
-                Config.defaults() ).doImport( new NodeCountInputs( nodeCount ) );
+        new ParallelBatchImporter( ensureExistsAndEmpty( storeDir ), DEFAULT, NullLogService.getInstance(),
+                ExecutionMonitors.defaultVisible(), Config.defaults() ).doImport( new NodeCountInputs( nodeCount ) );
 
         System.out.println( "2/6\tStarting database..." );
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
@@ -115,19 +111,8 @@ public class CheckPointingLogRotationStressTesting
         {
             System.out.println( "Done." );
         }
-    }
 
-    private File ensureExists( String directory )
-    {
-        File dir = new File( directory );
-        //noinspection ResultOfMethodCallIgnored
-        dir.mkdirs();
-        return dir;
-    }
-
-    private static String fromEnv( String environmentVariableName, String defaultValue )
-    {
-        String environmentVariableValue = getenv( environmentVariableName );
-        return environmentVariableValue == null ? defaultValue : environmentVariableValue;
+        // let's cleanup disk space when everything went well
+        FileUtils.deleteRecursively( storeDir );
     }
 }

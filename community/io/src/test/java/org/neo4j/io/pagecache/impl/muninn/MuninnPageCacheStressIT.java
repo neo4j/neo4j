@@ -21,10 +21,13 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import java.io.File;
+
 import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 
+import static java.lang.System.getProperty;
 import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
 
 /**
@@ -43,6 +46,7 @@ public class MuninnPageCacheStressIT
         Condition condition = numberOfEvictions( monitor, 1_000_000 );
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
+                .withWorkingDirectory( new File( getProperty( "java.io.tmpdir" ) ) )
                 .with( monitor )
                 .with( condition )
                 .build();
