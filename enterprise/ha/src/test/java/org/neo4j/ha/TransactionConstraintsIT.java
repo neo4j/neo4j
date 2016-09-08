@@ -279,7 +279,7 @@ public class TransactionConstraintsIT
         Transaction tx1 = slave1.beginTx();
         Transaction tx2 = thread2.execute( new BeginTx() );
         tx1.acquireReadLock( commonNode );
-        thread2.execute( new AcquireReadLockOnReferenceNode( tx2, commonNode ) );
+        thread2.execute( state -> tx2.acquireReadLock( commonNode ) );
         // -- and one of them wanting (and awaiting) to upgrade its read lock to a write lock
         Future<Lock> writeLockFuture = thread2.executeDontWait( state ->
         {
@@ -427,42 +427,6 @@ public class TransactionConstraintsIT
         }
         catch ( TransientTransactionFailureException | TransactionFailureException e )
         {   // Good
-        }
-    }
-
-    private static class AcquireReadLockOnReferenceNode implements WorkerCommand<HighlyAvailableGraphDatabase,Lock>
-    {
-        private final Transaction tx;
-        private final Node commonNode;
-
-        public AcquireReadLockOnReferenceNode( Transaction tx, Node commonNode )
-        {
-            this.tx = tx;
-            this.commonNode = commonNode;
-        }
-
-        @Override
-        public Lock doWork( HighlyAvailableGraphDatabase state )
-        {
-            return tx.acquireReadLock( commonNode );
-        }
-    }
-
-    private static class AcquireWriteLock implements WorkerCommand<HighlyAvailableGraphDatabase,Lock>
-    {
-        private final Transaction tx;
-        private final Callable<Node> callable;
-
-        public AcquireWriteLock( Transaction tx, Callable<Node> callable )
-        {
-            this.tx = tx;
-            this.callable = callable;
-        }
-
-        @Override
-        public Lock doWork( HighlyAvailableGraphDatabase state ) throws Exception
-        {
-            return tx.acquireWriteLock( callable.call() );
         }
     }
 
