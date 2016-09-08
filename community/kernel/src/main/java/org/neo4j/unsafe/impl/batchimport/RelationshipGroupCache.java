@@ -183,8 +183,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
 
             if ( desiredIndex == -1 )
             {
-                // ?? do we need mask here?
-                int existingType = cache.get3ByteInt( candidateIndex, 1 ) & 0xFFFFFF;
+                int existingType = cache.get3ByteInt( candidateIndex, 1 );
                 if ( existingType == type )
                 {
                     throw new IllegalStateException( "Tried to put multiple groups with same type " + type );
@@ -256,8 +255,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                     {
                         // Here we have an alive group
                         group = new RelationshipGroupRecord( -1 ).initialize( true,
-                                //do we need mask here?
-                                cache.get3ByteInt( cursor, 1 ) & 0xFFFFFF,
+                                cache.get3ByteInt( cursor, 1 ),
                                 cache.get6ByteLong( cursor, 1 + 3 ),
                                 cache.get6ByteLong( cursor, 1 + 3 + 6 ),
                                 cache.get6ByteLong( cursor, 1 + 3 + 6 + 6 ),
