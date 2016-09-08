@@ -28,9 +28,8 @@ Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Lang
   Apache Shiro :: Core
-  Apache Shiro :: Support :: EHCache
+  Caffeine cache
   Commons BeanUtils
-  Ehcache Core
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core

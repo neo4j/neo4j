@@ -29,7 +29,7 @@ Apache Software License, Version 2.0
   Apache Commons Configuration
   Apache Commons Lang
   Apache Shiro :: Core
-  Apache Shiro :: Support :: EHCache
+  Caffeine cache
   ColorBrewer
   Commons BeanUtils
   Commons Digester
@@ -38,7 +38,6 @@ Apache Software License, Version 2.0
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
-  Ehcache Core
   ExplorerCanvas
   Graphite Integration for Metrics
   hazelcast-all

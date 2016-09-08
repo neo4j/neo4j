@@ -107,6 +107,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         this.authenticationStrategy = authenticationStrategy;
         this.authenticationEnabled = authenticationEnabled;
         this.authorizationEnabled = authorizationEnabled;
+        setAuthenticationCachingEnabled( false );
+        setAuthorizationCachingEnabled( false );
         setCredentialsMatcher( new AllowAllCredentialsMatcher() );
         setRolePermissionResolver( rolePermissionResolver );
 

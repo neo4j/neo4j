@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import com.github.benmanes.caffeine.cache.Ticker;
 import org.apache.shiro.realm.Realm;
 
 import java.io.File;
@@ -78,7 +79,11 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
             // TODO: Load pluggable realms
         }
 
-        return new MultiRealmAuthManager( internalRealm, realms );
+        long ttl = config.get( SecuritySettings.auth_cache_ttl );
+        int maxCapacity = config.get( SecuritySettings.auth_cache_max_capacity );
+
+        return new MultiRealmAuthManager( internalRealm, realms,
+                new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ) );
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider )
