@@ -100,7 +100,6 @@ public class BindingServiceTest
         // given
         CoreTopology topology = new CoreTopology( null, true, emptyMap() );
 
-
         when( topologyService.coreServers() ).thenReturn( topology );
         when( topologyService.casClusterId( any() ) ).thenReturn( true );
 

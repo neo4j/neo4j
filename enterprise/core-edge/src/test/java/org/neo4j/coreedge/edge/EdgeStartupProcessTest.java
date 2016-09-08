@@ -71,7 +71,6 @@ public class EdgeStartupProcessTest
         when( clusterTopology.members() ).thenReturn( asSet( memberId ) );
     }
 
-
     @Test
     public void shouldReplaceEmptyStoreWithRemote() throws Throwable
     {
@@ -101,7 +100,6 @@ public class EdgeStartupProcessTest
         when( localDatabase.isEmpty() ).thenReturn( false );
         when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( otherStoreId );
 
-
         EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
                 txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(), copiedStoreRecovery );
@@ -127,7 +125,6 @@ public class EdgeStartupProcessTest
         // given
         when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( localStoreId );
         when( localDatabase.isEmpty() ).thenReturn( false );
-
 
         EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
                 txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
