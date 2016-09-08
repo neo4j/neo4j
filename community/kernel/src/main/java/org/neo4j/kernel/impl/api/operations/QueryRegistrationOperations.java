@@ -25,6 +25,11 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
+/**
+ * Query execution monitoring operations.
+ *
+ * @see org.neo4j.kernel.impl.api.OperationsFacade
+ */
 public interface QueryRegistrationOperations
 {
     Stream<ExecutingQuery> executingQueries( KernelStatement statement );

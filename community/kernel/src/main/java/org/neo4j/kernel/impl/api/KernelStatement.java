@@ -189,7 +189,7 @@ public class KernelStatement implements TxStateHolder, Statement
 
     final boolean isAcquired()
     {
-        return ( referenceCount > 0 );
+        return referenceCount > 0;
     }
 
     final void forceClose()

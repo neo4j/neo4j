@@ -1443,7 +1443,7 @@ public class OperationsFacade
 
     // </Counts>
 
-    // <Meta>
+    // query monitoring
 
     @Override
     public Stream<ExecutingQuery> executingQueries()
@@ -1472,7 +1472,7 @@ public class OperationsFacade
         queryRegistrationOperations().unregisterExecutingQuery( statement, executingQuery );
     }
 
-    // </Meta>
+    // query monitoring
 
     // <Procedures>
 

@@ -29,7 +29,6 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -201,20 +200,6 @@ public class KernelTransactions extends LifecycleAdapter
                 .collect( toSet() );
     }
 
-    /**
-     * Give an approximate set of all currently executing queries.
-     * This is not guaranteed to be exact, as a query may stop and start while this set is gathered, or even
-     * switch the transaction used (in case of PERIODIC COMMIT).
-     *
-     * @return the (approximate) set of currently executing 209.
-     */
-    public Set<ExecutingQuery> executingQueries() {
-        return allTransactions.stream()
-                .map( this::createHandle )
-                .filter( KernelTransactionHandle::isOpen )
-                .flatMap( KernelTransactionHandle::executingQueries )
-                .collect( toSet() );
-    }
     /**
      * Create new handle for the given transaction.
      * <p>
