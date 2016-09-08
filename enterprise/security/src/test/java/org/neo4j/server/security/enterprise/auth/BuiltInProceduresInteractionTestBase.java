@@ -23,6 +23,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +38,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -52,19 +53,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.isA;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-import static org.neo4j.server.security.auth.AuthProceduresIT.assertKeyIsMap;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
 
 public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
-    private static final String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
-
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
 
@@ -133,7 +129,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldListAllQueriesWhenRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        String startTime = OffsetDateTime.now().format( ISO_OFFSET_DATE_TIME );
+        OffsetDateTime startTime = OffsetDateTime.now();
 
         ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
         ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
@@ -164,7 +160,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldOnlyListOwnQueriesWhenNotRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        String startTime = OffsetDateTime.now().format( ISO_OFFSET_DATE_TIME );
+        OffsetDateTime startTime = OffsetDateTime.now();
         ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
         ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
 
@@ -373,7 +369,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         server.start();
         int localPort = getLocalPort(server);
 
-        String startTime = OffsetDateTime.now().format( ISO_OFFSET_DATE_TIME );
+        OffsetDateTime startTime = OffsetDateTime.now();
 
         // When
         ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
@@ -457,7 +453,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     //---------- matchers-----------
 
-    private Matcher<Map<String,Object>> listedQuery( String startTime, String username, String query )
+    private Matcher<Map<String,Object>> listedQuery( OffsetDateTime startTime, String username, String query )
     {
         return allOf(
                 hasQuery( query ),
@@ -486,9 +482,23 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasStartTimeAfter( String base )
+    private Matcher<Map<String, Object>> hasStartTimeAfter( OffsetDateTime startTime )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "startTime" ), allOf( greaterThanOrEqualTo( base ) ) );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "startTime" ), new BaseMatcher<String>()
+        {
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "should be after " + startTime.toString() );
+            }
+
+            @Override
+            public boolean matches( Object item )
+            {
+                OffsetDateTime otherTime =  OffsetDateTime.from( ISO_OFFSET_DATE_TIME.parse( item.toString() ) );
+                return startTime.compareTo( otherTime ) <= 0;
+            }
+        } );
     }
 
     @SuppressWarnings( "unchecked" )

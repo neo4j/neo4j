@@ -45,7 +45,7 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
         return loggerFactoryClassStr;
     }
 
-    public static void setNeo4jLogProvider( LogProvider logProvider )
+    public static final void setNeo4jLogProvider( LogProvider logProvider )
     {
         ((Neo4jLoggerFactory) getSingleton().getLoggerFactory()).setNeo4jLogProvider( logProvider );
     }
