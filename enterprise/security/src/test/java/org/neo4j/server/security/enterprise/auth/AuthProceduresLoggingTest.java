@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.io.IOException;
-import java.util.stream.Stream;
-
 import org.apache.shiro.mgt.SecurityManager;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.stream.Stream;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -38,7 +38,6 @@ import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;

@@ -35,7 +35,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.internal.matchers.Any;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;

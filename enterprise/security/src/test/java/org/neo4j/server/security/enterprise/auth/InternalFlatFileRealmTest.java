@@ -40,6 +40,10 @@ import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -47,6 +51,7 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -60,26 +65,22 @@ public class InternalFlatFileRealmTest
 {
     private MultiRealmAuthManager authManager;
     private TestRealm testRealm;
-    private AssertableLogProvider log = null;
 
     @Before
     public void setup() throws Throwable
     {
-        log = new AssertableLogProvider();
-        Log actualLog = log.getLog( this.getClass() );
-
         testRealm = new TestRealm(
                         new InMemoryUserRepository(),
                         new InMemoryRoleRepository(),
                         new BasicPasswordPolicy(),
                         new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
-                        mock( JobScheduler.class ),
-                        actualLog );
+                        mock( JobScheduler.class ) );
 
         List<Realm> realms = listOf( testRealm );
 
         authManager = new MultiRealmAuthManager( testRealm, realms, new MemoryConstrainedCacheManager(),
-                new SecurityLog( actualLog ) );
+                mock( SecurityLog.class ), true );
+
         authManager.init();
         authManager.start();
 
@@ -90,11 +91,13 @@ public class InternalFlatFileRealmTest
     public void shouldNotCacheAuthenticationInfo() throws InvalidAuthTokenException
     {
         // Given
-        authManager.login( authToken( "mike", "123" ) );
+        EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
+        assertThat( mike.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
         assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
 
         // When
-        authManager.login( authToken( "mike", "123" ) );
+        mike = authManager.login( authToken( "mike", "123" ) );
+        assertThat( mike.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
 
         // Then
         assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
@@ -105,6 +108,8 @@ public class InternalFlatFileRealmTest
     {
         // Given
         EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
+        assertThat( mike.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+
         mike.allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
@@ -121,10 +126,11 @@ public class InternalFlatFileRealmTest
         private boolean authorizationFlag = false;
 
         public TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
-                AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler, Log securityLog )
+                AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler )
         {
-            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler, securityLog );
+            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler );
         }
+
 
         boolean takeAuthenticationFlag()
         {
@@ -165,156 +171,5 @@ public class InternalFlatFileRealmTest
             authorizationFlag = true;
             return super.doGetAuthorizationInfo( principals );
         }
-    }
-
-    @Test
-    public void shouldLogCreatingUser() throws Throwable
-    {
-        testRealm.newUser( "andres", "el password", true );
-        testRealm.newUser( "mats", "el password", false );
-
-        log.assertExactly(
-                info( "User created: `%s` (password change required)", "andres" ),
-                info( "User created: `%s`", "mats" ) );
-    }
-
-    @Test
-    public void shouldLogCreatingUserWithBadPassword() throws Throwable
-    {
-        catchInvalidArguments( () -> testRealm.newUser( "andres", "", true ) );
-        catchInvalidArguments( () -> testRealm.newUser( "mats", null, true ) );
-
-        log.assertExactly(
-                error( "User creation failed for user `%s`: %s", "andres", "A password cannot be empty." ),
-                error( "User creation failed for user `%s`: %s", "mats", "A password cannot be empty." ) );
-    }
-
-    @Test
-    public void shouldLogDeletingUser() throws Throwable
-    {
-        testRealm.newUser( "andres", "el password", false );
-        testRealm.deleteUser( "andres" );
-
-        log.assertExactly(
-                info( "User created: `%s`", "andres" ),
-                info( "User deleted: `%s`", "andres" ) );
-    }
-
-    @Test
-    public void shouldLogDeletingNonExistentUser() throws Throwable
-    {
-        catchInvalidArguments( () -> testRealm.deleteUser( "andres" ) );
-
-        log.assertExactly( error( "User deletion failed for user `%s`: %s", "andres", "User 'andres' does not exist." ) );
-    }
-
-    @Test
-    public void shouldLogAddingRoleToUser() throws Throwable
-    {
-        testRealm.newUser( "mats", "neo4j", false );
-        testRealm.addRoleToUser( ARCHITECT, "mats" );
-
-        log.assertExactly(
-                info( "User created: `%s`", "mats" ),
-                info( "Role `%s` added to user `%s`", ARCHITECT, "mats" ) );
-    }
-
-    @Test
-    public void shouldLogFailureToAddRoleToUser() throws Throwable
-    {
-        testRealm.newUser( "mats", "neo4j", false );
-        catchInvalidArguments( () -> testRealm.addRoleToUser( "null", "mats" ) );
-
-        log.assertExactly(
-                info( "User created: `%s`", "mats" ),
-                error( "Role `%s` not added to user `%s`: %s", "null", "mats", "Role 'null' does not exist." ) );
-    }
-
-    @Test
-    public void shouldLogRemovalOfRoleFromUser() throws Throwable
-    {
-        // Given
-        testRealm.newUser( "mats", "neo4j", false );
-        testRealm.addRoleToUser( READER, "mats" );
-        log.clear();
-
-        // When
-        testRealm.removeRoleFromUser( READER, "mats" );
-
-        // Then
-        log.assertExactly( info( "Role `%s` removed from user `%s`", READER, "mats" ) );
-    }
-
-    @Test
-    public void shouldLogFailureToRemoveRoleFromUser() throws Throwable
-    {
-        // Given
-        testRealm.newUser( "mats", "neo4j", false );
-        testRealm.addRoleToUser( READER, "mats" );
-        log.clear();
-
-        // When
-        catchInvalidArguments( () -> testRealm.removeRoleFromUser( "notReader", "mats" ) );
-        catchInvalidArguments( () -> testRealm.removeRoleFromUser( READER, "notMats" ) );
-
-        // Then
-        log.assertExactly(
-                error( "Role `%s` not removed from user `%s`: %s", "notReader", "mats", "Role 'notReader' does not exist." ),
-                error( "Role `%s` not removed from user `%s`: %s", READER, "notMats", "User 'notMats' does not exist." )
-        );
-    }
-
-    @Test
-    public void shouldLogPasswordChanges() throws IOException, InvalidArgumentsException
-    {
-        // Given
-        testRealm.newUser( "andres", "neo4j", true );
-        log.clear();
-
-        // When
-        testRealm.setUserPassword( "andres", "longerPassword", false );
-
-        // Then
-        log.assertExactly( info( "Password changed for user `%s`.", "andres" ) );
-    }
-
-    @Test
-    public void shouldLogFailureToChangePassword() throws IOException, InvalidArgumentsException
-    {
-        // Given
-        testRealm.newUser( "andres", "neo4j", true );
-        log.clear();
-
-        // When
-        catchInvalidArguments( () -> testRealm.setUserPassword( "andres", "neo4j", false ) );
-        catchInvalidArguments( () -> testRealm.setUserPassword( "andres", "", false ) );
-        catchInvalidArguments( () -> testRealm.setUserPassword( "notAndres", "good password", false ) );
-
-        // Then
-        log.assertExactly(
-                error( "Password not changed for user `%s`: %s", "andres", "Old password and new password cannot be the same." ),
-                error( "Password not changed for user `%s`: %s", "andres", "A password cannot be empty." ),
-                error( "Password not changed for user `%s`: %s", "notAndres", "User 'notAndres' does not exist." )
-        );
-    }
-
-    private void catchInvalidArguments( CheckedFunction f ) throws IOException
-    {
-        try { f.apply(); } catch (InvalidArgumentsException e) { /*ignore*/ }
-    }
-
-    private AssertableLogProvider.LogMatcher info( String message, String... arguments )
-    {
-        return inLog( this.getClass() ).info( message, arguments );
-    }
-
-    private AssertableLogProvider.LogMatcher error( String message, String... arguments )
-    {
-        return inLog( this.getClass() ).error( message, arguments );
-    }
-
-    @FunctionalInterface
-    private interface CheckedFunction {
-        void apply() throws InvalidArgumentsException, IOException;
     }
 }

@@ -51,7 +51,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;

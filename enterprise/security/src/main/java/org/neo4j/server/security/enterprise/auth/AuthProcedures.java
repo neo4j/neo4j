@@ -44,9 +44,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static java.util.function.Predicate.isEqual;
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
 

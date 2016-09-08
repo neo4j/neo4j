@@ -58,7 +58,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;

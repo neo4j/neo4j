@@ -19,11 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
-
 import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 
 public class EmbeddedBuiltInProceduresTest extends BuiltInProceduresInteractionTestBase<EnterpriseAuthSubject>
 {

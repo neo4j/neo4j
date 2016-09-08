@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest.security;
 
-import java.util.Map;
-
 import org.junit.Rule;
 
-import org.neo4j.server.security.enterprise.auth.AuthScenariosInteractionTestBase;
+import java.util.Map;
+
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.server.security.enterprise.auth.AuthScenariosInteractionTestBase;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.rule.SuppressOutput;
 
