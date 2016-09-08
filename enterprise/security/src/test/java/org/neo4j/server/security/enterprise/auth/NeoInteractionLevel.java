@@ -39,11 +39,6 @@ public interface NeoInteractionLevel<S>
 
     FileSystemAbstraction fileSystem();
 
-    default InternalTransaction beginLocalTransactionAsUser( S subject ) throws Throwable
-    {
-        return beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit );
-    }
-
     InternalTransaction beginLocalTransactionAsUser( S subject, KernelTransaction.Type txType ) throws Throwable;
 
     /*

@@ -621,7 +621,7 @@ public class AuthProceduresLoggingTest
         return inLog( this.getClass() ).error( message, arguments );
     }
 
-    private static class TestAuthSubject extends EnterpriseAuthSubject
+    private static class TestAuthSubject extends StandardEnterpriseAuthSubject
     {
         private final String name;
         private final boolean isAdmin;

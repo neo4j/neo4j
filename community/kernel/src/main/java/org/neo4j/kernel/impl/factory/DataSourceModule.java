@@ -404,6 +404,7 @@ public class DataSourceModule
         procedures.registerComponent( DependencyResolver.class, ( ctx ) -> platform.dependencies );
         procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
         procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
+        procedures.registerComponent( AuthSubject.class, ctx -> ctx.get( AUTH_SUBJECT ) );
 
         // Edition procedures
         try
@@ -417,8 +418,6 @@ public class DataSourceModule
         }
 
         // Security procedures
-        procedures.registerComponent( AuthSubject.class, ctx -> ctx.get( AUTH_SUBJECT ) );
-
         for ( ProceduresProvider candidate : Service.load( ProceduresProvider.class ) )
         {
             candidate.registerProcedures( procedures );
