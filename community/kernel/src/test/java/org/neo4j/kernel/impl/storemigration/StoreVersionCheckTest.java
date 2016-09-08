@@ -119,6 +119,7 @@ public class StoreVersionCheckTest
     private File emptyFile( FileSystemAbstraction fs ) throws IOException
     {
         File shortFile = new File( "shortFile" );
+        fs.deleteFile( shortFile );
         fs.create( shortFile );
         return shortFile;
     }
@@ -126,7 +127,8 @@ public class StoreVersionCheckTest
     private File fileContaining( FileSystemAbstraction fs, String content ) throws IOException
     {
         File shortFile = new File( "shortFile" );
-        try ( OutputStream outputStream = fs.openAsOutputStream( shortFile, true ) )
+        fs.deleteFile( shortFile );
+        try ( OutputStream outputStream = fs.openAsOutputStream( shortFile, false ) )
         {
             outputStream.write( UTF8.encode( content ) );
             return shortFile;
