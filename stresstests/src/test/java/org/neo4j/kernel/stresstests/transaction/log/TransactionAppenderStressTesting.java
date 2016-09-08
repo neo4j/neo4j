@@ -30,10 +30,10 @@ import org.neo4j.kernel.impl.transaction.log.stresstest.TransactionAppenderStres
 
 import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
-import static java.lang.System.getenv;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
+import static org.neo4j.StressTestingHelper.fromEnv;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
@@ -48,12 +48,12 @@ public class TransactionAppenderStressTesting
     public void shouldBehaveCorrectlyUnderStress() throws Throwable
     {
         int durationInMinutes = parseInt( fromEnv( "TX_APPENDER_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
-        File workingDirectory = ensureExistsAndEmpty( fromEnv( "TX_APPENDER_WORKING_DIRECTORY", DEFAULT_WORKING_DIR ) );
+        File workingDirectory = new File( fromEnv( "TX_APPENDER_WORKING_DIRECTORY", DEFAULT_WORKING_DIR ) );
         int threads = parseInt( fromEnv( "TX_APPENDER_NUM_THREADS", DEFAULT_NUM_THREADS ) );
 
         Callable<Long> runner = new Builder()
                 .with( Builder.untilTimeExpired( durationInMinutes, MINUTES ) )
-                .withWorkingDirectory( workingDirectory )
+                .withWorkingDirectory( ensureExistsAndEmpty( workingDirectory ) )
                 .withNumThreads( threads )
                 .build();
 
@@ -63,23 +63,5 @@ public class TransactionAppenderStressTesting
 
         // let's cleanup disk space when everything went well
         FileUtils.deleteRecursively( workingDirectory );
-    }
-
-    private File ensureExistsAndEmpty( String directory )
-    {
-        File dir = new File( directory );
-        if ( !dir.mkdirs() )
-        {
-            assertTrue( dir.exists() );
-            assertTrue( dir.isDirectory() );
-            assertEquals( 0, dir.list().length );
-        }
-        return dir;
-    }
-
-    private static String fromEnv( String environmentVariableName, String defaultValue )
-    {
-        String environmentVariableValue = getenv( environmentVariableName );
-        return environmentVariableValue == null ? defaultValue : environmentVariableValue;
     }
 }

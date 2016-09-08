@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.stress;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -52,9 +51,9 @@ public class PageCacheStresser
     private final int maxPages;
     private final int numberOfThreads;
 
-    private final String workingDirectory;
+    private final File workingDirectory;
 
-    public PageCacheStresser( int maxPages, int numberOfThreads, String workingDirectory )
+    public PageCacheStresser( int maxPages, int numberOfThreads, File workingDirectory )
     {
         this.maxPages = maxPages;
         this.numberOfThreads = numberOfThreads;
@@ -63,7 +62,7 @@ public class PageCacheStresser
 
     public void stress( PageCache pageCache, Condition condition ) throws Exception
     {
-        File file = Files.createTempFile( Paths.get( workingDirectory ), "pagecacheundertest", ".bin" ).toFile();
+        File file = Files.createTempFile( workingDirectory.toPath(), "pagecacheundertest", ".bin" ).toFile();
         file.deleteOnExit();
 
         int cachePageSize = pageCache.pageSize();

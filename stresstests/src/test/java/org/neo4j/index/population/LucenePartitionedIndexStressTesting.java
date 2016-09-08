@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.population;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,6 +52,7 @@ import org.neo4j.io.fs.FileUtils;
 import static org.apache.commons.lang3.SystemUtils.JAVA_IO_TMPDIR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.StressTestingHelper.fromEnv;
 
 public class LucenePartitionedIndexStressTesting
 {
@@ -63,16 +63,16 @@ public class LucenePartitionedIndexStressTesting
     private static final int NUMBER_OF_PROPERTIES = 2;
 
     private static final int NUMBER_OF_POPULATORS =
-            Integer.valueOf( getEnvVariable( "LUCENE_INDEX_NUMBER_OF_POPULATORS",
+            Integer.valueOf( fromEnv( "LUCENE_INDEX_NUMBER_OF_POPULATORS",
                     String.valueOf( Runtime.getRuntime().availableProcessors() - 1 ) ) );
-    private static final int BATCH_SIZE = Integer.valueOf( getEnvVariable( "LUCENE_INDEX_POPULATION_BATCH_SIZE",
+    private static final int BATCH_SIZE = Integer.valueOf( fromEnv( "LUCENE_INDEX_POPULATION_BATCH_SIZE",
             String.valueOf( 10000 ) ) );
 
-    private static final long NUMBER_OF_NODES = Long.valueOf( getEnvVariable(
+    private static final long NUMBER_OF_NODES = Long.valueOf( fromEnv(
             "LUCENE_PARTITIONED_INDEX_NUMBER_OF_NODES", String.valueOf( 100000 ) ) );
     private static final String WORK_DIRECTORY =
-            getEnvVariable( "LUCENE_PARTITIONED_INDEX_WORKING_DIRECTORY", JAVA_IO_TMPDIR );
-    private static final int WAIT_DURATION_MINUTES = Integer.valueOf( getEnvVariable(
+            fromEnv( "LUCENE_PARTITIONED_INDEX_WORKING_DIRECTORY", JAVA_IO_TMPDIR );
+    private static final int WAIT_DURATION_MINUTES = Integer.valueOf( fromEnv(
             "LUCENE_PARTITIONED_INDEX_WAIT_TILL_ONLINE", String.valueOf( 30 ) ) );
 
     private ExecutorService populators;
@@ -263,12 +263,6 @@ public class LucenePartitionedIndexStressTesting
     private static String getUniqueStringProperty()
     {
         return UNIQUE_PROPERTY_PREFIX + 0;
-    }
-
-    private static String getEnvVariable( String propertyName, String defaultValue )
-    {
-        String value = System.getenv( propertyName );
-        return StringUtils.defaultIfEmpty( value, defaultValue );
     }
 
     private static class SequentialStringSupplier implements Supplier<String>
