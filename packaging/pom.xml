@@ -55,6 +55,7 @@ terms of the relevant Commercial Agreement.
   <profiles>
     <!-- Only include desktop installer in full build -->
     <profile>
+      <id>neo-full-build</id>
       <activation>
         <activeByDefault>false</activeByDefault>
         <property>
@@ -63,6 +64,7 @@ terms of the relevant Commercial Agreement.
       </activation>
       <modules>
         <module>neo4j-desktop</module>
+        <module>installer-linux</module>
       </modules>
     </profile>
     <profile>

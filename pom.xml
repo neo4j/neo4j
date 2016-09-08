@@ -306,7 +306,6 @@
       </activation>
       <modules>
         <module>manual</module>
-        <module>packaging/installer-linux</module>
       </modules>
       <build>
         <plugins>
