@@ -38,6 +38,11 @@ public enum Capability
     DENSE_NODES( CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
+     * 3 bytes relationship type support
+     */
+    RELATIONSHIP_TYPE_3BYTES( CapabilityType.FORMAT, CapabilityType.STORE ),
+
+    /**
      * Store has version trailers in the end of cleanly shut down store
      */
     VERSION_TRAILERS( CapabilityType.STORE ),

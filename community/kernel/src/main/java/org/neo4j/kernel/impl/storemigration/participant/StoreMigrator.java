@@ -416,7 +416,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                     importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
-                            importConfig ), importConfig ), additionalInitialIds, config );
+                            importConfig ), importConfig ), additionalInitialIds, config, newFormat );
             InputIterable<InputNode> nodes =
                     legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
             InputIterable<InputRelationship> relationships =

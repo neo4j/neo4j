@@ -52,6 +52,8 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.RepeatRule;
@@ -298,8 +300,11 @@ public class MultipleIndexPopulationStressIT
 
     private void createRandomData( int count ) throws IOException
     {
+        Config config = Config.empty();
+        RecordFormats recordFormats =
+                RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fs,
-                DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, Config.empty() );
+                DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats );
         importer.doImport( new RandomDataInput( count ) );
     }
 

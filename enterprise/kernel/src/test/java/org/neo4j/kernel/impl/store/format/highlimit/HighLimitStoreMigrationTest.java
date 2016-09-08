@@ -19,17 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -41,57 +38,65 @@ import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
 public class HighLimitStoreMigrationTest
 {
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    public RuleChain chain = RuleChain.outerRule( pageCacheRule )
+                                      .around( fileSystemRule )
+                                      .around( testDirectory );
 
     @Test
-    public void haveSameFormatCapabilitiesAsHighLimit3_0()
+    public void haveDifferentFormatCapabilitiesAsHighLimit3_0()
     {
-        assertTrue( HighLimit.RECORD_FORMATS.hasSameCapabilities( HighLimitV3_0_0.RECORD_FORMATS, CapabilityType.FORMAT ) );
+        assertFalse( HighLimit.RECORD_FORMATS.hasSameCapabilities( HighLimitV3_0_0.RECORD_FORMATS, CapabilityType.FORMAT ) );
     }
 
     @Test
-    public void doNotMigrateHighLimit3_0StoreFiles() throws IOException
+    public void migrateHighLimit3_0StoreFiles() throws IOException
     {
+        DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
+
         StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.empty(), NullLogService.getInstance(),
                                                     schemaIndexProvider );
 
-        File storeDir = new File( "storeDir" );
-        File migrationDir = new File( "migrationDir" );
+        File storeDir = new File( testDirectory.graphDbDir(), "storeDir" );
+        File migrationDir = new File( testDirectory.graphDbDir(), "migrationDir" );
         fileSystem.mkdir( migrationDir );
+        fileSystem.mkdir( storeDir );
 
-        prepareNeoStoreFile( storeDir, HighLimitV3_0_0.STORE_VERSION, pageCache );
+        prepareNeoStoreFile( fileSystem, storeDir, HighLimitV3_0_0.STORE_VERSION, pageCache );
 
         MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
+
         migrator.migrate( storeDir, migrationDir, progressMonitor, HighLimitV3_0_0.STORE_VERSION, HighLimit.STORE_VERSION );
 
-        File[] migrationFiles = fileSystem.listFiles( migrationDir );
-        Set<String> fileNames = Stream.of( migrationFiles ).map( File::getName ).collect( Collectors.toSet() );
-        assertThat( "Only specified files should be created after migration attempt from 3.0 to 3.1 using high limit " +
-                    "format. Since formats are compatible and migration is not required.", fileNames,
-                CoreMatchers.hasItems( "lastxinformation", "lastxlogposition" ) );
+        int newStoreFilesCount = fileSystem.listFiles( migrationDir ).length;
+        assertEquals( "Store should be migrated and new store files should be created.", 17, newStoreFilesCount );
     }
 
-    private File prepareNeoStoreFile( File storeDir, String storeVersion, PageCache pageCache ) throws IOException
+    private File prepareNeoStoreFile( FileSystemAbstraction fileSystem, File storeDir, String storeVersion,
+            PageCache pageCache ) throws IOException
     {
-        File neoStoreFile = createNeoStoreFile( storeDir );
+        File neoStoreFile = createNeoStoreFile( fileSystem, storeDir );
         long value = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value );
         return neoStoreFile;
     }
 
-    private File createNeoStoreFile( File storeDir ) throws IOException
+    private File createNeoStoreFile( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
     {
         fileSystem.mkdir( storeDir );
         File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
