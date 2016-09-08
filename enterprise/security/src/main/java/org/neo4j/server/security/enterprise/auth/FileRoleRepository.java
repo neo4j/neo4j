@@ -22,10 +22,12 @@ package org.neo4j.server.security.enterprise.auth;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.exception.FormatException;
 
 /**
@@ -39,8 +41,6 @@ public class FileRoleRepository extends AbstractRoleRepository
     private final RoleSerialization serialization = new RoleSerialization();
     private final FileSystemAbstraction fileSystem;
 
-    private long lastLoaded;
-
     public FileRoleRepository( FileSystemAbstraction fileSystem, File file, LogProvider logProvider )
     {
         this.roleFile = file;
@@ -52,19 +52,24 @@ public class FileRoleRepository extends AbstractRoleRepository
     public void start() throws Throwable
     {
         clear();
-        loadRoles();
+        ListSnapshot<RoleRecord> onDiskRoles = readPersistedRoles();
+        if ( onDiskRoles != null )
+        {
+            setRoles( onDiskRoles );
+        }
     }
 
     @Override
-    protected void loadRoles() throws IOException
+    protected ListSnapshot<RoleRecord> readPersistedRoles() throws IOException
     {
         if ( fileSystem.fileExists( roleFile ) )
         {
-            List<RoleRecord> loadedRoles;
+            long readTime;
+            List<RoleRecord> readRoles;
             try
             {
-                lastLoaded = fileSystem.lastModifiedTime( roleFile );
-                loadedRoles = serialization.loadRecordsFromFile( fileSystem, roleFile );
+                readTime = fileSystem.lastModifiedTime( roleFile );
+                readRoles = serialization.loadRecordsFromFile( fileSystem, roleFile );
             }
             catch ( FormatException e )
             {
@@ -72,29 +77,27 @@ public class FileRoleRepository extends AbstractRoleRepository
                 throw new IllegalStateException( "Failed to read role file '" + roleFile + "'." );
             }
 
-            clear();
-            roles = loadedRoles;
-            for ( RoleRecord role : roles )
-            {
-                rolesByName.put( role.name(), role );
-
-                populateUserMap( role );
-            }
+            return new ListSnapshot<>( readTime, readRoles );
         }
+        return null;
     }
 
     @Override
-    protected void saveRoles() throws IOException
+    protected void persistRoles() throws IOException
     {
         serialization.saveRecordsToFile( fileSystem, roleFile, roles );
     }
 
     @Override
-    public void reloadIfNeeded() throws IOException
+    public ListSnapshot<RoleRecord> getPersistedSnapshot() throws IOException
     {
-        if ( lastLoaded < fileSystem.lastModifiedTime( roleFile ) )
+        if ( lastLoaded.get() < fileSystem.lastModifiedTime( roleFile ) )
         {
-            loadRoles();
+            return readPersistedRoles();
+        }
+        synchronized ( this )
+        {
+            return new ListSnapshot<>( lastLoaded.get(), roles.stream().collect( Collectors.toList() ) );
         }
     }
 }

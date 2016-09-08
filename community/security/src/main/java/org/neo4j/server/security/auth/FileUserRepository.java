@@ -22,6 +22,7 @@ package org.neo4j.server.security.auth;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
@@ -36,7 +37,6 @@ public class FileUserRepository extends AbstractUserRepository
 {
     private final File authFile;
     private final FileSystemAbstraction fileSystem;
-    private long lastLoaded;
 
     // TODO: We could improve concurrency by using a ReadWriteLock
 
@@ -55,46 +55,53 @@ public class FileUserRepository extends AbstractUserRepository
     public void start() throws Throwable
     {
         clear();
-        loadUsers();
-    }
-
-    void loadUsers() throws IOException
-    {
-        if ( fileSystem.fileExists( authFile ) )
+        ListSnapshot<User> onDiskUsers = readPersistedUsers();
+        if ( onDiskUsers != null )
         {
-            List<User> loadedUsers;
-            try
-            {
-                lastLoaded = fileSystem.lastModifiedTime( authFile );
-                loadedUsers = serialization.loadRecordsFromFile( fileSystem, authFile );
-            } catch ( FormatException e )
-            {
-                log.error( "Failed to read authentication file \"%s\" (%s)", authFile.getAbsolutePath(),
-                        e.getMessage() );
-                throw new IllegalStateException( "Failed to read authentication file: " + authFile );
-            }
-
-            clear();
-            users = loadedUsers;
-            for ( User user : users )
-            {
-                usersByName.put( user.name(), user );
-            }
+            setUsers( onDiskUsers );
         }
     }
 
     @Override
-    protected void saveUsers() throws IOException
+    protected ListSnapshot<User> readPersistedUsers() throws IOException
+    {
+        if ( fileSystem.fileExists( authFile ) )
+        {
+            long readTime;
+            List<User> readUsers;
+            try
+            {
+                readTime = fileSystem.lastModifiedTime( authFile );
+                readUsers = serialization.loadRecordsFromFile( fileSystem, authFile );
+            }
+            catch ( FormatException e )
+            {
+                log.error( "Failed to read authentication file \"%s\" (%s)",
+                        authFile.getAbsolutePath(), e.getMessage() );
+                throw new IllegalStateException( "Failed to read authentication file: " + authFile );
+            }
+
+            return new ListSnapshot<>( readTime, readUsers );
+        }
+        return null;
+    }
+
+    @Override
+    protected void persistUsers() throws IOException
     {
         serialization.saveRecordsToFile( fileSystem, authFile, users );
     }
 
     @Override
-    public void reloadIfNeeded() throws IOException
+    public ListSnapshot<User> getPersistedSnapshot() throws IOException
     {
-        if ( lastLoaded < fileSystem.lastModifiedTime( authFile ) )
+        if ( lastLoaded.get() < fileSystem.lastModifiedTime( authFile ) )
         {
-            loadUsers();
+            return readPersistedUsers();
+        }
+        synchronized ( this )
+        {
+            return new ListSnapshot<>( lastLoaded.get(), users.stream().collect( Collectors.toList() ) );
         }
     }
 }

@@ -21,24 +21,26 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
 
+import org.neo4j.server.security.auth.ListSnapshot;
+
 /** A role repository implementation that just stores roles in memory */
 public class InMemoryRoleRepository extends AbstractRoleRepository
 {
     @Override
-    protected void saveRoles() throws IOException
+    protected void persistRoles() throws IOException
     {
         // Nothing to do
     }
 
     @Override
-    protected void loadRoles() throws IOException
+    protected ListSnapshot<RoleRecord> readPersistedRoles() throws IOException
     {
-        // Nothing to do
+        return null;
     }
 
     @Override
-    public void reloadIfNeeded()
+    public ListSnapshot<RoleRecord> getPersistedSnapshot()
     {
-        // Nothing to do
+        return null;
     }
 }

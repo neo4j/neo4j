@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
@@ -49,6 +50,7 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
@@ -64,10 +66,11 @@ public class LdapCachingTest
     {
         InternalFlatFileRealm internalFlatFileRealm =
             new InternalFlatFileRealm(
-                    new InMemoryUserRepository(),
-                    new InMemoryRoleRepository(),
-                    new BasicPasswordPolicy(),
-                    new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 )
+                new InMemoryUserRepository(),
+                new InMemoryRoleRepository(),
+                new BasicPasswordPolicy(),
+                new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
+                mock( JobScheduler.class )
             );
 
         testRealm = new TestRealm( getLdapConfig(), NullLogProvider.getInstance() );

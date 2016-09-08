@@ -52,6 +52,14 @@ public interface UserRepository extends Lifecycle
     void create( User user ) throws InvalidArgumentsException, IOException;
 
     /**
+     * Replaces the users in the repository with the given users.
+     * @param users the new users
+     * @throws InvalidArgumentsException if any username is not valid
+     * @throws IOException if the underlying storage for users fails
+     */
+    void setUsers( ListSnapshot<User> users ) throws InvalidArgumentsException, IOException;
+
+    /**
      * Update a user, given that the users token is unique.
      * @param existingUser the existing user object, which must match the current state in this repository
      * @param updatedUser the updated user object
@@ -77,5 +85,10 @@ public interface UserRepository extends Lifecycle
 
     Set<String> getAllUsernames();
 
-    void reloadIfNeeded() throws IOException;
+    /**
+     * Returns a snapshot of the current persisted user repository
+     * @return a snapshot of the current persisted user repository
+     * @throws IOException
+     */
+    ListSnapshot<User> getPersistedSnapshot() throws IOException;
 }

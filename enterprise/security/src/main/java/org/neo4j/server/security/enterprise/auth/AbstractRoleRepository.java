@@ -28,11 +28,13 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 public abstract class AbstractRoleRepository extends LifecycleAdapter implements RoleRepository
@@ -40,11 +42,12 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     // TODO: We could improve concurrency by using a ReadWriteLock
 
     /** Quick lookup of roles by name */
-    protected final Map<String,RoleRecord> rolesByName = new ConcurrentHashMap<>();
+    private final Map<String,RoleRecord> rolesByName = new ConcurrentHashMap<>();
     private final Map<String,SortedSet<String>> rolesByUsername = new ConcurrentHashMap<>();
 
     /** Master list of roles */
     protected volatile List<RoleRecord> roles = new ArrayList<>();
+    protected AtomicLong lastLoaded = new AtomicLong( 0L );
 
     private final Pattern roleNamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
 
@@ -72,10 +75,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     @Override
     public void create( RoleRecord role ) throws IllegalArgumentException, IOException
     {
-        if ( !isValidRoleName( role.name() ) )
-        {
-            throw new IllegalArgumentException( "'" + role.name() + "' is not a valid role name." );
-        }
+        assertValidRoleName( role.name() );
 
         synchronized ( this )
         {
@@ -90,11 +90,34 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
 
             roles.add( role );
 
-            saveRoles();
+            persistRoles();
 
             rolesByName.put( role.name(), role );
 
             populateUserMap( role );
+        }
+    }
+
+    @Override
+    public void setRoles( ListSnapshot<RoleRecord> rolesSnapshot ) throws InvalidArgumentsException, IOException
+    {
+        for ( RoleRecord role : rolesSnapshot.values )
+        {
+            assertValidRoleName( role.name() );
+        }
+
+        synchronized (this)
+        {
+            clear();
+            this.roles.addAll( rolesSnapshot.values );
+            this.lastLoaded.set( rolesSnapshot.timestamp );
+
+            for ( RoleRecord role : roles )
+            {
+                rolesByName.put( role.name(), role );
+
+                populateUserMap( role );
+            }
         }
     }
 
@@ -134,7 +157,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
 
             roles = newRoles;
 
-            saveRoles();
+            persistRoles();
 
             rolesByName.put( updatedRole.name(), updatedRole );
 
@@ -165,7 +188,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
         {
             roles = newRoles;
 
-            saveRoles();
+            persistRoles();
 
             rolesByName.remove( role.name() );
         }
@@ -173,15 +196,6 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
         removeFromUserMap( role );
         return foundRole;
     }
-
-    /**
-     * Override this in the implementing class to persist roles
-     *
-     * @throws IOException
-     */
-    protected abstract void saveRoles() throws IOException;
-
-    protected abstract void loadRoles() throws IOException;
 
     @Override
     public synchronized int numberOfRoles()
@@ -219,12 +233,22 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
         return roles.stream().map( RoleRecord::name ).collect( Collectors.toSet() );
     }
 
-    @Override
-    public boolean validateAgainst( UserRepository userRepository )
-    {
-        return rolesByUsername.keySet().stream()
-                .allMatch( username -> userRepository.getUserByName( username ) != null );
-    }
+    /**
+     * Override this in the implementing class to persist roles
+     *
+     * @throws IOException
+     */
+    protected abstract void persistRoles() throws IOException;
+
+    /**
+     * Override this in the implementing class to load roles
+     *
+     * @returns a timestamped snapshot of roles, or null if the backing file did not exist
+     * @throws IOException
+     */
+    protected abstract ListSnapshot<RoleRecord> readPersistedRoles() throws IOException;
+
+    // ------------------ helpers --------------------
 
     protected void populateUserMap( RoleRecord role )
     {
@@ -249,6 +273,14 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
             {
                 memberOfRoles.remove( role.name() );
             }
+        }
+    }
+
+    protected void assertValidRoleName( String roleName )
+    {
+        if ( !isValidRoleName( roleName ) )
+        {
+            throw new IllegalArgumentException( "'" + roleName + "' is not a valid role name." );
         }
     }
 }

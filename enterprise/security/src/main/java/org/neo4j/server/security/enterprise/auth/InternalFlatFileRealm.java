@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
+import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
@@ -73,7 +74,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
      */
     public static final String IS_SUSPENDED = "is_suspended";
 
-    private int RELOAD_ATTEMPTS = 10;
+    private int MAX_READ_ATTEMPTS = 10;
 
     private final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()
     {
@@ -99,6 +100,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private final boolean authenticationEnabled;
     private final boolean authorizationEnabled;
     private final Map<String,SimpleRole> roles;
+    private final JobScheduler jobScheduler;
+    private JobScheduler.JobHandle reloadJobHandle;
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler )
@@ -118,42 +121,22 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         this.authenticationStrategy = authenticationStrategy;
         this.authenticationEnabled = authenticationEnabled;
         this.authorizationEnabled = authorizationEnabled;
+        this.jobScheduler = jobScheduler;
         setAuthenticationCachingEnabled( false );
         setAuthorizationCachingEnabled( false );
         setCredentialsMatcher( new AllowAllCredentialsMatcher() );
         setRolePermissionResolver( rolePermissionResolver );
 
         roles = new PredefinedRolesBuilder().buildRoles();
-
-        jobScheduler.scheduleRecurring(
-                JobScheduler.Groups.nativeSecurity,
-                () -> tryReload( RELOAD_ATTEMPTS, new LinkedList<>() ),
-                5, TimeUnit.SECONDS );
     }
 
-   private void tryReload( int attemptLeft, java.util.List<String> failures )
+    private void setUsersAndRoles( ListSnapshot<User> users, ListSnapshot<RoleRecord> roles )
+            throws IOException, InvalidArgumentsException
     {
-        if ( attemptLeft < 0 )
+        synchronized ( this )
         {
-            throw new RuntimeException( "Unable to load valid flat file repositories! Attempts failed with:\n\t" +
-                    String.join( "\n\t", failures ) );
-        }
-
-        try
-        {
-            userRepository.reloadIfNeeded();
-            roleRepository.reloadIfNeeded();
-            if ( !roleRepository.validateAgainst( userRepository ) )
-            {
-                failures.add( "Role-auth file combination not valid." );
-                Thread.sleep( 10 );
-                tryReload( attemptLeft - 1, failures );
-            }
-        }
-        catch ( IOException | IllegalStateException | InterruptedException e )
-        {
-            failures.add( e.getMessage() );
-            tryReload( attemptLeft - 1, failures );
+            userRepository.setUsers( users );
+            roleRepository.setRoles( roles );
         }
     }
 
@@ -172,6 +155,41 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         ensureDefaultUsers();
         ensureDefaultRoles();
+
+        reloadJobHandle = jobScheduler.scheduleRecurring(
+                JobScheduler.Groups.nativeSecurity,
+                () -> readFilesFromDisk( MAX_READ_ATTEMPTS, new LinkedList<>() ),
+                5, 5, TimeUnit.SECONDS );
+    }
+
+    private void readFilesFromDisk( int attemptLeft, java.util.List<String> failures )
+    {
+        if ( attemptLeft < 0 )
+        {
+            throw new RuntimeException( "Unable to load valid flat file repositories! Attempts failed with:\n\t" +
+                    String.join( "\n\t", failures ) );
+        }
+
+        try
+        {
+            ListSnapshot<User> users = userRepository.getPersistedSnapshot();
+            ListSnapshot<RoleRecord> roles = roleRepository.getPersistedSnapshot();
+            if ( RoleRepository.validate( users.values, roles.values ) )
+            {
+                setUsersAndRoles( users, roles );
+            }
+            else
+            {
+                failures.add( "Role-auth file combination not valid." );
+                Thread.sleep( 10 );
+                readFilesFromDisk( attemptLeft - 1, failures );
+            }
+        }
+        catch ( IOException | IllegalStateException | InterruptedException | InvalidArgumentsException e )
+        {
+            failures.add( e.getMessage() );
+            readFilesFromDisk( attemptLeft - 1, failures );
+        }
     }
 
     /* Adds neo4j user if no users exist */
@@ -213,6 +231,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     {
         userRepository.stop();
         roleRepository.stop();
+
+        if ( reloadJobHandle != null )
+        {
+            reloadJobHandle.cancel( true );
+            reloadJobHandle = null;
+        }
     }
 
     @Override

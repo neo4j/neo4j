@@ -116,8 +116,7 @@ public class InternalFlatFileRealmIT
                         "Carol:SHA-256,FE0056C37E,A543:\n" +
                         "Mia:SHA-256,0E1FFFC23E,34"
                 ,
-                "admin:Mia\n" +
-                        "publisher:Hanna,Carol\n" );
+                "THIS_WILL_NOT_BE_READ" );
 
         // now the roles file has non-existent users
         fs.addUserRoleFilePair(
@@ -187,7 +186,7 @@ public class InternalFlatFileRealmIT
         Runnable scheduledRunnable;
 
         @Override
-        public JobHandle scheduleRecurring( Group group, Runnable r, long delay, TimeUnit timeUnit )
+        public JobHandle scheduleRecurring( Group group, Runnable r, long initialDelay, long delay, TimeUnit timeUnit )
         {
             this.scheduledRunnable = r;
             return null;
@@ -219,6 +218,10 @@ public class InternalFlatFileRealmIT
             }
             if ( fileName.equals( roleStoreFile ) )
             {
+                if ( userStoreVersions.size() < roleStoreVersions.size() - 1 )
+                {
+                    roleStoreVersions.remove();
+                }
                 return new ByteArrayInputStream( roleStoreVersions.remove().getBytes( "UTF-8" ) );
             }
             return super.openAsInputStream( fileName );

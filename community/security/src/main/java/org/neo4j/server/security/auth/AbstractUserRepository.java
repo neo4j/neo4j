@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -35,10 +36,11 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 public abstract class AbstractUserRepository extends LifecycleAdapter implements UserRepository
 {
     /** Quick lookup of users by name */
-    protected final Map<String, User> usersByName = new ConcurrentHashMap<>();
+    private final Map<String, User> usersByName = new ConcurrentHashMap<>();
 
     /** Master list of users */
     protected volatile List<User> users = new ArrayList<>();
+    protected AtomicLong lastLoaded = new AtomicLong( 0L );
 
     private final Pattern usernamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
 
@@ -58,10 +60,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     @Override
     public void create( User user ) throws InvalidArgumentsException, IOException
     {
-        if ( !isValidUsername( user.name() ) )
-        {
-            throw new InvalidArgumentsException( "'" + user.name() + "' is not a valid user name." );
-        }
+        assertValidUsername( user.name() );
 
         synchronized (this)
         {
@@ -74,27 +73,33 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
                 }
             }
 
+            persistUsers();
             users.add( user );
-
-            saveUsers();
-
             usersByName.put( user.name(), user );
         }
     }
 
-    /**
-     * Override this in the implementing class to persist users
-     *
-     * @throws IOException
-     */
-    protected abstract void saveUsers() throws IOException;
+    @Override
+    public void setUsers( ListSnapshot<User> usersSnapshot ) throws InvalidArgumentsException, IOException
+    {
+        for ( User user : usersSnapshot.values )
+        {
+            assertValidUsername( user.name() );
+        }
 
-    /**
-     * Override this in the implementing class to persist users
-     *
-     * @throws IOException
-     */
-    abstract void loadUsers() throws IOException;
+        synchronized (this)
+        {
+            clear();
+
+            this.users.addAll( usersSnapshot.values );
+            this.lastLoaded.set( usersSnapshot.timestamp );
+
+            for ( User user : users )
+            {
+                usersByName.put( user.name(), user );
+            }
+        }
+    }
 
     @Override
     public void update( User existingUser, User updatedUser )
@@ -131,7 +136,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
 
             users = newUsers;
 
-            saveUsers();
+            persistUsers();
 
             usersByName.put( updatedUser.name(), updatedUser );
         }
@@ -159,7 +164,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
         {
             users = newUsers;
 
-            saveUsers();
+            persistUsers();
 
             usersByName.remove( user.name() );
         }
@@ -182,5 +187,28 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     public synchronized Set<String> getAllUsernames()
     {
         return users.stream().map( User::name ).collect( Collectors.toSet() );
+    }
+
+    /**
+     * Override this in the implementing class to persist users
+     *
+     * @throws IOException
+     */
+    protected abstract void persistUsers() throws IOException;
+
+    /**
+     * Override this in the implementing class to load users
+     *
+     * @returns a timestamped snapshot of users, or null if the backing file did not exist
+     * @throws IOException
+     */
+    protected abstract ListSnapshot<User> readPersistedUsers() throws IOException;
+
+    protected void assertValidUsername( String username ) throws InvalidArgumentsException
+    {
+        if ( !isValidUsername( username ) )
+        {
+            throw new InvalidArgumentsException( "'" + username + "' is not a valid user name." );
+        }
     }
 }
