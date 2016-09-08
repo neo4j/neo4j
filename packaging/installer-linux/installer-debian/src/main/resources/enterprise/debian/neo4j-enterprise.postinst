@@ -72,7 +72,19 @@ case "$1" in
                 echo "After you have completed the upgrade process, these can be safely deleted."
                 echo
             fi
-            echo "The configuration files have changed in 3.0. A config migration tool exists to help with this:"
+            echo "The configuration files have changed in 3.0. A config migration tool exists to help with this."
+            echo "You will have to copy your changed configuration files to the original location so the"
+            echo "config-migrator can find them first."
+            echo
+            for old_config_file in /etc/neo4j/neo4j.properties.dpkg-bak \
+                                   /etc/neo4j/neo4j-server.properties.dpkg-bak \
+                                   /etc/neo4j/neo4j-wrapper.conf.dpkg-bak; do
+                if [ -f ${old_config_file} ]; then
+                    echo "    sudo cp ${old_config_file} /etc/neo4j/$(basename ${old_config_file} .dpkg-bak)"
+                fi
+            done
+            echo
+            echo "And then reun the config-migrator like so:"
             echo
             echo "    sudo -u neo4j -g adm java -jar /usr/share/neo4j/bin/tools/config-migrator.jar /var/lib/neo4j /var/lib/neo4j"
             echo
