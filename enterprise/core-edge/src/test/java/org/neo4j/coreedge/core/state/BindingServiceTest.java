@@ -25,14 +25,14 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
-import org.neo4j.coreedge.discovery.ClusterTopology;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -51,9 +51,9 @@ public class BindingServiceTest
     public void shouldTimeoutEventually() throws Throwable
     {
         // given
-        ClusterTopology topology = new ClusterTopology( null, false, emptyMap(), emptySet() );
+        CoreTopology topology = new CoreTopology( null, false, emptyMap() );
 
-        when( topologyService.currentTopology() ).thenReturn( topology );
+        when( topologyService.coreServers() ).thenReturn( topology );
 
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
                 getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 50 );
@@ -76,10 +76,10 @@ public class BindingServiceTest
         // given
         ClusterId commonClusterId = new ClusterId( UUID.randomUUID() );
 
-        ClusterTopology topologyNOK = new ClusterTopology( null, false, emptyMap(), emptySet() );
-        ClusterTopology topologyOK = new ClusterTopology( commonClusterId, false, emptyMap(), emptySet() );
+        CoreTopology topologyNOK = new CoreTopology( null, false, emptyMap() );
+        CoreTopology topologyOK = new CoreTopology( commonClusterId, false, emptyMap() );
 
-        when( topologyService.currentTopology() ).thenReturn( topologyNOK, topologyNOK, topologyNOK, topologyOK );
+        when( topologyService.coreServers() ).thenReturn( topologyNOK, topologyNOK, topologyNOK, topologyOK );
         when( topologyService.casClusterId( any() ) ).thenReturn( true );
 
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
@@ -98,9 +98,9 @@ public class BindingServiceTest
     public void shouldPublishNewId() throws Throwable
     {
         // given
-        ClusterTopology topology = new ClusterTopology( null, true, emptyMap(), emptySet() );
+        CoreTopology topology = new CoreTopology( null, true, emptyMap() );
 
-        when( topologyService.currentTopology() ).thenReturn( topology );
+        when( topologyService.coreServers() ).thenReturn( topology );
         when( topologyService.casClusterId( any() ) ).thenReturn( true );
 
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
@@ -118,13 +118,13 @@ public class BindingServiceTest
     public void shouldPublishOldId() throws Throwable
     {
         // given
-        ClusterTopology topology = new ClusterTopology( null, true, emptyMap(), emptySet() );
+        CoreTopology topology = new CoreTopology( null, true, emptyMap() );
         ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
 
         when( clusterIdStorage.exists() ).thenReturn( true );
         when( clusterIdStorage.readState() ).thenReturn( localClusterId );
 
-        when( topologyService.currentTopology() ).thenReturn( topology );
+        when( topologyService.coreServers() ).thenReturn( topology );
         when( topologyService.casClusterId( any() ) ).thenReturn( true );
 
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService,

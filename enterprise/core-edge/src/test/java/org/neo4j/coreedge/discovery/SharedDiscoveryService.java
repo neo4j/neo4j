@@ -55,7 +55,8 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
             LogProvider userLogProvider )
     {
         SharedDiscoveryCoreClient sharedDiscoveryCoreClient = new SharedDiscoveryCoreClient( this, myself, logProvider, config );
-        sharedDiscoveryCoreClient.onTopologyChange( currentTopology( sharedDiscoveryCoreClient ) );
+        sharedDiscoveryCoreClient.onCoreTopologyChange( coreTopology( sharedDiscoveryCoreClient ) );
+        sharedDiscoveryCoreClient.onEdgeTopologyChange( edgeTopology() );
         return sharedDiscoveryCoreClient;
     }
 
@@ -81,15 +82,30 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    ClusterTopology currentTopology( SharedDiscoveryCoreClient client )
+    CoreTopology coreTopology( SharedDiscoveryCoreClient client )
     {
         lock.lock();
         try
         {
-            return new ClusterTopology(
+            return new CoreTopology(
                     clusterId,
                     coreClients.size() > 0 && coreClients.get( 0 ) == client,
-                    unmodifiableMap( coreMembers ),
+                    unmodifiableMap( coreMembers )
+            );
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    EdgeTopology edgeTopology()
+    {
+        lock.lock();
+        try
+        {
+            return new EdgeTopology(
+                    clusterId,
                     unmodifiableSet( edgeAddresses )
             );
         }
@@ -134,7 +150,8 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     {
         for ( SharedDiscoveryCoreClient coreClient : coreClients )
         {
-            coreClient.onTopologyChange( currentTopology( coreClient ) );
+            coreClient.onCoreTopologyChange( coreTopology( coreClient ) );
+            coreClient.onEdgeTopologyChange( edgeTopology(  ) );
         }
     }
 

@@ -17,25 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.messaging.routing;
+package org.neo4j.coreedge.discovery;
 
-import org.neo4j.coreedge.discovery.CoreTopology;
-import org.neo4j.coreedge.discovery.TopologyService;
-import org.neo4j.coreedge.identity.MemberId;
+import java.util.Collections;
+import java.util.Set;
 
-public class AlwaysChooseFirstMember implements CoreMemberSelectionStrategy
+import org.neo4j.coreedge.identity.ClusterId;
+
+public class EdgeTopology
 {
-    private final TopologyService discoveryService;
+    public static EdgeTopology EMPTY = new EdgeTopology( null, Collections.emptySet() );
 
-    public AlwaysChooseFirstMember( TopologyService discoveryService)
+    private final ClusterId clusterId;
+    private final Set<EdgeAddresses> edgeMembers;
+
+    public EdgeTopology( ClusterId clusterId, Set<EdgeAddresses> edgeMembers )
     {
-        this.discoveryService = discoveryService;
+
+        this.clusterId = clusterId;
+        this.edgeMembers = edgeMembers;
     }
 
-    @Override
-    public MemberId coreMember() throws CoreMemberSelectionException
+    public Set<EdgeAddresses> members()
     {
-        CoreTopology coreTopology = discoveryService.coreServers();
-        return coreTopology.members().iterator().next();
+        return edgeMembers;
     }
 }

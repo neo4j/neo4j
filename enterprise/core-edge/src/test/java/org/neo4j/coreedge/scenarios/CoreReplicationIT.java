@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
+import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.coreedge.ClusterRule;

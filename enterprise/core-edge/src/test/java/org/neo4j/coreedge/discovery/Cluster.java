@@ -293,7 +293,7 @@ public class Cluster
                 .filter( ( member ) -> member.database() != null ).findAny().get();
         CoreTopologyService coreTopologyService = aCoreGraphDb.database().getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
-        return coreTopologyService.currentTopology().coreMembers().size();
+        return coreTopologyService.coreServers().members().size();
     }
 
     /**

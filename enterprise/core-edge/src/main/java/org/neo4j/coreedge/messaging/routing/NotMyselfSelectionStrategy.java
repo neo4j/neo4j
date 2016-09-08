@@ -38,7 +38,7 @@ public class NotMyselfSelectionStrategy implements CoreMemberSelectionStrategy
     @Override
     public MemberId coreMember() throws CoreMemberSelectionException
     {
-        Optional<MemberId> member = discoveryService.currentTopology().coreMembers().stream()
+        Optional<MemberId> member = discoveryService.coreServers().members().stream()
                 .filter( coreMember -> !coreMember.equals( myself ) ).findFirst();
 
         if ( member.isPresent() )

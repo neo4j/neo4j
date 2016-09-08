@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
@@ -71,7 +70,7 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
         {
             MemberId leader = leaderLocator.getLeader();
             AdvertisedSocketAddress leaderAddress =
-                    discoveryService.currentTopology().coreAddresses( leader ).getBoltServer();
+                    discoveryService.coreServers().find( leader ).getBoltServer();
             writeEndpoints = writeEndpoints( leaderAddress );
         }
         catch ( NoLeaderFoundException | NoKnownAddressesException e )
@@ -101,11 +100,9 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
 
     private Set<ReadWriteEndPoint> readEndpoints()
     {
-        ClusterTopology clusterTopology = discoveryService.currentTopology();
-
-        Stream<AdvertisedSocketAddress> readEdge = clusterTopology.edgeMemberAddresses().stream()
+        Stream<AdvertisedSocketAddress> readEdge = discoveryService.edgeServers().members().stream()
                 .map( EdgeAddresses::getBoltAddress );
-        Stream<AdvertisedSocketAddress> readCore = clusterTopology.coreMemberAddresses().stream()
+        Stream<AdvertisedSocketAddress> readCore = discoveryService.coreServers().addresses().stream()
                 .map( CoreAddresses::getBoltServer );
 
         return Stream.concat( readEdge, readCore ).map( ReadWriteEndPoint::read )

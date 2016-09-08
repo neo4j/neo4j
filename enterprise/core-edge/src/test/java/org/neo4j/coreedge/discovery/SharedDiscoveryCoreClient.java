@@ -40,7 +40,8 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     private final Set<Listener> listeners = new LinkedHashSet<>();
     private final Log log;
 
-    private ClusterTopology clusterTopology;
+    private CoreTopology coreTopology;
+    private EdgeTopology edgeTopology;
 
     SharedDiscoveryCoreClient( SharedDiscoveryService sharedDiscoveryService, MemberId member, LogProvider logProvider, Config config )
     {
@@ -54,7 +55,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     public synchronized void addCoreTopologyListener( Listener listener )
     {
         listeners.add( listener );
-        listener.onCoreTopologyChange( clusterTopology );
+        listener.onCoreTopologyChange( coreTopology );
     }
 
     @Override
@@ -80,19 +81,31 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public synchronized ClusterTopology currentTopology()
+    public EdgeTopology edgeServers()
     {
-        return clusterTopology;
+        return edgeTopology;
     }
 
-    synchronized void onTopologyChange( ClusterTopology clusterTopology )
+    @Override
+    public CoreTopology coreServers()
     {
-        log.info( "Notified of topology change" );
-        this.clusterTopology = clusterTopology;
+        return coreTopology;
+    }
+
+    synchronized void onCoreTopologyChange( CoreTopology coreTopology )
+    {
+        log.info( "Notified of core topology change " + coreTopology );
+        this.coreTopology = coreTopology;
         for ( Listener listener : listeners )
         {
-            listener.onCoreTopologyChange( clusterTopology );
+            listener.onCoreTopologyChange( coreTopology );
         }
+    }
+
+    synchronized void onEdgeTopologyChange( EdgeTopology edgeTopology )
+    {
+        log.info( "Notified of edge topology change " + edgeTopology  );
+        this.edgeTopology = edgeTopology;
     }
 
     private static CoreAddresses extractAddresses( Config config )

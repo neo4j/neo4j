@@ -27,11 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
+import org.neo4j.coreedge.discovery.EdgeTopology;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
@@ -59,8 +60,8 @@ public class AcquireEndpointsProcedureTest
         MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, DiscoverEndpointAcquisitionServersProcedureTest.addresses( 1 ) );
-        when( topologyService.currentTopology() ).thenReturn( clusterTopology );
+        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
+        when( topologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, DiscoverEndpointAcquisitionServersProcedureTest.addresses( 1 ) ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
@@ -88,8 +89,8 @@ public class AcquireEndpointsProcedureTest
         MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, DiscoverEndpointAcquisitionServersProcedureTest.addresses( 1, 2, 3 ) );
-        when( topologyService.currentTopology() ).thenReturn( clusterTopology );
+        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
+        when( topologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, DiscoverEndpointAcquisitionServersProcedureTest.addresses( 1, 2, 3 ) ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
@@ -113,9 +114,9 @@ public class AcquireEndpointsProcedureTest
         Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 0 ) );
-        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, DiscoverEndpointAcquisitionServersProcedureTest.addresses() );
 
-        when( topologyService.currentTopology() ).thenReturn( clusterTopology );
+        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
+        when( topologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, DiscoverEndpointAcquisitionServersProcedureTest.addresses() ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
@@ -142,9 +143,8 @@ public class AcquireEndpointsProcedureTest
         Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, DiscoverEndpointAcquisitionServersProcedureTest.addresses() );
-
-        when( topologyService.currentTopology() ).thenReturn( clusterTopology );
+        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
+        when( topologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, DiscoverEndpointAcquisitionServersProcedureTest.addresses() ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenThrow( new NoLeaderFoundException() );
@@ -169,9 +169,8 @@ public class AcquireEndpointsProcedureTest
         Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, DiscoverEndpointAcquisitionServersProcedureTest.addresses() );
-
-        when( topologyService.currentTopology() ).thenReturn( clusterTopology );
+        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
+        when( topologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, DiscoverEndpointAcquisitionServersProcedureTest.addresses()) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 1 ) );

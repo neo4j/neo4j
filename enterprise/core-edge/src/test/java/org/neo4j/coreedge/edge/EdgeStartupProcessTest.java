@@ -30,7 +30,7 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.coreedge.core.state.machines.tx.ConstantTimeRetryStrategy;
-import org.neo4j.coreedge.discovery.ClusterTopology;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
@@ -54,7 +54,7 @@ public class EdgeStartupProcessTest
     private StoreFetcher storeFetcher = mock( StoreFetcher.class );
     private LocalDatabase localDatabase = mock( LocalDatabase.class );
     private TopologyService hazelcastTopology = mock( TopologyService.class );
-    private ClusterTopology clusterTopology = mock( ClusterTopology.class );
+    private CoreTopology clusterTopology = mock( CoreTopology.class );
     private Lifecycle txPulling = mock( Lifecycle.class );
 
     private MemberId memberId = new MemberId( UUID.randomUUID() );
@@ -67,8 +67,8 @@ public class EdgeStartupProcessTest
     {
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
-        when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
-        when( clusterTopology.coreMembers() ).thenReturn( asSet( memberId ) );
+        when( hazelcastTopology.coreServers() ).thenReturn( clusterTopology );
+        when( clusterTopology.members() ).thenReturn( asSet( memberId ) );
     }
 
     @Test
