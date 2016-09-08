@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.ha.HaSettings;
@@ -102,9 +103,9 @@ public class ClusterLocksIT
                         assertEquals( testLabel, label );
                         tx.success();
                     }
-                    catch ( TransactionTerminatedException ex )
+                    catch ( TransactionTerminatedException | TransientTransactionFailureException ex )
                     {
-                        // this is fine we might have stopped a transaction when we switched role..
+                        // this is fine we might have stopped or rolled back a transaction when we switched role..
                     }
                     catch ( Throwable t )
                     {
@@ -122,7 +123,8 @@ public class ClusterLocksIT
         run.set( false );
         thread.join();
 
-        assertNull( ref.get() );
+        Throwable throwable = ref.get();
+        assertNull( "" + throwable, throwable );
     }
 
     private void takeExclusiveLockOnSameNodeAfterSwitch( Label testLabel, HighlyAvailableGraphDatabase master,
