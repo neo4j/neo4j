@@ -29,10 +29,20 @@ case "$1" in
                 --ingroup nogroup --disabled-password --shell /bin/bash \
                 $NEO_USER
         fi
-      
+
+        # remove the old conffiles
+        dpkg-maintscript-helper rm_conffile "/etc/init.d/neo4j-service" -- "$@"
+        dpkg-maintscript-helper rm_conffile "/etc/neo4j/README.txt" -- "$@"
+        dpkg-maintscript-helper rm_conffile "/etc/neo4j/neo4j-http-logging.xml" -- "$@"
+        dpkg-maintscript-helper rm_conffile "/etc/neo4j/neo4j-server.properties" -- "$@"
+        dpkg-maintscript-helper rm_conffile "/etc/neo4j/neo4j.properties" -- "$@"
+
         # directories needed for neo4j
         chown -R $NEO_USER:adm /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
         chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
+
+        # conf directory symlink, needed because config-migrator depends on config living in conf subdir
+        ln -s /etc/neo4j /var/lib/neo4j/conf
 
         update-rc.d neo4j defaults
 
@@ -45,6 +55,47 @@ case "$1" in
             echo
             echo "You MUST read the upgrade guide before re-starting the database.  The upgrade"
             echo "guide can be found at http://neo4j.com/guides/upgrade/."
+            echo
+            database_count=$(find /var/lib/neo4j/data -type f |grep neostore$ | sed s,/neostore$,, | wc -l)
+            if [ "$database_count" -gt "0" ]; then
+                echo "The following databases have been found:"
+                echo
+                find /var/lib/neo4j/data -type f |grep neostore$ | sed s,/neostore$,,
+                echo
+                echo "You should import these databases. You can try using the following commands:"
+                echo
+                for db in $(find /var/lib/neo4j/data -type f |grep neostore$ | sed s,/neostore$,,); do
+                    dbname=$(basename ${db})
+                    echo "    sudo -u neo4j -g adm neo4j-admin import --mode=database --database=${dbname} --from=${db}"
+                done
+                echo
+                echo "After you have completed the upgrade process, these can be safely deleted."
+                echo
+            fi
+            echo "The configuration files have changed in 3.0. A config migration tool exists to help with this."
+            echo "You will have to copy your changed configuration files to the original location so the"
+            echo "2.x-config-migrator can find them first."
+            echo
+            for old_config_file in /etc/neo4j/neo4j.properties.dpkg-bak \
+                                   /etc/neo4j/neo4j-server.properties.dpkg-bak \
+                                   /etc/neo4j/neo4j-wrapper.conf.dpkg-bak; do
+                if [ -f ${old_config_file} ]; then
+                    echo "    sudo cp ${old_config_file} /etc/neo4j/$(basename ${old_config_file} .dpkg-bak)"
+                fi
+            done
+            echo
+            echo "And then reun the 2.x-config-migrator like so:"
+            echo
+            echo "    sudo -u neo4j -g adm java -jar /usr/share/neo4j/bin/tools/2.x-config-migrator.jar /var/lib/neo4j /var/lib/neo4j"
+            echo
+            echo "You must tell the database to migrate your active database when the service starts."
+            echo "To do this, use the following command:"
+            echo
+            echo "    sudo -u neo4j -g adm sed -i 's/#dbms.allow_format_migration=true/dbms.allow_format_migration=true/' /etc/neo4j/neo4j.conf"
+            echo
+            echo "Finally, start the database service:"
+            echo
+            echo "    sudo service neo4j start"
             echo "-----------------------------------------------------------------------------"
             rm /tmp/neo4j-upgraded-from-2.x
         else
