@@ -74,6 +74,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final TransactionUriScheme uriScheme;
     private final Type type;
     private final AccessMode mode;
+    private long customTransactionTimeout;
     private final Log log;
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
@@ -81,7 +82,7 @@ public class TransactionHandle implements TransactionTerminationHandle
 
     TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
             GraphDatabaseQueryService queryService, TransactionRegistry registry, TransactionUriScheme uriScheme,
-            boolean implicitTransaction, AccessMode mode, LogProvider logProvider )
+            boolean implicitTransaction, AccessMode mode, long customTransactionTimeout, LogProvider logProvider )
     {
         this.txManagerFacade = txManagerFacade;
         this.engine = engine;
@@ -90,6 +91,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         this.uriScheme = uriScheme;
         this.type = implicitTransaction ? Type.implicit : Type.explicit;
         this.mode = mode;
+        this.customTransactionTimeout = customTransactionTimeout;
         this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
     }
@@ -206,7 +208,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             try
             {
-                context = txManagerFacade.newTransaction( type, mode );
+                context = txManagerFacade.newTransaction( type, mode, customTransactionTimeout );
             }
             catch ( RuntimeException e )
             {
@@ -314,7 +316,8 @@ public class TransactionHandle implements TransactionTerminationHandle
                     }
 
                     hasPrevious = true;
-                    QuerySession querySession = txManagerFacade.create( statement.statement(), statement.parameters(), queryService, type, mode, request );
+                    QuerySession querySession = txManagerFacade.create(  statement.statement(), statement.parameters(),
+                            queryService, type, mode, customTransactionTimeout, request );
                     Result result = safelyExecute( statement, hasPeriodicCommit, querySession );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                     output.notifications( result.getNotifications() );

@@ -19,19 +19,26 @@
  */
 package org.neo4j.kernel.guard;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 public class GuardTimeoutException extends GuardException
 {
-
     private final long overtime;
 
-    public GuardTimeoutException( final long overtime )
+    public GuardTimeoutException(String message, final long overtime )
     {
-        super( String.format( "timeout occured (overtime=%d)", overtime ) );
+        super( message );
         this.overtime = overtime;
     }
 
     public long getOvertime()
     {
         return overtime;
+    }
+
+    @Override
+    public Status status()
+    {
+        return Status.Transaction.TransactionTimedOut;
     }
 }

@@ -141,10 +141,11 @@ public interface ServerSettings
             "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ),
             range( 1, JettyThreadCalculator.MAX_THREADS ) );
 
-    @Description("If execution time limiting is enabled in the database, this configures the maximum request execution time.")
+    @Description( "If execution time limiting is enabled in the database, this configures the maximum request execution time. " +
+            "Please use dbms.transaction.timeout instead." )
     @Internal
-    Setting<Long> webserver_limit_execution_time =
-            setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
+    @Deprecated
+    Setting<Long> webserver_limit_execution_time = setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
 
     @Internal
     Setting<List<String>> console_module_engines = setting(
@@ -237,8 +238,8 @@ public interface ServerSettings
     @Description("Path of the lib directory")
     Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
 
-    @Description("Timeout for idle transactions in the REST endpoint")
-    Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
+    @Description("Timeout for idle transactions in the REST endpoint.")
+    Setting<Long> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout", DURATION, "60s" );
 
     @Internal
     Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );

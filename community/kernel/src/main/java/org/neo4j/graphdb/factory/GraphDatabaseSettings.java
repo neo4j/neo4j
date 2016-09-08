@@ -82,6 +82,9 @@ public abstract class GraphDatabaseSettings
     public static final int DEFAULT_LABEL_BLOCK_SIZE = 64;
     public static final int MINIMAL_BLOCK_SIZE = 16;
 
+    // default unspecified transaction timeout
+    public static final long UNSPECIFIED_TIMEOUT = 0L;
+
     @SuppressWarnings("unused") // accessed by reflection
     @Migrator
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
@@ -207,6 +210,14 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Long> transaction_start_timeout =
             setting( "unsupported.dbms.transaction_start_timeout", DURATION, "1s" );
+
+    @Internal
+    @Description( "Please use dbms.transaction.timeout instead." )
+    @Deprecated
+    public static final Setting<Boolean> execution_guard_enabled = setting("unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
+
+    @Description("The maximum time interval of a transaction within which it should be completed.")
+    public static final Setting<Long> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String.valueOf( UNSPECIFIED_TIMEOUT ) );
 
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )
@@ -448,9 +459,6 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<String> forced_kernel_id = setting("unsupported.dbms.kernel_id", STRING, NO_DEFAULT,
             illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
-
-    @Internal
-    public static final Setting<Boolean> execution_guard_enabled = setting("unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
     @Description("Amount of time in ms the GC monitor thread will wait before taking another measurement.")
     @Internal

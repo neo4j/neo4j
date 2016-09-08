@@ -102,6 +102,26 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
+    public void useGuardedPartsWhenTransactionHaveTimeout() throws Exception
+    {
+        try ( KernelTransaction transaction = newTransaction( 10L ) )
+        {
+            transaction.success();
+        }
+        verify( operationContainer ).guardedParts();
+    }
+
+    @Test
+    public void useNonGuardedPartsWhenTransactionHaveTimeout() throws Exception
+    {
+        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        {
+            transaction.success();
+        }
+        verify( operationContainer ).nonGuarderParts();
+    }
+
+    @Test
     public void shouldCommitSuccessfulTransaction() throws Exception
     {
         // GIVEN
@@ -380,7 +400,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
             transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
-                    AccessMode.Static.FULL );
+                    AccessMode.Static.FULL, 0L );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
                 statement.legacyIndexTxState(); // which will pull it from the supplier and the mocking above
@@ -441,7 +461,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transaction.close();
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
         transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
-                accessMode() );
+                accessMode(), 0L );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -635,6 +655,22 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
+    public void transactionWithCustomTimeout()
+    {
+        long transactionTimeout = 5L;
+        KernelTransactionImplementation transaction = newTransaction( transactionTimeout );
+        assertEquals( "Transaction should have custom configured timeout.", transactionTimeout, transaction.timeout() );
+    }
+
+    @Test
+    public void transactionStartTime()
+    {
+        long startTime = clock.forward( 5, TimeUnit.MINUTES ).millis();
+        KernelTransactionImplementation transaction = newTransaction( AccessMode.Static.FULL );
+        assertEquals( "Transaction start time should be the same as clock time.", startTime, transaction.startTime() );
+    }
+
+    @Test
     public void markForTerminationWithCorrectReuseCount() throws Exception
     {
         int reuseCount = 10;
@@ -645,7 +681,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, accessMode() );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, accessMode(), 0L );
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
@@ -665,7 +701,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, accessMode() );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, accessMode(), 0L );
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
 
@@ -678,7 +714,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         for ( int i = 0; i < times; i++ )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, accessMode() );
+            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, accessMode(), 0L );
             tx.close();
         }
     }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -31,19 +34,21 @@ class TransitionalTxManagementKernelTransaction
     private final GraphDatabaseFacade db;
     private final KernelTransaction.Type type;
     private final AccessMode mode;
+    private long customTransactionTimeout;
     private final ThreadToStatementContextBridge bridge;
 
     private InternalTransaction tx;
     private KernelTransaction suspendedTransaction;
 
     TransitionalTxManagementKernelTransaction( GraphDatabaseFacade db, KernelTransaction.Type type,
-            AccessMode mode, ThreadToStatementContextBridge bridge )
+            AccessMode mode, long customTransactionTimeout, ThreadToStatementContextBridge bridge )
     {
         this.db = db;
         this.type = type;
         this.mode = mode;
+        this.customTransactionTimeout = customTransactionTimeout;
         this.bridge = bridge;
-        this.tx = db.beginTransaction( type, mode );
+        this.tx = startTransaction();
     }
 
     void suspendSinceTransactionsAreStillThreadBound()
@@ -108,6 +113,13 @@ class TransitionalTxManagementKernelTransaction
 
     void reopenAfterPeriodicCommit()
     {
-        tx = db.beginTransaction( type, mode );
+        tx = startTransaction();
+    }
+
+    private InternalTransaction startTransaction()
+    {
+        return customTransactionTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ?
+               db.beginTransaction( type, mode, customTransactionTimeout, TimeUnit.MILLISECONDS ) :
+               db.beginTransaction( type, mode );
     }
 }

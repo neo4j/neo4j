@@ -25,7 +25,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.api.StatementOperationContainer;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -77,7 +77,7 @@ public class KernelTransactionFactory
         when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                mock( StatementOperationParts.class ),
+                mock( StatementOperationContainer.class ),
                 mock( SchemaWriteGuard.class ),
                 new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), new Procedures(), headerInformationFactory,
@@ -90,7 +90,7 @@ public class KernelTransactionFactory
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
-        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, accessMode );
+        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, accessMode, 0L );
 
         return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
     }

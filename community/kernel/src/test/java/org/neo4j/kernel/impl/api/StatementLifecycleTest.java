@@ -36,7 +36,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         StorageStatement storageStatement = mock( StorageStatement.class );
-        KernelStatement statement = new KernelStatement( transaction, null, null, storageStatement, new Procedures() );
+        KernelStatement statement = getKernelStatement( transaction, storageStatement );
         statement.acquire();
         verify( storageStatement ).acquire();
         statement.acquire();
@@ -56,7 +56,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         StorageStatement storageStatement = mock( StorageStatement.class );
-        KernelStatement statement = new KernelStatement( transaction, null, null, storageStatement, new Procedures() );
+        KernelStatement statement = getKernelStatement( transaction, storageStatement );
         statement.acquire();
 
         // when
@@ -64,5 +64,11 @@ public class StatementLifecycleTest
 
         // then
         verify( storageStatement ).release();
+    }
+
+    private KernelStatement getKernelStatement( KernelTransactionImplementation transaction,
+            StorageStatement storageStatement )
+    {
+        return new KernelStatement( transaction, null, storageStatement, new Procedures() );
     }
 }

@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
@@ -59,8 +60,8 @@ import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDatabaseAPI, IndexManager
 {
@@ -98,19 +99,45 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout,
+            TimeUnit unit )
+    {
+        return actual.beginTransaction( type, accessMode, timeout, unit );
+    }
+
+    @Override
     public Transaction beginTx()
     {
         return actual.beginTx();
     }
 
     @Override
+    public Transaction beginTx( long timeout, TimeUnit unit )
+    {
+        return actual.beginTx( timeout, unit );
+    }
+
+    @Override
     public Result execute( String query )
     {
-        return execute( query, Collections.<String, Object>emptyMap() );
+        return execute( query, Collections.emptyMap() );
+    }
+
+    @Override
+    public Result execute( String query, long timeout, TimeUnit unit ) throws QueryExecutionException
+    {
+        return execute( query, Collections.emptyMap(), timeout, unit );
     }
 
     @Override
     public Result execute( String query, Map<String, Object> parameters )
+    {
+        return readOnly();
+    }
+
+    @Override
+    public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws
+            QueryExecutionException
     {
         return readOnly();
     }

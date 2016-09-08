@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +63,7 @@ import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
+import org.neo4j.kernel.impl.api.StatementOperationContainer;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
@@ -162,7 +164,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.time.Clocks;
 
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -294,6 +295,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final ConstraintSemantics constraintSemantics;
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
+    private final Clock clock;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -342,7 +344,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             Monitors monitors,
             Tracers tracers,
             Procedures procedures,
-            IOLimiter ioLimiter )
+            IOLimiter ioLimiter,
+            Clock clock )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -374,6 +377,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.tracers = tracers;
         this.procedures = procedures;
         this.ioLimiter = ioLimiter;
+        this.clock = clock;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -474,7 +478,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     dependencies.resolveDependency( IndexingService.class ),
                     storageEngine.storeReadLayer(),
                     updateableSchemaState, dependencies.resolveDependency( LabelScanStore.class ),
-                    storageEngine, indexConfigStore, transactionIdStore );
+                    storageEngine, indexConfigStore, transactionIdStore, clock );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.storageEngine = storageEngine;
@@ -656,8 +660,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 new CountCommittedTransactionThreshold( txThreshold );
 
         long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time );
-        TimeCheckPointThreshold timeCheckPointThreshold =
-                new TimeCheckPointThreshold( timeMillisThreshold, Clocks.systemClock() );
+        TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( timeMillisThreshold, clock );
 
         CheckPointThreshold threshold =
                 CheckPointThresholds.or( countCommittedTransactionThreshold, timeCheckPointThreshold );
@@ -767,7 +770,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                                       UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
                                       StorageEngine storageEngine,
                                       IndexConfigStore indexConfigStore,
-                                      TransactionIdStore transactionIdStore ) throws KernelException, IOException
+                                      TransactionIdStore transactionIdStore,
+                                      Clock clock ) throws KernelException, IOException
     {
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
                 config );
@@ -784,17 +788,18 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config,
                 indexConfigStore, kernelProvider, legacyIndexProviderLookup );
 
-        StatementOperationParts statementOperations = dependencies.satisfyDependency( buildStatementOperations(
-                storeLayer, autoIndexing, constraintIndexCreator, updateableSchemaState, guard,
-                legacyIndexStore ) );
+        StatementOperationContainer statementOperationContainer = dependencies.satisfyDependency(
+                buildStatementOperations( storeLayer, autoIndexing,
+                        constraintIndexCreator, updateableSchemaState, guard, legacyIndexStore ) );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
-                constraintIndexCreator, statementOperations, schemaWriteGuard, transactionHeaderInformationFactory,
+                constraintIndexCreator, statementOperationContainer, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor, life,
-                tracers, storageEngine, procedures, transactionIdStore, Clocks.systemClock() ) );
+                tracers, storageEngine, procedures, transactionIdStore, clock ) );
 
-        final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures );
+        final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
+                config );
 
         kernel.registerTransactionHook( transactionEventHandlers );
 
@@ -967,7 +972,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return dependencies;
     }
 
-    private StatementOperationParts buildStatementOperations(
+    private StatementOperationContainer buildStatementOperations(
             StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator, UpdateableSchemaState updateableSchemaState,
             Guard guard, LegacyIndexStore legacyIndexStore )
@@ -980,7 +985,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 legacyIndexStore );
 
         QueryRegistrationOperations queryRegistrationOperations =
-                new StackingQueryRegistrationOperations( StackingQueryRegistrationOperations.LAST_QUERY_ID, Clocks.systemClock() );
+                new StackingQueryRegistrationOperations( StackingQueryRegistrationOperations.LAST_QUERY_ID, clock );
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
@@ -1003,15 +1008,13 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
                 lockingContext, null, null, null, null );
         // + Guard
-        if ( guard != null )
-        {
-            GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
-                    parts.entityWriteOperations(), parts.entityReadOperations(), guard );
-            parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null,
-                    null, null, null, null );
-        }
+        GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
+                parts.entityWriteOperations(), parts.entityReadOperations(), guard );
+        StatementOperationParts guardedParts = parts.override( null, null, guardingOperations,
+                guardingOperations, null, null, null, null,
+                null, null, null, null );
 
-        return parts;
+        return new StatementOperationContainer( guardedParts, parts );
     }
 
     @Override

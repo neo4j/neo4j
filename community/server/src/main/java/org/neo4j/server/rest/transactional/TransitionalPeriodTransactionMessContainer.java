@@ -20,8 +20,10 @@
 package org.neo4j.server.rest.transactional;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -47,9 +49,10 @@ public class TransitionalPeriodTransactionMessContainer
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    public TransitionalTxManagementKernelTransaction newTransaction( Type type, AccessMode mode )
+    public TransitionalTxManagementKernelTransaction newTransaction( Type type, AccessMode mode,
+            long customTransactionTimeout )
     {
-        return new TransitionalTxManagementKernelTransaction( db, type, mode, txBridge );
+        return new TransitionalTxManagementKernelTransaction( db, type, mode, customTransactionTimeout, txBridge );
     }
 
     public ThreadToStatementContextBridge getBridge()
@@ -57,18 +60,14 @@ public class TransitionalPeriodTransactionMessContainer
         return txBridge;
     }
 
-    public QuerySession create(
-            String query,
-            Map<String, Object> parameters,
-            GraphDatabaseQueryService service,
-            Type type,
-            AccessMode mode,
-            HttpServletRequest request )
+    public QuerySession create( String query, Map<String, Object> parameters, GraphDatabaseQueryService service,
+            Type type, AccessMode mode, long customTransactionTimeout, HttpServletRequest request )
     {
-        InternalTransaction transaction = db.beginTransaction( type, mode );
-        TransactionalContext context = new Neo4jTransactionalContext(
-            service, transaction, txBridge.get(), query, parameters, locker
-        );
+        InternalTransaction transaction = customTransactionTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ?
+                                          db.beginTransaction( type, mode, customTransactionTimeout, TimeUnit.MILLISECONDS ) :
+                                          db.beginTransaction( type, mode);
+        TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), query,
+                parameters, locker );
         return new ServerQuerySession( request, context );
     }
 }

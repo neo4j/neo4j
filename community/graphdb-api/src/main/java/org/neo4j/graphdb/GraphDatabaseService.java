@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -238,6 +239,24 @@ public interface GraphDatabaseService
     Transaction beginTx();
 
     /**
+     * Starts a new {@link Transaction transaction} with custom timeout and associates it with the current thread.
+     * Timeout will be taken into account <b>only</b> when execution guard is enabled.
+     * <p>
+     * <em>All database operations must be wrapped in a transaction.</em>
+     * <p>
+     * If you attempt to access the graph outside of a transaction, those operations will throw
+     * {@link NotInTransactionException}.
+     * <p>
+     * Please ensure that any returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param timeout transaction timeout
+     * @param unit time unit of timeout argument
+     * @return a new transaction instance
+     */
+    Transaction beginTx( long timeout, TimeUnit unit );
+
+    /**
      * Executes a query and returns an iterable that contains the result set.
      *
      * This method is the same as {@link #execute(String, java.util.Map)} with an empty parameters-map.
@@ -250,6 +269,20 @@ public interface GraphDatabaseService
 
     /**
      * Executes a query and returns an iterable that contains the result set.
+     * If query will not gonna be able to complete within specified timeout time interval it will be terminated.
+     *
+     * This method is the same as {@link #execute(String, java.util.Map)} with an empty parameters-map.
+     *
+     * @param query The query to execute
+     * @param timeout The maximum time interval within which query should be completed.
+     * @param unit time unit of timeout argument
+     * @return A {@link org.neo4j.graphdb.Result} that contains the result set.
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    Result execute( String query, long timeout, TimeUnit unit ) throws QueryExecutionException;
+
+    /**
+     * Executes a query and returns an iterable that contains the result set.
      *
      * @param query      The query to execute
      * @param parameters Parameters for the query
@@ -257,6 +290,19 @@ public interface GraphDatabaseService
      * @throws QueryExecutionException If the Query contains errors
      */
     Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException;
+
+    /**
+     * Executes a query and returns an iterable that contains the result set.
+     * If query will not gonna be able to complete within specified timeout time interval it will be terminated.
+     *
+     * @param query      The query to execute
+     * @param parameters Parameters for the query
+     * @param timeout The maximum time interval within which query should be completed.
+     * @param unit time unit of timeout argument
+     * @return A {@link org.neo4j.graphdb.Result} that contains the result set
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws QueryExecutionException;
 
     /**
      * Registers {@code handler} as a handler for transaction events which

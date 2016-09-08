@@ -19,17 +19,16 @@
  */
 package org.neo4j.server.plugins;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.HashMap;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConfigAdapterTest
@@ -82,15 +81,15 @@ public class ConfigAdapterTest
         Config config = new Config( new HashMap<>(), ServerSettings.class );
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
-        assertEquals( 60000L, wrappingConfiguration.getProperty( ServerSettings.transaction_timeout.name() ) );
+        assertEquals( 60000L, wrappingConfiguration.getProperty( ServerSettings.transaction_idle_timeout.name() ) );
     }
 
     @Test
     public void shouldAbleToAccessNonRegisteredPropertyByName()
     {
-        Config config = new Config( stringMap( ServerSettings.transaction_timeout.name(), "600" ) );
+        Config config = new Config( stringMap( ServerSettings.transaction_idle_timeout.name(), "600" ) );
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
-        assertEquals( "600", wrappingConfiguration.getProperty( ServerSettings.transaction_timeout.name() ) );
+        assertEquals( "600", wrappingConfiguration.getProperty( ServerSettings.transaction_idle_timeout.name() ) );
     }
 }

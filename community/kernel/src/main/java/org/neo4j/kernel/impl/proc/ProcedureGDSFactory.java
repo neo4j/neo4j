@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 
 public class ProcedureGDSFactory implements ThrowingFunction<CallableProcedure.Context,GraphDatabaseService,ProcedureException>
 {
+    private Config config;
     private final File storeDir;
     private final DependencyResolver resolver;
     private final Supplier<StoreId> storeId;
@@ -55,6 +56,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<CallableProcedure.C
                                 CoreAPIAvailabilityGuard availability,
                                 URLAccessRule urlAccessRule )
     {
+        this.config = config;
         this.storeDir = storeDir;
         this.resolver = resolver;
         this.storeId = storeId;
@@ -70,7 +72,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<CallableProcedure.C
         Thread owningThread = context.get( CallableProcedure.Context.THREAD );
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
         facade.init( new ProcedureGDBFacadeSPI( owningThread, transaction, queryExecutor, storeDir, resolver,
-                AutoIndexing.UNSUPPORTED, storeId, availability, urlValidator ) );
+                AutoIndexing.UNSUPPORTED, storeId, availability, urlValidator ), config );
         return facade;
     }
 

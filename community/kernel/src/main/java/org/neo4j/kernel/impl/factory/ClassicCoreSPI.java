@@ -165,12 +165,12 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout )
     {
         try
         {
             availability.assertDatabaseAvailable();
-            KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, accessMode );
+            KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, accessMode, timeout );
             kernelTx.registerCloseListener(
                     (txId) -> dataSource.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             dataSource.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );

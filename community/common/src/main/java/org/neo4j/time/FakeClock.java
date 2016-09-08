@@ -65,6 +65,12 @@ public class FakeClock extends SystemNanoClock
         return nanoTime;
     }
 
+    @Override
+    public long millis()
+    {
+        return TimeUnit.NANOSECONDS.toMillis( nanoTime );
+    }
+
     public FakeClock forward( long delta, TimeUnit unit )
     {
         nanoTime += unit.toNanos( delta );

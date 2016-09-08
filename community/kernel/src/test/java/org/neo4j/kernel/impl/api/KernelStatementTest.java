@@ -40,8 +40,7 @@ public class KernelStatementTest
         when( transaction.getReasonIfTerminated() ).thenReturn( Status.Transaction.Terminated );
         when( transaction.mode() ).thenReturn( AccessMode.Static.FULL );
 
-        KernelStatement statement = new KernelStatement(
-            transaction, null, null, mock( StorageStatement.class ), null );
+        KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null );
         statement.acquire();
 
         statement.readOperations().nodeExists( 0 );
@@ -53,7 +52,7 @@ public class KernelStatementTest
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
-                null, null, storeStatement, new Procedures() );
+                null, storeStatement, new Procedures() );
         statement.acquire();
 
         // when

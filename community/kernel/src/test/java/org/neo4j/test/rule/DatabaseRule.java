@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -130,9 +131,22 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
+    public Result execute( String query, long timeout, TimeUnit unit ) throws QueryExecutionException
+    {
+        return getGraphDatabaseAPI().execute( query, timeout, unit );
+    }
+
+    @Override
     public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
     {
         return getGraphDatabaseAPI().execute( query, parameters );
+    }
+
+    @Override
+    public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws
+            QueryExecutionException
+    {
+        return getGraphDatabaseAPI().execute( query, parameters, timeout, unit );
     }
 
     @Override
@@ -142,9 +156,22 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout,
+            TimeUnit unit )
+    {
+        return getGraphDatabaseAPI().beginTransaction( type, accessMode, timeout, unit );
+    }
+
+    @Override
     public Transaction beginTx()
     {
         return getGraphDatabaseAPI().beginTx();
+    }
+
+    @Override
+    public Transaction beginTx( long timeout, TimeUnit timeUnit)
+    {
+        return getGraphDatabaseAPI().beginTx( timeout, timeUnit );
     }
 
     @Override

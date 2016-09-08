@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
@@ -68,6 +70,9 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
 public class TestApps extends AbstractShellTest
 {
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     @Test
     public void canSetPropertiesAndLsWithFilters() throws Exception
     {

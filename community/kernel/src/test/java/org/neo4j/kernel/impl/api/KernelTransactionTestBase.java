@@ -25,10 +25,12 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -76,6 +78,9 @@ public class KernelTransactionTestBase
     protected final SchemaWriteGuard schemaWriteGuard = mock( SchemaWriteGuard.class );
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
+    protected final StatementOperationContainer operationContainer = mock( StatementOperationContainer.class );
+
+    private final long defaultTransactionTimeoutMillis = GraphDatabaseSettings.transaction_timeout.from( Config.defaults() );
 
     @Before
     public void before() throws Exception
@@ -91,6 +96,11 @@ public class KernelTransactionTestBase
                 any( ResourceLocker.class ), anyLong() );
     }
 
+    public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )
+    {
+        return newTransaction( 0, AccessMode.Static.FULL, transactionTimeoutMillis );
+    }
+
     public KernelTransactionImplementation newTransaction( AccessMode accessMode )
     {
         return newTransaction( 0, accessMode );
@@ -98,28 +108,35 @@ public class KernelTransactionTestBase
 
     public KernelTransactionImplementation newTransaction( AccessMode accessMode, Locks.Client locks )
     {
-        return newTransaction( 0, accessMode, locks );
+        return newTransaction( 0, accessMode, locks, defaultTransactionTimeoutMillis );
     }
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode )
     {
-        return newTransaction( lastTransactionIdWhenStarted, accessMode, new NoOpClient() );
+        return newTransaction( lastTransactionIdWhenStarted, accessMode, defaultTransactionTimeoutMillis );
     }
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode,
-            Locks.Client locks )
+            long transactionTimeoutMillis )
+    {
+        return newTransaction( lastTransactionIdWhenStarted, accessMode, new NoOpClient(), transactionTimeoutMillis );
+    }
+
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode,
+            Locks.Client locks, long transactionTimeout )
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
-        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,statementLocks, Type.implicit, accessMode );
+        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,statementLocks, Type.implicit,
+                accessMode, transactionTimeout );
         return tx;
     }
 
     public KernelTransactionImplementation newNotInitializedTransaction()
     {
-        return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
-                commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
-                storageEngine );
+        return new KernelTransactionImplementation( operationContainer, schemaWriteGuard,
+                hooks, null, null, headerInformationFactory, commitProcess, transactionMonitor, legacyIndexStateSupplier,
+                txPool, clock, TransactionTracer.NULL, storageEngine );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.junit.Test;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -43,7 +43,7 @@ public class CypherSessionDocTest
     {
         GraphDatabaseFacade graphdb = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         Database database = new WrappedDatabase( graphdb );
-        CypherExecutor executor = new CypherExecutor( database );
+        CypherExecutor executor = new CypherExecutor( database, NullLogProvider.getInstance() );
         executor.start();
         try
         {

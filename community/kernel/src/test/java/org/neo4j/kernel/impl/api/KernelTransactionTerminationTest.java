@@ -357,7 +357,7 @@ public class KernelTransactionTerminationTest
         @SuppressWarnings( "unchecked" )
         TestKernelTransaction( CommitTrackingMonitor monitor )
         {
-            super( mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
+            super( mock( StatementOperationContainer.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
                     mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT,
                     mock( TransactionCommitProcess.class ), monitor, () -> mock( LegacyIndexTransactionState.class ),
                     mock( Pool.class ), Clocks.fakeClock(), TransactionTracer.NULL,
@@ -373,7 +373,8 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, AccessMode.Static.FULL );
+            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit,
+                    AccessMode.Static.FULL, 0L );
             monitor.reset();
             return this;
         }

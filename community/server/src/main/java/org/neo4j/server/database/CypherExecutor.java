@@ -20,10 +20,12 @@
 package org.neo4j.server.database;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -35,7 +37,11 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.ServerQuerySession;
+
+import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 public class CypherExecutor extends LifecycleAdapter
 {
@@ -45,10 +51,12 @@ public class CypherExecutor extends LifecycleAdapter
     private ThreadToStatementContextBridge txBridge;
 
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
+    private final Log log;
 
-    public CypherExecutor( Database database )
+    public CypherExecutor( Database database, LogProvider logProvider )
     {
         this.database = database;
+        log = logProvider.getLog( getClass() );
     }
 
     public ExecutionEngine getExecutionEngine()
@@ -62,7 +70,7 @@ public class CypherExecutor extends LifecycleAdapter
         DependencyResolver dependencyResolver = database.getGraph().getDependencyResolver();
         this.executionEngine = (ExecutionEngine) dependencyResolver.resolveDependency( QueryExecutionEngine.class );
         this.service = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
-        this.txBridge = service.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        this.txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     @Override
@@ -75,10 +83,27 @@ public class CypherExecutor extends LifecycleAdapter
 
     public QuerySession createSession( String query, Map<String, Object> parameters, HttpServletRequest request )
     {
-        InternalTransaction transaction = service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
-        TransactionalContext context = new Neo4jTransactionalContext(
-            service, transaction, txBridge.get(), query, parameters, locker
-        );
+        InternalTransaction transaction = getInternalTransaction( request );
+        TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), query,
+                parameters, locker );
         return new ServerQuerySession( request, context );
+    }
+
+    private InternalTransaction getInternalTransaction( HttpServletRequest request )
+    {
+        long customTimeout = getTransactionTimeout( request, log );
+        return customTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ? beginCustomTransaction( customTimeout ) :
+                                                                           beginDefaultTransaction();
+    }
+
+    private InternalTransaction beginCustomTransaction( long customTimeout )
+    {
+        return service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
+                customTimeout, TimeUnit.MILLISECONDS );
+    }
+
+    private InternalTransaction beginDefaultTransaction()
+    {
+        return service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
     }
 }

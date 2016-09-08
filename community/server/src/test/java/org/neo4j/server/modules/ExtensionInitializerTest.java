@@ -48,7 +48,7 @@ public class ExtensionInitializerTest
     @Test
     public void testPluginInitialization()
     {
-        Config config = new Config( stringMap( ServerSettings.transaction_timeout.name(), "600" ) );
+        Config config = new Config( stringMap( ServerSettings.transaction_idle_timeout.name(), "600" ) );
         NeoServer neoServer = Mockito.mock( NeoServer.class, Mockito.RETURNS_DEEP_STUBS );
         Mockito.when( neoServer.getConfig() ).thenReturn( config );
         ExtensionInitializer extensionInitializer = new ExtensionInitializer( neoServer );
@@ -58,7 +58,7 @@ public class ExtensionInitializerTest
 
         assertThat( injectableProperties, Matchers.hasSize( 1 ) );
         assertThat( injectableProperties, Matchers.contains( new InjectableMatcher<>( ServerSettings
-                .transaction_timeout.name() ) ) );
+                .transaction_idle_timeout.name() ) ) );
     }
 
     private class InjectableMatcher<T> extends BaseMatcher<Injectable<?>>

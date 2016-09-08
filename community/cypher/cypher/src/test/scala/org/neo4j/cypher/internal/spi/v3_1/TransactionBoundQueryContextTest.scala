@@ -60,7 +60,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(kernelTransaction.mode()).thenReturn(AccessMode.Static.FULL)
     val storeStatement = mock[StorageStatement]
     val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
-    statement = new KernelStatement(kernelTransaction, null, operations, storeStatement, new Procedures())
+    statement = new KernelStatement(kernelTransaction, null, storeStatement, new Procedures())
+    statement.initialize(null, operations);
     statement.acquire()
   }
 
@@ -72,7 +73,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
     val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`, AccessMode.Static.FULL,
-      statement, null, locker, null, null)
+      statement, null, locker, null, null, null)
     val transactionalContext = new TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN

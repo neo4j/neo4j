@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -37,10 +38,35 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 public interface GraphDatabaseQueryService
 {
     DependencyResolver getDependencyResolver();
+
     Node createNode();
+
     Node createNode( Label... labels );
-    Node getNodeById(long id);
-    Relationship getRelationshipById(long id);
+
+    Node getNodeById( long id );
+
+    Relationship getRelationshipById( long id );
+
+    /**
+     * Begin new internal transaction with with default timeout.
+     *
+     * @param type transaction type
+     * @param accessMode transaction access mode
+     * @return internal transaction
+     */
     InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
+
+    /**
+     * Begin new internal transaction with specified timeout in milliseconds.
+     *
+     * @param type transaction type
+     * @param accessMode transaction access mode
+     * @param timeout transaction timeout
+     * @param unit time unit of timeout argument
+     * @return internal transaction
+     */
+    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout,
+            TimeUnit unit);
+
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 }

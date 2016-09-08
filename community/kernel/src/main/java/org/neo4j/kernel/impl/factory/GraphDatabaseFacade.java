@@ -23,6 +23,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -42,6 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.security.URLAccessValidationError;
@@ -65,6 +67,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -113,6 +116,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private NodeProxy.NodeActions nodeActions;
     private RelationshipProxy.RelationshipActions relActions;
     private SPI spi;
+    private long defaultTransactionTimeout;
 
     /**
      * This is what you need to implemenent to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
@@ -140,12 +144,14 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         void shutdown();
 
         /**
-         * Begin a new kernel transaction. If a transaction is already associated to the current context
+         * Begin a new kernel transaction with specified timeout in milliseconds.
+         * If a transaction is already associated to the current context
          * (meaning, non-null is returned from {@link #currentTransaction()}), this should fail.
          *
          * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
+         * @see SPI#beginTransaction(KernelTransaction.Type, AccessMode)
          */
-        KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
+        KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout );
 
         /**
          * Retrieve the transaction associated with the current context. For the classic implementation of the Core API,
@@ -188,8 +194,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     /**
      * Create a new Core API facade, backed by the given SPI.
      */
-    public void init( SPI spi )
+    public void init( SPI spi, Config config )
     {
+        defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
         IndexProviderImpl idxProvider = new IndexProviderImpl( this, spi::currentStatement );
 
         this.spi = spi;
@@ -332,15 +339,23 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL );
     }
 
+    @Override
+    public Transaction beginTx( long timeout, TimeUnit unit )
+    {
+        return beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL, timeout, unit );
+    }
+
+    @Override
     public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
     {
-        if ( spi.isInOpenTransaction() )
-        {
-            // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
-            return new PlaceboTransaction( spi::currentTransaction, spi::currentStatement );
-        }
+        return beginTransactionInternal( type, accessMode, defaultTransactionTimeout );
+    }
 
-        return new TopLevelTransaction( spi.beginTransaction( type, accessMode ), spi::currentStatement );
+    @Override
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode,
+            long timeout, TimeUnit unit )
+    {
+        return beginTransactionInternal( type, accessMode, unit.toMillis( timeout ) );
     }
 
     @Override
@@ -350,10 +365,25 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
+    public Result execute( String query, long timeout, TimeUnit unit ) throws QueryExecutionException
+    {
+        return execute( query, Collections.emptyMap(), timeout, unit );
+    }
+
+    @Override
     public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
         // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
         InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        return execute( transaction, query, parameters );
+    }
+
+    @Override
+    public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws
+            QueryExecutionException
+    {
+        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
+                timeout, unit );
         return execute( transaction, query, parameters );
     }
 
@@ -417,6 +447,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
         return allInUse( TokenAccess.RELATIONSHIP_TYPES );
     }
+
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
     {
         assertTransactionOpen();
@@ -507,6 +538,17 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public ResourceIterator<Node> findNodes( final Label myLabel )
     {
         return allNodesWithLabel( myLabel );
+    }
+
+    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, AccessMode accessMode,
+            long timeoutMillis )
+    {
+        if ( spi.isInOpenTransaction() )
+        {
+            // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
+            return new PlaceboTransaction( spi::currentTransaction, spi::currentStatement );
+        }
+        return new TopLevelTransaction( spi.beginTransaction( type, accessMode, timeoutMillis ), spi::currentStatement );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )

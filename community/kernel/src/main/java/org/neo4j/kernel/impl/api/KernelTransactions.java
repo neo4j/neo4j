@@ -68,7 +68,7 @@ public class KernelTransactions extends LifecycleAdapter
 
     private final StatementLocksFactory statementLocksFactory;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final StatementOperationParts statementOperations;
+    private final StatementOperationContainer statementOperations;
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final TransactionCommitProcess transactionCommitProcess;
@@ -100,7 +100,7 @@ public class KernelTransactions extends LifecycleAdapter
 
     public KernelTransactions( StatementLocksFactory statementLocksFactory,
                                ConstraintIndexCreator constraintIndexCreator,
-                               StatementOperationParts statementOperations,
+                               StatementOperationContainer statementOperationContainer,
                                SchemaWriteGuard schemaWriteGuard,
                                TransactionHeaderInformationFactory txHeaderFactory,
                                TransactionCommitProcess transactionCommitProcess,
@@ -117,7 +117,7 @@ public class KernelTransactions extends LifecycleAdapter
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.statementOperations = statementOperations;
+        this.statementOperations = statementOperationContainer;
         this.schemaWriteGuard = schemaWriteGuard;
         this.transactionHeaderInformationFactory = txHeaderFactory;
         this.transactionCommitProcess = transactionCommitProcess;
@@ -152,7 +152,7 @@ public class KernelTransactions extends LifecycleAdapter
         }
     };
 
-    public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode )
+    public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
         newTransactionsLock.readLock().lock();
@@ -163,7 +163,7 @@ public class KernelTransactions extends LifecycleAdapter
             KernelTransactionImplementation tx = localTxPool.acquire();
             StatementLocks statementLocks = statementLocksFactory.newInstance();
             tx.initialize( lastCommittedTransaction.transactionId(),
-                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, accessMode );
+                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, accessMode, timeout );
             return tx;
         }
         finally

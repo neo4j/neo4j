@@ -51,7 +51,7 @@ public interface KernelTransactionHandle
      *
      * @return the transaction start time.
      */
-    long localStartTime();
+    long startTime();
 
     /**
      * Check if the underlying transaction is open.
