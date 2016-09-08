@@ -113,7 +113,6 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
   }
 
   test("should use contains index with multiple indexes and predicates where other index is more selective but we add index hint") {
-    System.setProperty("pickBestPlan.VERBOSE", "true")
     val london = createLabeledNode(Map("name" -> "London", "country" -> "UK"), "Location")
     createLabeledNode(Map("name" -> "LONDON", "country" -> "UK"), "Location")
     graph.inTx {
