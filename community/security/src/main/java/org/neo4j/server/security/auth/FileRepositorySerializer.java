@@ -19,12 +19,14 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -42,17 +44,30 @@ public abstract class FileRepositorySerializer<S>
 
     public static void writeToFile( FileSystemAbstraction fs, File file, byte[] bytes ) throws IOException
     {
-        OutputStream o = fs.openAsOutputStream( file, false );
-        o.write( bytes );
-        o.close();
+        try ( OutputStream o = fs.openAsOutputStream( file, false ) )
+        {
+            o.write( bytes );
+        }
     }
 
-    public static byte[] readFromFile( FileSystemAbstraction fs, File file ) throws IOException
+    public static List<String> readFromFile( FileSystemAbstraction fs, File file ) throws IOException
     {
-        InputStream s = fs.openAsInputStream( file );
-        byte[] bytes = sun.misc.IOUtils.readFully( s, -1, false );
-        s.close();
-        return bytes;
+        ArrayList<String> lines = new ArrayList<>();
+
+        try ( BufferedReader r = new BufferedReader( fs.openAsReader( file, Charset.forName( "UTF-8" ) ) ) )
+        {
+            while ( true )
+            {
+                String line = r.readLine();
+                if ( line == null )
+                {
+                    break;
+                }
+                lines.add( line );
+            }
+        }
+
+        return lines;
     }
 
     public void saveRecordsToFile( FileSystemAbstraction fileSystem, File recordsFile, Collection<S> records ) throws
@@ -102,9 +117,14 @@ public abstract class FileRepositorySerializer<S>
 
     public List<S> deserializeRecords( byte[] bytes ) throws FormatException
     {
+        return deserializeRecords( Arrays.asList( UTF8.decode( bytes ).split( "\n" ) ) );
+    }
+
+    public List<S> deserializeRecords( List<String> lines ) throws FormatException
+    {
         List<S> out = new ArrayList<>();
         int lineNumber = 1;
-        for ( String line : UTF8.decode( bytes ).split( "\n" ) )
+        for ( String line : lines )
         {
             if ( line.trim().length() > 0 )
             {

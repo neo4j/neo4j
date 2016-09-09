@@ -24,10 +24,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
+import java.io.CharArrayReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -210,11 +211,11 @@ public class InternalFlatFileRealmIT
         }
 
         @Override
-        public InputStream openAsInputStream( File fileName ) throws IOException
+        public Reader openAsReader( File fileName, Charset charset ) throws IOException
         {
             if ( fileName.equals( userStoreFile ) )
             {
-                return new ByteArrayInputStream( userStoreVersions.remove().getBytes( "UTF-8" ) );
+                return new CharArrayReader( userStoreVersions.remove().toCharArray() );
             }
             if ( fileName.equals( roleStoreFile ) )
             {
@@ -222,9 +223,9 @@ public class InternalFlatFileRealmIT
                 {
                     roleStoreVersions.remove();
                 }
-                return new ByteArrayInputStream( roleStoreVersions.remove().getBytes( "UTF-8" ) );
+                return new CharArrayReader( roleStoreVersions.remove().toCharArray() );
             }
-            return super.openAsInputStream( fileName );
+            return super.openAsReader( fileName, charset );
         }
 
         @Override

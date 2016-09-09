@@ -113,8 +113,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
     }
 
-    private EphemeralFileSystemAbstraction( Set<File> directories, Map<File,EphemeralFileData> files )
+    private EphemeralFileSystemAbstraction( Set<File> directories, Map<File,EphemeralFileData> files, Clock clock )
     {
+        this.clock = clock;
         this.files = new ConcurrentHashMap<>( files );
         this.directories.addAll( directories );
         initCurrentWorkingDirectory();
@@ -517,7 +518,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         {
             copiedFiles.put( file.getKey(), file.getValue().copy() );
         }
-        return new EphemeralFileSystemAbstraction( directories, copiedFiles );
+        return new EphemeralFileSystemAbstraction( directories, copiedFiles, clock );
     }
 
     public void copyRecursivelyFromOtherFs( File from, FileSystemAbstraction fromFs, File to ) throws IOException

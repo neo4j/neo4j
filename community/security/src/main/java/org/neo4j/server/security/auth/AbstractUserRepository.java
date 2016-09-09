@@ -73,9 +73,9 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
                 }
             }
 
-            persistUsers();
             users.add( user );
             usersByName.put( user.name(), user );
+            persistUsers();
         }
     }
 
@@ -135,10 +135,8 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
             }
 
             users = newUsers;
-
-            persistUsers();
-
             usersByName.put( updatedUser.name(), updatedUser );
+            persistUsers();
         }
     }
 
@@ -163,10 +161,8 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
         if ( foundUser )
         {
             users = newUsers;
-
-            persistUsers();
-
             usersByName.remove( user.name() );
+            persistUsers();
         }
         return foundUser;
     }
