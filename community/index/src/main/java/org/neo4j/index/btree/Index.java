@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,7 +27,7 @@ public class Index implements SCIndex, IdProvider, Closeable
     private long rootId;
     private long lastId;
     private final IndexInsert inserter;
-    private final BTreeNode BTreeNode;
+    private final BTreeNode bTreeNode;
 
     /**
      * Initiate an already existing index from file and meta file
@@ -45,8 +46,8 @@ public class Index implements SCIndex, IdProvider, Closeable
         this.description = meta.description;
         this.rootId = meta.rootId;
         this.lastId = meta.lastId;
-        this.BTreeNode = new BTreeNode( meta.pageSize );
-        this.inserter = new IndexInsert( this, BTreeNode );
+        this.bTreeNode = new BTreeNode( meta.pageSize );
+        this.inserter = new IndexInsert( this, bTreeNode );
     }
 
     /**
@@ -63,19 +64,19 @@ public class Index implements SCIndex, IdProvider, Closeable
     {
         this.metaFile = metaFile;
         this.pageSize = pageSize;
-        this.pagedFile = pageCache.map( indexFile, pageSize );
+        this.pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
         this.description = description;
         this.lastId = 0;
         this.rootId = this.lastId;
-        this.BTreeNode = new BTreeNode( pageSize );
-        this.inserter = new IndexInsert( this, BTreeNode );
+        this.bTreeNode = new BTreeNode( pageSize );
+        this.inserter = new IndexInsert( this, bTreeNode );
 
         SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
 
         // Initialize index root node to a leaf node.
         PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
         cursor.next();
-        BTreeNode.initializeLeaf( cursor );
+        bTreeNode.initializeLeaf( cursor );
         cursor.close();
     }
 
@@ -99,11 +100,11 @@ public class Index implements SCIndex, IdProvider, Closeable
             rootId = acquireNewId();
             cursor.next( rootId );
 
-            BTreeNode.initializeInternal( cursor );
-            BTreeNode.setKeyAt( cursor, split.primKey, 0 );
-            BTreeNode.setKeyCount( cursor, 1 );
-            BTreeNode.setChildAt( cursor, split.left, 0 );
-            BTreeNode.setChildAt( cursor, split.right, 1 );
+            bTreeNode.initializeInternal( cursor );
+            bTreeNode.setKeyAt( cursor, split.primKey, 0 );
+            bTreeNode.setKeyCount( cursor, 1 );
+            bTreeNode.setChildAt( cursor, split.left, 0 );
+            bTreeNode.setChildAt( cursor, split.right, 1 );
             if ( metaFile != null )
             {
                 SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
@@ -118,7 +119,7 @@ public class Index implements SCIndex, IdProvider, Closeable
         PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
         cursor.next();
 
-        seeker.seek( cursor, BTreeNode, resultList );
+        seeker.seek( cursor, bTreeNode, resultList );
         cursor.close();
     }
 
@@ -141,18 +142,18 @@ public class Index implements SCIndex, IdProvider, Closeable
 
         int level = 0;
         long id;
-        while ( BTreeNode.isInternal( cursor ) )
+        while ( bTreeNode.isInternal( cursor ) )
         {
             System.out.println( "Level " + level++ );
             id = cursor.getCurrentPageId();
-            printKeysOfSiblings( cursor, BTreeNode );
+            printKeysOfSiblings( cursor, bTreeNode );
             System.out.println();
             cursor.next( id );
-            cursor.next( BTreeNode.childAt( cursor, 0 ) );
+            cursor.next( bTreeNode.childAt( cursor, 0 ) );
         }
 
         System.out.println( "Level " + level );
-        printKeysOfSiblings( cursor, BTreeNode );
+        printKeysOfSiblings( cursor, bTreeNode );
         System.out.println();
         cursor.close();
     }
