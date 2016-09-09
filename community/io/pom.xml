@@ -105,6 +105,22 @@ the relevant Commercial Agreement.
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>${test.runner.jvm.settings}</argLine>
+          <parallel>both</parallel>
+          <threadCount>32</threadCount>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <argLine>${test.runner.jvm.settings}</argLine>
+          <parallel>both</parallel>
+          <threadCount>32</threadCount>
+        </configuration>
+      </plugin>
+      <plugin>
         <!--
           Run mutation tests like this:
           mvn org.pitest:pitest-maven:mutationCoverage
