@@ -60,13 +60,13 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     }
 
     @Override
-    public AuthManager newInstance( Config config, LogProvider logProvider, Log securityLog,
+    public AuthManager newInstance( Config config, LogProvider logProvider, Log allegedSecurityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
 //        StaticLoggerBinder.setNeo4jLogProvider( logProvider );
 
         List<Realm> realms = new ArrayList<>( 2 );
-        SecurityLog castedSecurityLog = (SecurityLog) securityLog;
+        SecurityLog securityLog = getSecurityLog( allegedSecurityLog );
 
         // We always create the internal realm as it is our only UserManager implementation
         InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
@@ -80,7 +80,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         if ( config.get( SecuritySettings.ldap_authentication_enabled ) ||
              config.get( SecuritySettings.ldap_authorization_enabled ) )
         {
-            realms.add( new LdapRealm( config, castedSecurityLog ) );
+            realms.add( new LdapRealm( config, securityLog ) );
         }
 
         if ( config.get( SecuritySettings.plugin_authentication_enabled ) ||
@@ -94,7 +94,14 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         return new MultiRealmAuthManager( internalRealm, realms,
                 new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ),
-                castedSecurityLog, config.get( EnterpriseEditionSettings.security_log_successful_authentication ) );
+                securityLog, config.get( EnterpriseEditionSettings.security_log_successful_authentication ) );
+    }
+
+    private SecurityLog getSecurityLog( Log allegedSecurityLog )
+    {
+        return allegedSecurityLog instanceof SecurityLog ?
+               (SecurityLog) allegedSecurityLog :
+                new SecurityLog( allegedSecurityLog );
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
