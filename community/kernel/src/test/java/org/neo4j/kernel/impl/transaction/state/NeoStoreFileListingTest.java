@@ -37,6 +37,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -58,11 +59,62 @@ public class NeoStoreFileListingTest
     @Rule
     public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( getClass() );
     private NeoStoreDataSource neoStoreDataSource;
+    private static final String[] STANDARD_STORE_DIR_FILES = new String[]{
+            "lock",
+            "debug.log",
+            "neostore",
+            "neostore.id",
+            "neostore.counts.db.a",
+            "neostore.counts.db.b",
+            "neostore.labeltokenstore.db",
+            "neostore.labeltokenstore.db.id",
+            "neostore.labeltokenstore.db.names",
+            "neostore.labeltokenstore.db.names.id",
+            "neostore.nodestore.db",
+            "neostore.nodestore.db.id",
+            "neostore.nodestore.db.labels",
+            "neostore.nodestore.db.labels.id",
+            "neostore.propertystore.db",
+            "neostore.propertystore.db.arrays",
+            "neostore.propertystore.db.arrays.id",
+            "neostore.propertystore.db.id",
+            "neostore.propertystore.db.index",
+            "neostore.propertystore.db.index.id",
+            "neostore.propertystore.db.index.keys",
+            "neostore.propertystore.db.index.keys.id",
+            "neostore.propertystore.db.strings",
+            "neostore.propertystore.db.strings.id",
+            "neostore.relationshipstore.db",
+            "neostore.relationshipstore.db.id",
+            "neostore.relationshiptypestore.db",
+            "neostore.relationshiptypestore.db.id",
+            "neostore.relationshiptypestore.db.names",
+            "neostore.relationshiptypestore.db.names.id",
+            "neostore.schemastore.db",
+            "neostore.schemastore.db.id",
+            PhysicalLogFile.DEFAULT_NAME + ".active",
+            PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0",
+            PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "1",
+            PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "2",
+            "store_lock"};
+
+    private static final String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{"schema", "index", "branched"};
 
     @Before
     public void setUp() throws IOException
     {
+        createIndexDbFile();
         neoStoreDataSource = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
+    }
+
+    private void createIndexDbFile() throws IOException
+    {
+        File storeDir = new File( db.getStoreDir() );
+        final File indexFile = new File( storeDir, "index.db" );
+        if ( !indexFile.exists() )
+        {
+            assertTrue( indexFile.createNewFile() );
+        }
     }
 
     private Set<String> expectedStoreFiles( boolean includeLogFiles )
@@ -70,11 +122,7 @@ public class NeoStoreFileListingTest
         Set<String> storeFileNames = new HashSet<>();
         for ( StoreType type : StoreType.values() )
         {
-            if ( type.equals( StoreType.COUNTS ) )
-            {
-                // Skip
-            }
-            else
+            if ( !type.equals( StoreType.COUNTS ) )
             {
                 storeFileNames.add( type.getStoreFile().fileName( StoreFileType.STORE ) );
             }
@@ -83,6 +131,7 @@ public class NeoStoreFileListingTest
         {
             storeFileNames.add( PhysicalLogFile.DEFAULT_NAME + ".0" );
         }
+        storeFileNames.add( IndexConfigStore.INDEX_DB_FILE_NAME );
         return storeFileNames;
     }
 
@@ -101,7 +150,7 @@ public class NeoStoreFileListingTest
         final Set<String> actual = asSetOfPaths( storeFiles );
         final Set<String> expectedStoreFiles = expectedStoreFiles( false );
         final List<String> countStoreFiles = countStoreFiles();
-        assertTrue( actual.containsAll( expectedStoreFiles ) );
+        assertTrue( diffSet( actual, expectedStoreFiles ), actual.containsAll( expectedStoreFiles ) );
         assertFalse( Collections.disjoint( actual, countStoreFiles ) );
     }
 
@@ -112,7 +161,7 @@ public class NeoStoreFileListingTest
         final Set<String> actual = asSetOfPaths( storeFiles );
         final Set<String> expectedStoreFiles = expectedStoreFiles( true );
         final List<String> countStoreFiles = countStoreFiles();
-        assertTrue( actual.containsAll( expectedStoreFiles ) );
+        assertTrue( diffSet( actual, expectedStoreFiles ), actual.containsAll( expectedStoreFiles ) );
         assertFalse( Collections.disjoint( actual, countStoreFiles ) );
     }
 
@@ -125,6 +174,7 @@ public class NeoStoreFileListingTest
         LegacyIndexProviderLookup legacyIndexes = mock( LegacyIndexProviderLookup.class );
         when( legacyIndexes.all() ).thenReturn( Collections.emptyList() );
         File storeDir = mock( File.class );
+        filesInStoreDirAre( storeDir, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
         NeoStoreFileListing fileListing = new NeoStoreFileListing(
                 storeDir, labelScanStore, indexingService, legacyIndexes, storageEngine );
@@ -143,6 +193,14 @@ public class NeoStoreFileListingTest
         verify( indexSnapshot ).close();
     }
 
+    private void filesInStoreDirAre( File storeDir, String[] filenames, String[] dirs )
+    {
+        ArrayList<File> files = new ArrayList<>();
+        mockFiles( filenames, files, false );
+        mockFiles( dirs, files, true );
+        when( storeDir.listFiles() ).thenReturn( files.toArray( new File[files.size()] ) );
+    }
+
     private String diffSet( Set<String> actual, Set<String> expected )
     {
         Set<String> extra = new HashSet<>( actual );
@@ -154,12 +212,12 @@ public class NeoStoreFileListingTest
 
     private Set<String> asSetOfPaths( ResourceIterator<StoreFileMetadata> result )
     {
-        List<String> fnames = new ArrayList<>();
+        List<String> names = new ArrayList<>();
         while ( result.hasNext() )
         {
-            fnames.add( result.next().file().getName() );
+            names.add( result.next().file().getName() );
         }
-        return Iterables.asUniqueSet( fnames );
+        return Iterables.asUniqueSet( names );
     }
 
     private ResourceIterator<File> scanStoreFilesAre( LabelScanStore labelScanStore, String[] fileNames )

@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -77,7 +78,7 @@ public class NeoStoreFileListing
 
     private void gatherNonRecordStores( Collection<StoreFileMetadata> files, boolean includeLogs )
     {
-        for ( File file : storeDir.listFiles() )
+        for ( File file : Objects.requireNonNull( storeDir.listFiles()) )
         {
             if ( file.getName().equals( IndexConfigStore.INDEX_DB_FILE_NAME ) )
             {
