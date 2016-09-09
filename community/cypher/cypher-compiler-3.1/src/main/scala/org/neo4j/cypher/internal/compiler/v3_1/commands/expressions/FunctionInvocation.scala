@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
@@ -30,8 +29,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {
 
-  private val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
    val query = state.query
 
@@ -39,7 +36,8 @@ case class FunctionInvocation(signature: UserFunctionSignature, arguments: Index
     val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.typeConverter.asPublicType)
     val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, state.typeConverter.asPrivateType)
     val argValues = arguments.map(arg => converter.asDeepJavaValue(arg(ctx)(state)))
-    val result = callMode.callFunction(query, signature.name, argValues)
+
+    val result = query.callFunction(signature.name, argValues, signature.allowed)
 
     scalaValues.asDeepScalaValue(result)
   }

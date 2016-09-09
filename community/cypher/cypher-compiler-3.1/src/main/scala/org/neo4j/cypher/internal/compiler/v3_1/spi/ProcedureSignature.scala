@@ -37,7 +37,7 @@ case class UserFunctionSignature(name: QualifiedName,
                                  inputSignature: IndexedSeq[FieldSignature],
                                  outputType: CypherType,
                                  deprecationInfo: Option[String],
-                                 accessMode: ProcedureReadOnlyAccess)
+                                 allowed: Array[String])
 
 object QualifiedName {
   def apply(unresolved: UnresolvedCall): QualifiedName =

@@ -141,17 +141,8 @@ class ExceptionTranslatingQueryContextFor3_1(val inner: QueryContext) extends Qu
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callDbmsProcedure(name, args, allowed))
 
-  override def callReadOnlyFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    translateException(inner.callReadOnlyFunction(name, args, allowed))
-
-  override def callReadWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    translateException(inner.callReadWriteFunction(name, args, allowed))
-
-  override def callSchemaWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    translateException(inner.callSchemaWriteFunction(name, args, allowed))
-
-  override def callDbmsFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    translateException(inner.callDbmsFunction(name, args, allowed))
+  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+    translateException(inner.callFunction(name, args, allowed))
 
   override def isGraphKernelResultValue(v: Any): Boolean =
     translateException(inner.isGraphKernelResultValue(v))

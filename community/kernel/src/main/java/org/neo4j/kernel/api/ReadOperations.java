@@ -567,5 +567,5 @@ public interface ReadOperations
     RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException;
 
     /** Invoke a read-only procedure by name */
-   Object functionCallRead( QualifiedName name, Object[] input ) throws ProcedureException;
+   Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException;
 }

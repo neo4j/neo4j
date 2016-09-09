@@ -558,9 +558,9 @@ public class OperationsFacade
     }
 
     @Override
-    public Object functionCallRead( QualifiedName name, Object[] input ) throws ProcedureException
+    public Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callFunction( name, input, AccessMode.Static.READ );
+        return callFunction( name, input );
     }
 
     @Override
@@ -1089,12 +1089,6 @@ public class OperationsFacade
         return callProcedure( name, input, AccessMode.Static.FULL );
     }
 
-    @Override
-    public Object functionCallWrite( QualifiedName name, Object[] input ) throws ProcedureException
-    {
-        // FIXME: should this be AccessMode.Static.WRITE instead?
-        return callFunction( name, input, AccessMode.Static.FULL );
-    }
     // </DataWrite>
 
     // <SchemaWrite>
@@ -1163,12 +1157,6 @@ public class OperationsFacade
     public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
     {
         return callProcedure( name, input, AccessMode.Static.FULL );
-    }
-
-    @Override
-    public Object functionCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
-    {
-        return callFunction( name, input, AccessMode.Static.FULL );
     }
 
     // </SchemaWrite>
@@ -1511,7 +1499,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
 
-        try ( KernelTransaction.Revertable revertable = tx.overrideWith( mode ) )
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );
@@ -1521,12 +1509,12 @@ public class OperationsFacade
     }
 
     private Object callFunction(
-            QualifiedName name, Object[] input, AccessMode mode )
+            QualifiedName name, Object[] input )
             throws ProcedureException
     {
         statement.assertOpen();
 
-        try ( KernelTransaction.Revertable revertable = tx.overrideWith( mode ) )
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( AccessMode.Static.READ ) )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );

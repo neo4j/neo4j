@@ -29,13 +29,9 @@ import java.lang.annotation.Target;
  * cypher query language.
  * <p>
  * Functions accept input, use that input to perform work, and then return a value. The work performed usually
- * involves one or more resources, such as a {@link org.neo4j.graphdb.GraphDatabaseService}.
+ * involves one or more resources, such as a {@link org.neo4j.graphdb.GraphDatabaseService}. Functions are read-only, i.e
+ * can't update neither the graph nor update schema.
  * <p>
- * A function is associated with one of the following modes
- *      READ    allows only reading the graph (default mode)
- *      WRITE   allows reading and writing the graph
- *      SCHEMA  allows reading the graphs and performing schema operations
- *      DBMS    allows managing the database (i.e. change password)
  *
  * <h2>Input declaration</h2>
  * A function can accept input arguments, which is defined in the arguments to the

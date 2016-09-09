@@ -130,14 +130,7 @@ trait QueryContextAdaptation {
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
-  override def callReadOnlyFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef = ???
-
-  override def callDbmsFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef = ???
-
-  override def callSchemaWriteFunction(name: QualifiedName, args: Seq[Any],
-                                       allowed: Array[String]): AnyRef = ???
-
-  override def callReadWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef = ???
+  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef = ???
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 

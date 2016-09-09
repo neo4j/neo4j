@@ -193,17 +193,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     inner.callDbmsProcedure(name, args, allowed)
 
-  override def callReadOnlyFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    singleDbHit(inner.callReadOnlyFunction(name, args, allowed))
-
-  override def callReadWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    singleDbHit(inner.callReadWriteFunction(name, args, allowed))
-
-  override def callSchemaWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    singleDbHit(inner.callSchemaWriteFunction(name, args, allowed))
-
-  override def callDbmsFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    inner.callDbmsFunction(name, args, allowed)
+  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+    singleDbHit(inner.callFunction(name, args, allowed))
 
   override def isGraphKernelResultValue(v: Any): Boolean =
     inner.isGraphKernelResultValue(v)

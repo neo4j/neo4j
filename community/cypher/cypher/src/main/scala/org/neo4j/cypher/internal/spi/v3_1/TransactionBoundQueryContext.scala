@@ -636,36 +636,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  override def callReadOnlyFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val revertable = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_READ))
       case _ => None
     }
-    callFunction(name, args, transactionalContext.statement.readOperations().functionCallRead, revertable.foreach(_.close))
-  }
-
-  override def callReadWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val revertable = transactionalContext.accessMode match {
-      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
-        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_WRITE))
-      case _ => None
-    }
-    callFunction(name, args, transactionalContext.statement.dataWriteOperations().functionCallWrite,
-                  revertable.foreach(_.close))
-  }
-
-  override def callSchemaWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val revertable = transactionalContext.accessMode match {
-      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
-        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_SCHEMA))
-      case _ => None
-    }
-    callFunction(name, args, transactionalContext.statement.schemaWriteOperations().functionCallSchema, revertable.foreach(_.close))
-  }
-
-  override def callDbmsFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    callFunction(name, args, transactionalContext.dbmsOperations.functionCallDbms, ())
+    callFunction(name, args, transactionalContext.statement.readOperations().functionCall, revertable.foreach(_.close))
   }
 
   private def callFunction(name: QualifiedName, args: Seq[Any],

@@ -151,6 +151,4 @@ public interface DataWriteOperations extends TokenWriteOperations
 
     /** Invoke a read/write procedure by name */
     RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException;
-
-    Object functionCallWrite( QualifiedName name, Object[] input ) throws ProcedureException;
 }

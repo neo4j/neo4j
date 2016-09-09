@@ -151,7 +151,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
       val output = asCypherType(ks.outputType())
       val deprecationInfo = asOption(ks.deprecated())
 
-      Some(UserFunctionSignature(name, input, output, deprecationInfo, ProcedureReadOnlyAccess(ks.allowed())))
+      Some(UserFunctionSignature(name, input, output, deprecationInfo, ks.allowed()))
     }
     else None
   }

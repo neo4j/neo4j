@@ -164,12 +164,7 @@ trait QueryContext extends TokenContext {
 
   def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callReadOnlyFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
-
-  def callReadWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
-  def callSchemaWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
-
-  def callDbmsFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
+  def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
 
   // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database

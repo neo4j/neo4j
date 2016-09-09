@@ -36,8 +36,6 @@ sealed trait ProcedureCallMode {
 
   def callProcedure(ctx: QueryContext, name: QualifiedName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
-  def callFunction(ctx: QueryContext, name: QualifiedName, args: Seq[Any]): AnyRef
-
   val allowed: Array[String]
 }
 
@@ -46,9 +44,6 @@ case class LazyReadOnlyCallMode(allowed: Array[String]) extends ProcedureCallMod
 
   override def callProcedure(ctx: QueryContext, name: QualifiedName, args: Seq[Any]): Iterator[Array[AnyRef]] =
     ctx.callReadOnlyProcedure(name, args, allowed)
-
-  override def callFunction(ctx: QueryContext, name: QualifiedName, args: Seq[Any]) =
-    ctx.callReadOnlyFunction(name, args, allowed)
 }
 
 case class EagerReadWriteCallMode(allowed: Array[String]) extends ProcedureCallMode {
@@ -62,9 +57,6 @@ case class EagerReadWriteCallMode(allowed: Array[String]) extends ProcedureCallM
     }
     builder.result().iterator
   }
-
-    override def callFunction(ctx: QueryContext, name: QualifiedName, args: Seq[Any]) =
-      ctx.callReadWriteFunction(name, args, allowed)
 }
 
 case class SchemaWriteCallMode(allowed: Array[String]) extends ProcedureCallMode {
@@ -78,9 +70,6 @@ case class SchemaWriteCallMode(allowed: Array[String]) extends ProcedureCallMode
     }
     builder.result().iterator
   }
-
-  override def callFunction(ctx: QueryContext, name: QualifiedName, args: Seq[Any]) =
-    ctx.callSchemaWriteFunction(name, args, allowed)
 }
 
 case class DbmsCallMode(allowed: Array[String]) extends ProcedureCallMode {
@@ -94,7 +83,4 @@ case class DbmsCallMode(allowed: Array[String]) extends ProcedureCallMode {
     }
     builder.result().iterator
   }
-
-  override def callFunction(ctx: QueryContext, name: QualifiedName, args: Seq[Any]) =
-    ctx.callDbmsFunction(name, args, allowed)
 }
