@@ -67,10 +67,17 @@ public abstract class AbstractComponentSwitcher<T> implements ComponentSwitcher
     private void updateDelegate( T newValue )
     {
         T oldDelegate = delegate.setDelegate( newValue );
-        shutdownDelegate( oldDelegate );
+        shutdownOldDelegate( oldDelegate );
+        startNewDelegate( newValue );
     }
 
-    protected void shutdownDelegate( T oldDelegate )
+    protected void startNewDelegate( T newValue )
     {
+        // no-op by default
+    }
+
+    protected void shutdownOldDelegate( T oldDelegate )
+    {
+        // no-op by default
     }
 }

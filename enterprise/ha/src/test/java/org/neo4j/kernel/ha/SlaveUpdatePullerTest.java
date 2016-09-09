@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,7 +41,6 @@ import org.neo4j.kernel.ha.UpdatePuller.Condition;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.impl.util.CountingJobScheduler;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -50,7 +48,6 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.CleanupRule;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
@@ -59,7 +56,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -97,7 +93,6 @@ public class SlaveUpdatePullerTest
         when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
         jobScheduler.init();
         jobScheduler.start();
-        updatePuller.init();
         updatePuller.start();
     }
 
@@ -105,7 +100,6 @@ public class SlaveUpdatePullerTest
     public void tearDown() throws Throwable
     {
         updatePuller.stop();
-        updatePuller.shutdown();
         jobScheduler.stop();
         jobScheduler.shutdown();
     }
@@ -113,11 +107,8 @@ public class SlaveUpdatePullerTest
     @Test
     public void initialisationMustBeIdempotent() throws Throwable
     {
-        updatePuller.init();
         updatePuller.start();
-        updatePuller.init();
         updatePuller.start();
-        updatePuller.init();
         updatePuller.start();
         assertThat( scheduledJobs.get(), is( 1 ) );
     }
@@ -135,7 +126,7 @@ public class SlaveUpdatePullerTest
         verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
         // WHEN
-        updatePuller.shutdown();
+        updatePuller.stop();
         updatePuller.pullUpdates();
 
         // THEN
@@ -168,7 +159,7 @@ public class SlaveUpdatePullerTest
     public void falseOnTryPullUpdatesOnInactivePuller() throws Throwable
     {
         // GIVEN
-        updatePuller.shutdown();
+        updatePuller.stop();
 
         // WHEN
         boolean result = updatePuller.tryPullUpdates();
@@ -182,7 +173,7 @@ public class SlaveUpdatePullerTest
     {
         // GIVEN
         Condition condition = mock( Condition.class );
-        updatePuller.shutdown();
+        updatePuller.stop();
 
         // WHEN
         try
@@ -207,7 +198,7 @@ public class SlaveUpdatePullerTest
             @Override
             public Boolean answer( InvocationOnMock invocation ) throws Throwable
             {
-                updatePuller.shutdown();
+                updatePuller.stop();
                 return false;
             }
         } );
@@ -315,13 +306,4 @@ public class SlaveUpdatePullerTest
                 repeat( new InvalidEpochException( 2, 1 ), SlaveUpdatePuller.LOG_CAP + 1 ) );
     }
 
-    private AssertableLogProvider.LogMatcher[] repeat( AssertableLogProvider.LogMatcher item, int logCap )
-    {
-        AssertableLogProvider.LogMatcher[] items = new AssertableLogProvider.LogMatcher[logCap];
-        for ( int i = 0; i < logCap; i++ )
-        {
-            items[i] = item;
-        }
-        return items;
-    }
 }
