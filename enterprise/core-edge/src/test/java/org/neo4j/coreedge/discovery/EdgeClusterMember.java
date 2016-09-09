@@ -41,6 +41,7 @@ public class EdgeClusterMember implements ClusterMember
     private final DiscoveryServiceFactory discoveryServiceFactory;
     private final File storeDir;
     private final int memberId;
+    private final String boltAdvertisedAddress;
     private EdgeGraphDatabase database;
 
     public EdgeClusterMember( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
@@ -67,7 +68,8 @@ public class EdgeClusterMember implements ClusterMember
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + (9000 + memberId) );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:" + (9000 + memberId) );
+        boltAdvertisedAddress = "127.0.0.1:" + (9000 + memberId);
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
 
         File neo4jHome = new File( parentDir, "server-edge-" + memberId );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
@@ -77,7 +79,18 @@ public class EdgeClusterMember implements ClusterMember
         storeDir.mkdirs();
     }
 
+    public String boltAdvertisedAddress()
+    {
+        return boltAdvertisedAddress;
+    }
+
+    public String routingAddress()
+    {
+        return String.format( "bolt+routing://%s", boltAdvertisedAddress );
+    }
+
     @Override
+
     public void start()
     {
         database = new EdgeGraphDatabase( storeDir, config,

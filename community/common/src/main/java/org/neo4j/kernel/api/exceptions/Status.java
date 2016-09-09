@@ -483,7 +483,7 @@ public interface Status
         NoLeaderAvailable( TransientError,
                 "No leader available at the moment. Retrying your request at a later time may succeed." ),
 
-        NotALeader( TransientError,
+        NotALeader( ClientError,
                 "The request cannot be processed by this server. Write requests can only be processed by the leader." ),
                 ;
 

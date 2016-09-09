@@ -147,6 +147,11 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
                 } );
     }
 
+    public void triggerElection() throws IOException
+    {
+        handle( new RaftMessages.Timeout.Election( myself ) );
+    }
+
     public void stopTimers()
     {
         heartbeatTimer.cancel();

@@ -50,6 +50,7 @@ public class CoreClusterMember implements ClusterMember
     private final File storeDir;
     private final Map<String, String> config = stringMap();
     private final int serverId;
+    private final String boltAdvertisedAddress;
     private CoreGraphDatabase database;
 
     public CoreClusterMember( int serverId, int clusterSize,
@@ -80,7 +81,9 @@ public class CoreClusterMember implements ClusterMember
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + boltPort );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:" + boltPort );
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address.name(), "127.0.0.1:" + boltPort );
+        boltAdvertisedAddress = "127.0.0.1:" + boltPort;
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         config.putAll( extraParams );
@@ -96,6 +99,16 @@ public class CoreClusterMember implements ClusterMember
         this.discoveryServiceFactory = discoveryServiceFactory;
         storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
         storeDir.mkdirs();
+    }
+
+    public String boltAdvertisedAddress()
+    {
+        return boltAdvertisedAddress;
+    }
+
+    public String routingAddress()
+    {
+        return String.format( "bolt+routing://%s", boltAdvertisedAddress );
     }
 
     @Override
@@ -129,6 +142,11 @@ public class CoreClusterMember implements ClusterMember
     public CoreState coreState()
     {
         return database.getDependencyResolver().resolveDependency( CoreState.class );
+    }
+
+    public RaftMachine raft()
+    {
+        return database.getDependencyResolver().resolveDependency( RaftMachine.class );
     }
 
     public MemberId id()
