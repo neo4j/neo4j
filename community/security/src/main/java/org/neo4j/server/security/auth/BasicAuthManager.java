@@ -33,6 +33,11 @@ import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
+import static org.neo4j.kernel.api.security.AuthToken.BASIC_SCHEME;
+import static org.neo4j.kernel.api.security.AuthToken.NATIVE_REALM;
+import static org.neo4j.kernel.api.security.AuthToken.REALM_KEY;
+import static org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY;
+
 /**
  * Manages server authentication and authorization.
  * <p>
@@ -87,6 +92,13 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     public void shutdown() throws Throwable
     {
         userRepository.shutdown();
+    }
+
+    @Override
+    public boolean supports( Map<String,Object> authToken )
+    {
+        return authToken.containsKey( SCHEME_KEY ) && BASIC_SCHEME.equals( authToken.get( SCHEME_KEY ) ) &&
+               (!authToken.containsKey( REALM_KEY ) || NATIVE_REALM.equals( authToken.get( REALM_KEY ) ));
     }
 
     @Override

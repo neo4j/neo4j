@@ -71,6 +71,13 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
     }
 
     @Override
+    public boolean supports( final Map<String,Object> authToken )
+    {
+        final ShiroAuthToken token = new ShiroAuthToken( authToken );
+        return realms.stream().anyMatch( realm -> realm.supports( token ) );
+    }
+
+    @Override
     public EnterpriseAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
         ShiroSubject subject;

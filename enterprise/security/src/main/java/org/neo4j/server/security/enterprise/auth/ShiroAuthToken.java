@@ -56,4 +56,13 @@ public class ShiroAuthToken implements AuthenticationToken
     {
         return authToken;
     }
+
+    /** returns true if token map does not specify a realm, or if it specifies the requested realm */
+    public boolean supportsRealm( String realm )
+    {
+        return !authToken.containsKey( AuthToken.REALM_KEY ) ||
+               authToken.get( AuthToken.REALM_KEY ).toString().length() == 0 ||
+               authToken.get( AuthToken.REALM_KEY ).equals( "*" ) ||
+               authToken.get( AuthToken.REALM_KEY ).equals( realm );
+    }
 }

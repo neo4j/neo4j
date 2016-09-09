@@ -42,6 +42,8 @@ public interface AuthManager extends Lifecycle
         public abstract AuthManager newInstance( Config config, LogProvider logProvider );
     }
 
+    boolean supports( Map<String, Object> authToken );
+
     /**
      * Log in using the provided authentication token
      * @param authToken The authentication token to login with. Typically contains principals and credentials.
@@ -73,6 +75,12 @@ public interface AuthManager extends Lifecycle
         @Override
         public void shutdown() throws Throwable
         {
+        }
+
+        @Override
+        public boolean supports( Map<String,Object> authToken )
+        {
+            return true;
         }
 
         @Override

@@ -55,6 +55,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.v1.messaging.message.ResetMessage.reset;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.security.AuthToken.BASIC_SCHEME;
+import static org.neo4j.kernel.api.security.AuthToken.CREDENTIALS;
+import static org.neo4j.kernel.api.security.AuthToken.NATIVE_REALM;
+import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
+import static org.neo4j.kernel.api.security.AuthToken.REALM_KEY;
+import static org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject>
@@ -129,7 +135,8 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         }
         subject.client.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk( InitMessage.init( "TestClient/1.1",
-                        map( "principal", username, "credentials", password, "scheme", "basic" ) ) ) );
+                        map( REALM_KEY, NATIVE_REALM, PRINCIPAL, username, CREDENTIALS, password,
+                                SCHEME_KEY, BASIC_SCHEME ) ) ) );
         assertThat( subject.client, TransportTestUtil.eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         subject.setLoginResult( TransportTestUtil.receiveOneResponseMessage( subject.client ) );
         return subject;

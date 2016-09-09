@@ -30,7 +30,11 @@ public interface AuthToken
     String SCHEME_KEY = "scheme";
     String PRINCIPAL = "principal";
     String CREDENTIALS = "credentials";
+    String REALM_KEY = "realm";
+    String PARAMETERS = "parameters";
     String NEW_CREDENTIALS = "new_credentials";
+    String BASIC_SCHEME = "basic";
+    String NATIVE_REALM = "native";
 
     static String safeCast( String key, Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
@@ -39,13 +43,33 @@ public interface AuthToken
         {
             throw new InvalidAuthTokenException(
                     "The value associated with the key `" + key + "` must be a String but was: " +
-                    (value == null ? "null" : value.getClass().getSimpleName()));
+                    (value == null ? "null" : value.getClass().getSimpleName()) );
         }
         return (String) value;
     }
 
     static Map<String,Object> newBasicAuthToken( String username, String password )
     {
-        return map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS, password );
+        return map( AuthToken.SCHEME_KEY, BASIC_SCHEME, AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS,
+                password );
+    }
+
+    static Map<String,Object> newBasicAuthToken( String username, String password, String realm )
+    {
+        return map( AuthToken.SCHEME_KEY, BASIC_SCHEME, AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS, password,
+                AuthToken.REALM_KEY, realm );
+    }
+
+    static Map<String,Object> newCustomAuthToken( String principle, String credentials, String realm, String scheme )
+    {
+        return map( AuthToken.SCHEME_KEY, scheme, AuthToken.PRINCIPAL, principle, AuthToken.CREDENTIALS, credentials,
+                AuthToken.REALM_KEY, realm );
+    }
+
+    static Map<String,Object> newCustomAuthToken( String principle, String credentials, String realm, String scheme,
+            Map<String,Object> parameters )
+    {
+        return map( AuthToken.SCHEME_KEY, scheme, AuthToken.PRINCIPAL, principle, AuthToken.CREDENTIALS, credentials,
+                AuthToken.REALM_KEY, realm, AuthToken.PARAMETERS, parameters );
     }
 }

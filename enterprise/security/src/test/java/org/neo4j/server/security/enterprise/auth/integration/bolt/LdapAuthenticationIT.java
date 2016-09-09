@@ -550,6 +550,24 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
 
     //-------------------------------------------------------------------------
 
+    @Test
+    public void shouldBeAbleToLoginWithLdapWhenSelectingRealmFromClient() throws Throwable
+    {
+        //--------------------------
+        // When we have a native 'tank' that is read only, and ldap 'tank' that is publisher
+        testCreateReaderUser("tank");
+
+        //--------------------------
+        // Then native "tank" is reader
+        reconnect();
+        testAuthWithReaderUser("tank", "native");
+
+        //--------------------------
+        // And ldap "tank" is publisher
+        reconnect();
+        testAuthWithPublisherUser("tank", "ldap");
+    }
+
     @Before
     public void setup()
     {
@@ -577,22 +595,36 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
 
     private void testCreateReaderUser() throws Exception
     {
+        testCreateReaderUser( "neo" );
+    }
+
+    private void testAuthWithReaderUser() throws Exception
+    {
+        testAuthWithReaderUser( "neo", null );
+    }
+    private void testAuthWithPublisherUser() throws Exception
+    {
+        testAuthWithPublisherUser( "tank", null );
+    }
+
+    private void testCreateReaderUser(String username) throws Exception
+    {
         assertAuth( "neo4j", "abc123" );
 
         // NOTE: The default user 'neo4j' has password change required, so we have to first change it
         client.send( TransportTestUtil.chunk(
                 run( "CALL dbms.security.changeUserPassword('neo4j', '123', false) " +
-                     "CALL dbms.security.createUser( 'neo', 'invalid', false ) " +
-                     "CALL dbms.security.addRoleToUser( 'reader', 'neo' ) RETURN 0" ),
+                     "CALL dbms.security.createUser( '" + username + "', 'abc123', false ) " +
+                     "CALL dbms.security.addRoleToUser( 'reader', '" + username + "' ) RETURN 0" ),
                 pullAll() ) );
 
         assertThat( client, eventuallyReceives( msgSuccess() ) );
     }
 
-    private void testAuthWithReaderUser() throws Exception
+    private void testAuthWithReaderUser(String username, String realm) throws Exception
     {
         // When
-        assertAuth( "neo", "abc123" );
+        assertAuth( username, "abc123", realm );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -610,13 +642,13 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         // Then
         assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
-                        String.format( "Write operations are not allowed for 'neo'." ) ) ) );
+                        String.format( "Write operations are not allowed for '" + username + "'." ) ) ) );
     }
 
-    private void testAuthWithPublisherUser() throws Exception
+    private void testAuthWithPublisherUser(String username, String realm) throws Exception
     {
         // When
-        assertAuth( "tank", "abc123" );
+        assertAuth( username, "abc123", realm );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -645,14 +677,29 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
 
     private void assertAuth( String username, String password ) throws Exception
     {
+        assertAuth( username, password, null );
+    }
+
+    private void assertAuth( String username, String password, String realm ) throws Exception
+    {
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", username,
-                                "credentials", password, "scheme", "basic" ) ) ) );
+                .send( TransportTestUtil.chunk( init( "TestClient/1.1", authToken( username, password, realm ) ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgSuccess() ) );
+    }
+
+    private Map<String,Object> authToken( String username, String password, String realm )
+    {
+        if ( realm != null && realm.length() > 0 )
+        {
+            return map( "principal", username, "credentials", password, "scheme", "basic", "realm", realm );
+        }
+        else
+        {
+            return map( "principal", username, "credentials", password, "scheme", "basic" );
+        }
     }
 
     private void assertAuthFail( String username, String password ) throws Exception
