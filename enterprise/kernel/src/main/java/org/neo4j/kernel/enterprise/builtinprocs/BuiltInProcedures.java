@@ -120,13 +120,7 @@ public class BuiltInProcedures
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException
     {
-        EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
-        if ( !subject.isAdmin() && !subject.hasUsername( username ) )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-
-        subject.ensureUserExistsWithName( username );
+        ensureSelfOrAdminEnterpriseAuthSubject( username );
 
         return terminateConnectionsForValidUser( username );
     }
@@ -139,7 +133,7 @@ public class BuiltInProcedures
             .activeTransactions()
             .stream()
             .flatMap( KernelTransactionHandle::executingQueries )
-            .filter( ( query ) -> isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.authSubjectName() ) )
+            .filter( ( query ) -> isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.username() ) )
             .map( this::queryStatusResult );
     }
 
@@ -190,10 +184,10 @@ public class BuiltInProcedures
     private QueryTerminationResult killQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )
     {
         ExecutingQuery query = pair.other();
-        if ( isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.authSubjectName() ) )
+        if ( isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.username() ) )
         {
             pair.first().markForTermination( Status.Transaction.Terminated );
-            return new QueryTerminationResult( queryId( query.kernelQueryId() ), query.authSubjectName() );
+            return new QueryTerminationResult( queryId( query.kernelQueryId() ), query.username() );
         }
         else
         {
@@ -293,12 +287,13 @@ public class BuiltInProcedures
             throws InvalidArgumentsException
     {
         EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
-        subject.ensureUserExistsWithName( username );
 
         if ( subject.isAdmin() || subject.hasUsername( username ) )
         {
+            subject.ensureUserExistsWithName( username );
             return subject;
         }
+
         throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 
@@ -306,7 +301,7 @@ public class BuiltInProcedures
     {
         return new QueryStatusResult(
             queryId( q.kernelQueryId() ),
-            q.authSubjectName(),
+            q.username(),
             q.queryText(),
             q.queryParameters(),
             q.startTime(),

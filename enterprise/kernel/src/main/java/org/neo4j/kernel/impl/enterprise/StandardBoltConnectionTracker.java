@@ -56,8 +56,7 @@ public class StandardBoltConnectionTracker implements BoltConnectionTracker
         return sessions
                 .entrySet()
                 .stream()
-                .filter( entry -> entry.getValue()
-                .equals( owner ) )
+                .filter( entry -> entry.getValue().equals( owner ) )
                 .map( Map.Entry::getKey ).collect( toSet() );
     }
 }

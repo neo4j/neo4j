@@ -115,7 +115,7 @@ public class BasicAuthSubject implements AuthSubject
     @Override
     public boolean hasUsername( String username )
     {
-        return user.name().equals( username );
+        return username().equals( username );
     }
 
     @Override

@@ -56,7 +56,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     {
         long queryId = lastQueryId.incrementAndGet();
         ExecutingQuery executingQuery =
-                new ExecutingQuery( queryId, statement.authSubjectName(), queryText, queryParameters, clock.millis() );
+                new ExecutingQuery( queryId, statement.username(), queryText, queryParameters, clock.millis() );
         registerExecutingQuery( statement, executingQuery );
         return executingQuery;
     }

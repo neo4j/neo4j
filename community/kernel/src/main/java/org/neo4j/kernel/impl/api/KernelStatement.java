@@ -30,6 +30,8 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -201,9 +203,10 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    final String authSubjectName()
+    final String username()
     {
-        return transaction.mode().name();
+        AccessMode mode = transaction.mode();
+        return ( mode instanceof AuthSubject ) ? ((AuthSubject) mode).username() : null;
     }
 
     final ExecutingQueryList executingQueryList()

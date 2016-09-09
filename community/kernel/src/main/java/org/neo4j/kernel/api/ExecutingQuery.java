@@ -30,21 +30,21 @@ public class ExecutingQuery
 {
     private final long queryId;
 
-    private final String authSubjectName;
+    private final String username;
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime;
 
     public ExecutingQuery(
         long queryId,
-        String authSubjectName,
+        String userNameOrNull,
         String queryText,
         Map<String,Object> queryParameters,
         long startTime
     )
     {
         this.queryId = queryId;
-        this.authSubjectName = authSubjectName;
+        this.username = userNameOrNull;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
         this.startTime = startTime;
@@ -79,9 +79,9 @@ public class ExecutingQuery
         return queryId;
     }
 
-    public String authSubjectName()
+    public String username()
     {
-        return authSubjectName;
+        return username;
     }
 
     public String queryText()
@@ -103,7 +103,7 @@ public class ExecutingQuery
     public String toString()
     {
         return format(
-            "ExecutingQuery{queryId=%d, authSubjectName='%s', queryText='%s', queryParameters=%s, startTime=%d}",
-            queryId, authSubjectName, queryText, queryParameters, startTime );
+            "ExecutingQuery{queryId=%d, username='%s', queryText='%s', queryParameters=%s, startTime=%d}",
+            queryId, username == null ? "<unavailable>" : username, queryText, queryParameters, startTime );
     }
 }
