@@ -44,8 +44,8 @@ case object ToString extends Function {
            CTNumber.invariant |
            CTAny.invariant => SemanticCheckResult.success(s)
 
-      case
-        CTAny.covariant => SemanticCheckResult.success(s)
+      case x if x.contains(CTAny) =>
+        SemanticCheckResult.success(s)
 
       case x =>
         val message = s"Type mismatch: expected Boolean, Float, Integer or String but was ${x.mkString(", ")}"
