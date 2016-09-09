@@ -36,10 +36,15 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -70,24 +75,29 @@ public class CheckConsistencyCommand implements AdminCommand
         @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
-            return new CheckConsistencyCommand( homeDir, configDir );
+            return new CheckConsistencyCommand( homeDir, configDir, outsideWorld );
         }
     }
 
     private final Path homeDir;
     private final Path configDir;
+    private final OutsideWorld outsideWorld;
     private final ConsistencyCheckService consistencyCheckService;
+    private final FileSystemAbstraction fileSystemAbstraction;
 
-    public CheckConsistencyCommand( Path homeDir, Path configDir )
+    public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        this( homeDir, configDir, new ConsistencyCheckService() );
+        this( homeDir, configDir, outsideWorld, new ConsistencyCheckService() );
     }
 
-    public CheckConsistencyCommand( Path homeDir, Path configDir, ConsistencyCheckService consistencyCheckService )
+    public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld, ConsistencyCheckService
+            consistencyCheckService )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
+        this.outsideWorld = outsideWorld;
         this.consistencyCheckService = consistencyCheckService;
+        this.fileSystemAbstraction = new DefaultFileSystemAbstraction();
     }
 
     @Override
@@ -114,9 +124,11 @@ public class CheckConsistencyCommand implements AdminCommand
 
         try
         {
-            consistencyCheckService.runFullConsistencyCheck( config.get( database_path ), config,
+            File storeDir = config.get( database_path );
+            checkDbState( storeDir, config );
+            consistencyCheckService.runFullConsistencyCheck( storeDir, config,
                     ProgressMonitorFactory.textual( System.err ), FormattedLogProvider.toOutputStream( System.out ),
-                    new DefaultFileSystemAbstraction(), verbose );
+                    this.fileSystemAbstraction, verbose );
         }
         catch ( ConsistencyCheckIncompleteException | IOException e )
         {
@@ -139,6 +151,26 @@ public class CheckConsistencyCommand implements AdminCommand
         {
             throw new IllegalArgumentException(
                     String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
+        }
+    }
+
+    private void checkDbState( File storeDir, Config additionalConfiguration ) throws CommandFailed
+    {
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( this.fileSystemAbstraction,
+                additionalConfiguration ) )
+        {
+            if ( new RecoveryRequiredChecker( this.fileSystemAbstraction, pageCache ).isRecoveryRequiredAt( storeDir ) )
+            {
+                throw new CommandFailed( Strings.joinAsLines(
+                        "Active logical log detected, this might be a source of inconsistencies.",
+                        "Please recover database before running the consistency check.",
+                        "To perform recovery please start database and perform clean shutdown." ) );
+            }
+        }
+        catch ( IOException e )
+        {
+            outsideWorld.stdErrLine( "Failure when checking for recovery state: '%s', continuing as normal.%n" + e
+                    .getMessage() );
         }
     }
 

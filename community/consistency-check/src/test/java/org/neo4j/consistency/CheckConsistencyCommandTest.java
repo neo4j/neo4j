@@ -27,6 +27,7 @@ import java.io.File;
 import java.nio.file.Path;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -56,9 +57,10 @@ public class CheckConsistencyCommandTest
     @Test
     public void requiresDatabaseArgument() throws Exception
     {
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( testDir.directory( "home" ).toPath(),
-                        testDir.directory( "conf" ).toPath() );
+                        testDir.directory( "conf" ).toPath(), outsideWorld );
 
         String[] arguments = {""};
         try
@@ -78,8 +80,10 @@ public class CheckConsistencyCommandTest
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         Path homeDir = testDir.directory( "home" ).toPath();
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                        consistencyCheckService );
 
         File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
         checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
@@ -95,8 +99,10 @@ public class CheckConsistencyCommandTest
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         Path homeDir = testDir.directory( "home" ).toPath();
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                        consistencyCheckService );
 
         File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
 
