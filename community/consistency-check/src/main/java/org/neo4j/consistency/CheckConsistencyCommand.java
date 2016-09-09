@@ -22,7 +22,7 @@ package org.neo4j.consistency;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,11 +39,9 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
@@ -60,7 +58,7 @@ public class CheckConsistencyCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "--database=<database> [--tuning-config=<file>] [--verbose]" );
+            return Optional.of( "--database=<database> [--additional-config=<file>] [--verbose]" );
         }
 
         @Override
@@ -79,8 +77,6 @@ public class CheckConsistencyCommand implements AdminCommand
     private final Path homeDir;
     private final Path configDir;
     private final ConsistencyCheckService consistencyCheckService;
-    private final LogProvider logProvider;
-    private final FileSystemAbstraction fileSystemAbstraction;
 
     public CheckConsistencyCommand( Path homeDir, Path configDir )
     {
@@ -92,8 +88,6 @@ public class CheckConsistencyCommand implements AdminCommand
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.consistencyCheckService = consistencyCheckService;
-        this.logProvider = FormattedLogProvider.toOutputStream( System.out );
-        this.fileSystemAbstraction = new DefaultFileSystemAbstraction();
     }
 
     @Override
@@ -101,49 +95,50 @@ public class CheckConsistencyCommand implements AdminCommand
     {
         String database;
         Boolean verbose;
-        File tuningConfigFile;
+        File additionalConfigFile;
 
         Args parsedArgs = Args.parse( args );
         try
         {
             database = parsedArgs.interpretOption( "database", Converters.mandatory(), s -> s );
             verbose = parsedArgs.getBoolean( "verbose" );
-            tuningConfigFile =
-                    parsedArgs.interpretOption( "tuning-confing", Converters.optional(), Converters.toFile() );
+            additionalConfigFile =
+                    parsedArgs.interpretOption( "additional-config", Converters.optional(), Converters.toFile() );
         }
         catch ( IllegalArgumentException e )
         {
             throw new IncorrectUsage( e.getMessage() );
         }
 
-        Config config = loadNeo4jConfig( homeDir, configDir, database, loadTuningConfig( tuningConfigFile ) );
+        Config config = loadNeo4jConfig( homeDir, configDir, database, loadAdditionalConfig( additionalConfigFile ) );
 
         try
         {
             consistencyCheckService.runFullConsistencyCheck( config.get( database_path ), config,
-                    ProgressMonitorFactory.textual( System.err ), logProvider, fileSystemAbstraction, verbose );
+                    ProgressMonitorFactory.textual( System.err ), FormattedLogProvider.toOutputStream( System.out ),
+                    new DefaultFileSystemAbstraction(), verbose );
         }
         catch ( ConsistencyCheckIncompleteException | IOException e )
         {
-            throw new CommandFailed( "Consistency checking failed.", e );
+            throw new CommandFailed( "Consistency checking failed." + e.getMessage(), e );
         }
     }
 
-    private Map<String,String> loadTuningConfig( File tuningConfigFile )
+    private Map<String,String> loadAdditionalConfig( File additionalConfigFile )
     {
-        if ( tuningConfigFile == null )
+        if ( additionalConfigFile == null )
         {
             return new HashMap<>();
         }
 
         try
         {
-            return MapUtil.load( tuningConfigFile );
+            return MapUtil.load( additionalConfigFile );
         }
         catch ( IOException e )
         {
             throw new IllegalArgumentException(
-                    String.format( "Could not read configuration file [%s]", tuningConfigFile ), e );
+                    String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
         }
     }
 
@@ -159,10 +154,7 @@ public class CheckConsistencyCommand implements AdminCommand
 
     private static List<Class<?>> settings()
     {
-        List<Class<?>> settings = new ArrayList<>();
-        settings.add( GraphDatabaseSettings.class );
-        settings.add( DatabaseManagementSystemSettings.class );
-        settings.add( ConsistencyCheckSettings.class );
-        return settings;
+        return Arrays.asList( GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class,
+                ConsistencyCheckSettings.class );
     }
 }
