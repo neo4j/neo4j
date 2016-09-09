@@ -15,12 +15,12 @@ public class IndexInsert
 {
 
     private final IdProvider idProvider;
-    private final Node node;
+    private final BTreeNode BTreeNode;
 
-    public IndexInsert( IdProvider idProvider, Node node )
+    public IndexInsert( IdProvider idProvider, BTreeNode BTreeNode )
     {
         this.idProvider = idProvider;
-        this.node = node;
+        this.BTreeNode = BTreeNode;
     }
 
     /**
@@ -33,18 +33,18 @@ public class IndexInsert
      */
     public SplitResult insert( PageCursor cursor, long[] key, long[] value ) throws IOException
     {
-        if ( node.isLeaf( cursor ) )
+        if ( BTreeNode.isLeaf( cursor ) )
         {
             return insertInLeaf( cursor, key, value );
         }
         else
         {
-            int keyCount = node.keyCount( cursor );
+            int keyCount = BTreeNode.keyCount( cursor );
 
-            int pos = IndexSearch.search( cursor, node, key );
+            int pos = IndexSearch.search( cursor, BTreeNode, key );
 
             long currentId = cursor.getCurrentPageId();
-            cursor.next( node.childAt( cursor, pos ) );
+            cursor.next( BTreeNode.childAt( cursor, pos ) );
 
             SplitResult split = insert( cursor, key, value );
 
@@ -76,23 +76,23 @@ public class IndexInsert
     private SplitResult insertInInternal( PageCursor cursor, long nodeId, int keyCount, long[] primKey, long rightChild )
             throws IOException
     {
-        if ( keyCount < node.internalMaxKeyCount() )
+        if ( keyCount < BTreeNode.internalMaxKeyCount() )
         {
             // No overflow
-            int pos = IndexSearch.search( cursor, node, primKey );
+            int pos = IndexSearch.search( cursor, BTreeNode, primKey );
 
             // Insert and move keys
-            byte[] tmp = node.keysFromTo( cursor, pos, keyCount );
-            node.setKeyAt( cursor, primKey, pos );
-            node.setKeysAt( cursor, tmp, pos + 1 );
+            byte[] tmp = BTreeNode.keysFromTo( cursor, pos, keyCount );
+            BTreeNode.setKeyAt( cursor, primKey, pos );
+            BTreeNode.setKeysAt( cursor, tmp, pos + 1 );
 
             // Insert and move children
-            tmp = node.childrenFromTo( cursor, pos + 1, keyCount + 1 );
-            node.setChildAt( cursor, rightChild, pos + 1 );
-            node.setChildrenAt( cursor, tmp, pos + 2 );
+            tmp = BTreeNode.childrenFromTo( cursor, pos + 1, keyCount + 1 );
+            BTreeNode.setChildAt( cursor, rightChild, pos + 1 );
+            BTreeNode.setChildrenAt( cursor, tmp, pos + 2 );
 
             // Increase key count
-            node.setKeyCount( cursor, keyCount + 1 );
+            BTreeNode.setKeyCount( cursor, keyCount + 1 );
 
             return null;
         }
@@ -128,19 +128,19 @@ public class IndexInsert
         // First fullNode (left node). Then move on to right node.
 
         // Need old right sibling to set for new right sibling later
-        long oldRight = node.rightSibling( cursor );
+        long oldRight = BTreeNode.rightSibling( cursor );
 
         // Update right sibling for splitting node
-        node.setRightSibling( cursor, newRight );
+        BTreeNode.setRightSibling( cursor, newRight );
 
         // Find position to insert new key
-        int pos = IndexSearch.search( cursor, node, primKey );
+        int pos = IndexSearch.search( cursor, BTreeNode, primKey );
 
         // Arrays to temporarily store keys and children in sorted order.
         byte[] allKeysIncludingNewPrimKey = readRecordsWithInsertRecordInPosition( cursor, primKey, pos, keyCount+1,
-                Node.SIZE_KEY, node.keyOffset( 0 ) );
+                BTreeNode.SIZE_KEY, BTreeNode.keyOffset( 0 ) );
         byte[] allChildrenIncludingNewRightChild = readRecordsWithInsertRecordInPosition( cursor,
-                new long[]{newRightChild}, pos+1, keyCount+2, Node.SIZE_CHILD, node.childOffset( 0 ) );
+                new long[]{newRightChild}, pos+1, keyCount+2, BTreeNode.SIZE_CHILD, BTreeNode.childOffset( 0 ) );
 
 
         int keyCountAfterInsert = keyCount + 1;
@@ -150,16 +150,16 @@ public class IndexInsert
         if ( pos < middle )
         {
             // Write keys to left
-            arrayOffset = pos * Node.SIZE_KEY;
-            cursor.setOffset( node.keyOffset( pos ) );
-            cursor.putBytes( allKeysIncludingNewPrimKey, arrayOffset, (middle - pos) * Node.SIZE_KEY );
+            arrayOffset = pos * BTreeNode.SIZE_KEY;
+            cursor.setOffset( BTreeNode.keyOffset( pos ) );
+            cursor.putBytes( allKeysIncludingNewPrimKey, arrayOffset, (middle - pos) * BTreeNode.SIZE_KEY );
 
-            cursor.setOffset( node.childOffset( pos + 1 ) );
-            arrayOffset = (pos + 1) * Node.SIZE_CHILD;
-            cursor.putBytes( allChildrenIncludingNewRightChild, arrayOffset, (middle - pos) * Node.SIZE_VALUE );
+            cursor.setOffset( BTreeNode.childOffset( pos + 1 ) );
+            arrayOffset = (pos + 1) * BTreeNode.SIZE_CHILD;
+            cursor.putBytes( allChildrenIncludingNewRightChild, arrayOffset, (middle - pos) * BTreeNode.SIZE_VALUE );
         }
 
-        node.setKeyCount( cursor, middle );
+        BTreeNode.setKeyCount( cursor, middle );
 
         // Everything in left node should now be updated
         // Ready to start with right node
@@ -167,30 +167,30 @@ public class IndexInsert
         cursor.next( newRight );
 
         // Initialize
-        node.initializeInternal( cursor );
+        BTreeNode.initializeInternal( cursor );
 
         // Siblings
-        node.setRightSibling( cursor, oldRight );
-        node.setLeftSibling( cursor, fullNode );
+        BTreeNode.setRightSibling( cursor, oldRight );
+        BTreeNode.setLeftSibling( cursor, fullNode );
 
         // Keys
-        arrayOffset = (middle + 1) * Node.SIZE_KEY; // NOTE: (middle + 1) don't include middle
-        cursor.setOffset( node.keyOffset( 0 ) );
+        arrayOffset = (middle + 1) * BTreeNode.SIZE_KEY; // NOTE: (middle + 1) don't include middle
+        cursor.setOffset( BTreeNode.keyOffset( 0 ) );
         cursor.putBytes( allKeysIncludingNewPrimKey, arrayOffset, allKeysIncludingNewPrimKey.length - arrayOffset );
 
         // Children
-        arrayOffset = (middle + 1) * Node.SIZE_CHILD;
-        cursor.setOffset( node.childOffset( 0 ) );
+        arrayOffset = (middle + 1) * BTreeNode.SIZE_CHILD;
+        cursor.setOffset( BTreeNode.childOffset( 0 ) );
         cursor.putBytes( allChildrenIncludingNewRightChild, arrayOffset,
                 allChildrenIncludingNewRightChild.length - arrayOffset );
 
         // Key count
         // NOTE: Not keyCountAfterInsert because middle key is not kept at this level
-        node.setKeyCount( cursor, keyCount - middle );
+        BTreeNode.setKeyCount( cursor, keyCount - middle );
 
         // Extract middle key (prim key)
-        arrayOffset = middle * Node.SIZE_KEY;
-        ByteBuffer buffer = ByteBuffer.wrap( allKeysIncludingNewPrimKey, arrayOffset, Node.SIZE_KEY );
+        arrayOffset = middle * BTreeNode.SIZE_KEY;
+        ByteBuffer buffer = ByteBuffer.wrap( allKeysIncludingNewPrimKey, arrayOffset, BTreeNode.SIZE_KEY );
         long[] newPrimKey = new long[2];
         newPrimKey[0] = buffer.getLong();
         newPrimKey[1] = buffer.getLong();
@@ -221,25 +221,25 @@ public class IndexInsert
      */
     private SplitResult insertInLeaf( PageCursor cursor, long[] key, long[] value ) throws IOException
     {
-        int keyCount = node.keyCount( cursor );
+        int keyCount = BTreeNode.keyCount( cursor );
 
-        if ( keyCount < node.leafMaxKeyCount() )
+        if ( keyCount < BTreeNode.leafMaxKeyCount() )
         {
             // No overflow, insert key and value
-            int pos = IndexSearch.search( cursor, node, key );
+            int pos = IndexSearch.search( cursor, BTreeNode, key );
 
             // Insert and move keys
-            byte[] tmp = node.keysFromTo( cursor, pos, keyCount );
-            node.setKeyAt( cursor, key, pos );
-            node.setKeysAt( cursor, tmp, pos + 1 );
+            byte[] tmp = BTreeNode.keysFromTo( cursor, pos, keyCount );
+            BTreeNode.setKeyAt( cursor, key, pos );
+            BTreeNode.setKeysAt( cursor, tmp, pos + 1 );
 
             // Insert and move values
-            tmp = node.valuesFromTo( cursor, pos, keyCount );
-            node.setValueAt( cursor, value, pos );
-            node.setValuesAt( cursor, tmp, pos + 1 );
+            tmp = BTreeNode.valuesFromTo( cursor, pos, keyCount );
+            BTreeNode.setValueAt( cursor, value, pos );
+            BTreeNode.setValuesAt( cursor, tmp, pos + 1 );
 
             // Increase key count
-            node.setKeyCount( cursor, keyCount + 1 );
+            BTreeNode.setKeyCount( cursor, keyCount + 1 );
 
             return null; // No split has occurred
         }
@@ -279,8 +279,8 @@ public class IndexInsert
         long left = cursor.getCurrentPageId();
         long newRight = idProvider.acquireNewId();
 
-        long oldRight = node.rightSibling( cursor );
-        node.setRightSibling( cursor, newRight );
+        long oldRight = BTreeNode.rightSibling( cursor );
+        BTreeNode.setRightSibling( cursor, newRight );
 
         // BALANCE KEYS AND VALUES
         // Two different scenarios
@@ -314,13 +314,13 @@ public class IndexInsert
         //
 
         // Position where newKey / newValue is to be inserted
-        int pos = IndexSearch.search( cursor, node, newKey );
+        int pos = IndexSearch.search( cursor, BTreeNode, newKey );
 
         // arrays to temporarily store all keys and values
         byte[] allKeysIncludingNewKey = readRecordsWithInsertRecordInPosition( cursor, newKey, pos,
-                node.leafMaxKeyCount() + 1, Node.SIZE_KEY, node.keyOffset( 0 ) );
+                BTreeNode.leafMaxKeyCount() + 1, BTreeNode.SIZE_KEY, BTreeNode.keyOffset( 0 ) );
         byte[] allValuesIncludingNewValue = readRecordsWithInsertRecordInPosition( cursor, newValue, pos,
-                node.leafMaxKeyCount() + 1, Node.SIZE_VALUE, node.valueOffset( 0 ) );
+                BTreeNode.leafMaxKeyCount() + 1, BTreeNode.SIZE_VALUE, BTreeNode.valueOffset( 0 ) );
 
         int keyCountAfterInsert = keyCount + 1;
         int middle = keyCountAfterInsert / 2; // Floor division
@@ -332,46 +332,46 @@ public class IndexInsert
         // If pos < middle. Write shifted values to left node. Else, don't write anything.
         if ( pos < middle )
         {
-            int arrayOffset = pos * Node.SIZE_KEY;
-            cursor.setOffset( node.keyOffset( pos ) );
-            cursor.putBytes( allKeysIncludingNewKey, arrayOffset, (middle - pos) * Node.SIZE_KEY );
+            int arrayOffset = pos * BTreeNode.SIZE_KEY;
+            cursor.setOffset( BTreeNode.keyOffset( pos ) );
+            cursor.putBytes( allKeysIncludingNewKey, arrayOffset, (middle - pos) * BTreeNode.SIZE_KEY );
 
-            cursor.setOffset( node.valueOffset( pos ) );
-            arrayOffset = pos * Node.SIZE_VALUE;
-            cursor.putBytes( allValuesIncludingNewValue, arrayOffset, (middle - pos) * Node.SIZE_VALUE );
+            cursor.setOffset( BTreeNode.valueOffset( pos ) );
+            arrayOffset = pos * BTreeNode.SIZE_VALUE;
+            cursor.putBytes( allValuesIncludingNewValue, arrayOffset, (middle - pos) * BTreeNode.SIZE_VALUE );
         }
 
         // Key count
-        node.setKeyCount( cursor, middle );
+        BTreeNode.setKeyCount( cursor, middle );
 
         // We now have everything we need to start working on newRight
         // and everything that needs to be updated in left has been so.
 
         // Initialize
         cursor.next( newRight );
-        node.initializeLeaf( cursor );
+        BTreeNode.initializeLeaf( cursor );
 
         // Siblings
-        node.setRightSibling( cursor, oldRight );
-        node.setLeftSibling( cursor, left );
+        BTreeNode.setRightSibling( cursor, oldRight );
+        BTreeNode.setLeftSibling( cursor, left );
 
         // Keys
-        int arrayOffset = middle * Node.SIZE_KEY;
-        cursor.setOffset( node.keyOffset( 0 ) );
+        int arrayOffset = middle * BTreeNode.SIZE_KEY;
+        cursor.setOffset( BTreeNode.keyOffset( 0 ) );
         cursor.putBytes( allKeysIncludingNewKey, arrayOffset, allKeysIncludingNewKey.length - arrayOffset );
 
         // Values
-        arrayOffset = middle * Node.SIZE_VALUE;
-        cursor.setOffset( node.valueOffset( 0 ) );
+        arrayOffset = middle * BTreeNode.SIZE_VALUE;
+        cursor.setOffset( BTreeNode.valueOffset( 0 ) );
         cursor.putBytes( allValuesIncludingNewValue, arrayOffset, allValuesIncludingNewValue.length - arrayOffset );
 
         // Key count
-        node.setKeyCount( cursor, keyCountAfterInsert - middle );
+        BTreeNode.setKeyCount( cursor, keyCountAfterInsert - middle );
 
         SplitResult split = new SplitResult();
         split.left = left;
         split.right = newRight;
-        split.primKey = node.keyAt( cursor, 0 );
+        split.primKey = BTreeNode.keyAt( cursor, 0 );
 
         // Move cursor back to left
         cursor.next( left );

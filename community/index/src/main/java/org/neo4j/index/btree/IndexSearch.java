@@ -22,13 +22,13 @@ public class IndexSearch
      * //TODO: Implement binary search
      *
      * @param cursor    {@link PageCursor} pinned to page with node (internal or leaf does not matter)
-     * @param node      {@link index.btree.Node} to use for node interpretation
+     * @param BTreeNode      {@link index.btree.Node} to use for node interpretation
      * @param key       long[] of length 2 where key[0] is id and key[1] is property value
      * @return          first position i for which Node.KEY_COMPARATOR.compare( key, Node.keyAt( i ) <= 0;
      */
-    public static int search( PageCursor cursor, Node node, long[] key )
+    public static int search( PageCursor cursor, BTreeNode BTreeNode, long[] key )
     {
-        int keyCount = node.keyCount( cursor );
+        int keyCount = BTreeNode.keyCount( cursor );
 
         if ( keyCount == 0 )
         {
@@ -40,11 +40,11 @@ public class IndexSearch
         int pos;
 
         // Compare key with lower and higher and sort out special cases
-        if ( Node.KEY_COMPARATOR.compare( key, node.keyAt( cursor, higher ) ) > 0 )
+        if ( BTreeNode.KEY_COMPARATOR.compare( key, BTreeNode.keyAt( cursor, higher ) ) > 0 )
         {
             pos = keyCount;
         }
-        else if ( Node.KEY_COMPARATOR.compare( key, node.keyAt( cursor, lower ) ) < 0 )
+        else if ( BTreeNode.KEY_COMPARATOR.compare( key, BTreeNode.keyAt( cursor, lower ) ) < 0 )
         {
             pos = 0;
         }
@@ -57,7 +57,7 @@ public class IndexSearch
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                if ( Node.KEY_COMPARATOR.compare( key, node.keyAt( cursor, pos ) ) <= 0 )
+                if ( BTreeNode.KEY_COMPARATOR.compare( key, BTreeNode.keyAt( cursor, pos ) ) <= 0 )
                 {
                     higher = pos;
                 }

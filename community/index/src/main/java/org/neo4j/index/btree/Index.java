@@ -26,7 +26,7 @@ public class Index implements SCIndex, IdProvider, Closeable
     private long rootId;
     private long lastId;
     private final IndexInsert inserter;
-    private final Node node;
+    private final BTreeNode BTreeNode;
 
     /**
      * Initiate an already existing index from file and meta file
@@ -45,8 +45,8 @@ public class Index implements SCIndex, IdProvider, Closeable
         this.description = meta.description;
         this.rootId = meta.rootId;
         this.lastId = meta.lastId;
-        this.node = new Node( meta.pageSize );
-        this.inserter = new IndexInsert( this, node );
+        this.BTreeNode = new BTreeNode( meta.pageSize );
+        this.inserter = new IndexInsert( this, BTreeNode );
     }
 
     /**
@@ -67,15 +67,15 @@ public class Index implements SCIndex, IdProvider, Closeable
         this.description = description;
         this.lastId = 0;
         this.rootId = this.lastId;
-        this.node = new Node( pageSize );
-        this.inserter = new IndexInsert( this, node );
+        this.BTreeNode = new BTreeNode( pageSize );
+        this.inserter = new IndexInsert( this, BTreeNode );
 
         SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
 
         // Initialize index root node to a leaf node.
         PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
         cursor.next();
-        node.initializeLeaf( cursor );
+        BTreeNode.initializeLeaf( cursor );
         cursor.close();
     }
 
@@ -99,11 +99,11 @@ public class Index implements SCIndex, IdProvider, Closeable
             rootId = acquireNewId();
             cursor.next( rootId );
 
-            node.initializeInternal( cursor );
-            node.setKeyAt( cursor, split.primKey, 0 );
-            node.setKeyCount( cursor, 1 );
-            node.setChildAt( cursor, split.left, 0 );
-            node.setChildAt( cursor, split.right, 1 );
+            BTreeNode.initializeInternal( cursor );
+            BTreeNode.setKeyAt( cursor, split.primKey, 0 );
+            BTreeNode.setKeyCount( cursor, 1 );
+            BTreeNode.setChildAt( cursor, split.left, 0 );
+            BTreeNode.setChildAt( cursor, split.right, 1 );
             if ( metaFile != null )
             {
                 SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
@@ -118,7 +118,7 @@ public class Index implements SCIndex, IdProvider, Closeable
         PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
         cursor.next();
 
-        seeker.seek( cursor, node, resultList );
+        seeker.seek( cursor, BTreeNode, resultList );
         cursor.close();
     }
 
@@ -141,18 +141,18 @@ public class Index implements SCIndex, IdProvider, Closeable
 
         int level = 0;
         long id;
-        while ( node.isInternal( cursor ) )
+        while ( BTreeNode.isInternal( cursor ) )
         {
             System.out.println( "Level " + level++ );
             id = cursor.getCurrentPageId();
-            printKeysOfSiblings( cursor, node );
+            printKeysOfSiblings( cursor, BTreeNode );
             System.out.println();
             cursor.next( id );
-            cursor.next( node.childAt( cursor, 0 ) );
+            cursor.next( BTreeNode.childAt( cursor, 0 ) );
         }
 
         System.out.println( "Level " + level );
-        printKeysOfSiblings( cursor, node );
+        printKeysOfSiblings( cursor, BTreeNode );
         System.out.println();
         cursor.close();
     }
@@ -177,13 +177,13 @@ public class Index implements SCIndex, IdProvider, Closeable
     }
 
     // Utility method
-    protected static void printKeysOfSiblings( PageCursor cursor, Node node ) throws IOException
+    protected static void printKeysOfSiblings( PageCursor cursor, BTreeNode BTreeNode ) throws IOException
     {
         while ( true )
         {
-            printKeys( cursor, node );
-            long rightSibling = node.rightSibling( cursor );
-            if ( rightSibling == Node.NO_NODE_FLAG )
+            printKeys( cursor, BTreeNode );
+            long rightSibling = BTreeNode.rightSibling( cursor );
+            if ( rightSibling == BTreeNode.NO_NODE_FLAG )
             {
                 break;
             }
@@ -192,13 +192,13 @@ public class Index implements SCIndex, IdProvider, Closeable
     }
 
     // Utility method
-    protected static void printKeys( PageCursor cursor, Node node )
+    protected static void printKeys( PageCursor cursor, BTreeNode BTreeNode )
     {
-        int keyCount = node.keyCount( cursor );
+        int keyCount = BTreeNode.keyCount( cursor );
         System.out.print( "|" );
         for ( int i = 0; i < keyCount; i++ )
         {
-            System.out.print( Arrays.toString( node.keyAt( cursor, i ) ) + " " );
+            System.out.print( Arrays.toString( BTreeNode.keyAt( cursor, i ) ) + " " );
         }
         System.out.print( "|" );
     }

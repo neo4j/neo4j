@@ -13,19 +13,19 @@ public class Scanner extends Seeker.CommonSeeker
 {
 
     @Override
-    protected void seekLeaf( PageCursor cursor, Node node, List<SCResult> resultList ) throws IOException
+    protected void seekLeaf( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException
     {
         while ( true )
         {
-            int keyCount = node.keyCount( cursor );
+            int keyCount = BTreeNode.keyCount( cursor );
             for ( int i = 0; i < keyCount; i++ )
             {
-                long[] key = node.keyAt( cursor, i );
-                long[] value = node.valueAt( cursor, i );
+                long[] key = BTreeNode.keyAt( cursor, i );
+                long[] value = BTreeNode.valueAt( cursor, i );
                 resultList.add( new SCResult( new SCKey( key[0], key[1] ), new SCValue( value[0], value[1] ) ) );
             }
-            long rightSibling = node.rightSibling( cursor );
-            if ( rightSibling == Node.NO_NODE_FLAG )
+            long rightSibling = BTreeNode.rightSibling( cursor );
+            if ( rightSibling == BTreeNode.NO_NODE_FLAG )
             {
                 break;
             }
@@ -34,9 +34,9 @@ public class Scanner extends Seeker.CommonSeeker
     }
 
     @Override
-    protected void seekInternal( PageCursor cursor, Node node, List<SCResult> resultList ) throws IOException
+    protected void seekInternal( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException
     {
-        cursor.next( node.childAt( cursor, 0 ) );
-        seek( cursor, node, resultList );
+        cursor.next( BTreeNode.childAt( cursor, 0 ) );
+        seek( cursor, BTreeNode, resultList );
     }
 }

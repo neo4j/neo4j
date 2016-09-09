@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * HEADER_LENGTH + SIZE_KEY * MAX_KEY_COUNT_LEAF + i * SIZE_VALUE
  *
  */
-public class Node
+public class BTreeNode
 {
     public static final int BYTE_POS_TYPE = 0;
     public static final int BYTE_POS_KEYCOUNT = 1;
@@ -68,7 +68,7 @@ public class Node
         return compareId != 0 ? compareId : Long.compare( left[1], right[1] );
     };
 
-    public Node( int pageSize )
+    public BTreeNode( int pageSize )
     {
         internalMaxKeyCount = Math.floorDiv( pageSize - (HEADER_LENGTH + SIZE_CHILD),
                 SIZE_KEY + SIZE_CHILD);
