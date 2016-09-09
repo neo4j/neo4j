@@ -29,6 +29,7 @@ import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.Files.isDirectory;
@@ -57,6 +58,16 @@ public class ArchiveTest
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Files.createDirectories( directory );
         Files.write( directory.resolve( "a-file" ), "text".getBytes() );
+
+        assertRoundTrips( directory );
+    }
+
+    @Test
+    public void shouldRoundTripAnEmptyFile() throws IOException, IncorrectFormat
+    {
+        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Files.createDirectories( directory );
+        Files.write( directory.resolve( "a-file" ), new byte[0] );
 
         assertRoundTrips( directory );
     }
@@ -103,10 +114,49 @@ public class ArchiveTest
         assertRoundTrips( directory );
     }
 
+    @Test
+    public void shouldExcludeFilesMatchedByTheExclusionPredicate() throws IOException, IncorrectFormat
+    {
+        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Files.createDirectories( directory );
+        Files.write( directory.resolve( "a-file" ), new byte[0] );
+        Files.write( directory.resolve( "another-file" ), new byte[0] );
+
+        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        new Dumper().dump( directory, archive, path -> path.getFileName().toString().equals( "another-file" ) );
+        Path newDirectory = testDirectory.file( "the-new-directory" ).toPath();
+        new Loader().load( archive, newDirectory );
+
+        Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
+        Files.createDirectories( expectedOutput );
+        Files.write( expectedOutput.resolve( "a-file" ), new byte[0] );
+
+        assertEquals( describeRecursively( expectedOutput ), describeRecursively( newDirectory ) );
+    }
+
+    @Test
+    public void shouldExcludeWholeDirectoriesMatchedByTheExclusionPredicate() throws IOException, IncorrectFormat
+    {
+        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path subdir = directory.resolve( "subdir" );
+        Files.createDirectories( subdir );
+        Files.write( subdir.resolve( "a-file" ), new byte[0] );
+
+        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        new Dumper().dump( directory, archive, path -> path.getFileName().toString().equals( "subdir" ) );
+        Path newDirectory = testDirectory.file( "the-new-directory" ).toPath();
+        new Loader().load( archive, newDirectory );
+
+        Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
+        Files.createDirectories( expectedOutput );
+
+        assertEquals( describeRecursively( expectedOutput ), describeRecursively( newDirectory ) );
+    }
+
     private void assertRoundTrips( Path oldDirectory ) throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        new Dumper().dump( oldDirectory, archive );
+        new Dumper().dump( oldDirectory, archive, Predicates.alwaysFalse() );
         Path newDirectory = testDirectory.file( "the-new-directory" ).toPath();
         new Loader().load( archive, newDirectory );
 

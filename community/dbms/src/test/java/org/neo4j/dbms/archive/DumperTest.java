@@ -32,6 +32,7 @@ import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
@@ -53,7 +54,7 @@ public class DumperTest
         Files.write( archive, new byte[0] );
         try
         {
-            new Dumper().dump( directory, archive );
+            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( FileAlreadyExistsException e )
@@ -69,7 +70,7 @@ public class DumperTest
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         try
         {
-            new Dumper().dump( directory, archive );
+            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( NoSuchFileException e )
@@ -85,7 +86,7 @@ public class DumperTest
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
         try
         {
-            new Dumper().dump( directory, archive );
+            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( NoSuchFileException e )
@@ -102,7 +103,7 @@ public class DumperTest
         Files.write( archive.getParent(), new byte[0] );
         try
         {
-            new Dumper().dump( directory, archive );
+            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( FileSystemException e )
@@ -121,7 +122,7 @@ public class DumperTest
         Files.createDirectories( archive.getParent() );
         try ( Closeable ignored = TestUtils.withPermissions( archive.getParent(), emptySet() ) )
         {
-            new Dumper().dump( directory, archive );
+            new Dumper().dump( directory, archive, Predicates.alwaysFalse() );
             fail( "Expected an exception" );
         }
         catch ( AccessDeniedException e )

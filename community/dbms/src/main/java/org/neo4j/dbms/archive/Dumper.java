@@ -24,31 +24,38 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.stream.Stream;
+import java.util.function.Predicate;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
-import static java.nio.file.Files.isRegularFile;
+import org.neo4j.function.ThrowingAction;
 
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 import static org.neo4j.dbms.archive.Utils.copy;
+import static org.neo4j.function.Predicates.not;
+import static org.neo4j.function.ThrowingAction.noop;
+import static org.neo4j.io.fs.FileVisitors.justContinue;
+import static org.neo4j.io.fs.FileVisitors.onDirectory;
+import static org.neo4j.io.fs.FileVisitors.onFile;
+import static org.neo4j.io.fs.FileVisitors.onlyMatching;
+import static org.neo4j.io.fs.FileVisitors.throwExceptions;
 
 public class Dumper
 {
-    public void dump( Path root, Path archive ) throws IOException
+    public void dump( Path root, Path archive, Predicate<Path> exclude ) throws IOException
     {
         checkWritableDirectory( archive.getParent() );
-        try ( Stream<Path> files = Files.walk( root );
-              ArchiveOutputStream stream = openArchiveOut( archive ) )
+        try ( ArchiveOutputStream stream = openArchiveOut( archive ) )
         {
-            files.forEach( file -> dumpFile( file, root, stream ) );
-        }
-        catch ( TunnellingException e )
-        {
-            throw e.getWrapped();
+            Files.walkFileTree( root,
+                    onlyMatching( not( exclude ),
+                            throwExceptions(
+                                    onDirectory( dir -> dumpDirectory( root, stream, dir ),
+                                            onFile( file -> dumpFile( root, stream, file ),
+                                                    justContinue() ) ) ) ) );
         }
     }
 
@@ -65,47 +72,35 @@ public class Dumper
         return tarball;
     }
 
-    private static void dumpFile( Path file, Path root, ArchiveOutputStream archive )
+    private void dumpFile( Path root, ArchiveOutputStream stream, Path file ) throws IOException
     {
-        try
-        {
-            ArchiveEntry entry = createEntry( file, root, archive );
-            archive.putArchiveEntry( entry );
-            if ( isRegularFile( file ) )
-            {
-                writeFile( file, archive );
-            }
-            archive.closeArchiveEntry();
-        }
-        catch ( IOException e )
-        {
-            throw new TunnellingException( e );
-        }
+        withEntry( () -> writeFile( file, stream ), root, stream, file );
     }
 
-    private static ArchiveEntry createEntry( Path file, Path root, ArchiveOutputStream archive ) throws IOException
+    private void dumpDirectory( Path root, ArchiveOutputStream stream, Path dir ) throws IOException
+    {
+        withEntry( noop(), root, stream, dir );
+    }
+
+    private void withEntry( ThrowingAction<IOException> operation, Path root, ArchiveOutputStream stream, Path file )
+            throws IOException
+    {
+        ArchiveEntry entry = createEntry( file, root, stream );
+        stream.putArchiveEntry( entry );
+        operation.apply();
+        stream.closeArchiveEntry();
+    }
+
+    private ArchiveEntry createEntry( Path file, Path root, ArchiveOutputStream archive ) throws IOException
     {
         return archive.createArchiveEntry( file.toFile(), "./" + root.relativize( file ).toString() );
     }
 
-    private static void writeFile( Path file, ArchiveOutputStream archiveStream ) throws IOException
+    private void writeFile( Path file, ArchiveOutputStream archiveStream ) throws IOException
     {
         try ( InputStream in = Files.newInputStream( file ) )
         {
             copy( in, archiveStream );
-        }
-    }
-
-    private static class TunnellingException extends RuntimeException
-    {
-        public TunnellingException( IOException e )
-        {
-            super( e );
-        }
-
-        public IOException getWrapped()
-        {
-            return (IOException) getCause();
         }
     }
 }

@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -166,7 +167,7 @@ public class DumpCommand implements AdminCommand
     {
         try
         {
-            dumper.dump( databaseDirectory, archive );
+            dumper.dump( databaseDirectory, archive, this::isStoreLock );
         }
         catch ( FileAlreadyExistsException e )
         {
@@ -184,6 +185,11 @@ public class DumpCommand implements AdminCommand
         {
             wrapIOException( e );
         }
+    }
+
+    private boolean isStoreLock( Path path )
+    {
+        return Objects.equals( path.getFileName().toString(), StoreLocker.STORE_LOCK_FILENAME );
     }
 
     private void wrapIOException( IOException e ) throws CommandFailed
