@@ -33,15 +33,8 @@ public class EnterpriseAuthProceduresProvider extends ProceduresProvider
     }
 
     @Override
-    public void registerProcedures( Procedures procedures )
+    public void registerProcedures( Procedures procedures ) throws KernelException
     {
-        try
-        {
-            procedures.registerProcedure( AuthProcedures.class, true );
-        }
-        catch ( KernelException e )
-        {
-            throw new RuntimeException( e );
-        }
+        procedures.registerProcedure( AuthProcedures.class, true );
     }
 }

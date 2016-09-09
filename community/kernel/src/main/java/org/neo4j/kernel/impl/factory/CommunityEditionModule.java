@@ -259,7 +259,7 @@ public class CommunityEditionModule extends EditionModule
     public void registerProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( BuiltInProcedures.class );
-        findProcedureProvider( "auth-procedures-provider" ).registerProcedures( procedures );
+        registerProceduresFromProvider( "auth-procedures-provider", procedures );
     }
 
     @Override

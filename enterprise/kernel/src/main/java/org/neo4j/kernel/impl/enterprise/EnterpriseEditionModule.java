@@ -56,7 +56,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         super.registerProcedures( procedures );
         procedures.registerProcedure( BuiltInProcedures.class );
         procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-        findProcedureProvider( "enterprise-auth-procedures-provider" ).registerProcedures( procedures );
+        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
     }
     private SecurityLog securityLog;
 

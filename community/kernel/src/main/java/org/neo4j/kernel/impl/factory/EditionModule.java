@@ -24,11 +24,12 @@ import java.io.IOException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.logging.Log;
@@ -159,16 +159,17 @@ public abstract class EditionModule
         throw new IllegalArgumentException( "No auth manager factory detected!." );
     }
 
-    protected ProceduresProvider findProcedureProvider( String key )
+    protected void registerProceduresFromProvider( String key, Procedures procedures ) throws KernelException
     {
         for ( ProceduresProvider candidate : Service.load( ProceduresProvider.class ) )
         {
             if ( candidate.matches( key ) )
             {
-                return candidate;
+                candidate.registerProcedures( procedures );
+                return;
             }
         }
-        throw new IllegalArgumentException( "No procedure provider found with the key '" + key + "'." );
+        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, "No procedure provider found with the key '" + key + "'." );
     }
 
     protected BoltConnectionTracker createSessionTracker()

@@ -108,8 +108,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     {
         procedures.register( new EdgeRoleProcedure() );
         procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-        findProcedureProvider( "auth-procedures-provider" ).registerProcedures( procedures );
-        findProcedureProvider( "enterprise-auth-procedures-provider" ).registerProcedures( procedures );
+        registerProceduresFromProvider( "auth-procedures-provider" , procedures );
+        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
     }
 
     @Override

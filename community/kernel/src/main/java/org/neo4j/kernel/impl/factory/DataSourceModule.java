@@ -414,7 +414,6 @@ public class DataSourceModule
         catch ( KernelException e )
         {
             internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
-            throw new RuntimeException( e );
         }
 
         return procedures;

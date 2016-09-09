@@ -60,6 +60,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -80,7 +81,6 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -110,13 +110,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     @Override
-    public void registerProcedures( Procedures procedures )
+    public void registerProcedures( Procedures procedures ) throws KernelException
     {
         try
         {
             procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-            findProcedureProvider( "auth-procedures-provider" ).registerProcedures( procedures );
-            findProcedureProvider( "enterprise-auth-procedures-provider" ).registerProcedures( procedures );
+            registerProceduresFromProvider( "auth-procedures-provider", procedures );
+            registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
 
             procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );

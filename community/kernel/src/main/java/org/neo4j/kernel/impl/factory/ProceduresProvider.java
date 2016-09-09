@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 
 
@@ -37,5 +38,5 @@ public abstract class ProceduresProvider extends Service
         super( key, altKeys );
     }
 
-    public abstract void registerProcedures( Procedures procedures );
+    public abstract void registerProcedures( Procedures procedures ) throws KernelException;
 }
