@@ -286,22 +286,6 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 
-<<<<<<< HEAD
-  private def labelScan = NodeByLabelScanPipe("x", LazyLabel(LABEL.name()))()
-
-  private def labelScan(label: String) = NodeByLabelScanPipe("x", LazyLabel(label))()
-
-  private def hashJoin(l: Pipe, r: Pipe) = NodeHashJoinPipe(Set("x"), l, r)()
-
-  private def expand(l: Pipe, t: String) = ExpandAllPipe(l, "x", "r", "n", SemanticDirection.OUTGOING, LazyTypes(Seq(t)))()
-
-  private def allNodes = AllNodesScanPipe("x")()
-
-  private def nodeById(id: Long) = NodeByIdSeekPipe("x", SingleSeekArg(Literal(id)))()
-
-  private def relById(id: Long) = UndirectedRelationshipByIdSeekPipe("r", SingleSeekArg(Literal(id)), "to", "from")()
-
-=======
   private def labelScan(variable: String, label: String) = NodeByLabelScanPipe(variable, LazyLabel(label))()
 
   private def hashJoin(l: Pipe, r: Pipe) = NodeHashJoinPipe(Set("x"), l, r)()
@@ -314,16 +298,11 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def relById(id: Long) = UndirectedRelationshipByIdSeekPipe("r", SingleSeekArg(Literal(id)), "to", "from")()
 
->>>>>>> Tweak cost model constants
   private def eager(pipe: Pipe) = EagerPipe(pipe)()
 
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
-<<<<<<< HEAD
       val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
-=======
-      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
->>>>>>> Tweak cost model constants
       val ctx = new TransactionBoundPlanContext(transactionalContext)
       val literal = Literal(42)
 
@@ -338,11 +317,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def indexScan(graph: GraphDatabaseQueryService): NodeIndexScanPipe = {
     graph.withTx { tx =>
-<<<<<<< HEAD
       val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
-=======
-      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
->>>>>>> Tweak cost model constants
       val ctx = new TransactionBoundPlanContext(transactionalContext)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get

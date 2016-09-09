@@ -394,19 +394,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     }
   }
 
-  test("should not use indexes for large collections") {
-    // Index selectivity is 0.02, and label selectivity is 0.2.
-    // The OR query will use the formula A ∪ B = ¬ ( ¬ A ∩ ¬ B ) to calculate the selectivities,
-    // which gives us the formula:
-    // 1 - (1 - 0.02)^25 = 1 - .98^25 = 1 - .713702596 = 0.4 which is less selective than .2, so the index
-    // should not win
-    (new given {
-      indexOn("Awesome", "prop")
-    } planFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25] RETURN n").plan should beLike {
-      case _: Selection => ()
-    }
-  }
-
   test("should use indexes for large collections if it is a unique index") {
     val result = new given {
       cost =  {
