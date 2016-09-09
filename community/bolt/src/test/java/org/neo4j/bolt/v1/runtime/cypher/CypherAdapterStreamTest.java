@@ -24,6 +24,7 @@ import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
@@ -157,7 +158,7 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
 
-        when( result.getNotifications() ).thenReturn( Arrays.asList(
+        when( result.getNotifications() ).thenReturn( Arrays.<Notification>asList(
                 NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
                 NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
         ) );
