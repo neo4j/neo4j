@@ -65,7 +65,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphdb-api</artifactId>
-      <version>3.1.0-M06</version>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>
