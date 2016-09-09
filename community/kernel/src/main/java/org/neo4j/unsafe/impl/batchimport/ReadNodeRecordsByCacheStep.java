@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
@@ -40,16 +41,30 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
     private final boolean denseNodes;
     private final NodeRelationshipCache cache;
     private final int batchSize;
-    private final NodeStore nodeStore;
+    private final RecordCursor<NodeRecord> recordCursor;
 
     public ReadNodeRecordsByCacheStep( StageControl control, Configuration config,
             NodeStore nodeStore, NodeRelationshipCache cache, boolean denseNodes )
     {
         super( control, ">", config );
-        this.nodeStore = nodeStore;
         this.cache = cache;
         this.denseNodes = denseNodes;
         this.batchSize = config.batchSize();
+        this.recordCursor = nodeStore.newRecordCursor( nodeStore.newRecord() );
+    }
+
+    @Override
+    public void start( int orderingGuarantees )
+    {
+        super.start( orderingGuarantees );
+        recordCursor.acquire( 0, RecordLoad.NORMAL );
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        recordCursor.close();
+        super.close();
     }
 
     @Override
@@ -80,7 +95,8 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
         @Override
         public void change( long nodeId, ByteArray array )
         {
-            batch[cursor++] = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.CHECK );
+            recordCursor.next( nodeId );
+            batch[cursor++] = recordCursor.get().clone();
             if ( cursor == batchSize )
             {
                 send();
