@@ -77,7 +77,6 @@ import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
@@ -146,14 +145,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
                 platformModule.dataSourceManager,
-                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier,
-                logProvider );
-
-        life.add( localDatabase );
+                platformModule.pageCache,
+                databaseHealthSupplier );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory );
 
-        ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(), platformModule, clusterStateDirectory );
+        ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
+                platformModule );
         topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );

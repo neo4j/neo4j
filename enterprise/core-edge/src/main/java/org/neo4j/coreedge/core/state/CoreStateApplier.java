@@ -39,7 +39,7 @@ public class CoreStateApplier
     {
         private volatile boolean cancelled;
 
-        public boolean isCancelled()
+        boolean isCancelled()
         {
             return cancelled;
         }
@@ -50,6 +50,7 @@ public class CoreStateApplier
 
     private final Status status = new Status();
     private ExecutorService applier;
+    private boolean isPanic;
 
     public CoreStateApplier( LogProvider logProvider )
     {
@@ -70,40 +71,60 @@ public class CoreStateApplier
      * @param abortableTask A function that creates a runnable that can use
      *                      the status flag to decide when to abort.
      */
-    public void submit( Function<Status,Runnable> abortableTask )
+    public boolean submit( Function<Status,Runnable> abortableTask )
     {
+        if ( isPanic )
+        {
+            return false;
+        }
+
         if ( status.cancelled )
         {
             log.warn( "Task submitted while cancelled" );
         }
 
         applier.submit( abortableTask.apply( status ) );
+        return true;
     }
 
     /**
      * Used for synchronizing with the internal executor.
      *
      * @param cancelTasks Whether or not to flag for cancelling.
-     *
-     * @throws InterruptedException
      */
-    public void sync( boolean cancelTasks ) throws InterruptedException
+    public void sync( boolean cancelTasks )
     {
-        if ( applier != null )
+        if ( cancelTasks )
         {
-            if ( cancelTasks )
+            status.cancelled = true;
+        }
+
+        applier.shutdown();
+
+        do
+        {
+            try
             {
-                status.cancelled = true;
+                applier.awaitTermination( 1, MINUTES );
+            }
+            catch ( InterruptedException ignored )
+            {
+                log.warn( "Unexpected interrupt", ignored );
             }
 
-            applier.shutdown();
-
-            while ( !applier.awaitTermination( 1, MINUTES ) )
+            if ( !applier.isTerminated() )
             {
                 log.warn( "Applier is taking an unusually long time to sync" );
             }
         }
+        while ( !applier.isTerminated() );
 
         spawnExecutor();
+    }
+
+    public void panic()
+    {
+        applier.shutdown();
+        isPanic = true;
     }
 }

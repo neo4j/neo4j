@@ -20,20 +20,24 @@
 package org.neo4j.coreedge.core.state;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
-import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.pruning.LogPruner;
 import org.neo4j.coreedge.core.consensus.outcome.ConsensusOutcome;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
+import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessage>, LogPruner, Lifecycle
 {
@@ -41,18 +45,24 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
     private final LocalDatabase localDatabase;
     private final Log log;
     private final CoreStateDownloader downloader;
+    private final BindingService bindingService;
     private final CommandApplicationProcess applicationProcess;
+    private final CountDownLatch bootstrapLatch = new CountDownLatch( 1 );
+
+    private ClusterId boundClusterId; // TODO: Use for network message filtering.
 
     public CoreState(
             RaftMachine raftMachine,
             LocalDatabase localDatabase,
             LogProvider logProvider,
             CoreStateDownloader downloader,
+            BindingService bindingService,
             CommandApplicationProcess commandApplicationProcess )
     {
         this.raftMachine = raftMachine;
         this.localDatabase = localDatabase;
         this.downloader = downloader;
+        this.bindingService = bindingService;
         this.log = logProvider.getLog( getClass() );
         this.applicationProcess = commandApplicationProcess;
     }
@@ -64,11 +74,11 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
             ConsensusOutcome outcome = raftMachine.handle( storeIdAwareMessage.message() );
             if ( outcome.needsFreshSnapshot() )
             {
-                notifyNeedFreshSnapshot( storeIdAwareMessage.message().from() );
+                downloadSnapshot( storeIdAwareMessage.message().from() );
             }
             else
             {
-                notifyCommitted( outcome.getCommitIndex());
+                notifyCommitted( outcome.getCommitIndex() );
             }
         }
         catch ( Throwable e )
@@ -83,17 +93,12 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
         applicationProcess.notifyCommitted( commitIndex );
     }
 
-    private synchronized void notifyNeedFreshSnapshot( MemberId source )
-    {
-        downloadSnapshot( source );
-    }
-
     /**
      * Attempts to download a fresh snapshot from another core instance.
      *
      * @param source The source address to attempt a download of a snapshot from.
      */
-    private void downloadSnapshot( MemberId source )
+    private synchronized void downloadSnapshot( MemberId source )
     {
         try
         {
@@ -111,9 +116,10 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
         return applicationProcess.snapshot( raftMachine );
     }
 
-    public synchronized void installSnapshot( CoreSnapshot coreSnapshot ) throws IOException
+    public synchronized void installSnapshot( CoreSnapshot coreSnapshot ) throws Throwable
     {
         applicationProcess.installSnapshot( coreSnapshot, raftMachine );
+        bootstrapLatch.countDown();
     }
 
     @SuppressWarnings("unused") // used in embedded robustness testing
@@ -129,27 +135,53 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
     }
 
     @Override
-    public void start() throws IOException, InterruptedException
+    public void init() throws Throwable
     {
+        localDatabase.init();
+        applicationProcess.init();
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        // How can state be installed?
+        // 1. Already installed (detected by checking on-disk state)
+        // 2. Bootstrap (single selected server)
+        // 3. Download from someone else (others)
+
+        // TODO: Binding service can return whether or not we are allowed to bootstrap. ClusterId can be exposed at the interface.
+        boundClusterId = bindingService.bindToCluster( this::installSnapshot );
+
+        // TODO: Move haveState and CoreBootstrapper into CommandApplicationProcess, which perhaps needs a better name.
+        // TODO: Include the None/Partial/Full in the move.
+        if ( !haveState() )
+        {
+            boolean acquired = bootstrapLatch.await( 1, MINUTES );
+            if ( !acquired )
+            {
+                throw new RuntimeException( "Timed out while waiting to download a snapshot from another cluster member" );
+            }
+        }
+        localDatabase.start();
         applicationProcess.start();
     }
 
-    @Override
-    public void stop() throws IOException, InterruptedException
+    private boolean haveState()
     {
-        log.info( "CoreState stopping" );
-        applicationProcess.stop();
+        return raftMachine.state().entryLog().appendIndex() > -1;
     }
 
     @Override
-    public void init() throws Throwable
+    public void stop() throws Throwable
     {
-        applicationProcess.init();
+        applicationProcess.stop();
+        localDatabase.stop();
     }
 
     @Override
     public void shutdown() throws Throwable
     {
         applicationProcess.shutdown();
+        localDatabase.shutdown();
     }
 }

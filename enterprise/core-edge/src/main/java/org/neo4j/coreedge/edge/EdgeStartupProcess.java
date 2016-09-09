@@ -76,14 +76,10 @@ class EdgeStartupProcess implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        localDatabase.start();
-
         MemberId source = findCoreMemberToCopyFrom();
         if ( localDatabase.isEmpty() )
         {
             log.info( "Local database is empty, attempting to replace with copy from core server %s", source );
-            log.info( "Stopping local database before copy." );
-            localDatabase.stop();
 
             log.info( "Finding store id of core server %s", source );
             StoreId storeId = storeFetcher.getStoreIdOf( source );
@@ -93,13 +89,13 @@ class EdgeStartupProcess implements Lifecycle
             copyWholeStoreFrom( source, storeId, storeFetcher );
 
             log.info( "Restarting local database after copy.", source );
-            localDatabase.start();
         }
         else
         {
             ensureSameStoreIdAs( source );
         }
 
+        localDatabase.start();
         txPulling.start();
     }
 

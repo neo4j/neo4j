@@ -67,7 +67,7 @@ public class Cluster
 {
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
     private static final int DEFAULT_BACKOFF_MS = 100;
-    public final int defaultClusterSize = 3;
+    private static final int DEFAULT_CLUSTER_SIZE = 3;
 
     private final File parentDir;
     private final DiscoveryServiceFactory discoveryServiceFactory;
@@ -142,7 +142,7 @@ public class Cluster
     public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId,
             List<AdvertisedSocketAddress> initialMembers )
     {
-        CoreClusterMember coreClusterMember = new  CoreClusterMember( memberId, defaultClusterSize, initialMembers,
+        CoreClusterMember coreClusterMember = new  CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialMembers,
                 discoveryServiceFactory, StandardV3_0.NAME, parentDir,
                 emptyMap(), emptyMap() );
         coreMembers.put( memberId, coreClusterMember );
@@ -309,7 +309,7 @@ public class Cluster
     private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
         List<AdvertisedSocketAddress> advertisedAddress = buildAddresses( coreMembers.keySet() );
-        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, defaultClusterSize, advertisedAddress,
+        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, advertisedAddress,
                 discoveryServiceFactory, recordFormat, parentDir,
                 extraParams, instanceExtraParams );
         coreMembers.put( memberId, coreClusterMember );
@@ -396,7 +396,6 @@ public class Cluster
                                     List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams,
                                     Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-
         for ( int i = 0; i < noOfCoreMembers; i++ )
         {
             CoreClusterMember coreClusterMember = new CoreClusterMember( i, noOfCoreMembers, addresses,
@@ -465,11 +464,18 @@ public class Cluster
     public static void dataMatchesEventually( CoreClusterMember member, Collection<CoreClusterMember> targetDBs )
             throws TimeoutException, InterruptedException
     {
-        CoreGraphDatabase sourceDB = member.database();
-        DbRepresentation sourceRepresentation = DbRepresentation.of( sourceDB );
+        dataMatchesEventually( DbRepresentation.of( member.database() ), targetDBs );
+    }
+
+    public static void dataMatchesEventually( DbRepresentation sourceRepresentation, Collection<CoreClusterMember> targetDBs )
+            throws TimeoutException, InterruptedException
+    {
         for ( CoreClusterMember targetDB : targetDBs )
         {
-            Predicates.await( () -> sourceRepresentation.equals( DbRepresentation.of( targetDB.database() ) ),
+            Predicates.await( () -> {
+                DbRepresentation representation = DbRepresentation.of( targetDB.database() );
+                return sourceRepresentation.equals( representation );
+            },
                     DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
         }
     }

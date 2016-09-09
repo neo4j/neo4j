@@ -113,7 +113,6 @@ public class ClusterRule extends ExternalResource
         {
             cluster = new Cluster( clusterDirectory, noCoreMembers, noEdgeMembers, discoveryServiceFactory, coreParams,
                     instanceCoreParams, edgeParams, instanceEdgeParams, recordFormat );
-
         }
 
         return cluster;

@@ -24,12 +24,15 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 {
@@ -37,26 +40,23 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
-    private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
+    private final PageCache pageCache;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
-    private final Log log;
 
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
+    private boolean started = false;
 
     public LocalDatabase( File storeDir, StoreFiles storeFiles,
             DataSourceManager dataSourceManager,
-            Supplier<TransactionIdStore> transactionIdStoreSupplier,
-            Supplier<DatabaseHealth> databaseHealthSupplier,
-            LogProvider logProvider )
+            PageCache pageCache,
+            Supplier<DatabaseHealth> databaseHealthSupplier )
     {
         this.storeDir = storeDir;
         this.storeFiles = storeFiles;
         this.dataSourceManager = dataSourceManager;
-        this.transactionIdStoreSupplier = transactionIdStoreSupplier;
+        this.pageCache = pageCache;
         this.databaseHealthSupplier = databaseHealthSupplier;
-        this.log = logProvider.getLog( getClass() );
-        this.storeId = null;
     }
 
     @Override
@@ -66,21 +66,19 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     }
 
     @Override
-    public void start() throws Throwable
+    public synchronized void start() throws Throwable
     {
+        storeId = readStoreIdFromDisk();
         dataSourceManager.start();
-        org.neo4j.kernel.impl.store.StoreId kernelStoreId = dataSourceManager.getDataSource().getStoreId();
-        storeId = new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
-                kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
-        log.info( "My StoreId is: " + storeId );
+        started = true;
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
-        this.storeId = null;
         this.databaseHealth = null;
         dataSourceManager.stop();
+        started = false;
     }
 
     @Override
@@ -89,9 +87,31 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         dataSourceManager.shutdown();
     }
 
-    public StoreId storeId()
+    public synchronized StoreId storeId()
     {
-        return storeId;
+        if ( started )
+        {
+            return storeId;
+        }
+        else
+        {
+            return readStoreIdFromDisk();
+        }
+    }
+
+    private StoreId readStoreIdFromDisk()
+    {
+        try
+        {
+            File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+            org.neo4j.kernel.impl.store.StoreId kernelStoreId = MetaDataStore.getStoreId( pageCache, neoStoreFile );
+            return new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
+                    kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
+        }
+        catch ( IOException e )
+        {
+            return null;
+        }
     }
 
     public void panic( Throwable cause )
@@ -118,10 +138,11 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         storeFiles.delete( storeDir );
     }
 
-    public boolean isEmpty()
+    public boolean isEmpty() throws IOException
     {
         // TODO: Below doesn't work for an imported store. Need to check high-ids as well.
-        return transactionIdStoreSupplier.get().getLastCommittedTransactionId() == TransactionIdStore.BASE_TX_ID;
+        ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
+        return readOnlyTransactionIdStore.getLastCommittedTransactionId() <= BASE_TX_ID;
     }
 
     @Override

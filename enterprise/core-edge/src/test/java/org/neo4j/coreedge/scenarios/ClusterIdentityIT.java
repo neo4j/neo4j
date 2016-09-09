@@ -121,8 +121,8 @@ public class ClusterIdentityIT
         assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
-    // TODO: Fix this test by having the bootstrapper augment his store and bind it using store-id on disk.
-    @Ignore
+    @Test
+    @Ignore( "Fix this test by having the bootstrapper augment his store and bind it using store-id on disk." )
     public void shouldNotJoinClusterIfHasDataWithDifferentStoreId() throws Exception
     {
         // GIVEN

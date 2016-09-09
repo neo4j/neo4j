@@ -26,17 +26,17 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.SessionTracker;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
-import org.neo4j.coreedge.core.replication.DistributedOperation;
-import org.neo4j.coreedge.core.replication.ProgressTracker;
-import org.neo4j.coreedge.core.state.machines.CoreStateMachines;
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
-import org.neo4j.coreedge.core.state.snapshot.CoreStateType;
-import org.neo4j.coreedge.core.state.storage.StateStorage;
-import org.neo4j.coreedge.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.coreedge.core.replication.DistributedOperation;
+import org.neo4j.coreedge.core.replication.ProgressTracker;
+import org.neo4j.coreedge.core.state.machines.CoreStateMachines;
+import org.neo4j.coreedge.core.state.machines.tx.CoreReplicatedContent;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
+import org.neo4j.coreedge.core.state.snapshot.CoreStateType;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -63,6 +63,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
 
     private CoreStateMachines coreStateMachines;
 
+    private boolean started;
     private long lastApplied = NOTHING;
     private long lastSeenCommitIndex = NOTHING;
     private long lastFlushed = NOTHING;
@@ -98,17 +99,26 @@ public class CommandApplicationProcess extends LifecycleAdapter
     synchronized void notifyCommitted( long commitIndex )
     {
         assert this.lastSeenCommitIndex <= commitIndex;
+
         if ( this.lastSeenCommitIndex < commitIndex )
         {
             this.lastSeenCommitIndex = commitIndex;
-            submitApplyJob( commitIndex );
-            commitIndexMonitor.commitIndex( commitIndex );
+
+            /* ReplicationModule might already be up and running, but we might not
+               yet be ready to handle requests for applying committed state. At startup
+               the lastSeenCommitIndex will be taken into consideration. */
+            if ( started )
+            {
+                submitApplyJob( commitIndex );
+                commitIndexMonitor.commitIndex( commitIndex );
+            }
         }
     }
 
     private void submitApplyJob( long lastToApply )
     {
-        applier.submit( ( status ) -> () -> {
+        boolean success = applier.submit( ( status ) -> () ->
+        {
             try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, true ) )
             {
                 for ( long logIndex = lastApplied + 1; !status.isCancelled() && logIndex <= lastToApply; logIndex++ )
@@ -116,7 +126,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
                     RaftLogEntry entry = logEntrySupplier.get( logIndex );
                     if ( entry == null )
                     {
-                        throw new IllegalStateException( "Committed log entry must exist." );
+                        throw new IllegalStateException( format( "Committed log %d entry must exist.", logIndex ) );
                     }
 
                     if ( entry.content() instanceof DistributedOperation )
@@ -137,8 +147,23 @@ public class CommandApplicationProcess extends LifecycleAdapter
             {
                 log.error( "Failed to apply up to index " + lastToApply, e );
                 dbHealth.get().panic( e );
+                applier.panic();
             }
         } );
+
+        if ( !success )
+        {
+            log.error( "Applier has entered a state of panic, no more jobs can be submitted." );
+            try
+            {
+                // Let's sleep a while so that the log does not get flooded in this state.
+                // TODO: Consider triggering a shutdown of the database on panic.
+                Thread.sleep( 1000 );
+            }
+            catch ( InterruptedException ignored )
+            {
+            }
+        }
     }
 
     synchronized long lastApplied()
@@ -146,7 +171,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
         return lastApplied;
     }
 
-    public void sync() throws InterruptedException
+    public synchronized void sync() throws InterruptedException
     {
         applier.sync( true );
     }
@@ -208,6 +233,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
             {
                 if ( !sessionTracker.validateOperation( operation.globalSession(), operation.operationId() ) )
                 {
+                    sessionTracker.validateOperation( operation.globalSession(), operation.operationId() );
                     commandIndex++;
                     continue;
                 }
@@ -241,7 +267,15 @@ public class CommandApplicationProcess extends LifecycleAdapter
     @Override
     public synchronized void start() throws IOException, InterruptedException
     {
-        lastFlushed = lastApplied = lastFlushedStorage.getInitialState();
+        // TODO: check None/Partial/Full here, because this is the first level which can
+        // TODO: bootstrapping RAFT can also be performed from here.
+
+        if ( lastFlushed == NOTHING )
+        {
+            lastFlushed = lastFlushedStorage.getInitialState();
+        }
+        lastApplied = lastFlushed;
+
         log.info( format( "Restoring last applied index to %d", lastApplied ) );
         sessionTracker.start();
 
@@ -249,19 +283,22 @@ public class CommandApplicationProcess extends LifecycleAdapter
          * always be furthest ahead and indicate the furthest possible state to
          * which we must replay to reach a consistent state. */
         long lastPossiblyApplying = max( coreStateMachines.getLastAppliedIndex(), sessionTracker.getLastAppliedIndex() );
+        lastPossiblyApplying = max( lastPossiblyApplying, lastSeenCommitIndex );
 
         if ( lastPossiblyApplying > lastApplied )
         {
-            log.info( "Recovering up to: " + lastPossiblyApplying );
+            log.info( "Applying up to: " + lastPossiblyApplying );
             submitApplyJob( lastPossiblyApplying );
             applier.sync( false );
         }
+
+        started = true;
     }
 
     @Override
     public synchronized void stop() throws InterruptedException, IOException
     {
-        log.info( "CommandApplicationProcess stopping" );
+        started = false;
         applier.sync( true );
         flush();
     }
@@ -293,11 +330,12 @@ public class CommandApplicationProcess extends LifecycleAdapter
         {
             throw new RuntimeException( e );
         }
-        this.lastApplied = this.lastFlushed = snapshotPrevIndex;
+        lastApplied = lastFlushed = snapshotPrevIndex;
         log.info( format( "Skipping lastApplied index forward to %d", snapshotPrevIndex ) );
 
         raft.installCoreState( coreSnapshot.get( CoreStateType.RAFT_CORE_STATE ) );
 
         sessionTracker.installSnapshot( coreSnapshot.get( CoreStateType.SESSION_TRACKER ) );
+        flush();
     }
 }

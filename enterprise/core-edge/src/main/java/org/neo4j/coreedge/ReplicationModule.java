@@ -45,7 +45,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ReplicationModule
 {
-    public static final String LAST_FLUSHED_NAME = "last-flushed";
     public static final String SESSION_TRACKER_NAME = "session-tracker";
 
     private final RaftReplicator replicator;

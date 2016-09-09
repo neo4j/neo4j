@@ -38,7 +38,7 @@ public class MembershipEntry
     private long logIndex;
     private Set<MemberId> members;
 
-    MembershipEntry( long logIndex, Set<MemberId> members )
+    public MembershipEntry( long logIndex, Set<MemberId> members )
     {
         this.members = members;
         this.logIndex = logIndex;

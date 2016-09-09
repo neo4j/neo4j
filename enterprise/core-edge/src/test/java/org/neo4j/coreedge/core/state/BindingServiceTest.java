@@ -19,123 +19,185 @@
  */
 package org.neo4j.coreedge.core.state;
 
-import org.junit.Test;
-
+import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.Test;
+
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.identity.ClusterId;
+import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
-import static java.lang.Thread.sleep;
 import static java.util.Collections.emptyMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class BindingServiceTest
 {
-    private CoreTopologyService topologyService = mock( CoreTopologyService.class );
-    private SimpleStorage<ClusterId> clusterIdStorage = mock( SimpleStorage.class );
+    private final CoreBootstrapper coreBootstrapper = mock( CoreBootstrapper.class );
+    private final FakeClock clock = Clocks.fakeClock();
 
     @Test
-    public void shouldTimeoutEventually() throws Throwable
+    public void shouldTimeoutWhenNotBootrappableAndNobodyElsePublishesClusterId() throws Throwable
     {
         // given
-        CoreTopology topology = new CoreTopology( null, false, emptyMap() );
+        CoreTopology unboundTopology = new CoreTopology( null, false, emptyMap() );
+        CoreTopologyService topologyService = mock( CoreTopologyService.class );
+        when( topologyService.coreServers() ).thenReturn( unboundTopology );
 
-        when( topologyService.coreServers() ).thenReturn( topology );
+        BindingService binder = new BindingService( new StubClusterIdStorage(), topologyService,
+                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
+                coreBootstrapper );
 
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
-                getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 50 );
+        try
+        {
+            // when
+            binder.bindToCluster( null );
+            fail( "Should have timed out" );
+        }
+        catch ( TimeoutException e )
+        {
+            // expected
+        }
+
+        // then
+        verify( topologyService, atLeast( 2 ) ).coreServers();
+    }
+
+    @Test
+    public void shouldBindToClusterIdPublishedByAnotherMember() throws Throwable
+    {
+        // given
+        ClusterId publishedClusterId = new ClusterId( UUID.randomUUID() );
+        CoreTopology unboundTopology = new CoreTopology( null, false, emptyMap() );
+        CoreTopology boundTopology = new CoreTopology( publishedClusterId, false, emptyMap() );
+
+        CoreTopologyService topologyService = mock( CoreTopologyService.class );
+        when( topologyService.coreServers() ).thenReturn( unboundTopology ).thenReturn( boundTopology );
+
+        BindingService binder = new BindingService( new StubClusterIdStorage(), topologyService,
+                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
+                coreBootstrapper );
+
+        // when
+        ClusterId boundClusterId = binder.bindToCluster( null );
+
+        // then
+        assertEquals( publishedClusterId, boundClusterId );
+        verify( topologyService, atLeast( 2 ) ).coreServers();
+    }
+
+    @Test
+    public void shouldPublishStoredClusterIdIfPreviouslyBound() throws Throwable
+    {
+        // given
+        ClusterId previouslyBoundClusterId = new ClusterId( UUID.randomUUID() );
+
+        CoreTopologyService topologyService = mock( CoreTopologyService.class );
+        when( topologyService.casClusterId( previouslyBoundClusterId ) ).thenReturn( true );
+
+        StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
+        clusterIdStorage.writeState( previouslyBoundClusterId );
+
+        BindingService binder = new BindingService( clusterIdStorage, topologyService,
+                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
+                coreBootstrapper );
+
+        // when
+        ClusterId boundClusterId = binder.bindToCluster( null );
+
+        // then
+        verify( topologyService ).casClusterId( previouslyBoundClusterId );
+        assertEquals( previouslyBoundClusterId, boundClusterId );
+    }
+
+    @Test
+    public void shouldFailToPublishMismatchingStoredClusterId() throws Throwable
+    {
+        // given
+        ClusterId previouslyBoundClusterId = new ClusterId( UUID.randomUUID() );
+
+        CoreTopologyService topologyService = mock( CoreTopologyService.class );
+        when( topologyService.casClusterId( previouslyBoundClusterId ) ).thenReturn( false );
+
+        StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
+        clusterIdStorage.writeState( previouslyBoundClusterId );
+
+        BindingService binder = new BindingService( clusterIdStorage, topologyService,
+                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
+                coreBootstrapper );
 
         // when
         try
         {
-            bindingService.start();
-            fail();
+            binder.bindToCluster( null );
+            fail( "Should have thrown exception" );
         }
-        catch ( TimeoutException e )
+        catch ( BindingException e )
         {
-            // then: expected
+            // expected
         }
     }
 
     @Test
-    public void shouldConsiderTopologyChanges() throws Throwable
+    public void shouldBootstrapWhenBootstrappable() throws Throwable
     {
         // given
-        ClusterId commonClusterId = new ClusterId( UUID.randomUUID() );
+        CoreTopology bootstrappableTopology = new CoreTopology( null, true, emptyMap() );
 
-        CoreTopology topologyNOK = new CoreTopology( null, false, emptyMap() );
-        CoreTopology topologyOK = new CoreTopology( commonClusterId, false, emptyMap() );
-
-        when( topologyService.coreServers() ).thenReturn( topologyNOK, topologyNOK, topologyNOK, topologyOK );
+        CoreTopologyService topologyService = mock( CoreTopologyService.class );
+        when( topologyService.coreServers() ).thenReturn( bootstrappableTopology );
         when( topologyService.casClusterId( any() ) ).thenReturn( true );
 
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
-                getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 30_000 );
+        BindingService binder = new BindingService( new StubClusterIdStorage(), topologyService,
+                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
+                coreBootstrapper );
+
+        ThrowingConsumer<CoreSnapshot, Throwable> snapshotInstaller = mock( ThrowingConsumer.class );
 
         // when
-        bindingService.start();
+        ClusterId boundClusterId = binder.bindToCluster( snapshotInstaller );
 
         // then
-        assertEquals( commonClusterId, bindingService.clusterId() );
-        verify( topologyService ).casClusterId( any() );
-        verify( clusterIdStorage ).writeState( bindingService.clusterId() );
+        verify( coreBootstrapper ).bootstrap( any() );
+        verify( topologyService ).casClusterId( boundClusterId );
+        verify( snapshotInstaller ).accept( any() );
     }
 
-    @Test
-    public void shouldPublishNewId() throws Throwable
+    private class StubClusterIdStorage implements SimpleStorage<ClusterId>
     {
-        // given
-        CoreTopology topology = new CoreTopology( null, true, emptyMap() );
+        private ClusterId clusterId;
 
-        when( topologyService.coreServers() ).thenReturn( topology );
-        when( topologyService.casClusterId( any() ) ).thenReturn( true );
+        @Override
+        public boolean exists()
+        {
+            return clusterId != null;
+        }
 
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
-                getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 30_000 );
+        @Override
+        public ClusterId readState() throws IOException
+        {
+            return clusterId;
+        }
 
-        // when
-        bindingService.start();
-
-        // then
-        verify( topologyService ).casClusterId( bindingService.clusterId() );
-        verify( clusterIdStorage ).writeState( bindingService.clusterId() );
-    }
-
-    @Test
-    public void shouldPublishOldId() throws Throwable
-    {
-        // given
-        CoreTopology topology = new CoreTopology( null, true, emptyMap() );
-        ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
-
-        when( clusterIdStorage.exists() ).thenReturn( true );
-        when( clusterIdStorage.readState() ).thenReturn( localClusterId );
-
-        when( topologyService.coreServers() ).thenReturn( topology );
-        when( topologyService.casClusterId( any() ) ).thenReturn( true );
-
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
-                getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 30_000 );
-
-        // when
-        bindingService.start();
-
-        // then
-        assertEquals( localClusterId, bindingService.clusterId() );
-        verify( topologyService ).casClusterId( localClusterId );
-        verify( clusterIdStorage, never() ).writeState( any() );
+        @Override
+        public void writeState( ClusterId state ) throws IOException
+        {
+            clusterId = state;
+        }
     }
 }

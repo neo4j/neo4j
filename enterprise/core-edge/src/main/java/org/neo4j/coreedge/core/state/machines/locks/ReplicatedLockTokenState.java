@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.core.state.machines.locks;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
@@ -35,11 +36,11 @@ public class ReplicatedLockTokenState
     private ReplicatedLockTokenRequest currentToken = INVALID_REPLICATED_LOCK_TOKEN_REQUEST;
     private long ordinal = -1L;
 
-    ReplicatedLockTokenState()
+    public ReplicatedLockTokenState()
     {
     }
 
-    ReplicatedLockTokenState( long ordinal, ReplicatedLockTokenRequest currentToken )
+    public ReplicatedLockTokenState( long ordinal, ReplicatedLockTokenRequest currentToken )
     {
         this.ordinal = ordinal;
         this.currentToken = currentToken;
@@ -64,10 +65,29 @@ public class ReplicatedLockTokenState
     @Override
     public String toString()
     {
-        return "ReplicatedLockTokenState{" +
-                "currentToken=" + currentToken +
-                ", ordinal=" + ordinal +
-                '}';
+        return String.format( "ReplicatedLockTokenState{currentToken=%s, ordinal=%d}", currentToken, ordinal );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        ReplicatedLockTokenState that = (ReplicatedLockTokenState) o;
+        return ordinal == that.ordinal &&
+                Objects.equals( currentToken, that.currentToken );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( currentToken, ordinal );
     }
 
     ReplicatedLockTokenState newInstance()

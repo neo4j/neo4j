@@ -41,15 +41,20 @@ import org.neo4j.coreedge.core.consensus.RaftServer;
 import org.neo4j.coreedge.core.consensus.log.pruning.PruningScheduler;
 import org.neo4j.coreedge.core.consensus.membership.MembershipWaiter;
 import org.neo4j.coreedge.core.consensus.membership.MembershipWaiterLifecycle;
+import org.neo4j.coreedge.core.state.BindingService;
 import org.neo4j.coreedge.core.state.CommandApplicationProcess;
+import org.neo4j.coreedge.core.state.CoreBootstrapper;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.core.state.CoreStateApplier;
 import org.neo4j.coreedge.core.state.LongIndexMarshal;
 import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
+import org.neo4j.coreedge.core.state.storage.SimpleFileStorage;
+import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
@@ -68,10 +73,15 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
+import static java.lang.Thread.sleep;
+
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 public class CoreServerModule
 {
+    private static final String CLUSTER_ID_NAME = "cluster-id";
+    public static final String LAST_FLUSHED_NAME = "last-flushed";
+
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
 
     public CoreServerModule( MemberId myself, final PlatformModule platformModule, ConsensusModule consensusModule,
@@ -94,7 +104,7 @@ public class CoreServerModule
         StateStorage<Long> lastFlushedStorage;
 
         lastFlushedStorage = life.add(
-                new DurableStateStorage<>( fileSystem, clusterStateDirectory, ReplicationModule.LAST_FLUSHED_NAME,
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, LAST_FLUSHED_NAME,
                         new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
                         logProvider ) );
 
@@ -120,10 +130,20 @@ public class CoreServerModule
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
                 catchUpClient, logProvider, copiedStoreRecovery );
 
+        SimpleStorage<ClusterId> clusterIdStorage = new SimpleFileStorage<>( fileSystem, clusterStateDirectory,
+                CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
+
+        CoreBootstrapper coreBootstrapper = new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache,
+                fileSystem, config );
+
+        BindingService bindingService = new BindingService( clusterIdStorage, discoveryService, logProvider,
+                Clocks.systemClock(), () -> sleep( 100 ), 300_000, coreBootstrapper );
+
         CoreState coreState = new CoreState(
                 consensusModule.raftMachine(), localDatabase,
                 logProvider,
                 downloader,
+                bindingService,
                 new CommandApplicationProcess( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(),
                         config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                         config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
@@ -159,10 +179,10 @@ public class CoreServerModule
                 new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
                 coreState, config, platformModule.monitors );
 
-        life.add( coreState );
+        life.add( raftServer );
         life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler, logProvider ) );
-        life.add( raftServer );
+        life.add( coreState );
         life.add( catchupServer );
     }
 }
