@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -72,6 +73,15 @@ public class ConnectionIT
                         new WebSocketConnection(),
                         new HostnamePort( "localhost:7687" )
                 });
+    }
+
+    @After
+    public void cleanup() throws IOException
+    {
+        if ( connection != null )
+        {
+            connection.disconnect();
+        }
     }
 
     @Test

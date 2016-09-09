@@ -92,13 +92,9 @@ public class RejectTransportEncryptionIT
     @Test
     public void shouldRejectConnectionAfterHandshake() throws Throwable
     {
-        // Given
         exception.expect( expected.getClass() );
-        if ( expected.getMessage() != null )
-        {
-            exception.expectMessage( expected.getMessage() );
-        }
-        // When&Then
+        exception.expectMessage( expected.getMessage() );
+
         client.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
     }
 }

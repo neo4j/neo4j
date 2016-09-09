@@ -22,15 +22,16 @@ package org.neo4j.bolt.v1.transport.integration;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.neo4j.bolt.v1.messaging.message.RequestMessage;
-import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+
+import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -114,7 +115,7 @@ public class TransportTestUtil
 
     public static byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
     {
-        ByteBuffer bb = ByteBuffer.allocate( 5 * 4 ).order( BIG_ENDIAN );
+        ByteBuffer bb = ByteBuffer.allocate( 5 * Integer.BYTES ).order( BIG_ENDIAN );
         bb.putInt( 0x6060B017 );
         bb.putInt( (int) option1 );
         bb.putInt( (int) option2 );

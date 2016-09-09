@@ -24,7 +24,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
 /**
@@ -34,8 +33,7 @@ import org.neo4j.graphdb.config.Setting;
  */
 public class GroupSettingSupport
 {
-    private final String key;
-    private final String prefix;
+    private final String groupName;
 
     /**
      * List all keys for a given group type, this is a way to enumerate all instances of a group
@@ -73,10 +71,9 @@ public class GroupSettingSupport
      * @param groupKey the unique key for this particular group instance, eg. '0' or 'group1',
      *                 this gets combined with the groupPrefix to eg. `dbms.mygroup.0`
      */
-    public GroupSettingSupport( String groupPrefix, Object groupKey )
+    private GroupSettingSupport( String groupPrefix, Object groupKey )
     {
-        this.prefix = groupPrefix;
-        this.key = String.format( "%s.%s", prefix, groupKey );
+        this.groupName = String.format( "%s.%s", groupPrefix, groupKey );
     }
 
     /**
@@ -84,58 +81,9 @@ public class GroupSettingSupport
      * the group prefix or key. If you want config like `dbms.mygroup.0.foo=bar`, you should
      * pass in a setting with the key `foo` here.
      */
-    public <T> Setting<T> scope( Setting<T> inner )
+    public <T> Setting<T> scope( Setting<T> setting )
     {
-        return new Setting<T>()
-        {
-            @Override
-            public String name()
-            {
-                return scopeToGroup( inner.name() );
-            }
-
-            @Override
-            public String getDefaultValue()
-            {
-                return inner.getDefaultValue();
-            }
-
-            @Override
-            public T from( Configuration config )
-            {
-                return config.get( this );
-            }
-
-            @Override
-            public T apply( Function<String,String> config )
-            {
-                return inner.apply( ( key ) -> config.apply( scopeToGroup( key ) ) );
-            }
-
-            @Override
-            public String toString()
-            {
-                return inner.toString();
-            }
-
-            @Override
-            public int hashCode()
-            {
-                return name().hashCode();
-            }
-
-            @Override
-            public boolean equals( Object obj )
-            {
-                return obj != null
-                       && obj instanceof Setting
-                       && name().equals( ((Setting) obj).name() );
-            }
-
-            private String scopeToGroup( String key )
-            {
-                return String.format( "%s.%s", GroupSettingSupport.this.key, key );
-            }
-        };
+        setting.withScope( (key) -> String.format( "%s.%s", groupName, key ) );
+        return setting;
     }
 }
