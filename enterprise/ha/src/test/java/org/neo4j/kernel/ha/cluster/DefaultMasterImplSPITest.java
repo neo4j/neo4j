@@ -21,12 +21,12 @@ package org.neo4j.kernel.ha.cluster;
 
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -55,14 +55,14 @@ public class DefaultMasterImplSPITest
         CheckPointer checkPointer = mock( CheckPointer.class );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.<File>emptyIterator() );
+        when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.emptyIterator() );
 
         DefaultMasterImplSPI master = new DefaultMasterImplSPI( mock( GraphDatabaseAPI.class, RETURNS_MOCKS ),
                 mock( FileSystemAbstraction.class ), new Monitors(), mock( LabelTokenHolder.class ),
                 mock( PropertyKeyTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ),
                 mock( IdGeneratorFactory.class ), mock( TransactionCommitProcess.class ), checkPointer,
                 mock( TransactionIdStore.class ), mock( LogicalTransactionStore.class ),
-                dataSource );
+                dataSource, mock( PageCache.class ) );
 
         master.flushStoresAndStreamStoreFiles( mock( StoreWriter.class ) );
 

@@ -85,6 +85,7 @@ import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -804,7 +805,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         kernel.registerTransactionHook( transactionEventHandlers );
 
         final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService,
-                legacyIndexProviderLookup );
+                legacyIndexProviderLookup, storageEngine );
 
         return new KernelModule()
         {
@@ -951,7 +952,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return kernelModule.kernelAPI();
     }
 
-    public ResourceIterator<File> listStoreFiles( boolean includeLogs ) throws IOException
+    public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
         return kernelModule.fileListing().listStoreFiles( includeLogs );
     }

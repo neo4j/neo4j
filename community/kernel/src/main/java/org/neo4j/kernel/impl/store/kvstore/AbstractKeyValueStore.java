@@ -21,10 +21,14 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.locking.LockWrapper;
@@ -143,6 +147,13 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     public final File currentFile()
     {
         return state.file();
+    }
+
+    public final Collection<File> allFiles()
+    {
+        List<File> countStoreFiles = new ArrayList<>();
+        Iterables.addToCollection( rotationStrategy.candidateFiles(), countStoreFiles );
+        return countStoreFiles;
     }
 
     @Override
