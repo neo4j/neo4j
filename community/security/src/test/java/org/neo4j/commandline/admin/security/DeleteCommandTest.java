@@ -32,7 +32,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class DeleteCommandTest extends CommandTestBase
+public class DeleteCommandTest extends UsersCommandTestBase
 {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDir );

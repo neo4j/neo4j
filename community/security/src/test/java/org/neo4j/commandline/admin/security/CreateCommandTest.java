@@ -19,7 +19,9 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.commandline.admin.CommandFailed;
 
@@ -30,8 +32,11 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class CreateCommandTest extends CommandTestBase
+public class CreateCommandTest extends UsersCommandTestBase
 {
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( testDir );
+
     @Test
     public void shouldFailToCreateExistingUser() throws Throwable
     {

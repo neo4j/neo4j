@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-public class SetPasswordCommandTest extends CommandTestBase
+public class SetPasswordCommandTest extends UsersCommandTestBase
 {
 
     @Rule
