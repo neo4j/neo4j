@@ -117,14 +117,14 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.toList should equal(List(
       Map("m" -> n2),
       Map("m" -> n3)
     ))
-    result.executionPlanDescription().toString shouldNot include("Index")
+    result.executionPlanDescription().toString shouldNot include("IndexSeek")
     assertNoLockingHappened
   }
 

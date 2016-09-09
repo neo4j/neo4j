@@ -22,11 +22,11 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 
 /**
- * These tests are testing the actual index implementation, thus they should all check the actual result.
- * If you only want to verify that plans using indexes are actually planned, please use
- * [[org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LeafPlanningIntegrationTest]]
- */
-class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
+  * These tests are testing the actual index implementation, thus they should all check the actual result.
+  * If you only want to verify that plans using indexes are actually planned, please use
+  * [[org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LeafPlanningIntegrationTest]]
+  */
+class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("should handle comparing large integers") {
     // Given
@@ -82,7 +82,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("should perform prefix search in an update query") {
     createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "london"), "Location")
-    for (i <- 1 to 100) createLabeledNode("Location")
+    for (i <- 1 to 100) createLabeledNode(Map("name" -> ("City" + i)), "Location")
     graph.createIndex("Location", "name")
 
     val query =

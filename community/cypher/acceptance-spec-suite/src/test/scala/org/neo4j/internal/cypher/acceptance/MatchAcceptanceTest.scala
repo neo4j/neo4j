@@ -276,6 +276,7 @@ return p""")
 
   test("should be able to use index hints with STARTS WITH predicates") {
     // given
+    (1 to 50) foreach (i => createLabeledNode(Map("name" -> ("Robot" + i)), "Person"))
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
     val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
@@ -430,18 +431,6 @@ return p""")
     // then
     result.toList should equal(List(Map("n" -> nodes(0)), Map("n" -> nodes(1))))
     result.executionPlanDescription().toString should include("NodeIndexScan")
-  }
-
-  test("should not use the index for property existence queries when cardinality does not prefer it") {
-    // given
-    val nodes = setupIndexScanTest()
-
-    // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE exists(n.name) RETURN n")
-
-    // then
-    result.toList.length should equal(100)
-    result.executionPlanDescription().toString should include("NodeByLabelScan")
   }
 
   test("should not use the index for property existence queries when property value predicate exists") {
