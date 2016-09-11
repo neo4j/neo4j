@@ -22,10 +22,12 @@ package org.neo4j.index.btree;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.index.IdProvider;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCIndexDescription;
@@ -38,59 +40,64 @@ import org.neo4j.io.pagecache.PagedFile;
 
 public class Index implements SCIndex, IdProvider
 {
-    private final File metaFile;
-    private final int pageSize;
+    private static final Charset UTF_8 = Charset.forName( "UTF-8" );
+
+    private static final int META_PAGE_ID = 0;
 
     private final PagedFile pagedFile;
     private final SCIndexDescription description;
+
+    // When updating these the meta page will also be kept up2date
     private long rootId;
-    private long lastId;
+    private long lastId = META_PAGE_ID + 1; // first page (page 0) is for meta data (even actual page size)
+
     private final IndexInsert inserter;
     private final BTreeNode bTreeNode;
+    private final PageCursor metaCursor;
 
     /**
      * Initiate an already existing index from file and meta file
      * @param pageCache     {@link PageCache} to use to map index file
      * @param indexFile     {@link File} containing the actual index
-     * @param metaFile      {@link File} containing the meta data about the index
      * @throws IOException on page cache error
      */
-    public Index( PageCache pageCache, File indexFile, File metaFile ) throws IOException
+    public Index( PageCache pageCache, File indexFile ) throws IOException
     {
-        this.metaFile = metaFile;
-        SCMetaData meta = SCMetaData.parseMeta( metaFile );
+        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
+        SCMetaData meta = readMetaData( pagedFile );
 
-        this.pageSize = meta.pageSize;
-        this.pagedFile = pageCache.map( indexFile, pageSize );
+        if ( meta.pageSize != pageCache.pageSize() )
+        {
+            pagedFile.close();
+            pagedFile = pageCache.map( indexFile, meta.pageSize );
+        }
+        this.pagedFile = pagedFile;
         this.description = meta.description;
         this.rootId = meta.rootId;
         this.lastId = meta.lastId;
         this.bTreeNode = new BTreeNode( meta.pageSize );
         this.inserter = new IndexInsert( this, bTreeNode );
+        this.metaCursor = openMetaPageCursor();
     }
 
     /**
      * Initiate a completely new index
      * @param pageCache     {@link PageCache} to use to map index file
      * @param indexFile     {@link File} containing the actual index
-     * @param metaFile      {@link File} conaining the meta data about the index
      * @param description   {@link SCIndexDescription} description of the index
      * @param pageSize      page size to use for index
      * @throws IOException on page cache error
      */
-    public Index( PageCache pageCache, File indexFile, File metaFile, SCIndexDescription description, int pageSize )
+    public Index( PageCache pageCache, File indexFile, SCIndexDescription description, int pageSize )
             throws IOException
     {
-        this.metaFile = metaFile;
-        this.pageSize = pageSize;
         this.pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
         this.description = description;
-        this.lastId = 0;
         this.rootId = this.lastId;
         this.bTreeNode = new BTreeNode( pageSize );
         this.inserter = new IndexInsert( this, bTreeNode );
 
-        SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
+        writeMetaData( pagedFile, new SCMetaData( description, pageSize, rootId, lastId ) );
 
         // Initialize index root node to a leaf node.
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
@@ -98,6 +105,77 @@ public class Index implements SCIndex, IdProvider
             cursor.next();
             bTreeNode.initializeLeaf( cursor );
         }
+        this.metaCursor = openMetaPageCursor();
+    }
+
+    private PageCursor openMetaPageCursor() throws IOException
+    {
+        PageCursor cursor = pagedFile.io( META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
+        cursor.next();
+        return cursor;
+    }
+
+    private static void writeMetaData( PagedFile pagedFile, SCMetaData metaData ) throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            cursor.next();
+            cursor.putInt( metaData.pageSize );
+            cursor.putLong( metaData.rootId );
+            cursor.putLong( metaData.lastId );
+            writeString( cursor, metaData.description.firstLabel );
+            writeString( cursor, metaData.description.secondLabel );
+            writeString( cursor, metaData.description.relationshipType );
+            cursor.putByte( (byte) metaData.description.direction.ordinal() );
+            writeString( cursor, metaData.description.relationshipPropertyKey );
+            writeString( cursor, metaData.description.nodePropertyKey );
+        }
+    }
+
+    private static void writeString( PageCursor cursor, String string )
+    {
+        if ( string == null )
+        {
+            cursor.putInt( -1 );
+        }
+        else
+        {
+            byte[] bytes = string.getBytes( UTF_8 );
+            cursor.putInt( string.length() );
+            cursor.putBytes( bytes );
+        }
+    }
+
+    private static SCMetaData readMetaData( PagedFile pagedFile ) throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( META_PAGE_ID, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            cursor.next();
+            int pageSize = cursor.getInt();
+            long rootId = cursor.getLong();
+            long lastId = cursor.getLong();
+            SCIndexDescription description = new SCIndexDescription(
+                    readString( cursor ), // firstLabel
+                    readString( cursor ), // secondLabel
+                    readString( cursor ), // relationshipType
+                    Direction.values()[cursor.getByte()],
+                    readString( cursor ), // nodePropertyKey
+                    readString( cursor ) ); // relationshipPropertyKey
+            return new SCMetaData( description, pageSize, rootId, lastId );
+        }
+    }
+
+    private static String readString( PageCursor cursor )
+    {
+        int length = cursor.getInt();
+        if ( length == -1 )
+        {
+            return null;
+        }
+
+        byte[] bytes = new byte[length];
+        cursor.getBytes( bytes );
+        return new String( bytes, UTF_8 );
     }
 
     @Override
@@ -132,11 +210,14 @@ public class Index implements SCIndex, IdProvider
             bTreeNode.setKeyCount( cursor, 1 );
             bTreeNode.setChildAt( cursor, split.left, 0 );
             bTreeNode.setChildAt( cursor, split.right, 1 );
-//                if ( metaFile != null )
-//                {
-//                    SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
-//                }
+            updateIdsInMetaPage();
         }
+    }
+
+    private void updateIdsInMetaPage()
+    {
+        metaCursor.putLong( 4, rootId );
+        metaCursor.putLong( 12, lastId );
     }
 
     @Override
@@ -154,10 +235,7 @@ public class Index implements SCIndex, IdProvider
     public long acquireNewId() throws FileNotFoundException
     {
         lastId++;
-//        if ( metaFile != null )
-//        {
-//            SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
-//        }
+        updateIdsInMetaPage();
         return lastId;
     }
 
@@ -202,6 +280,7 @@ public class Index implements SCIndex, IdProvider
     @Override
     public void close() throws IOException
     {
+        metaCursor.close();
         pagedFile.close();
     }
 

@@ -45,20 +45,21 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.index.SCIndex.indexFileName;
-import static org.neo4j.index.SCIndex.metaFileName;
 import static org.neo4j.index.btree.RangePredicate.equalTo;
 
 public class NativeLabelScanStore implements LabelScanStore
 {
     private final SCIndex index;
+    private final File indexFile;
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir ) throws IOException
     {
         String name = "labelscan.db";
-        File indexFile = new File( storeDir, indexFileName( name ) );
-        File metaFile = new File( storeDir, metaFileName( name ));
-        this.index = new Index( pageCache, indexFile, metaFile,
+        indexFile = new File( storeDir, indexFileName( name ) );
+        this.index = new Index( pageCache, indexFile,
                 new SCIndexDescription( "", "", "", Direction.BOTH, "", null ), pageCache.pageSize() );
     }
 
@@ -149,7 +150,8 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void force() throws UnderlyingStorageException
     {
-
+        // No need, this call was made with Lucene in mind. Before call to LabelScanStore#force()
+        // the page cache is also forced, so ignore this.
     }
 
     @Override
@@ -161,25 +163,22 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
-        return null;
+        return asResourceIterator( iterator( indexFile ) );
     }
 
     @Override
     public void init() throws IOException
     {
-
     }
 
     @Override
     public void start() throws IOException
     {
-
     }
 
     @Override
     public void stop() throws IOException
     {
-
     }
 
     @Override

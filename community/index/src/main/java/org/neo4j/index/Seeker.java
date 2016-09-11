@@ -33,13 +33,14 @@ public interface Seeker
      * @param resultList    {@link java.util.List} where found results will be stored
      * @throws IOException  on cursor failure
      */
-    void seek( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException;
+    void seek( PageCursor cursor, BTreeNode bTreeNode, List<SCResult> resultList ) throws IOException;
 
     public abstract class CommonSeeker implements Seeker
     {
 
         // TODO: A lot of time is spent in the seek method, both for seek and scan. Can we make it faster?
         // TODO: Maybe with binary search in IndexSearch.
+        @Override
         public void seek( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException
         {
             if ( BTreeNode.isInternal( cursor ) )
