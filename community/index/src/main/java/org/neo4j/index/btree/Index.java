@@ -29,6 +29,7 @@ import java.util.List;
 import org.neo4j.index.IdProvider;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCIndexDescription;
+import org.neo4j.index.SCInserter;
 import org.neo4j.index.SCResult;
 import org.neo4j.index.Seeker;
 import org.neo4j.io.pagecache.PageCache;
@@ -110,26 +111,31 @@ public class Index implements SCIndex, IdProvider
     {
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
-            cursor.next();
+            insert0( cursor, key, value );
+        }
+    }
 
-            SplitResult split = inserter.insert( cursor, key, value );
+    private void insert0( PageCursor cursor, long[] key, long[] value ) throws IOException
+    {
+        cursor.next( rootId );
 
-            if ( split != null )
-            {
-                // New root
-                rootId = acquireNewId();
-                cursor.next( rootId );
+        SplitResult split = inserter.insert( cursor, key, value );
 
-                bTreeNode.initializeInternal( cursor );
-                bTreeNode.setKeyAt( cursor, split.primKey, 0 );
-                bTreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, split.left, 0 );
-                bTreeNode.setChildAt( cursor, split.right, 1 );
+        if ( split != null )
+        {
+            // New root
+            rootId = acquireNewId();
+            cursor.next( rootId );
+
+            bTreeNode.initializeInternal( cursor );
+            bTreeNode.setKeyAt( cursor, split.primKey, 0 );
+            bTreeNode.setKeyCount( cursor, 1 );
+            bTreeNode.setChildAt( cursor, split.left, 0 );
+            bTreeNode.setChildAt( cursor, split.right, 1 );
 //                if ( metaFile != null )
 //                {
 //                    SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
 //                }
-            }
         }
     }
 
@@ -197,6 +203,26 @@ public class Index implements SCIndex, IdProvider
     public void close() throws IOException
     {
         pagedFile.close();
+    }
+
+    @Override
+    public SCInserter inserter() throws IOException
+    {
+        final PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
+        return new SCInserter()
+        {
+            @Override
+            public void insert( long[] key, long[] value ) throws IOException
+            {
+                insert0( cursor, key, value );
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                cursor.close();
+            }
+        };
     }
 
     // Utility method

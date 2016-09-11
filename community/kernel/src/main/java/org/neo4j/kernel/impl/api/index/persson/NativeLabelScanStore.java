@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCIndexDescription;
+import org.neo4j.index.SCInserter;
 import org.neo4j.index.SCResult;
 import org.neo4j.index.Seeker;
 import org.neo4j.index.btree.Index;
@@ -112,6 +113,16 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public LabelScanWriter newWriter()
     {
+        final SCInserter inserter;
+        try
+        {
+            inserter = index.inserter();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
         return new LabelScanWriter()
         {
             @Override
@@ -123,14 +134,14 @@ public class NativeLabelScanStore implements LabelScanStore
                 final long nodeId = update.getNodeId();
                 for ( long labelId : toAdd )
                 {
-                    index.insert( new long[]{labelId, 0L}, new long[]{nodeId, 0L} ); //TODO reuse
+                    inserter.insert( new long[]{labelId, 0L}, new long[]{nodeId, 0L} ); //TODO reuse
                 }
             }
 
             @Override
             public void close() throws IOException
             {
-                // No
+                inserter.close();
             }
         };
     }
