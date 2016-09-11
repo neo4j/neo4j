@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.btree;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -36,7 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-public class Index implements SCIndex, IdProvider, Closeable
+public class Index implements SCIndex, IdProvider
 {
     private final File metaFile;
     private final int pageSize;
@@ -53,7 +52,7 @@ public class Index implements SCIndex, IdProvider, Closeable
      * @param pageCache     {@link PageCache} to use to map index file
      * @param indexFile     {@link File} containing the actual index
      * @param metaFile      {@link File} containing the meta data about the index
-     * @throws IOException
+     * @throws IOException on page cache error
      */
     public Index( PageCache pageCache, File indexFile, File metaFile ) throws IOException
     {
@@ -76,7 +75,7 @@ public class Index implements SCIndex, IdProvider, Closeable
      * @param metaFile      {@link File} conaining the meta data about the index
      * @param description   {@link SCIndexDescription} description of the index
      * @param pageSize      page size to use for index
-     * @throws IOException
+     * @throws IOException on page cache error
      */
     public Index( PageCache pageCache, File indexFile, File metaFile, SCIndexDescription description, int pageSize )
             throws IOException
@@ -93,10 +92,11 @@ public class Index implements SCIndex, IdProvider, Closeable
         SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
 
         // Initialize index root node to a leaf node.
-        PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
-        cursor.next();
-        bTreeNode.initializeLeaf( cursor );
-        cursor.close();
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            cursor.next();
+            bTreeNode.initializeLeaf( cursor );
+        }
     }
 
     @Override
@@ -108,73 +108,76 @@ public class Index implements SCIndex, IdProvider, Closeable
     @Override
     public void insert( long[] key, long[] value ) throws IOException
     {
-        PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
-        cursor.next();
-
-        SplitResult split = inserter.insert( cursor, key, value );
-
-        if ( split != null )
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
-            // New root
-            rootId = acquireNewId();
-            cursor.next( rootId );
+            cursor.next();
 
-            bTreeNode.initializeInternal( cursor );
-            bTreeNode.setKeyAt( cursor, split.primKey, 0 );
-            bTreeNode.setKeyCount( cursor, 1 );
-            bTreeNode.setChildAt( cursor, split.left, 0 );
-            bTreeNode.setChildAt( cursor, split.right, 1 );
-            if ( metaFile != null )
+            SplitResult split = inserter.insert( cursor, key, value );
+
+            if ( split != null )
             {
-                SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
+                // New root
+                rootId = acquireNewId();
+                cursor.next( rootId );
+
+                bTreeNode.initializeInternal( cursor );
+                bTreeNode.setKeyAt( cursor, split.primKey, 0 );
+                bTreeNode.setKeyCount( cursor, 1 );
+                bTreeNode.setChildAt( cursor, split.left, 0 );
+                bTreeNode.setChildAt( cursor, split.right, 1 );
+//                if ( metaFile != null )
+//                {
+//                    SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
+//                }
             }
         }
-        cursor.close();
     }
 
     @Override
     public void seek( Seeker seeker, List<SCResult> resultList ) throws IOException
     {
-        PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
-        cursor.next();
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            cursor.next();
 
-        seeker.seek( cursor, bTreeNode, resultList );
-        cursor.close();
+            seeker.seek( cursor, bTreeNode, resultList );
+        }
     }
 
     @Override
     public long acquireNewId() throws FileNotFoundException
     {
         lastId++;
-        if ( metaFile != null )
-        {
-            SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
-        }
+//        if ( metaFile != null )
+//        {
+//            SCMetaData.writeMetaData( metaFile, description, pageSize, rootId, lastId );
+//        }
         return lastId;
     }
 
     // Utility method
     public void printTree() throws IOException
     {
-        PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK );
-        cursor.next();
-
-        int level = 0;
-        long id;
-        while ( bTreeNode.isInternal( cursor ) )
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            System.out.println( "Level " + level++ );
-            id = cursor.getCurrentPageId();
+            cursor.next();
+
+            int level = 0;
+            long id;
+            while ( bTreeNode.isInternal( cursor ) )
+            {
+                System.out.println( "Level " + level++ );
+                id = cursor.getCurrentPageId();
+                printKeysOfSiblings( cursor, bTreeNode );
+                System.out.println();
+                cursor.next( id );
+                cursor.next( bTreeNode.childAt( cursor, 0 ) );
+            }
+
+            System.out.println( "Level " + level );
             printKeysOfSiblings( cursor, bTreeNode );
             System.out.println();
-            cursor.next( id );
-            cursor.next( bTreeNode.childAt( cursor, 0 ) );
         }
-
-        System.out.println( "Level " + level );
-        printKeysOfSiblings( cursor, bTreeNode );
-        System.out.println();
-        cursor.close();
     }
 
     /**
@@ -197,12 +200,12 @@ public class Index implements SCIndex, IdProvider, Closeable
     }
 
     // Utility method
-    protected static void printKeysOfSiblings( PageCursor cursor, BTreeNode BTreeNode ) throws IOException
+    protected static void printKeysOfSiblings( PageCursor cursor, BTreeNode bTreeNode ) throws IOException
     {
         while ( true )
         {
-            printKeys( cursor, BTreeNode );
-            long rightSibling = BTreeNode.rightSibling( cursor );
+            printKeys( cursor, bTreeNode );
+            long rightSibling = bTreeNode.rightSibling( cursor );
             if ( rightSibling == BTreeNode.NO_NODE_FLAG )
             {
                 break;

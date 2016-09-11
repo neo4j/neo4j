@@ -36,7 +36,11 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+
+import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.helpers.Format.duration;
 
 public class NativeLabelScanStoreTest
 {
@@ -51,19 +55,35 @@ public class NativeLabelScanStoreTest
         File storeDir = testDirectory.directory();
         final PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
         NativeLabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, storeDir );
+        int count = 100_000;
 
-        final LabelScanWriter writer = labelScanStore.newWriter();
-        for ( int id = 0; id < 10_000; id++ )
+        long time = currentTimeMillis();
+        try ( final LabelScanWriter writer = labelScanStore.newWriter() )
         {
-            writer.write( NodeLabelUpdate.labelChanges( id, EMPTY_LONG_ARRAY, someLabels() ) );
+            for ( int id = 0; id < count; id++ )
+            {
+                writer.write( NodeLabelUpdate.labelChanges( id, EMPTY_LONG_ARRAY, someLabels() ) );
+                if ( id % 100_000 == 0 )
+                {
+                    System.out.println( id + " at " + ((double)id / (currentTimeMillis() - time)) + " nodes/ms" );
+                }
+            }
         }
+        long writeTime = currentTimeMillis() - time;
+        System.out.println( "write:" + duration( writeTime ) );
 
-        final LabelScanReader reader = labelScanStore.newReader();
-        for ( int labelId = 1; labelId <= 2; labelId++ )
+        time = currentTimeMillis();
+        try ( final LabelScanReader reader = labelScanStore.newReader() )
         {
-            final PrimitiveLongIterator primitiveLongIterator = reader.nodesWithLabel( labelId );
-            assertThat( PrimitiveLongCollections.count( primitiveLongIterator ), equalTo( 10_000 ) );
+            for ( int labelId = 1; labelId <= 2; labelId++ )
+            {
+                final PrimitiveLongIterator primitiveLongIterator = reader.nodesWithLabel( labelId );
+                assertThat( PrimitiveLongCollections.count( primitiveLongIterator ), equalTo( count ) );
+            }
         }
+        long readTime = currentTimeMillis() - time;
+        System.out.println( "read:" + duration( readTime ) );
+
         labelScanStore.shutdown();
     }
 

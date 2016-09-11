@@ -61,7 +61,6 @@ public class NativeLabelScanStore implements LabelScanStore
                 new SCIndexDescription( "", "", "", Direction.BOTH, "", null ), pageCache.pageSize() );
     }
 
-
     @Override
     public LabelScanReader newReader()
     {
