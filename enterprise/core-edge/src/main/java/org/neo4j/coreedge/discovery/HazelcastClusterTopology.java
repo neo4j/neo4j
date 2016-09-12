@@ -19,27 +19,11 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.core.Client;
-import com.hazelcast.core.ClientService;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.core.IAtomicReference;
-import com.hazelcast.core.IExecutorService;
-import com.hazelcast.core.Member;
-
-import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule;
@@ -51,11 +35,15 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
+import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.IMap;
+import com.hazelcast.core.Member;
+
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
-
-import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
 
 class HazelcastClusterTopology
 {
@@ -74,7 +62,7 @@ class HazelcastClusterTopology
 
         if ( hazelcastInstance != null )
         {
-            edgeMembers = edgeMembers( hazelcastInstance, log );
+            edgeMembers = edgeMembers( hazelcastInstance );
             clusterId = getClusterId( hazelcastInstance );
         }
         else
@@ -121,49 +109,13 @@ class HazelcastClusterTopology
         return uuidReference.compareAndSet( null, clusterId.uuid() ) || uuidReference.get().equals( clusterId.uuid() );
     }
 
-    private static class GetConnectedClients implements Callable<Collection<String>>, Serializable, HazelcastInstanceAware
+    private static Set<EdgeAddresses> edgeMembers( HazelcastInstance hazelcastInstance )
     {
-        private transient HazelcastInstance instance;
+        IMap<String/*uuid*/, String/*boltAddress*/> edgeServerMap = hazelcastInstance.getMap(
+                EDGE_SERVER_BOLT_ADDRESS_MAP_NAME );
 
-        GetConnectedClients( HazelcastInstance instance )
-        {
-            this.instance = instance;
-        }
-
-        @Override
-        public Collection<String> call() throws Exception
-        {
-            final ClientService clientService = instance.getClientService();
-            return clientService.getConnectedClients()
-                    .stream()
-                    .map( Client::getUuid )
-                    .collect( Collectors.toCollection( HashSet::new ) );
-        }
-
-        @Override
-        public void setHazelcastInstance( HazelcastInstance hazelcastInstance )
-        {
-            this.instance = hazelcastInstance;
-        }
-    }
-
-    private static Set<EdgeAddresses> edgeMembers( HazelcastInstance hazelcastInstance, Log log )
-    {
-        Collection<String> connectedUUIDs;
-        final IExecutorService executorService = hazelcastInstance.getExecutorService( "default" );
-        try
-        {
-            connectedUUIDs = executorService.submit( new GetConnectedClients( hazelcastInstance ) ).get();
-        }
-        catch ( InterruptedException | ExecutionException | RejectedExecutionException e )
-        {
-            log.info( "Unable to complete operation with distributed discovery service.", e );
-            return emptySet();
-        }
-
-        return hazelcastInstance.<String/*uuid*/,String/*boltAddress*/>getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
-                .entrySet().stream().
-                        filter( entry -> connectedUUIDs.contains( entry.getKey() ) )
+        return edgeServerMap
+                .entrySet().stream()
                 .map( entry -> new EdgeAddresses( SocketAddressFormat.socketAddress( entry.getValue() /*boltAddress*/, AdvertisedSocketAddress::new ) ) )
                 .collect( toSet() );
     }
