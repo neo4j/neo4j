@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -42,6 +44,8 @@ public class DefaultRecoverySPI implements Recovery.SPI
 {
     private final LogVersionRepository logVersionRepository;
     private final PositionToRecoverFrom positionToRecoverFrom;
+    private final PhysicalLogFiles logFiles;
+    private final FileSystemAbstraction fs;
     private final StorageEngine storageEngine;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
@@ -50,10 +54,13 @@ public class DefaultRecoverySPI implements Recovery.SPI
 
     public DefaultRecoverySPI(
             StorageEngine storageEngine,
+            PhysicalLogFiles logFiles, FileSystemAbstraction fs,
             LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder,
             TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore )
     {
         this.storageEngine = storageEngine;
+        this.logFiles = logFiles;
+        this.fs = fs;
         this.logVersionRepository = logVersionRepository;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
@@ -106,7 +113,9 @@ public class DefaultRecoverySPI implements Recovery.SPI
                 lastRecoveredTransaction.getCommitEntry().getTimeWritten(),
                 positionAfterLastRecoveredTransaction.getByteOffset(),
                 positionAfterLastRecoveredTransaction.getLogVersion() );
-        // TODO: Also truncate last log after last known position
+
+        fs.truncate( logFiles.getLogFileForVersion( positionAfterLastRecoveredTransaction.getLogVersion() ),
+                positionAfterLastRecoveredTransaction.getByteOffset() );
     }
 
     static class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation,Exception>

@@ -734,7 +734,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
         Recovery.SPI spi = new DefaultRecoverySPI(
-                storageEngine, logVersionRepository,
+                storageEngine, logFiles, fileSystemAbstraction, logVersionRepository,
                 checkPointFinder, transactionIdStore, logicalTransactionStore );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
         monitors.addMonitorListener( new Recovery.Monitor()
