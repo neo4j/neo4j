@@ -21,10 +21,12 @@ package org.neo4j.kernel.impl.api;
 
 import java.time.Clock;
 import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
@@ -206,6 +208,24 @@ public class KernelTransactions extends LifecycleAdapter
     }
 
     /**
+     * Give an approximate set of all transactions currently running together with associated metadata as
+     * computed by the provided selector function.
+     * This is not guaranteed to be exact, as transactions may stop and start while this set is gathered.
+     *
+     * @return the (approximate) set of open transactions.
+     */
+    public <T> Set<Pair<KernelTransactionHandle, T>> activeTransactions(
+            Function<KernelTransactionHandle,Stream<T>> selector
+    )
+    {
+        return allTransactions.stream()
+                .map( this::createHandle )
+                .filter( KernelTransactionHandle::isOpen )
+                .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
+                .collect( toSet() );
+    }
+
+    /**
      * Create new handle for the given transaction.
      * <p>
      * <b>Note:</b> this method is package-private for testing <b>only</b>.
@@ -298,4 +318,17 @@ public class KernelTransactions extends LifecycleAdapter
                     "Thread that is blocking new transactions from starting can't start new transaction" );
         }
     }
+
+    public class TxExecutingQuery
+    {
+        public final Map<String,String> txMetaData;
+        public final ExecutingQuery query;
+
+        public TxExecutingQuery( Map<String,String> txMetaData, ExecutingQuery query )
+        {
+            this.txMetaData = txMetaData;
+            this.query = query;
+        }
+    }
+
 }

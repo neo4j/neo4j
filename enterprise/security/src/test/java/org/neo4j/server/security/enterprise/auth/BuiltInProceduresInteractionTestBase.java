@@ -32,6 +32,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -91,11 +92,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldListTransactions() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransactionCreate<S> write1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> write2 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<S> write1 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> write2 = new ThreadedTransaction<>( neo, latch );
 
-        String q1 = write1.execute( threading, writeSubject );
-        String q2 = write2.execute( threading, writeSubject );
+        String q1 = write1.executeCreateNode( threading, writeSubject );
+        String q2 = write2.executeCreateNode( threading, writeSubject );
         latch.startAndWaitForAllToStart();
 
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
@@ -131,6 +132,36 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     //---------- list running queries -----------
 
+    @Test
+    public void shouldListAllQueryIncludingMetaData() throws Throwable
+    {
+        String setMetaDataQuery = "CALL dbms.setTXMetaData( { realUser: 'MyMan' } )";
+        String matchQuery = "MATCH (n) RETURN n";
+        String listQueriesQuery = "CALL dbms.listQueries()";
+
+        DoubleLatch latch = new DoubleLatch( 2 );
+        OffsetDateTime startTime = OffsetDateTime.now();
+
+        ThreadedTransaction<S> tx = new ThreadedTransaction<>( neo, latch );
+        tx.execute( threading, writeSubject, setMetaDataQuery, matchQuery );
+
+        latch.startAndWaitForAllToStart();
+
+        assertSuccess( adminSubject, listQueriesQuery, r ->
+        {
+            Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
+
+            Matcher<Map<String,Object>> thisQuery = listedQueryOfInteractionLevel( startTime, "adminSubject", listQueriesQuery );
+            Matcher<Map<String,Object>> matchQueryMatcher =
+                    listedQueryWithMetaData( startTime, "writeSubject", matchQuery, map( "realUser", "MyMan") );
+
+            assertThat( maps, matchesOneToOneInAnyOrder( thisQuery, matchQueryMatcher ) );
+        } );
+
+        latch.finishAndWaitForAllToFinish();
+        tx.closeAndAssertSuccess();
+    }
+
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldListAllQueriesWhenRunningAsAdmin() throws Throwable
@@ -138,8 +169,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         DoubleLatch latch = new DoubleLatch( 3, true );
         OffsetDateTime startTime = OffsetDateTime.now();
 
-        ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
 
         String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
         String q2 = read2.execute( threading, writeSubject, "UNWIND [4,5,6] AS y RETURN y" );
@@ -168,8 +199,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
         OffsetDateTime startTime = OffsetDateTime.now();
-        ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
 
         String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
         String ignored = read2.execute( threading, writeSubject, "UNWIND [4,5,6] AS y RETURN y" );
@@ -213,7 +244,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             OffsetDateTime startTime = OffsetDateTime.now();
 
             // When
-            ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
+            ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
 
             try
             {
@@ -250,12 +281,13 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     //---------- terminate query -----------
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldKillQueryAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
         String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
         String q2 = read2.execute( threading, readSubject, "UNWIND [4,5,6] AS y RETURN y" );
         latch.startAndWaitForAllToStart();
@@ -263,18 +295,18 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String id1 = extractQueryId( q1 );
 
         assertSuccess(
-            adminSubject,
-            "CALL dbms.killQuery('" + id1 + "') YIELD username " +
-            "RETURN count(username) AS count, username", r ->
-            {
-                List<Map<String,Object>> actual = r.stream().collect( toList() );
-                Matcher<Map<String,Object>> mapMatcher = allOf(
-                        (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
-                        (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
-                );
-                assertThat( actual, matchesOneToOneInAnyOrder( mapMatcher ) );
-            }
-        );
+                adminSubject,
+                "CALL dbms.killQuery('" + id1 + "') YIELD username " +
+                "RETURN count(username) AS count, username", r ->
+                {
+                    List<Map<String,Object>> actual = r.stream().collect( toList() );
+                    Matcher<Map<String,Object>> mapMatcher = allOf(
+                            (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
+                            (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
+                    );
+                    assertThat( actual, matchesOneToOneInAnyOrder( mapMatcher ) );
+                }
+            );
 
         latch.finishAndWaitForAllToFinish();
         read1.closeAndAssertTransactionTermination();
@@ -285,12 +317,13 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldKillQueryAsUser() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransactionCreate<S> read = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<S> read = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
         String q1 = read.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
         String q2 = write.execute( threading, writeSubject, "UNWIND [4,5,6] AS y RETURN y" );
         latch.startAndWaitForAllToStart();
@@ -309,7 +342,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                     );
                     assertThat( actual, matchesOneToOneInAnyOrder( mapMatcher ) );
                 }
-        );
+            );
 
         latch.finishAndWaitForAllToFinish();
         read.closeAndAssertTransactionTermination();
@@ -343,8 +376,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldFailToTerminateOtherUsersQuery() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        ThreadedTransactionCreate<S> read = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<S> read = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
         String q1 = read.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
         write.execute( threading, writeSubject, "UNWIND [4,5,6] AS y RETURN y" );
         latch.startAndWaitForAllToStart();
@@ -391,7 +424,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             int localPort = getLocalPort( server );
 
             // When
-            ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
+            ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
 
             try
             {
@@ -434,10 +467,10 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldKillMultipleUserQueries() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 5 );
-        ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> read3 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> read3 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
         String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
         String q2 = read2.execute( threading, readSubject, "UNWIND [4,5,6] AS y RETURN y" );
         read3.execute( threading, readSubject, "UNWIND [7,8,9] AS z RETURN z" );
@@ -474,7 +507,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
     }
 
-    protected String extractQueryId( String writeQuery )
+    String extractQueryId( String writeQuery )
     {
         return single( collectSuccessResult( adminSubject, "CALL dbms.listQueries()" )
                 .stream()
@@ -484,14 +517,36 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 .toString();
     }
 
+    //---------- set tx meta data -----------
+
+    @Test
+    public void shouldHaveSetTXMetaDataProcedure() throws Throwable
+    {
+        assertEmpty( writeSubject, "CALL dbms.setTXMetaData( { aKey: 'aValue' } )" );
+    }
+
+    @Test
+    public void shouldFailOnTooLargeTXMetaData() throws Throwable
+    {
+        ArrayList<String> list = new ArrayList<>();
+        for ( int i = 0; i < 200; i++ )
+        {
+            list.add( format( "key%d: '0123456789'", i ) );
+        }
+        String longMetaDataMap = "{" + String.join( ", ", list ) + "}";
+        assertFail( writeSubject, "CALL dbms.setTXMetaData( " + longMetaDataMap + " )",
+                "Invalid transaction meta-data, expected the total number of chars for keys and values to be " +
+                        "less than 2048, got 3090" );
+    }
+
     //---------- terminate transactions for user -----------
 
     @Test
     public void shouldTerminateTransactionForUser() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
-        write.execute( threading, writeSubject );
+        ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
+        write.executeCreateNode( threading, writeSubject );
         latch.startAndWaitForAllToStart();
 
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )",
@@ -511,11 +566,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldTerminateOnlyGivenUsersTransaction() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransactionCreate<S> schema = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<S> schema = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
 
-        schema.execute( threading, schemaSubject );
-        write.execute( threading, writeSubject );
+        schema.executeCreateNode( threading, schemaSubject );
+        write.executeCreateNode( threading, writeSubject );
         latch.startAndWaitForAllToStart();
 
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'schemaSubject' )",
@@ -538,11 +593,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldTerminateAllTransactionsForGivenUser() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransactionCreate<S> schema1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> schema2 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<S> schema1 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> schema2 = new ThreadedTransaction<>( neo, latch );
 
-        schema1.execute( threading, schemaSubject );
-        schema2.execute( threading, schemaSubject );
+        schema1.executeCreateNode( threading, schemaSubject );
+        schema2.executeCreateNode( threading, schemaSubject );
         latch.startAndWaitForAllToStart();
 
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'schemaSubject' )",
@@ -583,8 +638,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     private void shouldTerminateSelfTransactionsExceptTerminationTransaction( S subject ) throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<S> create = new ThreadedTransactionCreate<>( neo, latch );
-        create.execute( threading, subject );
+        ThreadedTransaction<S> create = new ThreadedTransaction<>( neo, latch );
+        create.executeCreateNode( threading, subject );
 
         latch.startAndWaitForAllToStart();
 
@@ -610,8 +665,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldNotTerminateTransactionsIfNotAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
-        write.execute( threading, writeSubject );
+        ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
+        write.executeCreateNode( threading, writeSubject );
         latch.startAndWaitForAllToStart();
 
         assertFail( noneSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
@@ -730,6 +785,20 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 hasConnectionDetails( neo.getConnectionDetails() )
         );
     }
+
+    private Matcher<Map<String,Object>> listedQueryWithMetaData( OffsetDateTime startTime, String username,
+            String query, Map<String,Object> metaData )
+    {
+        return allOf(
+                hasQuery( query ),
+                hasUsername( username ),
+                hasQueryId(),
+                hasStartTimeAfter( startTime ),
+                hasNoParameters(),
+                hasMetaData( metaData )
+        );
+    }
+
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQuery( String query )
     {
@@ -782,6 +851,20 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     {
         return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "connectionDetails" ),
                 containsString( expected ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private Matcher<Map<String, Object>> hasMetaData( Map<String,Object> expected )
+    {
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "metaData" ),
+                allOf(
+                    expected.entrySet().stream().map(
+                            entry -> hasEntry(
+                                    equalTo( entry.getKey() ),
+                                    equalTo( entry.getValue() )
+                            )
+                        ).collect( Collectors.toList() )
+                ) );
     }
 
     @Override

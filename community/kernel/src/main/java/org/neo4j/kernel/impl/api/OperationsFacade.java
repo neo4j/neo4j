@@ -1471,6 +1471,13 @@ public class OperationsFacade
     // query monitoring
 
     @Override
+    public void setMetaData( Map<String,Object> data )
+    {
+        statement.assertOpen();
+        statement.getTransaction().setMetaData( data );
+    }
+
+    @Override
     public Stream<ExecutingQuery> executingQueries()
     {
         statement.assertOpen();

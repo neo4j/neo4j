@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.api;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -165,6 +167,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long transactionId;
     private long commitTime;
     private volatile int reuseCount;
+    private Map<String,Object> userMetaData;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
@@ -204,6 +207,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.tracer = tracer;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement, procedures );
+        this.userMetaData = Collections.emptyMap();
     }
 
     /**
@@ -332,6 +336,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public AccessMode mode()
     {
         return accessMode;
+    }
+
+    public void setMetaData( Map<String, Object> data )
+    {
+        this.userMetaData = data;
+    }
+
+    public Map<String, Object> getMetaData()
+    {
+        return userMetaData;
     }
 
     @Override
@@ -716,6 +730,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             currentTransactionOperations = null;
             closeListeners.clear();
             reuseCount++;
+            userMetaData = Collections.emptyMap();
             pool.release( this );
         }
         finally

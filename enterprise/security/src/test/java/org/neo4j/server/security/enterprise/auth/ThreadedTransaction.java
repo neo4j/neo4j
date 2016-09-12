@@ -33,19 +33,19 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
-public class ThreadedTransactionCreate<S>
+public class ThreadedTransaction<S>
 {
     private volatile Future<Throwable> done = null;
     private final NeoInteractionLevel<S> neo;
     private final DoubleLatch latch;
 
-    ThreadedTransactionCreate( NeoInteractionLevel<S> neo, DoubleLatch latch  )
+    ThreadedTransaction( NeoInteractionLevel<S> neo, DoubleLatch latch  )
     {
         this.neo = neo;
         this.latch = latch;
     }
 
-    String execute( ThreadingRule threading, S subject )
+    String executeCreateNode( ThreadingRule threading, S subject )
     {
         final String query = "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})";
         return execute( threading, subject, query );
@@ -53,19 +53,29 @@ public class ThreadedTransactionCreate<S>
 
     String execute( ThreadingRule threading, S subject, String query )
     {
-        return doExecute( threading, subject, KernelTransaction.Type.explicit, false, query );
+        return doExecute( threading, subject, KernelTransaction.Type.explicit, false, query )[0];
+    }
+
+    String[] execute( ThreadingRule threading, S subject, String... queries )
+    {
+        return doExecute( threading, subject, KernelTransaction.Type.explicit, false, queries );
     }
 
     String executeEarly( ThreadingRule threading, S subject, KernelTransaction.Type txType, String query )
     {
-        return doExecute( threading, subject, txType, true, query );
+        return doExecute( threading, subject, txType, true, query )[0];
     }
 
-    private String doExecute(
-        ThreadingRule threading, S subject, KernelTransaction.Type txType, boolean startEarly, String query )
+    String[] executeEarly( ThreadingRule threading, S subject, KernelTransaction.Type txType, String... queries )
+    {
+        return doExecute( threading, subject, txType, true, queries );
+    }
+
+    private String[] doExecute(
+        ThreadingRule threading, S subject, KernelTransaction.Type txType, boolean startEarly, String... queries )
     {
         NamedFunction<S, Throwable> startTransaction =
-                new NamedFunction<S, Throwable>( "start-transaction-" + query.hashCode() )
+                new NamedFunction<S, Throwable>( "threaded-transaction-" + queries.hashCode() )
                 {
                     @Override
                     public Throwable apply( S subject )
@@ -74,14 +84,21 @@ public class ThreadedTransactionCreate<S>
                         {
                             try ( InternalTransaction tx = neo.beginLocalTransactionAsUser( subject, txType ) )
                             {
-                                Result result;
+                                Result result = null;
                                 try
                                 {
                                     if ( startEarly )
                                     {
                                         latch.start();
                                     }
-                                    result = neo.getLocalGraph().execute( query );
+                                    for ( String query : queries )
+                                    {
+                                        if ( result != null )
+                                        {
+                                            result.close();
+                                        }
+                                        result = neo.getLocalGraph().execute( query );
+                                    }
                                     if ( !startEarly )
                                     {
                                         latch.startAndWaitForAllToStart();
@@ -106,7 +123,7 @@ public class ThreadedTransactionCreate<S>
                 };
 
         done = threading.execute( startTransaction, subject );
-        return query;
+        return queries;
     }
 
     @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )

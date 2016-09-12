@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.query;
 
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.time.Clock;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -37,9 +35,14 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class QueryLoggerTest
@@ -67,9 +70,9 @@ public class QueryLoggerTest
         queryLogger.endSuccess( query );
 
         // then
-        String expectedSessionString = String.format( "%s [%s]", SESSION_1_NAME, "TestUser" );
+        String expectedSessionString = format( "%s [%s]", SESSION_1_NAME, "TestUser" );
         logProvider.assertExactly(
-            inLog( getClass() ).info( "%d ms: %s - %s", 11L, expectedSessionString, QUERY_1 )
+            inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 11L, expectedSessionString, QUERY_1 ) )
         );
     }
 
@@ -117,11 +120,11 @@ public class QueryLoggerTest
         queryLogger.endSuccess( query1 );
 
         // then
-        String expectedSession1String = String.format( "%s [%s]", SESSION_1_NAME, "TestUser1" );
-        String expectedSession2String = String.format( "%s [%s]", SESSION_2_NAME, "TestUser2" );
+        String expectedSession1String = format( "%s [%s]", SESSION_1_NAME, "TestUser1" );
+        String expectedSession2String = format( "%s [%s]", SESSION_2_NAME, "TestUser2" );
         logProvider.assertExactly(
-                inLog( getClass() ).info( "%d ms: %s - %s", 15L, expectedSession2String, QUERY_2 ),
-                inLog( getClass() ).info( "%d ms: %s - %s", 23L, expectedSession1String, QUERY_1 )
+                inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 15L, expectedSession2String, QUERY_2 ) ),
+                inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 23L, expectedSession1String, QUERY_1 ) )
         );
     }
 
@@ -144,7 +147,7 @@ public class QueryLoggerTest
         // then
         logProvider.assertExactly(
                 inLog( getClass() )
-                        .error( is( "1 ms: {session one} [TestUser] - MATCH (n) RETURN n" ), sameInstance( failure ) )
+                        .error( is( "1 ms: {session one} [TestUser] - MATCH (n) RETURN n - {}" ), sameInstance( failure ) )
         );
     }
 
@@ -155,7 +158,7 @@ public class QueryLoggerTest
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         Map<String,Object> params = new HashMap<>();
         params.put( "ages", Arrays.asList( 41, 42, 43 ) );
-        ExecutingQuery query = query( 0, SESSION_1_NAME, "TestUser", QUERY_4, params );
+        ExecutingQuery query = query( 0, SESSION_1_NAME, "TestUser", QUERY_4, params, emptyMap() );
         FakeClock clock = Clocks.fakeClock();
         QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
 
@@ -165,9 +168,11 @@ public class QueryLoggerTest
         queryLogger.endSuccess( query );
 
         // then
-        String expectedSessionString = String.format( "%s [%s]", SESSION_1_NAME, "TestUser" );
+        String expectedSessionString = format( "%s [%s]", SESSION_1_NAME, "TestUser" );
         logProvider.assertExactly(
-            inLog( getClass() ).info( "%d ms: %s - %s - %s", 11L, expectedSessionString, QUERY_4, "{ages: [41, 42, 43]}" )
+            inLog( getClass() ).info( format( "%d ms: %s - %s - %s - {}", 11L, expectedSessionString, QUERY_4,
+                    "{ages: " +
+                    "[41, 42, 43]}" ) )
         );
     }
 
@@ -178,7 +183,7 @@ public class QueryLoggerTest
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         Map<String,Object> params = new HashMap<>();
         params.put( "ages", Arrays.asList( 41, 42, 43 ) );
-        ExecutingQuery query = query( 0, SESSION_1_NAME, "TestUser", QUERY_4, params );
+        ExecutingQuery query = query( 0, SESSION_1_NAME, "TestUser", QUERY_4, params, emptyMap() );
         FakeClock clock = Clocks.fakeClock();
         QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
         RuntimeException failure = new RuntimeException();
@@ -191,7 +196,8 @@ public class QueryLoggerTest
         // then
         logProvider.assertExactly(
             inLog( getClass() ).error(
-                is( "1 ms: {session one} [TestUser] - MATCH (n) WHERE n.age IN {ages} RETURN n - {ages: [41, 42, 43]}" ),
+                is( "1 ms: {session one} [TestUser] - MATCH (n) WHERE n.age IN {ages} RETURN n - {ages: [41, 42, 43]}" +
+                        " - {}" ),
                 sameInstance( failure ) )
         );
     }
@@ -217,8 +223,41 @@ public class QueryLoggerTest
 
         // then
         logProvider.assertExactly(
-            inLog( getClass() ).info( "%d ms: %s - %s", 10L, "{session one} [TestUser]", QUERY_1 ),
-            inLog( getClass() ).info( "%d ms: %s - %s", 10L, "{session one} [AnotherUser]", QUERY_1 )
+                inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 10L, "{session one} [TestUser]", QUERY_1 ) ),
+                inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 10L, "{session one} [AnotherUser]", QUERY_1 ) )
+        );
+    }
+
+    @Test
+    public void shouldLogMetaData() throws Exception
+    {
+        // given
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        FakeClock clock = Clocks.fakeClock();
+        QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
+
+        // when
+        ExecutingQuery query = query( 0, SESSION_1_NAME, "TestUser", QUERY_1, emptyMap(), map( "User", "UltiMate" ) );
+        queryLogger.startQueryExecution( query );
+        clock.forward( 10, TimeUnit.MILLISECONDS );
+        queryLogger.endSuccess( query );
+
+        ExecutingQuery anotherQuery =
+                query( 10, SESSION_1_NAME, "AnotherUser", QUERY_1, emptyMap(), map( "Place", "Town" ) );
+        queryLogger.startQueryExecution( anotherQuery );
+        clock.forward( 10, TimeUnit.MILLISECONDS );
+        Throwable error = new Throwable();
+        queryLogger.endFailure( anotherQuery, error );
+
+        // then
+        logProvider.assertExactly(
+                inLog( getClass() ).info( format( "%d ms: %s - %s - {User: 'UltiMate'}", 10L,
+                        "{session one} [TestUser]", QUERY_1
+                ) ),
+                inLog( getClass() ).error(
+                        equalTo( format( "%d ms: %s - %s - {Place: 'Town'}", 10L,
+                            "{session one} [AnotherUser]", QUERY_1 ) ),
+                        sameInstance( error ) )
         );
     }
 
@@ -234,19 +273,21 @@ public class QueryLoggerTest
 
     private static ExecutingQuery query( long startTime, String source, String username, String queryText )
     {
-        return query( startTime, source, username, queryText, Collections.emptyMap() );
+        return query( startTime, source, username, queryText, emptyMap(), emptyMap() );
     }
 
     private static ExecutingQuery query(
-        long startTime, String source, String username, String queryText, Map<String,Object> params
+        long startTime, String source, String username, String queryText, Map<String,Object> params,
+            Map<String,Object> metaData
     )
     {
-        ExecutingQuery query = Mockito.mock( ExecutingQuery.class );
+        ExecutingQuery query = mock( ExecutingQuery.class );
         when( query.querySource() ).thenReturn( new QuerySource( source + " [" + username + "]" ) );
         when( query.queryText() ).thenReturn( queryText );
         when( query.queryParameters() ).thenReturn( params );
         when( query.startTime() ).thenReturn( startTime );
         when( query.username() ).thenReturn( Optional.of(username) );
+        when( query.metaData() ).thenReturn( metaData );
         return query;
     }
 }

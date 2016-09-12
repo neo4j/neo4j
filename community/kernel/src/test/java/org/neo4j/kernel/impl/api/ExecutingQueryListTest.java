@@ -99,6 +99,7 @@ public class ExecutingQueryListTest
 
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
-        return new ExecutingQuery( queryId, QuerySource.UNKNOWN, Optional.of( "me" ), query, Collections.emptyMap(), 10 );
+        return new ExecutingQuery( queryId, QuerySource.UNKNOWN, Optional.of( "me" ), query,
+                Collections.emptyMap(), 10, Collections.emptyMap() );
     }
 }

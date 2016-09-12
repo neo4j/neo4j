@@ -43,6 +43,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.time.Clocks;
 
+import static java.lang.String.format;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 @Service.Implementation( KernelExtensionFactory.class )
@@ -153,7 +154,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         public void endFailure( ExecutingQuery query, Throwable failure )
         {
             long time = clock.millis() - query.startTime();
-            logFailure( time, query, failure );
+            log.error( logEntry( time, query ), failure );
         }
 
         @Override
@@ -162,37 +163,23 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             long time = clock.millis() - query.startTime();
             if ( time >= thresholdMillis )
             {
-                logSuccess( time, query );
+                log.info( logEntry( time, query ) );
             }
         }
 
-        private void logFailure( long time, ExecutingQuery query, Throwable failure )
+        private String logEntry( long time, ExecutingQuery query )
         {
             String sourceString = query.querySource().toString();
             String queryText = query.queryText();
+            String metaData = mapAsString( query.metaData() );
             if ( logQueryParameters )
             {
                 String params = mapAsString( query.queryParameters() );
-                log.error( String.format( "%d ms: %s - %s - %s", time, sourceString, queryText, params ), failure );
+                return format( "%d ms: %s - %s - %s - %s", time, sourceString, queryText, params, metaData );
             }
             else
             {
-                log.error( String.format( "%d ms: %s - %s", time, sourceString, queryText ), failure );
-            }
-        }
-
-        private void logSuccess( long time, ExecutingQuery query )
-        {
-            String sourceString = query.querySource().toString();
-            String queryText = query.queryText();
-            if ( logQueryParameters )
-            {
-                String params = mapAsString( query.queryParameters() );
-                log.info( "%d ms: %s - %s - %s", time, sourceString, queryText, params );
-            }
-            else
-            {
-                log.info( "%d ms: %s - %s", time, sourceString, queryText );
+                return format( "%d ms: %s - %s - %s", time, sourceString, queryText, metaData );
             }
         }
 
@@ -208,22 +195,30 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             String sep = "";
             for ( Map.Entry<String,Object> entry : params.entrySet() )
             {
-                builder.append( sep ).append( entry.getKey() ).append( ": " );
+                builder
+                    .append( sep )
+                    .append( entry.getKey() )
+                    .append( ": " )
+                    .append( valueToString( entry.getValue() ) );
 
-                Object value = entry.getValue();
-                if ( value instanceof Map<?,?> )
-                {
-                    builder.append( mapAsString( (Map<String,Object>) value ) );
-                }
-                else
-                {
-                    builder.append( Strings.prettyPrint( value ) );
-                }
                 sep = ", ";
             }
             builder.append( "}" );
 
             return builder.toString();
+        }
+
+        private static String valueToString( Object value )
+        {
+            if ( value instanceof Map<?,?> )
+            {
+                return mapAsString( (Map<String,Object>) value );
+            }
+            if ( value instanceof String )
+            {
+                return format( "'%s'", String.valueOf( value ) );
+            }
+            return Strings.prettyPrint( value );
         }
     }
 }

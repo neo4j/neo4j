@@ -72,7 +72,7 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
 
         GraphDatabaseFacade graph = neo.getLocalGraph();
         DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<EnterpriseAuthSubject> read = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransaction<EnterpriseAuthSubject> read = new ThreadedTransaction<>( neo, latch );
         String query = read.execute( threading, authy, "UNWIND [1,2,3] AS x RETURN x" );
 
         latch.startAndWaitForAllToStart();

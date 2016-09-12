@@ -445,8 +445,8 @@ public abstract class ProcedureInteractionTestBase<S>
     void shouldTerminateTransactionsForUser( S subject, String procedure ) throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<S> userThread = new ThreadedTransactionCreate<>( neo, latch );
-        userThread.execute( threading(), subject );
+        ThreadedTransaction<S> userThread = new ThreadedTransaction<>( neo, latch );
+        userThread.executeCreateNode( threading(), subject );
         latch.startAndWaitForAllToStart();
 
         assertEmpty( adminSubject, "CALL " + format(procedure, neo.nameOf( subject ) ) );

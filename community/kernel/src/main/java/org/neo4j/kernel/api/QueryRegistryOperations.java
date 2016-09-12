@@ -35,6 +35,12 @@ import org.neo4j.kernel.impl.query.QuerySource;
 public interface QueryRegistryOperations
 {
     /**
+     * Sets the user defined meta data to be associated with started queries.
+     * @param data the meta data
+     */
+    void setMetaData( Map<String,Object> data );
+
+    /**
      * List of all currently running stream in this transaction. An user can have multiple stream running
      * simultaneously on the same transaction.
      */

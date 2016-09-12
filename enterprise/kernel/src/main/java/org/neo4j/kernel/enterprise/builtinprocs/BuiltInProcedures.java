@@ -53,6 +53,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.time.Clocks;
 
+import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -67,6 +68,7 @@ import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
 
+@SuppressWarnings( "unused" )
 public class BuiltInProcedures
 {
     public static Clock clock = Clocks.systemClock();
@@ -82,6 +84,23 @@ public class BuiltInProcedures
 
     @Context
     public AuthSubject authSubject;
+
+    @Procedure( name = "dbms.setTXMetaData", mode = DBMS )
+    public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
+    {
+        int totalCharSize = data.entrySet().stream()
+                .mapToInt( e -> e.getKey().length() + e.getValue().toString().length() ).sum();
+
+        final int HARD_CHAR_LIMIT = 2048;
+        if ( totalCharSize >= HARD_CHAR_LIMIT )
+        {
+            throw new IllegalArgumentException(
+                    format( "Invalid transaction meta-data, expected the total number of chars for " +
+                            "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
+        }
+
+        tx.acquireStatement().queryRegistration().setMetaData( data );
+    }
 
     @Procedure( name = "dbms.listTransactions", mode = DBMS )
     public Stream<TransactionResult> listTransactions()
@@ -136,11 +155,10 @@ public class BuiltInProcedures
     {
         try
         {
-            return getKernelTransactions()
-                .activeTransactions()
-                .stream()
+            return getKernelTransactions().activeTransactions().stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
-                .filter( ( query ) -> isAdminEnterpriseAuthSubject() || query.username().map( authSubject::hasUsername ).orElse( false ) )
+                .filter( query -> isAdminEnterpriseAuthSubject() ||
+                        query.username().map( authSubject::hasUsername ).orElse( false ) )
                 .map( catchThrown( InvalidArgumentsException.class, this::queryStatusResult ) );
         }
         catch ( UncaughtCheckedException uncaught )
@@ -330,7 +348,8 @@ public class BuiltInProcedures
         throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 
-    private QueryStatusResult queryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
+    private QueryStatusResult queryStatusResult( ExecutingQuery q )
+            throws InvalidArgumentsException
     {
         return new QueryStatusResult(
                 ofInternalId( q.internalQueryId() ),
@@ -339,7 +358,8 @@ public class BuiltInProcedures
                 q.queryParameters(),
                 q.startTime(),
                 clock.instant().minusMillis( q.startTime() ).toEpochMilli(),
-                q.querySource()
+                q.querySource(),
+                q.metaData()
         );
     }
 
@@ -352,10 +372,18 @@ public class BuiltInProcedures
         public final String startTime;
         public final String elapsedTime;
         public final String connectionDetails;
+        public final Map<String,Object> metaData;
 
-        QueryStatusResult( QueryId queryId, String username, String query, Map<String,Object> parameters,
-                long startTime, long elapsedTime, QuerySource querySource )
-        {
+        QueryStatusResult(
+                QueryId queryId,
+                String username,
+                String query,
+                Map<String,Object> parameters,
+                long startTime,
+                long elapsedTime,
+                QuerySource querySource,
+                Map<String,Object> txMetaData
+        ) {
             this.queryId = queryId.toString();
             this.username = username;
             this.query = query;
@@ -363,6 +391,7 @@ public class BuiltInProcedures
             this.startTime = formatTime( startTime );
             this.elapsedTime = formatInterval( elapsedTime );
             this.connectionDetails = querySource.toString();
+            this.metaData = txMetaData;
         }
 
         private static String formatTime( final long startTime )

@@ -40,22 +40,24 @@ public class ExecutingQuery
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime;
+    private Map<String,Object> metaData;
 
     public ExecutingQuery(
-        long queryId,
-        QuerySource querySource,
-        Optional<String> username,
-        String queryText,
-        Map<String,Object> queryParameters,
-        long startTime
-    )
-    {
+            long queryId,
+            QuerySource querySource,
+            Optional<String> username,
+            String queryText,
+            Map<String,Object> queryParameters,
+            long startTime,
+            Map<String,Object> metaData
+    ) {
         this.queryId = queryId;
         this.querySource = querySource;
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
         this.startTime = startTime;
+        this.metaData = metaData;
     }
 
     @Override
@@ -124,5 +126,10 @@ public class ExecutingQuery
             "ExecutingQuery{queryId=%d, querySource='%s', username='%s', queryText='%s', queryParameters=%s, " +
             "startTime=%d}",
             queryId, querySource.toString( ":" ), usernameAsString(), queryText, queryParameters, startTime );
+    }
+
+    public Map<String,Object> metaData()
+    {
+        return metaData;
     }
 }
