@@ -18,23 +18,20 @@
  */
 package org.neo4j.examples;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 /**
@@ -85,10 +82,9 @@ public class ReadOnlyDocTest
             fail( "expected exception" );
         }
         // then
-        catch ( TransactionFailureException e )
+        catch ( WriteOperationsNotAllowedException e )
         {
             // ok
-            assertThat( e.getCause(), instanceOf( ReadOnlyDbException.class ) );
         }
     }
 }

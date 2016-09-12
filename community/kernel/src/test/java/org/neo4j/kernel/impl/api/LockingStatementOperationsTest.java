@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
@@ -73,7 +74,7 @@ public class LockingStatementOperationsTest
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private final TxState txState = new TxState();
     private final KernelStatement state = new KernelStatement( transaction, new SimpleTxStateHolder( txState ),
-            mock( StorageStatement.class ), new Procedures() );
+            mock( StorageStatement.class ), new Procedures(), new CanWrite() );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()

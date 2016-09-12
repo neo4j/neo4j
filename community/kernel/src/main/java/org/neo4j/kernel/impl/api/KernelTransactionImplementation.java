@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -190,7 +191,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Pool<KernelTransactionImplementation> pool,
                                             Clock clock,
                                             TransactionTracer tracer,
-                                            StorageEngine storageEngine )
+                                            StorageEngine storageEngine,
+                                            AccessCapability accessCapability )
     {
         this.operationContainer = operationContainer;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -206,7 +208,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clock = clock;
         this.tracer = tracer;
         this.storageStatement = storeLayer.newStatement();
-        this.currentStatement = new KernelStatement( this, this, storageStatement, procedures );
+        this.currentStatement = new KernelStatement( this, this, storageStatement, procedures, accessCapability );
         this.userMetaData = Collections.emptyMap();
     }
 

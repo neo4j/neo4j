@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
@@ -69,6 +70,6 @@ public class StatementLifecycleTest
     private KernelStatement getKernelStatement( KernelTransactionImplementation transaction,
             StorageStatement storageStatement )
     {
-        return new KernelStatement( transaction, null, storageStatement, new Procedures() );
+        return new KernelStatement( transaction, null, storageStatement, new Procedures(), new CanWrite() );
     }
 }

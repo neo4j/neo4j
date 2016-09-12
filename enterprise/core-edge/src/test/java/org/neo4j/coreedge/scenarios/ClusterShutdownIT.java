@@ -35,6 +35,7 @@ import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.Arrays.asList;
@@ -63,11 +64,18 @@ public class ClusterShutdownIT
     {
         Cluster cluster = clusterRule.startCluster();
 
-        for ( int victimId = 0; victimId < cluster.numberOfCoreMembersReportedByTopology(); victimId++ )
+        try
         {
-            assertTrue( cluster.getCoreMemberById( victimId ).database().isAvailable( 1000 ) );
-            shouldShutdownEvenThoughWaitingForLock0( cluster, victimId, shutdownOrder );
-            cluster.start();
+            for ( int victimId = 0; victimId < cluster.numberOfCoreMembersReportedByTopology(); victimId++ )
+            {
+                assertTrue( cluster.getCoreMemberById( victimId ).database().isAvailable( 1000 ) );
+                shouldShutdownEvenThoughWaitingForLock0( cluster, victimId, shutdownOrder );
+                cluster.start();
+            }
+        }
+        catch ( WriteOperationsNotAllowedException e )
+        {
+            // expected
         }
     }
 

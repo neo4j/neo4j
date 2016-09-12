@@ -85,6 +85,8 @@ public class CommunityEditionModule extends EditionModule
         LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );
 
+        this.accessCapability = config.get( GraphDatabaseSettings.read_only )? new ReadOnly() : new CanWrite();
+
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );

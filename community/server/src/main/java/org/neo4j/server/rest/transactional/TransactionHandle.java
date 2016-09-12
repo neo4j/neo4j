@@ -29,6 +29,7 @@ import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -322,7 +323,8 @@ public class TransactionHandle implements TransactionTerminationHandle
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                     output.notifications( result.getNotifications() );
                 }
-                catch ( KernelException | CypherException | AuthorizationViolationException e )
+                catch ( KernelException | CypherException | AuthorizationViolationException |
+                        WriteOperationsNotAllowedException e )
                 {
                     errors.add( new Neo4jError( e.status(), e ) );
                     break;

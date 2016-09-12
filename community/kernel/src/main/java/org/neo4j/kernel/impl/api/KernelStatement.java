@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -64,6 +65,7 @@ public class KernelStatement implements TxStateHolder, Statement
 {
     private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
+    private final AccessCapability accessCapability;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
     private StatementLocks statementLocks;
@@ -71,11 +73,15 @@ public class KernelStatement implements TxStateHolder, Statement
     private volatile ExecutingQueryList executingQueryList;
 
     public KernelStatement( KernelTransactionImplementation transaction,
-            TxStateHolder txStateHolder, StorageStatement storeStatement, Procedures procedures )
+                            TxStateHolder txStateHolder,
+                            StorageStatement storeStatement,
+                            Procedures procedures,
+                            AccessCapability accessCapability )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
+        this.accessCapability = accessCapability;
         this.facade = new OperationsFacade( transaction, this, procedures );
         this.executingQueryList = ExecutingQueryList.EMPTY;
     }
@@ -94,6 +100,7 @@ public class KernelStatement implements TxStateHolder, Statement
     @Override
     public TokenWriteOperations tokenWriteOperations()
     {
+        accessCapability.assertCanWrite();
         return facade;
     }
 
@@ -101,6 +108,8 @@ public class KernelStatement implements TxStateHolder, Statement
     public DataWriteOperations dataWriteOperations()
             throws InvalidTransactionTypeKernelException
     {
+        accessCapability.assertCanWrite();
+
         if( !transaction.mode().allowsWrites() )
         {
             throw transaction.mode().onViolation(
@@ -114,6 +123,8 @@ public class KernelStatement implements TxStateHolder, Statement
     public SchemaWriteOperations schemaWriteOperations()
             throws InvalidTransactionTypeKernelException
     {
+        accessCapability.assertCanWrite();
+
         if( !transaction.mode().allowsSchemaWrites() )
         {
             throw transaction.mode().onViolation(

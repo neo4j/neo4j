@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -120,7 +121,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
                 mock( Procedures.class ),
-                IOLimiter.unlimited(), Clock.systemUTC() );
+                IOLimiter.unlimited(), Clock.systemUTC(), new CanWrite() );
 
         return dataSource;
     }

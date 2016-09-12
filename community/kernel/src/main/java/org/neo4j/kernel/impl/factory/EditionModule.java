@@ -107,6 +107,8 @@ public abstract class EditionModule
 
     public CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
+    public AccessCapability accessCapability;
+
     public IOLimiter ioLimiter;
 
     public IdReuseEligibility eligibleForIdReuse;

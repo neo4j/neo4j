@@ -40,6 +40,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
@@ -446,12 +448,12 @@ public class KernelTransactionsTest
             return new TestKernelTransactions( statementLocksFactory, null, statementOperationsContianer,
                     null, DEFAULT,
                     commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                    tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock() );
+                    tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock(), new CanWrite() );
         }
         return new KernelTransactions( statementLocksFactory,
                 null, statementOperationsContianer, null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock() );
+                tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock(), new CanWrite() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -520,19 +522,22 @@ public class KernelTransactionsTest
     private static class TestKernelTransactions extends KernelTransactions
     {
         public TestKernelTransactions( StatementLocksFactory statementLocksFactory,
-                ConstraintIndexCreator constraintIndexCreator,
-                StatementOperationContainer statementOperationsContianer, SchemaWriteGuard schemaWriteGuard,
-                TransactionHeaderInformationFactory txHeaderFactory,
-                TransactionCommitProcess transactionCommitProcess,
-                IndexConfigStore indexConfigStore,
-                LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
-                TransactionMonitor transactionMonitor, LifeSupport dataSourceLife,
-                Tracers tracers, StorageEngine storageEngine, Procedures procedures,
-                TransactionIdStore transactionIdStore, Clock clock )
+                                       ConstraintIndexCreator constraintIndexCreator,
+                                       StatementOperationContainer statementOperationsContianer,
+                                       SchemaWriteGuard schemaWriteGuard,
+                                       TransactionHeaderInformationFactory txHeaderFactory,
+                                       TransactionCommitProcess transactionCommitProcess,
+                                       IndexConfigStore indexConfigStore,
+                                       LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
+                                       TransactionMonitor transactionMonitor, LifeSupport dataSourceLife,
+                                       Tracers tracers, StorageEngine storageEngine, Procedures procedures,
+                                       TransactionIdStore transactionIdStore, Clock clock,
+                                       AccessCapability accessCapability )
         {
-            super( statementLocksFactory, constraintIndexCreator, statementOperationsContianer, schemaWriteGuard, txHeaderFactory,
-                    transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor,
-                    dataSourceLife, tracers, storageEngine, procedures, transactionIdStore, clock );
+            super( statementLocksFactory, constraintIndexCreator, statementOperationsContianer, schemaWriteGuard,
+                    txHeaderFactory, transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks,
+                    transactionMonitor, dataSourceLife, tracers, storageEngine, procedures, transactionIdStore, clock,
+                    accessCapability );
         }
 
         @Override

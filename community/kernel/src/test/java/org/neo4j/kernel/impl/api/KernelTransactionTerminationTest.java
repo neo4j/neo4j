@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -361,7 +362,7 @@ public class KernelTransactionTerminationTest
                     mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT,
                     mock( TransactionCommitProcess.class ), monitor, () -> mock( LegacyIndexTransactionState.class ),
                     mock( Pool.class ), Clocks.fakeClock(), TransactionTracer.NULL,
-                    mock( StorageEngine.class, RETURNS_MOCKS ) );
+                    mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite() );
 
             this.monitor = monitor;
         }

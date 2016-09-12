@@ -24,13 +24,20 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.test.coreedge.ClusterRule;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.coreedge.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -48,6 +55,91 @@ public class CoreReplicationIT
     public void setup() throws Exception
     {
         cluster = clusterRule.startCluster();
+    }
+
+    @Test
+    public void shouldNotAllowWritesFromAFollower() throws Exception
+    {
+        // given
+        cluster.awaitLeader();
+
+        CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
+
+        // when
+        try(Transaction tx = follower.beginTx())
+        {
+            follower.createNode();
+            tx.success();
+            fail( "Should have thrown exception" );
+        }
+        catch ( WriteOperationsNotAllowedException ignored )
+        {
+            // expected
+            assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
+        }
+        catch(Exception exception)
+        {
+            fail("Got an unexpected exception: " + exception);
+        }
+    }
+
+    @Test
+    public void shouldNotAllowSchemaChangesFromAFollower() throws Exception
+    {
+        // given
+        cluster.awaitLeader();
+
+        CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
+
+        // when
+        try(Transaction tx = follower.beginTx())
+        {
+            follower.schema().constraintFor( Label.label( "Foo" ) ).assertPropertyIsUnique( "name" ).create();
+            tx.success();
+            fail( "Should have thrown exception" );
+        }
+        catch ( WriteOperationsNotAllowedException ignored )
+        {
+            // expected
+            assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
+        }
+        catch(Exception exception)
+        {
+            fail("Got an unexpected exception: " + exception);
+        }
+    }
+
+    @Test
+    public void shouldNotAllowTokenCreationFromAFollower() throws Exception
+    {
+        // given
+        CoreClusterMember leader = cluster.awaitLeader();
+
+        CoreGraphDatabase leaderDb = leader.database();
+        try( Transaction tx = leaderDb.beginTx())
+        {
+            leaderDb.createNode( Label.label( "Person" ) );
+            tx.success();
+        }
+
+        CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
+
+        // when
+        try(Transaction tx = follower.beginTx())
+        {
+            follower.findNodes( Label.label( "Person" ) ).next().setProperty( "name", "Mark" );
+            tx.success();
+            fail( "Should have thrown exception" );
+        }
+        catch ( WriteOperationsNotAllowedException ignored )
+        {
+            // expected
+            assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
+        }
+        catch(Exception exception)
+        {
+            fail("Got an unexpected exception: " + exception);
+        }
     }
 
     @Test

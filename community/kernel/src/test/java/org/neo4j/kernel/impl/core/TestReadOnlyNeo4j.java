@@ -33,6 +33,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.DbRepresentation;
@@ -69,10 +70,9 @@ public class TestReadOnlyNeo4j
 
             tx.success();
         }
-        catch ( TransactionFailureException e )
+        catch ( WriteOperationsNotAllowedException e )
         {
             // good
-            assertThat(e.getCause(), instanceOf( ReadOnlyDbException.class ));
         }
         readGraphDb.shutdown();
     }
