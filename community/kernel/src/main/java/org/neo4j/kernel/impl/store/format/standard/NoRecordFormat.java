@@ -40,7 +40,7 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
     @Override
     public int getRecordSize( StoreHeader storeHeader )
     {
-        return 1;
+        return NO_RECORD_SIZE;
     }
 
     @Override

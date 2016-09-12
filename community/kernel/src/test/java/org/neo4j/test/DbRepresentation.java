@@ -282,7 +282,7 @@ public class DbRepresentation
         @Override
         public String toString()
         {
-            return "<id: " + id + " props: " + properties + ", rels: " + outRelationships + ">";
+            return "<id: " + id + " props: " + properties + ", rels: " + outRelationships + ", index: " + index + ">";
         }
     }
 

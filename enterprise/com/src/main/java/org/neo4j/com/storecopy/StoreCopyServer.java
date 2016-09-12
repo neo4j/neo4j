@@ -33,6 +33,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
@@ -149,11 +150,11 @@ public class StoreCopyServer
 
             // Copy the store files
             monitor.startStreamingStoreFiles();
-            try ( ResourceIterator<File> files = dataSource.listStoreFiles( includeLogs ) )
+            try ( ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( includeLogs ) )
             {
                 while ( files.hasNext() )
                 {
-                    File file = files.next();
+                    File file = files.next().file();
                     try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
                     {
                         monitor.startStreamingStoreFile( file );

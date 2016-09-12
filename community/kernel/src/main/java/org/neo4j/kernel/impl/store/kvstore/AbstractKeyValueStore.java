@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -241,6 +243,19 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             }
         }
         return true;
+    }
+
+    public Iterable<File> allFiles()
+    {
+        List<File> existingFiles = new ArrayList<>();
+        for ( File candidateFile : rotationStrategy.candidateFiles() )
+        {
+            if ( candidateFile.exists() )
+            {
+                existingFiles.add( candidateFile );
+            }
+        }
+        return existingFiles;
     }
 
     private class RotationTask implements PreparedRotation, Runnable
