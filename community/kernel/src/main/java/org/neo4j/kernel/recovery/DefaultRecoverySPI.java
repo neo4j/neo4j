@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.RecoveryLabelScanWriterProvider;
 import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -47,6 +49,8 @@ public class DefaultRecoverySPI implements Recovery.SPI
     private final RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup;
     private final StoreFlusher storeFlusher;
     private final NeoStores neoStores;
+    private final PhysicalLogFiles logFiles;
+    private final FileSystemAbstraction fs;
     private final LogVersionRepository logVersionRepository;
     private final PositionToRecoverFrom positionToRecoverFrom;
     private final RecoveryIndexingUpdatesValidator indexUpdatesValidator;
@@ -57,6 +61,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     public DefaultRecoverySPI( RecoveryLabelScanWriterProvider labelScanWriters,
             RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup,
             StoreFlusher storeFlusher, NeoStores neoStores,
+            PhysicalLogFiles logFiles, FileSystemAbstraction fs,
             LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder,
             RecoveryIndexingUpdatesValidator indexUpdatesValidator,
             TransactionIdStore transactionIdStore,
@@ -67,6 +72,8 @@ public class DefaultRecoverySPI implements Recovery.SPI
         this.legacyIndexApplierLookup = legacyIndexApplierLookup;
         this.storeFlusher = storeFlusher;
         this.neoStores = neoStores;
+        this.logFiles = logFiles;
+        this.fs = fs;
         this.logVersionRepository = logVersionRepository;
         this.indexUpdatesValidator = indexUpdatesValidator;
         this.transactionIdStore = transactionIdStore;
@@ -125,7 +132,9 @@ public class DefaultRecoverySPI implements Recovery.SPI
                 lastRecoveredTransaction.getCommitEntry().getTimeWritten(),
                 positionAfterLastRecoveredTransaction.getByteOffset(),
                 positionAfterLastRecoveredTransaction.getLogVersion() );
-        // TODO: Also truncate last log after last known position
+
+        fs.truncate( logFiles.getLogFileForVersion( positionAfterLastRecoveredTransaction.getLogVersion() ),
+                positionAfterLastRecoveredTransaction.getByteOffset() );
     }
 
     static class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation,Exception>
