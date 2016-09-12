@@ -48,11 +48,6 @@ public class PhysicalTransactionCursor<T extends ReadableClosablePositionAwareCh
                 new LogEntryCursor( (LogEntryReader<ReadableClosablePositionAwareChannel>) entryReader, channel );
     }
 
-    protected List<StorageCommand> commandList()
-    {
-        return new ArrayList<>();
-    }
-
     @Override
     public CommittedTransactionRepresentation get()
     {
@@ -81,7 +76,7 @@ public class PhysicalTransactionCursor<T extends ReadableClosablePositionAwareCh
             LogEntryStart startEntry = entry.as();
             LogEntryCommit commitEntry;
 
-            List<StorageCommand> entries = commandList();
+            List<StorageCommand> entries = new ArrayList<>();
             while ( true )
             {
                 if ( !logEntryCursor.next() )
