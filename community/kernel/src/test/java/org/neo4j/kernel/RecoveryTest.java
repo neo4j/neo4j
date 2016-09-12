@@ -164,10 +164,10 @@ public class RecoveryTest
                 private int nr = 0;
 
                 @Override
-                public Visitor<CommittedTransactionRepresentation,Exception> getRecoveryVisitor()
+                public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
                 {
                     recoveryRequired.set( true );
-                    final Visitor<CommittedTransactionRepresentation,Exception> actual = super.getRecoveryVisitor();
+                    final Visitor<CommittedTransactionRepresentation,Exception> actual = super.startRecovery();
                     return new Visitor<CommittedTransactionRepresentation,Exception>()
                     {
                         @Override
@@ -257,7 +257,7 @@ public class RecoveryTest
                     logVersionRepository, finder, validator, transactionIdStore, txStore, storeApplier )
             {
                 @Override
-                public Visitor<CommittedTransactionRepresentation,Exception> getRecoveryVisitor()
+                public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
                 {
                     fail( "Recovery should not be required" );
                     return null; // <-- to satisfy the compiler

@@ -22,7 +22,6 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.RecoveryLabelScanWriterProvider;
 import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -36,15 +35,13 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
-
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 
-public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransactionRepresentation,Exception>
+public class DefaultRecoverySPI implements Recovery.SPI
 {
     private final RecoveryLabelScanWriterProvider labelScanWriters;
     private final RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup;
@@ -55,12 +52,11 @@ public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransa
     private final RecoveryIndexingUpdatesValidator indexUpdatesValidator;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
-    private final TransactionRepresentationStoreApplier storeApplier;
+    private final Visitor<CommittedTransactionRepresentation,Exception> recoveryVisitor;
 
     public DefaultRecoverySPI( RecoveryLabelScanWriterProvider labelScanWriters,
             RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup,
             StoreFlusher storeFlusher, NeoStores neoStores,
-            PhysicalLogFiles logFiles, FileSystemAbstraction fileSystemAbstraction,
             LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder,
             RecoveryIndexingUpdatesValidator indexUpdatesValidator,
             TransactionIdStore transactionIdStore,
@@ -75,8 +71,8 @@ public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransa
         this.indexUpdatesValidator = indexUpdatesValidator;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
-        this.storeApplier = storeApplier;
         this.positionToRecoverFrom = new PositionToRecoverFrom( checkPointFinder );
+        this.recoveryVisitor = new RecoveryVisitor( storeApplier, indexUpdatesValidator );
     }
 
     @Override
@@ -102,7 +98,7 @@ public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransa
     }
 
     @Override
-    public Visitor<CommittedTransactionRepresentation,Exception> getRecoveryVisitor()
+    public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
     {
         // Calling this method means that recovery is required, tell storage engine about it
         // This method will be called before recovery actually starts and so will ensure that
@@ -110,7 +106,7 @@ public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransa
         // already started btw.
         // Go and read more at {@link CommonAbstractStore#deleteIdGenerator()}
         neoStores.deleteIdGenerators();
-        return this;
+        return recoveryVisitor;
     }
 
     @Override
@@ -132,28 +128,41 @@ public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransa
         // TODO: Also truncate last log after last known position
     }
 
-    @Override
-    public boolean visit( CommittedTransactionRepresentation transaction ) throws Exception
+    static class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation,Exception>
     {
-        TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
-        long txId = transaction.getCommitEntry().getTxId();
-        try ( LockGroup locks = new LockGroup();
-                ValidatedIndexUpdates indexUpdates = prepareIndexUpdates( txRepresentation ) )
-        {
-            storeApplier.apply( txRepresentation, indexUpdates, locks, txId, RECOVERY );
-        }
-        return false;
-    }
+        private final TransactionRepresentationStoreApplier storeApplier;
+        private final RecoveryIndexingUpdatesValidator indexUpdatesValidator;
 
-    /**
-     * Recovery operates under a condition that all index updates are valid because otherwise they have no chance to
-     * appear in write ahead log.
-     * This step is still needed though, because it is not only about validation of index sizes but also about
-     * inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands in transaction state and
-     * grouping those by {@link org.neo4j.kernel.api.index.IndexUpdater}s.
-     */
-    private ValidatedIndexUpdates prepareIndexUpdates( TransactionRepresentation txRepresentation ) throws IOException
-    {
-        return indexUpdatesValidator.validate( txRepresentation );
+        public RecoveryVisitor( TransactionRepresentationStoreApplier storeApplier,
+                RecoveryIndexingUpdatesValidator indexUpdatesValidator )
+        {
+            this.storeApplier = storeApplier;
+            this.indexUpdatesValidator = indexUpdatesValidator;
+        }
+
+        @Override
+        public boolean visit( CommittedTransactionRepresentation transaction ) throws Exception
+        {
+            TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
+            long txId = transaction.getCommitEntry().getTxId();
+            try ( LockGroup locks = new LockGroup();
+                    ValidatedIndexUpdates indexUpdates = prepareIndexUpdates( txRepresentation ) )
+            {
+                storeApplier.apply( txRepresentation, indexUpdates, locks, txId, RECOVERY );
+            }
+            return false;
+        }
+
+        /**
+         * Recovery operates under a condition that all index updates are valid because otherwise they have no chance to
+         * appear in write ahead log.
+         * This step is still needed though, because it is not only about validation of index sizes but also about
+         * inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands in transaction state and
+         * grouping those by {@link org.neo4j.kernel.api.index.IndexUpdater}s.
+         */
+        private ValidatedIndexUpdates prepareIndexUpdates( TransactionRepresentation txRepresentation ) throws IOException
+        {
+            return indexUpdatesValidator.validate( txRepresentation );
+        }
     }
 }
