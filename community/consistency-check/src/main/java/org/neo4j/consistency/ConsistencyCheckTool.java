@@ -53,6 +53,8 @@ public class ConsistencyCheckTool
     {
         try
         {
+            System.err.println("WARNING: ConsistencyCheckTool is deprecated and support for it will be" +
+                    "removed in a future version of Neo4j. Please use neo4j-admin check-consistency.");
             runConsistencyCheckTool( args );
         }
         catch ( ToolFailureException e )
