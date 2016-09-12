@@ -23,6 +23,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.cursor.Cursor;
+import org.neo4j.index.btree.RangePredicate;
+
 public interface SCIndex extends Closeable
 {
     public static final String filePrefix = "shortcut.index.";
@@ -44,6 +47,8 @@ public interface SCIndex extends Closeable
     void insert( long[] key, long[] value ) throws IOException;
 
     void seek( Seeker seeker, List<SCResult> resultList) throws IOException;
+
+    Cursor<BTreeHit> seek( RangePredicate from, RangePredicate to ) throws IOException;
 
     SCInserter inserter() throws IOException;
 }

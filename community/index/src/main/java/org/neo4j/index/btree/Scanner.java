@@ -30,20 +30,19 @@ import org.neo4j.io.pagecache.PageCursor;
 
 public class Scanner extends Seeker.CommonSeeker
 {
-
     @Override
-    protected void seekLeaf( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException
+    protected void seekLeaf( PageCursor cursor, BTreeNode bTreeNode, List<SCResult> resultList ) throws IOException
     {
         while ( true )
         {
-            int keyCount = BTreeNode.keyCount( cursor );
+            int keyCount = bTreeNode.keyCount( cursor );
             for ( int i = 0; i < keyCount; i++ )
             {
-                long[] key = BTreeNode.keyAt( cursor, i );
-                long[] value = BTreeNode.valueAt( cursor, i );
+                long[] key = bTreeNode.keyAt( cursor, new long[2], i );
+                long[] value = bTreeNode.valueAt( cursor, new long[2], i );
                 resultList.add( new SCResult( new SCKey( key[0], key[1] ), new SCValue( value[0], value[1] ) ) );
             }
-            long rightSibling = BTreeNode.rightSibling( cursor );
+            long rightSibling = bTreeNode.rightSibling( cursor );
             if ( rightSibling == BTreeNode.NO_NODE_FLAG )
             {
                 break;

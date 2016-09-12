@@ -381,7 +381,7 @@ public class IndexInsert
         SplitResult split = new SplitResult();
         split.left = left;
         split.right = newRight;
-        split.primKey = bTreeNode.keyAt( cursor, 0 );
+        split.primKey = bTreeNode.keyAt( cursor, new long[2], 0 );
 
         // Move cursor back to left
         cursor.next( left );

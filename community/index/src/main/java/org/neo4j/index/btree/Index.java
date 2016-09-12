@@ -27,7 +27,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.index.BTreeHit;
 import org.neo4j.index.IdProvider;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCIndexDescription;
@@ -232,6 +234,116 @@ public class Index implements SCIndex, IdProvider
     }
 
     @Override
+    public Cursor<BTreeHit> seek( RangePredicate fromPred, RangePredicate toPred ) throws IOException
+    {
+        PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK );
+        long[] key = new long[2], value = new long[2];
+        cursor.next();
+
+        // Find the left-most in-range leaf node, i.e. iterate through internal nodes to find it
+        while ( bTreeNode.isInternal( cursor ) )
+        {
+            // COPY(1)
+            // Find the left-most key within from-range
+            int keyCount = bTreeNode.keyCount( cursor );
+            int pos = 0;
+            bTreeNode.keyAt( cursor, key, pos );
+            while ( pos < keyCount && fromPred.inRange( key ) < 0 )
+            {
+                pos++;
+                bTreeNode.keyAt( cursor, key, pos );
+            }
+
+            cursor.next( bTreeNode.childAt( cursor, pos ) );
+        }
+
+        // Returns cursor which is now initiated with left-most leaf node for the specified range
+        return new Cursor<BTreeHit>()
+        {
+            private final MutableBTreeHit hit = new MutableBTreeHit( key, value );
+
+            // data structures for the current b-tree node
+            private int keyCount;
+            private int pos;
+
+            {
+                initTreeNode();
+            }
+
+            private void gotoTreeNode( long id )
+            {
+                try
+                {
+                    cursor.next( id );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                cursor.setOffset( 0 );
+                initTreeNode();
+            }
+
+            private void initTreeNode()
+            {
+                // COPY(1)
+                // Find the left-most key within from-range
+                keyCount = bTreeNode.keyCount( cursor );
+                // TODO only do this for first leaf
+                pos = 0;
+                bTreeNode.keyAt( cursor, key, pos );
+                while ( pos < keyCount && fromPred.inRange( key ) < 0 )
+                {
+                    pos++;
+                    bTreeNode.keyAt( cursor, key, pos );
+                }
+                pos--;
+            }
+
+            @Override
+            public BTreeHit get()
+            {
+                return hit;
+            }
+
+            @Override
+            public boolean next()
+            {
+                while ( true )
+                {
+                    pos++;
+                    if ( pos >= keyCount )
+                    {
+                        long rightSibling = bTreeNode.rightSibling( cursor );
+                        if ( rightSibling != BTreeNode.NO_NODE_FLAG )
+                        {
+                            gotoTreeNode( rightSibling );
+                            continue;
+                        }
+                        return false;
+                    }
+
+                    // Go to the next one, so that next call to next() gets it
+                    bTreeNode.keyAt( cursor, key, pos );
+                    if ( toPred.inRange( key ) <= 0 )
+                    {
+                        // A hit
+                        bTreeNode.valueAt( cursor, value, pos );
+                        return true;
+                    }
+                    return false;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                cursor.close();
+            }
+        };
+    }
+
+    @Override
     public long acquireNewId() throws FileNotFoundException
     {
         lastId++;
@@ -320,13 +432,14 @@ public class Index implements SCIndex, IdProvider
     }
 
     // Utility method
-    protected static void printKeys( PageCursor cursor, BTreeNode BTreeNode )
+    protected static void printKeys( PageCursor cursor, BTreeNode bTreeNode )
     {
-        int keyCount = BTreeNode.keyCount( cursor );
+        int keyCount = bTreeNode.keyCount( cursor );
         System.out.print( "|" );
+        long[] key = new long[2];
         for ( int i = 0; i < keyCount; i++ )
         {
-            System.out.print( Arrays.toString( BTreeNode.keyAt( cursor, i ) ) + " " );
+            System.out.print( Arrays.toString( bTreeNode.keyAt( cursor, key, i ) ) + " " );
         }
         System.out.print( "|" );
     }

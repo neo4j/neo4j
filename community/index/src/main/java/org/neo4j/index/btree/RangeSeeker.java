@@ -55,29 +55,31 @@ public class RangeSeeker extends Seeker.CommonSeeker
     }
 
     @Override
-    protected void seekLeaf( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException
+    protected void seekLeaf( PageCursor cursor, BTreeNode bTreeNode, List<SCResult> resultList ) throws IOException
     {
-        int keyCount = BTreeNode.keyCount( cursor );
+        int keyCount = bTreeNode.keyCount( cursor );
+        long[] key = new long[2];
+        long[] value = new long[2];
 
         if ( !descending )
         {
             int pos = 0;
-            long[] key = BTreeNode.keyAt( cursor, pos );
+            bTreeNode.keyAt( cursor, key, pos );
             while ( pos < keyCount && fromPred.inRange( key ) < 0 )
             {
                 pos++;
-                key = BTreeNode.keyAt( cursor, pos );
+                bTreeNode.keyAt( cursor, key, pos );
             }
 
             while ( pos < keyCount && toPred.inRange( key ) <= 0 && !countPred.reachedLimit( resultCount ) )
             {
                 SCKey SCKey = new SCKey( key[0], key[1] );
-                long[] value = BTreeNode.valueAt( cursor, pos );
+                bTreeNode.valueAt( cursor, value, pos );
                 SCValue SCValue = new SCValue( value[0], value[1] );
                 resultList.add( new SCResult( SCKey, SCValue ) );
                 resultCount++;
                 pos++;
-                key = BTreeNode.keyAt( cursor, pos );
+                bTreeNode.keyAt( cursor, key, pos );
             }
 
             if ( pos < keyCount || countPred.reachedLimit( resultCount ) )
@@ -86,17 +88,17 @@ public class RangeSeeker extends Seeker.CommonSeeker
             }
 
             // Continue in right sibling
-            long rightSibling = BTreeNode.rightSibling( cursor );
+            long rightSibling = bTreeNode.rightSibling( cursor );
             if ( rightSibling != BTreeNode.NO_NODE_FLAG )
             {
                 cursor.next( rightSibling );
-                seekLeaf( cursor, BTreeNode, resultList );
+                seekLeaf( cursor, bTreeNode, resultList );
             }
         }
         else
         {
             int pos = keyCount - 1;
-            long[] key = BTreeNode.keyAt( cursor, pos );
+            bTreeNode.keyAt( cursor, key, pos );
             while ( pos > -1 && toPred.inRange( key ) > 0 )
             {
                 pos--;
@@ -104,13 +106,13 @@ public class RangeSeeker extends Seeker.CommonSeeker
                 {
                     break;
                 }
-                key = BTreeNode.keyAt( cursor, pos );
+                bTreeNode.keyAt( cursor, key, pos );
             }
 
             while ( pos > -1 && fromPred.inRange( key ) >= 0 && !countPred.reachedLimit( resultCount ) )
             {
                 SCKey SCKey = new SCKey( key[0], key[1] );
-                long[] value = BTreeNode.valueAt( cursor, pos );
+                bTreeNode.valueAt( cursor, value, pos );
                 SCValue SCValue = new SCValue( value[0], value[1] );
                 resultList.add( new SCResult( SCKey, SCValue ) );
                 resultCount++;
@@ -119,7 +121,7 @@ public class RangeSeeker extends Seeker.CommonSeeker
                 {
                     break;
                 }
-                key = BTreeNode.keyAt( cursor, pos );
+                bTreeNode.keyAt( cursor, key, pos );
             }
 
             if ( pos > -1 || countPred.reachedLimit( resultCount ) )
@@ -128,38 +130,39 @@ public class RangeSeeker extends Seeker.CommonSeeker
             }
 
             // Continue in left sibling
-            long leftSibling = BTreeNode.leftSibling( cursor );
+            long leftSibling = bTreeNode.leftSibling( cursor );
             if ( leftSibling != BTreeNode.NO_NODE_FLAG )
             {
                 cursor.next( leftSibling );
-                seekLeaf( cursor, BTreeNode, resultList );
+                seekLeaf( cursor, bTreeNode, resultList );
             }
         }
     }
 
     @Override
-    protected void seekInternal( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException
+    protected void seekInternal( PageCursor cursor, BTreeNode bTreeNode, List<SCResult> resultList ) throws IOException
     {
-        int keyCount = BTreeNode.keyCount( cursor );
+        int keyCount = bTreeNode.keyCount( cursor );
+        long[] key = new long[2];
 
         if ( !descending )
         {
             int pos = 0;
-            long[] key = BTreeNode.keyAt( cursor, pos );
+            bTreeNode.keyAt( cursor, key, pos );
             while ( pos < keyCount && fromPred.inRange( key ) < 0 )
             {
                 pos++;
-                key = BTreeNode.keyAt( cursor, pos );
+                bTreeNode.keyAt( cursor, key, pos );
             }
 
-            cursor.next( BTreeNode.childAt( cursor, pos ) );
+            cursor.next( bTreeNode.childAt( cursor, pos ) );
 
-            seek( cursor, BTreeNode, resultList );
+            seek( cursor, bTreeNode, resultList );
         }
         else
         {
             int pos = keyCount - 1;
-            long[] key = BTreeNode.keyAt( cursor, pos );
+            bTreeNode.keyAt( cursor, key, pos );
             while ( pos > -1 && toPred.inRange( key ) > 0 )
             {
                 pos--;
@@ -167,12 +170,12 @@ public class RangeSeeker extends Seeker.CommonSeeker
                 {
                     break;
                 }
-                key = BTreeNode.keyAt( cursor, pos );
+                bTreeNode.keyAt( cursor, key, pos );
             }
 
-            cursor.next( BTreeNode.childAt( cursor, pos + 1 ) );
+            cursor.next( bTreeNode.childAt( cursor, pos + 1 ) );
 
-            seek( cursor, BTreeNode, resultList );
+            seek( cursor, bTreeNode, resultList );
         }
     }
 }

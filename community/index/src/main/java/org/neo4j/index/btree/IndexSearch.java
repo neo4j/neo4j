@@ -57,13 +57,14 @@ public class IndexSearch
         int lower = 0;
         int higher = keyCount-1;
         int pos;
+        long[] readKey = new long[2];
 
         // Compare key with lower and higher and sort out special cases
-        if ( BTreeNode.KEY_COMPARATOR.compare( key, bTreeNode.keyAt( cursor, higher ) ) > 0 )
+        if ( BTreeNode.KEY_COMPARATOR.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) ) > 0 )
         {
             pos = keyCount;
         }
-        else if ( BTreeNode.KEY_COMPARATOR.compare( key, bTreeNode.keyAt( cursor, lower ) ) < 0 )
+        else if ( BTreeNode.KEY_COMPARATOR.compare( key, bTreeNode.keyAt( cursor, readKey, lower ) ) < 0 )
         {
             pos = 0;
         }
@@ -76,7 +77,7 @@ public class IndexSearch
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                if ( BTreeNode.KEY_COMPARATOR.compare( key, bTreeNode.keyAt( cursor, pos ) ) <= 0 )
+                if ( BTreeNode.KEY_COMPARATOR.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) <= 0 )
                 {
                     higher = pos;
                 }

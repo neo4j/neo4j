@@ -23,20 +23,17 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCIndexDescription;
 import org.neo4j.index.SCInserter;
-import org.neo4j.index.SCResult;
-import org.neo4j.index.Seeker;
 import org.neo4j.index.btree.Index;
-import org.neo4j.index.btree.RangeSeeker;
+import org.neo4j.index.btree.RangePredicate;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -77,27 +74,31 @@ public class NativeLabelScanStore implements LabelScanStore
             @Override
             public PrimitiveLongIterator nodesWithLabel( int labelId )
             {
-                Seeker seeker = new RangeSeeker( equalTo( labelId, 0L ), equalTo( labelId, 0L ) );
-                final ArrayList<SCResult> resultList = new ArrayList<>();
+                RangePredicate predicate = equalTo( labelId, 0L );
+//                Seeker seeker = new RangeSeeker( predicate, predicate );
+//                final ArrayList<SCResult> resultList = new ArrayList<>();
+                Cursor<BTreeHit> cursor;
                 try
                 {
-                    index.seek( seeker, resultList );
+//                    index.seek( seeker, resultList );
+                    cursor = index.seek( predicate, predicate );
                 }
                 catch ( IOException e )
                 {
                     throw new RuntimeException( e );
                 }
+
                 return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
                 {
-                    Iterator<SCResult> iterator = resultList.iterator();
                     @Override
                     protected boolean fetchNext()
                     {
-                        if ( !iterator.hasNext() )
+                        if ( !cursor.next() )
                         {
+                            cursor.close();
                             return false;
                         }
-                        final long nodeId = iterator.next().getValue().getRelId();
+                        final long nodeId = cursor.get().value()[0];
                         return next( nodeId );
                     }
                 };

@@ -168,13 +168,12 @@ public class BTreeNode
 
     // BODY METHODS
 
-    public long[] keyAt( PageCursor cursor, int pos )
+    public long[] keyAt( PageCursor cursor, long[] into, int pos )
     {
-        long[] key = new long[2];
         cursor.setOffset( keyOffset( pos ) );
-        key[0] = cursor.getLong();
-        key[1] = cursor.getLong();
-        return key;
+        into[0] = cursor.getLong();
+        into[1] = cursor.getLong();
+        return into;
     }
 
     public void setKeyAt( PageCursor cursor, long[] key, int pos )
@@ -198,9 +197,8 @@ public class BTreeNode
         cursor.putBytes( keys );
     }
 
-    public long[] valueAt( PageCursor cursor, int pos )
+    public long[] valueAt( PageCursor cursor, long[] value, int pos )
     {
-        long[] value = new long[2];
         cursor.setOffset( valueOffset( pos ) );
         value[0] = cursor.getLong();
         value[1] = cursor.getLong();
