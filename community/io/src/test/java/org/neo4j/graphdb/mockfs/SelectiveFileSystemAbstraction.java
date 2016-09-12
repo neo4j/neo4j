@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
 import java.util.function.Function;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -125,9 +126,9 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean renameFile( File from, File to ) throws IOException
+    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
     {
-        return chooseFileSystem( from ).renameFile( from, to );
+        return chooseFileSystem( from ).move( from, to, copyOptions );
     }
 
     @Override
@@ -177,6 +178,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     public void truncate( File path, long size ) throws IOException
     {
         chooseFileSystem( path ).truncate( path, size );
+    }
+
+    @Override
+    public long lastModifiedTime( File file ) throws IOException
+    {
+        return chooseFileSystem( file ).lastModifiedTime( file );
     }
 
     private FileSystemAbstraction chooseFileSystem( File file )

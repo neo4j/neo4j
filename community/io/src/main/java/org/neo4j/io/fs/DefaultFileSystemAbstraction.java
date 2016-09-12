@@ -33,6 +33,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -133,8 +135,13 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean renameFile( File from, File to ) throws IOException
+    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
     {
+        if ( copyOptions.length > 0 )
+        {
+            Files.move( from.toPath(), to.toPath(), copyOptions );
+            return true; // will throw if failure
+        }
         return FileUtils.renameFile( from, to );
     }
 
@@ -193,6 +200,12 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     public void truncate( File path, long size ) throws IOException
     {
         FileUtils.truncateFile( path, size );
+    }
+
+    @Override
+    public long lastModifiedTime( File file )
+    {
+        return file.lastModified();
     }
 
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )

@@ -56,7 +56,7 @@ public class EnterpriseAuthManagerFactoryTest
         when( config.get( SecuritySettings.ldap_user_dn_template ) ).thenReturn( "prefix{0}" );
 
         // When
-        new EnterpriseAuthManagerFactory().newInstance( config, mockLogProvider );
+        new EnterpriseAuthManagerFactory().newInstance( config, mockLogProvider, null, null );
 
         // Then
         verify( mockLog, atLeastOnce() ).debug( anyString(), contains( "prefix" ), anyString() );

@@ -19,11 +19,16 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.util.List;
+
 import java.io.IOException;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.server.security.auth.ListSnapshot;
+import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 /**
@@ -36,12 +41,25 @@ public interface RoleRepository extends Lifecycle
     Set<String> getRoleNamesByUsername( String username );
 
     /**
+     * Clears all cached role data.
+     */
+    void clear();
+
+    /**
      * Create a role, given that the roles token is unique.
      *
      * @param role the new role object
      * @throws IllegalArgumentException if the role name is not valid or the role name already exists
      */
     void create( RoleRecord role ) throws IllegalArgumentException, IOException;
+
+    /**
+     * Replaces the roles in the repository with the given roles.
+     * @param roles the new roles
+     * @throws InvalidArgumentsException if any role name is not valid
+     * @throws IOException if the underlying storage for roles fails
+     */
+    void setRoles( ListSnapshot<RoleRecord> roles ) throws InvalidArgumentsException, IOException;
 
     /**
      * Update a role, given that the role token is unique.
@@ -70,4 +88,20 @@ public interface RoleRepository extends Lifecycle
             throws ConcurrentModificationException, IOException;
 
     Set<String> getAllRoleNames();
+
+    /**
+     * Returns a snapshot of the current persisted role repository
+     * @return a snapshot of the current persisted role repository
+     * @throws IOException
+     */
+    ListSnapshot<RoleRecord> getPersistedSnapshot() throws IOException;
+
+    static boolean validate( List<User> users, List<RoleRecord> roles )
+    {
+        Set<String> usernamesInRoles = roles.stream()
+                .flatMap( rr -> rr.users().stream() )
+                .collect( Collectors.toSet() );
+        Set<String> usernameInUsers = users.stream().map( User::name ).collect( Collectors.toSet() );
+        return usernameInUsers.containsAll( usernamesInRoles );
+    }
 }

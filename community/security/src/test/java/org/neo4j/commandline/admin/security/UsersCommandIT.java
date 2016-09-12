@@ -23,15 +23,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.nio.file.Path;
-
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.CommandLocator;
-import org.neo4j.commandline.admin.OutsideWorld;
 
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.contains;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -293,17 +289,14 @@ public class UsersCommandIT extends CommandTestBase
     private void assertFailedUserCommand( String command, String... errors )
     {
         // When running users command without a command or with incorrect command
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
         AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
         if ( command == null )
         {
-            tool.execute( homeDir, configDir, "users" );
+            tool.execute( graphDir.toPath(), confDir.toPath(), "users" );
         }
         else
         {
-            tool.execute( homeDir, configDir, "users", command );
+            tool.execute( graphDir.toPath(), confDir.toPath(), "users", command );
         }
 
         // Then we get the expected error
@@ -327,11 +320,9 @@ public class UsersCommandIT extends CommandTestBase
     private void assertFailedSubCommand( String command, String[] args, String... errors )
     {
         // When running set password on a failing case (missing user, or other error)
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
+        resetOutsideWorldMock();
         AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, makeArgs( command, args ) );
+        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ) );
 
         // Then we get the expected error
         for ( String error : errors )
@@ -345,11 +336,9 @@ public class UsersCommandIT extends CommandTestBase
     private void assertSuccessfulSubCommand( String command, String[] args, String... messages )
     {
         // When running set password on a successful case (user exists)
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
+        resetOutsideWorldMock();
         AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, makeArgs( command, args ));
+        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ));
 
         // Then we get the expected output messages
         for ( String message : messages )

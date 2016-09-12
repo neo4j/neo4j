@@ -28,6 +28,7 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -88,10 +89,10 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     }
 
     @Override
-    public boolean renameFile( File from, File to ) throws IOException
+    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         ensureHasSpace();
-        return super.renameFile( from, to );
+        return super.move( from, to, copyOptions );
     }
 
     public void runOutOfDiskSpace( boolean outOfSpace )

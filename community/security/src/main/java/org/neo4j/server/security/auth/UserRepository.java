@@ -31,6 +31,16 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
  */
 public interface UserRepository extends Lifecycle
 {
+    /**
+     * Clears all cached user data.
+     */
+    void clear();
+
+    /**
+     * Return the user associated with the given username.
+     * @param username the username
+     * @return the associated user, or null if no user exists
+     */
     User getUserByName( String username );
 
     /**
@@ -40,6 +50,14 @@ public interface UserRepository extends Lifecycle
      * @throws IOException if the underlying storage for users fails
      */
     void create( User user ) throws InvalidArgumentsException, IOException;
+
+    /**
+     * Replaces the users in the repository with the given users.
+     * @param users the new users
+     * @throws InvalidArgumentsException if any username is not valid
+     * @throws IOException if the underlying storage for users fails
+     */
+    void setUsers( ListSnapshot<User> users ) throws InvalidArgumentsException, IOException;
 
     /**
      * Update a user, given that the users token is unique.
@@ -66,4 +84,11 @@ public interface UserRepository extends Lifecycle
     boolean isValidUsername( String username );
 
     Set<String> getAllUsernames();
+
+    /**
+     * Returns a snapshot of the current persisted user repository
+     * @return a snapshot of the current persisted user repository
+     * @throws IOException
+     */
+    ListSnapshot<User> getPersistedSnapshot() throws IOException;
 }

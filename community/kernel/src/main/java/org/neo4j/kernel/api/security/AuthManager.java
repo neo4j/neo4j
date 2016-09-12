@@ -20,8 +20,10 @@
 package org.neo4j.kernel.api.security;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 
@@ -39,7 +41,8 @@ public interface AuthManager extends Lifecycle
             super( key, altKeys );
         }
 
-        public abstract AuthManager newInstance( Config config, LogProvider logProvider );
+        public abstract AuthManager newInstance( Config config, LogProvider logProvider,
+                FileSystemAbstraction fileSystem, JobScheduler jobScheduler );
     }
 
     boolean supports( Map<String, Object> authToken );

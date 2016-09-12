@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
 import java.util.function.Function;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -79,9 +80,15 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean renameFile( File from, File to ) throws IOException
+    public long lastModifiedTime( File file ) throws IOException
     {
-        return delegate.renameFile( from, to );
+        return delegate.lastModifiedTime( file );
+    }
+
+    @Override
+    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
+    {
+        return delegate.move( from, to, copyOptions );
     }
 
     @Override

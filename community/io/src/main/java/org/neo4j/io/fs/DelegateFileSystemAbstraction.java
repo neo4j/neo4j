@@ -30,6 +30,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -37,8 +38,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
  * This FileSystemAbstract implementation delegates all calls to a given {@link FileSystem} implementation.
@@ -165,9 +170,9 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean renameFile( File from, File to ) throws IOException
+    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
     {
-        Files.move( path( from ), path( to ) );
+        Files.move( path( from ), path( to ), copyOptions );
         return true;
     }
 
@@ -241,7 +246,7 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
                 else
                 {
                     Files.copy( sourcePath, targetPath,
-                            StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
+                            REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
                 }
             }
         }
@@ -270,5 +275,11 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
         {
             channel.truncate( size );
         }
+    }
+
+    @Override
+    public long lastModifiedTime( File file ) throws IOException
+    {
+        return Files.getLastModifiedTime( path( file ) ).toMillis();
     }
 }

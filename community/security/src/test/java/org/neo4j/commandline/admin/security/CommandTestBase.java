@@ -19,9 +19,17 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 
+import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.io.fs.DelegateFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.Credential;
@@ -32,11 +40,46 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class CommandTestBase
 {
     protected static String password_change_required = "password_change_required";
     protected TestDirectory testDir = TestDirectory.testDirectory();
+    protected FileSystemAbstraction fileSystem = new DelegateFileSystemAbstraction( FileSystems.getDefault() );
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( testDir );
+    File graphDir;
+    File confDir;
+    File homeDir;
+    OutsideWorld out;
+
+    @Before
+    public void setup()
+    {
+        graphDir = testDir.graphDbDir();
+        confDir = ensureDir( "conf" );
+        homeDir = ensureDir( "home" );
+        resetOutsideWorldMock();
+    }
+
+    protected File ensureDir( String name )
+    {
+        File dir = new File( graphDir, name );
+        if ( !dir.exists() )
+        {
+            dir.mkdirs();
+        }
+        return dir;
+    }
+
+    protected void resetOutsideWorldMock()
+    {
+        out = mock( OutsideWorld.class );
+        when( out.fileSystem() ).thenReturn( fileSystem );
+    }
 
     protected File authFile()
     {
@@ -45,7 +88,7 @@ public class CommandTestBase
 
     protected User createTestUser( String username, String password ) throws IOException, InvalidArgumentsException
     {
-        FileUserRepository users = new FileUserRepository( authFile().toPath(), NullLogProvider.getInstance() );
+        FileUserRepository users = new FileUserRepository( fileSystem, authFile(), NullLogProvider.getInstance() );
         User user =
                 new User.Builder( username, Credential.forPassword( password ) ).withRequiredPasswordChange( true )
                         .build();
@@ -56,7 +99,7 @@ public class CommandTestBase
     protected User getUser( String username ) throws Throwable
     {
         FileUserRepository afterUsers =
-                new FileUserRepository( authFile().toPath(), NullLogProvider.getInstance() );
+                new FileUserRepository( fileSystem, authFile(), NullLogProvider.getInstance() );
         afterUsers.start(); // load users from disk
         return afterUsers.getUserByName( username );
     }

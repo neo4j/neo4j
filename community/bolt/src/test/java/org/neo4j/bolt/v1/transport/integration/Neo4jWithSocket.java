@@ -26,14 +26,15 @@ import org.junit.runners.model.Statement;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
@@ -41,23 +42,32 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 public class Neo4jWithSocket implements TestRule
 {
+    private Supplier<FileSystemAbstraction> fileSystemProvider;
     private final Consumer<Map<Setting<?>,String>> configure;
-    TestGraphDatabaseFactory graphDatabaseFactory;
+    private TestGraphDatabaseFactory graphDatabaseFactory;
     private GraphDatabaseService gdb;
 
     public Neo4jWithSocket()
     {
-        this( new TestGraphDatabaseFactory(), settings -> {} );
+        this( new TestGraphDatabaseFactory(), () -> null, settings -> {} );
     }
 
     public Neo4jWithSocket( Consumer<Map<Setting<?>, String>> configure )
     {
-        this( new TestGraphDatabaseFactory(), configure );
+        this( new TestGraphDatabaseFactory(), () -> null, configure );
     }
 
     public Neo4jWithSocket( TestGraphDatabaseFactory graphDatabaseFactory, Consumer<Map<Setting<?>, String>> configure )
     {
+        this( graphDatabaseFactory, () -> null, configure );
+    }
+
+    public Neo4jWithSocket( TestGraphDatabaseFactory graphDatabaseFactory,
+            Supplier<FileSystemAbstraction> fileSystemProvider,
+            Consumer<Map<Setting<?>, String>> configure )
+    {
         this.graphDatabaseFactory = graphDatabaseFactory;
+        this.fileSystemProvider = fileSystemProvider;
         this.configure = configure;
     }
 
@@ -94,8 +104,8 @@ public class Neo4jWithSocket implements TestRule
         {
             gdb.shutdown();
         }
-        Neo4jWithSocket.cleanupTemporaryTestFiles();
         Map<Setting<?>,String> settings = configure( overrideSettingsFunction );
+        graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
         gdb = graphDatabaseFactory.newImpermanentDatabase( settings );
     }
 
@@ -122,17 +132,5 @@ public class Neo4jWithSocket implements TestRule
     public GraphDatabaseService graphDatabaseService()
     {
         return gdb;
-    }
-
-    public static void cleanupTemporaryTestFiles() throws IOException
-    {
-        for ( String name : new String[]{"roles", "auth"} )
-        {
-            Path file = Paths.get( "target/test-data/impermanent-db/data/dbms/" + name );
-            if ( Files.exists( file ) )
-            {
-                Files.delete( file );
-            }
-        }
     }
 }

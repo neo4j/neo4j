@@ -19,26 +19,16 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.IOException;
+import java.util.List;
 
-/** A user repository implementation that just stores users in memory */
-public class InMemoryUserRepository extends AbstractUserRepository
+public class ListSnapshot<T>
 {
-    @Override
-    protected void persistUsers() throws IOException
-    {
-        // Nothing to do
-    }
+    public final long timestamp;
+    public final List<T> values;
 
-    @Override
-    protected ListSnapshot<User> readPersistedUsers() throws IOException
+    public ListSnapshot( long timestamp, List<T> values )
     {
-        return null;
-    }
-
-    @Override
-    public ListSnapshot<User> getPersistedSnapshot() throws IOException
-    {
-        return null;
+        this.timestamp = timestamp;
+        this.values = values;
     }
 }

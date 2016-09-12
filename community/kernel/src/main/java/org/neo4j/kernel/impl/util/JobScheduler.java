@@ -166,6 +166,11 @@ public interface JobScheduler extends Lifecycle
          * Storage maintenance.
          */
         public static Group storageMaintenance = new Group( "StorageMaintenance", POOLED );
+
+        /**
+         * Native security.
+         */
+        public static Group nativeSecurity = new Group( "NativeSecurity", POOLED );
     }
 
     interface JobHandle

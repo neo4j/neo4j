@@ -29,6 +29,7 @@ import java.util.Collections;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -61,8 +62,10 @@ public class MultiRealmAuthManagerTest
         authStrategy = mock( AuthenticationStrategy.class );
 
         InternalFlatFileRealm internalFlatFileRealm =
-                new InternalFlatFileRealm( users, new InMemoryRoleRepository(), mock( PasswordPolicy.class ), authStrategy );
-        manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ), new MemoryConstrainedCacheManager() );
+                new InternalFlatFileRealm( users, new InMemoryRoleRepository(), mock( PasswordPolicy.class ),
+                        authStrategy, mock( JobScheduler.class ) );
+        manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
+                new MemoryConstrainedCacheManager() );
         manager.init();
         userManager = manager.getUserManager();
     }

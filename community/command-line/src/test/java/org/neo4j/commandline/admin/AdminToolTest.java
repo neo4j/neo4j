@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -211,6 +212,12 @@ public class AdminToolTest
         @Override
         public void printStacktrace( Exception exception )
         {
+        }
+
+        @Override
+        public FileSystemAbstraction fileSystem()
+        {
+            return null;
         }
     }
 

@@ -57,7 +57,7 @@ public class EditionModuleTest
         exception.expectMessage( "Auth enabled but no auth manager found. This is an illegal product configuration." );
 
         // When
-        EditionModule.createAuthManager( config, logService );
+        EditionModule.createAuthManager( config, logService, null, null );
 
         // Then
         verify( userLog ).error( anyString() );

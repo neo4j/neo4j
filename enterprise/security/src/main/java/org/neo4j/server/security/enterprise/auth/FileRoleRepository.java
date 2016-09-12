@@ -19,13 +19,15 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.exception.FormatException;
 
 /**
@@ -34,47 +36,68 @@ import org.neo4j.server.security.auth.exception.FormatException;
  */
 public class FileRoleRepository extends AbstractRoleRepository
 {
-    private final Path roleFile;
-
+    private final File roleFile;
     private final Log log;
-
     private final RoleSerialization serialization = new RoleSerialization();
+    private final FileSystemAbstraction fileSystem;
 
-    public FileRoleRepository( Path file, LogProvider logProvider )
+    public FileRoleRepository( FileSystemAbstraction fileSystem, File file, LogProvider logProvider )
     {
-        this.roleFile = file.toAbsolutePath();
+        this.roleFile = file;
         this.log = logProvider.getLog( getClass() );
+        this.fileSystem = fileSystem;
     }
 
     @Override
     public void start() throws Throwable
     {
-        if ( Files.exists( roleFile ) )
+        clear();
+        ListSnapshot<RoleRecord> onDiskRoles = readPersistedRoles();
+        if ( onDiskRoles != null )
         {
-            List<RoleRecord> loadedRoles;
-            try
-            {
-                loadedRoles = serialization.loadRecordsFromFile( roleFile );
-            }
-            catch ( FormatException e )
-            {
-                log.error( "Failed to read role file \"%s\" (%s)", roleFile.toAbsolutePath(), e.getMessage() );
-                throw new IllegalStateException( "Failed to read role file '" + roleFile + "'." );
-            }
-
-            roles = loadedRoles;
-            for ( RoleRecord role : roles )
-            {
-                rolesByName.put( role.name(), role );
-
-                populateUserMap( role );
-            }
+            setRoles( onDiskRoles );
         }
     }
 
     @Override
-    protected void saveRoles() throws IOException
+    protected ListSnapshot<RoleRecord> readPersistedRoles() throws IOException
     {
-        serialization.saveRecordsToFile( roleFile, roles );
+        if ( fileSystem.fileExists( roleFile ) )
+        {
+            long readTime;
+            List<RoleRecord> readRoles;
+            try
+            {
+                readTime = fileSystem.lastModifiedTime( roleFile );
+                readRoles = serialization.loadRecordsFromFile( fileSystem, roleFile );
+            }
+            catch ( FormatException e )
+            {
+                log.error( "Failed to read role file \"%s\" (%s)", roleFile.getAbsolutePath(), e.getMessage() );
+                throw new IllegalStateException( "Failed to read role file '" + roleFile + "'." );
+            }
+
+            return new ListSnapshot<>( readTime, readRoles );
+        }
+        return null;
+    }
+
+    @Override
+    protected void persistRoles() throws IOException
+    {
+        serialization.saveRecordsToFile( fileSystem, roleFile, roles );
+    }
+
+    @Override
+    public ListSnapshot<RoleRecord> getPersistedSnapshot() throws IOException
+    {
+        if ( lastLoaded.get() < fileSystem.lastModifiedTime( roleFile ) )
+        {
+            return readPersistedRoles();
+        }
+        synchronized ( this )
+        {
+            return new ListSnapshot<>( lastLoaded.get(), roles.stream().collect( Collectors.toList() ) );
+        }
     }
 }

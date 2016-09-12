@@ -66,7 +66,6 @@ class SessionRule implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                Neo4jWithSocket.cleanupTemporaryTestFiles();
                 Map<Setting<?>,String> config = new HashMap<>();
                 config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );

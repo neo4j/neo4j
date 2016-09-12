@@ -34,6 +34,7 @@ import java.util.List;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -43,6 +44,7 @@ import org.neo4j.server.security.auth.UserRepository;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
 
@@ -58,7 +60,8 @@ public class InternalFlatFileRealmTest
                         new InMemoryUserRepository(),
                         new InMemoryRoleRepository(),
                         new BasicPasswordPolicy(),
-                        new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ) );
+                        new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
+                        mock( JobScheduler.class ) );
 
         List<Realm> realms = listOf( testRealm );
 
@@ -103,6 +106,12 @@ public class InternalFlatFileRealmTest
         private boolean authenticationFlag = false;
         private boolean authorizationFlag = false;
 
+        public TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
+                AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler )
+        {
+            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler );
+        }
+
         boolean takeAuthenticationFlag()
         {
             boolean t = authenticationFlag;
@@ -115,12 +124,6 @@ public class InternalFlatFileRealmTest
             boolean t = authorizationFlag;
             authorizationFlag = false;
             return t;
-        }
-
-        TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
-                AuthenticationStrategy authenticationStrategy )
-        {
-            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy );
         }
 
         @Override

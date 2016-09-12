@@ -22,11 +22,18 @@ package org.neo4j.bolt.v1.docs;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.model.Statement;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,8 +57,11 @@ import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,12 +74,36 @@ public class BoltFullExchangesDocTest
     private static final long DEFAULT_TIME = 12L;
     private static final String VERSION = "Neo4j/3.1.0";
 
+    private String ephemeralAuthPath = "/auth";
+    private String authPath = this.getClass().getResource( "/authorization/auth" ).getPath();
+
+    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    public Neo4jWithSocket server = new Neo4jWithSocket(
+                                            new TestGraphDatabaseFactory(),
+                                            this::setupFileSystem,
+                                            settings -> {
+                                                settings.put( GraphDatabaseSettings.auth_enabled, "true" );
+                                                settings.put( GraphDatabaseSettings.auth_store, ephemeralAuthPath );
+                                            } );
+
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
-        settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-        settings.put( GraphDatabaseSettings.auth_store,
-                this.getClass().getResource( "/authorization/auth" ).getPath() );
-    } );
+    public RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( server );
+
+    private FileSystemAbstraction setupFileSystem()
+    {
+        try ( OutputStream o = fileSystemRule.get().openAsOutputStream(
+                new File( ephemeralAuthPath ), false ) )
+        {
+            byte[] authBytes = Files.readAllBytes( Paths.get( authPath ) );
+            o.write( authBytes );
+        }
+        catch ( IOException ioe )
+        {
+            throw new RuntimeException( "Unable to setup TestGraphDatabaseFactory", ioe );
+        }
+
+        return fileSystemRule.get();
+    }
 
     @Parameterized.Parameter( 0 )
     public String testName;
@@ -270,5 +304,4 @@ public class BoltFullExchangesDocTest
         assert messages.size() == 1;
         return messages.get( 0 );
     }
-
 }
