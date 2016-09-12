@@ -29,21 +29,14 @@ import org.apache.shiro.subject.PrincipalCollection;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.util.List;
 
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -55,11 +48,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
 public class InternalFlatFileRealmTest
 {
@@ -130,7 +120,6 @@ public class InternalFlatFileRealmTest
         {
             super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler );
         }
-
 
         boolean takeAuthenticationFlag()
         {

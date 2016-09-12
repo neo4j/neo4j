@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import com.github.benmanes.caffeine.cache.Ticker;
 import org.apache.shiro.realm.Realm;
-import org.slf4j.impl.StaticLoggerBinder;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -32,9 +31,9 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;

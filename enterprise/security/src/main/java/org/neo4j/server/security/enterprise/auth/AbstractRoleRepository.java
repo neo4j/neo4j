@@ -283,12 +283,4 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
             }
         }
     }
-
-    protected void assertValidRoleName( String roleName )
-    {
-        if ( !isValidRoleName( roleName ) )
-        {
-            throw new IllegalArgumentException( "'" + roleName + "' is not a valid role name." );
-        }
-    }
 }

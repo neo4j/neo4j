@@ -24,7 +24,10 @@ import org.junit.Test;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.api.security.AuthenticationResult.*;
+import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
+import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
+import static org.neo4j.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 
 public class ShiroAuthenticationInfoTest
 {

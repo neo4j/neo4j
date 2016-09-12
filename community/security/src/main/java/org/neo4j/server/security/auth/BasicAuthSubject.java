@@ -27,7 +27,9 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
-import static org.neo4j.kernel.api.security.AuthenticationResult.*;
+import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
+import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
 
 public class BasicAuthSubject implements AuthSubject
 {

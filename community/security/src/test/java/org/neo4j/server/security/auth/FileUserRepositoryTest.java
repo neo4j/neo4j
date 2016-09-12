@@ -37,17 +37,6 @@ import java.util.Collection;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-
-import org.neo4j.io.fs.DelegatingFileSystem;
-import org.neo4j.io.fs.DelegatingFileSystemProvider;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -62,7 +51,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.test.assertion.Assert.assertException;
 
 @RunWith(Parameterized.class)

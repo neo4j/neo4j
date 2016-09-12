@@ -74,21 +74,21 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
     protected final Factory<TransportConnection> connectionFactory = SocketConnection::new;
     private final Neo4jWithSocket server;
     private Map<String,BoltSubject> subjects = new HashMap<>();
-    private FileSystemAbstraction fileSystem;
+    private EphemeralFileSystemAbstraction fileSystem;
     EnterpriseAuthManager authManager;
 
     BoltInteraction( Map<Setting<?>, String> config ) throws IOException
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
-        factory.setFileSystem( new EphemeralFileSystemAbstraction() );
-        this.server = new Neo4jWithSocket(
+        fileSystem = new EphemeralFileSystemAbstraction();
+        server = new Neo4jWithSocket(
                 factory,
+                () -> fileSystem,
                 settings -> {
                     settings.put( GraphDatabaseSettings.auth_enabled, "true" );
                     settings.putAll( config );
                 } );
         server.restartDatabase( r -> {} );
-        this.fileSystem = factory.getFileSystem();
         GraphDatabaseFacade db = (GraphDatabaseFacade) server.graphDatabaseService();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
     }
@@ -190,6 +190,7 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         }
         subjects.clear();
         server.graphDatabaseService().shutdown();
+        fileSystem.shutdown();
     }
 
     @Override

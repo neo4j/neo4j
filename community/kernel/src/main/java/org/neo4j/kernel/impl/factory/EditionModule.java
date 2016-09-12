@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
@@ -48,6 +52,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.logging.Log;
@@ -126,37 +131,60 @@ public abstract class EditionModule
             return AuthManager.NO_AUTH;
         }
 
-        String key = config.get( GraphDatabaseSettings.auth_manager );
+        String configuredKey = config.get( GraphDatabaseSettings.auth_manager );
+        List<AuthManager.Factory> wantedAuthManagerFactories = new ArrayList<>();
+        List<AuthManager.Factory> backupAuthManagerFactories = new ArrayList<>();
 
         for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
         {
-            String candidateId = candidate.getKeys().iterator().next();
-            try
+            if ( StreamSupport.stream( candidate.getKeys().spliterator(), false ).anyMatch( configuredKey::equals ) )
             {
-                return candidate.newInstance( config, logging.getUserLogProvider(),
-                        authManagerLog(), fileSystem, jobScheduler );
+                wantedAuthManagerFactories.add( candidate );
             }
-            catch ( Exception e1 )
+            else
             {
-                logging.getInternalLog( GraphDatabaseFacadeFactory.class )
-                        .info( "No auth manager implementation specified, defaulting to '" + candidateId + "'" );
-                try
-                {
-                    return candidate.newInstance( config, logging.getUserLogProvider(), authManagerLog(), fileSystem,
-                            jobScheduler );
-                }
-                catch ( Exception e2 )
-                {
-                    logging.getUserLog( GraphDatabaseFacadeFactory.class )
-                            .error( "No auth manager implementation specified and no default could be loaded. " +
-                                    "It is an illegal product configuration to have auth enabled and not provide an " +
-                                    "auth manager service." );
-                    throw new IllegalArgumentException( "Auth enabled but no auth manager found. This is an illegal product configuration." );
-                }
+                backupAuthManagerFactories.add( candidate );
             }
         }
 
-        throw new IllegalArgumentException( "No auth manager factory detected!." );
+        AuthManager authManager = tryMakeInOrder( config, logging, fileSystem, jobScheduler, wantedAuthManagerFactories );
+
+        if ( authManager == null )
+        {
+            authManager = tryMakeInOrder( config, logging, fileSystem, jobScheduler, backupAuthManagerFactories );
+        }
+
+        if ( authManager == null )
+        {
+            logging.getUserLog( GraphDatabaseFacadeFactory.class )
+                    .error( "No auth manager implementation specified and no default could be loaded. " +
+                            "It is an illegal product configuration to have auth enabled and not provide an " +
+                            "auth manager service." );
+            throw new IllegalArgumentException(
+                    "Auth enabled but no auth manager found. This is an illegal product configuration." );
+        }
+
+        return authManager;
+    }
+
+    private AuthManager tryMakeInOrder( Config config, LogService logging, FileSystemAbstraction fileSystem,
+            JobScheduler jobScheduler, List<AuthManager.Factory> authManagerFactories  )
+    {
+        for ( AuthManager.Factory x : authManagerFactories )
+        {
+            try
+            {
+                return x.newInstance( config, logging.getUserLogProvider(), authManagerLog(),
+                        fileSystem, jobScheduler );
+            }
+            catch ( Exception e )
+            {
+                logging.getInternalLog( GraphDatabaseFacadeFactory.class )
+                        .warn( "Attempted to load configured auth manager with keys '%s', but failed",
+                                String.join( ", ", x.getKeys() ), e );
+            }
+        }
+        return null;
     }
 
     protected void registerProceduresFromProvider( String key, Procedures procedures ) throws KernelException
