@@ -159,7 +159,7 @@ public class RecoveryTest
             TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
 
             life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ),
-                    logFiles, fs, logVersionRepository, finder, validator, transactionIdStore, txStore, storeApplier )
+                    logVersionRepository, finder, validator, transactionIdStore, txStore, storeApplier )
             {
                 private int nr = 0;
 
@@ -254,7 +254,7 @@ public class RecoveryTest
             TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
 
             life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ),
-                    logFiles, fs, logVersionRepository, finder, validator, transactionIdStore, txStore, storeApplier )
+                    logVersionRepository, finder, validator, transactionIdStore, txStore, storeApplier )
             {
                 @Override
                 public Visitor<CommittedTransactionRepresentation,Exception> getRecoveryVisitor()

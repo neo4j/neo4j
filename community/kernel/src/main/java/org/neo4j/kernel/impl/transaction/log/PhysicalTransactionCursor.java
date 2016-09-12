@@ -48,11 +48,6 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
         this.logEntryCursor = new LogEntryCursor( (LogEntryReader<ReadableLogChannel>) entryReader, channel );
     }
 
-    protected List<Command> commandList()
-    {
-        return new ArrayList<>();
-    }
-
     @Override
     public CommittedTransactionRepresentation get()
     {
@@ -81,7 +76,7 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
             LogEntryStart startEntry = entry.as();
             LogEntryCommit commitEntry;
 
-            List<Command> entries = commandList();
+            List<Command> entries = new ArrayList<>();
             while ( true )
             {
                 if ( !logEntryCursor.next() )

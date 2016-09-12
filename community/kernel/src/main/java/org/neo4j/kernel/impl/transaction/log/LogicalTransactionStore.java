@@ -48,12 +48,12 @@ public interface LogicalTransactionStore
     /**
      * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}
      * instances for committed transactions, starting from the specified {@link LogPosition}.
-     * This is useful for placing a cursor at a position refered to by a {@link CheckPoint}.
+     * This is useful for placing a cursor at a position referred to by a {@link CheckPoint}.
      * Transactions will be returned from the cursor in transaction-id-sequential order.
      *
      * @param position {@link LogPosition} of the first transaction that the cursor will return.
      * @return an {@link TransactionCursor} capable of returning {@link CommittedTransactionRepresentation} instances
-     * for committed transactions, starting from the specified {@code transactionIdToStartFrom}.
+     * for committed transactions, starting from the specified {@code position}.
      * @throws NoSuchTransactionException if the requested transaction hasn't been committed,
      * or if the transaction has been committed, but information about it is no longer available for some reason.
      * @throws IOException if there was an I/O related error looking for the start transaction.
