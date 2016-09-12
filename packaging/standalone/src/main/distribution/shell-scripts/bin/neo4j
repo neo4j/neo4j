@@ -246,8 +246,13 @@ main() {
       do_status
       ;;
 
-    *)
+    help)
       echo "Usage: ${PROGRAM} { console | start | stop | restart | status }"
+      ;;
+
+    *)
+      echo >&2 "Usage: ${PROGRAM} { console | start | stop | restart | status }"
+      exit 1
       ;;
   esac
 }
