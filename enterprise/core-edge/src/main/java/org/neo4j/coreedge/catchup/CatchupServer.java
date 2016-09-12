@@ -32,6 +32,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
+import java.net.BindException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -48,15 +49,18 @@ import org.neo4j.coreedge.catchup.tx.TxPullRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.TxPullRequestHandler;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseEncoder;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotEncoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestHandler;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -67,8 +71,11 @@ import org.neo4j.logging.LogProvider;
 
 public class CatchupServer extends LifecycleAdapter
 {
+    private static final Setting<ListenSocketAddress> setting = CoreEdgeClusterSettings.transaction_listen_address;
     private final LogProvider logProvider;
-    private Monitors monitors;
+    private final Log log;
+    private final Log userLog;
+    private final Monitors monitors;
 
     private final Supplier<StoreId> storeIdSupplier;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
@@ -82,25 +89,21 @@ public class CatchupServer extends LifecycleAdapter
     private EventLoopGroup workerGroup;
     private Channel channel;
     private Supplier<CheckPointer> checkPointerSupplier;
-    private Log log;
 
-    public CatchupServer( LogProvider logProvider,
-                          Supplier<StoreId> storeIdSupplier,
-                          Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                          Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
-                          Supplier<NeoStoreDataSource> dataSourceSupplier,
-                          Supplier<CheckPointer> checkPointerSupplier,
-                          CoreState coreState,
-                          ListenSocketAddress listenAddress, Monitors monitors )
+    public CatchupServer( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> storeIdSupplier,
+            Supplier<TransactionIdStore> transactionIdStoreSupplier, Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
+            Supplier<NeoStoreDataSource> dataSourceSupplier, Supplier<CheckPointer> checkPointerSupplier, CoreState coreState,
+            Config config, Monitors monitors )
     {
         this.coreState = coreState;
-        this.listenAddress = listenAddress;
+        this.listenAddress = config.get( setting );
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.storeIdSupplier = storeIdSupplier;
         this.logicalTransactionStoreSupplier = logicalTransactionStoreSupplier;
         this.logProvider = logProvider;
         this.monitors = monitors;
         this.log = logProvider.getLog( getClass() );
+        this.userLog = userLogProvider.getLog( getClass() );
         this.dataSourceSupplier = dataSourceSupplier;
         this.checkPointerSupplier = checkPointerSupplier;
     }
@@ -117,7 +120,7 @@ public class CatchupServer extends LifecycleAdapter
                 .childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
-                    protected void initChannel( SocketChannel ch ) throws Exception
+                    protected void initChannel( SocketChannel ch )
                     {
                         CatchupServerProtocol protocol = new CatchupServerProtocol();
 
@@ -153,7 +156,22 @@ public class CatchupServer extends LifecycleAdapter
                     }
                 } );
 
-        channel = bootstrap.bind().syncUninterruptibly().channel();
+        try
+        {
+            channel = bootstrap.bind().syncUninterruptibly().channel();
+        }
+        catch( Exception e )
+        {
+            // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
+            // checked exception but it still throws them with some black magic at runtime.
+            //noinspection ConstantConditions
+            if ( e instanceof BindException )
+            {
+                userLog.error( "Address is already bound for setting: " + setting + " with value: " + listenAddress );
+                log.error( "Address is already bound for setting: " + setting + " with value: " + listenAddress, e );
+                throw e;
+            }
+        }
     }
 
     private ChannelInboundHandler decoders( CatchupServerProtocol protocol )

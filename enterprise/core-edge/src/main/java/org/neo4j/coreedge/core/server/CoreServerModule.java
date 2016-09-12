@@ -85,6 +85,7 @@ public class CoreServerModule
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final LifeSupport life = platformModule.life;
         LogProvider logProvider = logging.getInternalLogProvider();
+        LogProvider userLogProvider = logging.getUserLogProvider();
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -97,9 +98,7 @@ public class CoreServerModule
 
         consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
-        ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
-
-        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), raftListenAddress, logProvider );
+        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), config, logProvider, userLogProvider );
 
         LoggingInbound<RaftMessages.StoreIdAwareMessage> loggingRaftInbound =
                 new LoggingInbound<>( raftServer, messageLogger, myself );
@@ -150,11 +149,11 @@ public class CoreServerModule
 
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
-        CatchupServer catchupServer = new CatchupServer( logProvider, localDatabase,
+        CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
-                coreState, config.get( CoreEdgeClusterSettings.transaction_listen_address ), platformModule.monitors );
+                coreState, config, platformModule.monitors );
 
         life.add( coreState );
         life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
