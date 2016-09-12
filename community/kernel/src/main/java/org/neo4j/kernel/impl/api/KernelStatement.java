@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -203,10 +205,10 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    final String username()
+    final Optional<String> username()
     {
         AccessMode mode = transaction.mode();
-        return ( mode instanceof AuthSubject ) ? ((AuthSubject) mode).username() : null;
+        return ( mode instanceof AuthSubject ) ? Optional.of( ((AuthSubject) mode).username() ) : Optional.empty();
     }
 
     final ExecutingQueryList executingQueryList()

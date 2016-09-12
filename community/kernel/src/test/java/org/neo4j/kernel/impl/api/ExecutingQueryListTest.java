@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.ExecutingQuery;
@@ -97,6 +98,6 @@ public class ExecutingQueryListTest
 
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
-        return new ExecutingQuery( queryId, "me", query, Collections.emptyMap(), 10 );
+        return new ExecutingQuery( queryId, Optional.of( "me" ), query, Collections.emptyMap(), 10 );
     }
 }

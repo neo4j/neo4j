@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static java.lang.String.format;
 
@@ -30,21 +31,21 @@ public class ExecutingQuery
 {
     private final long queryId;
 
-    private final String username;
+    private final Optional<String> username;
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime;
 
     public ExecutingQuery(
         long queryId,
-        String userNameOrNull,
+        Optional<String> username,
         String queryText,
         Map<String,Object> queryParameters,
         long startTime
     )
     {
         this.queryId = queryId;
-        this.username = userNameOrNull;
+        this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
         this.startTime = startTime;
@@ -79,7 +80,7 @@ public class ExecutingQuery
         return queryId;
     }
 
-    public String username()
+    public Optional<String> username()
     {
         return username;
     }

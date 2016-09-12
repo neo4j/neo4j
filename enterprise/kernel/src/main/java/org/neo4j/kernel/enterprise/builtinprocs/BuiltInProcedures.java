@@ -26,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -138,7 +139,7 @@ public class BuiltInProcedures
                 .activeTransactions()
                 .stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
-                .filter( ( query ) -> isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.username() ) )
+                .filter( ( query ) -> isAdminEnterpriseAuthSubject() || query.username().map( authSubject::hasUsername ).orElse( false ) )
                 .map( catchThrown( InvalidArgumentsException.class, this::queryStatusResult ) );
         }
         catch ( UncaughtCheckedException uncaught )
@@ -212,7 +213,7 @@ public class BuiltInProcedures
             throws InvalidArgumentsException
     {
         ExecutingQuery query = pair.other();
-        if ( isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.username() ) )
+        if ( isAdminEnterpriseAuthSubject() || query.username().map( authSubject::hasUsername ).orElse( false ) )
         {
             pair.first().markForTermination( Status.Transaction.Terminated );
             return new QueryTerminationResult( queryId( query.kernelQueryId() ), query.username() );
@@ -232,29 +233,22 @@ public class BuiltInProcedures
 
     private Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
     {
-        long terminatedCount = 0;
-        for ( KernelTransactionHandle tx : getActiveTransactions() )
-        {
-            if ( getUsernameFromAccessMode( tx.mode() ).equals( username ) && !tx.isUnderlyingTransaction( this.tx ) )
-            {
-                boolean marked = tx.markForTermination( Status.Transaction.Terminated );
-                if ( marked )
-                {
-                    terminatedCount++;
-                }
-            }
-        }
+        long terminatedCount = getActiveTransactions()
+            .stream()
+            .filter( tx -> getUsernameFromAccessMode( tx.mode() ).equals( username ) && !tx.isUnderlyingTransaction( this.tx ) )
+            .map( tx -> tx.markForTermination( Status.Transaction.Terminated ) )
+            .filter( marked -> marked )
+            .count();
         return Stream.of( new TransactionTerminationResult( username, terminatedCount ) );
     }
 
     private Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
     {
-        Long killCount = 0L;
-        for ( ManagedBoltStateMachine connection : getBoltConnectionTracker().getActiveConnections( username ) )
-        {
-            connection.terminate();
-            killCount += 1;
-        }
+        Long killCount = getBoltConnectionTracker()
+            .getActiveConnections( username )
+            .stream()
+            .map( conn -> { conn.terminate(); return true; } )
+            .count();
         return Stream.of( new ConnectionResult( username, killCount ) );
     }
 
@@ -337,6 +331,8 @@ public class BuiltInProcedures
         );
     }
 
+    private static String UNAVAILABLE_USERNAME = "<unavailable>";
+
     public static class QueryStatusResult
     {
         public final String queryId;
@@ -347,11 +343,11 @@ public class BuiltInProcedures
         public final String startTime;
         public final String elapsedTime;
 
-        QueryStatusResult( QueryId queryId, String username, String query, Map<String,Object> parameters,
+        QueryStatusResult( QueryId queryId, Optional<String> username, String query, Map<String,Object> parameters,
                 long startTime, long elapsedTime )
         {
             this.queryId = queryId.toString();
-            this.username = username;
+            this.username = username.orElse( UNAVAILABLE_USERNAME );
             this.query = query;
             this.parameters = parameters;
             this.startTime = formatTime( startTime );
@@ -371,10 +367,10 @@ public class BuiltInProcedures
         public final String queryId;
         public final String username;
 
-        public QueryTerminationResult( QueryId queryId, String username )
+        public QueryTerminationResult( QueryId queryId, Optional<String> username )
         {
             this.queryId = queryId.toString();
-            this.username = username;
+            this.username = username.orElse( UNAVAILABLE_USERNAME );
         }
     }
 
