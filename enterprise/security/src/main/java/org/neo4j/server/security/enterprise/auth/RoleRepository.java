@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.User;

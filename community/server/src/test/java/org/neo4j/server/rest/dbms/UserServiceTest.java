@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.AuthenticationStrategy;

@@ -248,7 +248,7 @@ public class BoltConnectionManagementIT
                 pullAll() ) );
 
         // Then
-        assertThat( admin, eventuallyReceives( msgFailure( Status.Security.InvalidArguments,
+        assertThat( admin, eventuallyReceives( msgFailure( Status.General.InvalidArguments,
                 "User 'NonExistentUser' does not exist." ) ) );
     }
 

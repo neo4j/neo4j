@@ -22,7 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.server.security.auth.UserManager;
 
 public interface EnterpriseUserManager extends UserManager

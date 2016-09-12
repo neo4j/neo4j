@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.function.UncaughtCheckedException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
@@ -41,7 +42,7 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -56,6 +57,8 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.function.ThrowingFunction.catchThrown;
+import static org.neo4j.function.ThrowingFunction.throwIfPresent;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.parseQueryId;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.queryId;
@@ -129,12 +132,20 @@ public class BuiltInProcedures
     @Procedure( name = "dbms.listQueries", mode = DBMS )
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
     {
-        return getKernelTransactions()
-            .activeTransactions()
-            .stream()
-            .flatMap( KernelTransactionHandle::executingQueries )
-            .filter( ( query ) -> isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.username() ) )
-            .map( this::queryStatusResult );
+        try
+        {
+            return getKernelTransactions()
+                .activeTransactions()
+                .stream()
+                .flatMap( KernelTransactionHandle::executingQueries )
+                .filter( ( query ) -> isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.username() ) )
+                .map( catchThrown( InvalidArgumentsException.class, this::queryStatusResult ) );
+        }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
     }
 
     @Description( "Kill all transactions executing the query with the given query id." )
@@ -142,14 +153,22 @@ public class BuiltInProcedures
     public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
             throws InvalidArgumentsException, IOException
     {
-        long queryId = parseQueryId( idText ).kernelQueryId();
+        try
+        {
+            long queryId = parseQueryId( idText ).kernelQueryId();
 
-        Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-            getKernelTransactions().activeTransactions( tx -> executingQueriesWithId( queryId, tx ) );
+            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
+                getKernelTransactions().activeTransactions( tx -> executingQueriesWithId( queryId, tx ) );
 
-        return executingQueries
-            .stream()
-            .map(this::killQueryTransaction);
+            return executingQueries
+                .stream()
+                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+         }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
     }
 
     @Description( "Kill all transactions executing a query with any of the given query ids." )
@@ -157,18 +176,26 @@ public class BuiltInProcedures
     public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts )
             throws InvalidArgumentsException, IOException
     {
-        Set<Long> queryIds =
-            idTexts.stream()
-                   .map( QueryId::parseQueryId )
-                   .map( QueryId::kernelQueryId )
-                   .collect( Collectors.toSet() );
+        try
+        {
+            Set<Long> queryIds = idTexts
+                .stream()
+                .map( catchThrown( InvalidArgumentsException.class, QueryId::parseQueryId ) )
+                .map( catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) )
+                .collect( Collectors.toSet() );
 
-        Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
+            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
                 getKernelTransactions().activeTransactions( tx -> executingQueriesWithIds( queryIds, tx ) );
 
-        return executingQueries
+            return executingQueries
                 .stream()
-                .map(this::killQueryTransaction);
+                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+        }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
     }
 
     private Stream<ExecutingQuery> executingQueriesWithIds( Set<Long> ids, KernelTransactionHandle txHandle )
@@ -182,6 +209,7 @@ public class BuiltInProcedures
     }
 
     private QueryTerminationResult killQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )
+            throws InvalidArgumentsException
     {
         ExecutingQuery query = pair.other();
         if ( isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.username() ) )
@@ -297,7 +325,7 @@ public class BuiltInProcedures
         throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 
-    private QueryStatusResult queryStatusResult( ExecutingQuery q )
+    private QueryStatusResult queryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
     {
         return new QueryStatusResult(
             queryId( q.kernelQueryId() ),

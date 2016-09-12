@@ -19,17 +19,19 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+
 public final class QueryId
 {
     public static final String QUERY_ID_PREFIX = "query-";
     private final long kernelQueryId;
 
-    public static QueryId queryId( long queryId )
+    public static QueryId queryId( long queryId ) throws InvalidArgumentsException
     {
         return new QueryId( queryId );
     }
 
-    public static QueryId parseQueryId( String queryIdText )
+    public static QueryId parseQueryId( String queryIdText ) throws InvalidArgumentsException
     {
         try
         {
@@ -40,17 +42,17 @@ public final class QueryId
         }
         catch ( NumberFormatException e )
         {
-            throw new IllegalArgumentException( e );
+            throw new InvalidArgumentsException( "Could not parse query id (expected format: query-1234)", e );
         }
 
-        throw new IllegalArgumentException( "Could not parse query id" );
+        throw new InvalidArgumentsException( "Could not parse query id (expected format: query-1234)" );
     }
 
-    private QueryId( long kernelQueryId )
+    private QueryId( long kernelQueryId ) throws InvalidArgumentsException
     {
         if ( kernelQueryId <= 0 )
         {
-            throw new IllegalArgumentException( "Negative query ids are not supported" );
+            throw new InvalidArgumentsException( "Negative query ids are not supported (expected format: query-1234)" );
         }
         this.kernelQueryId = kernelQueryId;
     }

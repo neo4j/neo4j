@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;

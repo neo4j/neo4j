@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;

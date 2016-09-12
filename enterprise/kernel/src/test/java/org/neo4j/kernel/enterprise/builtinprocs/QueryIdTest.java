@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.parseQueryId;
@@ -34,49 +36,49 @@ public class QueryIdTest
     public ExpectedException thrown = ExpectedException.none();
 
     @Test
-    public void printsQueryIds()
+    public void printsQueryIds() throws InvalidArgumentsException
     {
         assertThat( queryId( 12L ).toString(), equalTo( "query-12" ) );
     }
 
     @Test
-    public void doesNotConstructNegativeQueryIds()
+    public void doesNotConstructNegativeQueryIds() throws InvalidArgumentsException
     {
-        thrown.expect( IllegalArgumentException.class );
+        thrown.expect( InvalidArgumentsException.class );
         queryId( -15L );
     }
 
     @Test
-    public void parsesQueryIds()
+    public void parsesQueryIds() throws InvalidArgumentsException
     {
         assertThat( parseQueryId( "query-14" ), equalTo( queryId( 14L ) ) );
     }
 
     @Test
-    public void doesNotParseNegativeQueryIds()
+    public void doesNotParseNegativeQueryIds() throws InvalidArgumentsException
     {
-        thrown.expect( IllegalArgumentException.class );
+        thrown.expect( InvalidArgumentsException.class );
         parseQueryId( "query--12" );
     }
 
     @Test
-    public void doesNotParseRandomText()
+    public void doesNotParseRandomText() throws InvalidArgumentsException
     {
-        thrown.expect( IllegalArgumentException.class );
+        thrown.expect( InvalidArgumentsException.class );
         parseQueryId( "blarglbarf" );
     }
 
     @Test
-    public void doesNotParseTrailingRandomText()
+    public void doesNotParseTrailingRandomText() throws InvalidArgumentsException
     {
-        thrown.expect( IllegalArgumentException.class );
+        thrown.expect( InvalidArgumentsException.class );
         parseQueryId( "query-12  " );
     }
 
     @Test
-    public void doesNotParseEmptyText()
+    public void doesNotParseEmptyText() throws InvalidArgumentsException
     {
-        thrown.expect( IllegalArgumentException.class );
+        thrown.expect( InvalidArgumentsException.class );
         parseQueryId( "" );
     }
 }

@@ -24,14 +24,7 @@ package org.neo4j.function;
  */
 public final class ThrowingFunctions
 {
-    private static final ThrowingUnaryOperator IDENTITY = new ThrowingUnaryOperator()
-    {
-        @Override
-        public Object apply( Object value )
-        {
-            return value;
-        }
-    };
+    private static final ThrowingUnaryOperator IDENTITY = value -> value;
 
     @SuppressWarnings( "unchecked" )
     public static <T, E extends Exception> ThrowingUnaryOperator<T,E> identity()
@@ -39,28 +32,17 @@ public final class ThrowingFunctions
         return IDENTITY;
     }
 
-    public static <T, E extends Exception> ThrowingFunction<T,Void,E> fromConsumer( final ThrowingConsumer<T,E> consumer )
+    public static <T, E extends Exception> ThrowingFunction<T,Void,E> fromConsumer( ThrowingConsumer<T,E> consumer )
     {
-        return new ThrowingFunction<T,Void,E>()
+        return t ->
         {
-            @Override
-            public Void apply( T t ) throws E
-            {
-                consumer.accept( t );
-                return null;
-            }
+            consumer.accept( t );
+            return null;
         };
     }
 
-    public static <T, E extends Exception> ThrowingFunction<Void,T,E> fromSupplier( final ThrowingSupplier<T,E> supplier )
+    public static <T, E extends Exception> ThrowingFunction<Void,T,E> fromSupplier( ThrowingSupplier<T,E> supplier )
     {
-        return new ThrowingFunction<Void,T,E>()
-        {
-            @Override
-            public T apply( Void t ) throws E
-            {
-                return supplier.get();
-            }
-        };
+        return t -> supplier.get();
     }
 }

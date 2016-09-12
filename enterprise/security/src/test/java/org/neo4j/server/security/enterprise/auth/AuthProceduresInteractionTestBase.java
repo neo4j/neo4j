@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;

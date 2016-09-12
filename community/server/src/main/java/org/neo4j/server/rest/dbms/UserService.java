@@ -32,7 +32,7 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExceptionRepresentation;
