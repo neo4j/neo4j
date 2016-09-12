@@ -78,7 +78,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // Then
         assertThat( found, equalTo( procedureSignature( procedureName( "db", "labels" ) )
-                .out(  "label", Neo4jTypes.NTString ).build() ) );
+                .out(  "label", NTString ).build() ) );
     }
 
     @Test
@@ -86,8 +86,8 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     {
         // Given
         kernel.registerProcedure( procedure );
-        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) );
-        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc3" ).build() ) );
+        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).out( "name", NTString ).build() ) );
+        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc3" ).out( "name", NTString ).build() ) );
 
         // When
         List<ProcedureSignature> signatures =
@@ -96,8 +96,19 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         // Then
         assertThat( signatures, hasItems(
             procedure.signature(),
-            procedureSignature( "example", "exampleProc2" ).build(),
-            procedureSignature( "example", "exampleProc3" ).build() ) );
+            procedureSignature( "example", "exampleProc2" ).out( "name", NTString ).build(),
+            procedureSignature( "example", "exampleProc3" ).out( "name", NTString ).build() ) );
+    }
+
+    @Test
+    public void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs() throws ProcedureException
+    {
+        // Then
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Procedures with zero output fields must be declared as VOID" );
+
+        // When
+        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) );
     }
 
     @Test

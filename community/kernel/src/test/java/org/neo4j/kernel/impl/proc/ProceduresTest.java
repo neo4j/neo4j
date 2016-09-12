@@ -44,6 +44,8 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.Key.key;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresTest
@@ -52,7 +54,7 @@ public class ProceduresTest
     public ExpectedException exception = ExpectedException.none();
 
     private final Procedures procs = new Procedures();
-    private final ProcedureSignature signature = procedureSignature( "org", "myproc" ).build();
+    private final ProcedureSignature signature = procedureSignature( "org", "myproc" ).out( "name", NTString ).build();
     private final CallableProcedure procedure = procedure( signature );
 
     @Test
@@ -69,16 +71,16 @@ public class ProceduresTest
     public void shouldGetAllRegisteredProcedures() throws Throwable
     {
         // When
-        procs.register( procedure( procedureSignature( "org", "myproc1" ).build() ) );
-        procs.register( procedure( procedureSignature( "org", "myproc2" ).build() ) );
-        procs.register( procedure( procedureSignature( "org", "myproc3" ).build() ) );
+        procs.register( procedure( procedureSignature( "org", "myproc1" ).out( "age", NTInteger ).build() ) );
+        procs.register( procedure( procedureSignature( "org", "myproc2" ).out( "age", NTInteger ).build() ) );
+        procs.register( procedure( procedureSignature( "org", "myproc3" ).out( "age", NTInteger ).build() ) );
 
         // Then
         List<ProcedureSignature> signatures = Iterables.asList( procs.getAllProcedures() );
         assertThat( signatures, containsInAnyOrder(
-                procedureSignature( "org", "myproc1" ).build(),
-                procedureSignature( "org", "myproc2" ).build(),
-                procedureSignature( "org", "myproc3" ).build() ) );
+                procedureSignature( "org", "myproc1" ).out( "age", NTInteger ).build(),
+                procedureSignature( "org", "myproc2" ).out( "age", NTInteger ).build(),
+                procedureSignature( "org", "myproc3" ).out( "age", NTInteger ).build() ) );
     }
 
     @Test
