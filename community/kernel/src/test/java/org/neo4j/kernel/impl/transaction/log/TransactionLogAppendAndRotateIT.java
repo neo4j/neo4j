@@ -78,7 +78,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
 import static org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent.NULL;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
-public class TransactionLogAppendAndRotateStressIT
+public class TransactionLogAppendAndRotateIT
 {
     private final LifeRule life = new LifeRule( true );
     private final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
