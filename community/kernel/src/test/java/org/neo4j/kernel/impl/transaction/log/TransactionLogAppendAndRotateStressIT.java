@@ -60,7 +60,7 @@ import org.neo4j.test.Race;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
@@ -162,28 +162,26 @@ public class TransactionLogAppendAndRotateStressIT
         {
             VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
             LogEntry entry = null;
-            int state = 0;
+            boolean inTx = false;
             int transactions = 0;
             while ( (entry = entryReader.readLogEntry( reader )) != null )
             {
-                switch ( state )
+                if ( !inTx ) // Expects start entry
                 {
-                case 0: // Expects start entry
                     assertTrue( entry instanceof LogEntryStart );
-                    state = 1;
-                    break;
-                case 1: // Expects command/commit entry
+                    inTx = true;
+                }
+                else // Expects command/commit entry
+                {
                     assertTrue( entry instanceof LogEntryCommand || entry instanceof LogEntryCommit );
                     if ( entry instanceof LogEntryCommit )
                     {
-                        state = 0;
+                        inTx = false;
                         transactions++;
                     }
-                    break;
-                default: throw new IllegalArgumentException();
                 }
             }
-            assertEquals( 0, state );
+            assertFalse( inTx );
             assertTrue( transactions > 0 );
         }
     }
