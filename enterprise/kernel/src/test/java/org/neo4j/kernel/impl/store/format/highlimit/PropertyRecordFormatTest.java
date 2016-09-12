@@ -29,7 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
-import org.neo4j.kernel.impl.store.format.highlimit.v30.PropertyRecordFormatV3_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v300.PropertyRecordFormatV3_0_0;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -199,8 +199,8 @@ public class PropertyRecordFormatTest
 
     private void writeRecordWithOldFormat( PropertyRecord oldFormatRecord ) throws IOException
     {
-        int oldRecordSize = PropertyRecordFormatV3_0.RECORD_SIZE;
-        PropertyRecordFormatV3_0 recordFormatV30 = new PropertyRecordFormatV3_0();
+        int oldRecordSize = PropertyRecordFormatV3_0_0.RECORD_SIZE;
+        PropertyRecordFormatV3_0_0 recordFormatV30 = new PropertyRecordFormatV3_0_0();
         recordFormatV30.prepare( oldFormatRecord, oldRecordSize, idSequence );
         recordFormatV30.write( oldFormatRecord, pageCursor, oldRecordSize );
         pageCursor.setOffset( 0 );

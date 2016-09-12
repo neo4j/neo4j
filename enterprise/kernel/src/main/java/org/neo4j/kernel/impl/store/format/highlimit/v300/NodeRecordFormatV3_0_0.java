@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit.v30;
+package org.neo4j.kernel.impl.store.format.highlimit.v300;
 
 import java.io.IOException;
 
@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.record.Record;
  *
  * => 12B-22B
  */
-public class NodeRecordFormatV3_0 extends BaseHighLimitRecordFormatV3_0<NodeRecord>
+public class NodeRecordFormatV3_0_0 extends BaseHighLimitRecordFormatV3_0_0<NodeRecord>
 {
     public static final int RECORD_SIZE = 16;
 
@@ -47,12 +47,12 @@ public class NodeRecordFormatV3_0 extends BaseHighLimitRecordFormatV3_0<NodeReco
     private static final int HAS_PROPERTY_BIT     = 0b0010_0000;
     private static final int HAS_LABELS_BIT       = 0b0100_0000;
 
-    public NodeRecordFormatV3_0()
+    public NodeRecordFormatV3_0_0()
     {
         this( RECORD_SIZE );
     }
 
-    NodeRecordFormatV3_0( int recordSize )
+    NodeRecordFormatV3_0_0( int recordSize )
     {
         super( fixedRecordSize( recordSize ), 0 );
     }

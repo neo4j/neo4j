@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit.v30;
+package org.neo4j.kernel.impl.store.format.highlimit.v300;
 
 import java.io.IOException;
 
@@ -47,13 +47,13 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
  *
  * => 39B-49B
  */
-public class PropertyRecordFormatV3_0 extends BaseOneByteHeaderRecordFormat<PropertyRecord>
+public class PropertyRecordFormatV3_0_0 extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 {
     public static final int RECORD_SIZE = 48;
 
-    public PropertyRecordFormatV3_0()
+    public PropertyRecordFormatV3_0_0()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, HighLimitV3_0.DEFAULT_MAXIMUM_BITS_PER_ID );
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, HighLimitV3_0_0.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 
     @Override
