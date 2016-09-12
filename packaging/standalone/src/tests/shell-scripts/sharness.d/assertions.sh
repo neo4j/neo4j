@@ -39,7 +39,7 @@ test_expect_stderr_matching() {
   expected_pattern=$1
   shift
 
-  stdout="$("$@" 2>&1)"
+  stdout="$("$@" 2>&1 1>/dev/null)"
   err="$?"
   [[ "${err}" -ne 0 ]] && return "${err}"
 
