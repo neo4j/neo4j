@@ -16,11 +16,15 @@ NEW_IMPORT_DIR=/var/lib/neo4j/import
 
 case "$1" in
     upgrade)
+        service neo4j-service stop
+
         dpkg-maintscript-helper rm_conffile "/etc/init.d/neo4j-service" -- "$@"
         dpkg-maintscript-helper rm_conffile "/etc/neo4j/README.txt" -- "$@"
         dpkg-maintscript-helper rm_conffile "/etc/neo4j/neo4j-http-logging.xml" -- "$@"
         dpkg-maintscript-helper rm_conffile "/etc/neo4j/neo4j-server.properties" -- "$@"
         dpkg-maintscript-helper rm_conffile "/etc/neo4j/neo4j.properties" -- "$@"
+
+        update-rc.d neo4j-service remove
 
         if [ -d "${OLD_CERTIFICATES_DIR}" ]; then
             mkdir -p "${NEW_CERTIFICATES_DIR}" && chown neo4j.nogroup "${NEW_CERTIFICATES_DIR}" && chmod 0755 "${NEW_CERTIFICATES_DIR}"
