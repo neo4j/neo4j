@@ -148,6 +148,13 @@ _read_config() {
     fi
   }
 
+  if [[ -f "${NEO4J_CONF}/neo4j-wrapper.conf" ]]; then
+    cat >&2 <<EOF
+WARNING: neo4j-wrapper.conf is deprecated and support for it will be removed in a future
+         version of Neo4j; please move all your settings to neo4j.conf
+EOF
+  fi
+
   for file in "neo4j-wrapper.conf" "neo4j.conf"; do
     path="${NEO4J_CONF}/${file}"
     if [ -e "${path}" ]; then
