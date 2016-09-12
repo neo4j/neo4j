@@ -26,12 +26,12 @@ public final class QueryId
     public static final String QUERY_ID_PREFIX = "query-";
     private final long kernelQueryId;
 
-    public static QueryId queryId( long queryId ) throws InvalidArgumentsException
+    public static QueryId ofInternalId( long queryId ) throws InvalidArgumentsException
     {
         return new QueryId( queryId );
     }
 
-    public static QueryId parseQueryId( String queryIdText ) throws InvalidArgumentsException
+    public static QueryId fromExternalString( String queryIdText ) throws InvalidArgumentsException
     {
         try
         {

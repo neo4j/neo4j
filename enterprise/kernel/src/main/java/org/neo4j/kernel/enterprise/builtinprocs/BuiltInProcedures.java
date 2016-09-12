@@ -58,11 +58,12 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toSet;
 import static org.neo4j.function.ThrowingFunction.catchThrown;
 import static org.neo4j.function.ThrowingFunction.throwIfPresent;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.parseQueryId;
-import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.queryId;
+import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.fromExternalString;
+import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
 
@@ -156,10 +157,10 @@ public class BuiltInProcedures
     {
         try
         {
-            long queryId = parseQueryId( idText ).kernelQueryId();
+            long queryId = fromExternalString( idText ).kernelQueryId();
 
             Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-                getKernelTransactions().activeTransactions( tx -> executingQueriesWithId( queryId, tx ) );
+                getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) );
 
             return executingQueries
                 .stream()
@@ -181,12 +182,12 @@ public class BuiltInProcedures
         {
             Set<Long> queryIds = idTexts
                 .stream()
-                .map( catchThrown( InvalidArgumentsException.class, QueryId::parseQueryId ) )
+                .map( catchThrown( InvalidArgumentsException.class, QueryId::fromExternalString ) )
                 .map( catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) )
-                .collect( Collectors.toSet() );
+                .collect( toSet() );
 
             Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-                getKernelTransactions().activeTransactions( tx -> executingQueriesWithIds( queryIds, tx ) );
+                getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) );
 
             return executingQueries
                 .stream()
@@ -199,14 +200,24 @@ public class BuiltInProcedures
         }
     }
 
+    private <T> Set<Pair<KernelTransactionHandle, T>> getActiveTransactions(
+            Function<KernelTransactionHandle,Stream<T>> selector
+    )
+    {
+        return getActiveTransactions()
+            .stream()
+            .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
+            .collect( toSet() );
+    }
+
     private Stream<ExecutingQuery> executingQueriesWithIds( Set<Long> ids, KernelTransactionHandle txHandle )
     {
-        return txHandle.executingQueries().filter( q -> ids.contains( q.kernelQueryId() ) );
+        return txHandle.executingQueries().filter( q -> ids.contains( q.internalQueryId() ) );
     }
 
     private Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
     {
-        return txHandle.executingQueries().filter( q -> q.kernelQueryId() == id );
+        return txHandle.executingQueries().filter( q -> q.internalQueryId() == id );
     }
 
     private QueryTerminationResult killQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )
@@ -216,7 +227,7 @@ public class BuiltInProcedures
         if ( isAdminEnterpriseAuthSubject() || query.username().map( authSubject::hasUsername ).orElse( false ) )
         {
             pair.first().markForTermination( Status.Transaction.Terminated );
-            return new QueryTerminationResult( queryId( query.kernelQueryId() ), query.username() );
+            return new QueryTerminationResult( ofInternalId( query.internalQueryId() ), query.username() );
         }
         else
         {
@@ -322,7 +333,7 @@ public class BuiltInProcedures
     private QueryStatusResult queryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
     {
         return new QueryStatusResult(
-            queryId( q.kernelQueryId() ),
+            ofInternalId( q.internalQueryId() ),
             q.username(),
             q.queryText(),
             q.queryParameters(),

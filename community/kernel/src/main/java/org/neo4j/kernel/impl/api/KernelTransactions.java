@@ -198,49 +198,14 @@ public class KernelTransactions extends LifecycleAdapter
      */
     public Set<KernelTransactionHandle> activeTransactions()
     {
-        return allTransactions.stream()
-                .map( this::createHandle )
-                .filter( KernelTransactionHandle::isOpen )
-                .collect( toSet() );
+        return allTransactions
+            .stream()
+            .map( this::createHandle )
+            .filter( KernelTransactionHandle::isOpen )
+            .collect( toSet() );
     }
 
     /**
-<<<<<<< 02d875ee756f43722fd716311ab1036e685b081d
-=======
-     * Give an approximate set of all transactions currently running together with associated metadata as
-     * computed by the provided selector function.
-     * This is not guaranteed to be exact, as transactions may stop and start while this set is gathered.
-     *
-     * @return the (approximate) set of open transactions.
-     */
-    public <T> Set<Pair<KernelTransactionHandle, T>> activeTransactions(
-            Function<KernelTransactionHandle,Stream<T>> selector
-    )
-    {
-        return allTransactions.stream()
-                .map( this::createHandle )
-                .filter( KernelTransactionHandle::isOpen )
-                .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
-                .collect( toSet() );
-    }
-
-    /**
-     * Give an approximate set of all currently executing queries.
-     * This is not guaranteed to be exact, as a query may stop and start while this set is gathered, or even
-     * switch the transaction used (in case of PERIODIC COMMIT).
-     *
-     * @return the (approximate) set of currently executing 209.
-     */
-    public Set<ExecutingQuery> executingQueries() {
-        return allTransactions.stream()
-                .map( this::createHandle )
-                .filter( KernelTransactionHandle::isOpen )
-                .flatMap( KernelTransactionHandle::executingQueries )
-                .collect( toSet() );
-    }
-
-    /**
->>>>>>> Add procedure for terminating queries
      * Create new handle for the given transaction.
      * <p>
      * <b>Note:</b> this method is package-private for testing <b>only</b>.

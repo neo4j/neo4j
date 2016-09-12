@@ -27,8 +27,8 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.parseQueryId;
-import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.queryId;
+import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.fromExternalString;
+import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 
 public class QueryIdTest
 {
@@ -38,47 +38,47 @@ public class QueryIdTest
     @Test
     public void printsQueryIds() throws InvalidArgumentsException
     {
-        assertThat( queryId( 12L ).toString(), equalTo( "query-12" ) );
+        assertThat( ofInternalId( 12L ).toString(), equalTo( "query-12" ) );
     }
 
     @Test
     public void doesNotConstructNegativeQueryIds() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
-        queryId( -15L );
+        ofInternalId( -15L );
     }
 
     @Test
     public void parsesQueryIds() throws InvalidArgumentsException
     {
-        assertThat( parseQueryId( "query-14" ), equalTo( queryId( 14L ) ) );
+        assertThat( fromExternalString( "query-14" ), equalTo( ofInternalId( 14L ) ) );
     }
 
     @Test
     public void doesNotParseNegativeQueryIds() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
-        parseQueryId( "query--12" );
+        fromExternalString( "query--12" );
     }
 
     @Test
     public void doesNotParseRandomText() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
-        parseQueryId( "blarglbarf" );
+        fromExternalString( "blarglbarf" );
     }
 
     @Test
     public void doesNotParseTrailingRandomText() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
-        parseQueryId( "query-12  " );
+        fromExternalString( "query-12  " );
     }
 
     @Test
     public void doesNotParseEmptyText() throws InvalidArgumentsException
     {
         thrown.expect( InvalidArgumentsException.class );
-        parseQueryId( "" );
+        fromExternalString( "" );
     }
 }

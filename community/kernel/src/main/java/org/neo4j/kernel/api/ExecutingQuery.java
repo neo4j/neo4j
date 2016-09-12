@@ -75,7 +75,7 @@ public class ExecutingQuery
         return (int) (queryId ^ (queryId >>> 32));
     }
 
-    public long kernelQueryId()
+    public long internalQueryId()
     {
         return queryId;
     }

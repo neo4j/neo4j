@@ -337,7 +337,7 @@ public class UserServiceTest
         assertThat( response.getStatus(), equalTo( 422 ) );
         String json = new String( (byte[]) response.getEntity() );
         assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Security.InvalidArguments\"" ) );
+        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.General.InvalidArguments\"" ) );
         assertThat( json, containsString( "\"message\" : \"A password cannot be empty.\"" ) );
     }
 
@@ -358,7 +358,7 @@ public class UserServiceTest
         assertThat( response.getStatus(), equalTo( 422 ) );
         String json = new String( (byte[]) response.getEntity() );
         assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Security.InvalidArguments\"" ) );
+        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.General.InvalidArguments\"" ) );
         assertThat( json, containsString( "\"message\" : \"Old password and new password cannot be the same.\"" ) );
     }
 

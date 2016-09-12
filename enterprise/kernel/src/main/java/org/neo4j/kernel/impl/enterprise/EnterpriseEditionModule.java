@@ -52,6 +52,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     @Override
     public void setupProcedures( Procedures procedures ) throws KernelException
     {
+        super.setupProcedures( procedures );
         // If you change this, don't forget to update the HA and Core|Edge editions, too
         procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
 
