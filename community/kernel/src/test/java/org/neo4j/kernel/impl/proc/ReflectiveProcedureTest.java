@@ -32,10 +32,9 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.CallableProcedure.BasicContext;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
@@ -48,11 +47,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -79,7 +75,7 @@ public class ReflectiveProcedureTest
         // Given
         Log log = spy( Log.class );
         components.register( Log.class, (ctx) -> log );
-        CallableProcedure procedure = procedureCompiler.compile( LoggingProcedure.class ).get( 0 );
+        CallableProcedure procedure = procedureCompiler.compileProcedure( LoggingProcedure.class ).get( 0 );
 
         // When
         procedure.apply( new BasicContext(), new Object[0] );
@@ -278,7 +274,7 @@ public class ReflectiveProcedureTest
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, log );
 
         // When
-        List<CallableProcedure> procs = procedureCompiler.compile( ProcedureWithDeprecation.class );
+        List<CallableProcedure> procs = procedureCompiler.compileProcedure( ProcedureWithDeprecation.class );
 
         // Then
         verify( log ).warn( "Use of @Procedure(deprecatedBy) without @Deprecated in badProc" );
@@ -524,6 +520,6 @@ public class ReflectiveProcedureTest
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
-        return procedureCompiler.compile( clazz );
+        return procedureCompiler.compileProcedure( clazz );
     }
 }

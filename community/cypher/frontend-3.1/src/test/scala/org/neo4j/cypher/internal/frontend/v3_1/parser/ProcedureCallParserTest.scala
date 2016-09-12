@@ -32,16 +32,16 @@ class ProcedureCallParserTest
   implicit val parser = Call
 
   test("CALL foo") {
-    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos)))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos)))
   }
 
   test("CALL foo()") {
-    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty)))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty)))
   }
 
   test("CALL foo('Test', 1+2)") {
-    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos),
-      Some(Vector(
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos),
+                              Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
           ast.SignedDecimalIntegerLiteral("1")(pos),
@@ -51,8 +51,8 @@ class ProcedureCallParserTest
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
-    yields(ast.UnresolvedCall(ast.ProcedureNamespace(List("foo", "bar"))(pos), ast.ProcedureName("baz")(pos),
-      Some(Vector(
+    yields(ast.UnresolvedCall(ast.Namespace(List("foo", "bar"))(pos), ast.ProcedureName("baz")(pos),
+                              Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
           ast.SignedDecimalIntegerLiteral("1")(pos),
@@ -62,19 +62,19 @@ class ProcedureCallParserTest
   }
 
   test("CALL foo YIELD bar") {
-    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), None, Some(Seq(result("bar")))))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), None, Some(Seq(result("bar")))))
   }
 
   test("CALL foo YIELD bar, baz") {
-    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), None, Some(Seq(result("bar"), result("baz")))))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), None, Some(Seq(result("bar"), result("baz")))))
   }
 
   test("CALL foo() YIELD bar") {
-    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(result("bar")))))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(result("bar")))))
   }
 
   test("CALL foo() YIELD bar, baz") {
-    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(result("bar"), result("baz")))))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(result("bar"), result("baz")))))
   }
 
   private def result(name: String): ProcedureResultItem =

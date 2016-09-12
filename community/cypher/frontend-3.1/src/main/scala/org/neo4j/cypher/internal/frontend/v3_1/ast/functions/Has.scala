@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{ContainerIndex, Function}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Function
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticError, ast}
 
 /*

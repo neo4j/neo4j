@@ -34,8 +34,8 @@ import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, Result, Transaction}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
-import org.neo4j.kernel.api.proc.Neo4jTypes
+import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.proc.{Context, Mode, Neo4jTypes}
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.tools.tck.TCKCucumberTemplate
@@ -289,7 +289,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   private def asKernelSignature(parsedSignature: ProcedureSignature): org.neo4j.kernel.api.proc.ProcedureSignature = {
     val builder = org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature(parsedSignature.namespace.toArray, parsedSignature.name)
-    builder.mode(org.neo4j.kernel.api.proc.ProcedureSignature.Mode.READ_ONLY)
+    builder.mode(Mode.READ_ONLY)
     parsedSignature.inputs.foreach { case (name, tpe) => builder.in(name, asKernelType(tpe)) }
     parsedSignature.outputs match {
       case Some(fields) => fields.foreach { case (name, tpe) => builder.out(name, asKernelType(tpe)) }

@@ -22,7 +22,8 @@ package org.neo4j.kernel.builtinprocs;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.api.proc.QualifiedName;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
@@ -49,7 +50,7 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
     private final String neo4jVersion;
     private final String neo4jEdition;
 
-    public ListComponentsProcedure( ProcedureSignature.ProcedureName name, String neo4jVersion, String neo4jEdition )
+    public ListComponentsProcedure( QualifiedName name, String neo4jVersion, String neo4jEdition )
     {
         super( procedureSignature( name )
                 .out( "name", NTString )

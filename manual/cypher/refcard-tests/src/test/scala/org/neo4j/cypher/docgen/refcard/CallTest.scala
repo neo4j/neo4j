@@ -26,8 +26,8 @@ import org.neo4j.cypher.docgen.RefcardTest
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
-import org.neo4j.kernel.api.proc.Neo4jTypes
+import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
 import org.neo4j.kernel.api.proc.ProcedureSignature._
 
 class CallTest extends RefcardTest with QueryStatisticsTestSupport {

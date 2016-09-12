@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.planDescription
 import org.neo4j.cypher.internal.compiler.v3_1.commands
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{LazyLabel, LazyTypes, SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v3_1.spi.QualifiedProcedureName
+import org.neo4j.cypher.internal.compiler.v3_1.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, ast}
 
@@ -93,7 +93,7 @@ object InternalPlanDescription {
     case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
     case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
     case class EstimatedRows(value: Double) extends Argument
-    case class Signature(procedureName: QualifiedProcedureName,
+    case class Signature(procedureName: QualifiedName,
                          args: Seq[commands.expressions.Expression],
                          results: Seq[(String, CypherType)]) extends Argument
     case class Version(value: String) extends Argument {

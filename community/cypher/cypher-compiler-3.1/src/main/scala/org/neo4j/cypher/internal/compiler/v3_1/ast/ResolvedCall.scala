@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast
 
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CypherType, _}
 
 object ResolvedCall {
-  def apply(signatureLookup: QualifiedProcedureName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
+  def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
     val UnresolvedCall(_, _, declaredArguments, declaredResults) = unresolved
     val position = unresolved.position
-    val signature = signatureLookup(QualifiedProcedureName(unresolved))
+    val signature = signatureLookup(QualifiedName(unresolved))
     val nonDefaults = signature.inputSignature.flatMap(s => if (s.default.isDefined) None else Some(Parameter(s.name, CTAny)(position)))
     val callArguments = declaredArguments.getOrElse(nonDefaults)
     val callResults = declaredResults.getOrElse(signatureResults(signature, position))
@@ -51,7 +51,7 @@ case class ResolvedCall(signature: ProcedureSignature,
                        (val position: InputPosition)
   extends CallClause {
 
-  def qualifiedName: QualifiedProcedureName = signature.name
+  def qualifiedName: QualifiedName = signature.name
 
   def fullyDeclared: Boolean = declaredArguments && declaredResults
 

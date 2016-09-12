@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -58,7 +58,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
+import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 
 public class BuiltInProceduresTest
 {
@@ -262,7 +262,7 @@ public class BuiltInProceduresTest
     {
         procs.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
         new SpecialBuiltInProcedures("1.3.37", Edition.enterprise.toString() ).accept( procs );
-        procs.register( BuiltInProcedures.class );
+        procs.registerProcedure( BuiltInProcedures.class );
 
         when(tx.acquireStatement()).thenReturn( statement );
         when(statement.readOperations()).thenReturn( read );
@@ -273,7 +273,7 @@ public class BuiltInProceduresTest
         when(read.indexesGetAll()).thenAnswer( (i) -> indexes.iterator() );
         when(read.uniqueIndexesGetAll()).thenAnswer( (i) -> uniqueIndexes.iterator() );
         when(read.constraintsGetAll()).thenAnswer( (i) -> constraints.iterator() );
-        when(read.proceduresGetAll() ).thenReturn( procs.getAll() );
+        when(read.proceduresGetAll() ).thenReturn( procs.getAllProcedures() );
 
         when(read.propertyKeyGetName( anyInt() ))
                 .thenAnswer( (invocation) -> propKeys.get( (int)invocation.getArguments()[0] ) );
@@ -302,8 +302,8 @@ public class BuiltInProceduresTest
 
     private List<Object[]> call(String name, Object ... args) throws ProcedureException
     {
-        CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
+        BasicContext ctx = new BasicContext();
         ctx.put( KERNEL_TRANSACTION, tx );
-        return Iterators.asList( procs.call( ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args ) );
+        return Iterators.asList( procs.callProcedure( ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args ) );
     }
 }

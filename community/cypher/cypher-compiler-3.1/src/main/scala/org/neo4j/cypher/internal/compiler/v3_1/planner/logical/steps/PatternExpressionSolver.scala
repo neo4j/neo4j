@@ -53,8 +53,7 @@ Would be solved with a plan such as
 */
 case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression) {
 
-  import PatternExpressionSolver.solvePatternExpressions
-  import PatternExpressionSolver.solvePatternComprehensions
+  import PatternExpressionSolver.{solvePatternComprehensions, solvePatternExpressions}
 
   def apply(source: LogicalPlan, expressions: Seq[Expression])
            (implicit context: LogicalPlanningContext): (LogicalPlan, Seq[Expression]) = {
@@ -250,7 +249,7 @@ case class CollectionSubQueryExpressionSolver[T <: Expression](namer: T => (T, M
     topDown(inner, stopper = {
       case _: PatternComprehension => false
       case _: ScopeExpression | _: CaseExpression => true
-      case f: FunctionInvocation => f.function contains Exists
+      case f: FunctionInvocation => f.function == Exists
       case _ => false
     })
   }

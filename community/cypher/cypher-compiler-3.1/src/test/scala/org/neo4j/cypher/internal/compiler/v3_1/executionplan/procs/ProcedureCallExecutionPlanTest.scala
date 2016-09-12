@@ -82,7 +82,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   def string(s: String): Expression = StringLiteral(s)(pos)
 
   private val readSignature = ProcedureSignature(
-    QualifiedProcedureName(IndexedSeq.empty, "foo"),
+    QualifiedName(IndexedSeq.empty, "foo"),
     IndexedSeq(FieldSignature("a", symbols.CTInteger)),
     Some(IndexedSeq(FieldSignature("b", symbols.CTInteger))),
     None,
@@ -90,7 +90,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   )
 
   private val writeSignature = ProcedureSignature(
-    QualifiedProcedureName(Seq.empty, "foo"),
+    QualifiedName(Seq.empty, "foo"),
     IndexedSeq(FieldSignature("a", symbols.CTInteger)),
     Some(IndexedSeq(FieldSignature("b", symbols.CTInteger))),
     None,
@@ -116,6 +116,6 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   }
 
   when(ctx.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-  when(ctx.callReadOnlyProcedure(any[QualifiedProcedureName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(any[QualifiedProcedureName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
 }

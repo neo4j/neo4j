@@ -33,7 +33,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
 
   override def hardReset() = {
     super.hardReset()
-    db.getDependencyResolver.resolveDependency(classOf[Procedures]).register( classOf[IndexingProcedure] )
+    db.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure( classOf[IndexingProcedure] )
     db.inTx {
       val node = db.createNode(Label.label("User"), Label.label("Administrator"))
       node.setProperty("name", "Adrian")

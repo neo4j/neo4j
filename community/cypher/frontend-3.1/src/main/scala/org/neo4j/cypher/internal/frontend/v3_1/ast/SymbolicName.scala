@@ -26,7 +26,7 @@ trait SymbolicName extends ASTNode with ASTParticle {
   def position: InputPosition
 }
 
-case class ProcedureNamespace(parts: List[String] = List.empty)(val position: InputPosition) extends ASTNode
+case class Namespace(parts: List[String] = List.empty)(val position: InputPosition) extends ASTNode
 
 case class ProcedureName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName
 

@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Ascending, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, ShortestPathPattern, _}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Ascending, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{Predicate, QueryGraph}
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.{Length, Nodes}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.frontend.v3_1.{ExhaustiveShortestPathForbiddenException, InternalException}
-import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.{Nodes, Length}
 
 case object planShortestPaths {
 
@@ -46,8 +46,8 @@ case object planShortestPaths {
 
     val (safePredicates, needFallbackPredicates) = predicates.partition {
       // TODO: Once we support node predicates we should enable all NONE and ALL predicates as safe predicates
-      case NoneIterablePredicate(_, f@FunctionInvocation(_, _, _)) if f.function contains Nodes => false
-      case AllIterablePredicate(_, f@FunctionInvocation(_, _, _)) if f.function contains Nodes => false
+      case NoneIterablePredicate(_, f@FunctionInvocation(_, _, _, _)) if f.function == Nodes => false
+      case AllIterablePredicate(_, f@FunctionInvocation(_, _, _, _)) if f.function == Nodes => false
       case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case _ => false

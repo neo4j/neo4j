@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -61,8 +62,9 @@ import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.procedure.Procedure.Mode.READ;
-import static org.neo4j.procedure.Procedure.Mode.WRITE;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.procedure.Mode.READ;
+import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
@@ -111,9 +113,8 @@ abstract class ProcedureInteractionTestBase<S>
         Neo4jWithSocket.cleanupTemporaryTestFiles();
         neo = setUpNeoServer();
         neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class )
-                .register( ClassWithProcedures.class );
+                .registerProcedure( ClassWithProcedures.class );
         userManager = neo.getLocalUserManager();
-
         userManager.newUser( "noneSubject", "abc", false );
         userManager.newUser( "pwdSubject", "abc", true );
         userManager.newUser( "adminSubject", "abc", false );
@@ -479,14 +480,14 @@ abstract class ProcedureInteractionTestBase<S>
             return Stream.of( new CountResult( nNodes ) );
         }
 
-        @Procedure( name = "test.allowedProcedure1", allowed = {"role1"}, mode = Procedure.Mode.READ )
+        @Procedure( name = "test.allowedProcedure1", allowed = {"role1"}, mode = Mode.READ )
         public Stream<AuthProcedures.StringResult> allowedProcedure1()
         {
             db.execute( "MATCH (:Foo) RETURN 'foo' AS foo" );
             return Stream.of( new AuthProcedures.StringResult( "foo" ) );
         }
 
-        @Procedure( name = "test.allowedProcedure2", allowed = {"otherRole", "role1"}, mode = Procedure.Mode.WRITE )
+        @Procedure( name = "test.allowedProcedure2", allowed = {"otherRole", "role1"}, mode = Mode.WRITE )
         public Stream<AuthProcedures.StringResult> allowedProcedure2()
         {
             db.execute( "CREATE (:VeryUniqueLabel {prop: 'a'})" );
@@ -494,7 +495,7 @@ abstract class ProcedureInteractionTestBase<S>
                     .map( r -> new AuthProcedures.StringResult( (String) r.get( "a" ) ) );
         }
 
-        @Procedure( name = "test.allowedProcedure3", allowed = {"role1"}, mode = Procedure.Mode.SCHEMA )
+        @Procedure( name = "test.allowedProcedure3", allowed = {"role1"}, mode = Mode.SCHEMA )
         public Stream<AuthProcedures.StringResult> allowedProcedure3()
         {
             db.execute( "CREATE INDEX ON :VeryUniqueLabel(prop)" );

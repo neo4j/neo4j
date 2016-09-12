@@ -122,13 +122,15 @@ trait QueryContextAdaptation {
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = ???
 
-  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
-  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+
+  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef = ???
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 

@@ -33,6 +33,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.logging.NullLog;
@@ -65,14 +66,14 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar );
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
         assertThat( signatures, contains(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
 
-        assertThat( asList( procedures.get( 0 ).apply( new CallableProcedure.BasicContext(), new Object[0] ) ),
+        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0] ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} )) );
     }
 
@@ -83,7 +84,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithProcedureWithArgument.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar );
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -93,7 +94,7 @@ public class ProcedureJarLoaderTest
                         .out( "someNumber", NTInteger )
                         .build() ));
 
-        assertThat( asList(procedures.get( 0 ).apply( new CallableProcedure.BasicContext(), new Object[]{42L} ) ),
+        assertThat( asList(procedures.get( 0 ).apply( new BasicContext(), new Object[]{42L} ) ),
                 contains( IsEqual.equalTo( new Object[]{42L} )) );
     }
 
@@ -104,7 +105,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar );
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -143,7 +144,7 @@ public class ProcedureJarLoaderTest
         createJarFor( ClassWithAnotherProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( tmpdir.getRoot() );
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( tmpdir.getRoot() ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );

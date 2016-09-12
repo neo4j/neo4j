@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -70,9 +71,11 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.BasicContext;
+import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
+import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -541,14 +544,27 @@ public class OperationsFacade
     }
 
     @Override
-    public ProcedureSignature procedureGet( ProcedureName name ) throws ProcedureException
+    public ProcedureSignature procedureGet( QualifiedName name ) throws ProcedureException
     {
         statement.assertOpen();
-        return procedures.get( name );
+        return procedures.procedure( name );
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
+    public Optional<UserFunctionSignature> functionGet( QualifiedName name )
+    {
+        statement.assertOpen();
+        return procedures.function( name );
+    }
+
+    @Override
+    public Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        return callFunction( name, input );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException
     {
         return callProcedure( name, input, AccessMode.Static.READ );
     }
@@ -557,7 +573,7 @@ public class OperationsFacade
     public Set<ProcedureSignature> proceduresGetAll()
     {
         statement.assertOpen();
-        return procedures.getAll();
+        return procedures.getAllProcedures();
     }
     // </DataRead>
 
@@ -1067,11 +1083,12 @@ public class OperationsFacade
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> procedureCallWrite( ProcedureName name, Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException
     {
         // FIXME: should this be AccessMode.Static.WRITE instead?
         return callProcedure( name, input, AccessMode.Static.FULL );
     }
+
     // </DataWrite>
 
     // <SchemaWrite>
@@ -1137,7 +1154,7 @@ public class OperationsFacade
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> procedureCallSchema( ProcedureName name, Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
     {
         return callProcedure( name, input, AccessMode.Static.FULL );
     }
@@ -1477,19 +1494,33 @@ public class OperationsFacade
     // <Procedures>
 
     private RawIterator<Object[],ProcedureException> callProcedure(
-            ProcedureName name, Object[] input, AccessMode mode )
+            QualifiedName name, Object[] input, AccessMode mode )
             throws ProcedureException
     {
         statement.assertOpen();
 
-        try ( KernelTransaction.Revertable revertable = tx.overrideWith( mode ) )
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
         {
-            CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
-            ctx.put( CallableProcedure.Context.KERNEL_TRANSACTION, tx );
-            ctx.put( CallableProcedure.Context.THREAD, Thread.currentThread() );
-            return procedures.call( ctx, name, input );
+            BasicContext ctx = new BasicContext();
+            ctx.put( Context.KERNEL_TRANSACTION, tx );
+            ctx.put( Context.THREAD, Thread.currentThread() );
+            return procedures.callProcedure( ctx, name, input );
         }
     }
 
+    private Object callFunction(
+            QualifiedName name, Object[] input )
+            throws ProcedureException
+    {
+        statement.assertOpen();
+
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( AccessMode.Static.READ ) )
+        {
+            BasicContext ctx = new BasicContext();
+            ctx.put( Context.KERNEL_TRANSACTION, tx );
+            ctx.put( Context.THREAD, Thread.currentThread() );
+            return procedures.callFunction( ctx, name, input );
+        }
+    }
     // </Procedures>
 }

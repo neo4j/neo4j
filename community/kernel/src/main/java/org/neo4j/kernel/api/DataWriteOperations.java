@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 
@@ -150,5 +150,5 @@ public interface DataWriteOperations extends TokenWriteOperations
     void relationshipLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
 
     /** Invoke a read/write procedure by name */
-    RawIterator<Object[], ProcedureException> procedureCallWrite( ProcedureSignature.ProcedureName name, Object[] input ) throws ProcedureException;
+    RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException;
 }

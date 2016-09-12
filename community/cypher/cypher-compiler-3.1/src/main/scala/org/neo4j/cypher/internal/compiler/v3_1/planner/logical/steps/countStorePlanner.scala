@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes.LazyTypes
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 
 case object countStorePlanner {
@@ -54,7 +54,7 @@ case object countStorePlanner {
                                         argumentIds: Set[IdName], selections: Selections)(implicit context: LogicalPlanningContext): Option[LogicalPlan] =
     exp match {
       case // COUNT(<id>)
-        func@FunctionInvocation(_, false, Vector(Variable(variableName))) if func.function contains functions.Count =>
+        func@FunctionInvocation(_, _, false, Vector(Variable(variableName))) if func.function == functions.Count =>
         trySolveNodeAggregation(query, columnName, Some(variableName), patternRelationships, patternNodes, argumentIds, selections)
 
       case // COUNT(*)
@@ -62,8 +62,8 @@ case object countStorePlanner {
         trySolveNodeAggregation(query, columnName, None, patternRelationships, patternNodes, argumentIds, selections)
 
       case // COUNT(n.prop)
-        func@FunctionInvocation(_, false, Vector(Property(Variable(variableName), PropertyKeyName(propKeyName))))
-        if func.function contains functions.Count =>
+        func@FunctionInvocation(_, _, false, Vector(Property(Variable(variableName), PropertyKeyName(propKeyName))))
+        if func.function == functions.Count =>
         val labelCheck: Option[LabelName] => (Option[LogicalPlan] => Option[LogicalPlan]) = {
             case None => _ => None
             case Some(LabelName(labelName)) => (plan: Option[LogicalPlan]) => plan.filter(_ => context.planContext.hasPropertyExistenceConstraint(labelName, propKeyName))

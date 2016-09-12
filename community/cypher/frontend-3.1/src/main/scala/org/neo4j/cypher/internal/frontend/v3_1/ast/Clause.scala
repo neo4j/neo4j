@@ -139,8 +139,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           acc => (acc :+ name, None)
         case In(Property(Variable(id), PropertyKeyName(name)),_) if id == variable =>
           acc => (acc :+ name, None)
-        case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
-          if id == variable && predicate.function.contains(functions.Exists) =>
+        case predicate@FunctionInvocation(_, _, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
+          if id == variable && predicate.function == functions.Exists =>
           acc => (acc :+ name, None)
         case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
           acc => (acc :+ name, None)
@@ -181,7 +181,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   private def applicable(other: Expression) = {
     other match {
       case _: Property => false
-      case f: FunctionInvocation => !f.function.contains(functions.Id)
+      case f: FunctionInvocation => f.function != functions.Id
       case _ => true
     }
   }
@@ -298,7 +298,7 @@ abstract class CallClause extends Clause {
   def containsNoUpdates: Boolean
 }
 
-case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
+case class UnresolvedCall(procedureNamespace: Namespace,
                           procedureName: ProcedureName,
                           // None: No arguments given (i.e. no "YIELD" part)
                           declaredArguments: Option[Seq[Expression]] = None,

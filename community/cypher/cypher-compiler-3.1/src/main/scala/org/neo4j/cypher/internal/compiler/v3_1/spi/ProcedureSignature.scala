@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.spi
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.UnresolvedCall
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, UnresolvedCall}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
-case class ProcedureSignature(name: QualifiedProcedureName,
+case class ProcedureSignature(name: QualifiedName,
                               inputSignature: IndexedSeq[FieldSignature],
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],
@@ -33,12 +33,20 @@ case class ProcedureSignature(name: QualifiedProcedureName,
   def isVoid = outputSignature.isEmpty
 }
 
-object QualifiedProcedureName {
-  def apply(unresolved: UnresolvedCall): QualifiedProcedureName =
-    QualifiedProcedureName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
+case class UserFunctionSignature(name: QualifiedName,
+                                 inputSignature: IndexedSeq[FieldSignature],
+                                 outputType: CypherType,
+                                 deprecationInfo: Option[String],
+                                 allowed: Array[String])
+
+object QualifiedName {
+  def apply(unresolved: UnresolvedCall): QualifiedName =
+    QualifiedName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
+  def apply(unresolved: FunctionInvocation): QualifiedName =
+    QualifiedName(unresolved.namespace.parts, unresolved.functionName.name)
 }
 
-case class QualifiedProcedureName(namespace: Seq[String], name: String) {
+case class QualifiedName(namespace: Seq[String], name: String) {
   override def toString = (namespace :+ name).mkString(".")
 }
 

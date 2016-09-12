@@ -20,29 +20,31 @@
 package org.neo4j.cypher.internal.compiler.v3_1
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val ns = ProcedureNamespace(List("my", "proc"))(pos)
+  val ns = Namespace(List("my", "proc"))(pos)
   val name = ProcedureName("foo")(pos)
-  val qualifiedName = QualifiedProcedureName(ns.parts, name.name)
+  val qualifiedName = QualifiedName(ns.parts, name.name)
   val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
   val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
+
   val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(Array.empty[String]))
-  val lookup: (QualifiedProcedureName) => ProcedureSignature = _ => signature
+  val procLookup: (QualifiedName) => ProcedureSignature = _ => signature
+  val fcnLookup: (QualifiedName) => Option[UserFunctionSignature] = _ => None
 
   test("should resolve standalone procedure calls") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
     val original = Query(None, SingleQuery(Seq(unresolved))_)(pos)
 
-    val rewritten = rewriteProcedureCalls(lookup)(original)
+    val rewritten = rewriteProcedureCalls(procLookup, fcnLookup)(original)
 
     rewritten should equal(
-      Query(None, SingleQuery(Seq(ResolvedCall(lookup)(unresolved).coerceArguments.withFakedFullDeclarations))_)(pos)
+      Query(None, SingleQuery(Seq(ResolvedCall(procLookup)(unresolved).coerceArguments.withFakedFullDeclarations))_)(pos)
     )
   }
 
@@ -51,10 +53,10 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     val headClause = Unwind(varFor("x"), varFor("y"))(pos)
     val original = Query(None, SingleQuery(Seq(headClause, unresolved))_)(pos)
 
-    val rewritten = rewriteProcedureCalls(lookup)(original)
+    val rewritten = rewriteProcedureCalls(procLookup, fcnLookup)(original)
 
     rewritten should equal(
-      Query(None, SingleQuery(Seq(headClause, ResolvedCall(lookup)(unresolved).coerceArguments))_)(pos)
+      Query(None, SingleQuery(Seq(headClause, ResolvedCall(procLookup)(unresolved).coerceArguments))_)(pos)
     )
   }
 }

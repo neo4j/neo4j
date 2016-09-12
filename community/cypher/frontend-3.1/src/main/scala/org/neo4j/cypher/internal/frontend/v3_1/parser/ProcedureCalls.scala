@@ -27,11 +27,7 @@ trait ProcedureCalls {
   self: Parser with Base with Expressions with Literals =>
 
   def Call: Rule1[UnresolvedCall] = rule("CALL") {
-    group(keyword("CALL") ~~ ProcedureNamespace ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResults) ~~>> (ast.UnresolvedCall(_, _, _, _))
-  }
-
-  protected def ProcedureNamespace: Rule1[ast.ProcedureNamespace] = rule("namespace of a procedure") {
-    zeroOrMore(SymbolicNameString ~ ".") ~~>> (ast.ProcedureNamespace(_))
+    group(keyword("CALL") ~~ Namespace ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResults) ~~>> (ast.UnresolvedCall(_, _, _, _))
   }
 
   private def ProcedureArguments: Rule1[Option[Seq[Expression]]] = rule("arguments to a procedure") {

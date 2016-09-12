@@ -25,8 +25,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.Counter
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
-import org.neo4j.kernel.api.proc.{CallableProcedure, Neo4jTypes}
+import org.neo4j.kernel.api.proc
+import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.proc.{Context, Mode, CallableProcedure, Neo4jTypes}
 import org.neo4j.storageengine.api.{Direction, RelationshipItem}
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -80,10 +81,10 @@ class EagerizationAcceptanceTest
       builder.in("x", Neo4jTypes.NTNode)
       builder.in("y", Neo4jTypes.NTNode)
       builder.out("relId", Neo4jTypes.NTInteger)
-      builder.mode(org.neo4j.kernel.api.proc.ProcedureSignature.Mode.READ_WRITE)
+      builder.mode(Mode.READ_WRITE)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
-          val transaction = ctx.get(CallableProcedure.Context.KERNEL_TRANSACTION)
+          val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
             val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
@@ -117,10 +118,10 @@ class EagerizationAcceptanceTest
       builder.in("x", Neo4jTypes.NTNode)
       builder.in("y", Neo4jTypes.NTNode)
       builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
-      builder.mode(org.neo4j.kernel.api.proc.ProcedureSignature.Mode.READ_WRITE)
+      builder.mode(proc.Mode.READ_WRITE)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
-          val transaction = ctx.get(CallableProcedure.Context.KERNEL_TRANSACTION)
+          val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
             val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
@@ -156,7 +157,7 @@ class EagerizationAcceptanceTest
       builder.out("relId", Neo4jTypes.NTInteger)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
-          val transaction = ctx.get(CallableProcedure.Context.KERNEL_TRANSACTION)
+          val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
             val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
@@ -205,7 +206,7 @@ class EagerizationAcceptanceTest
       builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
-          val transaction = ctx.get(CallableProcedure.Context.KERNEL_TRANSACTION)
+          val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
             val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")

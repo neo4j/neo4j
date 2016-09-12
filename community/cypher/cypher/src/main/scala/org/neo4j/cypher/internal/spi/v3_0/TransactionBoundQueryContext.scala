@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, Relati
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.proc.QualifiedName
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -625,8 +626,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms)
 
   private def callProcedure(name: QualifiedProcedureName, args: Seq[Any],
-                            call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {
-    val kn = new proc.ProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
+                            call: (QualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {
+    val kn = new QualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     val read: RawIterator[Array[AnyRef], ProcedureException] = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {

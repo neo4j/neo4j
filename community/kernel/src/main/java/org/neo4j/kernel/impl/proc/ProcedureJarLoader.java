@@ -24,8 +24,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -35,12 +34,14 @@ import org.neo4j.collection.PrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.logging.Log;
 
 import static java.util.stream.Collectors.toList;
 
 /**
- * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure} instances.
+ * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
+ * instances.
  */
 public class ProcedureJarLoader
 {
@@ -53,21 +54,23 @@ public class ProcedureJarLoader
         this.log = log;
     }
 
-    public List<CallableProcedure> loadProcedures( URL jar ) throws Exception
+    public Callables loadProcedures( URL jar ) throws Exception
     {
-        return loadProcedures( jar, new URLClassLoader( new URL[]{jar}, this.getClass().getClassLoader() ), new LinkedList<>() );
+        return loadProcedures( jar, new URLClassLoader( new URL[]{jar}, this.getClass().getClassLoader() ),
+                new Callables() );
     }
 
-    public List<CallableProcedure> loadProceduresFromDir( File root ) throws IOException, KernelException
+    public Callables loadProceduresFromDir( File root ) throws IOException, KernelException
     {
         if ( !root.exists() )
         {
-            return Collections.emptyList();
+            return Callables.empty();
         }
 
-        LinkedList<CallableProcedure> out = new LinkedList<>();
+        Callables out = new Callables();
 
-        List<URL> list = Stream.of( root.listFiles( ( dir, name ) -> name.endsWith( ".jar" ) ) ).map( this::toURL ).collect( toList() );
+        List<URL> list = Stream.of( root.listFiles( ( dir, name ) -> name.endsWith( ".jar" ) ) ).map( this::toURL )
+                .collect( toList() );
         URL[] jarFiles = list.toArray( new URL[list.size()] );
 
         URLClassLoader loader = new URLClassLoader( jarFiles, this.getClass().getClassLoader() );
@@ -79,13 +82,15 @@ public class ProcedureJarLoader
         return out;
     }
 
-    private List<CallableProcedure> loadProcedures( URL jar, ClassLoader loader, List<CallableProcedure> target ) throws IOException, KernelException
+    private Callables loadProcedures( URL jar, ClassLoader loader, Callables target )
+            throws IOException, KernelException
     {
         RawIterator<Class<?>,IOException> classes = listClassesIn( jar, loader );
         while ( classes.hasNext() )
         {
             Class<?> next = classes.next();
-            target.addAll( compiler.compile( next ) );
+            target.addAllProcedures( compiler.compileProcedure( next ) );
+            target.addAllFunctions( compiler.compileFunction( next ) );
         }
         return target;
     }
@@ -125,19 +130,23 @@ public class ProcedureJarLoader
                         String name = nextEntry.getName();
                         if ( name.endsWith( ".class" ) )
                         {
-                            String className = name.substring( 0, name.length() - ".class".length() ).replace( "/", "." );
+                            String className =
+                                    name.substring( 0, name.length() - ".class".length() ).replace( "/", "." );
 
                             try
                             {
                                 Class<?> aClass = loader.loadClass( className );
-                                // We do getDeclaredMethods to trigger NoClassDefErrors, which loadClass above does not do.
-                                // This way, even if some of the classes in a jar cannot be loaded, we still check the others.
+                                // We do getDeclaredMethods to trigger NoClassDefErrors, which loadClass above does
+                                // not do.
+                                // This way, even if some of the classes in a jar cannot be loaded, we still check
+                                // the others.
                                 aClass.getDeclaredMethods();
                                 return aClass;
                             }
                             catch ( UnsatisfiedLinkError | NoClassDefFoundError | Exception e )
                             {
-                                log.warn( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(), e.getMessage() );
+                                log.warn( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(),
+                                        e.getMessage() );
                             }
                         }
                     }
@@ -149,5 +158,48 @@ public class ProcedureJarLoader
                 }
             }
         };
+    }
+
+    public static class Callables
+    {
+        private final List<CallableProcedure> procedures = new ArrayList<>();
+        private final List<CallableUserFunction> functions = new ArrayList<>();
+
+        public void add( CallableProcedure proc )
+        {
+            procedures.add( proc );
+        }
+
+        public void add( CallableUserFunction func )
+        {
+            functions.add( func );
+        }
+
+        public List<CallableProcedure> procedures()
+        {
+            return procedures;
+        }
+
+        public List<CallableUserFunction> functions()
+        {
+            return functions;
+        }
+
+        public void addAllProcedures( List<CallableProcedure> callableProcedures )
+        {
+            procedures.addAll( callableProcedures );
+        }
+
+        public void addAllFunctions( List<CallableUserFunction> callableFunctions )
+        {
+            functions.addAll( callableFunctions );
+        }
+
+        private static Callables EMPTY = new Callables();
+
+        public static Callables empty()
+        {
+            return EMPTY;
+        }
     }
 }

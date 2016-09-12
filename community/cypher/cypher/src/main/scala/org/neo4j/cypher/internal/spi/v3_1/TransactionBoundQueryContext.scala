@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, Relati
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.security.{AccessMode, AuthSubject}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
@@ -584,7 +585,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val revertable = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_READ))
@@ -593,7 +594,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     callProcedure(name, args, transactionalContext.statement.readOperations().procedureCallRead, revertable.foreach(_.close))
   }
 
-  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val revertable = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_WRITE))
@@ -603,8 +604,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
                   revertable.foreach(_.close))
   }
 
-
-  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val revertable = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_SCHEMA))
@@ -613,14 +613,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     callProcedure(name, args, transactionalContext.statement.schemaWriteOperations().procedureCallSchema, revertable.foreach(_.close))
   }
 
-  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
-    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_, _), ())
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms, ())
   }
 
-  private def callProcedure(name: QualifiedProcedureName, args: Seq[Any],
-                            call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException],
+  private def callProcedure(name: QualifiedName, args: Seq[Any],
+                            call: (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException],
                             onClose: => Unit) = {
-    val kn = new proc.ProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     val read: RawIterator[Array[AnyRef], ProcedureException] = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {
@@ -634,6 +634,23 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         read.next
       }
     }
+  }
+
+  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+    val revertable = transactionalContext.accessMode match {
+      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
+        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_READ))
+      case _ => None
+    }
+    callFunction(name, args, transactionalContext.statement.readOperations().functionCall, revertable.foreach(_.close))
+  }
+
+  private def callFunction(name: QualifiedName, args: Seq[Any],
+                           call: (KernelQualifiedName, Array[AnyRef]) => AnyRef,
+                           onClose: => Unit) = {
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
+    call(kn, toArray)
   }
 
   override def isGraphKernelResultValue(v: Any): Boolean = internal.isGraphKernelResultValue(v)

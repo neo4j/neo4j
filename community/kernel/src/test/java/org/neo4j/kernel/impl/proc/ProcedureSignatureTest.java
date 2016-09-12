@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
@@ -44,7 +45,7 @@ public class ProcedureSignatureTest
         exception.expect( UnsupportedOperationException.class );
 
         // When
-        signature.inputSignature().add( new ProcedureSignature.FieldSignature( "b", Neo4jTypes.NTAny ) );
+        signature.inputSignature().add( new FieldSignature( "b", Neo4jTypes.NTAny ) );
     }
 
     @Test
@@ -54,7 +55,7 @@ public class ProcedureSignatureTest
         exception.expect( UnsupportedOperationException.class );
 
         // When
-        signature.outputSignature().add( new ProcedureSignature.FieldSignature( "b", Neo4jTypes.NTAny ) );
+        signature.outputSignature().add( new FieldSignature( "b", Neo4jTypes.NTAny ) );
     }
 
     @Test

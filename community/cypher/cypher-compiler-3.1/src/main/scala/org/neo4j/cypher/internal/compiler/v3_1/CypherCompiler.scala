@@ -213,7 +213,7 @@ case class CypherCompiler(parser: CypherParser,
 
     val queryText = syntacticQuery.queryText
 
-    val rewrittenSyntacticQuery = syntacticQuery.rewrite(rewriteProcedureCalls(context.procedureSignature))
+    val rewrittenSyntacticQuery = syntacticQuery.rewrite(rewriteProcedureCalls(context.procedureSignature, context.functionSignature))
 
     val procedureDeprecations = procedureDeprecationNotifications(rewrittenSyntacticQuery.statement)
     procedureDeprecations.foreach(notificationLogger.log)
@@ -230,7 +230,7 @@ case class CypherCompiler(parser: CypherParser,
 
   private def syntaxDeprecationNotifications(statement: Statement): Set[InternalNotification] =
     statement.treeFold(Set.empty[InternalNotification]) {
-      case f@FunctionInvocation(FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
+      case f@FunctionInvocation(_, FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
         (seq) => (seq + DeprecatedFunctionNotification(f.position, name, aliases(name)), None)
     }
 

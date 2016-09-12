@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.helpers
 
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.simpleExpressionEvaluator.isNonDeterministic
 import org.neo4j.cypher.internal.frontend.v3_1.DummyPosition
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionName, FunctionInvocation}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, FunctionName}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class SimpleExpressionEvaluatorTest extends CypherFunSuite {

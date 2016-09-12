@@ -19,26 +19,31 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast
 
+import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticError, _}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.UnresolvedFunction
 
 object FunctionInvocation {
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
-    FunctionInvocation(name, distinct = false, IndexedSeq(argument))(position)
+    FunctionInvocation(Namespace()(position), name, distinct = false, IndexedSeq(argument))(position)
   def apply(left: Expression, name: FunctionName, right: Expression): FunctionInvocation =
-    FunctionInvocation(name, distinct = false, IndexedSeq(left, right))(name.position)
+    FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(left, right))(name.position)
   def apply(expression: Expression, name: FunctionName): FunctionInvocation =
-    FunctionInvocation(name, distinct = false, IndexedSeq(expression))(name.position)
+    FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(expression))(name.position)
+  def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])(position: InputPosition): FunctionInvocation =
+  FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
 }
 
-case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
+case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
                              (val position: InputPosition) extends Expression {
   val name = functionName.name
-  val function: Option[Function] = Function.lookup.get(name.toLowerCase)
+  val function = Function.lookup.getOrElse(name.toLowerCase, UnresolvedFunction)
 
-  def semanticCheck(ctx: SemanticContext) = function match {
-    case None    => SemanticError(s"Unknown function '$name'", position)
-    case Some(f) => f.semanticCheckHook(ctx, this)
+  def semanticCheck(ctx: SemanticContext) = function.semanticCheckHook(ctx, this)
+
+  def needsToBeResolved = function match {
+    case UnresolvedFunction => true
+    case _ => false
   }
 }
 

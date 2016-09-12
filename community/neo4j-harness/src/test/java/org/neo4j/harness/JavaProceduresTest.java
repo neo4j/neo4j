@@ -42,6 +42,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.rule.SuppressOutput;
@@ -145,7 +146,7 @@ public class JavaProceduresTest
         @Context
         public MyCoreAPI myCoreAPI;
 
-        @Procedure( value = "makeNode", mode = Procedure.Mode.WRITE )
+        @Procedure( value = "makeNode", mode = Mode.WRITE )
         public Stream<LongResult> makeNode( @Name( "label" ) String label ) throws ProcedureException
         {
             LongResult t = new LongResult();
@@ -153,7 +154,7 @@ public class JavaProceduresTest
             return Stream.of( t );
         }
 
-        @Procedure( value = "willFail", mode = Procedure.Mode.READ )
+        @Procedure( value = "willFail", mode = Mode.READ )
         public Stream<LongResult> willFail() throws ProcedureException
         {
             LongResult t = new LongResult();

@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
@@ -51,7 +52,7 @@ public class ResourceInjectionTest
         CallableProcedure proc = compile( ProcedureWithInjectedAPI.class ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( new CallableProcedure.BasicContext(), new Object[0] ) );
+        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( (new Object[]{"Bonnie"}) ) );
@@ -127,6 +128,6 @@ public class ResourceInjectionTest
     {
         ComponentRegistry components = new ComponentRegistry();
         components.register( MyAwesomeAPI.class, (ctx) -> new MyAwesomeAPI() );
-        return new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance() ).compile( clazz );
+        return new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance() ).compileProcedure( clazz );
     }
 }

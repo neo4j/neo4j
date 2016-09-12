@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Parameter, AggregatingFunction, DoubleLiteral, FunctionInvocation, Literal, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{AggregatingFunction, FunctionInvocation, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheck, SemanticCheckResult, SemanticError}
 
 case object PercentileDisc extends AggregatingFunction with SimpleTypedFunction {
   def name = "percentileDisc"

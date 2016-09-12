@@ -30,7 +30,7 @@ object IsAggregate {
 
     case fi: FunctionInvocation =>
       fi.function match {
-        case Some(fun: AggregatingFunction) => Some(fi)
+        case fun: AggregatingFunction => Some(fi)
         case _                              => None
       }
 

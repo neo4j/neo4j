@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
+import org.neo4j.kernel.api.proc.FieldSignature;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;

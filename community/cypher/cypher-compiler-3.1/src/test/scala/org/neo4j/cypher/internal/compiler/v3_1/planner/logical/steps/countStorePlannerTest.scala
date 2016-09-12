@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{RelationshipCountFromCountStore, NodeCountFromCountStore, IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphProducer, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{AggregatingQueryProjection, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext

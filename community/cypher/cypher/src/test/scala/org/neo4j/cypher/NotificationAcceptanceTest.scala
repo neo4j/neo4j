@@ -29,7 +29,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   override def initTest(): Unit = {
     super.initTest()
     val procedures = this.graph.getDependencyResolver.resolveDependency(classOf[Procedures])
-    procedures.register(classOf[NotificationAcceptanceTest.TestProcedures])
+    procedures.registerProcedure(classOf[NotificationAcceptanceTest.TestProcedures])
   }
 
   test("Warn on deprecated standalone procedure calls") {
@@ -508,11 +508,11 @@ object NotificationAcceptanceTest {
 
   class TestProcedures {
     @Procedure("newProc")
-    def newProc: Unit = {}
+    def newProc(): Unit = {}
 
     @Deprecated
     @Procedure(name = "oldProc", deprecatedBy = "newProc")
-    def oldProc: Unit = {}
+    def oldProc(): Unit = {}
   }
 
 }

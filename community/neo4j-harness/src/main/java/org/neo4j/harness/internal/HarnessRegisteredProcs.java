@@ -39,7 +39,7 @@ public class HarnessRegisteredProcs
     {
         for ( Class<?> cls : procs )
         {
-            procedures.register( cls );
+            procedures.registerProcedure( cls );
         }
     }
 }

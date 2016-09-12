@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Context;
 
 /**
  * Tracks components that can be injected into compiled procedures.
@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 public class ComponentRegistry
 {
     /** Given the context of a procedure call, provide some component. */
-    public interface Provider<T> extends ThrowingFunction<CallableProcedure.Context, T,ProcedureException>
+    public interface Provider<T> extends ThrowingFunction<Context, T,ProcedureException>
     {
         // This interface intentionally empty, alias for the Function generic above
     }

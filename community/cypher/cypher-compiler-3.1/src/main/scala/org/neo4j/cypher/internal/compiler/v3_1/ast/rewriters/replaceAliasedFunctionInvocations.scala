@@ -37,7 +37,7 @@ case object replaceAliasedFunctionInvocations extends Rewriter {
                                              "rels" -> "relationships")(CaseInsensitiveOrdered)
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
-    case func@FunctionInvocation(f@FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
+    case func@FunctionInvocation(_, f@FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
       func.copy(functionName = FunctionName(aliases(name))(f.position))(func.position)
   })
 

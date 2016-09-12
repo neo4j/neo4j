@@ -248,7 +248,7 @@ public class CommunityEditionModule extends EditionModule
     @Override
     public void registerProcedures( Procedures procedures ) throws KernelException
     {
-        procedures.register( BuiltInProcedures.class );
+        procedures.registerProcedure( BuiltInProcedures.class );
     }
 
     @Override

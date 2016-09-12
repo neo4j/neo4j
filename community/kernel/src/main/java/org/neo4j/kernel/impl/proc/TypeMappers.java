@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -161,13 +162,16 @@ public class TypeMappers
 
     private ProcedureException javaToNeoMappingError( Type cls )
     {
-        List<Type> types = Iterables.asList( javaToNeo.keySet() );
-        types.sort( (a,b)->a.toString().compareTo( b.toString() ) );
+        List<String> types = Iterables.asList( javaToNeo.keySet() )
+                .stream()
+                .map( Type::getTypeName )
+                .collect( Collectors.toList());
+        types.sort( String::compareTo );
 
         return new ProcedureException( Status.Statement.TypeError,
                 "Don't know how to map `%s` to the Neo4j Type System.%n" +
                 "Please refer to to the documentation for full details.%n" +
-                "For your reference, known types are: %s", cls, types );
+                "For your reference, known types are: %s", cls.getTypeName(), types );
     }
 
     public static class SimpleConverter implements NeoValueConverter

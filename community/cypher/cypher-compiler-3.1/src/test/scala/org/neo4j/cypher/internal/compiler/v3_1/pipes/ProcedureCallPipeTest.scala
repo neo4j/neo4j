@@ -32,7 +32,7 @@ class ProcedureCallPipeTest
     with PipeTestSupport
     with AstConstructionTestSupport {
 
-  val procedureName = QualifiedProcedureName(List.empty, "foo")
+  val procedureName = QualifiedName(List.empty, "foo")
   val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {
@@ -110,21 +110,21 @@ class ProcedureCallPipeTest
   }.toIterator
 
 
-  class FakeQueryContext(procedureName: QualifiedProcedureName, result: Seq[Any] => Iterator[Array[AnyRef]],
+  class FakeQueryContext(procedureName: QualifiedName, result: Seq[Any] => Iterator[Array[AnyRef]],
                          expectedAccessMode: ProcedureAccessMode) extends QueryContext with QueryContextAdaptation {
     override def isGraphKernelResultValue(v: Any): Boolean = false
 
-    override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
+    override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
       expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
       doIt(name, args, allowed)
     }
 
-    override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
+    override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
       expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
       doIt(name, args, allowed)
     }
 
-    private def doIt(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
+    private def doIt(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
       name should equal(procedureName)
       args.length should be(1)
       result(args)

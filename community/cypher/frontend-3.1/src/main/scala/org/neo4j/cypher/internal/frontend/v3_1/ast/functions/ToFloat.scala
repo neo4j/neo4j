@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, SemanticError, SemanticState, _}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, FunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, SemanticError, SemanticState, _}
 
 case object ToFloat extends Function {
   def name = "toFloat"

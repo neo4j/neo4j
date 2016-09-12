@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{NullPipeDecorator, QueryState}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.{Rand, Timestamp}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, FunctionName, Parameter, Expression}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, FunctionInvocation, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}
 
 import scala.collection.mutable
@@ -38,8 +38,8 @@ object simpleExpressionEvaluator {
 
   def isNonDeterministic(expr: Expression): Boolean =
     expr.inputs.exists {
-      case (func@FunctionInvocation(_, _, _), _) if func.function contains Rand => true
-      case (func@FunctionInvocation(_, _, _), _) if func.function contains Timestamp => true
+      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => true
+      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Timestamp => true
       case _ => false
     }
 

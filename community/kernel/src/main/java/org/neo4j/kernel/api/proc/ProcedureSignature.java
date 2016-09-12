@@ -27,9 +27,7 @@ import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
-import org.neo4j.kernel.impl.proc.Neo4jValue;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 
 /**
@@ -40,118 +38,7 @@ public class ProcedureSignature
 {
     public static List<FieldSignature> VOID = unmodifiableList( new ArrayList<>() );
 
-    public static class ProcedureName
-    {
-        private final String[] namespace;
-        private final String name;
-
-        public ProcedureName( List<String> namespace, String name )
-        {
-            this(namespace.toArray( new String[namespace.size()] ), name);
-        }
-
-        public ProcedureName( String[] namespace, String name )
-        {
-            this.namespace = namespace;
-            this.name = name;
-        }
-
-        public String[] namespace()
-        {
-            return namespace;
-        }
-
-        public String name()
-        {
-            return name;
-        }
-
-        @Override
-        public String toString()
-        {
-            String strNamespace = namespace.length > 0 ? Iterables.toString( asList( namespace ), "." ) + "." : "";
-            return String.format("%s%s", strNamespace, name);
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o ) { return true; }
-            if ( o == null || getClass() != o.getClass() ) { return false; }
-
-            ProcedureName that = (ProcedureName) o;
-            return Arrays.equals( namespace, that.namespace ) && name.equals( that.name );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = Arrays.hashCode( namespace );
-            result = 31 * result + name.hashCode();
-            return result;
-        }
-    }
-
-    /** Represents a type and a name for a field in a record, used to define input and output record signatures. */
-    public static class FieldSignature
-    {
-        private final String name;
-        private final AnyType type;
-        private final Optional<Neo4jValue> defaultValue;
-
-        public FieldSignature( String name, AnyType type)
-        {
-            this(name, type, Optional.empty());
-        }
-
-        public FieldSignature( String name, AnyType type, Optional<Neo4jValue> defaultValue )
-        {
-            this.name = name;
-            this.type = type;
-            this.defaultValue = defaultValue;
-        }
-
-        public String name()
-        {
-            return name;
-        }
-
-        public AnyType neo4jType()
-        {
-            return type;
-        }
-
-        public Optional<Neo4jValue> defaultValue()
-        {
-            return defaultValue;
-        }
-
-        @Override
-        public String toString()
-        {
-            String nameValue = defaultValue.isPresent() ? name + " = " + defaultValue.get().value() : name;
-            return String.format("%s :: %s", nameValue, type);
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o ) { return true; }
-            if ( o == null || getClass() != o.getClass() ) { return false; }
-            FieldSignature that = (FieldSignature) o;
-            return name.equals( that.name ) && type.equals( that.type );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = name.hashCode();
-            result = 31 * result + type.hashCode();
-            return result;
-        }
-    }
-
-    private final ProcedureName name;
+    private final QualifiedName name;
     private final List<FieldSignature> inputSignature;
     private final List<FieldSignature> outputSignature;
     private final Mode mode;
@@ -159,23 +46,7 @@ public class ProcedureSignature
     private final String[] allowed;
     private final Optional<String> description;
 
-    /**
-     * The procedure mode affects how the procedure will execute, and which capabilities
-     * it requires.
-     */
-    public enum Mode
-    {
-        /** This procedure will only perform read operations against the graph */
-        READ_ONLY,
-        /** This procedure may perform both read and write operations against the graph */
-        READ_WRITE,
-        /** This procedure will perform operations against the schema */
-        SCHEMA_WRITE,
-        /** This procedure will perform system operations - i.e. not against the graph */
-        DBMS
-    }
-
-    public ProcedureSignature( ProcedureName name,
+    public ProcedureSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
             List<FieldSignature> outputSignature,
             Mode mode,
@@ -192,7 +63,7 @@ public class ProcedureSignature
         this.description = description;
     }
 
-    public ProcedureName name()
+    public QualifiedName name()
     {
         return name;
     }
@@ -264,7 +135,7 @@ public class ProcedureSignature
 
     public static class Builder
     {
-        private final ProcedureName name;
+        private final QualifiedName name;
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private List<FieldSignature> outputSignature = new LinkedList<>();
         private Mode mode = Mode.READ_ONLY;
@@ -274,7 +145,7 @@ public class ProcedureSignature
 
         public Builder( String[] namespace, String name )
         {
-            this.name = new ProcedureName( namespace, name );
+            this.name = new QualifiedName( namespace, name );
         }
 
         public Builder mode( Mode mode )
@@ -334,9 +205,9 @@ public class ProcedureSignature
         return procedureSignature( namespace, name );
     }
 
-    public static Builder procedureSignature( ProcedureName name )
+    public static Builder procedureSignature( QualifiedName name )
     {
-        return new Builder( name.namespace, name.name );
+        return new Builder( name.namespace(), name.name() );
     }
 
     public static Builder procedureSignature(String[] namespace, String name)
@@ -344,7 +215,7 @@ public class ProcedureSignature
         return new Builder(namespace, name);
     }
 
-    public static ProcedureName procedureName( String ... namespaceAndName)
+    public static QualifiedName procedureName( String ... namespaceAndName)
     {
         return procedureSignature( namespaceAndName ).build().name();
     }

@@ -301,7 +301,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.plan should equal(
       Selection(Seq(FunctionInvocation(FunctionName("exists") _, Property(varFor("n"), PropertyKeyName("prop") _) _) _),
-        NodeIndexSeek(
+                NodeIndexSeek(
           "n",
           LabelToken("Awesome", LabelId(0)),
           PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
