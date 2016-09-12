@@ -108,12 +108,15 @@ public class CsvInput implements Input
             @Override
             public InputIterator<InputNode> iterator()
             {
-                DeserializerFactory<InputNode> factory = (dataStream, dataHeader, decorator, validator) ->
-                        new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
-                                new InputNodeDeserialization( dataStream, dataHeader, groups, idType.idsAreExternal() ),
-                                decorator, validator, badCollector );
+                DeserializerFactory<InputNode> factory = (dataHeader, dataStream, decorator, validator) ->
+                {
+                        InputNodeDeserialization deserialization =
+                                new InputNodeDeserialization( dataHeader, dataStream, groups, idType.idsAreExternal() );
+                        return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
+                                deserialization, decorator, validator, badCollector );
+                };
                 return new InputGroupsDeserializer<>( nodeDataFactory.iterator(), nodeHeaderFactory, config,
-                        idType, maxProcessors, factory,Validators.<InputNode>emptyValidator(), InputNode.class );
+                        idType, maxProcessors, factory, Validators.<InputNode>emptyValidator(), InputNode.class );
             }
 
             @Override
@@ -132,10 +135,13 @@ public class CsvInput implements Input
             @Override
             public InputIterator<InputRelationship> iterator()
             {
-                DeserializerFactory<InputRelationship> factory = (dataStream, dataHeader, decorator, validator) ->
-                        new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
-                                new InputRelationshipDeserialization( dataStream, dataHeader, groups ),
-                                decorator, validator, badCollector );
+                DeserializerFactory<InputRelationship> factory = (dataHeader, dataStream, decorator, validator) ->
+                {
+                        InputRelationshipDeserialization deserialization =
+                                new InputRelationshipDeserialization( dataHeader, dataStream, groups );
+                        return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
+                                deserialization, decorator, validator, badCollector );
+                };
                 return new InputGroupsDeserializer<>( relationshipDataFactory.iterator(), relationshipHeaderFactory,
                         config, idType, maxProcessors, factory, new InputRelationshipValidator(),
                         InputRelationship.class );

@@ -53,7 +53,7 @@ public class ExternalPropertiesDecoratorIT
         int processors = 5;
         Collector collector = mock( Collector.class );
         int count = 1000;
-        Configuration config = new Configuration.Overriden( Configuration.COMMAS )
+        Configuration config = new Configuration.Overridden( Configuration.COMMAS )
         {
             @Override
             public int bufferSize()
@@ -86,6 +86,7 @@ public class ExternalPropertiesDecoratorIT
                 assertHasProperty( node, "extra", node.id() + "-decorated" );
                 if ( i == 0 )
                 {
+                    // This code is equal to nodes.setProcessors( processors ) (a method which doesn't exist)
                     nodes.processors( processors - nodes.processors( 0 ) );
                 }
             }

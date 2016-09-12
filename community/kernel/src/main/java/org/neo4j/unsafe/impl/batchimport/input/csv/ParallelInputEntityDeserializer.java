@@ -99,7 +99,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
                 // to cater for decorators which may be mutable and sensitive to ordering, while still putting
                 // the work of decorating and validating on the processing threads as to not affect performance.
                 InputEntityDeserializer<ENTITY> chunkDeserializer =
-                        factory.create( seeker, header, batchDecorator, batchValidator );
+                        factory.create( header, seeker, batchDecorator, batchValidator );
                 chunkDeserializer.initialize();
                 List<ENTITY> entities = new ArrayList<>();
                 while ( chunkDeserializer.hasNext() )

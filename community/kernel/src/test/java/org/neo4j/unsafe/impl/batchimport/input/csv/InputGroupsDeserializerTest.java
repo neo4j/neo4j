@@ -52,7 +52,7 @@ public class InputGroupsDeserializerTest
         final AtomicReference<InputGroupsDeserializer<InputNode>> deserializerTestHack = new AtomicReference<>( null );
         InputGroupsDeserializer<InputNode> deserializer = new InputGroupsDeserializer<>(
                 data.iterator(), defaultFormatNodeFileHeader(), lowBufferSize( COMMAS ), INTEGER,
-                Runtime.getRuntime().availableProcessors(), (stream,header,decorator,validator) ->
+                Runtime.getRuntime().availableProcessors(), (header,stream,decorator,validator) ->
                 {
                     // This is the point where the currentInput field in InputGroupsDeserializer was null
                     // so ensure that's no longer the case, just by poking those source methods right here and now.
@@ -82,7 +82,7 @@ public class InputGroupsDeserializerTest
 
     private Configuration lowBufferSize( Configuration conf )
     {
-        return new Configuration.Overriden( conf )
+        return new Configuration.Overridden( conf )
         {
             @Override
             public int bufferSize()

@@ -55,7 +55,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
     @FunctionalInterface
     public interface DeserializerFactory<ENTITY extends InputEntity>
     {
-        InputEntityDeserializer<ENTITY> create( CharSeeker dataStream, Header dataHeader,
+        InputEntityDeserializer<ENTITY> create( Header dataHeader, CharSeeker dataStream,
                 Function<ENTITY,ENTITY> decorator, Validator<ENTITY> validator );
     }
 
@@ -94,7 +94,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
             Header dataHeader = headerFactory.create( dataStream, config, idType );
 
             InputEntityDeserializer<ENTITY> input =
-                    factory.create( dataStream, dataHeader, data.decorator(), validator );
+                    factory.create( dataHeader, dataStream, data.decorator(), validator );
             // It's important that we assign currentInput before calling initialize(), so that if something
             // goes wrong in initialize() and our close() is called we close it properly.
             currentInput = input;

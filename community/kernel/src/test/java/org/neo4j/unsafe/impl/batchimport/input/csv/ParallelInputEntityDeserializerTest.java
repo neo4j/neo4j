@@ -55,7 +55,7 @@ public class ParallelInputEntityDeserializerTest
         // GIVEN
         int entities = 500;
         Data<InputNode> data = testData( entities );
-        Configuration config = new Configuration.Overriden( COMMAS )
+        Configuration config = new Configuration.Overridden( COMMAS )
         {
             @Override
             public int bufferSize()
@@ -68,13 +68,13 @@ public class ParallelInputEntityDeserializerTest
         Groups groups = new Groups();
         Set<Thread> observedProcessingThreads = new CopyOnWriteArraySet<>();
         int threads = 4;
-        DeserializerFactory<InputNode> deserializerFactory = (chunk,header,decorator,validator) ->
+        DeserializerFactory<InputNode> deserializerFactory = (header,chunk,decorator,validator) ->
         {
             observedProcessingThreads.add( Thread.currentThread() );
             // Make sure there will be 4 different processing threads doing this
             while ( observedProcessingThreads.size() < threads );
             return new InputEntityDeserializer<>( header, chunk, config.delimiter(),
-                    new InputNodeDeserialization( chunk, header, groups, idType.idsAreExternal() ), decorator,
+                    new InputNodeDeserialization( header, chunk, groups, idType.idsAreExternal() ), decorator,
                     validator, badCollector );
         };
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,

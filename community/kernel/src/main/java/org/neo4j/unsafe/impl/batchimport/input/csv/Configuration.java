@@ -69,11 +69,11 @@ public interface Configuration extends org.neo4j.csv.reader.Configuration
         }
     };
 
-    class Overriden extends org.neo4j.csv.reader.Configuration.Overridden implements Configuration
+    class Overridden extends org.neo4j.csv.reader.Configuration.Overridden implements Configuration
     {
         private final Configuration defaults;
 
-        public Overriden( Configuration defaults )
+        public Overridden( Configuration defaults )
         {
             super( defaults );
             this.defaults = defaults;

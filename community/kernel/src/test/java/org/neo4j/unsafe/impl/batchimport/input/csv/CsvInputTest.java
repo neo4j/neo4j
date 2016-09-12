@@ -795,7 +795,7 @@ public class CsvInputTest
         Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
                 ":ID,one,two,three\n" +
                 "1,\"\",,value" ) );
-        Configuration config = config( new Configuration.Overriden( COMMAS )
+        Configuration config = config( new Configuration.Overridden( COMMAS )
         {
             @Override
             public boolean emptyQuotedStringsAsNull()
@@ -994,7 +994,7 @@ public class CsvInputTest
 
     private Configuration config( Configuration config )
     {
-        return new Configuration.Overriden( config )
+        return new Configuration.Overridden( config )
         {
             @Override
             public boolean multilineFields()
