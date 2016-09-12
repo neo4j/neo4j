@@ -17,29 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.function;
+package org.neo4j.io.fs;
 
-/**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional interfaces, ThrowingConsumer is expected to
- * operate via side-effects.
- *
- * @param <T> the type of the input to the operation
- * @param <E> the type of exception that may be thrown from the function
- */
-public interface ThrowingConsumer<T, E extends Exception>
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+
+import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
+public class JustContinueTest
 {
-    /**
-     * Performs this operation on the given argument.
-     *
-     * @param t the input argument
-     * @throws E an exception if the function fails
-     */
-    void accept( T t ) throws E;
-
-    static <T, E extends Exception> ThrowingConsumer<T, E> noop()
+    @Test
+    public void shouldJustContinue() throws IOException
     {
-        return t ->
-        {
-        };
+        assertThat( FileVisitors.justContinue().preVisitDirectory( null, null ), is( FileVisitResult.CONTINUE ) );
+        assertThat( FileVisitors.justContinue().visitFile( null, null ), is( FileVisitResult.CONTINUE ) );
+        assertThat( FileVisitors.justContinue().visitFileFailed( null, null ), is( FileVisitResult.CONTINUE ) );
+        assertThat( FileVisitors.justContinue().postVisitDirectory( null, null ), is( FileVisitResult.CONTINUE ) );
     }
 }
