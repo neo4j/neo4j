@@ -35,6 +35,7 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
@@ -293,7 +294,7 @@ public abstract class Protocol
             {
                 String path = readString( buffer, pathLength );
                 boolean hasData = buffer.readByte() == 1;
-                int recordSize = buffer.readInt();
+                int recordSize = hasData ? buffer.readInt() : RecordFormat.NO_RECORD_SIZE;
                 writer.write( path, hasData ? new BlockLogReader( buffer ) : null, temporaryBuffer, hasData,
                         recordSize );
             }

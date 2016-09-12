@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.neo4j.kernel.impl.store.StoreType.isStoreType;
+import static org.neo4j.kernel.impl.store.format.RecordFormat.NO_RECORD_SIZE;
 
 public class ToFileStoreWriter implements StoreWriter
 {
@@ -74,7 +75,7 @@ public class ToFileStoreWriter implements StoreWriter
                 }
                 if ( storeType.isPresent() && storeType.get().isRecordStore() )
                 {
-                    int filePageSize = pageCache.pageSize() - pageCache.pageSize() % recordSize;
+                    int filePageSize = filePageSize( recordSize );
                     try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )
                     {
                         return writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
@@ -94,6 +95,13 @@ public class ToFileStoreWriter implements StoreWriter
         {
             throw new IOException( t );
         }
+    }
+
+    private int filePageSize( int recordSize )
+    {
+        final int pageCacheSize = pageCache.pageSize();
+        return recordSize == NO_RECORD_SIZE ? pageCacheSize
+                                            : pageCacheSize - pageCacheSize % recordSize;
     }
 
     private long writeDataThroughFileSystem( File file, ReadableByteChannel data, ByteBuffer temporaryBuffer,
