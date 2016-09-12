@@ -25,10 +25,9 @@ package org.neo4j.kernel.ha;
  * <p>
  * On a running instance of a store there should be only one active implementation of this interface.
  * <p>
- * Typically master instance should use {@link #NONE} implementation since master is owner of data in cluster env
- * and its up to slaves to pull updates.
  *
  * @see SlaveUpdatePuller
+ * @see MasterUpdatePuller
  */
 public interface UpdatePuller
 {
@@ -47,6 +46,16 @@ public interface UpdatePuller
      * @throws InterruptedException in case if interrupted while waiting for updates
      */
     boolean tryPullUpdates() throws InterruptedException;
+
+    /**
+     * Start update pulling
+     */
+    void start();
+
+    /**
+     * Terminate update pulling
+     */
+    void stop();
 
     /**
      * Pull updates and waits for the supplied condition to be
@@ -69,24 +78,4 @@ public interface UpdatePuller
         boolean evaluate( int currentTicket, int targetTicket );
     }
 
-    UpdatePuller NONE = new UpdatePuller()
-    {
-        @Override
-        public void pullUpdates() throws InterruptedException
-        {
-        }
-
-        @Override
-        public boolean tryPullUpdates() throws InterruptedException
-        {
-            return false;
-        }
-
-        @Override
-        public void pullUpdates( Condition condition, boolean assertPullerActive )
-                throws InterruptedException
-        {
-
-        }
-    };
 }
