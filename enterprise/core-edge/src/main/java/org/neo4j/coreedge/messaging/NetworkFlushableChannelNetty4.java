@@ -20,78 +20,114 @@
 package org.neo4j.coreedge.messaging;
 
 import java.io.Flushable;
-import java.io.IOException;
 
 import io.netty.buffer.ByteBuf;
-
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+
+import static java.lang.String.format;
 
 public class NetworkFlushableChannelNetty4 implements FlushableChannel
 {
+    /**
+     * This implementation puts an upper limit to the size of the state serialized in the buffer. The default
+     * value for that should be sufficient for all replicated state except for transactions, the size of which
+     * is unbounded.
+     */
+    private static final long DEFAULT_SIZE_LIMIT = 2 * 1024 * 1024; // 2 MB
+
     private final ByteBuf delegate;
+    private final int initialWriterIndex;
+
+    private final long sizeLimit;
 
     public NetworkFlushableChannelNetty4( ByteBuf delegate )
     {
+        this( delegate, DEFAULT_SIZE_LIMIT );
+    }
+
+    public NetworkFlushableChannelNetty4( ByteBuf delegate, long sizeLimit )
+    {
         this.delegate = delegate;
+        this.initialWriterIndex = delegate.writerIndex();
+        this.sizeLimit = sizeLimit;
     }
 
     @Override
-    public Flushable prepareForFlush() throws IOException
+    public Flushable prepareForFlush()
     {
         return null;
     }
 
     @Override
-    public FlushableChannel put( byte value ) throws IOException
+    public FlushableChannel put( byte value ) throws MessageTooBigException
     {
+        checkSize( Byte.BYTES );
         delegate.writeByte( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putShort( short value ) throws IOException
+    public FlushableChannel putShort( short value ) throws MessageTooBigException
     {
+        checkSize( Short.BYTES );
         delegate.writeShort( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putInt( int value ) throws IOException
+    public FlushableChannel putInt( int value ) throws MessageTooBigException
     {
+        checkSize( Integer.BYTES );
         delegate.writeInt( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putLong( long value ) throws IOException
+    public FlushableChannel putLong( long value ) throws MessageTooBigException
     {
+        checkSize( Long.BYTES );
         delegate.writeLong( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putFloat( float value ) throws IOException
+    public FlushableChannel putFloat( float value ) throws MessageTooBigException
     {
+        checkSize( Float.BYTES );
         delegate.writeFloat( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putDouble( double value ) throws IOException
+    public FlushableChannel putDouble( double value ) throws MessageTooBigException
     {
+        checkSize( Double.BYTES );
         delegate.writeDouble( value );
         return this;
     }
 
     @Override
-    public FlushableChannel put( byte[] value, int length ) throws IOException
+    public FlushableChannel put( byte[] value, int length ) throws MessageTooBigException
     {
+        checkSize( length );
         delegate.writeBytes( value, 0, length );
         return this;
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
+    }
+
+    private void checkSize( int additional ) throws MessageTooBigException
+    {
+        int writtenSoFar = delegate.writerIndex() - initialWriterIndex;
+        int countToCheck = writtenSoFar + additional;
+        if ( countToCheck > sizeLimit )
+        {
+            throw new MessageTooBigException( format(
+                    "Size limit exceeded. Limit is %d, wanted to write %d with the writer index at %d (started at %d), written so far %d",
+                    sizeLimit, additional, delegate.writerIndex(), initialWriterIndex, writtenSoFar ) );
+        }
     }
 }
