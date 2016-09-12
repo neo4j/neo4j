@@ -117,6 +117,14 @@ for run_command in run_console run_daemon; do
     NEO4J_CONF=/some/other/conf/dir ${run_command} &&
     test_expect_java_arg '--config-dir=/some/other/conf/dir'
   "
+
+  test_expect_success "should warn that neo4j-wrapper.conf is deprecated" "
+    set_config 'anything.at.all' 'value', neo4j-wrapper.conf &&
+    test_expect_stderr_matching \
+        'WARNING: neo4j-wrapper.conf is deprecated and support for it will be removed in a future
+         version of Neo4j; please move all your settings to neo4j.conf' \
+        ${run_command}
+  "
 done
 
 test_expect_success "should set heap size constraints when checking version from wrapper conf" "
