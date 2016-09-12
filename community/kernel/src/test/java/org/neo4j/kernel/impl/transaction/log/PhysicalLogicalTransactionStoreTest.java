@@ -153,7 +153,7 @@ public class PhysicalLogicalTransactionStoreTest
             }
 
             @Override
-            public Visitor<CommittedTransactionRepresentation,Exception> getRecoveryVisitor()
+            public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
             {
                 recoveryRequired.set( true );
                 return visitor;
