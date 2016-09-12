@@ -511,7 +511,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             if ( type.equals( StoreType.COUNTS ) )
             {
-                addCurrentCountStoreFile( files );
+                addCountStoreFiles( files );
             }
             else
             {
@@ -525,12 +525,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         return files;
     }
 
-    private void addCurrentCountStoreFile( List<StoreFileMetadata> files )
+    private void addCountStoreFiles( List<StoreFileMetadata> files )
     {
-        File countStoreFile = neoStores.getCounts().currentFile();
-        StoreFileMetadata countStoreFileMetadata = new StoreFileMetadata( countStoreFile,
-                Optional.of( StoreType.COUNTS ), RecordFormat.NO_RECORD_SIZE );
-        files.add( countStoreFileMetadata );
+        Iterable<File> countStoreFiles = neoStores.getCounts().allFiles();
+        for ( File countStoreFile : countStoreFiles )
+        {
+            StoreFileMetadata countStoreFileMetadata = new StoreFileMetadata( countStoreFile,
+                    Optional.of( StoreType.COUNTS ), RecordFormat.NO_RECORD_SIZE );
+            files.add( countStoreFileMetadata );
+        }
     }
 
     /**
