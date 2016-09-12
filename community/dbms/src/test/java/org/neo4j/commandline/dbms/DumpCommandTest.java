@@ -26,6 +26,8 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.function.Predicate;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Before;
@@ -44,6 +46,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -79,7 +82,7 @@ public class DumpCommandTest
     public void shouldDumpTheDatabaseToTheArchive() throws CommandFailed, IncorrectUsage, IOException
     {
         execute( "foo.db" );
-        verify( dumper ).dump( homeDir.resolve( "data/databases/foo.db" ), archive );
+        verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ), eq( archive ), any() );
     }
 
     @Test
@@ -92,7 +95,7 @@ public class DumpCommandTest
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
-        verify( dumper ).dump( eq( databaseDir ), any() );
+        verify( dumper ).dump( eq( databaseDir ), any(), any() );
     }
 
     @Test
@@ -101,7 +104,7 @@ public class DumpCommandTest
     {
         File to = testDirectory.directory( "some-dir" );
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo.db", "--to=" + to} );
-        verify( dumper ).dump( any( Path.class ), eq( to.toPath().resolve( "foo.db.dump" ) ) );
+        verify( dumper ).dump( any( Path.class ), eq( to.toPath().resolve( "foo.db.dump" ) ), any() );
     }
 
     @Test
@@ -110,7 +113,7 @@ public class DumpCommandTest
     {
         Files.createFile( archive );
         execute( "foo.db" );
-        verify( dumper ).dump( homeDir.resolve( "data/databases/foo.db" ), archive );
+        verify( dumper ).dump( any(), eq( archive ), any() );
     }
 
     @Test
@@ -149,7 +152,7 @@ public class DumpCommandTest
     @Test
     public void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws IOException, IncorrectUsage
     {
-        doThrow( IOException.class ).when( dumper ).dump( any(), any() );
+        doThrow( IOException.class ).when( dumper ).dump( any(), any(), any() );
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
 
@@ -174,7 +177,7 @@ public class DumpCommandTest
         {
             assertThat( Files.exists( databaseDirectory ), equalTo( false ) );
             return null;
-        } ).when( dumper ).dump( any(), any() );
+        } ).when( dumper ).dump( any(), any(), any() );
 
         execute( "foo.db" );
     }
@@ -208,6 +211,22 @@ public class DumpCommandTest
     }
 
     @Test
+    public void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
+            throws CommandFailed, IncorrectUsage, IOException
+    {
+        doAnswer( invocation ->
+        {
+            //noinspection unchecked
+            Predicate<Path> exclude = (Predicate<Path>) invocation.getArgumentAt( 2, Predicate.class );
+            assertThat( exclude.test( Paths.get( StoreLocker.STORE_LOCK_FILENAME ) ), is( true ) );
+            assertThat( exclude.test( Paths.get( "some-other-file" ) ), is( false ) );
+            return null;
+        } ).when( dumper ).dump( any(), any(), any() );
+
+        execute( "foo.db" );
+    }
+
+    @Test
     public void shouldObjectIfTheDatabaseArgumentIsMissing() throws CommandFailed
     {
         try
@@ -238,7 +257,7 @@ public class DumpCommandTest
     @Test
     public void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws IOException, IncorrectUsage
     {
-        doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any() );
+        doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any(), any() );
         try
         {
             execute( null );
@@ -254,7 +273,7 @@ public class DumpCommandTest
     public void shouldGiveAClearMessageIfTheDatabaseDoesntExist() throws IOException, IncorrectUsage
     {
         doThrow( new NoSuchFileException( homeDir.resolve( "data/databases/foo.db" ).toString() ) )
-                .when( dumper ).dump( any(), any() );
+                .when( dumper ).dump( any(), any(), any() );
         try
         {
             execute( "foo.db" );
@@ -269,7 +288,7 @@ public class DumpCommandTest
     @Test
     public void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws IOException, IncorrectUsage
     {
-        doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump( any(), any() );
+        doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump( any(), any(), any() );
         try
         {
             execute( "foo.db" );
@@ -287,7 +306,7 @@ public class DumpCommandTest
     shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectUsage
     {
-        doThrow( new IOException( "the-message" ) ).when( dumper ).dump( any(), any() );
+        doThrow( new IOException( "the-message" ) ).when( dumper ).dump( any(), any(), any() );
         try
         {
             execute( null );
