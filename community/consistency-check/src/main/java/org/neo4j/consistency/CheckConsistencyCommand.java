@@ -90,8 +90,8 @@ public class CheckConsistencyCommand implements AdminCommand
         this( homeDir, configDir, outsideWorld, new ConsistencyCheckService() );
     }
 
-    public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld, ConsistencyCheckService
-            consistencyCheckService )
+    public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+            ConsistencyCheckService consistencyCheckService )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
@@ -126,9 +126,15 @@ public class CheckConsistencyCommand implements AdminCommand
         {
             File storeDir = config.get( database_path );
             checkDbState( storeDir, config );
-            consistencyCheckService.runFullConsistencyCheck( storeDir, config,
-                    ProgressMonitorFactory.textual( System.err ), FormattedLogProvider.toOutputStream( System.out ),
-                    this.fileSystemAbstraction, verbose );
+            ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
+                    .runFullConsistencyCheck( storeDir, config, ProgressMonitorFactory.textual( System.err ),
+                            FormattedLogProvider.toOutputStream( System.out ), this.fileSystemAbstraction, verbose );
+
+            if ( !consistencyCheckResult.isSuccessful() )
+            {
+                throw new CommandFailed( String.format( "Inconsistencies found. See '%s' for details.",
+                        consistencyCheckService.chooseReportPath( config, storeDir ).toString() ) );
+            }
         }
         catch ( ConsistencyCheckIncompleteException | IOException e )
         {
@@ -156,21 +162,21 @@ public class CheckConsistencyCommand implements AdminCommand
 
     private void checkDbState( File storeDir, Config additionalConfiguration ) throws CommandFailed
     {
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( this.fileSystemAbstraction,
-                additionalConfiguration ) )
+        try ( PageCache pageCache = StandalonePageCacheFactory
+                .createPageCache( this.fileSystemAbstraction, additionalConfiguration ) )
         {
             if ( new RecoveryRequiredChecker( this.fileSystemAbstraction, pageCache ).isRecoveryRequiredAt( storeDir ) )
             {
-                throw new CommandFailed( Strings.joinAsLines(
-                        "Active logical log detected, this might be a source of inconsistencies.",
-                        "Please recover database before running the consistency check.",
-                        "To perform recovery please start database and perform clean shutdown." ) );
+                throw new CommandFailed(
+                        Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
+                                "Please recover database before running the consistency check.",
+                                "To perform recovery please start database and perform clean shutdown." ) );
             }
         }
         catch ( IOException e )
         {
-            outsideWorld.stdErrLine( "Failure when checking for recovery state: '%s', continuing as normal.%n" + e
-                    .getMessage() );
+            outsideWorld.stdErrLine(
+                    "Failure when checking for recovery state: '%s', continuing as normal.%n" + e.getMessage() );
         }
     }
 

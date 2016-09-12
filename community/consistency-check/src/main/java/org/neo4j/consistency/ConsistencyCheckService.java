@@ -198,7 +198,7 @@ public class ConsistencyCheckService
         return Result.SUCCESS;
     }
 
-    private File chooseReportPath( Config tuningConfiguration, File storeDir )
+    public File chooseReportPath( Config tuningConfiguration, File storeDir )
     {
         if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
         {

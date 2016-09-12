@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.nio.file.Path;
 
+import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -37,12 +38,14 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class CheckConsistencyCommandTest
 {
@@ -59,8 +62,8 @@ public class CheckConsistencyCommandTest
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( testDir.directory( "home" ).toPath(),
-                        testDir.directory( "conf" ).toPath(), outsideWorld );
+                new CheckConsistencyCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
+                        outsideWorld );
 
         String[] arguments = {""};
         try
@@ -86,6 +89,12 @@ public class CheckConsistencyCommandTest
                         consistencyCheckService );
 
         File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
+
+        when( consistencyCheckService
+                .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ) ) )
+                .thenReturn( ConsistencyCheckService.Result.SUCCESS );
+
         checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
 
         verify( consistencyCheckService )
@@ -106,10 +115,44 @@ public class CheckConsistencyCommandTest
 
         File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
 
+        when( consistencyCheckService
+                .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ) ) )
+                .thenReturn( ConsistencyCheckService.Result.SUCCESS );
+
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--verbose"} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ) );
+    }
+
+    @Test
+    public void failsWhenInconsistenciesAreFound() throws Exception
+    {
+        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+
+        Path homeDir = testDir.directory( "home" ).toPath();
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        CheckConsistencyCommand checkConsistencyCommand =
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                        consistencyCheckService );
+        File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
+
+        when( consistencyCheckService
+                .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ) ) )
+                .thenReturn( ConsistencyCheckService.Result.FAILURE );
+        when( consistencyCheckService.chooseReportPath( any(), any() ) )
+                .thenReturn( testDir.directory( "report file" ) );
+
+        try
+        {
+            checkConsistencyCommand.execute( new String[]{"--database=mydb", "--verbose"} );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( CommandFailed.class, e.getClass() );
+        }
     }
 }
