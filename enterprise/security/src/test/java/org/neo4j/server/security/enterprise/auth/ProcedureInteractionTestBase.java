@@ -108,7 +108,6 @@ abstract class ProcedureInteractionTestBase<S>
     @Before
     public void setUp() throws Throwable
     {
-        Neo4jWithSocket.cleanupTemporaryTestFiles();
         neo = setUpNeoServer();
         neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class )
                 .register( ClassWithProcedures.class );
@@ -141,7 +140,6 @@ abstract class ProcedureInteractionTestBase<S>
     public void tearDown() throws Throwable
     {
         neo.tearDown();
-        Neo4jWithSocket.cleanupTemporaryTestFiles();
     }
 
     protected String[] with( String[] strs, String... moreStr )

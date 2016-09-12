@@ -375,7 +375,6 @@ public class AuthenticationIT
     @Before
     public void setup() throws IOException
     {
-        Neo4jWithSocket.cleanupTemporaryTestFiles();
         this.client = cf.newInstance();
     }
 
@@ -386,7 +385,6 @@ public class AuthenticationIT
         {
             client.disconnect();
         }
-        Neo4jWithSocket.cleanupTemporaryTestFiles();
     }
 
     private void reconnect() throws Exception
