@@ -23,7 +23,9 @@
   </module>
 
   <!-- Require new line at the end of file -->
-  <module name="NewlineAtEndOfFile"/>
+  <module name="NewlineAtEndOfFile">
+    <property name="lineSeparator" value="lf_cr_crlf" />
+  </module>
 
   <!-- Prohibit trailing spaces -->
   <module name="RegexpSingleline">
