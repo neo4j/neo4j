@@ -93,7 +93,6 @@ public class SlaveUpdatePullerTest
         when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
         jobScheduler.init();
         jobScheduler.start();
-        updatePuller.init();
         updatePuller.start();
     }
 
@@ -101,7 +100,6 @@ public class SlaveUpdatePullerTest
     public void tearDown() throws Throwable
     {
         updatePuller.stop();
-        updatePuller.shutdown();
         jobScheduler.stop();
         jobScheduler.shutdown();
     }
@@ -109,11 +107,8 @@ public class SlaveUpdatePullerTest
     @Test
     public void initialisationMustBeIdempotent() throws Throwable
     {
-        updatePuller.init();
         updatePuller.start();
-        updatePuller.init();
         updatePuller.start();
-        updatePuller.init();
         updatePuller.start();
         assertThat( scheduledJobs.get(), is( 1 ) );
     }
@@ -131,7 +126,7 @@ public class SlaveUpdatePullerTest
         verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
         // WHEN
-        updatePuller.shutdown();
+        updatePuller.stop();
         updatePuller.pullUpdates();
 
         // THEN
@@ -164,7 +159,7 @@ public class SlaveUpdatePullerTest
     public void falseOnTryPullUpdatesOnInactivePuller() throws Throwable
     {
         // GIVEN
-        updatePuller.shutdown();
+        updatePuller.stop();
 
         // WHEN
         boolean result = updatePuller.tryPullUpdates();
@@ -178,7 +173,7 @@ public class SlaveUpdatePullerTest
     {
         // GIVEN
         Condition condition = mock( Condition.class );
-        updatePuller.shutdown();
+        updatePuller.stop();
 
         // WHEN
         try
@@ -203,7 +198,7 @@ public class SlaveUpdatePullerTest
             @Override
             public Boolean answer( InvocationOnMock invocation ) throws Throwable
             {
-                updatePuller.shutdown();
+                updatePuller.stop();
                 return false;
             }
         } );
@@ -311,13 +306,4 @@ public class SlaveUpdatePullerTest
                 repeat( new InvalidEpochException( 2, 1 ), SlaveUpdatePuller.LOG_CAP + 1 ) );
     }
 
-    private AssertableLogProvider.LogMatcher[] repeat( AssertableLogProvider.LogMatcher item, int logCap )
-    {
-        AssertableLogProvider.LogMatcher[] items = new AssertableLogProvider.LogMatcher[logCap];
-        for ( int i = 0; i < logCap; i++ )
-        {
-            items[i] = item;
-        }
-        return items;
-    }
 }

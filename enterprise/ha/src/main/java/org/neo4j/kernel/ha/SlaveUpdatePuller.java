@@ -42,7 +42,6 @@ import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -113,7 +112,7 @@ import static java.lang.System.currentTimeMillis;
  *
  * @see org.neo4j.kernel.ha.UpdatePuller
  */
-public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, UpdatePuller
+public class SlaveUpdatePuller implements Runnable, UpdatePuller
 {
     public interface Monitor
     {
@@ -128,14 +127,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
             "org.neo4j.kernel.ha.SlaveUpdatePuller.AVAILABILITY_AWAIT_MILLIS", 5000 );
     public static final String UPDATE_PULLER_THREAD_PREFIX = "UpdatePuller@";
 
-    static final Condition NEXT_TICKET = new Condition()
-    {
-        @Override
-        public boolean evaluate( int currentTicket, int targetTicket )
-        {
-            return currentTicket >= targetTicket;
-        }
-    };
+    static final Condition NEXT_TICKET = ( currentTicket, targetTicket ) -> currentTicket >= targetTicket;
 
     private volatile boolean halted;
     private final AtomicInteger targetTicket = new AtomicInteger();
@@ -213,7 +205,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     }
 
     @Override
-    public synchronized void init()
+    public void start()
     {
         if ( shutdownLatch != null )
         {
@@ -225,17 +217,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     }
 
     @Override
-    public void start() // for removing throw declaration
-    {
-    }
-
-    @Override
     public void stop() // for removing throw declaration
-    {
-    }
-
-    @Override
-    public synchronized void shutdown()
     {
         if ( shutdownLatch == null )
         {
@@ -279,7 +261,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
      *
      * @param condition {@link UpdatePuller.Condition} to wait for.
      * @param strictlyAssertActive if {@code true} then observing an inactive update puller, whether
-     * {@link #shutdown() halted}, will throw an {@link IllegalStateException},
+     * {@link #stop() halted}, will throw an {@link IllegalStateException},
      * otherwise if {@code false} just stop waiting and return {@code false}.
      * @return whether or not the condition was met. If {@code strictlyAssertActive} either
      * {@code true} will be returned or exception thrown, if puller became inactive.

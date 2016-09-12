@@ -21,16 +21,19 @@ package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.MasterUpdatePuller;
 import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.ha.UpdatePuller;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class UpdatePullerSwitcherTest
@@ -46,6 +49,8 @@ public class UpdatePullerSwitcherTest
         PullerFactory pullerFactory = mock( PullerFactory.class );
         slaveUpdatePuller = mock( SlaveUpdatePuller.class );
         when( pullerFactory.createSlaveUpdatePuller() ).thenReturn( slaveUpdatePuller );
+        when( invocationHandler.setDelegate( slaveUpdatePuller ) ).thenReturn( slaveUpdatePuller );
+
         modeSwitcher = new UpdatePullerSwitcher( invocationHandler, pullerFactory );
     }
 
@@ -53,7 +58,7 @@ public class UpdatePullerSwitcherTest
     public void masterUpdatePuller()
     {
         UpdatePuller masterPuller = modeSwitcher.getMasterImpl();
-        assertEquals( UpdatePuller.NONE, masterPuller );
+        assertSame( MasterUpdatePuller.INSTANCE, masterPuller );
     }
 
     @Test
@@ -61,6 +66,18 @@ public class UpdatePullerSwitcherTest
     {
         UpdatePuller updatePuller = modeSwitcher.getSlaveImpl();
         assertSame( slaveUpdatePuller, updatePuller );
+        verifyZeroInteractions( slaveUpdatePuller );
+    }
+
+    @Test
+    public void switchToPendingTest() throws Exception
+    {
+        modeSwitcher.switchToSlave();
         verify( slaveUpdatePuller ).start();
+
+        modeSwitcher.switchToSlave();
+        InOrder inOrder = inOrder( slaveUpdatePuller );
+        inOrder.verify( slaveUpdatePuller ).stop();
+        inOrder.verify( slaveUpdatePuller ).start();
     }
 }

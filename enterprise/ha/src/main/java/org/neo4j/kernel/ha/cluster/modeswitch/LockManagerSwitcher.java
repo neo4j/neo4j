@@ -72,7 +72,7 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     }
 
     @Override
-    protected void shutdownDelegate( Locks oldLocks )
+    protected void shutdownOldDelegate( Locks oldLocks )
     {
         if ( oldLocks != null )
         {
