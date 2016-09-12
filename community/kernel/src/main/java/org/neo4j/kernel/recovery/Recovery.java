@@ -56,7 +56,7 @@ public class Recovery extends LifecycleAdapter
 
         LogPosition getPositionToRecoverFrom() throws IOException;
 
-        Visitor<CommittedTransactionRepresentation,Exception> getRecoveryVisitor();
+        Visitor<CommittedTransactionRepresentation,Exception> startRecovery();
 
         void allTransactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
                 LogPosition positionAfterLastRecoveredTransaction ) throws Exception;
@@ -87,7 +87,7 @@ public class Recovery extends LifecycleAdapter
 
         LogPosition recoveryToPosition;
         CommittedTransactionRepresentation lastTransaction = null;
-        Visitor<CommittedTransactionRepresentation,Exception> recoveryVisitor = spi.getRecoveryVisitor();
+        Visitor<CommittedTransactionRepresentation,Exception> recoveryVisitor = spi.startRecovery();
         try ( TransactionCursor transactionsToRecover = spi.getTransactions( recoveryFromPosition ) )
         {
             while ( transactionsToRecover.next() )

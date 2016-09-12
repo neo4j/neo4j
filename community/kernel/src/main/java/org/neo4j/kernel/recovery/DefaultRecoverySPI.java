@@ -22,7 +22,6 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -31,7 +30,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -40,26 +38,22 @@ import org.neo4j.storageengine.api.StorageEngine;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 
-public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransactionRepresentation,Exception>
+public class DefaultRecoverySPI implements Recovery.SPI
 {
-    private final PhysicalLogFiles logFiles;
-    private final FileSystemAbstraction fileSystemAbstraction;
     private final LogVersionRepository logVersionRepository;
     private final PositionToRecoverFrom positionToRecoverFrom;
     private final StorageEngine storageEngine;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
+    private Visitor<CommittedTransactionRepresentation,Exception> recoveryVisitor;
     private TransactionQueue transactionsToApply;
 
     public DefaultRecoverySPI(
             StorageEngine storageEngine,
-            PhysicalLogFiles logFiles, FileSystemAbstraction fileSystemAbstraction,
             LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder,
             TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore )
     {
         this.storageEngine = storageEngine;
-        this.logFiles = logFiles;
-        this.fileSystemAbstraction = fileSystemAbstraction;
         this.logVersionRepository = logVersionRepository;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
@@ -80,7 +74,7 @@ public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransa
     }
 
     @Override
-    public Visitor<CommittedTransactionRepresentation,Exception> getRecoveryVisitor()
+    public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
     {
         // Calling this method means that recovery is required, tell storage engine about it
         // This method will be called before recovery actually starts and so will ensure that
@@ -90,8 +84,9 @@ public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransa
         storageEngine.prepareForRecoveryRequired();
 
         transactionsToApply = new TransactionQueue( 10_000, (first,last) -> storageEngine.apply( first, RECOVERY ) );
+        recoveryVisitor = new RecoveryVisitor( transactionsToApply );
 
-        return this;
+        return recoveryVisitor;
     }
 
     @Override
@@ -114,14 +109,24 @@ public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransa
         // TODO: Also truncate last log after last known position
     }
 
-    @Override
-    public boolean visit( CommittedTransactionRepresentation transaction ) throws Exception
+    static class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation,Exception>
     {
-        TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
-        long txId = transaction.getCommitEntry().getTxId();
-        TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
-        tx.commitment( NO_COMMITMENT, txId );
-        transactionsToApply.queue( tx );
-        return false;
+        private final TransactionQueue transactionsToApply;
+
+        public RecoveryVisitor( TransactionQueue transactionsToApply )
+        {
+            this.transactionsToApply = transactionsToApply;
+        }
+
+        @Override
+        public boolean visit( CommittedTransactionRepresentation transaction ) throws Exception
+        {
+            TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
+            long txId = transaction.getCommitEntry().getTxId();
+            TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
+            tx.commitment( NO_COMMITMENT, txId );
+            transactionsToApply.queue( tx );
+            return false;
+        }
     }
 }
