@@ -65,8 +65,8 @@ public class NeoStoreFileListing
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
         Collection<StoreFileMetadata> files = new ArrayList<>();
-        gatherNeoStoreFiles( files );
         gatherNonRecordStores( files, includeLogs );
+        gatherNeoStoreFiles( files );
         Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
         Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
         Resource legacyIndexSnapshots = gatherLegacyIndexFiles( files );

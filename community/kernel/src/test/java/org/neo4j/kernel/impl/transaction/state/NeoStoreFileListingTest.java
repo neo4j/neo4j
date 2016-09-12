@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +27,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +40,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -191,6 +194,40 @@ public class NeoStoreFileListingTest
         // Then
         verify( scanSnapshot ).close();
         verify( indexSnapshot ).close();
+    }
+
+    @Test
+    public void shouldListNeostoreDbLast() throws Exception
+    {
+        Boolean[] foundStoreType = new Boolean[StoreType.values().length];
+        boolean foundTxLogs = false;
+
+        final ResourceIterator<StoreFileMetadata> storeFiles =
+                neoStoreDataSource.listStoreFiles( true );
+
+        while ( storeFiles.hasNext() )
+        {
+            final StoreFileMetadata storeFile = storeFiles.next();
+            if ( storeFile.storeType().isPresent() )
+            {
+                StoreType storeType = storeFile.storeType().get();
+                foundStoreType[storeType.ordinal()] = true;
+                if ( storeType == StoreType.META_DATA )
+                {
+                    Arrays.stream( foundStoreType ).forEach( Assert::assertTrue );
+                    assertTrue( "Transaction logs was not listed before neostore.db", foundTxLogs );
+                }
+            }
+            else if ( transactionLogFile( storeFile.file().getName() ) )
+            {
+                foundTxLogs = true;
+            }
+        }
+    }
+
+    private boolean transactionLogFile( String name )
+    {
+        return name.startsWith( MetaDataStore.DEFAULT_NAME + ".transaction" ) && !name.endsWith( ".active" );
     }
 
     private void filesInStoreDirAre( File storeDir, String[] filenames, String[] dirs )
