@@ -23,10 +23,8 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.io.IOException;
@@ -77,13 +75,14 @@ public class BoltFullExchangesDocTest
     private String ephemeralAuthPath = "/auth";
     private String authPath = this.getClass().getResource( "/authorization/auth" ).getPath();
 
-    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
-    public Neo4jWithSocket server = new Neo4jWithSocket(
+    private EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
                                             new TestGraphDatabaseFactory(),
                                             this::setupFileSystem,
                                             settings -> {
-                                                settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-                                                settings.put( GraphDatabaseSettings.auth_store, ephemeralAuthPath );
+                                                settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
+                                                settings.put( GraphDatabaseSettings.auth_store.name(),
+                                                        ephemeralAuthPath );
                                             } );
 
     @Rule

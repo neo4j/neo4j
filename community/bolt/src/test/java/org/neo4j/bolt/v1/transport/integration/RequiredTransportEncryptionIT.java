@@ -25,6 +25,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Collection;
+
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
@@ -32,8 +35,6 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
-
-import java.util.Collection;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,11 +45,11 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 public class RequiredTransportEncryptionIT
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket(
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings -> {
                 Setting<GraphDatabaseSettings.BoltConnector.EncryptionLevel> encryption_level =
                         boltConnector( "0" ).encryption_level;
-                settings.put( encryption_level, REQUIRED.name() );
+                settings.put( encryption_level.name(), REQUIRED.name() );
             } );
 
     @Parameterized.Parameter( 0 )

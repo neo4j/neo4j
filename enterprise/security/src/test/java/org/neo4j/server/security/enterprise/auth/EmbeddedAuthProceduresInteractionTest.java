@@ -21,13 +21,12 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 
 public class EmbeddedAuthProceduresInteractionTest extends AuthProceduresInteractionTestBase<EnterpriseAuthSubject>
 {
     @Override
-    protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer( Map<Setting<?>, String> config )
+    protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer( Map<String, String> config )
             throws Throwable
     {
         return new EmbeddedInteraction( config );

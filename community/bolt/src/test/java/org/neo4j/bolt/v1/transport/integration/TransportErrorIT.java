@@ -49,7 +49,7 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 public class TransportErrorIT
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket();
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass() );
 
     @Parameterized.Parameter(0)
     public Factory<TransportConnection> cf;

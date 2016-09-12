@@ -39,7 +39,8 @@ public class BoltAuthScenariosInteractionTest extends AuthScenariosInteractionTe
     }
 
     @Override
-    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<Setting<?>, String> config ) throws Throwable
+    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<String, String> config )
+            throws Throwable
     {
         return new BoltInteraction( config );
     }

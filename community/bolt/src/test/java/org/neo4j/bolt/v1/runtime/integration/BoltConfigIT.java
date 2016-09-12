@@ -21,10 +21,15 @@ package org.neo4j.bolt.v1.runtime.integration;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.*;
+import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.helpers.HostnamePort;
 
 import static java.util.Collections.emptyMap;
@@ -38,13 +43,13 @@ public class BoltConfigIT
 {
 
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket(
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings -> {
-                settings.put( boltConnector("0").enabled, "true" );
-                settings.put( boltConnector("0").address, "localhost:7888" );
-                settings.put( boltConnector("1").enabled, "true" );
-                settings.put( boltConnector("1").address, "localhost:7687" );
-                settings.put( boltConnector("1").encryption_level, REQUIRED.name() );
+                settings.put( boltConnector("0").enabled.name(), "true" );
+                settings.put( boltConnector("0").address.name(), "localhost:7888" );
+                settings.put( boltConnector("1").enabled.name(), "true" );
+                settings.put( boltConnector("1").address.name(), "localhost:7687" );
+                settings.put( boltConnector("1").encryption_level.name(), REQUIRED.name() );
             } );
 
     @Test

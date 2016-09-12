@@ -25,7 +25,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -48,19 +47,14 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     private GraphDatabaseFacade db;
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
-    private FileSystemAbstraction _fileSystem;
+    private FileSystemAbstraction fileSystem;
 
-    EmbeddedInteraction( Map<Setting<?>, String> config ) throws Throwable
+    EmbeddedInteraction( Map<String, String> config ) throws Throwable
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
         factory.setFileSystem( new EphemeralFileSystemAbstraction() );
-        GraphDatabaseBuilder builder = factory.newImpermanentDatabaseBuilder();
-        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
-        {
-            builder.setConfig( entry.getKey(), entry.getValue() );
-        }
-        this._fileSystem = factory.getFileSystem();
-
+        GraphDatabaseBuilder builder = factory.newImpermanentDatabaseBuilder().setConfig( config );
+        this.fileSystem = factory.getFileSystem();
         init( builder );
     }
 
@@ -97,7 +91,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     @Override
     public FileSystemAbstraction fileSystem()
     {
-        return _fileSystem;
+        return fileSystem;
     }
 
     @Override

@@ -49,9 +49,9 @@ public class CertificatesIT
     private static Certificates certFactory;
 
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
-        settings.put( tls_certificate_file, certFile.getAbsolutePath() );
-        settings.put( tls_key_file, keyFile.getAbsolutePath() );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings -> {
+        settings.put( tls_certificate_file.name(), certFile.getAbsolutePath() );
+        settings.put( tls_key_file.name(), keyFile.getAbsolutePath() );
     } );
 
     @Test

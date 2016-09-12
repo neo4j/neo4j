@@ -36,7 +36,6 @@ import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -69,12 +68,12 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
 
     EnterpriseAuthManager authManager;
 
-   RESTInteraction( Map<Setting<?>,String> config ) throws IOException
+   RESTInteraction( Map<String,String> config ) throws IOException
     {
         CommunityServerBuilder builder = EnterpriseServerBuilder.server();
-        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
+        for ( Map.Entry<String,String> entry : config.entrySet() )
         {
-            builder = builder.withProperty( entry.getKey().name(), entry.getValue() );
+            builder = builder.withProperty( entry.getKey(), entry.getValue() );
         }
         this.server = builder.withProperty( boltConnector( "0" ).enabled.name(), "true" )
                 .withProperty( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() )

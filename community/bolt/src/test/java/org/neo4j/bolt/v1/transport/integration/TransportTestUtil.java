@@ -28,10 +28,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.function.Predicates;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -212,23 +215,34 @@ public class TransportTestUtil
             @Override
             protected boolean matchesSafely( TransportConnection connection )
             {
+                Supplier<Boolean> condition = () -> {
+                    try
+                    {
+                        connection.send( new byte[]{0,0});
+                        connection.recv( 1 );
+                    }
+                    catch ( Exception e )
+                    {
+                        // take an IOException on send/receive as evidence of disconnection
+                        return e instanceof IOException;
+                    }
+                    return false;
+                };
                 try
                 {
-                    connection.send( new byte[]{0,0});
-                    connection.recv( 1 );
+                    Predicates.await( condition, 2, TimeUnit.SECONDS );
+                    return true;
                 }
                 catch ( Exception e )
                 {
-                    // take an IOException on send/receive as evidence of disconnection
-                    return e instanceof IOException;
+                    return false;
                 }
-                return false;
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "?" );
+                description.appendText( "Eventually Disconnects" );
             }
         };
     }

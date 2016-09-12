@@ -71,8 +71,8 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 public class TransportSessionIT
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket(settings ->
-            settings.put( GraphDatabaseSettings.auth_enabled, "false"  ));
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
+            settings.put( GraphDatabaseSettings.auth_enabled.name(), "false"  ));
 
     @Parameterized.Parameter(0)
     public Factory<TransportConnection> cf;

@@ -19,69 +19,77 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import org.junit.rules.TestRule;
+import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
-public class Neo4jWithSocket implements TestRule
+public class Neo4jWithSocket extends ExternalResource
 {
     private Supplier<FileSystemAbstraction> fileSystemProvider;
-    private final Consumer<Map<Setting<?>,String>> configure;
+    private final Consumer<Map<String,String>> configure;
+    private final TestDirectory testDirectory;
     private TestGraphDatabaseFactory graphDatabaseFactory;
     private GraphDatabaseService gdb;
+    private File workingDirectory;
 
-    public Neo4jWithSocket()
+    public Neo4jWithSocket( Class<?> testClass )
     {
-        this( new TestGraphDatabaseFactory(), EphemeralFileSystemAbstraction::new, settings -> {} );
+        this( testClass, settings ->
+        {
+        } );
     }
 
-    public Neo4jWithSocket( Consumer<Map<Setting<?>, String>> configure )
+    public Neo4jWithSocket( Class<?> testClass, Consumer<Map<String,String>> configure )
     {
-        this( new TestGraphDatabaseFactory(), EphemeralFileSystemAbstraction::new, configure );
+        this( testClass, new TestGraphDatabaseFactory(), configure );
     }
 
-    public Neo4jWithSocket( TestGraphDatabaseFactory graphDatabaseFactory, Consumer<Map<Setting<?>, String>> configure )
+    public Neo4jWithSocket( Class<?> testClass, TestGraphDatabaseFactory graphDatabaseFactory,
+            Consumer<Map<String,String>> configure )
     {
-        this( graphDatabaseFactory, EphemeralFileSystemAbstraction::new, configure );
+        this( testClass, graphDatabaseFactory, EphemeralFileSystemAbstraction::new, configure );
     }
 
-    public Neo4jWithSocket( TestGraphDatabaseFactory graphDatabaseFactory,
-            Supplier<FileSystemAbstraction> fileSystemProvider,
-            Consumer<Map<Setting<?>, String>> configure )
+    public Neo4jWithSocket( Class<?> testClass, TestGraphDatabaseFactory graphDatabaseFactory,
+            Supplier<FileSystemAbstraction> fileSystemProvider, Consumer<Map<String,String>> configure )
     {
+        this.testDirectory = TestDirectory.testDirectory( testClass, fileSystemProvider.get() );
         this.graphDatabaseFactory = graphDatabaseFactory;
         this.fileSystemProvider = fileSystemProvider;
         this.configure = configure;
     }
 
     @Override
-    public Statement apply( final Statement statement, Description description )
+    public Statement apply( final Statement statement, final Description description )
     {
-        return new Statement()
+        Statement testMethod = new Statement()
         {
             @Override
             public void evaluate() throws Throwable
             {
-                restartDatabase( settings -> {} );
+                // If this is used as class rule then getMethodName() returns null, so use
+                // getClassName() instead.
+                String name =
+                        description.getMethodName() != null ? description.getMethodName() : description.getClassName();
+                workingDirectory = testDirectory.directory( name );
+                ensureDatabase( settings -> {} );
                 try
                 {
                     statement.evaluate();
@@ -92,43 +100,53 @@ public class Neo4jWithSocket implements TestRule
                 }
             }
         };
+
+        Statement testMethodWithBeforeAndAfter = super.apply( testMethod, description );
+
+        return testDirectory.apply( testMethodWithBeforeAndAfter, description );
     }
 
-    private void shutdownDatabase()
+    public void shutdownDatabase()
     {
-        gdb.shutdown();
-        gdb = null;
-    }
-
-    public void restartDatabase( Consumer<Map<Setting<?>, String>> overrideSettingsFunction ) throws IOException
-    {
-        if ( gdb != null )
+        try
         {
             gdb.shutdown();
         }
-        Map<Setting<?>,String> settings = configure( overrideSettingsFunction );
-        graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
-        gdb = graphDatabaseFactory.newImpermanentDatabase( settings );
+        finally
+        {
+            gdb = null;
+        }
     }
 
-    public Map<Setting<?>,String> configure(  Consumer<Map<Setting<?>, String>> overrideSettingsFunction ) throws IOException
+    public void ensureDatabase( Consumer<Map<String,String>> overrideSettingsFunction ) throws IOException
     {
-        Map<Setting<?>, String> settings = new HashMap<>();
-        settings.put( boltConnector( "0" ).enabled, "true" );
-        settings.put( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
-        settings.put( BoltKernelExtension.Settings.tls_key_file, tempPath( "key", ".key" ) );
-        settings.put( BoltKernelExtension.Settings.tls_certificate_file, tempPath( "cert", ".cert" ) );
-        configure.andThen( overrideSettingsFunction ).accept( settings );
+        if ( gdb != null )
+        {
+            return;
+        }
+
+        Map<String,String> settings = configure( overrideSettingsFunction );
+        File storeDir = new File( workingDirectory, "storeDir" );
+        graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
+        gdb = graphDatabaseFactory.newImpermanentDatabaseBuilder( storeDir ).
+                setConfig( settings ).newGraphDatabase();
+    }
+
+    private Map<String,String> configure( Consumer<Map<String,String>> overrideSettingsFunction ) throws IOException
+    {
+        Map<String,String> settings = new HashMap<>();
+        settings.put( boltConnector( "0" ).enabled.name(), "true" );
+        settings.put( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() );
+        settings.put( BoltKernelExtension.Settings.tls_key_file.name(), tempPath( "key.key" ) );
+        settings.put( BoltKernelExtension.Settings.tls_certificate_file.name(), tempPath( "cert.cert" ) );
+        configure.accept( settings );
+        overrideSettingsFunction.accept( settings );
         return settings;
     }
 
-    private String tempPath(String prefix, String suffix ) throws IOException
+    private String tempPath( String filename ) throws IOException
     {
-        Path path = Files.createTempFile( prefix, suffix );
-        // We don't want an existing file just the path to a temporary file
-        // a little silly to do it this way
-        Files.delete( path );
-        return path.toString();
+        return new File( new File( workingDirectory, "security" ), filename ).getAbsolutePath();
     }
 
     public GraphDatabaseService graphDatabaseService()

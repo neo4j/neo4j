@@ -41,7 +41,6 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -60,16 +59,16 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class AuthenticationIT
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(), getSettingsFunction() );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), getSettingsFunction() );
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         return new TestGraphDatabaseFactory();
     }
 
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Consumer<Map<String, String>> getSettingsFunction()
     {
-        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" );
+        return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
     }
 
     @Parameterized.Parameter( 0 )

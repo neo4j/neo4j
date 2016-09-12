@@ -23,7 +23,6 @@ import org.junit.Rule;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.test.rule.SuppressOutput;
 
 public class BoltBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<BoltInteraction.BoltSubject>
@@ -39,7 +38,7 @@ public class BoltBuiltInProceduresInteractionTest extends BuiltInProceduresInter
     }
 
     @Override
-    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<Setting<?>, String> config ) throws
+    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<String, String> config ) throws
             Throwable
     {
         return new BoltInteraction( config );
