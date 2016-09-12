@@ -985,7 +985,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 legacyIndexStore );
 
         QueryRegistrationOperations queryRegistrationOperations =
-                new StackingQueryRegistrationOperations( StackingQueryRegistrationOperations.LAST_QUERY_ID, clock );
+                new StackingQueryRegistrationOperations( clock );
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,

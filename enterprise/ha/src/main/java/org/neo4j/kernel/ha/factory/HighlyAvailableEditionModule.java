@@ -862,7 +862,7 @@ public class HighlyAvailableEditionModule
     @Override
     public void registerProcedures( Procedures procedures ) throws KernelException
     {
-        // TODO
+        // empty
     }
 
     @Override

@@ -29,14 +29,12 @@ import org.neo4j.kernel.impl.util.MonotonicCounter;
 
 public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
 {
-    public static final MonotonicCounter LAST_QUERY_ID = MonotonicCounter.newAtomicMonotonicCounter();
 
-    private final MonotonicCounter lastQueryId;
+    private final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
     private final Clock clock;
 
-    public StackingQueryRegistrationOperations( MonotonicCounter lastQueryId, Clock clock )
+    public StackingQueryRegistrationOperations( Clock clock )
     {
-        this.lastQueryId = lastQueryId;
         this.clock = clock;
     }
 
@@ -59,7 +57,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
         long queryId = lastQueryId.incrementAndGet();
         ExecutingQuery executingQuery =
                 new ExecutingQuery( queryId, statement.authSubjectName(), queryText, queryParameters, clock.millis() );
-        statement.startQueryExecution( executingQuery );
+        registerExecutingQuery( statement, executingQuery );
         return executingQuery;
     }
 

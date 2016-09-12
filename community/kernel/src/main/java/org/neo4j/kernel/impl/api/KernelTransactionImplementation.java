@@ -342,16 +342,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement;
     }
 
-    KernelStatement tryAcquireStatement()
-    {
-        assertTransactionOpen();
-        return currentStatement.isAcquired() ? currentStatement : null;
-    }
-
     ExecutingQueryList executingQueries()
     {
-        return !closed && currentStatement.isAcquired() ?
-               currentStatement.executingQueryList() : ExecutingQueryList.EMPTY;
+        return currentStatement.executingQueryList();
     }
 
     void upgradeToDataWrites() throws InvalidTransactionTypeKernelException

@@ -391,14 +391,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public Result execute( InternalTransaction transaction, String query, Map<String,Object> parameters )
             throws QueryExecutionException
     {
-        TransactionalContext transactionalContext = new Neo4jTransactionalContext(
-            spi.queryService(),
-            transaction,
-            spi.currentStatement(),
-            query,
-            parameters,
-            locker
-        );
+        TransactionalContext transactionalContext = new Neo4jTransactionalContext( spi.queryService(),
+            transaction, spi.currentStatement(), query, parameters, locker );
         return spi.executeQuery( query, parameters, QueryEngineProvider.embeddedSession( transactionalContext ) );
     }
 
