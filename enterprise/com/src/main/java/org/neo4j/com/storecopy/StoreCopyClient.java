@@ -24,6 +24,9 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.com.Response;
@@ -183,12 +186,13 @@ public class StoreCopyClient
     {
         // Create a temp directory (or clean if present)
         File tempStore = new File( storeDir, TEMP_COPY_DIRECTORY_NAME );
+        List<FileMoveAction> fileMoveActions = new ArrayList<>();
         cleanDirectory( tempStore );
 
         // Request store files and transactions that will need recovery
         monitor.startReceivingStoreFiles();
         try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
-                new ToFileStoreWriter( tempStore, monitor, pageCache ) ) ) )
+                new ToFileStoreWriter( tempStore, monitor, pageCache, fileMoveActions ) ) ) )
         {
             monitor.finishReceivingStoreFiles();
             // Update highest archived log id
@@ -210,6 +214,13 @@ public class StoreCopyClient
         monitor.finishRecoveringStore();
 
         // All is well, move the streamed files to the real store directory
+        // Start with the files written through the page cache. Should only be record store files
+        for ( FileMoveAction fileMoveAction : fileMoveActions )
+        {
+            fileMoveAction.move( storeDir, StandardCopyOption.REPLACE_EXISTING );
+        }
+
+        // And continue with the rest of the files
         for ( File candidate : tempStore.listFiles( STORE_FILE_FILTER ) )
         {
             FileUtils.moveFileToDirectory( candidate, storeDir );
@@ -227,7 +238,8 @@ public class StoreCopyClient
             // Start the log and appender
             PhysicalLogFiles logFiles = new PhysicalLogFiles( tempStoreDir, fs );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-            ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, tempStoreDir );
+            ReadOnlyLogVersionRepository logVersionRepository =
+                    new ReadOnlyLogVersionRepository( pageCache, tempStoreDir );
             ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore(
                     pageCache, tempStoreDir );
             LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
@@ -333,7 +345,7 @@ public class StoreCopyClient
 
             @Override
             public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
-                              boolean hasData, int recordSize ) throws IOException
+                    boolean hasData, int recordSize ) throws IOException
             {
                 log.info( "Copying %s", path );
                 long written = actual.write( path, data, temporaryBuffer, hasData, recordSize );
