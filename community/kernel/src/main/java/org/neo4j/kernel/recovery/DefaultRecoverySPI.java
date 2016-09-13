@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.storageengine.api.StorageEngine;
+
+import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 
 public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransactionRepresentation,Exception>
@@ -117,7 +119,9 @@ public class DefaultRecoverySPI implements Recovery.SPI, Visitor<CommittedTransa
     {
         TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
         long txId = transaction.getCommitEntry().getTxId();
-        transactionsToApply.queue( new TransactionToApply( txRepresentation, txId ) );
+        TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
+        tx.commitment( NO_COMMITMENT, txId );
+        transactionsToApply.queue( tx );
         return false;
     }
 }
