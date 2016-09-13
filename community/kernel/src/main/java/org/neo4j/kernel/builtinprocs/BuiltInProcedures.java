@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -47,6 +48,7 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.procedure.Mode.READ;
 
+@SuppressWarnings( "unused" )
 public class BuiltInProcedures
 {
     @Context
@@ -160,6 +162,20 @@ public class BuiltInProcedures
         }
     }
 
+    @Description( "List all user functions in the DBMS." )
+    @Procedure(name = "dbms.functions", mode = READ)
+    public Stream<FunctionResult> listFunctions()
+    {
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            return statement.readOperations().functionsGetAll()
+                    .stream()
+                    .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                    .map( FunctionResult::new );
+        }
+    }
+
+    @SuppressWarnings( "unused" )
     public class LabelResult
     {
         public final String label;
@@ -170,6 +186,7 @@ public class BuiltInProcedures
         }
     }
 
+    @SuppressWarnings( "unused" )
     public class PropertyKeyResult
     {
         public final String propertyKey;
@@ -180,6 +197,7 @@ public class BuiltInProcedures
         }
     }
 
+    @SuppressWarnings( "unused" )
     public class RelationshipTypeResult
     {
         public final String relationshipType;
@@ -190,6 +208,7 @@ public class BuiltInProcedures
         }
     }
 
+    @SuppressWarnings( "unused" )
     public class IndexResult
     {
         public final String description;
@@ -204,6 +223,7 @@ public class BuiltInProcedures
         }
     }
 
+    @SuppressWarnings( "unused" )
     public class ConstraintResult
     {
         public final String description;
@@ -221,6 +241,21 @@ public class BuiltInProcedures
         public final String description;
 
         private ProcedureResult( ProcedureSignature signature )
+        {
+            this.name = signature.name().toString();
+            this.signature = signature.toString();
+            this.description = signature.description().orElse( "" );
+        }
+    }
+
+    @SuppressWarnings( "unused" )
+    public class FunctionResult
+    {
+        public final String name;
+        public final String signature;
+        public final String description;
+
+        private FunctionResult( UserFunctionSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();

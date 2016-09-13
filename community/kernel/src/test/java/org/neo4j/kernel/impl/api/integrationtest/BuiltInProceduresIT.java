@@ -115,6 +115,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "STRING?)", "List all relationship types in the database."} ),
                 equalTo( new Object[]{"dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: " +
                         "STRING?, description :: STRING?)", "List all procedures in the DBMS."} ),
+                equalTo( new Object[]{"dbms.functions", "dbms.functions() :: (name :: STRING?, signature :: " +
+                                                         "STRING?, description :: STRING?)", "List all user functions in the DBMS."} ),
                 equalTo( new Object[]{"dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF" +
                         " STRING?, edition :: STRING?)", "List DBMS components and their versions."} ),
                 equalTo( new Object[]{"dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, " +

@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.hamcrest.Matcher;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.stubbing.Answer;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -48,7 +48,6 @@ import org.neo4j.storageengine.api.Token;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -57,7 +56,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 
 public class BuiltInProceduresTest
@@ -169,7 +167,7 @@ public class BuiltInProceduresTest
     public void shouldListCorrectBuiltinProcedures() throws Throwable
     {
         // When/Then
-        assertThat( call( "dbms.procedures" ), contains(
+        assertThat( call( "dbms.procedures" ), containsInAnyOrder(
             record( "db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID", "Await indexes in the database to come online." ),
             record( "db.constraints", "db.constraints() :: (description :: STRING?)", "List all constraints in the database." ),
             record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "List all indexes in the database." ),
@@ -178,6 +176,7 @@ public class BuiltInProceduresTest
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)", "List all relationship types in the database." ),
             record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)", "List DBMS components and their versions." ),
             record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?, description :: STRING?)", "List all procedures in the DBMS." ),
+            record( "dbms.functions", "dbms.functions() :: (name :: STRING?, signature :: STRING?, description :: STRING?)", "List all user functions in the DBMS." ),
             record( "dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)", "Query JMX management data by domain and name. For instance, \"org.neo4j:*\"")
         ) );
     }
