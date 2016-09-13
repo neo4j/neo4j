@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -54,8 +53,6 @@ import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
-    static final String CUSTOM_IO_EXCEPTION_MESSAGE = "Online Backup not allowed with custom IO integration";
-
     private Object startBindingListener;
     private Object bindingListener;
 
@@ -93,15 +90,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
                     monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache );
             LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
             LogFileInformation logFileInformation = logFileInformationSupplier.get();
-            return new BackupImpl( copier, monitors,
-                    logicalTransactionStore, transactionIdStore, logFileInformation, new Supplier<StoreId>()
-                    {
-                        @Override
-                        public StoreId get()
-                        {
-                            return graphDatabaseAPI.storeId();
-                        }
-                    }, logProvider );
+            return new BackupImpl( copier, monitors, logicalTransactionStore, transactionIdStore, logFileInformation,
+                    graphDatabaseAPI::storeId, logProvider );
         }, monitors, logProvider );
     }
 
@@ -125,8 +115,6 @@ public class OnlineBackupKernelExtension implements Lifecycle
     {
         if ( config.<Boolean>get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
-
             try
             {
                 server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),
