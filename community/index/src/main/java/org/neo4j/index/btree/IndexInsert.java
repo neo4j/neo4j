@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import org.neo4j.index.IdProvider;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.Integer.max;
+
 /**
  * Implementation of the insert algorithm in this B+ tree including split.
  * Takes storage format into consideration.
@@ -33,15 +35,18 @@ public class IndexInsert
 {
     private final IdProvider idProvider;
     private final BTreeNode bTreeNode;
+    private final byte[] tmp;
 
     public IndexInsert( IdProvider idProvider, BTreeNode bTreeNode )
     {
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;
+        this.tmp = new byte[max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() ) *
+                            max( BTreeNode.SIZE_KEY, BTreeNode.SIZE_VALUE )];
     }
 
     /**
-     * Leaves cursor at same page as when called. No guaranties on offset.
+     * Leaves cursor at same page as when called. No guarantees on offset.
      * @param cursor        {@link org.neo4j.io.pagecache.PageCursor} pinned to page where insertion is to be done.
      * @param key           key to be inserted
      * @param value         value to be associated with key
@@ -97,14 +102,14 @@ public class IndexInsert
             int pos = IndexSearch.search( cursor, bTreeNode, primKey );
 
             // Insert and move keys
-            byte[] tmp = bTreeNode.keysFromTo( cursor, pos, keyCount );
+            int tmpLength = bTreeNode.keysFromTo( cursor, pos, keyCount, tmp );
             bTreeNode.setKeyAt( cursor, primKey, pos );
-            bTreeNode.setKeysAt( cursor, tmp, pos + 1 );
+            bTreeNode.setKeysAt( cursor, tmp, pos + 1, tmpLength );
 
             // Insert and move children
-            tmp = bTreeNode.childrenFromTo( cursor, pos + 1, keyCount + 1 );
+            tmpLength = bTreeNode.childrenFromTo( cursor, pos + 1, keyCount + 1, tmp );
             bTreeNode.setChildAt( cursor, rightChild, pos + 1 );
-            bTreeNode.setChildrenAt( cursor, tmp, pos + 2 );
+            bTreeNode.setChildrenAt( cursor, tmp, pos + 2, tmpLength );
 
             // Increase key count
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
@@ -118,7 +123,7 @@ public class IndexInsert
 
     /**
      *
-     * Leaves cursor at same page as when called. No guaranties on offset.
+     * Leaves cursor at same page as when called. No guarantees on offset.
      *
      * Split in internal node caused by an insertion of primKey and newRightChild
      *
@@ -241,14 +246,14 @@ public class IndexInsert
             int pos = IndexSearch.search( cursor, bTreeNode, key );
 
             // Insert and move keys
-            byte[] tmp = bTreeNode.keysFromTo( cursor, pos, keyCount );
+            int tmpLength = bTreeNode.keysFromTo( cursor, pos, keyCount, tmp );
             bTreeNode.setKeyAt( cursor, key, pos );
-            bTreeNode.setKeysAt( cursor, tmp, pos + 1 );
+            bTreeNode.setKeysAt( cursor, tmp, pos + 1, tmpLength );
 
             // Insert and move values
-            tmp = bTreeNode.valuesFromTo( cursor, pos, keyCount );
+            tmpLength = bTreeNode.valuesFromTo( cursor, pos, keyCount, tmp );
             bTreeNode.setValueAt( cursor, value, pos );
-            bTreeNode.setValuesAt( cursor, tmp, pos + 1 );
+            bTreeNode.setValuesAt( cursor, tmp, pos + 1, tmpLength );
 
             // Increase key count
             bTreeNode.setKeyCount( cursor, keyCount + 1 );

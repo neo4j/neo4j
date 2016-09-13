@@ -44,8 +44,6 @@ public interface SCIndex extends Closeable
 
     SCIndexDescription getDescription();
 
-    void insert( long[] key, long[] value ) throws IOException;
-
     void seek( Seeker seeker, List<SCResult> resultList) throws IOException;
 
     Cursor<BTreeHit> seek( RangePredicate from, RangePredicate to ) throws IOException;

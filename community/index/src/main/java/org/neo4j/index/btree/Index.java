@@ -53,9 +53,16 @@ public class Index implements SCIndex, IdProvider
     private long rootId;
     private long lastId = META_PAGE_ID + 1; // first page (page 0) is for meta data (even actual page size)
 
-    private final IndexInsert inserter;
     private final BTreeNode bTreeNode;
     private final PageCursor metaCursor;
+    private final ThreadLocal<TheInserter> inserters = new ThreadLocal<TheInserter>()
+    {
+        @Override
+        protected TheInserter initialValue()
+        {
+            return new TheInserter();
+        }
+    };
 
     /**
      * Initiate an already existing index from file and meta file
@@ -78,7 +85,6 @@ public class Index implements SCIndex, IdProvider
         this.rootId = meta.rootId;
         this.lastId = meta.lastId;
         this.bTreeNode = new BTreeNode( meta.pageSize );
-        this.inserter = new IndexInsert( this, bTreeNode );
         this.metaCursor = openMetaPageCursor();
     }
 
@@ -97,7 +103,6 @@ public class Index implements SCIndex, IdProvider
         this.description = description;
         this.rootId = this.lastId;
         this.bTreeNode = new BTreeNode( pageSize );
-        this.inserter = new IndexInsert( this, bTreeNode );
 
         writeMetaData( pagedFile, new SCMetaData( description, pageSize, rootId, lastId ) );
 
@@ -184,36 +189,6 @@ public class Index implements SCIndex, IdProvider
     public SCIndexDescription getDescription()
     {
         return description;
-    }
-
-    @Override
-    public void insert( long[] key, long[] value ) throws IOException
-    {
-        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
-        {
-            insert0( cursor, key, value );
-        }
-    }
-
-    private void insert0( PageCursor cursor, long[] key, long[] value ) throws IOException
-    {
-        cursor.next( rootId );
-
-        SplitResult split = inserter.insert( cursor, key, value );
-
-        if ( split != null )
-        {
-            // New root
-            rootId = acquireNewId();
-            cursor.next( rootId );
-
-            bTreeNode.initializeInternal( cursor );
-            bTreeNode.setKeyAt( cursor, split.primKey, 0 );
-            bTreeNode.setKeyCount( cursor, 1 );
-            bTreeNode.setChildAt( cursor, split.left, 0 );
-            bTreeNode.setChildAt( cursor, split.right, 1 );
-            updateIdsInMetaPage();
-        }
     }
 
     private void updateIdsInMetaPage()
@@ -399,21 +374,7 @@ public class Index implements SCIndex, IdProvider
     @Override
     public SCInserter inserter() throws IOException
     {
-        final PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
-        return new SCInserter()
-        {
-            @Override
-            public void insert( long[] key, long[] value ) throws IOException
-            {
-                insert0( cursor, key, value );
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                cursor.close();
-            }
-        };
+        return inserters.get().take( rootId );
     }
 
     // Utility method
@@ -442,5 +403,46 @@ public class Index implements SCIndex, IdProvider
             System.out.print( Arrays.toString( bTreeNode.keyAt( cursor, key, i ) ) + " " );
         }
         System.out.print( "|" );
+    }
+
+    class TheInserter implements SCInserter
+    {
+        // Well, IndexInsert code lives somewhere so we need to instantiate that bastard here as well
+        private final IndexInsert inserter = new IndexInsert( Index.this, bTreeNode );
+        private PageCursor cursor;
+
+        TheInserter take( long rootId ) throws IOException
+        {
+            cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
+            return this;
+        }
+
+        @Override
+        public void insert( long[] key, long[] value ) throws IOException
+        {
+            cursor.next( rootId );
+
+            SplitResult split = inserter.insert( cursor, key, value );
+
+            if ( split != null )
+            {
+                // New root
+                rootId = acquireNewId();
+                cursor.next( rootId );
+
+                bTreeNode.initializeInternal( cursor );
+                bTreeNode.setKeyAt( cursor, split.primKey, 0 );
+                bTreeNode.setKeyCount( cursor, 1 );
+                bTreeNode.setChildAt( cursor, split.left, 0 );
+                bTreeNode.setChildAt( cursor, split.right, 1 );
+                updateIdsInMetaPage();
+            }
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            cursor.close();
+        }
     }
 }

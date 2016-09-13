@@ -183,18 +183,18 @@ public class BTreeNode
         cursor.putLong( key[1] );
     }
 
-    public byte[] keysFromTo( PageCursor cursor, int fromIncluding, int toExcluding )
+    public int keysFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into )
     {
-        byte[] data = new byte[(toExcluding - fromIncluding) * SIZE_KEY];
+        int length = (toExcluding - fromIncluding) * SIZE_KEY;
         cursor.setOffset( keyOffset( fromIncluding ) );
-        cursor.getBytes( data );
-        return data;
+        cursor.getBytes( into, 0, length );
+        return length;
     }
 
-    public void setKeysAt( PageCursor cursor, byte[] keys, int pos )
+    public void setKeysAt( PageCursor cursor, byte[] keys, int pos, int length )
     {
         cursor.setOffset( keyOffset( pos ) );
-        cursor.putBytes( keys );
+        cursor.putBytes( keys, 0, length );
     }
 
     public long[] valueAt( PageCursor cursor, long[] value, int pos )
@@ -212,18 +212,18 @@ public class BTreeNode
         cursor.putLong( value[1] );
     }
 
-    public byte[] valuesFromTo( PageCursor cursor, int fromIncluding, int toExcluding )
+    public int valuesFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into )
     {
-        byte[] data = new byte[(toExcluding - fromIncluding) * SIZE_VALUE];
+        int length = (toExcluding - fromIncluding) * SIZE_VALUE;
         cursor.setOffset( valueOffset( fromIncluding ) );
-        cursor.getBytes( data );
-        return data;
+        cursor.getBytes( into, 0, length );
+        return length;
     }
 
-    public void setValuesAt( PageCursor cursor, byte[] values, int pos )
+    public void setValuesAt( PageCursor cursor, byte[] values, int pos, int length )
     {
         cursor.setOffset( valueOffset( pos ) );
-        cursor.putBytes( values );
+        cursor.putBytes( values, 0, length );
     }
 
     public long childAt( PageCursor cursor, int pos )
@@ -236,18 +236,18 @@ public class BTreeNode
         cursor.putLong( childOffset( pos ), child );
     }
 
-    public byte[] childrenFromTo( PageCursor cursor, int fromIncluding, int toExcluding )
+    public int childrenFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into )
     {
-        byte[] data = new byte[(toExcluding - fromIncluding) * SIZE_CHILD];
+        int length = (toExcluding - fromIncluding) * SIZE_CHILD;
         cursor.setOffset( childOffset( fromIncluding ) );
-        cursor.getBytes( data );
-        return data;
+        cursor.getBytes( into, 0, length );
+        return length;
     }
 
-    public void setChildrenAt( PageCursor cursor, byte[] children, int pos )
+    public void setChildrenAt( PageCursor cursor, byte[] children, int pos, int length )
     {
         cursor.setOffset( childOffset( pos ) );
-        cursor.putBytes( children );
+        cursor.putBytes( children, 0, length );
     }
 
     public int internalMaxKeyCount()
