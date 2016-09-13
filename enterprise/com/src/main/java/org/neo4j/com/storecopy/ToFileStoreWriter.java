@@ -25,6 +25,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.io.pagecache.PageCache;
@@ -41,12 +42,15 @@ public class ToFileStoreWriter implements StoreWriter
     private final File basePath;
     private final StoreCopyClient.Monitor monitor;
     private final PageCache pageCache;
+    private final List<FileMoveAction> fileMoveActions; // Todo need thread safe?
 
-    public ToFileStoreWriter( File graphDbStoreDir, StoreCopyClient.Monitor monitor, PageCache pageCache )
+    public ToFileStoreWriter( File graphDbStoreDir, StoreCopyClient.Monitor monitor, PageCache pageCache,
+            List<FileMoveAction> fileMoveActions )
     {
         this.basePath = graphDbStoreDir;
         this.monitor = monitor;
         this.pageCache = pageCache;
+        this.fileMoveActions = fileMoveActions;
     }
 
     @Override
@@ -70,7 +74,9 @@ public class ToFileStoreWriter implements StoreWriter
                 {
                     try ( PagedFile pagedFile = existingMapping.get() )
                     {
-                        return writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
+                        final long written = writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
+                        addPageCacheMoveAction( file );
+                        return written;
                     }
                 }
                 if ( storeType.isPresent() && storeType.get().isRecordStore() )
@@ -78,11 +84,14 @@ public class ToFileStoreWriter implements StoreWriter
                     int filePageSize = filePageSize( recordSize );
                     try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )
                     {
-                        return writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
+                        final long written = writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
+                        addPageCacheMoveAction( file );
+                        return written;
                     }
                 }
                 else
                 {
+
                     return writeDataThroughFileSystem( file, data, temporaryBuffer, hasData );
                 }
             }
@@ -95,6 +104,14 @@ public class ToFileStoreWriter implements StoreWriter
         {
             throw new IOException( t );
         }
+    }
+
+    // As only the page cache know towards which device (block device or normal file system) it is working, we use
+    // the page cache later on when we want to move the files written through the page cache.
+    private void addPageCacheMoveAction( File file )
+    {
+        fileMoveActions.add( ( ( toDir, copyOptions ) ->
+                pageCache.moveFile( file, new File( toDir, file.getName() ), copyOptions ) ) );
     }
 
     private int filePageSize( int recordSize )
