@@ -227,7 +227,7 @@ public class BuiltInProcedures
         if ( isAdminEnterpriseAuthSubject() || query.username().map( authSubject::hasUsername ).orElse( false ) )
         {
             pair.first().markForTermination( Status.Transaction.Terminated );
-            return new QueryTerminationResult( ofInternalId( query.internalQueryId() ), query.username() );
+            return new QueryTerminationResult( ofInternalId( query.internalQueryId() ), query.usernameAsString() );
         }
         else
         {
@@ -334,15 +334,13 @@ public class BuiltInProcedures
     {
         return new QueryStatusResult(
             ofInternalId( q.internalQueryId() ),
-            q.username(),
+            q.usernameAsString(),
             q.queryText(),
             q.queryParameters(),
             q.startTime(),
             clock.instant().minusMillis( q.startTime() ).toEpochMilli()
         );
     }
-
-    private static String UNAVAILABLE_USERNAME = "<unavailable>";
 
     public static class QueryStatusResult
     {
@@ -354,11 +352,11 @@ public class BuiltInProcedures
         public final String startTime;
         public final String elapsedTime;
 
-        QueryStatusResult( QueryId queryId, Optional<String> username, String query, Map<String,Object> parameters,
+        QueryStatusResult( QueryId queryId, String username, String query, Map<String,Object> parameters,
                 long startTime, long elapsedTime )
         {
             this.queryId = queryId.toString();
-            this.username = username.orElse( UNAVAILABLE_USERNAME );
+            this.username = username;
             this.query = query;
             this.parameters = parameters;
             this.startTime = formatTime( startTime );
@@ -378,10 +376,10 @@ public class BuiltInProcedures
         public final String queryId;
         public final String username;
 
-        public QueryTerminationResult( QueryId queryId, Optional<String> username )
+        public QueryTerminationResult( QueryId queryId, String username )
         {
             this.queryId = queryId.toString();
-            this.username = username.orElse( UNAVAILABLE_USERNAME );
+            this.username = username;
         }
     }
 

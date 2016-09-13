@@ -29,6 +29,8 @@ import static java.lang.String.format;
  */
 public class ExecutingQuery
 {
+    public static String UNAVAILABLE_USERNAME = "<unavailable>";
+
     private final long queryId;
 
     private final Optional<String> username;
@@ -85,6 +87,11 @@ public class ExecutingQuery
         return username;
     }
 
+    public String usernameAsString()
+    {
+        return username().orElse( UNAVAILABLE_USERNAME );
+
+    }
     public String queryText()
     {
         return queryText;
@@ -105,6 +112,6 @@ public class ExecutingQuery
     {
         return format(
             "ExecutingQuery{queryId=%d, username='%s', queryText='%s', queryParameters=%s, startTime=%d}",
-            queryId, username == null ? "<unavailable>" : username, queryText, queryParameters, startTime );
+            queryId, usernameAsString(), queryText, queryParameters, startTime );
     }
 }
