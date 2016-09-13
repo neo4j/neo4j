@@ -19,12 +19,9 @@
  */
 package org.neo4j.jmx.impl;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
-
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -34,9 +31,11 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.ManagementInterface;
 import org.neo4j.kernel.internal.KernelData;
 
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
+
 public class ManagementSupport
 {
-    final static ManagementSupport load()
+    public static final ManagementSupport load()
     {
         ManagementSupport support = new ManagementSupport();
         for ( ManagementSupport candidate : Service.load( ManagementSupport.class ) )
@@ -67,7 +66,7 @@ public class ManagementSupport
 
     final <T> Collection<T> getProxiesFor( Class<T> beanInterface, KernelBean kernel )
     {
-        Collection<T> result = new ArrayList<T>();
+        Collection<T> result = new ArrayList<>();
         ObjectName query = createObjectNameQuery( kernel.getInstanceId(), beanInterface );
         for ( ObjectName name : getMBeanServer().queryNames( query, null ) )
         {
@@ -116,7 +115,7 @@ public class ManagementSupport
 
     protected ObjectName createObjectName( String instanceId, String beanName, boolean query, String... extraNaming )
     {
-        Hashtable<String, String> properties = new Hashtable<String, String>();
+        Hashtable<String, String> properties = new Hashtable<>();
         properties.put( "instance", "kernel#" + instanceId );
         properties.put( "name", beanName );
         for ( int i = 0; i < extraNaming.length; i++ )
