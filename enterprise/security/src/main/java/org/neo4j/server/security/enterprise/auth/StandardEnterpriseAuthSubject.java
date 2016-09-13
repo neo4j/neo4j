@@ -96,6 +96,11 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
         return authManager.getUserManager();
     }
 
+    public void clearAuthCache()
+    {
+        authManager.clearAuthCache();
+    }
+
     @Override
     public boolean isAdmin()
     {

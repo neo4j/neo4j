@@ -174,6 +174,29 @@ public class LdapCachingTest
         assertThat( "Test realm did not received a call", testRealm.takeAuthenticationFlag(), is( true ) );
     }
 
+    @Test
+    public void shouldInvalidateAuthenticationCacheOnDemand() throws InvalidAuthTokenException
+    {
+        // Given
+        Map<String,Object> mike = authToken( "mike", "123" );
+        authManager.login( mike );
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
+
+        // When
+        fakeTicker.advance( 2, TimeUnit.MILLISECONDS );
+        authManager.login( mike );
+
+        // Then
+        assertThat( "Test realm received a call", testRealm.takeAuthenticationFlag(), is( false ) );
+
+        // When
+        authManager.clearAuthCache();
+        authManager.login( mike );
+
+        // Then
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
+    }
+
     private class TestRealm extends LdapRealm
     {
         private boolean authenticationFlag = false;

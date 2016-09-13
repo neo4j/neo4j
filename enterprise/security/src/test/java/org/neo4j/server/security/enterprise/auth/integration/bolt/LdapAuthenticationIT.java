@@ -30,6 +30,7 @@ import org.apache.directory.server.core.annotations.LoadSchema;
 import org.apache.directory.server.core.integ.AbstractLdapTestUnit;
 import org.apache.directory.server.core.integ.FrameworkRunner;
 import org.apache.directory.server.ldap.handlers.extended.StartTlsHandler;
+import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,6 +42,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
 import java.util.function.Consumer;
+import javax.naming.directory.BasicAttribute;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.ModificationItem;
+import javax.naming.ldap.LdapContext;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
@@ -55,11 +60,14 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -595,6 +603,82 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         testAuthWithPublisherUser("tank", "ldap");
     }
 
+    @Test
+    public void shouldClearAuthenticationCache() throws Throwable
+    {
+        getLdapServer().setConfidentialityRequired( true );
+
+        try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        {
+            // When
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_server.name(), "ldaps://localhost:10636" );
+            } ) );
+
+            // Then
+            assertAuth( "tank", "abc123", "ldap" );
+            changeLDAPPassword( "tank", "abc123", "123abc" );
+
+            // When logging in without clearing cache
+            reconnect();
+
+            // Then
+            assertAuthFail( "tank", "123abc" );
+            reconnect();
+            assertAuth( "tank", "abc123", "ldap" );
+
+            // When clearing cache and logging in
+            reconnect();
+            testClearAuthCache();
+            reconnect();
+
+            // Then
+            assertAuthFail( "tank", "abc123" );
+            reconnect();
+            assertAuth( "tank", "123abc", "ldap" );
+        }
+    }
+
+    @Test
+    public void shouldClearAuthorizationCache() throws Throwable
+    {
+        getLdapServer().setConfidentialityRequired( true );
+
+        try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        {
+            // When
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_server.name(), "ldaps://localhost:10636" );
+            } ) );
+
+            // Then
+            assertAuth( "tank", "abc123", "ldap" );
+            assertReadSucceeds();
+            assertWriteSucceeds();
+
+            // When
+            changeLDAPGroup( "tank", "abc123", "reader" );
+
+            // When logging in without clearing cache
+            reconnect();
+            assertAuth( "tank", "abc123", "ldap" );
+
+            // Then
+            assertReadSucceeds();
+            assertWriteSucceeds();
+
+            // When clearing cache and logging in
+            reconnect();
+            testClearAuthCache();
+            reconnect();
+
+            // Then
+            assertAuth( "tank", "abc123", "ldap" );
+            assertReadSucceeds();
+            assertWriteFails( "tank" );
+        }
+    }
+
     @Before
     public void setup()
     {
@@ -744,12 +828,14 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     protected void assertReadSucceeds() throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
-                run( "MATCH (n) RETURN n" ),
+        client.send( TransportTestUtil.chunk( run( "MATCH (n) RETURN count(n)" ),
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgRecord( eqRecord( greaterThanOrEqualTo( 0L ) ) ),
+                msgSuccess() ) );
     }
 
     protected void assertReadFails( String username ) throws Exception
@@ -787,6 +873,64 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
                         String.format( "Write operations are not allowed for '%s'.", username ) ) ) );
+    }
+
+    private void testClearAuthCache() throws Exception
+    {
+        assertAuth( "neo4j", "abc123" );
+
+        client.send( TransportTestUtil.chunk( run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
+
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
+    }
+
+    private void modifyLDAPAttribute( String username, Object credentials, String attribute, Object value )
+            throws Throwable
+    {
+        String principal = String.format( "cn=%s,ou=users,dc=example,dc=com", username );
+        String principal1 = String.format( "cn=%s,ou=users,dc=example,dc=com", username );
+        JndiLdapContextFactory contextFactory = new JndiLdapContextFactory();
+        contextFactory.setUrl( "ldaps://localhost:10636" );
+        LdapContext ctx = contextFactory.getLdapContext( principal1, credentials );
+
+        ModificationItem[] mods = new ModificationItem[1];
+        mods[0] = new ModificationItem( DirContext.REPLACE_ATTRIBUTE, new BasicAttribute( attribute, value ) );
+
+        // Perform the update
+        ctx.modifyAttributes( principal, mods );
+        ctx.close();
+    }
+
+    private void changeLDAPPassword( String username, Object credentials, Object newCredentials ) throws Throwable
+    {
+        modifyLDAPAttribute( username, credentials, "userpassword", newCredentials );
+    }
+
+    private void changeLDAPGroup( String username, Object credentials, String group ) throws Throwable
+    {
+        String gid;
+        switch ( group )
+        {
+        case "reader":
+            gid = "500";
+            break;
+        case "publisher":
+            gid = "501";
+            break;
+        case "architect":
+            gid = "502";
+            break;
+        case "admin":
+            gid = "503";
+            break;
+        case "none":
+            gid = "504";
+            break;
+        default:
+            throw new IllegalArgumentException( "Invalid group name '" + group +
+                    "', expected one of none, reader, publisher, architect, or admin" );
+        }
+        modifyLDAPAttribute( username, credentials, "gidnumber", gid );
     }
 
     private Consumer<Map<String, String>> ldapOnlyAuthSettings = settings ->

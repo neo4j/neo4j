@@ -24,4 +24,6 @@ import org.neo4j.kernel.api.security.AuthManager;
 public interface EnterpriseAuthManager extends AuthManager
 {
     EnterpriseUserManager getUserManager();
+
+    void clearAuthCache();
 }

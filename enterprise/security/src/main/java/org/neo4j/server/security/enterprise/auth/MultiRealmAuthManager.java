@@ -20,14 +20,19 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.ExcessiveAttemptsException;
 import org.apache.shiro.authc.pam.ModularRealmAuthenticator;
 import org.apache.shiro.authc.pam.UnsupportedTokenException;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.cache.Cache;
 import org.apache.shiro.cache.CacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.DefaultSessionStorageEvaluator;
 import org.apache.shiro.mgt.DefaultSubjectDAO;
 import org.apache.shiro.mgt.SubjectDAO;
+import org.apache.shiro.realm.AuthenticatingRealm;
+import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.realm.CachingRealm;
 import org.apache.shiro.realm.Realm;
 import org.apache.shiro.util.Initializable;
@@ -188,5 +193,29 @@ class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplie
     public EnterpriseUserManager getUserManager()
     {
         return userManager;
+    }
+
+    @Override
+    public void clearAuthCache()
+    {
+        for ( Realm realm : realms )
+        {
+            if ( realm instanceof AuthenticatingRealm )
+            {
+                Cache<Object,AuthenticationInfo> cache = ((AuthenticatingRealm) realm).getAuthenticationCache();
+                if ( cache != null )
+                {
+                    cache.clear();
+                }
+            }
+            if ( realm instanceof AuthorizingRealm )
+            {
+                Cache<Object,AuthorizationInfo> cache = ((AuthorizingRealm) realm).getAuthorizationCache();
+                if ( cache != null )
+                {
+                    cache.clear();
+                }
+            }
+        }
     }
 }
