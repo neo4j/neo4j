@@ -54,22 +54,22 @@ public class BuiltInProcedures
     @Context
     public KernelTransaction tx;
 
-    @Description("List all labels in the database.")
-    @Procedure(name = "db.labels", mode = READ)
+    @Description( "List all labels in the database." )
+    @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
         return TokenAccess.LABELS.inUse( tx.acquireStatement() ).map( LabelResult::new ).stream();
     }
 
     @Description( "List all property keys in the database." )
-    @Procedure(name = "db.propertyKeys", mode = READ)
+    @Procedure( name = "db.propertyKeys", mode = READ )
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
         return TokenAccess.PROPERTY_KEYS.inUse( tx.acquireStatement() ).map( PropertyKeyResult::new ).stream();
     }
 
     @Description( "List all relationship types in the database." )
-    @Procedure(name = "db.relationshipTypes", mode = READ)
+    @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
         return TokenAccess.RELATIONSHIP_TYPES.inUse( tx.acquireStatement() )
@@ -77,7 +77,7 @@ public class BuiltInProcedures
     }
 
     @Description( "List all indexes in the database." )
-    @Procedure(name = "db.indexes", mode = READ)
+    @Procedure( name = "db.indexes", mode = READ )
     public Stream<IndexResult> listIndexes() throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
@@ -120,21 +120,21 @@ public class BuiltInProcedures
         }
     }
 
-    @Description("Await indexes in the database to come online.")
-    @Procedure(name = "db.awaitIndex", mode = READ)
-    public void awaitIndex( @Name("label") String labelName,
-                            @Name("property") String propertyKeyName,
-                            @Name(value = "timeOutSeconds", defaultValue = "300") long timeout )
+    @Description( "Wait for an index to come online." )
+    @Procedure( name = "db.awaitIndex", mode = READ )
+    public void awaitIndex( @Name( "label" ) String labelName,
+                            @Name( "property" ) String propertyKeyName,
+                            @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
             throws ProcedureException
     {
-        try ( AwaitIndexProcedure awaitIndexProcedure = new AwaitIndexProcedure( tx ) )
+        try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            awaitIndexProcedure.execute( labelName, propertyKeyName, timeout, TimeUnit.SECONDS );
+            indexProcedures.awaitIndex( labelName, propertyKeyName, timeout, TimeUnit.SECONDS );
         }
     }
 
     @Description( "List all constraints in the database." )
-    @Procedure(name = "db.constraints", mode = READ)
+    @Procedure( name = "db.constraints", mode = READ )
     public Stream<ConstraintResult> listConstraints()
     {
         Statement statement = tx.acquireStatement();
@@ -150,7 +150,7 @@ public class BuiltInProcedures
     }
 
     @Description( "List all procedures in the DBMS." )
-    @Procedure(name = "dbms.procedures", mode = READ)
+    @Procedure( name = "dbms.procedures", mode = READ )
     public Stream<ProcedureResult> listProcedures()
     {
         try ( Statement statement = tx.acquireStatement() )
@@ -173,6 +173,11 @@ public class BuiltInProcedures
                     .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
                     .map( FunctionResult::new );
         }
+    }
+
+    private IndexProcedures indexProcedures()
+    {
+        return new IndexProcedures( tx );
     }
 
     @SuppressWarnings( "unused" )

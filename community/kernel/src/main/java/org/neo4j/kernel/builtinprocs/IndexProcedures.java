@@ -35,18 +35,18 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 
 import static java.lang.String.format;
 
-public class AwaitIndexProcedure implements AutoCloseable
+public class IndexProcedures implements AutoCloseable
 {
+    private final Statement statement;
     private final ReadOperations operations;
-    private Statement statement;
 
-    public AwaitIndexProcedure( KernelTransaction tx )
+    public IndexProcedures( KernelTransaction tx )
     {
         statement = tx.acquireStatement();
         operations = statement.readOperations();
     }
 
-    public void execute( String labelName, String propertyKeyName, long timeout, TimeUnit timeoutUnits )
+    public void awaitIndex( String labelName, String propertyKeyName, long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
         int labelId = getLabelId( labelName );
