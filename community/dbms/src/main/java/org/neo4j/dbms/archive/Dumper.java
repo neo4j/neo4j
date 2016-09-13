@@ -69,6 +69,7 @@ public class Dumper
                 new TarArchiveOutputStream( new GzipCompressorOutputStream(
                         Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW ) ) );
         tarball.setLongFileMode( TarArchiveOutputStream.LONGFILE_POSIX );
+        tarball.setBigNumberMode( TarArchiveOutputStream.BIGNUMBER_POSIX );
         return tarball;
     }
 
