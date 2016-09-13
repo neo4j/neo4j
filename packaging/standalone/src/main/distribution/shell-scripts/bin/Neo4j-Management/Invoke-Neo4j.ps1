@@ -64,6 +64,8 @@ Function Invoke-Neo4j
   {
     try 
     {
+      $HelpText = "Usage: neo4j { console | start | stop | restart | status | install-service | uninstall-service } < -Verbose >"
+
       # Determine the Neo4j Home Directory.  Uses the NEO4J_HOME enironment variable or a parent directory of this script
       $Neo4jHome = Get-Neo4jEnv 'NEO4J_HOME'
       if ( ($Neo4jHome -eq $null) -or (-not (Test-Path -Path $Neo4jHome)) ) {
@@ -85,9 +87,9 @@ Function Invoke-Neo4j
 
       switch ($Command.Trim().ToLower())
       {
-        "" {
-          Write-Host "Usage: neo4j { console | start | stop | restart | status | install-service | uninstall-service } < -Verbose >"
-          Return 1
+        "help" {
+          Write-Host $HelpText
+          Return 0
         }
         "console" {
           Write-Verbose "Console command specified"
@@ -121,8 +123,9 @@ Function Invoke-Neo4j
           Return [int](Uninstall-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
         }
         default {
-          Write-Host "Unknown command $Command"
-          Return 255
+          if ($Command -ne '') { Write-StdErr "Unknown command $Command" }
+          Write-StdErr $HelpText
+          Return 1
         }
       }
       # Should not get here!
