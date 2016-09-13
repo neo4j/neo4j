@@ -288,41 +288,11 @@ public class RecoveryTest
             }
         } );
 
-        LifeSupport life = new LifeSupport();
-        Recovery.Monitor monitor = mock( Recovery.Monitor.class );
-        final AtomicBoolean recoveryRequired = new AtomicBoolean();
-        try
-        {
-            StorageEngine storageEngine = mock( StorageEngine.class );
-            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+        // WHEN
+        boolean recoveryRequired = recover( logFiles );
 
-            TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
-            LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-            LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
-                    () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
-                    mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
-
-            life.add( new Recovery( new DefaultRecoverySPI( storageEngine,
-                    logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore )
-            {
-                @Override
-                public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
-                {
-                    recoveryRequired.set( true );
-                    return super.startRecovery();
-                }
-            }, monitor ) );
-
-            life.start();
-        }
-        finally
-        {
-            life.shutdown();
-        }
-
-        assertTrue( recoveryRequired.get() );
+        // THEN
+        assertTrue( recoveryRequired );
         assertEquals( marker.getByteOffset(), file.length() );
     }
 
@@ -356,6 +326,22 @@ public class RecoveryTest
             }
         } );
 
+        // WHEN
+        boolean recoveryRequired = recover( logFiles );
+
+        // THEN
+        assertTrue( recoveryRequired );
+        long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+        assertEquals( transactionId, lastClosedTransaction[0] );
+        assertEquals( LogEntryStart.checksum( additionalHeaderData, masterId, authorId ),
+                transactionIdStore.getLastCommittedTransaction().checksum() );
+        assertEquals( commitTimestamp, transactionIdStore.getLastCommittedTransaction().commitTimestamp() );
+        assertEquals( logVersion, lastClosedTransaction[1] );
+        assertEquals( marker.getByteOffset(), lastClosedTransaction[2] );
+    }
+
+    private boolean recover( PhysicalLogFiles logFiles )
+    {
         LifeSupport life = new LifeSupport();
         Recovery.Monitor monitor = mock( Recovery.Monitor.class );
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
@@ -389,15 +375,7 @@ public class RecoveryTest
         {
             life.shutdown();
         }
-
-        assertTrue( recoveryRequired.get() );
-        long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
-        assertEquals( transactionId, lastClosedTransaction[0] );
-        assertEquals( LogEntryStart.checksum( additionalHeaderData, masterId, authorId ),
-                transactionIdStore.getLastCommittedTransaction().checksum() );
-        assertEquals( commitTimestamp, transactionIdStore.getLastCommittedTransaction().commitTimestamp() );
-        assertEquals( logVersion, lastClosedTransaction[1] );
-        assertEquals( marker.getByteOffset(), lastClosedTransaction[2] );
+        return recoveryRequired.get();
     }
 
     private void writeSomeData( File file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
