@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.CharReadable;
@@ -58,7 +57,7 @@ public class DataFactories
      *
      * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
      */
-    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
+    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Decorator<ENTITY> decorator,
             final Charset charset, final File... files )
     {
         if ( files.length == 0 )
@@ -82,7 +81,7 @@ public class DataFactories
             }
 
             @Override
-            public Function<ENTITY,ENTITY> decorator()
+            public Decorator<ENTITY> decorator()
             {
                 return decorator;
             }
@@ -94,7 +93,7 @@ public class DataFactories
      * multiple times.
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
      */
-    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
+    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Decorator<ENTITY> decorator,
             final Supplier<CharReadable> readable )
     {
         return config -> new Data<ENTITY>()
@@ -106,7 +105,7 @@ public class DataFactories
             }
 
             @Override
-            public Function<ENTITY,ENTITY> decorator()
+            public Decorator<ENTITY> decorator()
             {
                 return decorator;
             }

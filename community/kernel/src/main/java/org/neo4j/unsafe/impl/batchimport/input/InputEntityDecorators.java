@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.util.function.Function;
 
 import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 
 /**
  * Common {@link InputEntity} decorators, able to provide defaults or overrides.
@@ -31,11 +32,11 @@ public class InputEntityDecorators
     /**
      * Ensures that all {@link InputNode input nodes} will at least have the given set of labels.
      */
-    public static Function<InputNode,InputNode> additiveLabels( final String[] labelNamesToAdd )
+    public static Decorator<InputNode> additiveLabels( final String[] labelNamesToAdd )
     {
         if ( labelNamesToAdd == null || labelNamesToAdd.length == 0 )
         {
-            return value -> value;
+            return NO_NODE_DECORATOR;
         }
 
         return node -> {
@@ -57,7 +58,7 @@ public class InputEntityDecorators
      * Ensures that {@link InputRelationship input relationships} without a specified relationship type will get
      * the specified default relationship type.
      */
-    public static Function<InputRelationship,InputRelationship> defaultRelationshipType( final String defaultType )
+    public static Decorator<InputRelationship> defaultRelationshipType( final String defaultType )
     {
         if ( defaultType == null )
         {
@@ -86,6 +87,11 @@ public class InputEntityDecorators
         };
     }
 
-    public static final Function<InputNode,InputNode> NO_NODE_DECORATOR = value -> value;
-    public static final Function<InputRelationship,InputRelationship> NO_RELATIONSHIP_DECORATOR = value -> value;
+    public static final Decorator<InputNode> NO_NODE_DECORATOR = value -> value;
+    public static final Decorator<InputRelationship> NO_RELATIONSHIP_DECORATOR = value -> value;
+
+    public static <ENTITY extends InputEntity> Decorator<ENTITY> noDecorator()
+    {
+        return value -> value;
+    }
 }

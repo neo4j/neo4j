@@ -115,7 +115,7 @@ public class CsvInputBatchImportIT
     private org.neo4j.unsafe.impl.batchimport.input.csv.Configuration lowBufferSize(
             org.neo4j.unsafe.impl.batchimport.input.csv.Configuration actual )
     {
-        return new org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.Overriden( actual )
+        return new org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.Overridden( actual )
         {
             @Override
             public int bufferSize()

@@ -39,7 +39,7 @@ public class InputRelationshipDeserialization extends InputEntityDeserialization
     private Object startNode;
     private Object endNode;
 
-    public InputRelationshipDeserialization( SourceTraceability source, Header header, Groups groups )
+    public InputRelationshipDeserialization( Header header, SourceTraceability source, Groups groups )
     {
         super( source );
         this.header = header;

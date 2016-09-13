@@ -19,17 +19,19 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.neo4j.csv.reader.CharReadable;
-import org.neo4j.csv.reader.CharSeeker;
+import java.util.function.Function;
+
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
-/**
- * Produces a {@link CharSeeker} that can seek and extract values from a csv/tsv style data stream.
- * A decorator also comes with it which can specify global overrides/defaults of extracted input entities.
- */
-public interface Data<ENTITY extends InputEntity>
+public interface Decorator<ENTITY extends InputEntity> extends Function<ENTITY,ENTITY>
 {
-    CharReadable stream();
-
-    Decorator<ENTITY> decorator();
+    /**
+     * @return whether or not this decorator is mutable. This is important because a state-less decorator
+     * can be called from multiple parallel processing threads. A mutable decorator has to be called by
+     * a single thread and may incur a performance penalty.
+     */
+    default boolean isMutable()
+    {
+        return false;
+    }
 }

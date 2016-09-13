@@ -33,6 +33,7 @@ import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.collection.ContinuableArrayCursor;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
@@ -44,6 +45,8 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.Deser
 import org.neo4j.unsafe.impl.batchimport.staging.TicketedProcessing;
 
 import static org.neo4j.csv.reader.Source.singleChunk;
+import static org.neo4j.kernel.impl.util.Validators.emptyValidator;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.noDecorator;
 
 /**
  * Deserializes CSV into {@link InputNode} and {@link InputRelationship} and does so by reading characters
@@ -65,7 +68,8 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
 
     @SuppressWarnings( "unchecked" )
     public ParallelInputEntityDeserializer( Data<ENTITY> data, Header.Factory headerFactory, Configuration config,
-            IdType idType, int maxProcessors, DeserializerFactory<ENTITY> factory, Class<ENTITY> entityClass )
+            IdType idType, int maxProcessors, DeserializerFactory<ENTITY> factory,
+            Validator<ENTITY> validator, Class<ENTITY> entityClass )
     {
         // Reader of chunks, characters aligning to nearest newline
         source = new ProcessingSource( data.stream(), config.bufferSize(), maxProcessors );
@@ -81,9 +85,21 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             Header dataHeader = headerFactory.create( firstSeeker, config, idType );
 
             // Initialize the processing logic for parsing the data in the first chunk, as well as in all other chunk
+            Decorator<ENTITY> decorator = data.decorator();
+
+            // Check if each individual processor can decorate-and-validate themselves or we have to
+            // defer that to the batch supplier below. We have to defer is decorator is mutable.
+            boolean deferredValidation = decorator.isMutable();
+            Decorator<ENTITY> batchDecorator = deferredValidation ? noDecorator() : decorator;
+            Validator<ENTITY> batchValidator = deferredValidation ? emptyValidator() : validator;
             processing = new TicketedProcessing<>( "Parallel input parser", maxProcessors, (seeker, header) ->
             {
-                InputEntityDeserializer<ENTITY> chunkDeserializer = factory.create( seeker, header, data.decorator() );
+                // Create a local deserializer for this chunk with NO decoration/validation,
+                // this will happen in an orderly fashion in our post-processor below and done like this
+                // to cater for decorators which may be mutable and sensitive to ordering, while still putting
+                // the work of decorating and validating on the processing threads as to not affect performance.
+                InputEntityDeserializer<ENTITY> chunkDeserializer =
+                        factory.create( header, seeker, batchDecorator, batchValidator );
                 chunkDeserializer.initialize();
                 List<ENTITY> entities = new ArrayList<>();
                 while ( chunkDeserializer.hasNext() )
@@ -96,7 +112,10 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             () -> dataHeader.clone() /*We need to clone the stateful header to each processing thread*/ );
 
             // Utility cursor which takes care of moving over processed results from chunk to chunk
-            cursor = new ContinuableArrayCursor<>( rebaseBatches( processing ) );
+            Supplier<ENTITY[]> batchSupplier = rebaseBatches( processing );
+            batchSupplier = deferredValidation ?
+                    decorateAndValidate( batchSupplier, decorator, validator ) : batchSupplier;
+            cursor = new ContinuableArrayCursor<>( batchSupplier );
 
             // Start an asynchronous slurp of the chunks fed directly into the processors
             processing.slurp( seekers( firstSeeker, source, config ), true );
@@ -105,6 +124,25 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
         {
             throw new InputException( "Couldn't read first chunk from input", e );
         }
+    }
+
+    private Supplier<ENTITY[]> decorateAndValidate( Supplier<ENTITY[]> actual,
+            Decorator<ENTITY> decorator, Validator<ENTITY> validator )
+    {
+        return () ->
+        {
+            ENTITY[] entities = actual.get();
+            if ( entities != null )
+            {
+                for ( int i = 0; i < entities.length; i++ )
+                {
+                    ENTITY entity = decorator.apply( entities[i] );
+                    validator.validate( entity );
+                    entities[i] = entity;
+                }
+            }
+            return entities;
+        };
     }
 
     @Override

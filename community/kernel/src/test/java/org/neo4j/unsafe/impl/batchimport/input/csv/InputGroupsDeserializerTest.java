@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.function.Suppliers;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 
 import static java.util.Arrays.asList;
@@ -51,7 +52,7 @@ public class InputGroupsDeserializerTest
         final AtomicReference<InputGroupsDeserializer<InputNode>> deserializerTestHack = new AtomicReference<>( null );
         InputGroupsDeserializer<InputNode> deserializer = new InputGroupsDeserializer<>(
                 data.iterator(), defaultFormatNodeFileHeader(), lowBufferSize( COMMAS ), INTEGER,
-                Runtime.getRuntime().availableProcessors(), (stream,header,decorator) ->
+                Runtime.getRuntime().availableProcessors(), (header,stream,decorator,validator) ->
                 {
                     // This is the point where the currentInput field in InputGroupsDeserializer was null
                     // so ensure that's no longer the case, just by poking those source methods right here and now.
@@ -69,7 +70,7 @@ public class InputGroupsDeserializerTest
                     InputEntityDeserializer<InputNode> result = mock( InputEntityDeserializer.class );
                     when( result.sourceDescription() ).thenReturn( String.valueOf( flips.get() ) );
                     return result;
-                }, InputNode.class );
+                }, Validators.<InputNode>emptyValidator(), InputNode.class );
         deserializerTestHack.set( deserializer );
 
         // WHEN running through the iterator
@@ -81,7 +82,7 @@ public class InputGroupsDeserializerTest
 
     private Configuration lowBufferSize( Configuration conf )
     {
-        return new Configuration.Overriden( conf )
+        return new Configuration.Overridden( conf )
         {
             @Override
             public int bufferSize()

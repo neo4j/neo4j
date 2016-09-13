@@ -282,7 +282,7 @@ public class DataFactoriesTest
 
     private static Configuration withBufferSize( Configuration config, final int bufferSize )
     {
-        return new Configuration.Overriden( config )
+        return new Configuration.Overridden( config )
         {
             @Override
             public int bufferSize()

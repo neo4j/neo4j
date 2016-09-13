@@ -55,6 +55,10 @@ public abstract class InputEntity implements SourceTraceability
         this.firstPropertyId = firstPropertyId;
     }
 
+    /**
+     * @return properties on this entity. Properties sits in one array with alternating keys (even indexes)
+     * and values (odd indexes).
+     */
     public Object[] properties()
     {
         return properties;
