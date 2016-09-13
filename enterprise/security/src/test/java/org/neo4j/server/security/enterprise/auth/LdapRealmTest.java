@@ -83,6 +83,7 @@ public class LdapRealmTest
 
         when( config.get( SecuritySettings.ldap_authentication_enabled ) ).thenReturn( true );
         when( config.get( SecuritySettings.ldap_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.ldap_authentication_cache_enabled ) ).thenReturn( false );
     }
 
     @Test

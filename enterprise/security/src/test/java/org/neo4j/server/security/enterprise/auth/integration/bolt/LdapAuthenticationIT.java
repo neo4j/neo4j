@@ -146,6 +146,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
             settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
             settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
             settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
+            settings.put( SecuritySettings.ldap_authentication_cache_enabled, "true" );
             settings.put( SecuritySettings.ldap_system_username, "uid=admin,ou=system" );
             settings.put( SecuritySettings.ldap_system_password, "secret" );
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
@@ -166,12 +167,34 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     public void shouldLoginWithLdap() throws Throwable
     {
         assertAuth( "neo4j", "abc123" );
+        reconnect();
+        assertAuth( "neo4j", "abc123" );
+    }
+
+    @Test
+    public void shouldLoginWithLdapWithAuthenticationCacheDisabled() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_authentication_cache_enabled, "false" );
+        } ) );
+
+        assertAuth( "neo4j", "abc123" );
+        reconnect();
+        assertAuth( "neo4j", "abc123" );
     }
 
     @Test
     public void shouldFailToLoginWithLdapIfInvalidCredentials() throws Throwable
     {
         assertAuthFail( "neo4j", "CANT_REMEMBER_MY_PASSWORDS_ANYMORE!" );
+    }
+
+    @Test
+    public void shoulFailToLoginWithLdapIfInvalidCredentialsFollowingSuccessfulLogin() throws Throwable
+    {
+        assertAuth( "neo4j", "abc123" );
+        reconnect();
+        assertAuthFail( "neo4j", "" );
     }
 
     @Test

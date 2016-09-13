@@ -135,6 +135,45 @@ public class AuthenticationIT
     }
 
     @Test
+    public void shouldFailIfWrongCredentialsFollowingSuccessfulLogin() throws Throwable
+    {
+        // When change password
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        InitMessage.init( "TestClient/1.1", map( "principal", "neo4j",
+                                "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) ) );
+        // Then
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
+
+        // When login again with the new password
+        reconnect();
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        InitMessage.init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
+
+        // When login again with the wrong password
+        reconnect();
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        InitMessage.init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+                "The client is unauthorized due to authentication failure." ) ) );
+    }
+
+    @Test
     public void shouldFailIfMalformedAuthTokenWrongType() throws Throwable
     {
         // When
