@@ -58,7 +58,7 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
     {
         return batch -> new SimpleDataGeneratorBatch<>( nodeHeader, batch.getStart(), randomSeed + batch.getStart(),
                 nodeCount, labels, relationshipTypes,
-                new InputNodeDeserialization( SimpleDataGenerator.this, nodeHeader, groups, idType.idsAreExternal() ),
+                new InputNodeDeserialization( nodeHeader, SimpleDataGenerator.this, groups, idType.idsAreExternal() ),
                 new InputNode[batch.getSize()] ).get();
     }
 
@@ -66,7 +66,7 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
     {
         return batch -> new SimpleDataGeneratorBatch<>( relationshipHeader, batch.getStart(),
                 randomSeed + batch.getStart(), nodeCount, labels, relationshipTypes,
-                new InputRelationshipDeserialization( SimpleDataGenerator.this, relationshipHeader, groups ),
+                new InputRelationshipDeserialization( relationshipHeader, SimpleDataGenerator.this, groups ),
                 new InputRelationship[batch.getSize()] ).get();
     }
 

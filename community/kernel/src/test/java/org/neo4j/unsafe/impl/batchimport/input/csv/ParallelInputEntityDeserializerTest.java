@@ -25,13 +25,12 @@ import org.junit.Test;
 import java.io.StringReader;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.function.Function;
-
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.DeserializerFactory;
 
@@ -56,7 +55,7 @@ public class ParallelInputEntityDeserializerTest
         // GIVEN
         int entities = 500;
         Data<InputNode> data = testData( entities );
-        Configuration config = new Configuration.Overriden( COMMAS )
+        Configuration config = new Configuration.Overridden( COMMAS )
         {
             @Override
             public int bufferSize()
@@ -69,17 +68,18 @@ public class ParallelInputEntityDeserializerTest
         Groups groups = new Groups();
         Set<Thread> observedProcessingThreads = new CopyOnWriteArraySet<>();
         int threads = 4;
-        DeserializerFactory<InputNode> deserializerFactory = (chunk,header,decorator) ->
+        DeserializerFactory<InputNode> deserializerFactory = (header,chunk,decorator,validator) ->
         {
             observedProcessingThreads.add( Thread.currentThread() );
             // Make sure there will be 4 different processing threads doing this
             while ( observedProcessingThreads.size() < threads );
             return new InputEntityDeserializer<>( header, chunk, config.delimiter(),
-                    new InputNodeDeserialization( chunk, header, groups, idType.idsAreExternal() ), decorator,
-                    Validators.<InputNode>emptyValidator(), badCollector );
+                    new InputNodeDeserialization( header, chunk, groups, idType.idsAreExternal() ), decorator,
+                    validator, badCollector );
         };
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,
-                defaultFormatNodeFileHeader(), config, idType, threads, deserializerFactory, InputNode.class ) )
+                defaultFormatNodeFileHeader(), config, idType, threads, deserializerFactory,
+                Validators.<InputNode>emptyValidator(), InputNode.class ) )
         {
             deserializer.processors( threads );
 
@@ -127,9 +127,9 @@ public class ParallelInputEntityDeserializerTest
             }
 
             @Override
-            public Function<InputNode,InputNode> decorator()
+            public Decorator<InputNode> decorator()
             {
-                return item -> item;
+                return InputEntityDecorators.NO_NODE_DECORATOR;
             }
         };
     }
