@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.function.Factory;
@@ -43,7 +42,6 @@ import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Provider;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
@@ -119,9 +117,7 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -159,7 +155,6 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValida
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextFactory;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -376,7 +371,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private final NodeManager nodeManager;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
-    private final AtomicInteger recoveredCount = new AtomicInteger();
     private final Guard guard;
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
@@ -504,7 +498,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     @Override
     public void init()
-    { // We do our own internal life management:
+    {   // We do our own internal life management:
         // start() does life.init() and life.start(),
         // stop() does life.stop() and life.shutdown().
     }
@@ -523,14 +517,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         // Monitor listeners
         LoggingLogFileMonitor loggingLogMonitor = new LoggingLogFileMonitor( msgLog );
         monitors.addMonitorListener( loggingLogMonitor );
-        monitors.addMonitorListener( new RecoveryVisitor.Monitor()
-        {
-            @Override
-            public void transactionRecovered( long txId )
-            {
-                recoveredCount.incrementAndGet();
-            }
-        } );
 
         life.add( new Lifecycle.Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
@@ -575,9 +561,9 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
             buildRecovery( fs, cacheModule.cacheAccess(), indexingModule.indexingService(),
                     indexingModule.labelScanStore(), neoStoreModule.neoStores(),
-                    monitors.newMonitor( RecoveryVisitor.Monitor.class ), monitors.newMonitor( Recovery.Monitor.class ),
+                    monitors.newMonitor( Recovery.Monitor.class ),
                     transactionLogModule.logFiles(), transactionLogModule.storeFlusher(), startupStatistics,
-                    legacyIndexApplierLookup );
+                    legacyIndexApplierLookup, transactionLogModule.logicalTransactionStore() );
 
             final KernelModule kernelModule = buildKernel( indexingModule.integrityValidator(),
                     transactionLogModule.transactionAppender(), neoStoreModule.neoStores(),
@@ -1015,10 +1001,11 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private void buildRecovery( final FileSystemAbstraction fileSystemAbstraction, CacheAccessBackDoor cacheAccess,
             IndexingService indexingService, LabelScanStore labelScanStore,
-            final NeoStores neoStores, RecoveryVisitor.Monitor recoveryVisitorMonitor, Recovery.Monitor recoveryMonitor,
+            final NeoStores neoStores, Recovery.Monitor recoveryMonitor,
             final PhysicalLogFiles logFiles, final StoreFlusher storeFlusher,
             final StartupStatisticsProvider startupStatistics,
-            LegacyIndexApplierLookup legacyIndexApplierLookup )
+            LegacyIndexApplierLookup legacyIndexApplierLookup,
+            LogicalTransactionStore logicalTransactionStore )
     {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         final RecoveryLabelScanWriterProvider labelScanWriters =
@@ -1030,31 +1017,33 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 new TransactionRepresentationStoreApplier( indexingService, labelScanWriters, neoStores, cacheAccess,
                         lockService, legacyIndexApplierLookup, indexConfigStore, kernelHealth, IdOrderingQueue.BYPASS );
 
-        RecoveryVisitor recoveryVisitor =
-                new RecoveryVisitor( metaDataStore, storeRecoverer, indexUpdatesValidator, recoveryVisitorMonitor );
-
         LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =
-                new LogFileRecoverer( logEntryReader, recoveryVisitor );
 
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
         Recovery.SPI spi = new DefaultRecoverySPI( labelScanWriters, recoveryLegacyIndexApplierLookup,
-                storeFlusher, neoStores, logFileRecoverer, logFiles, fileSystemAbstraction, metaDataStore,
-                checkPointFinder, indexUpdatesValidator );
+                storeFlusher, neoStores, logFiles, fileSystemAbstraction, metaDataStore,
+                checkPointFinder, indexUpdatesValidator, metaDataStore, logicalTransactionStore, storeRecoverer );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
-
-        life.add( recovery );
-
-        life.add( new LifecycleAdapter()
+        monitors.addMonitorListener( new Recovery.Monitor()
         {
             @Override
-            public void init() throws Throwable
+            public void recoveryCompleted( int numberOfRecoveredTransactions )
             {
-                startupStatistics.setNumberOfRecoveredTransactions( recoveredCount.get() );
-                recoveredCount.set( 0 );
+                startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );
+            }
+
+            @Override
+            public void recoveryRequired( LogPosition recoveryPosition )
+            {   // noop
+            }
+
+            @Override
+            public void transactionRecovered( long txId )
+            {   // noop
             }
         } );
+        life.add( recovery );
     }
 
     private KernelModule buildKernel( IntegrityValidator integrityValidator, TransactionAppender appender,

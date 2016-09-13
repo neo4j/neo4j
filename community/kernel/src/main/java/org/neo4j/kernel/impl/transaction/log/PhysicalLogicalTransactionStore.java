@@ -47,9 +47,14 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         this.transactionMetadataCache = transactionMetadataCache;
     }
 
+    @Override
+    public TransactionCursor getTransactions( LogPosition position ) throws IOException
+    {
+        return new PhysicalTransactionCursor<>( logFile.getReader( position ), new VersionAwareLogEntryReader<>() );
+    }
 
     @Override
-    public IOCursor<CommittedTransactionRepresentation> getTransactions( final long transactionIdToStartFrom )
+    public TransactionCursor getTransactions( final long transactionIdToStartFrom )
             throws IOException
     {
         // look up in position cache

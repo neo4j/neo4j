@@ -31,8 +31,9 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
@@ -43,6 +44,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class ResponsePackerTest
@@ -53,7 +55,7 @@ public class ResponsePackerTest
         // GIVEN
         LogicalTransactionStore transactionStore = mock( LogicalTransactionStore.class );
         long lastAppliedTransactionId = 5L;
-        IOCursor<CommittedTransactionRepresentation> endlessCursor = new EndlessCursor( lastAppliedTransactionId+1 );
+        TransactionCursor endlessCursor = new EndlessCursor( lastAppliedTransactionId+1 );
         when( transactionStore.getTransactions( anyLong() ) ).thenReturn( endlessCursor );
         final long targetTransactionId = 8L;
         final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0,
@@ -101,8 +103,9 @@ public class ResponsePackerTest
         return new RequestContext( 0, 0, 0, txId, 0 );
     }
 
-    public class EndlessCursor implements IOCursor<CommittedTransactionRepresentation>
+    public class EndlessCursor implements TransactionCursor
     {
+        private final LogPosition position = new LogPosition( 0, 0 );
         private long txId;
         private CommittedTransactionRepresentation transaction;
 
@@ -128,6 +131,12 @@ public class ResponsePackerTest
             transaction = new CommittedTransactionRepresentation( null, null,
                     new OnePhaseCommit( txId++, 0 ) );
             return true;
+        }
+
+        @Override
+        public LogPosition position()
+        {
+            return position;
         }
     }
 }
