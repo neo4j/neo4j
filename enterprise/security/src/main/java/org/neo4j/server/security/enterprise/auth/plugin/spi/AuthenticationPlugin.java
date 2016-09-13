@@ -29,5 +29,10 @@ public interface AuthenticationPlugin extends RealmLifecycle
     /**
      * TODO
      */
+    String name();
+
+    /**
+     * TODO
+     */
     AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken );
 }

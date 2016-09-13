@@ -25,30 +25,35 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 
 public class TestAuthenticationPlugin implements AuthenticationPlugin
 {
     @Override
+    public String name()
+    {
+        return getClass().getSimpleName();
+    }
+
+    @Override
     public AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken )
     {
         String principal;
         String credentials;
-        String realm;
 
         try
         {
             principal = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
             credentials = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
-            realm = AuthToken.safeCast( "realm", authToken );
         }
         catch ( InvalidAuthTokenException e )
         {
             return null;
         }
 
-        if ( realm.equals( getClass().getSimpleName() ) && principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
+        if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
             return new AuthenticationInfo()
             {
@@ -69,7 +74,7 @@ public class TestAuthenticationPlugin implements AuthenticationPlugin
     }
 
     @Override
-    public void initialize() throws Throwable
+    public void initialize( RealmOperations ignore ) throws Throwable
     {
 
     }

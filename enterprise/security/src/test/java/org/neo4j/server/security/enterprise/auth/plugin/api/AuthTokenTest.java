@@ -17,44 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth.plugin.spi;
+package org.neo4j.server.security.enterprise.auth.plugin.api;
 
-import java.util.Collection;
+import org.junit.Test;
 
-/**
- * TODO
- */
-public interface AuthorizationPlugin extends RealmLifecycle
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+public class AuthTokenTest
 {
-    final class PrincipalAndRealm
+    @Test
+    public void shouldMatchKernelSecurityApiConstants()
     {
-        private final Object principal;
-        private final String realm;
-
-        public PrincipalAndRealm( Object principal, String realm )
-        {
-            this.principal = principal;
-            this.realm = realm;
-        }
-
-        public Object principal()
-        {
-            return principal;
-        }
-
-        public String realm()
-        {
-            return realm;
-        }
-    };
-
-    /**
-     * TODO
-     */
-    String name();
-
-    /**
-     * TODO
-     */
-    AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals );
+        // If you change one of these you need to change the other!
+        assertThat( AuthToken.PRINCIPAL, equalTo( org.neo4j.kernel.api.security.AuthToken.PRINCIPAL ) );
+        assertThat( AuthToken.CREDENTIALS, equalTo( org.neo4j.kernel.api.security.AuthToken.CREDENTIALS ) );
+        assertThat( AuthToken.PARAMETERS, equalTo( org.neo4j.kernel.api.security.AuthToken.PARAMETERS ) );
+    }
 }

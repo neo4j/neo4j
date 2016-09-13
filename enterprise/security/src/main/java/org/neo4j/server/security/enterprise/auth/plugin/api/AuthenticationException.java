@@ -21,4 +21,8 @@ package org.neo4j.server.security.enterprise.auth.plugin.api;
 
 public class AuthenticationException extends Exception
 {
+    public AuthenticationException( String message )
+    {
+        super( message );
+    }
 }

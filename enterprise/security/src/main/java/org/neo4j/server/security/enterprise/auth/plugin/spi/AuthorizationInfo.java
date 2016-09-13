@@ -31,4 +31,9 @@ public interface AuthorizationInfo extends Serializable
      * TODO
      */
     Collection<String> getRoles();
+
+    static AuthorizationInfo of( Collection<String> roles )
+    {
+        return () -> roles;
+    }
 }

@@ -28,10 +28,20 @@ import org.apache.shiro.cache.Cache;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 
+import java.nio.file.Path;
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Optional;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
@@ -40,32 +50,86 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 
 public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
 {
+    private static final String PLUGIN_REALM_NAME_PREFIX = "plugin-";
+
     private AuthenticationPlugin authenticationPlugin;
     private AuthorizationPlugin authorizationPlugin;
+    private final Config config;
     private AuthPlugin authPlugin;
     private final Log log;
+    private final Clock clock;
+    private RealmOperations realmOperations = new PluginRealmOperations();
 
-    public PluginRealm( LogProvider logProvider )
+    public PluginRealm( Config config, LogProvider logProvider, Clock clock )
     {
+        this.config = config;
+        this.clock = clock;
         setCredentialsMatcher( new AllowAllCredentialsMatcher() );
-        setAuthenticationCachingEnabled( true );
+
+        // Synchronize this default value with the javadoc for RealmOperations.setAuthenticationCachingEnabled
+        setAuthenticationCachingEnabled( false );
+
+        // Synchronize this default value with the javadoc for RealmOperations.setAuthorizationCachingEnabled
         setAuthorizationCachingEnabled( true );
+
         setRolePermissionResolver( PredefinedRolesBuilder.rolePermissionResolver );
         log = logProvider.getLog( getClass() );
     }
 
     public PluginRealm( AuthenticationPlugin authenticationPlugin, AuthorizationPlugin authorizationPlugin,
-            LogProvider logProvider )
+            Config config, LogProvider logProvider, Clock clock )
     {
-        this( logProvider );
+        this( config, logProvider, clock );
         this.authenticationPlugin = authenticationPlugin;
         this.authorizationPlugin = authorizationPlugin;
+        resolvePluginName();
     }
 
-    public PluginRealm( AuthPlugin authPlugin, LogProvider logProvider )
+    public PluginRealm( AuthPlugin authPlugin, Config config, LogProvider logProvider, Clock clock )
     {
-        this( logProvider );
+        this( config, logProvider, clock );
         this.authPlugin = authPlugin;
+        resolvePluginName();
+    }
+
+    private void resolvePluginName()
+    {
+        String pluginName = null;
+        if ( authPlugin != null )
+        {
+            pluginName = authPlugin.name();
+        }
+        else if ( authenticationPlugin != null )
+        {
+            pluginName = authenticationPlugin.name();
+        }
+        else if ( authorizationPlugin != null )
+        {
+            pluginName = authorizationPlugin.name();
+        }
+
+        if ( pluginName != null && !pluginName.isEmpty() )
+        {
+            setName( PLUGIN_REALM_NAME_PREFIX + pluginName );
+        }
+        // Otherwise we rely on the Shiro default generated name
+    }
+
+    private Collection<AuthorizationPlugin.PrincipalAndRealm> getPrincipalAndRealmCollection(
+            PrincipalCollection principalCollection
+    )
+    {
+        Collection<AuthorizationPlugin.PrincipalAndRealm> principalAndRealmCollection = new ArrayList<>();
+
+        for ( String realm : principalCollection.getRealmNames() )
+        {
+            for ( Object principal : principalCollection.fromRealm( realm ) )
+            {
+                principalAndRealmCollection.add( new AuthorizationPlugin.PrincipalAndRealm( principal, realm ) );
+            }
+        }
+
+        return principalAndRealmCollection;
     }
 
     @Override
@@ -74,7 +138,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         if ( authorizationPlugin != null )
         {
             org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo authorizationInfo =
-                    authorizationPlugin.getAuthorizationInfo( principals.asSet() );
+                    authorizationPlugin.getAuthorizationInfo( getPrincipalAndRealmCollection( principals ) );
             if ( authorizationInfo != null )
             {
                 return PluginAuthorizationInfo.create( authorizationInfo );
@@ -137,19 +201,33 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
     @Override
     public boolean supports( AuthenticationToken token )
     {
-        return token instanceof ShiroAuthToken;
+        return supportsSchemeAndRealm( token );
+    }
+
+    private boolean supportsSchemeAndRealm( AuthenticationToken token )
+    {
+        if ( token instanceof ShiroAuthToken )
+        {
+            ShiroAuthToken shiroAuthToken = (ShiroAuthToken) token;
+            return shiroAuthToken.supportsRealm( getName() );
+        }
+        return false;
     }
 
     @Override
-    public void initialize() throws Throwable
+    public void initialize( RealmOperations ignore ) throws Throwable
     {
         if ( authenticationPlugin != null )
         {
-            authenticationPlugin.initialize();
+            authenticationPlugin.initialize( this.realmOperations );
         }
         if ( authorizationPlugin != null && authorizationPlugin != authenticationPlugin )
         {
-            authorizationPlugin.initialize();
+            authorizationPlugin.initialize( this.realmOperations );
+        }
+        if ( authPlugin != null )
+        {
+            authPlugin.initialize( this.realmOperations );
         }
     }
 
@@ -164,6 +242,10 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         {
             authorizationPlugin.start();
         }
+        if ( authPlugin != null )
+        {
+            authPlugin.start();
+        }
     }
 
     @Override
@@ -177,6 +259,10 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         {
             authorizationPlugin.stop();
         }
+        if ( authPlugin != null )
+        {
+            authPlugin.stop();
+        }
     }
 
     @Override
@@ -189,6 +275,93 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         if ( authorizationPlugin != null && authorizationPlugin != authenticationPlugin )
         {
             authorizationPlugin.shutdown();
+        }
+        if ( authPlugin != null )
+        {
+            authPlugin.shutdown();
+        }
+    }
+
+    private class PluginRealmOperations implements RealmOperations
+    {
+        private Log innerLog = new Log()
+        {
+            private String withPluginName( String msg )
+            {
+                return "{" + getName() + "} " + msg;
+            }
+
+            @Override
+            public void debug( String message )
+            {
+                log.debug( withPluginName( message ) );
+            }
+
+            @Override
+            public void info( String message )
+            {
+                log.info( withPluginName( message ) );
+            }
+
+            @Override
+            public void warn( String message )
+            {
+                log.warn( withPluginName( message ) );
+            }
+
+            @Override
+            public void error( String message )
+            {
+                log.error( withPluginName( message ) );
+            }
+
+            @Override
+            public boolean isDebugEnabled()
+            {
+                return log.isDebugEnabled();
+            }
+        };
+
+        @Override
+        public Path neo4jHome()
+        {
+            return config.get( GraphDatabaseSettings.neo4j_home ).getAbsoluteFile().toPath();
+        }
+
+        @Override
+        public Optional<Path> neo4jConfigFile()
+        {
+            return config.getConfigFile();
+        }
+
+        @Override
+        public String neo4jVersion()
+        {
+            return Version.getKernel().getReleaseVersion();
+        }
+
+        @Override
+        public Clock clock()
+        {
+            return clock;
+        }
+
+        @Override
+        public Log log()
+        {
+            return innerLog;
+        }
+
+        @Override
+        public void setAuthenticationCachingEnabled( boolean authenticationCachingEnabled )
+        {
+            PluginRealm.this.setAuthenticationCachingEnabled( authenticationCachingEnabled );
+        }
+
+        @Override
+        public void setAuthorizationCachingEnabled( boolean authorizationCachingEnabled )
+        {
+            PluginRealm.this.setAuthorizationCachingEnabled( authorizationCachingEnabled );
         }
     }
 }

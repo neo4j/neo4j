@@ -41,4 +41,52 @@ public interface AuthInfo extends Serializable
      * TODO
      */
     Collection<String> getRoles();
+
+    static AuthInfo of( Object principal, Object credentials, Collection<String> roles )
+    {
+        return new AuthInfo()
+        {
+            @Override
+            public Object getPrincipal()
+            {
+                return principal;
+            }
+
+            @Override
+            public Object getCredentials()
+            {
+                return credentials;
+            }
+
+            @Override
+            public Collection<String> getRoles()
+            {
+                return roles;
+            }
+        };
+    }
+
+    static AuthInfo of( Object principal, Collection<String> roles )
+    {
+        return new AuthInfo()
+        {
+            @Override
+            public Object getPrincipal()
+            {
+                return principal;
+            }
+
+            @Override
+            public Object getCredentials()
+            {
+                return null;
+            }
+
+            @Override
+            public Collection<String> getRoles()
+            {
+                return roles;
+            }
+        };
+    }
 }

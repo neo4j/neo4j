@@ -137,7 +137,7 @@ class MultiRealmAuthManager implements EnterpriseAuthManager
             }
             if ( realm instanceof RealmLifecycle )
             {
-                ((RealmLifecycle) realm).initialize();
+                ((RealmLifecycle) realm).initialize( null );
             }
         }
     }

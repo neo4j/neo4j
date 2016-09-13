@@ -19,9 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
+import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
+
 public interface RealmLifecycle
 {
-    void initialize() throws Throwable;
+    void initialize( RealmOperations realmOperations ) throws Throwable;
     void start() throws Throwable;
     void stop() throws Throwable;
     void shutdown() throws Throwable;
@@ -29,7 +31,7 @@ public interface RealmLifecycle
     class Adapter implements RealmLifecycle
     {
         @Override
-        public void initialize() throws Throwable
+        public void initialize( RealmOperations realmOperations ) throws Throwable
         {
         }
 

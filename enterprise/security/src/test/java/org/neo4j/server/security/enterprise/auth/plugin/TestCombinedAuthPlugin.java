@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
+import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
@@ -34,45 +35,46 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
 public class TestCombinedAuthPlugin implements AuthenticationPlugin, AuthorizationPlugin
 {
     @Override
+    public String name()
+    {
+        return getClass().getSimpleName();
+    }
+
+    @Override
     public AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken )
     {
         String principal;
         String credentials;
-        String realm;
 
         try
         {
             principal = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
             credentials = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
-            realm = AuthToken.safeCast( "realm", authToken );
         }
         catch ( InvalidAuthTokenException e )
         {
             return null;
         }
 
-        if ( realm.equals( getClass().getSimpleName() ) && principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
+        if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
-            return new AuthenticationInfo()
-            {
-                @Override
-                public Object getPrincipal()
-                {
-                    return "neo4j";
-                }
-
-                @Override
-                public Object getCredentials()
-                {
-                    return null;
-                }
-            };
+            return AuthenticationInfo.of( "neo4j", null );
         }
         return null;
     }
 
     @Override
-    public void initialize() throws Throwable
+    public AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals )
+    {
+        if ( principals.stream().anyMatch( p -> "neo4j".equals( p.principal() ) ) )
+        {
+            return (AuthorizationInfo) () -> Collections.singleton( PredefinedRoles.READER );
+        }
+        return null;
+    }
+
+    @Override
+    public void initialize( RealmOperations ignore ) throws Throwable
     {
 
     }
@@ -93,15 +95,5 @@ public class TestCombinedAuthPlugin implements AuthenticationPlugin, Authorizati
     public void shutdown() throws Throwable
     {
 
-    }
-
-    @Override
-    public AuthorizationInfo getAuthorizationInfo( Collection<Object> principals )
-    {
-        if ( principals.contains( "neo4j" ) )
-        {
-            return (AuthorizationInfo) () -> Collections.singleton( PredefinedRoles.READER );
-        }
-        return null;
     }
 }

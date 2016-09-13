@@ -40,14 +40,14 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     public void shouldAuthenticateWithTestAuthenticationPlugin() throws Throwable
     {
         assertConnectionSucceeds( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm",
-                "TestAuthenticationPlugin" ) );
+                "plugin-TestAuthenticationPlugin" ) );
     }
 
     @Test
     public void shouldAuthenticateAndAuthorizeWithTestAuthPlugin() throws Throwable
     {
         assertConnectionSucceeds(
-                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm", "TestAuthPlugin" ) );
+                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm", "plugin-TestAuthPlugin" ) );
         assertReadSucceeds();
         assertWriteFails( "neo4j" );
     }
@@ -56,7 +56,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     public void shouldAuthenticateAndAuthorizeWithTestCombinedAuthPlugin() throws Throwable
     {
         assertConnectionSucceeds( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm",
-                "TestCombinedAuthPlugin" ) );
+                "plugin-TestCombinedAuthPlugin" ) );
         assertReadSucceeds();
         assertWriteFails( "neo4j" );
     }

@@ -17,44 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth.plugin.spi;
+package org.neo4j.server.security.enterprise.auth.plugin.api;
 
-import java.util.Collection;
-
-/**
- * TODO
- */
-public interface AuthorizationPlugin extends RealmLifecycle
+public interface AuthToken
 {
-    final class PrincipalAndRealm
-    {
-        private final Object principal;
-        private final String realm;
-
-        public PrincipalAndRealm( Object principal, String realm )
-        {
-            this.principal = principal;
-            this.realm = realm;
-        }
-
-        public Object principal()
-        {
-            return principal;
-        }
-
-        public String realm()
-        {
-            return realm;
-        }
-    };
-
-    /**
-     * TODO
-     */
-    String name();
-
-    /**
-     * TODO
-     */
-    AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals );
+    String PRINCIPAL = "principal";
+    String CREDENTIALS = "credentials";
+    String PARAMETERS = "parameters";
 }

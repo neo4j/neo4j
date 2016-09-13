@@ -21,17 +21,25 @@ package org.neo4j.server.security.enterprise.auth.plugin;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
+import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
 
 public class TestAuthorizationPlugin implements AuthorizationPlugin
 {
     @Override
-    public AuthorizationInfo getAuthorizationInfo( Collection<Object> principals )
+    public String name()
     {
-        if ( principals.contains( "neo4j" ) )
+        return getClass().getSimpleName();
+    }
+
+    @Override
+    public AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals )
+    {
+        if ( principals.stream().anyMatch( p -> "neo4j".equals( p.principal() ) ) )
         {
             return (AuthorizationInfo) () -> Collections.singleton( PredefinedRoles.READER );
         }
@@ -39,7 +47,7 @@ public class TestAuthorizationPlugin implements AuthorizationPlugin
     }
 
     @Override
-    public void initialize() throws Throwable
+    public void initialize( RealmOperations realmOperations ) throws Throwable
     {
 
     }

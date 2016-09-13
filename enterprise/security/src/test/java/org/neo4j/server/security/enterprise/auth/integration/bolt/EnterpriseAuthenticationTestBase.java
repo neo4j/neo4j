@@ -265,14 +265,14 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     protected void assertWriteFails( String username ) throws Exception
     {
         // When
-        client.send(TransportTestUtil.chunk(
-        run("CREATE ()"),
-        pullAll()));
+        client.send( TransportTestUtil.chunk(
+                run( "CREATE ()" ),
+                pullAll() ) );
 
         // Then
-        assertThat( client,eventuallyReceives(
-            msgFailure(Status.Security.Forbidden,
-            String.format("Write operations are not allowed for '%s'.",username ) ) ) );
+        assertThat( client, eventuallyReceives(
+                msgFailure( Status.Security.Forbidden,
+                        String.format( "Write operations are not allowed for '%s'.", username ) ) ) );
     }
 
     protected Map<String,Object> authToken( String username, String password, String realm )

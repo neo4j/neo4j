@@ -31,5 +31,10 @@ public interface AuthPlugin extends RealmLifecycle
     /**
      * TODO
      */
+    String name();
+
+    /**
+     * TODO
+     */
     AuthInfo getAuthInfo( Map<String,Object> authToken ) throws AuthenticationException;
 }

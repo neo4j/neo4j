@@ -133,7 +133,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
             for ( AuthPlugin plugin : authPlugins )
             {
-                PluginRealm pluginRealm = new PluginRealm( plugin, logProvider );
+                PluginRealm pluginRealm = new PluginRealm( plugin, config, logProvider,  Clocks.systemClock() );
                 realms.add( pluginRealm );
             }
         }
@@ -150,7 +150,8 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
                 if ( pluginAuthorizationEnabled && plugin instanceof AuthorizationPlugin )
                 {
                     // This plugin implements both interfaces, create a combined plugin
-                    pluginRealm = new PluginRealm( plugin, (AuthorizationPlugin) plugin, logProvider );
+                    pluginRealm = new PluginRealm( plugin, (AuthorizationPlugin) plugin, config, logProvider,
+                            Clocks.systemClock() );
 
                     // We need to make sure we do not add a duplicate when the AuthorizationPlugin service gets loaded
                     // so we allow only one instance per combined plugin class
@@ -158,7 +159,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
                 }
                 else
                 {
-                    pluginRealm = new PluginRealm( plugin, null, logProvider );
+                    pluginRealm = new PluginRealm( plugin, null, config, logProvider, Clocks.systemClock() );
                 }
                 realms.add( pluginRealm );
             }
@@ -173,7 +174,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
             {
                 if ( !excludedClasses.contains( plugin.getClass() ) )
                 {
-                    PluginRealm pluginRealm = new PluginRealm( null, plugin, logProvider );
+                    PluginRealm pluginRealm = new PluginRealm( null, plugin, config, logProvider, Clocks.systemClock() );
                     realms.add( pluginRealm );
                 }
             }
