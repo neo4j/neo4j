@@ -173,13 +173,13 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "dbms.procedures" ), containsInAnyOrder(
-            record( "db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID", "Wait for an index to come online." ),
+            record( "db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID", "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." ),
             record( "db.constraints", "db.constraints() :: (description :: STRING?)", "List all constraints in the database." ),
             record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "List all indexes in the database." ),
             record( "db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database." ),
             record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)", "List all property keys in the database." ),
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)", "List all relationship types in the database." ),
-            record( "db.resampleIndex", "db.resampleIndex(label :: STRING?, property :: STRING?) :: VOID", "Schedule resampling of an index." ),
+            record( "db.resampleIndex", "db.resampleIndex(index :: STRING?) :: VOID", "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))." ),
             record( "db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID", "Schedule resampling of all outdated indexes." ),
             record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)", "List DBMS components and their versions." ),
             record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?, description :: STRING?)", "List all procedures in the DBMS." ),

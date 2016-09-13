@@ -50,11 +50,11 @@ public class ResampleIndexProcedureTest
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
     {
-        when( operations.labelGetForName( "non-existent-label" ) ).thenReturn( -1 );
+        when( operations.labelGetForName( "NonExistentLabel" ) ).thenReturn( -1 );
 
         try
         {
-            procedure.resampleIndex( "non-existent-label", null );
+            procedure.resampleIndex( ":NonExistentLabel(prop)" );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -66,11 +66,11 @@ public class ResampleIndexProcedureTest
     @Test
     public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist() throws ProcedureException
     {
-        when( operations.propertyKeyGetForName( "non-existent-property-key" ) ).thenReturn( -1 );
+        when( operations.propertyKeyGetForName( "nonExistentProperty" ) ).thenReturn( -1 );
 
         try
         {
-            procedure.resampleIndex( null, "non-existent-property-key" );
+            procedure.resampleIndex( ":Label(nonExistentProperty)" );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -88,7 +88,7 @@ public class ResampleIndexProcedureTest
         when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
                 .thenReturn( new IndexDescriptor( 0, 0 ) );
 
-        procedure.resampleIndex( null, null );
+        procedure.resampleIndex( ":Person(name)" );
 
         verify( operations ).indexGetForLabelAndPropertyKey( 123, 456 );
     }
@@ -105,7 +105,7 @@ public class ResampleIndexProcedureTest
 
         try
         {
-            procedure.resampleIndex( null, null );
+            procedure.resampleIndex( ":Person(name)" );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -120,7 +120,7 @@ public class ResampleIndexProcedureTest
         IndexDescriptor index = new IndexDescriptor( 123, 456 );
         when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) ).thenReturn( index );
 
-        procedure.resampleIndex( null, null );
+        procedure.resampleIndex( ":Person(name)" );
 
         verify( indexingService ).triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }

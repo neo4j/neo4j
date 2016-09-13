@@ -35,8 +35,6 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
-import static java.lang.String.format;
-
 public class IndexProcedures implements AutoCloseable
 {
     private final Statement statement;
@@ -50,27 +48,29 @@ public class IndexProcedures implements AutoCloseable
         this.indexingService = indexingService;
     }
 
-    public void awaitIndex( String labelName, String propertyKeyName, long timeout, TimeUnit timeoutUnits )
+    public void awaitIndex( String indexSpecification, long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
-        int labelId = getLabelId( labelName );
-        int propertyKeyId = getPropertyKeyId( propertyKeyName );
-        String indexDescription = formatIndex( labelName, propertyKeyName );
-        IndexDescriptor index = getIndex( labelId, propertyKeyId, indexDescription );
-        waitUntilOnline( index, indexDescription, timeout, timeoutUnits );
+        IndexSpecifier index = parse( indexSpecification );
+        int labelId = getLabelId( index.label() );
+        int propertyKeyId = getPropertyKeyId( index.property() );
+        waitUntilOnline( getIndex( labelId, propertyKeyId, index ), index, timeout, timeoutUnits );
     }
 
-    public void resampleIndex( String labelName, String propertyKeyName ) throws ProcedureException
+    public void resampleIndex( String indexSpecification ) throws ProcedureException
     {
-        triggerSampling( getIndex(
-                getLabelId( labelName ),
-                getPropertyKeyId( propertyKeyName ),
-                formatIndex( labelName, propertyKeyName ) ) );
+        IndexSpecifier index = parse( indexSpecification );
+        triggerSampling( getIndex( getLabelId( index.label() ), getPropertyKeyId( index.property() ), index ) );
     }
 
     public void resampleOutdatedIndexes()
     {
         indexingService.triggerIndexSampling( IndexSamplingMode.TRIGGER_REBUILD_UPDATED );
+    }
+
+    private IndexSpecifier parse( String specification )
+    {
+        return new IndexSpecifier( specification );
     }
 
     private int getLabelId( String labelName ) throws ProcedureException
@@ -94,7 +94,7 @@ public class IndexProcedures implements AutoCloseable
         return propertyKeyId;
     }
 
-    private IndexDescriptor getIndex( int labelId, int propertyKeyId, String indexDescription ) throws
+    private IndexDescriptor getIndex( int labelId, int propertyKeyId, IndexSpecifier index ) throws
             ProcedureException
     {
         try
@@ -103,11 +103,12 @@ public class IndexProcedures implements AutoCloseable
         }
         catch ( SchemaRuleNotFoundException e )
         {
-            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on %s", indexDescription );
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on %s", index );
         }
     }
 
-    private void waitUntilOnline( IndexDescriptor index, String indexDescription, long timeout, TimeUnit timeoutUnits )
+    private void waitUntilOnline( IndexDescriptor index, IndexSpecifier indexDescription, long timeout, TimeUnit
+            timeoutUnits )
             throws ProcedureException
     {
         try
@@ -126,7 +127,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private boolean isOnline( String indexDescription, IndexDescriptor index ) throws ProcedureException
+    private boolean isOnline( IndexSpecifier indexDescription, IndexDescriptor index ) throws ProcedureException
     {
         InternalIndexState state = getState( indexDescription, index );
         switch ( state )
@@ -143,7 +144,8 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private InternalIndexState getState( String indexDescription, IndexDescriptor index ) throws ProcedureException
+    private InternalIndexState getState( IndexSpecifier indexDescription, IndexDescriptor index )
+            throws ProcedureException
     {
         try
         {
@@ -158,11 +160,6 @@ public class IndexProcedures implements AutoCloseable
     private void triggerSampling( IndexDescriptor index )
     {
         indexingService.triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
-    }
-
-    private String formatIndex( String labelName, String propertyKeyName )
-    {
-        return format( ":%s(%s)", labelName, propertyKeyName );
     }
 
     @Override

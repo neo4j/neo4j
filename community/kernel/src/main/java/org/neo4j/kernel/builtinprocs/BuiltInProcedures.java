@@ -125,27 +125,25 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Wait for an index to come online." )
+    @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
     @Procedure( name = "db.awaitIndex", mode = READ )
-    public void awaitIndex( @Name( "label" ) String labelName,
-                            @Name( "property" ) String propertyKeyName,
+    public void awaitIndex( @Name( "index" ) String index,
                             @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
             throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            indexProcedures.awaitIndex( labelName, propertyKeyName, timeout, TimeUnit.SECONDS );
+            indexProcedures.awaitIndex( index, timeout, TimeUnit.SECONDS );
         }
     }
 
-    @Description( "Schedule resampling of an index." )
+    @Description( "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))." )
     @Procedure( name = "db.resampleIndex", mode = READ )
-    public void resampleIndex( @Name( "label" ) String labelName,
-                               @Name( "property" ) String propertyKeyName ) throws ProcedureException
+    public void resampleIndex( @Name( "index" ) String index ) throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            indexProcedures.resampleIndex( labelName, propertyKeyName );
+            indexProcedures.resampleIndex( index );
         }
     }
 

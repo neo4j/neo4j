@@ -63,11 +63,11 @@ public class AwaitIndexProcedureTest
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
     {
-        when( operations.labelGetForName( "non-existent-label" ) ).thenReturn( -1 );
+        when( operations.labelGetForName( "NonExistentLabel" ) ).thenReturn( -1 );
 
         try
         {
-            procedure.awaitIndex( "non-existent-label", null, timeout, timeoutUnits );
+            procedure.awaitIndex( ":NonExistentLabel(prop)", timeout, timeoutUnits );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -79,11 +79,11 @@ public class AwaitIndexProcedureTest
     @Test
     public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist() throws ProcedureException
     {
-        when( operations.propertyKeyGetForName( "non-existent-property-key" ) ).thenReturn( -1 );
+        when( operations.propertyKeyGetForName( "nonExistentProperty" ) ).thenReturn( -1 );
 
         try
         {
-            procedure.awaitIndex( null, "non-existent-property-key", timeout, timeoutUnits );
+            procedure.awaitIndex( ":Label(nonExistentProperty)", timeout, timeoutUnits );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -102,7 +102,7 @@ public class AwaitIndexProcedureTest
                 .thenReturn( new IndexDescriptor( 0, 0 ) );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
-        procedure.awaitIndex( null, null, timeout, timeoutUnits );
+        procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
 
         verify( operations ).indexGetForLabelAndPropertyKey( 123, 456 );
     }
@@ -120,7 +120,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( null, null, timeout, timeoutUnits );
+            procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -141,7 +141,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( null, null, timeout, timeoutUnits );
+            procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -174,7 +174,7 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( null, null, timeout, timeoutUnits );
+                procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
             }
             catch ( ProcedureException e )
             {
@@ -205,7 +205,7 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( null, null, timeout, timeoutUnits );
+                procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
             }
             catch ( ProcedureException e )
             {
