@@ -34,6 +34,7 @@ import java.io.PrintWriter;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,8 +44,14 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.ProcedureGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Procedure;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -60,6 +67,7 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.isA;
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -543,8 +551,79 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         }
         String longMetaDataMap = "{" + String.join( ", ", list ) + "}";
         assertFail( writeSubject, "CALL dbms.setTXMetaData( " + longMetaDataMap + " )",
-                "Invalid transaction meta-data, expected the total number of chars for keys and values to be " +
-                        "less than 2048, got 3090" );
+            "Invalid transaction meta-data, expected the total number of chars for keys and values to be " +
+            "less than 2048, got 3090" );
+    }
+
+    //---------- procedure guard -----------
+
+    @Test
+    public void shouldTerminateLongRunningProcedureThatChecksTheGuardRegularlyIfKilled() throws Throwable
+    {
+        neo
+            .getLocalGraph()
+            .getDependencyResolver()
+            .resolveDependency( Procedures.class )
+            .registerProcedure( NeverEndingProcedure.class );
+
+        DoubleLatch latch = new DoubleLatch( 2 );
+        ThreadedTransaction<S> loopProc = new ThreadedTransaction<S>( neo, latch );
+        String loopQuery =
+            loopProc.executeEarly( threading, readSubject, KernelTransaction.Type.explicit, "CALL test.loop" );
+        latch.startAndWaitForAllToStart();
+
+        String loopId = extractQueryId( loopQuery );
+
+        assertSuccess(
+                adminSubject,
+                "CALL dbms.killQuery('" + loopId + "') YIELD username " +
+                        "RETURN count(username) AS count, username", r ->
+                {
+                    List<Map<String,Object>> actual = r.stream().collect( toList() );
+                    Matcher<Map<String,Object>> mapMatcher = allOf(
+                            (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
+                            (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
+                    );
+                    assertThat( actual, matchesOneToOneInAnyOrder( mapMatcher ) );
+                }
+        );
+
+        latch.finishAndWaitForAllToFinish();
+        loopProc.closeAndAssertTransactionTermination();
+
+        assertEmpty(
+                adminSubject,
+                "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
+    }
+
+    @Test
+    public void shouldTerminateLongRunningProcedureThatChecksTheGuardRegularlyOnTimeout() throws Throwable
+    {
+
+        neo.tearDown();
+        Map<String, String> config = new HashMap<>();
+        config.put( GraphDatabaseSettings.transaction_timeout.name(), "3s" );
+        neo = setUpNeoServer( config );
+        reSetUp();
+
+        neo
+           .getLocalGraph()
+           .getDependencyResolver()
+           .resolveDependency( Procedures.class )
+           .registerProcedure( NeverEndingProcedure.class );
+
+        assertFail(
+            adminSubject,
+            "CALL test.loop",
+            "Transaction guard check failed"
+       );
+
+        Result result = neo
+            .getLocalGraph()
+            .execute( "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
+
+        assertFalse( result.hasNext() );
+        result.close();
     }
 
     /*
@@ -888,5 +967,28 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     protected ThreadingRule threading()
     {
         return threading;
+    }
+
+    public static class NeverEndingProcedure {
+
+        @Context
+        public ProcedureGuard guard;
+
+        @Procedure(name = "test.loop")
+        public void loop()
+        {
+            while ( true )
+            {
+                try
+                {
+                    Thread.sleep( 100 );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.interrupted();
+                }
+                guard.check();
+            }
+        }
     }
 }

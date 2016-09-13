@@ -48,7 +48,7 @@ public class TimeoutGuard implements Guard
         check( statement.getTransaction() );
     }
 
-    private void check( KernelTransactionImplementation transaction )
+    public void check( KernelTransactionImplementation transaction )
     {
         if ( transaction.timeout() > UNSPECIFIED_TIMEOUT )
         {
