@@ -70,6 +70,13 @@ public class AdversarialPagedFile implements PagedFile
     }
 
     @Override
+    public long fileSize() throws IOException
+    {
+        adversary.injectFailure( IllegalStateException.class );
+        return delegate.fileSize();
+    }
+
+    @Override
     public void flushAndForce() throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );

@@ -60,7 +60,6 @@ public class ToNetworkStoreWriter implements StoreWriter
             totalWritten += 4;
             totalWritten += buffer.write( data );
             buffer.close();
-
         }
         return totalWritten;
     }

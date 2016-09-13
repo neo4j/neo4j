@@ -131,6 +131,11 @@ public interface PagedFile extends AutoCloseable
     int pageSize();
 
     /**
+     * Size of file, in bytes.
+     */
+    long fileSize() throws IOException;
+
+    /**
      * Flush all dirty pages into the file channel, and force the file channel to disk.
      */
     void flushAndForce() throws IOException;

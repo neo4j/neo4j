@@ -52,6 +52,12 @@ public class DelegatingPagedFile implements PagedFile
         return delegate.pageSize();
     }
 
+    @Override
+    public long fileSize() throws IOException
+    {
+        return delegate.fileSize();
+    }
+
     public void close() throws IOException
     {
         delegate.close();

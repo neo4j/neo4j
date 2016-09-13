@@ -54,6 +54,17 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
+    public long fileSize() throws IOException
+    {
+        final long lastPageId = getLastPageId();
+        if ( lastPageId < 0 )
+        {
+            return 0L;
+        }
+        return (lastPageId + 1) * pageSize();
+    }
+
+    @Override
     public void flushAndForce() throws IOException
     {
     }
