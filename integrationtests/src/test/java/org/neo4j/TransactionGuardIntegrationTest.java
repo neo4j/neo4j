@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.harness.internal.Ports;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -103,6 +104,8 @@ public class TransactionGuardIntegrationTest
     private static GraphDatabaseAPI databaseWithTimeoutAndGuard;
     private static GraphDatabaseAPI databaseWithoutTimeout;
     private static CommunityNeoServer neoServer;
+    private static int boltPortCustomGuard;
+    private static int boltPortDatabaseWithTimeout;
 
     @Test
     public void terminateLongRunningTransaction()
@@ -304,7 +307,7 @@ public class TransactionGuardIntegrationTest
         assertDatabaseDoesNotHaveNodes( database );
     }
 
-//    @Test
+    @Test
     public void terminateLongRunningDriverQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
@@ -312,7 +315,7 @@ public class TransactionGuardIntegrationTest
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost", driverConfig );
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:" + boltPortDatabaseWithTimeout, driverConfig );
               Session session = driver.session() )
         {
             org.neo4j.driver.v1.Transaction transaction = session.beginTransaction();
@@ -332,12 +335,35 @@ public class TransactionGuardIntegrationTest
         assertDatabaseDoesNotHaveNodes( database );
     }
 
+    @Test
+    public void terminateLongRunningDriverPeriodicCommitQuery() throws Exception
+    {
+        GraphDatabaseAPI database = startDatabaseWithTimeoutCustomGuard();
+        CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+
+        org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:" + boltPortCustomGuard, driverConfig );
+              Session session = driver.session() )
+        {
+            URL url = prepareTestImportFile( 8 );
+            session.run( "USING PERIODIC COMMIT 5 LOAD CSV FROM '" + url + "' AS line CREATE ();" ).consume();
+            fail("Transaction should be already terminated by execution guard.");
+        }
+        catch ( Exception expected )
+        {
+            //
+        }
+        assertDatabaseDoesNotHaveNodes( database );
+    }
+
     private GraphDatabaseAPI startDatabaseWithTimeoutCustomGuard()
     {
         if ( databaseWithTimeoutAndGuard == null )
         {
-            Map<Setting<?>,String> configMap = getSettingsWithTransactionTimeout();
-            databaseWithTimeoutAndGuard = startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndguard" ), configMap );
+            boltPortCustomGuard = findFreePort();
+            Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt( boltPortCustomGuard );
+            databaseWithTimeoutAndGuard = startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndGuard" ), configMap );
         }
         return databaseWithTimeoutAndGuard;
     }
@@ -346,9 +372,9 @@ public class TransactionGuardIntegrationTest
     {
         if ( databaseWithTimeout == null )
         {
-            Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt();
-            databaseWithTimeout = startCustomDatabase( testDirectory.directory( "dbWithTimeout" ),
-                    configMap );
+            boltPortDatabaseWithTimeout = findFreePort();
+            Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt( boltPortDatabaseWithTimeout );
+            databaseWithTimeout = startCustomDatabase( testDirectory.directory( "dbWithTimeout" ), configMap );
         }
         return databaseWithTimeout;
     }
@@ -389,21 +415,16 @@ public class TransactionGuardIntegrationTest
         return neoServer;
     }
 
-    private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt()
+    private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt( int boltPort )
     {
-        Map<Setting<?>,String> configMap = getSettingsWithTransactionTimeout();
         GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
-        MapUtil.genericMap(configMap,
+        return MapUtil.genericMap(
+                GraphDatabaseSettings.transaction_timeout, "2s",
+                boltConnector.address, "localhost:" + boltPort,
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
                 boltConnector.encryption_level, GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
-        return configMap;
-    }
-
-    private Map<Setting<?>,String> getSettingsWithTransactionTimeout()
-    {
-        return MapUtil.genericMap( GraphDatabaseSettings.transaction_timeout, "2s" );
     }
 
     private Map<Setting<?>,String> getSettingsWithoutTransactionTimeout()
@@ -427,6 +448,23 @@ public class TransactionGuardIntegrationTest
             }
         }
         return tempFile.toURI().toURL();
+    }
+
+    private int findFreePort()
+    {
+        return freePort( 8000, 8100 );
+    }
+
+    private int freePort(int startRange, int endRange)
+    {
+        try
+        {
+            return Ports.findFreePort( Ports.INADDR_LOCALHOST, new int[]{startRange, endRange} ).getPort();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Unable to find an available port: " + e.getMessage(), e );
+        }
     }
 
     private Response execute( GraphDatabaseShellServer shellServer,

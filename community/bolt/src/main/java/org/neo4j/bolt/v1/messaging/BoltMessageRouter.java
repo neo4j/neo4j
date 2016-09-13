@@ -20,16 +20,16 @@
 
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.logging.Log;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
+import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.logging.Log;
 
 /**
  * This class is responsible for routing incoming request messages to a worker
@@ -141,9 +141,6 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
         @Override
         public void onRecords( BoltResult result, boolean pull ) throws Exception
         {
-            // Overridden if records are returned, therefore
-            // should fail if called but not overridden.
-            assert false;
         }
 
         @Override
