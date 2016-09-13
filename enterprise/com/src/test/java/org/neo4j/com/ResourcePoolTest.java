@@ -292,8 +292,9 @@ public class ResourcePoolTest
         }
 
         // then
-        // currentPeakSize should be at bellowPoolMinSize
-        assertEquals( bellowPoolMinSize, stateMonitor.currentPeakSize.get() );
+        // currentPeakSize should not be higher than bellowPoolMinSize
+        assertTrue( String.valueOf( stateMonitor.currentPeakSize.get() ),
+                stateMonitor.currentPeakSize.get() <= bellowPoolMinSize );
         // target size should remain at pool min size
         assertEquals( poolMinSize, stateMonitor.targetSize.get() );
         assertEquals( poolMinSize, pool.unusedSize() );
