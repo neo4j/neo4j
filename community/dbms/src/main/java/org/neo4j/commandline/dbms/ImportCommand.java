@@ -68,9 +68,9 @@ public class ImportCommand implements AdminCommand
 
     private final Path homeDir;
     private final Path configDir;
-    private final String[] allowedModes = {"database"};
+    private final String[] allowedModes = {"database", "csv"};
 
-    public ImportCommand( Path homeDir, Path configDir )
+    ImportCommand( Path homeDir, Path configDir )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
@@ -80,10 +80,12 @@ public class ImportCommand implements AdminCommand
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
         Args parsedArgs = Args.parse( args );
+        String mode;
+
         try
         {
-            parsedArgs.interpretOption( "mode", Converters.<String>mandatory(), s -> s,
-                    Validators.inList( allowedModes ) );
+            mode = parsedArgs
+                    .interpretOption( "mode", Converters.mandatory(), s -> s, Validators.inList( allowedModes ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -93,8 +95,21 @@ public class ImportCommand implements AdminCommand
         try
         {
             Config config = loadNeo4jConfig( homeDir, configDir );
-            DatabaseImporter databaseImporter = new DatabaseImporter( parsedArgs, config );
-            databaseImporter.doImport();
+            Importer importer;
+
+            switch ( mode )
+            {
+            case "database":
+                importer = new DatabaseImporter( args, config );
+                break;
+            case "csv":
+                importer = new CsvImporter( args, config );
+                break;
+            default:
+                throw new CommandFailed( "Invalid mode specified." ); // This won't happen because mode is mandatory.
+            }
+
+            importer.doImport();
         }
         catch ( IOException e )
         {
@@ -105,10 +120,9 @@ public class ImportCommand implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir )
     {
         ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadConfig( Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
 
-        return config;
+        return configLoader.loadConfig( Optional.of( homeDir.toFile() ),
+                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
     }
 
     private static List<Class<?>> settings()

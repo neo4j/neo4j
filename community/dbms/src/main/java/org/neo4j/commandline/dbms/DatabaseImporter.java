@@ -33,28 +33,31 @@ import org.neo4j.kernel.impl.util.Validators;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class DatabaseImporter
+class DatabaseImporter implements Importer
 {
-    private final String database;
     private final File from;
     private final Config config;
 
-    public DatabaseImporter( Args parsedArgs, Config config ) throws IncorrectUsage
+    DatabaseImporter( String[] args, Config config ) throws IncorrectUsage
     {
+        Args parsedArgs = Args.parse( args );
+        String database;
+
         try
         {
-            this.database = parsedArgs.interpretOption( "database", Converters.<String>mandatory(), s -> s );
-            this.from = parsedArgs.interpretOption( "from", Converters.<File>mandatory(), Converters.toFile(),
+            database = parsedArgs.interpretOption( "database", Converters.mandatory(), s -> s );
+            this.from = parsedArgs.interpretOption( "from", Converters.mandatory(), Converters.toFile(),
                     Validators.CONTAINS_EXISTING_DATABASE );
         }
         catch ( IllegalArgumentException e )
         {
             throw new IncorrectUsage( e.getMessage() );
         }
-        this.config =
-                config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), this.database ) );
+
+        this.config = config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), database ) );
     }
 
+    @Override
     public void doImport() throws IOException
     {
         copyDatabase( from, config );
