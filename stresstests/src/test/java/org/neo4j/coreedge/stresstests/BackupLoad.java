@@ -35,7 +35,7 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
     BackupLoad( BooleanSupplier keepGoing, Cluster cluster, File baseDirectory,
             BiFunction<Boolean, Integer, SocketAddress> backupAddress )
     {
-        super( keepGoing, cluster );
+        super( keepGoing, cluster, cluster.edgeMembers().isEmpty() );
         this.baseDirectory = baseDirectory;
         this.backupAddress = backupAddress;
     }

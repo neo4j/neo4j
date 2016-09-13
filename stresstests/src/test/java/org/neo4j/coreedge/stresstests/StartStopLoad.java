@@ -29,7 +29,7 @@ class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
 {
     StartStopLoad( BooleanSupplier keepGoing, Cluster cluster )
     {
-        super( keepGoing, cluster );
+        super( keepGoing, cluster, cluster.edgeMembers().isEmpty() );
     }
 
     @Override

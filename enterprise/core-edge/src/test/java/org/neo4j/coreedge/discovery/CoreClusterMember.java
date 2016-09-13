@@ -115,6 +115,7 @@ public class CoreClusterMember implements ClusterMember
         }
     }
 
+    @Override
     public CoreGraphDatabase database()
     {
         return database;

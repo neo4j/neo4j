@@ -31,6 +31,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.logging.Level;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -39,6 +40,7 @@ public class EdgeClusterMember implements ClusterMember
     private final Map<String, String> config = stringMap();
     private final DiscoveryServiceFactory discoveryServiceFactory;
     private final File storeDir;
+    private final int memberId;
     private EdgeGraphDatabase database;
 
     EdgeClusterMember( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
@@ -47,6 +49,7 @@ public class EdgeClusterMember implements ClusterMember
                        Map<String, IntFunction<String>> instanceExtraParams,
                        String recordFormat )
     {
+        this.memberId = memberId;
         String initialHosts = coreMemberHazelcastAddresses.stream()
                 .map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
@@ -93,6 +96,7 @@ public class EdgeClusterMember implements ClusterMember
         database = null;
     }
 
+    @Override
     public EdgeGraphDatabase database()
     {
         return database;
@@ -103,4 +107,8 @@ public class EdgeClusterMember implements ClusterMember
         return storeDir;
     }
 
+    public String toString()
+    {
+        return format( "EdgeClusterMember{memberId=%d}", memberId );
+    }
 }

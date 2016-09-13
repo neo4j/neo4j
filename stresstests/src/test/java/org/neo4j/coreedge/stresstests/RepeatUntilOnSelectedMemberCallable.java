@@ -29,18 +29,20 @@ import org.neo4j.coreedge.discovery.ClusterMember;
 abstract class RepeatUntilOnSelectedMemberCallable extends RepeatUntilCallable
 {
     private final Random random = new Random();
-    protected final Cluster cluster;
+    final Cluster cluster;
+    private final boolean onlyCores;
 
-    RepeatUntilOnSelectedMemberCallable( BooleanSupplier keepGoing, Cluster cluster )
+    RepeatUntilOnSelectedMemberCallable( BooleanSupplier keepGoing, Cluster cluster, boolean onlyCores )
     {
         super( keepGoing );
         this.cluster = cluster;
+        this.onlyCores = onlyCores;
     }
 
     @Override
     protected final boolean doWork()
     {
-        boolean isCore = random.nextBoolean();
+        boolean isCore = onlyCores || random.nextBoolean();
         Collection<? extends ClusterMember> members = isCore ? cluster.coreMembers() : cluster.edgeMembers();
         if ( members.isEmpty() )
         {

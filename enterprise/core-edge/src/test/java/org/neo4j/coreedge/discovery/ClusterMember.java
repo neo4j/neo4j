@@ -19,9 +19,13 @@
  */
 package org.neo4j.coreedge.discovery;
 
-public interface ClusterMember
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+
+public interface ClusterMember<T extends GraphDatabaseAPI>
 {
     void start();
 
     void shutdown();
+
+    T database();
 }
