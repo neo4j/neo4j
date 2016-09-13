@@ -303,45 +303,11 @@ public class RecoveryTest
             }
         } );
 
-        LifeSupport life = new LifeSupport();
-        Recovery.Monitor monitor = mock( Recovery.Monitor.class );
-        final AtomicBoolean recoveryRequired = new AtomicBoolean();
-        try
-        {
-            RecoveryLabelScanWriterProvider provider = mock( RecoveryLabelScanWriterProvider.class );
-            RecoveryLegacyIndexApplierLookup lookup = mock( RecoveryLegacyIndexApplierLookup.class );
-            RecoveryIndexingUpdatesValidator validator = mock( RecoveryIndexingUpdatesValidator.class );
+        // WHEN
+        boolean recoveryRequired = recover( logFiles );
 
-            StoreFlusher flusher = mock( StoreFlusher.class );
-            final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
-                    LogEntryVersion.CURRENT.byteCode() );
-            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-
-            TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 100 );
-            LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
-                    transactionIdStore, logVersionRepository, mock( PhysicalLogFile.Monitor.class ), metadataCache ) );
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache );
-            TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
-
-            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ),
-                    logFiles, fs, logVersionRepository, finder, validator, transactionIdStore, txStore, storeApplier )
-            {
-                @Override
-                public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
-                {
-                    recoveryRequired.set( true );
-                    return super.startRecovery();
-                }
-            }, monitor ) );
-
-            life.start();
-        }
-        finally
-        {
-            life.shutdown();
-        }
-
-        assertTrue( recoveryRequired.get() );
+        // THEN
+        assertTrue( recoveryRequired );
         assertEquals( marker.getByteOffset(), file.length() );
     }
 
@@ -375,6 +341,22 @@ public class RecoveryTest
             }
         } );
 
+        // WHEN
+        boolean recoveryRequired = recover( logFiles );
+
+        // THEN
+        assertTrue( recoveryRequired );
+        long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+        assertEquals( transactionId, lastClosedTransaction[0] );
+        assertEquals( LogEntryStart.checksum( additionalHeaderData, masterId, authorId ),
+                transactionIdStore.getLastCommittedTransaction().checksum() );
+        assertEquals( commitTimestamp, transactionIdStore.getLastCommittedTransaction().commitTimestamp() );
+        assertEquals( logVersion, lastClosedTransaction[1] );
+        assertEquals( marker.getByteOffset(), lastClosedTransaction[2] );
+    }
+
+    private boolean recover( PhysicalLogFiles logFiles )
+    {
         LifeSupport life = new LifeSupport();
         Recovery.Monitor monitor = mock( Recovery.Monitor.class );
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
@@ -412,15 +394,7 @@ public class RecoveryTest
         {
             life.shutdown();
         }
-
-        assertTrue( recoveryRequired.get() );
-        long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
-        assertEquals( transactionId, lastClosedTransaction[0] );
-        assertEquals( LogEntryStart.checksum( additionalHeaderData, masterId, authorId ),
-                transactionIdStore.getLastCommittedTransaction().checksum() );
-        assertEquals( commitTimestamp, transactionIdStore.getLastCommittedTransaction().commitTimestamp() );
-        assertEquals( logVersion, lastClosedTransaction[1] );
-        assertEquals( marker.getByteOffset(), lastClosedTransaction[2] );
+        return recoveryRequired.get();
     }
 
     private void writeSomeData( File file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
