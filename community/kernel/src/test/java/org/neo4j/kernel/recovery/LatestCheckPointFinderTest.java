@@ -40,6 +40,8 @@ import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -63,7 +65,7 @@ public class LatestCheckPointFinderTest
             File file = mock( File.class );
             when( logFiles.getLogFileForVersion( i ) ).thenReturn( file );
             StoreChannel channel = mock( StoreChannel.class );
-            when( fs.open( file, "rw" ) ).thenReturn( channel );
+            when( fs.open( eq( file ), anyString() ) ).thenReturn( channel );
             final int version = i;
             when( channel.read( any( ByteBuffer.class ) ) ).thenAnswer( invocationOnMock -> {
                 ByteBuffer buffer = (ByteBuffer) invocationOnMock.getArguments()[0];

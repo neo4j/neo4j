@@ -107,7 +107,7 @@ public class TransactionAppenderStressTest
 
     public static class TransactionIdChecker
     {
-        private File workingDirectory;
+        private final File workingDirectory;
 
         public TransactionIdChecker( File workingDirectory )
         {
@@ -136,7 +136,7 @@ public class TransactionAppenderStressTest
         private ReadableLogChannel openLogFile( FileSystemAbstraction fs, int version ) throws IOException
         {
             PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fs );
-            PhysicalLogVersionedStoreChannel channel = PhysicalLogFile.openForVersion( logFiles, fs, version );
+            PhysicalLogVersionedStoreChannel channel = PhysicalLogFile.openForVersion( logFiles, fs, version, false );
             return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( fs, logFiles ) );
         }
     }

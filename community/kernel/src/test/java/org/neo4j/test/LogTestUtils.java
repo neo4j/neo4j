@@ -154,7 +154,7 @@ public class LogTestUtils
         {
             channel = fs.open( firstFile, "r" );
             ByteBuffer buffer = ByteBuffer.allocate( LogHeader.LOG_HEADER_SIZE );
-            LogHeader header = LogHeaderReader.readLogHeader( buffer, channel, true );
+            LogHeader header = LogHeaderReader.readLogHeader( buffer, channel, true, firstFile );
 
             PhysicalLogVersionedStoreChannel logVersionedChannel = new PhysicalLogVersionedStoreChannel( channel,
                     header.logVersion, header.logFormatVersion );
@@ -235,7 +235,7 @@ public class LogTestUtils
     private static LogHeader transferLogicalLogHeader( StoreChannel in, StoreChannel out, ByteBuffer buffer )
             throws IOException
     {
-        LogHeader header = readLogHeader( buffer, in, true );
+        LogHeader header = readLogHeader( buffer, in, true, null );
         writeLogHeader( buffer, header.logVersion, header.lastCommittedTxId );
         buffer.flip();
         out.write( buffer );

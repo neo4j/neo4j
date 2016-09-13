@@ -17,29 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import java.io.File;
+import java.io.IOException;
 
-public class DeadSimpleLogVersionRepository implements LogVersionRepository
+/**
+ * Used to signal an incomplete log header, i.e. if file is smaller than the header.
+ * This exception is still an {@link IOException}, but a specific subclass of it as to make possible
+ * special handling.
+ */
+public class IncompleteLogHeaderException extends IOException
 {
-    private volatile long logVersion;
-
-    public DeadSimpleLogVersionRepository( long initialLogVersion )
+    public IncompleteLogHeaderException( File file, int readSize )
     {
-        this.logVersion = initialLogVersion;
+        super( "Unable to read log version and last committed tx from '" + file.getAbsolutePath() + "', " +
+                "was only able to read " + readSize + " bytes" );
     }
 
-    @Override
-    public long incrementAndGetVersion()
+    public IncompleteLogHeaderException( int readSize )
     {
-        logVersion++;
-        return logVersion;
-    }
-
-    @Override
-    public long getCurrentLogVersion()
-    {
-        return logVersion;
+        super( "Unable to read log version and last committed tx, was only able to read " + readSize + " bytes" );
     }
 }
