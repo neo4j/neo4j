@@ -22,26 +22,20 @@ package org.neo4j.coreedge.stresstests;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.LockSupport;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 
-import org.neo4j.backup.OnlineBackup;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.io.fs.FileUtils;
@@ -50,6 +44,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.StressTestingHelper.fromEnv;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
@@ -83,11 +78,12 @@ public class BackupStoreCopyInteractionStressTesting
         File clusterDirectory = ensureExistsAndEmpty( new File( workingDirectory, "cluster" ) );
         File backupDirectory = ensureExistsAndEmpty( new File( workingDirectory, "backups" ) );
 
+        BiFunction<Boolean,Integer,SocketAddress> backupAddress = ( isCore, id ) ->
+                new AdvertisedSocketAddress( "localhost", (isCore ? baseCoreBackupPort : baseEdgeBackupPort) + id );
+
         Map<String,String> params = Collections.emptyMap();
-        Map<String,IntFunction<String>> paramsPerCoreInstance =
-                configureBackup( baseCoreBackupPort, baseEdgeBackupPort, true );
-        Map<String,IntFunction<String>> paramsPerEdgeInstance =
-                configureBackup( baseCoreBackupPort, baseEdgeBackupPort, false );
+        Map<String,IntFunction<String>> paramsPerCoreInstance = configureBackup( (id) -> backupAddress.apply( true, id ) );
+        Map<String,IntFunction<String>> paramsPerEdgeInstance = configureBackup( (id) -> backupAddress.apply( false, id ) );
 
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
         Cluster cluster = new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, params,
@@ -99,14 +95,14 @@ public class BackupStoreCopyInteractionStressTesting
         try
         {
             cluster.start();
-            Future<?> workload = service.submit( workLoad( cluster, keepGoing ) );
-            Future<?> startStopWorker = service.submit( startStopLoad( cluster, keepGoing ) );
-            Future<?> backupWorker = service.submit(
-                    backupLoad( backupDirectory, baseCoreBackupPort, baseEdgeBackupPort, cluster, keepGoing ) );
+            Future<Boolean> workload = service.submit( new Workload( keepGoing, cluster ) );
+            Future<Boolean> startStopWorker = service.submit( new StartStopLoad( keepGoing, cluster ) );
+            Future<Boolean> backupWorker =
+                    service.submit( new BackupLoad( keepGoing, cluster, backupDirectory, backupAddress ) );
 
-            workload.get();
-            startStopWorker.get();
-            backupWorker.get();
+            assertTrue( workload.get() );
+            assertTrue( startStopWorker.get() );
+            assertTrue( backupWorker.get() );
         }
         finally
         {
@@ -118,140 +114,11 @@ public class BackupStoreCopyInteractionStressTesting
         FileUtils.deleteRecursively( backupDirectory );
     }
 
-    private Runnable workLoad( Cluster cluster, BooleanSupplier keepGoing )
-    {
-        return new RepeatUntilRunnable( keepGoing )
-        {
-            @Override
-            protected void doWork()
-            {
-                try
-                {
-                    cluster.coreTx( ( db, tx ) ->
-                    {
-                        db.createNode();
-                        tx.success();
-                    } );
-                }
-                catch ( InterruptedException e )
-                {
-                    // whatever let's go on with the workload
-                    Thread.interrupted();
-                }
-                catch ( TimeoutException | DatabaseShutdownException e )
-                {
-                    // whatever let's go on with the workload
-                }
-            }
-        };
-    }
-
-    private Runnable startStopLoad( Cluster cluster, BooleanSupplier keepGoing )
-    {
-        return new RepeatUntilOnSelectedMemberRunnable( keepGoing, cluster )
-        {
-            @Override
-            protected void doWorkOnMember( boolean isCore, int id )
-            {
-                ClusterMember member = pickSingleMember( cluster, id, isCore );
-                member.shutdown();
-                LockSupport.parkNanos( 500_000_000 );
-                member.start();
-            }
-        };
-    }
-
-    private Runnable backupLoad( File baseDirectory, int baseCoreBackupPort, int baseEdgeBackupPort, Cluster cluster,
-            BooleanSupplier keepGoing )
-    {
-        return new RepeatUntilOnSelectedMemberRunnable( keepGoing, cluster )
-        {
-            @Override
-            protected void doWorkOnMember( boolean isCore, int id )
-            {
-                SocketAddress address = backupAddress( baseCoreBackupPort, baseEdgeBackupPort, isCore, id );
-                File backupDirectory = new File( baseDirectory, Integer.toString( address.getPort() ) );
-                OnlineBackup backup =
-                        OnlineBackup.from( address.getHostname(), address.getPort() ).backup( backupDirectory );
-
-                if ( !backup.isConsistent() )
-                {
-                    System.err.println( "Not consistent backup from " + address );
-                }
-            }
-        };
-    }
-
-    private static abstract class RepeatUntilOnSelectedMemberRunnable extends RepeatUntilRunnable
-    {
-        private final Random random = new Random();
-        private final Cluster cluster;
-
-        RepeatUntilOnSelectedMemberRunnable( BooleanSupplier keepGoing, Cluster cluster )
-        {
-            super( keepGoing );
-            this.cluster = cluster;
-        }
-
-        @Override
-        protected final void doWork()
-        {
-            boolean isCore = random.nextBoolean();
-            Collection<? extends ClusterMember> members = pickMembers( cluster, isCore );
-            if ( members.isEmpty() )
-            {
-                return;
-            }
-            int id = random.nextInt( members.size() );
-            doWorkOnMember( isCore, id );
-        }
-
-        protected abstract void doWorkOnMember( boolean isCore, int id );
-    }
-
-    private static abstract class RepeatUntilRunnable implements Runnable
-    {
-        private BooleanSupplier keepGoing;
-
-        RepeatUntilRunnable( BooleanSupplier keepGoing )
-        {
-            this.keepGoing = keepGoing;
-        }
-
-        @Override
-        public final void run()
-        {
-            while ( keepGoing.getAsBoolean() )
-            {
-                doWork();
-            }
-        }
-
-        protected abstract void doWork();
-    }
-
-    private static Collection<? extends ClusterMember> pickMembers( Cluster cluster, boolean isCore )
-    {
-        return isCore ? cluster.coreMembers() : cluster.edgeMembers();
-    }
-
-    private static ClusterMember pickSingleMember( Cluster cluster, int id, boolean isCore )
-    {
-        return isCore ? cluster.getCoreMemberById( id ) : cluster.getEdgeMemberById( id );
-    }
-
-    private static Map<String,IntFunction<String>> configureBackup( int baseCoreBackupPort, int baseEdgeBackupPort,
-            boolean isCore )
+    private static Map<String,IntFunction<String>> configureBackup( IntFunction<SocketAddress> address )
     {
         Map<String,IntFunction<String>> settings = new HashMap<>();
         settings.put( OnlineBackupSettings.online_backup_enabled.name(), id -> TRUE );
-        settings.put( OnlineBackupSettings.online_backup_server.name(),
-                id -> backupAddress( baseCoreBackupPort, baseEdgeBackupPort, isCore, id ).toString() );
+        settings.put( OnlineBackupSettings.online_backup_server.name(), id -> address.apply( id ).toString() );
         return settings;
-    }
-
-    private static SocketAddress backupAddress( int baseCoreBackupPort, int baseEdgeBackupPort, boolean isCore, int id )
-    {
-        return new AdvertisedSocketAddress( "localhost", (isCore ? baseCoreBackupPort : baseEdgeBackupPort) + id );
     }
 }
