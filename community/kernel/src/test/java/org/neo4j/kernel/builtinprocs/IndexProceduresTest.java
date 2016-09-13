@@ -37,7 +37,7 @@ public class IndexProceduresTest
         Statement statement = mock( Statement.class );
         when( kernelTransaction.acquireStatement() ).thenReturn( statement );
         //noinspection EmptyTryBlock
-        try ( IndexProcedures ignored = new IndexProcedures( kernelTransaction ) )
+        try ( IndexProcedures ignored = new IndexProcedures( kernelTransaction, null ) )
         {
         }
         verify( statement ).close();

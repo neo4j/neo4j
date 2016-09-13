@@ -32,6 +32,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
 import static java.lang.String.format;
 
@@ -39,11 +41,13 @@ public class IndexProcedures implements AutoCloseable
 {
     private final Statement statement;
     private final ReadOperations operations;
+    private final IndexingService indexingService;
 
-    public IndexProcedures( KernelTransaction tx )
+    public IndexProcedures( KernelTransaction tx, IndexingService indexingService )
     {
         statement = tx.acquireStatement();
         operations = statement.readOperations();
+        this.indexingService = indexingService;
     }
 
     public void awaitIndex( String labelName, String propertyKeyName, long timeout, TimeUnit timeoutUnits )
@@ -54,6 +58,14 @@ public class IndexProcedures implements AutoCloseable
         String indexDescription = formatIndex( labelName, propertyKeyName );
         IndexDescriptor index = getIndex( labelId, propertyKeyId, indexDescription );
         waitUntilOnline( index, indexDescription, timeout, timeoutUnits );
+    }
+
+    public void resampleIndex( String labelName, String propertyKeyName ) throws ProcedureException
+    {
+        triggerSampling( getIndex(
+                getLabelId( labelName ),
+                getPropertyKeyId( propertyKeyName ),
+                formatIndex( labelName, propertyKeyName ) ) );
     }
 
     private int getLabelId( String labelName ) throws ProcedureException
@@ -136,6 +148,11 @@ public class IndexProcedures implements AutoCloseable
         {
             throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on %s", indexDescription );
         }
+    }
+
+    private void triggerSampling( IndexDescriptor index )
+    {
+        indexingService.triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
 
     private String formatIndex( String labelName, String propertyKeyName )

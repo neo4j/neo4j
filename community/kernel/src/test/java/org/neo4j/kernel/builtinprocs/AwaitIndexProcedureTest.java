@@ -58,7 +58,7 @@ public class AwaitIndexProcedureTest
     private static final int timeout = 40;
     private static final TimeUnit timeoutUnits = TimeUnit.MILLISECONDS;
     private final ReadOperations operations = mock( ReadOperations.class );
-    private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ) );
+    private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException

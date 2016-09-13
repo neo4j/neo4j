@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -53,6 +55,9 @@ public class BuiltInProcedures
 {
     @Context
     public KernelTransaction tx;
+
+    @Context
+    public DependencyResolver resolver;
 
     @Description( "List all labels in the database." )
     @Procedure( name = "db.labels", mode = READ )
@@ -133,6 +138,17 @@ public class BuiltInProcedures
         }
     }
 
+    @Description( "Schedule resampling of an index." )
+    @Procedure( name = "db.resampleIndex", mode = READ )
+    public void resampleIndex( @Name( "label" ) String labelName,
+                               @Name( "property" ) String propertyKeyName ) throws ProcedureException
+    {
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.resampleIndex( labelName, propertyKeyName );
+        }
+    }
+
     @Description( "List all constraints in the database." )
     @Procedure( name = "db.constraints", mode = READ )
     public Stream<ConstraintResult> listConstraints()
@@ -177,7 +193,7 @@ public class BuiltInProcedures
 
     private IndexProcedures indexProcedures()
     {
-        return new IndexProcedures( tx );
+        return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
     }
 
     @SuppressWarnings( "unused" )
