@@ -149,6 +149,16 @@ public class BuiltInProcedures
         }
     }
 
+    @Description( "Schedule resampling of all outdated indexes." )
+    @Procedure( name = "db.resampleOutdatedIndexes", mode = READ )
+    public void resampleOutdatedIndexes()
+    {
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.resampleOutdatedIndexes();
+        }
+    }
+
     @Description( "List all constraints in the database." )
     @Procedure( name = "db.constraints", mode = READ )
     public Stream<ConstraintResult> listConstraints()

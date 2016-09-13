@@ -68,6 +68,11 @@ public class IndexProcedures implements AutoCloseable
                 formatIndex( labelName, propertyKeyName ) ) );
     }
 
+    public void resampleOutdatedIndexes()
+    {
+        indexingService.triggerIndexSampling( IndexSamplingMode.TRIGGER_REBUILD_UPDATED );
+    }
+
     private int getLabelId( String labelName ) throws ProcedureException
     {
         int labelId = operations.labelGetForName( labelName );

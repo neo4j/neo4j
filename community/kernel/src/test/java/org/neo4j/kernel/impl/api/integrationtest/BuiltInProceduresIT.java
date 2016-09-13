@@ -111,6 +111,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "timeOutSeconds = 300 :: INTEGER?) :: VOID", "Wait for an index to come online."} ),
                 equalTo( new Object[]{"db.resampleIndex", "db.resampleIndex(label :: STRING?, property :: STRING?) " +
                         ":: VOID", "Schedule resampling of an index."} ),
+                equalTo( new Object[]{"db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID",
+                        "Schedule resampling of all outdated indexes."} ),
                 equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)", "List all property keys in the database."} ),
                 equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database."} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +

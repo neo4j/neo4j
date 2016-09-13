@@ -180,6 +180,7 @@ public class BuiltInProceduresTest
             record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)", "List all property keys in the database." ),
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)", "List all relationship types in the database." ),
             record( "db.resampleIndex", "db.resampleIndex(label :: STRING?, property :: STRING?) :: VOID", "Schedule resampling of an index." ),
+            record( "db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID", "Schedule resampling of all outdated indexes." ),
             record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)", "List DBMS components and their versions." ),
             record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?, description :: STRING?)", "List all procedures in the DBMS." ),
             record( "dbms.functions", "dbms.functions() :: (name :: STRING?, signature :: STRING?, description :: STRING?)", "List all user functions in the DBMS." ),
