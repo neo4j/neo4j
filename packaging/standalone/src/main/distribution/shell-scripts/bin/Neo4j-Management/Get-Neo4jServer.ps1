@@ -148,6 +148,10 @@ Function Get-Neo4jServer
     if ( (Get-Neo4jEnv 'NEO4J_CONF') -eq $null) { Set-Neo4jEnv "NEO4J_CONF" $ConfDir }
     if ( (Get-Neo4jEnv 'NEO4J_HOME') -eq $null) { Set-Neo4jEnv "NEO4J_HOME" $Neo4jHome }
 
+    # Any deprecation warnings
+    $WrapperPath = Join-Path -Path $ConfDir -ChildPath 'neo4j-wrapper.conf'
+    If (Test-Path -Path $WrapperPath) { Write-Warning "$WrapperPath is deprecated and support for it will be removed in a future version of Neo4j; please move all your settings to neo4j.conf" }
+
     Write-Output $serverObject
   }
 
