@@ -29,7 +29,7 @@ import java.util.Collection;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.highlimit.v30.HighLimitV3_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.test.Unzip;
 
 import static java.util.Collections.singletonList;
@@ -44,7 +44,7 @@ public class EnterpriseStoreUpgraderTest extends StoreUpgraderTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<String> versions()
     {
-        return singletonList( HighLimitV3_0.STORE_VERSION );
+        return singletonList( HighLimitV3_0_0.STORE_VERSION );
     }
 
     @Override
@@ -71,7 +71,7 @@ public class EnterpriseStoreUpgraderTest extends StoreUpgraderTest
 
     private File findFormatStoreDirectoryForVersion( String version, File databaseDirectory ) throws IOException
     {
-        if ( version.equals( HighLimitV3_0.STORE_VERSION ) )
+        if ( version.equals( HighLimitV3_0_0.STORE_VERSION ) )
         {
             return highLimit3_0Store( databaseDirectory );
         }

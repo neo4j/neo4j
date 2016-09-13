@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.highlimit.v30.HighLimitV3_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
@@ -53,7 +53,7 @@ public class RecordFormatsGenerationTest
                 StandardV2_2.RECORD_FORMATS,
                 StandardV2_3.RECORD_FORMATS,
                 StandardV3_0.RECORD_FORMATS,
-                HighLimitV3_0.RECORD_FORMATS,
+                HighLimitV3_0_0.RECORD_FORMATS,
                 HighLimit.RECORD_FORMATS
         );
 

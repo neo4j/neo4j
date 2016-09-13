@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.highlimit.v30.HighLimitV3_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.logging.NullLogProvider;
@@ -78,8 +78,8 @@ public class RecordFormatsMigrationIT
     @Test
     public void migrateHighLimitV3_0ToLatestHighLimit() throws IOException
     {
-        executeAndStopDb( startDb( HighLimitV3_0.NAME ), this::createNode );
-        assertStoreFormat( HighLimitV3_0.RECORD_FORMATS );
+        executeAndStopDb( startDb( HighLimitV3_0_0.NAME ), this::createNode );
+        assertStoreFormat( HighLimitV3_0_0.RECORD_FORMATS );
 
         executeAndStopDb( startHighLimitFormatDb(), this::assertNodeExists );
         assertLatestHighLimitStore();

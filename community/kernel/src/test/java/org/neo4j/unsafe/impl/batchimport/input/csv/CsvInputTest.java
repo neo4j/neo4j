@@ -86,7 +86,8 @@ public class CsvInputTest
         return asList( Boolean.TRUE, Boolean.FALSE );
     }
 
-    public final @Rule TestDirectory directory = TestDirectory.testDirectory( getClass() );
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory( getClass() );
     private final Extractors extractors = new Extractors( ',' );
     @Parameter
     public Boolean allowMultilineFields;

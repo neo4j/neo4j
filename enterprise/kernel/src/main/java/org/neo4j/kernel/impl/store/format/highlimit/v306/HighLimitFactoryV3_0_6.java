@@ -17,15 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit.v30;
+package org.neo4j.kernel.impl.store.format.highlimit.v306;
 
-import org.neo4j.kernel.impl.store.format.RecordFormatTest;
-import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 
-public class HighLimitV3_0RecordFormatTest extends RecordFormatTest
+@Service.Implementation( RecordFormats.Factory.class )
+public class HighLimitFactoryV3_0_6 extends RecordFormats.Factory
 {
-    public HighLimitV3_0RecordFormatTest()
+    public HighLimitFactoryV3_0_6()
     {
-        super( HighLimitV3_0_0.RECORD_FORMATS, 50, 50 );
+        super( HighLimitV3_0_6.NAME );
+    }
+
+    @Override
+    public RecordFormats newInstance()
+    {
+        return HighLimitV3_0_6.RECORD_FORMATS;
     }
 }

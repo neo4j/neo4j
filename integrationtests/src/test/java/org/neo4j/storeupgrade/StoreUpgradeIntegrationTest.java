@@ -62,6 +62,8 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -145,6 +147,21 @@ public class StoreUpgradeIntegrationTest
                     selectivities( 1.0, 1.0, 1.0 ),
                     indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
             )} );
+    private static final List<Store[]> STORES300 = Arrays.asList(
+            new Store[]{new Store( "E.H.0-empty.zip",
+                    0 /* node count */,
+                    1 /* last txId */,
+                    selectivities(),
+                    indexCounts(),
+                    HighLimit.NAME
+                    )},
+            new Store[]{new Store( "E.H.0-data.zip",
+                    174 /* node count */,
+                    30 /* last txId */,
+                    selectivities( 1.0, 1.0, 1.0 ),
+                    indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) ),
+                    HighLimit.NAME
+                    )} );
 
     @RunWith( Parameterized.class )
     public static class StoreUpgradeTest
@@ -155,7 +172,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return Iterables.asCollection( Iterables.concat( STORES20, STORES21, STORES22, STORES23 ) );
+            return Iterables.asCollection( Iterables.concat( STORES20, STORES21, STORES22, STORES23, STORES300 ) );
         }
 
         @Rule
@@ -330,7 +347,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return Iterables.asCollection( Iterables.concat( STORES21, STORES22, STORES23 ) );
+            return Iterables.asCollection( Iterables.concat( STORES21, STORES22, STORES23, STORES300 ) );
         }
 
         @Rule
@@ -352,6 +369,7 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            builder.setConfig( GraphDatabaseSettings.record_format, store.getFormatFamily() );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -374,15 +392,23 @@ public class StoreUpgradeIntegrationTest
         final long lastTxId;
         private final double[] indexSelectivity;
         final long[][] indexCounts;
+        private final String formatFamily;
 
         private Store( String resourceName, long expectedNodeCount, long lastTxId,
                 double[] indexSelectivity, long[][] indexCounts )
+        {
+            this( resourceName, expectedNodeCount, lastTxId, indexSelectivity, indexCounts, StandardV3_0.NAME );
+        }
+
+        private Store( String resourceName, long expectedNodeCount, long lastTxId,
+                double[] indexSelectivity, long[][] indexCounts, String formatFamily )
         {
             this.resourceName = resourceName;
             this.expectedNodeCount = expectedNodeCount;
             this.lastTxId = lastTxId;
             this.indexSelectivity = indexSelectivity;
             this.indexCounts = indexCounts;
+            this.formatFamily = formatFamily;
         }
 
         public File prepareDirectory( File targetDir ) throws IOException
@@ -405,6 +431,11 @@ public class StoreUpgradeIntegrationTest
         public long indexes()
         {
             return indexCounts.length;
+        }
+
+        public String getFormatFamily()
+        {
+            return formatFamily;
         }
     }
 

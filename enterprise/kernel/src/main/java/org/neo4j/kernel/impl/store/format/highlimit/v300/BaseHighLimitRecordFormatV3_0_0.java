@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit.v30;
+package org.neo4j.kernel.impl.store.format.highlimit.v300;
 
 import java.io.IOException;
 import java.util.function.Function;
@@ -77,7 +77,7 @@ import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdFor
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-abstract class BaseHighLimitRecordFormatV3_0<RECORD extends AbstractBaseRecord>
+abstract class BaseHighLimitRecordFormatV3_0_0<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
     private static final int HEADER_BYTE = Byte.BYTES;
@@ -86,9 +86,9 @@ abstract class BaseHighLimitRecordFormatV3_0<RECORD extends AbstractBaseRecord>
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
 
-    protected BaseHighLimitRecordFormatV3_0( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
+    protected BaseHighLimitRecordFormatV3_0_0( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {
-        super( recordSize, recordHeaderSize, IN_USE_BIT, HighLimitV3_0.DEFAULT_MAXIMUM_BITS_PER_ID );
+        super( recordSize, recordHeaderSize, IN_USE_BIT, HighLimitV3_0_0.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 
     public void read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize )

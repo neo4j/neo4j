@@ -37,7 +37,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
-import org.neo4j.kernel.impl.store.format.highlimit.v30.HighLimitV3_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.test.rule.PageCacheRule;
@@ -56,7 +56,7 @@ public class HighLimitStoreMigrationTest
     @Test
     public void haveSameFormatCapabilitiesAsHighLimit3_0()
     {
-        assertTrue( HighLimit.RECORD_FORMATS.hasSameCapabilities( HighLimitV3_0.RECORD_FORMATS, CapabilityType.FORMAT ) );
+        assertTrue( HighLimit.RECORD_FORMATS.hasSameCapabilities( HighLimitV3_0_0.RECORD_FORMATS, CapabilityType.FORMAT ) );
     }
 
     @Test
@@ -71,10 +71,10 @@ public class HighLimitStoreMigrationTest
         File migrationDir = new File( "migrationDir" );
         fileSystem.mkdir( migrationDir );
 
-        prepareNeoStoreFile( storeDir, HighLimitV3_0.STORE_VERSION, pageCache );
+        prepareNeoStoreFile( storeDir, HighLimitV3_0_0.STORE_VERSION, pageCache );
 
         MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
-        migrator.migrate( storeDir, migrationDir, progressMonitor, HighLimitV3_0.STORE_VERSION, HighLimit.STORE_VERSION );
+        migrator.migrate( storeDir, migrationDir, progressMonitor, HighLimitV3_0_0.STORE_VERSION, HighLimit.STORE_VERSION );
 
         File[] migrationFiles = fileSystem.listFiles( migrationDir );
         Set<String> fileNames = Stream.of( migrationFiles ).map( File::getName ).collect( Collectors.toSet() );
