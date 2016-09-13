@@ -403,7 +403,7 @@ public class AuthProcedures
 
     // ----------------- helpers ---------------------
 
-    private void terminateTransactionsForValidUser( String username )
+    protected void terminateTransactionsForValidUser( String username )
     {
         getActiveTransactions()
                 .stream()
@@ -413,7 +413,7 @@ public class AuthProcedures
                 ).forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
     }
 
-    private void terminateConnectionsForValidUser( String username )
+    protected void terminateConnectionsForValidUser( String username )
     {
         getBoltConnectionTracker().getActiveConnections( username ).forEach( ManagedBoltStateMachine::terminate );
     }
