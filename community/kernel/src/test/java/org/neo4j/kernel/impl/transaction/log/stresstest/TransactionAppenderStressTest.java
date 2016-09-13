@@ -47,6 +47,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.function.Suppliers.untilTimeExpired;
 
 public class TransactionAppenderStressTest
 {
@@ -59,7 +60,7 @@ public class TransactionAppenderStressTest
         int threads = 10;
         File workingDirectory = directory.directory( "work" );
         Callable<Long> runner = new Builder()
-                .with( Builder.untilTimeExpired( 10, SECONDS ) )
+                .with( untilTimeExpired( 10, SECONDS ) )
                 .withWorkingDirectory( workingDirectory )
                 .withNumThreads( threads )
                 .build();
@@ -74,12 +75,6 @@ public class TransactionAppenderStressTest
         private BooleanSupplier condition;
         private File workingDirectory;
         private int threads;
-
-        public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
-        {
-            final long endTimeInMilliseconds = currentTimeMillis() + unit.toMillis( duration );
-            return () -> currentTimeMillis() <= endTimeInMilliseconds;
-        }
 
         public Builder with( BooleanSupplier condition )
         {

@@ -34,6 +34,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.StressTestingHelper.fromEnv;
+import static org.neo4j.function.Suppliers.untilTimeExpired;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
@@ -52,7 +53,7 @@ public class TransactionAppenderStressTesting
         int threads = parseInt( fromEnv( "TX_APPENDER_NUM_THREADS", DEFAULT_NUM_THREADS ) );
 
         Callable<Long> runner = new Builder()
-                .with( Builder.untilTimeExpired( durationInMinutes, MINUTES ) )
+                .with( untilTimeExpired( durationInMinutes, MINUTES ) )
                 .withWorkingDirectory( ensureExistsAndEmpty( workingDirectory ) )
                 .withNumThreads( threads )
                 .build();

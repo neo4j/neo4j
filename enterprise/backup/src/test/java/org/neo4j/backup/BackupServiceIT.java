@@ -105,7 +105,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
+import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_LEFT;
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_RIGHT;
 

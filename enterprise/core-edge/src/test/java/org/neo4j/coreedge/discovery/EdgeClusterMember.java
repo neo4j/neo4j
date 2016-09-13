@@ -34,7 +34,7 @@ import org.neo4j.logging.Level;
 import static java.util.stream.Collectors.joining;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class EdgeClusterMember
+public class EdgeClusterMember implements ClusterMember
 {
     private final Map<String, String> config = stringMap();
     private final DiscoveryServiceFactory discoveryServiceFactory;
@@ -76,12 +76,14 @@ public class EdgeClusterMember
         storeDir.mkdirs();
     }
 
+    @Override
     public void start()
     {
         database = new EdgeGraphDatabase( storeDir, config,
                 GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
     }
 
+    @Override
     public void shutdown()
     {
         if ( database != null )

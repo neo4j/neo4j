@@ -19,9 +19,13 @@
  */
 package org.neo4j.function;
 
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import static java.lang.System.currentTimeMillis;
 
 /**
  * Constructors for basic {@link Supplier} types
@@ -117,5 +121,11 @@ public final class Suppliers
     public static <T> Supplier<Boolean> compose( final Supplier<T> input, final Predicate<T> predicate )
     {
         return () -> predicate.test( input.get() );
+    }
+
+    public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
+    {
+        final long endTimeInMilliseconds = currentTimeMillis() + unit.toMillis( duration );
+        return () -> currentTimeMillis() <= endTimeInMilliseconds;
     }
 }

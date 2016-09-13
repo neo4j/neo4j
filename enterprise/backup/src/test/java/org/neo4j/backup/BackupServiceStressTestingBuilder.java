@@ -68,12 +68,6 @@ public class BackupServiceStressTestingBuilder
     private String backupHostname = "localhost";
     private int backupPort = 8200;
 
-    public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
-    {
-        final long endTimeInMilliseconds = currentTimeMillis() + unit.toMillis( duration );
-        return () -> currentTimeMillis() <= endTimeInMilliseconds;
-    }
-
     public BackupServiceStressTestingBuilder until( BooleanSupplier untilCondition )
     {
         Objects.requireNonNull( untilCondition );
