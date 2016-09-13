@@ -130,5 +130,17 @@ InModuleScope Neo4j-Management {
          Assert-MockCalled Set-Neo4jEnv -Times 0 -ParameterFilter { $Name -eq 'NEO4J_HOME' }
       }
     }
+
+    Context "Deprecation warning if a neo4j-wrapper.conf file is found" {
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j'
+      Mock Write-Warning
+ 
+      '# Mock File' | Out-File 'TestDrive:\neo4j\conf\neo4j-wrapper.conf'
+
+      It "Should raise a warning if conf\neo4j-wrapper.conf exists" {
+         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\' -ErrorAction Stop
+         Assert-MockCalled Write-Warning -Times 1
+      }
+    }
   }
 }
