@@ -1,1 +1,2 @@
 org.neo4j.server.security.enterprise.auth.plugin.TestAuthPlugin
+org.neo4j.server.security.enterprise.auth.plugin.LdapGroupHasUsersAuthPlugin
