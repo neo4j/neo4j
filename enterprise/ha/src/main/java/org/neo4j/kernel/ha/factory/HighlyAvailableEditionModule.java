@@ -131,12 +131,14 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -181,8 +183,23 @@ public class HighlyAvailableEditionModule
 {
     public static final String CUSTOM_IO_EXCEPTION_MESSAGE = "HA mode not allowed with custom IO integrations";
 
-    public HighAvailabilityMemberStateMachine memberStateMachine;
+    private HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
+    private SecurityLog securityLog;
+
+    @Override
+    protected Log authManagerLog()
+    {
+        return securityLog;
+    }
+
+    @Override
+    public void registerProcedures( Procedures procedures ) throws KernelException
+    {
+        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
+        registerProceduresFromProvider( "auth-procedures-provider", procedures );
+        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
+    }
 
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
@@ -494,6 +511,9 @@ public class HighlyAvailableEditionModule
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
                         storeDir, lastUpdateTime, lastTxIdGetter, life ) );
 
+        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
+                platformModule.fileSystem, platformModule.jobScheduler );
+
         life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
                 platformModule.fileSystem, platformModule.jobScheduler ) ) );
 
@@ -508,8 +528,7 @@ public class HighlyAvailableEditionModule
             {
                 throw new InvalidTransactionTypeKernelException(
                         "Modifying the database schema can only be done on the master server, " +
-                                "this server is a slave. Please issue schema modification commands directly to " +
-                                "the master."
+                        "this server is a slave. Please issue schema modification commands directly to the master."
                 );
             }
         };
@@ -540,7 +559,7 @@ public class HighlyAvailableEditionModule
         sysInfo.set( UsageDataKeys.serverId, config.get( ClusterSettings.server_id ).toString() );
     }
 
-    protected TransactionHeaderInformationFactory createHeaderInformationFactory(
+    private TransactionHeaderInformationFactory createHeaderInformationFactory(
             final HighAvailabilityMemberContext memberContext )
     {
         return new TransactionHeaderInformationFactory.WithRandomBytes()
@@ -698,8 +717,8 @@ public class HighlyAvailableEditionModule
         return life.add( new HighlyAvailableKernelData( graphDb, members, databaseInfo, fs, pageCache, storeDir, config ) );
     }
 
-    protected void registerRecovery( final DatabaseInfo databaseInfo, final DependencyResolver dependencyResolver,
-                                     final LogService logging )
+    private void registerRecovery( final DatabaseInfo databaseInfo, final DependencyResolver dependencyResolver,
+            final LogService logging )
     {
         memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener.Adapter()
         {
@@ -754,7 +773,7 @@ public class HighlyAvailableEditionModule
         } );
     }
 
-    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver resolver, boolean isMaster )
+    private void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver resolver, boolean isMaster )
     {
         super.doAfterRecoveryAndStartup( databaseInfo, resolver );
 
@@ -802,36 +821,16 @@ public class HighlyAvailableEditionModule
 
     private Server.Configuration masterServerConfig( final Config config )
     {
-        return new Server.Configuration()
-        {
-            @Override
-            public long getOldChannelThreshold()
-            {
-                return config.get( HaSettings.lock_read_timeout );
-            }
-
-            @Override
-            public int getMaxConcurrentTransactions()
-            {
-                return config.get( HaSettings.max_concurrent_channels_per_slave );
-            }
-
-            @Override
-            public int getChunkSize()
-            {
-                return config.get( HaSettings.com_chunk_size ).intValue();
-            }
-
-            @Override
-            public HostnamePort getServerAddress()
-            {
-                return config.get( HaSettings.ha_server );
-            }
-        };
+        return commonConfig( config );
     }
 
     private Server.Configuration slaveServerConfig( final Config config )
     {
+        return commonConfig( config );
+    }
+
+    private Server.Configuration commonConfig( final Config config )
+    {
         return new Server.Configuration()
         {
             @Override
@@ -858,12 +857,6 @@ public class HighlyAvailableEditionModule
                 return config.get( HaSettings.ha_server );
             }
         };
-    }
-
-    @Override
-    public void registerProcedures( Procedures procedures ) throws KernelException
-    {
-        // empty
     }
 
     @Override

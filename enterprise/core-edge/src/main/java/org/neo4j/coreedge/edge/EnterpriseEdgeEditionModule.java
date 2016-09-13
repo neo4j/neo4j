@@ -20,11 +20,11 @@
 package org.neo4j.coreedge.edge;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
@@ -42,18 +42,18 @@ import org.neo4j.coreedge.core.state.machines.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.discovery.procedures.EdgeRoleProcedure;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.routing.ConnectToRandomCoreMember;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
@@ -90,8 +91,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
-import static java.util.Collections.singletonMap;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
@@ -102,18 +101,21 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THR
  */
 public class EnterpriseEdgeEditionModule extends EditionModule
 {
+    private SecurityLog securityLog;
+
     @Override
-    public void registerProcedures( Procedures procedures )
+    public void registerProcedures( Procedures procedures ) throws KernelException
     {
-        // TODO
-        try
-        {
-            procedures.register( new EdgeRoleProcedure() );
-        }
-        catch ( ProcedureException e )
-        {
-            throw new RuntimeException( e );
-        }
+        procedures.register( new EdgeRoleProcedure() );
+        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
+        registerProceduresFromProvider( "auth-procedures-provider" , procedures );
+        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
+    }
+
+    @Override
+    protected Log authManagerLog()
+    {
+        return securityLog;
     }
 
     EnterpriseEdgeEditionModule( final PlatformModule platformModule,
@@ -151,13 +153,15 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         life.add( dependencies.satisfyDependency(
                 new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
 
+        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
+                platformModule.fileSystem, platformModule.jobScheduler );
+
         life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
                 platformModule.fileSystem, platformModule.jobScheduler ) ) );
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
-        schemaWriteGuard = () -> {
-        };
+        schemaWriteGuard = () -> {};
 
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 

@@ -26,14 +26,39 @@ import org.hamcrest.StringDescription;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Strings;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.StringContains.containsString;
+import static org.junit.Assert.fail;
 
 public final class Assert
 {
     private Assert()
     {
+    }
+
+    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class typeOfException,
+            String partOfErrorMessage ) throws Exception
+    {
+        try
+        {
+            f.apply();
+        }
+        catch ( Exception e )
+        {
+            if ( typeOfException.isInstance( e ) )
+            {
+                assertThat( e.getMessage(), containsString( partOfErrorMessage ) );
+            }
+            else
+            {
+                fail( "Got unexpected exception " + e.getClass() + "\nExpected: " + typeOfException );
+            }
+        }
     }
 
     public static void assertObjectOrArrayEquals( Object expected, Object actual )

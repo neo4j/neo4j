@@ -36,12 +36,16 @@ import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.security.enterprise.auth.EnterpriseAuthManager;
@@ -65,10 +69,14 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
 
     EnterpriseAuthManager authManager;
 
-    RESTInteraction() throws IOException
+   RESTInteraction( Map<Setting<?>,String> config ) throws IOException
     {
-        server = EnterpriseServerBuilder.server()
-                .withProperty( boltConnector( "0" ).enabled.name(), "true" )
+        CommunityServerBuilder builder = EnterpriseServerBuilder.server();
+        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
+        {
+            builder = builder.withProperty( entry.getKey().name(), entry.getValue() );
+        }
+        this.server = builder.withProperty( boltConnector( "0" ).enabled.name(), "true" )
                 .withProperty( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() )
                 .withProperty( BoltKernelExtension.Settings.tls_key_file.name(),
                                     NeoInteractionLevel.tempPath( "key", ".key" ) )
@@ -77,8 +85,8 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( true ) )
                 .withProperty( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" )
                 .build();
-        server.start();
-        authManager = server.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        this.server.start();
+        authManager = this.server.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
     }
 
     @Override
@@ -94,8 +102,14 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
     }
 
     @Override
-    public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject, KernelTransaction.Type txType ) throws
-            Throwable
+    public FileSystemAbstraction fileSystem()
+    {
+        return new DefaultFileSystemAbstraction();
+    }
+
+    @Override
+    public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject, KernelTransaction.Type txType )
+            throws Throwable
     {
         AuthSubject authSubject = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
         return getLocalGraph().beginTransaction( txType, authSubject );

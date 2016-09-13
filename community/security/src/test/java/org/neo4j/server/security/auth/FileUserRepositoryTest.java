@@ -37,6 +37,7 @@ import java.util.Collection;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -49,8 +50,8 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 @RunWith(Parameterized.class)
 public class FileUserRepositoryTest
@@ -132,14 +133,20 @@ public class FileUserRepositoryTest
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
 
         // When
-        assertTrue( users.isValidUsername( "neo4j" ) );
-        assertTrue( users.isValidUsername( "johnosbourne" ) );
-        assertTrue( users.isValidUsername( "john_osbourne" ) );
+        users.assertValidUsername( "neo4j" );
+        users.assertValidUsername( "johnosbourne" );
+        users.assertValidUsername( "john_osbourne" );
 
-        assertFalse( users.isValidUsername( ":" ) );
-        assertFalse( users.isValidUsername( "" ) );
-        assertFalse( users.isValidUsername( "john osbourne" ) );
-        assertFalse( users.isValidUsername( "john:osbourne" ) );
+        assertException( () -> users.assertValidUsername( null ), InvalidArgumentsException.class,
+                "The provided username is empty." );
+        assertException( () -> users.assertValidUsername( "" ), InvalidArgumentsException.class,
+                "The provided username is empty." );
+        assertException( () -> users.assertValidUsername( ":" ), InvalidArgumentsException.class,
+                "Username ':' contains illegal characters. Use simple ascii characters and numbers." );
+        assertException( () -> users.assertValidUsername( "with space" ), InvalidArgumentsException.class,
+                "Username 'with space' contains illegal characters. Use simple ascii characters and numbers." );
+        assertException( () -> users.assertValidUsername( "with:colon" ), InvalidArgumentsException.class,
+                "Username 'with:colon' contains illegal characters. Use simple ascii characters and numbers." );
     }
 
     @Test

@@ -19,8 +19,16 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.commons.io.Charsets;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
@@ -29,7 +37,9 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.fail;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
@@ -76,6 +86,65 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         S subject = neo.login( "Henrik", "foo" );
         neo.assertInitFailed( subject );
+    }
+
+    /*
+     * Logging scenario smoke test
+     */
+    @Test
+    public void shouldLogSecurityEvents() throws Exception
+    {
+        S mats = neo.login( "mats", "neo4j" );
+        // for REST, login doesn't happen until the subject does something
+        neo.executeQuery( mats, "UNWIND [] AS i RETURN 1", Collections.emptyMap(), r -> {} );
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('mats', 'neo4j', false)" );
+        assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
+        assertEmpty( adminSubject, "CALL dbms.security.deleteRole('role1')" );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('reader', 'mats')" );
+        mats = neo.login( "mats", "neo4j" );
+        assertEmpty( mats, "MATCH (n) WHERE id(n) < 0 RETURN 1" );
+        assertFail( mats, "CALL dbms.security.changeUserPassword('neo4j', 'hackerPassword')", PERMISSION_DENIED );
+        assertFail( mats, "CALL dbms.security.changeUserPassword('mats', '')", "A password cannot be empty." );
+        assertEmpty( mats, "CALL dbms.security.changeUserPassword('mats', 'hackerPassword')" );
+        assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('reader', 'mats')" );
+        assertEmpty( adminSubject, "CALL dbms.security.deleteUser('mats')" );
+
+        // flush log
+        neo.getLocalGraph().shutdown();
+
+        // assert on log content
+        FullLog log = new FullLog();
+
+        log.assertHasLine( "mats", "logged in" );
+        log.assertHasLine( "adminSubject", "created user `mats`" );
+        log.assertHasLine( "adminSubject", "created role `role1`" );
+        log.assertHasLine( "adminSubject", "deleted role `role1`" );
+        log.assertHasLine( "mats", "logged in" );
+        log.assertHasLine( "adminSubject", "added role `reader` to user `mats`" );
+        log.assertHasLine( "mats", "tried to change password for user `neo4j`: " + PERMISSION_DENIED);
+        log.assertHasLine( "mats", "tried to change password: A password cannot be empty.");
+        log.assertHasLine( "mats", "changed password");
+        log.assertHasLine( "adminSubject", "removed role `reader` from user `mats`");
+        log.assertHasLine( "adminSubject", "deleted user `mats`");
+    }
+
+    private class FullLog
+    {
+        List<String> lines;
+
+        FullLog() throws IOException
+        {
+            lines = new ArrayList<>();
+            BufferedReader bufferedReader = new BufferedReader(
+                    neo.fileSystem().openAsReader( new File( securityLog.getAbsolutePath() ), Charsets.UTF_8 ) );
+            lines.add( bufferedReader.readLine() );
+            bufferedReader.lines().forEach( lines::add );
+        }
+
+        void assertHasLine( String subject, String msg )
+        {
+            assertThat( lines, hasItem( containsString( "[" + subject + "]: " + msg ) ) );
+        }
     }
 
     /*

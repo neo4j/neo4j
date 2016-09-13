@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import java.io.IOException;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
@@ -28,6 +31,7 @@ import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -36,6 +40,9 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 
 /**
  * This implementation of {@link EditionModule} creates the implementations of services
@@ -48,7 +55,10 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     {
         super.registerProcedures( procedures );
         procedures.registerProcedure( BuiltInProcedures.class );
+        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
+        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
     }
+    private SecurityLog securityLog;
 
     public EnterpriseEditionModule( PlatformModule platformModule )
     {
@@ -80,5 +90,19 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     protected StatementLocksFactory createStatementLocksFactory( Locks locks, Config config, LogService logService )
     {
         return new StatementLocksFactorySelector( locks, config, logService ).select();
+    }
+
+    @Override
+    protected void createAuthManagerLog( Config config, LogService logging, FileSystemAbstraction fileSystem,
+            JobScheduler jobScheduler )
+    {
+        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
+                fileSystem, jobScheduler );
+    }
+
+    @Override
+    protected Log authManagerLog()
+    {
+        return securityLog == null ? NullLog.getInstance() : securityLog;
     }
 }

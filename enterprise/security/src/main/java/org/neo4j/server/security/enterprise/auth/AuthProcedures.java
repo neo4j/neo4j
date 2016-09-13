@@ -37,16 +37,18 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static java.util.function.Predicate.isEqual;
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
 
+@SuppressWarnings( "unused" )
 public class AuthProcedures
 {
     public static final String PERMISSION_DENIED = "Permission denied.";
@@ -60,6 +62,9 @@ public class AuthProcedures
     @Context
     public KernelTransaction tx;
 
+    @Context
+    public SecurityLog securityLog;
+
     @Description( "Create a new user." )
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
     public void createUser(
@@ -69,11 +74,42 @@ public class AuthProcedures
     )
             throws InvalidArgumentsException, IOException
     {
-        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        adminSubject.getUserManager().newUser( username, password, requirePasswordChange );
+        try
+        {
+            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            adminSubject.getUserManager().newUser( username, password, requirePasswordChange );
+            securityLog.info( authSubject, "created user `%s`%s", username,
+                    requirePasswordChange ? ", with password change required" : "" );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to create user `%s`: %s", username, e.getMessage() );
+            throw e;
+        }
     }
 
     @Description( "Change the current user's password." )
+    @Procedure( name = "dbms.security.changePassword", mode = DBMS )
+    public void changePassword(
+            @Name( "password" ) String password,
+            @Name( value = "requirePasswordChange", defaultValue = "false"  ) boolean requirePasswordChange
+    )
+            throws InvalidArgumentsException, IOException
+    {
+        try
+        {
+            authSubject.setPassword( password, requirePasswordChange );
+            securityLog.info( authSubject, "changed password%s",
+                    requirePasswordChange ? ", with password change required" : "" );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to change password: %s", e.getMessage() );
+            throw e;
+        }
+    }
+
+    @Description( "Change the given user's password." )
     @Procedure( name = "dbms.security.changeUserPassword", mode = DBMS )
     public void changeUserPassword(
             @Name( "username" ) String username,
@@ -82,20 +118,34 @@ public class AuthProcedures
     )
             throws InvalidArgumentsException, IOException
     {
-        StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-        if ( enterpriseSubject.doesUsernameMatch( username ) )
+        String ownOrOther = format("password for user `%s`", username );
+        try
         {
-            enterpriseSubject.setPassword( newPassword, requirePasswordChange );
+            StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
+            if ( enterpriseSubject.doesUsernameMatch( username ) )
+            {
+                ownOrOther = "password";
+                enterpriseSubject.setPassword( newPassword, requirePasswordChange );
+                securityLog.info( authSubject, "changed password%s",
+                        requirePasswordChange ? ", with password change required" : "" );
+            }
+            else if ( !enterpriseSubject.isAdmin() )
+            {
+                throw new AuthorizationViolationException( PERMISSION_DENIED );
+            }
+            else
+            {
+                enterpriseSubject.getUserManager().setUserPassword( username, newPassword, requirePasswordChange );
+                terminateTransactionsForValidUser( username );
+                terminateConnectionsForValidUser( username );
+                securityLog.info( authSubject, "changed password for user `%s`%s", username,
+                        requirePasswordChange ? ", with password change required" : "" );
+            }
         }
-        else if ( !enterpriseSubject.isAdmin() )
+        catch ( Exception e )
         {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        else
-        {
-            enterpriseSubject.getUserManager().setUserPassword( username, newPassword, requirePasswordChange );
-            terminateTransactionsForValidUser( username );
-            terminateConnectionsForValidUser( username );
+            securityLog.error( authSubject, "tried to change %s: %s", ownOrOther, e.getMessage() );
+            throw e;
         }
     }
 
@@ -104,8 +154,18 @@ public class AuthProcedures
     public void addRoleToUser(@Name( "roleName" ) String roleName, @Name( "username" ) String username )
             throws IOException, InvalidArgumentsException
     {
-        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        adminSubject.getUserManager().addRoleToUser( roleName, username );
+        try
+        {
+            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            adminSubject.getUserManager().addRoleToUser( roleName, username );
+            securityLog.info( authSubject, "added role `%s` to user `%s`", roleName, username );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to add role `%s` to user `%s`: %s",
+                    roleName, username, e.getMessage() );
+            throw e;
+        }
     }
 
     @Description( "Unassign a role from the user." )
@@ -113,43 +173,85 @@ public class AuthProcedures
     public void removeRoleFromUser( @Name( "roleName" ) String roleName, @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
-        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        if ( adminSubject.doesUsernameMatch( username ) && roleName.equals( PredefinedRolesBuilder.ADMIN ) )
+        try
         {
-            throw new InvalidArgumentsException( "Removing yourself (user '" + username +
-                    "') from the admin role is not allowed." );
+            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            if ( adminSubject.doesUsernameMatch( username ) && roleName.equals( PredefinedRolesBuilder.ADMIN ) )
+            {
+                throw new InvalidArgumentsException(
+                        "Removing yourself (user '" + username + "') from the admin role is not allowed." );
+            }
+            adminSubject.getUserManager().removeRoleFromUser( roleName, username );
+            securityLog.info( authSubject, "removed role `%s` from user `%s`", roleName, username );
         }
-        adminSubject.getUserManager().removeRoleFromUser( roleName, username );
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to remove role `%s` from user `%s`: %s", roleName, username, e
+                    .getMessage() );
+            throw e;
+        }
     }
 
     @Description( "Delete the specified user." )
     @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
-        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        if ( adminSubject.doesUsernameMatch( username ) )
+        try
         {
-            throw new InvalidArgumentsException( "Deleting yourself (user '" + username +
-                    "') is not allowed." );
+            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            if ( adminSubject.doesUsernameMatch( username ) )
+            {
+                throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
+            }
+            adminSubject.getUserManager().deleteUser( username );
+            securityLog.info( authSubject, "deleted user `%s`", username );
         }
-        adminSubject.getUserManager().deleteUser( username );
-        terminateTransactionsForValidUser( username );
-        terminateConnectionsForValidUser( username );
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to delete user `%s`: %s", username, e.getMessage() );
+            throw e;
+        }
+
+        kickoutUser( username, "deletion" );
+    }
+
+    private void kickoutUser( String username, String reason )
+    {
+        try
+        {
+            terminateTransactionsForValidUser( username );
+            terminateConnectionsForValidUser( username );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "failed to terminate running transaction and bolt connections for " +
+                    "user `%s` following %s: %s", username, reason, e.getMessage() );
+            throw e;
+        }
     }
 
     @Description( "Suspend the specified user." )
     @Procedure( name = "dbms.security.suspendUser", mode = DBMS )
     public void suspendUser( @Name( "username" ) String username ) throws IOException, InvalidArgumentsException
     {
-        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        if ( adminSubject.doesUsernameMatch( username ) )
+        try
         {
-            throw new InvalidArgumentsException( "Suspending yourself (user '" + username +
-                    "') is not allowed." );
+            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            if ( adminSubject.doesUsernameMatch( username ) )
+            {
+                throw new InvalidArgumentsException( "Suspending yourself (user '" + username +
+                        "') is not allowed." );
+            }
+            adminSubject.getUserManager().suspendUser( username );
+            securityLog.info( authSubject, "suspended user `%s`", username );
         }
-        adminSubject.getUserManager().suspendUser( username );
-        terminateTransactionsForValidUser( username );
-        terminateConnectionsForValidUser( username );
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to suspend user `%s`: %s", username, e.getMessage() );
+            throw e;
+        }
+
+        kickoutUser( username, "suspension" );
     }
 
     @Description( "Activate a suspended user." )
@@ -159,13 +261,22 @@ public class AuthProcedures
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange
     ) throws IOException, InvalidArgumentsException
     {
-        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        if ( adminSubject.doesUsernameMatch( username ) )
+        try
         {
-            throw new InvalidArgumentsException( "Activating yourself (user '" + username +
-                    "') is not allowed." );
+            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            if ( adminSubject.doesUsernameMatch( username ) )
+            {
+                throw new InvalidArgumentsException( "Activating yourself (user '" + username +
+                        "') is not allowed." );
+            }
+            adminSubject.getUserManager().activateUser( username, requirePasswordChange );
+            securityLog.info( authSubject, "activated user `%s`", username );
         }
-        adminSubject.getUserManager().activateUser( username, requirePasswordChange );
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to activate user `%s`: %s", username, e.getMessage() );
+            throw e;
+        }
     }
 
     @Description( "Show the current user." )
@@ -183,31 +294,47 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
     {
-        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        EnterpriseUserManager userManager = adminSubject.getUserManager();
-        Set<String> users = userManager.getAllUsernames();
-        List<UserResult> results = new ArrayList<>();
-        for ( String u : users )
+        try
         {
-            results.add(
-                    new UserResult( u, userManager.getRoleNamesForUser( u ), userManager.getUser( u ).getFlags() ) );
+            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            EnterpriseUserManager userManager = adminSubject.getUserManager();
+            Set<String> users = userManager.getAllUsernames();
+            List<UserResult> results = new ArrayList<>();
+            for ( String u : users )
+            {
+                results.add(
+                        new UserResult( u, userManager.getRoleNamesForUser( u ), userManager.getUser( u ).getFlags() ) );
+            }
+            return results.stream();
         }
-        return results.stream();
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to list users: %s", e.getMessage() );
+            throw e;
+        }
     }
 
     @Description( "List all available roles." )
     @Procedure( name = "dbms.security.listRoles", mode = DBMS )
     public Stream<RoleResult> listRoles() throws InvalidArgumentsException, IOException
     {
-        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        EnterpriseUserManager userManager = adminSubject.getUserManager();
-        Set<String> roles = userManager.getAllRoleNames();
-        List<RoleResult> results = new ArrayList<>();
-        for ( String r : roles )
+        try
         {
-            results.add( new RoleResult( r, userManager.getUsernamesForRole( r ) ) );
+            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            EnterpriseUserManager userManager = adminSubject.getUserManager();
+            Set<String> roles = userManager.getAllRoleNames();
+            List<RoleResult> results = new ArrayList<>();
+            for ( String r : roles )
+            {
+                results.add( new RoleResult( r, userManager.getUsernamesForRole( r ) ) );
+            }
+            return results.stream();
         }
-        return results.stream();
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to list roles: %s", e.getMessage() );
+            throw e;
+        }
     }
 
     @Description( "List all roles assigned to the specified user." )
@@ -215,8 +342,16 @@ public class AuthProcedures
     public Stream<StringResult> listRolesForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
-        StandardEnterpriseAuthSubject subject = ensureSelfOrAdminAuthSubject( username );
-        return subject.getUserManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
+        try
+        {
+            StandardEnterpriseAuthSubject subject = ensureSelfOrAdminAuthSubject( username );
+            return subject.getUserManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to list roles for user `%s`: %s", username, e.getMessage() );
+            throw e;
+        }
     }
 
     @Description( "List all users currently assigned the specified role." )
@@ -224,8 +359,16 @@ public class AuthProcedures
     public Stream<StringResult> listUsersForRole( @Name( "roleName" ) String roleName )
             throws InvalidArgumentsException, IOException
     {
-        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        return adminSubject.getUserManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
+        try
+        {
+            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            return adminSubject.getUserManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to list users for role `%s`: %s", roleName, e.getMessage() );
+            throw e;
+        }
     }
 
     @Description( "Create a new role." )
@@ -233,7 +376,16 @@ public class AuthProcedures
     public void createRole( @Name( "roleName" ) String roleName )
         throws InvalidArgumentsException, IOException
     {
-        ensureAdminAuthSubject().getUserManager().newRole( roleName );
+        try
+        {
+            ensureAdminAuthSubject().getUserManager().newRole( roleName );
+            securityLog.info( authSubject, "created role `%s`", roleName );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to create role `%s`: %s", roleName, e.getMessage() );
+            throw e;
+        }
     }
 
     @Description( "Delete the specified role. Any role assignments will be removed." )
@@ -241,9 +393,20 @@ public class AuthProcedures
     public void deleteRole( @Name( "roleName" ) String roleName )
         throws InvalidArgumentsException, IOException
     {
-        ensureAdminAuthSubject().getUserManager().deleteRole( roleName );
+        try
+        {
+            ensureAdminAuthSubject().getUserManager().deleteRole( roleName );
+            securityLog.info( authSubject, "deleted role `%s`", roleName );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to delete role `%s`: %s", roleName, e.getMessage() );
+            throw e;
+        }
     }
 
+    // TODO: add security logging once listQueries PR is in
+    // ====================================================== FROM HERE
     @Procedure( name = "dbms.security.listTransactions", mode = DBMS )
     public Stream<TransactionResult> listTransactions()
             throws InvalidArgumentsException, IOException
@@ -293,10 +456,11 @@ public class AuthProcedures
 
         return terminateConnectionsForValidUser( username );
     }
+    // ====================================================== TO HERE
 
     // ----------------- helpers ---------------------
 
-    private Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
+    Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
     {
         long terminatedCount = 0;
         for ( KernelTransactionHandle tx : getActiveTransactions() )
@@ -313,7 +477,7 @@ public class AuthProcedures
         return Stream.of( new TransactionTerminationResult( username, terminatedCount ) );
     }
 
-    private Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
+    Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
     {
         Long killCount = 0L;
         for ( ManagedBoltStateMachine connection : getBoltConnectionTracker().getActiveConnections( username ) )
@@ -365,12 +529,13 @@ public class AuthProcedures
     private StandardEnterpriseAuthSubject ensureSelfOrAdminAuthSubject( String username ) throws InvalidArgumentsException
     {
         StandardEnterpriseAuthSubject subject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-        subject.getUserManager().getUser( username );
 
         if ( subject.isAdmin() || subject.doesUsernameMatch( username ) )
         {
+            subject.getUserManager().getUser( username );
             return subject;
         }
+
         throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 

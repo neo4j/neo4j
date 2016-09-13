@@ -21,9 +21,9 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.List;
 
 class AuthTestUtil
 {

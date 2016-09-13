@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.stream.StreamSupport;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -27,6 +32,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -48,6 +55,8 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -60,6 +69,11 @@ import static java.util.Collections.singletonMap;
 public abstract class EditionModule
 {
     public abstract void registerProcedures( Procedures procedures ) throws KernelException;
+
+    protected Log authManagerLog()
+    {
+        return NullLog.getInstance();
+    }
 
     public IdGeneratorFactory idGeneratorFactory;
     public IdTypeConfigurationProvider idTypeConfigurationProvider;
@@ -108,7 +122,7 @@ public abstract class EditionModule
         config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
     }
 
-    public static AuthManager createAuthManager( Config config, LogService logging,
+    public AuthManager createAuthManager( Config config, LogService logging,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         boolean authEnabled = config.get( GraphDatabaseSettings.auth_enabled );
@@ -117,33 +131,73 @@ public abstract class EditionModule
             return AuthManager.NO_AUTH;
         }
 
-        String key = config.get( GraphDatabaseSettings.auth_manager );
+        String configuredKey = config.get( GraphDatabaseSettings.auth_manager );
+        List<AuthManager.Factory> wantedAuthManagerFactories = new ArrayList<>();
+        List<AuthManager.Factory> backupAuthManagerFactories = new ArrayList<>();
+
         for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
         {
-            String candidateId = candidate.getKeys().iterator().next();
-            if ( candidateId.equals( key ) )
+            if ( StreamSupport.stream( candidate.getKeys().spliterator(), false ).anyMatch( configuredKey::equals ) )
             {
-                return candidate.newInstance( config, logging.getUserLogProvider(), fileSystem, jobScheduler );
+                wantedAuthManagerFactories.add( candidate );
             }
-            else if ( key.isEmpty() )
+            else
             {
-                // As a default use the available service for the configured build edition
-                logging.getInternalLog( GraphDatabaseFacadeFactory.class )
-                        .info( "No auth manager implementation specified, defaulting to '" + candidateId + "'" );
-                return candidate.newInstance( config, logging.getUserLogProvider(), fileSystem, jobScheduler );
+                backupAuthManagerFactories.add( candidate );
             }
         }
 
-        if ( key.isEmpty() )
+        AuthManager authManager = tryMakeInOrder( config, logging, fileSystem, jobScheduler, wantedAuthManagerFactories );
+
+        if ( authManager == null )
+        {
+            authManager = tryMakeInOrder( config, logging, fileSystem, jobScheduler, backupAuthManagerFactories );
+        }
+
+        if ( authManager == null )
         {
             logging.getUserLog( GraphDatabaseFacadeFactory.class )
                     .error( "No auth manager implementation specified and no default could be loaded. " +
                             "It is an illegal product configuration to have auth enabled and not provide an " +
                             "auth manager service." );
-            throw new IllegalArgumentException( "Auth enabled but no auth manager found. This is an illegal product configuration." );
+            throw new IllegalArgumentException(
+                    "Auth enabled but no auth manager found. This is an illegal product configuration." );
         }
 
-        throw new IllegalArgumentException( "No auth manager found with the name '" + key + "'." );
+        return authManager;
+    }
+
+    private AuthManager tryMakeInOrder( Config config, LogService logging, FileSystemAbstraction fileSystem,
+            JobScheduler jobScheduler, List<AuthManager.Factory> authManagerFactories  )
+    {
+        for ( AuthManager.Factory x : authManagerFactories )
+        {
+            try
+            {
+                return x.newInstance( config, logging.getUserLogProvider(), authManagerLog(),
+                        fileSystem, jobScheduler );
+            }
+            catch ( Exception e )
+            {
+                logging.getInternalLog( GraphDatabaseFacadeFactory.class )
+                        .warn( "Attempted to load configured auth manager with keys '%s', but failed",
+                                String.join( ", ", x.getKeys() ), e );
+            }
+        }
+        return null;
+    }
+
+    protected void registerProceduresFromProvider( String key, Procedures procedures ) throws KernelException
+    {
+        for ( ProceduresProvider candidate : Service.load( ProceduresProvider.class ) )
+        {
+            if ( candidate.matches( key ) )
+            {
+                candidate.registerProcedures( procedures );
+                return;
+            }
+        }
+        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, "No procedure provider found with the key '" + key + "'." );
     }
 
     protected BoltConnectionTracker createSessionTracker()

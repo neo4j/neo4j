@@ -20,9 +20,7 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -106,7 +104,7 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     public boolean doesUsernameMatch( String username )
     {
         Object principal = shiroSubject.getPrincipal();
-        return principal != null && username.equals( principal );
+        return principal != null && username != null && username.equals( principal );
     }
 
     @Override

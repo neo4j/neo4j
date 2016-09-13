@@ -66,32 +66,15 @@ import static java.lang.String.format;
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
  */
-public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager
+class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager
 {
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
      * placed here because of user suspension not being a part of community edition
      */
-    public static final String IS_SUSPENDED = "is_suspended";
-
     private int MAX_READ_ATTEMPTS = 10;
 
-    private final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()
-    {
-        @Override
-        public Collection<Permission> resolvePermissionsInRole( String roleString )
-        {
-            SimpleRole role = roles.get( roleString );
-            if ( role != null )
-            {
-                return role.getPermissions();
-            }
-            else
-            {
-                return Collections.emptyList();
-            }
-        }
-    };
+    static final String IS_SUSPENDED = "is_suspended";
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -104,12 +87,14 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private JobScheduler.JobHandle reloadJobHandle;
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler )
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
+            JobScheduler jobScheduler )
     {
-        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true, jobScheduler );
+        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true,
+                jobScheduler );
     }
 
-    public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
+    InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
             boolean authenticationEnabled, boolean authorizationEnabled, JobScheduler jobScheduler )
     {
@@ -125,7 +110,22 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         setAuthenticationCachingEnabled( false );
         setAuthorizationCachingEnabled( false );
         setCredentialsMatcher( new AllowAllCredentialsMatcher() );
-        setRolePermissionResolver( rolePermissionResolver );
+        setRolePermissionResolver( new RolePermissionResolver()
+            {
+                @Override
+                public Collection<Permission> resolvePermissionsInRole( String roleString )
+                {
+                    SimpleRole role = roles.get( roleString );
+                    if ( role != null )
+                    {
+                        return role.getPermissions();
+                    }
+                    else
+                    {
+                        return Collections.emptyList();
+                    }
+                }
+            } );
 
         roles = new PredefinedRolesBuilder().buildRoles();
     }
@@ -353,12 +353,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return new ShiroAuthenticationInfo( user.name(), user.credentials(), getName(), result );
     }
 
-    int numberOfUsers()
+    private int numberOfUsers()
     {
         return userRepository.numberOfUsers();
     }
 
-    int numberOfRoles()
+    private int numberOfRoles()
     {
         return roleRepository.numberOfRoles();
     }
@@ -367,8 +367,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     public User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        assertValidUsername( username );
-
+        userRepository.assertValidUsername( username );
         passwordPolicy.validatePassword( initialPassword );
 
         User user = new User.Builder()
@@ -384,10 +383,10 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
     {
-        assertValidRoleName( roleName );
+        roleRepository.assertValidRoleName( roleName );
         for ( String username : usernames )
         {
-            assertValidUsername( username );
+            userRepository.assertValidUsername( username );
         }
 
         SortedSet<String> userSet = new TreeSet<>( Arrays.asList( usernames ) );
@@ -434,8 +433,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public void addRoleToUser( String roleName, String username ) throws IOException, InvalidArgumentsException
     {
-        assertValidRoleName( roleName );
-        assertValidUsername( username );
+        roleRepository.assertValidRoleName( roleName );
+        userRepository.assertValidUsername( username );
 
         synchronized ( this )
         {
@@ -458,8 +457,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public void removeRoleFromUser( String roleName, String username ) throws IOException, InvalidArgumentsException
     {
-        assertValidRoleName( roleName );
-        assertValidUsername( username );
+        roleRepository.assertValidRoleName( roleName );
+        userRepository.assertValidUsername( username );
 
         synchronized ( this )
         {
@@ -477,6 +476,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                 removeRoleFromUser( roleName, username );
             }
         }
+
         clearCachedAuthorizationInfoForUser( username );
     }
 
@@ -627,32 +627,6 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         {
             // Try again
             removeUserFromAllRoles( username );
-        }
-    }
-
-    private void assertValidUsername( String name ) throws InvalidArgumentsException
-    {
-        if ( name.isEmpty() )
-        {
-            throw new InvalidArgumentsException( "The provided user name is empty." );
-        }
-        if ( !userRepository.isValidUsername( name ) )
-        {
-            throw new InvalidArgumentsException(
-                    "User name '" + name + "' contains illegal characters. Use simple ascii characters and numbers." );
-        }
-    }
-
-    private void assertValidRoleName( String name ) throws InvalidArgumentsException
-    {
-        if ( name.isEmpty() )
-        {
-            throw new InvalidArgumentsException( "The provided role name is empty." );
-        }
-        if ( !roleRepository.isValidRoleName( name ) )
-        {
-            throw new InvalidArgumentsException(
-                    "Role name '" + name + "' contains illegal characters. Use simple ascii characters and numbers." );
         }
     }
 

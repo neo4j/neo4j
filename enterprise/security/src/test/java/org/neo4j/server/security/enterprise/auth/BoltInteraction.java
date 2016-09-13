@@ -42,13 +42,18 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -69,12 +74,21 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
     protected final Factory<TransportConnection> connectionFactory = SocketConnection::new;
     private final Neo4jWithSocket server;
     private Map<String,BoltSubject> subjects = new HashMap<>();
-
+    private EphemeralFileSystemAbstraction fileSystem;
     EnterpriseAuthManager authManager;
 
-    public BoltInteraction( Neo4jWithSocket server ) throws IOException
+    BoltInteraction( Map<Setting<?>, String> config ) throws IOException
     {
-        this.server = server;
+        TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
+        fileSystem = new EphemeralFileSystemAbstraction();
+        server = new Neo4jWithSocket(
+                factory,
+                () -> fileSystem,
+                settings -> {
+                    settings.put( GraphDatabaseSettings.auth_enabled, "true" );
+                    settings.putAll( config );
+                } );
+        server.restartDatabase( r -> {} );
         GraphDatabaseFacade db = (GraphDatabaseFacade) server.graphDatabaseService();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
     }
@@ -89,6 +103,12 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
     public GraphDatabaseFacade getLocalGraph()
     {
         return (GraphDatabaseFacade) server.graphDatabaseService();
+    }
+
+    @Override
+    public FileSystemAbstraction fileSystem()
+    {
+        return fileSystem;
     }
 
     @Override
@@ -170,6 +190,7 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         }
         subjects.clear();
         server.graphDatabaseService().shutdown();
+        fileSystem.shutdown();
     }
 
     @Override

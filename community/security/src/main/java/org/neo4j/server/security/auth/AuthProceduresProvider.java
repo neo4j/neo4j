@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.factory.ProceduresProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 
 @Service.Implementation( ProceduresProvider.class )
-public class AuthProceduresProvider extends Service implements ProceduresProvider
+public class AuthProceduresProvider extends ProceduresProvider
 {
     public AuthProceduresProvider()
     {
@@ -33,15 +33,8 @@ public class AuthProceduresProvider extends Service implements ProceduresProvide
     }
 
     @Override
-    public void registerProcedures( Procedures procedures )
+    public void registerProcedures( Procedures procedures ) throws KernelException
     {
-        try
-        {
-            procedures.registerProcedure( AuthProcedures.class );
-        }
-        catch ( KernelException e )
-        {
-            throw new RuntimeException( e );
-        }
+        procedures.registerProcedure( AuthProcedures.class );
     }
 }

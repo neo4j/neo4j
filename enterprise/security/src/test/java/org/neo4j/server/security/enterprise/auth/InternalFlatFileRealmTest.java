@@ -32,8 +32,10 @@ import org.junit.Test;
 import java.time.Clock;
 import java.util.List;
 
+import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
@@ -42,6 +44,7 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -65,7 +68,9 @@ public class InternalFlatFileRealmTest
 
         List<Realm> realms = listOf( testRealm );
 
-        authManager = new MultiRealmAuthManager( testRealm, realms, new MemoryConstrainedCacheManager() );
+        authManager = new MultiRealmAuthManager( testRealm, realms, new MemoryConstrainedCacheManager(),
+                mock( SecurityLog.class ), true );
+
         authManager.init();
         authManager.start();
 
@@ -76,11 +81,13 @@ public class InternalFlatFileRealmTest
     public void shouldNotCacheAuthenticationInfo() throws InvalidAuthTokenException
     {
         // Given
-        authManager.login( authToken( "mike", "123" ) );
+        EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
+        assertThat( mike.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
         assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
 
         // When
-        authManager.login( authToken( "mike", "123" ) );
+        mike = authManager.login( authToken( "mike", "123" ) );
+        assertThat( mike.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
 
         // Then
         assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
@@ -91,6 +98,8 @@ public class InternalFlatFileRealmTest
     {
         // Given
         EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
+        assertThat( mike.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+
         mike.allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
@@ -152,5 +161,4 @@ public class InternalFlatFileRealmTest
             return super.doGetAuthorizationInfo( principals );
         }
     }
-
 }

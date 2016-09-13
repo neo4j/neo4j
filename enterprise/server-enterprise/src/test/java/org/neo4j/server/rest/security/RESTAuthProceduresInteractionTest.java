@@ -21,6 +21,9 @@ package org.neo4j.server.rest.security;
 
 import org.junit.Rule;
 
+import java.util.Map;
+
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.security.enterprise.auth.AuthProceduresInteractionTestBase;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.rule.SuppressOutput;
@@ -41,8 +44,8 @@ public class RESTAuthProceduresInteractionTest extends AuthProceduresInteraction
     }
 
     @Override
-    public NeoInteractionLevel<RESTSubject> setUpNeoServer() throws Throwable
+    public NeoInteractionLevel<RESTSubject> setUpNeoServer( Map<Setting<?>,String> config ) throws Throwable
     {
-        return new RESTInteraction();
+        return new RESTInteraction( config );
     }
 }

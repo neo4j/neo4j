@@ -124,7 +124,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     public User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        assertValidUsername( username );
+        userRepository.assertValidUsername( username );
 
         passwordPolicy.validatePassword( initialPassword );
 
@@ -200,20 +200,6 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     public Set<String> getAllUsernames()
     {
         return userRepository.getAllUsernames();
-    }
-
-    private void assertValidUsername( String name ) throws InvalidArgumentsException
-    {
-        if ( name.isEmpty() )
-        {
-            throw new InvalidArgumentsException( "The provided user name is empty." );
-        }
-        if ( !userRepository.isValidUsername( name ) )
-        {
-            throw new InvalidArgumentsException(
-                    "User name '" + name +
-                            "' contains illegal characters. Use simple ascii characters and numbers." );
-        }
     }
 
     @Override

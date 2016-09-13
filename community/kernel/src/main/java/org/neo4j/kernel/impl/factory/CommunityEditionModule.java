@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
@@ -102,9 +103,10 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging, platformModule.fileSystem,
-                platformModule.jobScheduler )
-        ) );
+        createAuthManagerLog( config, logging, platformModule.fileSystem, platformModule.jobScheduler );
+
+        life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
+                platformModule.fileSystem, platformModule.jobScheduler ) ) );
 
         commitProcessFactory = new CommunityCommitProcessFactory();
 
@@ -127,6 +129,12 @@ public class CommunityEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         dependencies.satisfyDependency( createSessionTracker() );
+    }
+
+    protected void createAuthManagerLog( Config config, LogService logging, FileSystemAbstraction fileSystem, JobScheduler
+            jobScheduler )
+    {
+        // no auth manager log in community
     }
 
     protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )
@@ -251,6 +259,7 @@ public class CommunityEditionModule extends EditionModule
     public void registerProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( BuiltInProcedures.class );
+        registerProceduresFromProvider( "auth-procedures-provider", procedures );
     }
 
     @Override

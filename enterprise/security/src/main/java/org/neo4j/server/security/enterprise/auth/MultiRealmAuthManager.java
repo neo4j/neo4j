@@ -38,22 +38,30 @@ import java.util.Map;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.server.security.auth.UserManagerSupplier;
 
-public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplier
+import static org.neo4j.helpers.Strings.escape;
+
+class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplier
 {
     private final EnterpriseUserManager userManager;
     private final Collection<Realm> realms;
     private final DefaultSecurityManager securityManager;
     private final CacheManager cacheManager;
+    private final SecurityLog securityLog;
+    private final boolean logSuccessfulLogin;
 
-    MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms, CacheManager cacheManager )
+    MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms, CacheManager cacheManager,
+            SecurityLog securityLog, boolean logSuccessfulLogin )
     {
         this.userManager = userManager;
         this.realms = realms;
         this.cacheManager = cacheManager;
 
         securityManager = new DefaultSecurityManager( realms );
+        this.securityLog = securityLog;
+        this.logSuccessfulLogin = logSuccessfulLogin;
         securityManager.setSubjectFactory( new ShiroSubjectFactory() );
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
                 .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
@@ -80,29 +88,40 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
     @Override
     public EnterpriseAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
-        ShiroSubject subject;
+        EnterpriseAuthSubject subject;
 
         ShiroAuthToken token = new ShiroAuthToken( authToken );
 
         try
         {
-            subject = (ShiroSubject) securityManager.login( null, token );
+            subject = new StandardEnterpriseAuthSubject( this, (ShiroSubject) securityManager.login( null, token ) );
+            if ( logSuccessfulLogin )
+            {
+                securityLog.info( subject, "logged in" );
+            }
         }
         catch ( UnsupportedTokenException e )
         {
-            throw new InvalidAuthTokenException( e.getCause().getMessage() );
+            securityLog.error( "Unknown user failed to log in: %s", e.getMessage() );
+            throw new InvalidAuthTokenException( e.getMessage() );
         }
         catch ( ExcessiveAttemptsException e )
         {
             // NOTE: We only get this with single (internal) realm authentication
-            subject = new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS );
+            subject = new StandardEnterpriseAuthSubject( this,
+                    new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS ) );
+            securityLog.error( "[%s]: failed to log in: too many failed attempts",
+                    escape( token.getPrincipal().toString() ) );
         }
         catch ( AuthenticationException e )
         {
-            subject = new ShiroSubject( securityManager, AuthenticationResult.FAILURE );
+            subject = new StandardEnterpriseAuthSubject( this,
+                    new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );
+            securityLog.error( "[%s]: failed to log in: invalid principal or credentials",
+                    escape( token.getPrincipal().toString() ) );
         }
 
-        return new StandardEnterpriseAuthSubject( this, subject );
+        return subject;
     }
 
     @Override

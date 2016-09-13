@@ -80,8 +80,13 @@ public interface UserRepository extends Lifecycle
 
     int numberOfUsers();
 
-    /** Utility for API consumers to tell if #create() will accept a given username */
-    boolean isValidUsername( String username );
+    /**
+     * Asserts whether the given username is valid or not. A valid username is non-null, non-empty, and contains
+     * only simple ascii characters.
+     * @param username the username to be tested.
+     * @throws InvalidArgumentsException if the username was invalid.
+     */
+    void assertValidUsername( String username ) throws InvalidArgumentsException;
 
     Set<String> getAllUsernames();
 

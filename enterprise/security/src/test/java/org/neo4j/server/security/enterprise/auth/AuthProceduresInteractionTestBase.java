@@ -250,18 +250,21 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldNotCreateUserIfInvalidUsername() throws Exception
     {
+        assertFail( adminSubject, "CALL dbms.security.createUser(null, '1234', true)",
+                "The provided username is empty." );
         assertFail( adminSubject, "CALL dbms.security.createUser('', '1234', true)",
-                "The provided user name is empty." );
+                "The provided username is empty." );
         assertFail( adminSubject, "CALL dbms.security.createUser('&%ss!', '1234', true)",
-                "User name '&%ss!' contains illegal characters." );
+                "Username '&%ss!' contains illegal characters." );
         assertFail( adminSubject, "CALL dbms.security.createUser('&%ss!', '', true)",
-                "User name '&%ss!' contains illegal characters." );
+                "Username '&%ss!' contains illegal characters." );
     }
 
     @Test
     public void shouldNotCreateUserIfInvalidPassword() throws Exception
     {
         assertFail( adminSubject, "CALL dbms.security.createUser('craig', '', true)", "A password cannot be empty." );
+        assertFail( adminSubject, "CALL dbms.security.createUser('craig', null, true)", "A password cannot be empty." );
     }
 
     @Test
@@ -551,7 +554,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
         testFailRemoveRoleFromUser( adminSubject, "thisRoleDoesNotExist", "Olivia", "User 'Olivia' does not exist." );
         testFailRemoveRoleFromUser( adminSubject, "", "Olivia", "The provided role name is empty." );
         testFailRemoveRoleFromUser( adminSubject, "", "", "The provided role name is empty." );
-        testFailRemoveRoleFromUser( adminSubject, PUBLISHER, "", "The provided user name is empty." );
+        testFailRemoveRoleFromUser( adminSubject, PUBLISHER, "", "The provided username is empty." );
     }
 
     @Test

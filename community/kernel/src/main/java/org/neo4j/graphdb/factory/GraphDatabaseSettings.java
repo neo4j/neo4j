@@ -507,6 +507,8 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
             "10000" );
 
+    // Security settings
+
     @Description("Enable auth requirement to access Neo4j.")
     public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "false" );
 
@@ -516,6 +518,8 @@ public abstract class GraphDatabaseSettings
 
     @Internal
     public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
+
+    // Bolt Settings
 
     @Description("Default network interface to listen for incoming connections. " +
             "To listen for connections on all interfaces, use \"0.0.0.0\". " +

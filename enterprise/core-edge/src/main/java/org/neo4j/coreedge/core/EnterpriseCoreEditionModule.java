@@ -60,6 +60,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -67,10 +68,12 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -84,6 +87,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 
@@ -98,6 +102,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private final ConsensusModule consensusModule;
     private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
+    private SecurityLog securityLog;
 
     public enum RaftLogImplementation
     {
@@ -105,10 +110,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     @Override
-    public void registerProcedures( Procedures procedures )
+    public void registerProcedures( Procedures procedures ) throws KernelException
     {
         try
         {
+            procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
+            registerProceduresFromProvider( "auth-procedures-provider", procedures );
+            registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
+
             procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
@@ -118,6 +127,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
         {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    protected Log authManagerLog()
+    {
+        return securityLog;
     }
 
     EnterpriseCoreEditionModule( final PlatformModule platformModule,
@@ -214,6 +229,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.storeDir,
                         config, platformModule.graphDatabaseFacade, life ) );
+
+        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
+                platformModule.fileSystem, platformModule.jobScheduler );
 
         life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
                 platformModule.fileSystem, platformModule.jobScheduler ) ) );

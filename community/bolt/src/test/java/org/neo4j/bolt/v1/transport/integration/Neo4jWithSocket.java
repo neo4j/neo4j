@@ -28,12 +28,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -49,17 +51,17 @@ public class Neo4jWithSocket implements TestRule
 
     public Neo4jWithSocket()
     {
-        this( new TestGraphDatabaseFactory(), () -> null, settings -> {} );
+        this( new TestGraphDatabaseFactory(), EphemeralFileSystemAbstraction::new, settings -> {} );
     }
 
     public Neo4jWithSocket( Consumer<Map<Setting<?>, String>> configure )
     {
-        this( new TestGraphDatabaseFactory(), () -> null, configure );
+        this( new TestGraphDatabaseFactory(), EphemeralFileSystemAbstraction::new, configure );
     }
 
     public Neo4jWithSocket( TestGraphDatabaseFactory graphDatabaseFactory, Consumer<Map<Setting<?>, String>> configure )
     {
-        this( graphDatabaseFactory, () -> null, configure );
+        this( graphDatabaseFactory, EphemeralFileSystemAbstraction::new, configure );
     }
 
     public Neo4jWithSocket( TestGraphDatabaseFactory graphDatabaseFactory,

@@ -54,7 +54,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     @Override
     public User getUserByName( String username )
     {
-        return usersByName.get( username );
+        return username == null ? null : usersByName.get( username );
     }
 
     @Override
@@ -174,9 +174,18 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public boolean isValidUsername( String username )
+    public void assertValidUsername( String username ) throws InvalidArgumentsException
     {
-        return usernamePattern.matcher( username ).matches();
+        if ( username == null || username.isEmpty() )
+        {
+            throw new InvalidArgumentsException( "The provided username is empty." );
+        }
+        if ( !usernamePattern.matcher( username ).matches() )
+        {
+            throw new InvalidArgumentsException(
+                    "Username '" + username +
+                    "' contains illegal characters. Use simple ascii characters and numbers." );
+        }
     }
 
     @Override
@@ -199,12 +208,4 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
      * @throws IOException
      */
     protected abstract ListSnapshot<User> readPersistedUsers() throws IOException;
-
-    protected void assertValidUsername( String username ) throws InvalidArgumentsException
-    {
-        if ( !isValidUsername( username ) )
-        {
-            throw new InvalidArgumentsException( "'" + username + "' is not a valid user name." );
-        }
-    }
 }

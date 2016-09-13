@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import com.github.benmanes.caffeine.cache.Ticker;
 import org.apache.shiro.realm.Realm;
-import org.slf4j.impl.StaticLoggerBinder;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -32,7 +31,10 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
@@ -57,12 +59,13 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     }
 
     @Override
-    public AuthManager newInstance( Config config, LogProvider logProvider,
+    public AuthManager newInstance( Config config, LogProvider logProvider, Log allegedSecurityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        StaticLoggerBinder.setNeo4jLogProvider( logProvider );
+//        StaticLoggerBinder.setNeo4jLogProvider( logProvider );
 
         List<Realm> realms = new ArrayList<>( 2 );
+        SecurityLog securityLog = getSecurityLog( allegedSecurityLog );
 
         // We always create the internal realm as it is our only UserManager implementation
         InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
@@ -76,7 +79,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         if ( config.get( SecuritySettings.ldap_authentication_enabled ) ||
              config.get( SecuritySettings.ldap_authorization_enabled ) )
         {
-            realms.add( new LdapRealm( config, logProvider ) );
+            realms.add( new LdapRealm( config, securityLog ) );
         }
 
         if ( config.get( SecuritySettings.plugin_authentication_enabled ) ||
@@ -89,7 +92,15 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         int maxCapacity = config.get( SecuritySettings.auth_cache_max_capacity );
 
         return new MultiRealmAuthManager( internalRealm, realms,
-                new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ) );
+                new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ),
+                securityLog, config.get( EnterpriseEditionSettings.security_log_successful_authentication ) );
+    }
+
+    private SecurityLog getSecurityLog( Log allegedSecurityLog )
+    {
+        return allegedSecurityLog instanceof SecurityLog ?
+               (SecurityLog) allegedSecurityLog :
+                new SecurityLog( allegedSecurityLog );
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,

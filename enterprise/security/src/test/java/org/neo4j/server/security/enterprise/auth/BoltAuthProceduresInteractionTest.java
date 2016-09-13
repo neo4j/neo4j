@@ -20,21 +20,16 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.Rule;
-import org.junit.rules.RuleChain;
 
-import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import java.util.Map;
+
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.test.rule.SuppressOutput;
 
 public class BoltAuthProceduresInteractionTest extends AuthProceduresInteractionTestBase<BoltInteraction.BoltSubject>
 {
-    private Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(),
-            settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" ) );
-
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( server );
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     public BoltAuthProceduresInteractionTest()
     {
@@ -43,14 +38,9 @@ public class BoltAuthProceduresInteractionTest extends AuthProceduresInteraction
         IS_BOLT = true;
     }
 
-    private TestGraphDatabaseFactory getTestGraphDatabaseFactory()
-    {
-        return new TestEnterpriseGraphDatabaseFactory();
-    }
-
     @Override
-    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer() throws Throwable
+    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<Setting<?>, String> config ) throws Throwable
     {
-        return new BoltInteraction( server );
+        return new BoltInteraction( config );
     }
 }

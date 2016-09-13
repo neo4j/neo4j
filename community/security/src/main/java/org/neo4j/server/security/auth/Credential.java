@@ -24,8 +24,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.string.UTF8;
 import org.neo4j.string.HexString;
+import org.neo4j.string.UTF8;
 
 public class Credential
 {

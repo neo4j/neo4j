@@ -62,7 +62,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     @Override
     public RoleRecord getRoleByName( String roleName )
     {
-        return rolesByName.get( roleName );
+        return roleName == null ? null : rolesByName.get( roleName );
     }
 
     @Override
@@ -73,7 +73,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public void create( RoleRecord role ) throws IllegalArgumentException, IOException
+    public void create( RoleRecord role ) throws InvalidArgumentsException, IOException
     {
         assertValidRoleName( role.name() );
 
@@ -84,7 +84,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
             {
                 if ( other.name().equals( role.name() ) )
                 {
-                    throw new IllegalArgumentException( "The specified role '" + role.name() + "' already exists." );
+                    throw new InvalidArgumentsException( "The specified role '" + role.name() + "' already exists." );
                 }
             }
 
@@ -204,9 +204,17 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public boolean isValidRoleName( String roleName )
+    public void assertValidRoleName( String name ) throws InvalidArgumentsException
     {
-        return roleNamePattern.matcher( roleName ).matches();
+        if ( name == null || name.isEmpty() )
+        {
+            throw new InvalidArgumentsException( "The provided role name is empty." );
+        }
+        if ( !roleNamePattern.matcher( name ).matches() )
+        {
+            throw new InvalidArgumentsException(
+                    "Role name '" + name + "' contains illegal characters. Use simple ascii characters and numbers." );
+        }
     }
 
     @Override
@@ -273,14 +281,6 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
             {
                 memberOfRoles.remove( role.name() );
             }
-        }
-    }
-
-    protected void assertValidRoleName( String roleName )
-    {
-        if ( !isValidRoleName( roleName ) )
-        {
-            throw new IllegalArgumentException( "'" + roleName + "' is not a valid role name." );
         }
     }
 }

@@ -41,9 +41,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
@@ -64,6 +63,7 @@ public class LdapCachingTest
     @Before
     public void setup() throws Throwable
     {
+        SecurityLog securityLog = mock( SecurityLog.class );
         InternalFlatFileRealm internalFlatFileRealm =
             new InternalFlatFileRealm(
                 new InMemoryUserRepository(),
@@ -73,13 +73,13 @@ public class LdapCachingTest
                 mock( JobScheduler.class )
             );
 
-        testRealm = new TestRealm( getLdapConfig(), NullLogProvider.getInstance() );
+        testRealm = new TestRealm( getLdapConfig(), securityLog );
 
         List<Realm> realms = listOf( internalFlatFileRealm, testRealm );
 
         fakeTicker = new FakeTicker();
         authManager = new MultiRealmAuthManager( internalFlatFileRealm, realms,
-                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10) );
+                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10), securityLog, false );
         authManager.init();
         authManager.start();
 
@@ -93,7 +93,9 @@ public class LdapCachingTest
                 SecuritySettings.internal_authentication_enabled.name(), "false",
                 SecuritySettings.internal_authorization_enabled.name(), "false",
                 SecuritySettings.ldap_authentication_enabled.name(), "true",
-                SecuritySettings.ldap_authorization_enabled.name(), "true"
+                SecuritySettings.ldap_authorization_enabled.name(), "true",
+                SecuritySettings.ldap_authorization_user_search_base.name(), "dc=example,dc=com",
+                SecuritySettings.ldap_authorization_group_membership_attribute_names.name(), "gidnumber"
             ) );
     }
 
@@ -191,9 +193,9 @@ public class LdapCachingTest
             return t;
         }
 
-        TestRealm( Config config, LogProvider logProvider )
+        TestRealm( Config config, SecurityLog securityLog )
         {
-            super( config, logProvider );
+            super( config, securityLog );
             setAuthenticationCachingEnabled( true );
             setAuthorizationCachingEnabled( true );
         }

@@ -23,11 +23,9 @@ import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.helpers.HostnamePort;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;

@@ -149,7 +149,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                         builder.append( ',' );
                     }
                     first = false;
-                    builder.append( escapeJava( arg.toString() ) );
+                    builder.append( escapeJava( "" + arg ) );
                 }
                 builder.append( "]" );
             } else

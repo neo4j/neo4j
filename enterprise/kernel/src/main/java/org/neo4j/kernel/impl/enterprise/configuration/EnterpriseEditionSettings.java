@@ -19,13 +19,23 @@
  */
 package org.neo4j.kernel.impl.enterprise.configuration;
 
+import java.io.File;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.store.id.IdType;
 
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.max;
+import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.store.id.IdType.NODE;
@@ -41,4 +51,27 @@ public class EnterpriseEditionSettings
     public static Setting<List<IdType>> idTypesToReuse = setting(
             "dbms.ids.reuse.types.override", list( ",", optionsIgnoreCase( NODE, RELATIONSHIP ) ),
             String.join( ",", IdType.RELATIONSHIP.name(), IdType.NODE.name() ) );
+
+    @Description( "File name for the security log." )
+    public static final Setting<File> security_log_filename = derivedSetting("dbms.security.log_path",
+            GraphDatabaseSettings.logs_directory,
+            ( logs ) -> new File( logs, "security.log" ),
+            PATH );
+
+    @Description( "Set to log successful authentication events." )
+    public static final Setting<Boolean> security_log_successful_authentication =
+            setting("dbms.security.log_successful_authentication", BOOLEAN, "true" );
+
+    @Description( "Threshold for rotation of the security log." )
+    public static final Setting<Long> store_security_log_rotation_threshold =
+            setting("dbms.logs.security.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+
+    @Description( "Minimum time interval after last rotation of the security log before it may be rotated again." )
+    public static final Setting<Long> store_security_log_rotation_delay =
+            setting("dbms.logs.security.rotation.delay", DURATION, "300s" );
+
+    @Description( "Maximum number of history files for the security log." )
+    public static final Setting<Integer> store_security_log_max_archives =
+            setting("dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
+
 }
