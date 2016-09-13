@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit.v30;
+package org.neo4j.kernel.impl.store.format.highlimit.v300;
 
 import java.io.IOException;
 
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  *
  * => 18B-43B
  */
-public class RelationshipGroupRecordFormatV3_0 extends BaseHighLimitRecordFormatV3_0<RelationshipGroupRecord>
+public class RelationshipGroupRecordFormatV3_0_0 extends BaseHighLimitRecordFormatV3_0_0<RelationshipGroupRecord>
 {
     public static final int RECORD_SIZE = 32;
 
@@ -48,12 +48,12 @@ public class RelationshipGroupRecordFormatV3_0 extends BaseHighLimitRecordFormat
     private static final int HAS_LOOP_BIT     = 0b0010_0000;
     private static final int HAS_NEXT_BIT     = 0b0100_0000;
 
-    public RelationshipGroupRecordFormatV3_0()
+    public RelationshipGroupRecordFormatV3_0_0()
     {
         this( RECORD_SIZE );
     }
 
-    RelationshipGroupRecordFormatV3_0( int recordSize )
+    RelationshipGroupRecordFormatV3_0_0( int recordSize )
     {
         super( fixedRecordSize( recordSize ), 0 );
     }

@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.impl.store.format.highlimit.v30.NodeRecordFormatV3_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v300.NodeRecordFormatV3_0_0;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -184,8 +184,8 @@ public class NodeRecordFormatTest
 
     private void writeRecordWithOldFormat( NodeRecord oldFormatRecord ) throws IOException
     {
-        int oldRecordSize = NodeRecordFormatV3_0.RECORD_SIZE;
-        NodeRecordFormatV3_0 recordFormatV30 = new NodeRecordFormatV3_0();
+        int oldRecordSize = NodeRecordFormatV3_0_0.RECORD_SIZE;
+        NodeRecordFormatV3_0_0 recordFormatV30 = new NodeRecordFormatV3_0_0();
         recordFormatV30.prepare( oldFormatRecord, oldRecordSize, idSequence );
         recordFormatV30.write( oldFormatRecord, pageCursor, oldRecordSize );
         pageCursor.setOffset( 0 );

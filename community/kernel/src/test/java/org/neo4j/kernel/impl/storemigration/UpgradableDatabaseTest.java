@@ -211,7 +211,7 @@ public class UpgradableDatabaseTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
         {
-            return Arrays.asList( "v0.9.5", "v0.A.4", StoreVersion.HIGH_LIMIT_V3_0.versionString() );
+            return Arrays.asList( "v0.9.5", "v0.A.4", StoreVersion.HIGH_LIMIT_V3_0_0.versionString() );
         }
 
         @Rule

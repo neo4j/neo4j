@@ -67,7 +67,7 @@ public class StoreVersionTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
         {
-            return Arrays.asList( StoreVersion.HIGH_LIMIT_V3_0.versionString() );
+            return Arrays.asList( StoreVersion.HIGH_LIMIT_V3_0_0.versionString() );
         }
 
         @Test

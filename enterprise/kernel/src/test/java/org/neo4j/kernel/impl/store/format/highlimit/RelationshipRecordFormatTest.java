@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPageCursor;
-import org.neo4j.kernel.impl.store.format.highlimit.v30.RelationshipRecordFormatV3_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v300.RelationshipRecordFormatV3_0_0;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -213,8 +213,8 @@ public class RelationshipRecordFormatTest
 
     private void writeRecordWithOldFormat( RelationshipRecord oldFormatRecord ) throws IOException
     {
-        int oldRecordSize = RelationshipRecordFormatV3_0.RECORD_SIZE;
-        RelationshipRecordFormatV3_0 recordFormatV30 = new RelationshipRecordFormatV3_0();
+        int oldRecordSize = RelationshipRecordFormatV3_0_0.RECORD_SIZE;
+        RelationshipRecordFormatV3_0_0 recordFormatV30 = new RelationshipRecordFormatV3_0_0();
         recordFormatV30.prepare( oldFormatRecord, oldRecordSize, idSequence );
         recordFormatV30.write( oldFormatRecord, cursor, oldRecordSize );
         cursor.setOffset( 0 );
