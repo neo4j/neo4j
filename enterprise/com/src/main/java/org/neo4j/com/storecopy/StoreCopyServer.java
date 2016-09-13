@@ -165,20 +165,25 @@ public class StoreCopyServer
 
                     // Read from paged file if mapping exists. Otherwise read through file system.
                     final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
-                    try ( ReadableByteChannel fileChannel = optionalPagedFile.isPresent() ?
-                                                            optionalPagedFile.get().openReadableByteChannel() :
-                                                            fileSystem.open( file, "r" ) )
+                    if ( optionalPagedFile.isPresent() )
                     {
-                        monitor.startStreamingStoreFile( file );
-                        writer.write( relativePath( storeDirectory, file ), fileChannel,
-                                temporaryBuffer, file.length() > 0, recordSize );
-                        monitor.finishStreamingStoreFile( file );
-                    }
-                    finally
-                    {
-                        if ( optionalPagedFile.isPresent() )
+                        PagedFile pagedFile = optionalPagedFile.get();
+                        long fileSize = pagedFile.fileSize();
+                        try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
                         {
-                            optionalPagedFile.get().close();
+                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize );
+                        }
+                        finally
+                        {
+                            pagedFile.close();
+                        }
+                    }
+                    else
+                    {
+                        try ( ReadableByteChannel fileChannel = fileSystem.open( file, "r" ) )
+                        {
+                            long fileSize = file.length();
+                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize );
                         }
                     }
                 }
@@ -194,5 +199,14 @@ public class StoreCopyServer
         {
             throw new ServerFailureException( e );
         }
+    }
+
+    private void doWrite( StoreWriter writer, ByteBuffer temporaryBuffer, File file, int recordSize,
+            ReadableByteChannel fileChannel, long fileSize ) throws IOException
+    {
+        monitor.startStreamingStoreFile( file );
+        writer.write( relativePath( storeDirectory, file ), fileChannel,
+                temporaryBuffer, fileSize > 0, recordSize );
+        monitor.finishStreamingStoreFile( file );
     }
 }
