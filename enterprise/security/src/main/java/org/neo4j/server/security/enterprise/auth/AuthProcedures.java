@@ -401,6 +401,13 @@ public class AuthProcedures
         }
     }
 
+    @Description( "Clears authentication and authorization cache." )
+    @Procedure( name = "dbms.security.clearAuthCache", mode = DBMS )
+    public void clearAuthenticationCache()
+    {
+        ensureAdminAuthSubject().clearAuthCache();
+    }
+
     // ----------------- helpers ---------------------
 
     protected void terminateTransactionsForValidUser( String username )

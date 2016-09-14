@@ -74,9 +74,8 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
                 }
                 return false;
             } );
-            assertThat( securityProcedures.count(), equalTo( 15L ) );
+            assertThat( securityProcedures.count(), equalTo( 16L ) );
         } );
-
     }
 
     //---------- Change own password -----------
@@ -869,6 +868,23 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
         testFailListRoleUsers( readSubject, ADMIN, PERMISSION_DENIED );
         testFailListRoleUsers( writeSubject, ADMIN, PERMISSION_DENIED );
         testFailListRoleUsers( schemaSubject, ADMIN, PERMISSION_DENIED );
+    }
+
+    //---------- clearing authentication cache -----------
+
+    @Test
+    public void shouldAllowClearAuthCacheIfAdmin() throws Exception
+    {
+        assertEmpty( adminSubject, "CALL dbms.security.clearAuthCache()" );
+    }
+
+    @Test
+    public void shouldNotClearAuthCacheIfNotAdmin() throws Exception
+    {
+        assertFail( pwdSubject, "CALL dbms.security.clearAuthCache()", CHANGE_PWD_ERR_MSG );
+        assertFail( readSubject, "CALL dbms.security.clearAuthCache()", PERMISSION_DENIED );
+        assertFail( writeSubject, "CALL dbms.security.clearAuthCache()", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.clearAuthCache()", PERMISSION_DENIED );
     }
 
     //---------- permissions -----------
