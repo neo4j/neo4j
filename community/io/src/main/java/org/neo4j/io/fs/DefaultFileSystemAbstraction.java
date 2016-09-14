@@ -46,6 +46,9 @@ import static java.lang.String.format;
  */
 public class DefaultFileSystemAbstraction implements FileSystemAbstraction
 {
+    // Named this way for better readability when statically importing
+    public static final FileSystemAbstraction REAL_FS = new DefaultFileSystemAbstraction();
+
     static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to create directory path [%s] for Neo4j store.";
 
     @Override

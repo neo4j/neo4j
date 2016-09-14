@@ -246,8 +246,31 @@ public class TestDirectory implements TestRule
         {
             throw new IllegalStateException(" Test owning class is not defined" );
         }
+        try
+        {
+            testClassBaseFolder = testDataDirectoryOf( fileSystem, owningTest, false );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    /**
+     * This method can be used outside the context of a Rule as a utility. It will return something like:
+     * {@code component/target/test-data/org.neo4j.location.of.my.test.Clazz/}
+     */
+    public static File testDataDirectoryOf( FileSystemAbstraction fs, Class<?> owningTest, boolean clean )
+            throws IOException
+    {
         File testData = new File( locateTarget( owningTest ), "test-data" );
-        testClassBaseFolder = new File( testData, owningTest.getName() ).getAbsoluteFile();
+        File result = new File( testData, owningTest.getName() ).getAbsoluteFile();
+        if ( clean )
+        {
+            fs.deleteRecursively( result );
+            fs.mkdirs( result );
+        }
+        return result;
     }
 
     private void register( String test, String dir )
