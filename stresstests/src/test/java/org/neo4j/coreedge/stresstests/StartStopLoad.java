@@ -37,7 +37,7 @@ class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
     {
         ClusterMember member = isCore ? cluster.getCoreMemberById( id ) : cluster.getEdgeMemberById( id );
         member.shutdown();
-        LockSupport.parkNanos( 500_000_000 );
+        LockSupport.parkNanos( 2_000_000_000 );
         member.start();
         return true;
     }

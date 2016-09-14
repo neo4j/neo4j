@@ -20,6 +20,8 @@
 package org.neo4j.coreedge.stresstests;
 
 import java.io.File;
+import java.net.ConnectException;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 
@@ -45,8 +47,22 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
     {
         SocketAddress address = backupAddress.apply( isCore, id );
         File backupDirectory = new File( baseDirectory, Integer.toString( address.getPort() ) );
-        OnlineBackup backup =
-                OnlineBackup.from( address.getHostname(), address.getPort() ).backup( backupDirectory );
+
+        OnlineBackup backup;
+        try
+        {
+            backup = OnlineBackup.from( address.getHostname(), address.getPort() ).backup( backupDirectory );
+        }
+        catch ( RuntimeException e )
+        {
+            if ( e.getCause() instanceof ConnectException )
+            {
+                // if we could not connect, wait a bit and try again...
+                LockSupport.parkNanos( 10_000_000 );
+                return true;
+            }
+            throw e;
+        }
 
         if ( !backup.isConsistent() )
         {
