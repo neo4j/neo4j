@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith( Parameterized.class )
 public class ByteArrayTest
 {
-    private static final byte[] DEFAULT = new byte[15];
+    private static final byte[] DEFAULT = new byte[25];
 
     @Parameters
     public static Collection<Supplier<ByteArray>> data()
@@ -74,12 +74,14 @@ public class ByteArrayTest
         array.setShort( 0, 1, (short) 1234 );
         array.setInt( 0, 5, 12345 );
         array.setLong( 0, 9, Long.MAX_VALUE - 100 );
+        array.set3ByteInt( 0, 17, 76767 );
 
         // THEN
         assertEquals( (byte) 123, array.getByte( 0, 0 ) );
         assertEquals( (short) 1234, array.getShort( 0, 1 ) );
         assertEquals( 12345, array.getInt( 0, 5 ) );
         assertEquals( Long.MAX_VALUE - 100, array.getLong( 0, 9 ) );
+        assertEquals( 76767, array.get3ByteInt( 0, 17 ) );
     }
 
     @Test

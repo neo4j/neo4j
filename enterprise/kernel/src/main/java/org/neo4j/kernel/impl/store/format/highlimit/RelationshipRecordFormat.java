@@ -70,6 +70,8 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
                                                 Integer.BYTES /* second next rel */ +
                                                 Integer.BYTES /* next property */;
 
+    private static final int TYPE_FIELD_BYTES = 3;
+
     private static final int FIRST_IN_FIRST_CHAIN_BIT = 0b0000_1000;
     private static final int FIRST_IN_SECOND_CHAIN_BIT = 0b0001_0000;
     private static final int HAS_FIRST_CHAIN_NEXT_BIT = 0b0010_0000;
@@ -110,15 +112,18 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     protected void doReadInternal(
             RelationshipRecord record, PageCursor cursor, int recordSize, long headerByte, boolean inUse )
     {
-        int type = cursor.getShort() & 0xFFFF;
         if (record.isUseFixedReferences())
         {
+            int type = cursor.getShort() & 0xFFFF;
             // read record in fixed reference format
             readFixedReferencesRecord( record, cursor, headerByte, inUse, type );
             record.setUseFixedReferences( true );
         }
         else
         {
+            int typeLowWord = cursor.getShort() & 0xFFFF;
+            int typeHighWord = cursor.getByte() & 0xFF;
+            int type = ((typeHighWord << Short.SIZE) | typeLowWord);
             long recordId = record.getId();
             record.initialize( inUse,
                     decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL ),
@@ -150,7 +155,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     protected int requiredDataLength( RelationshipRecord record )
     {
         long recordId = record.getId();
-        return Short.BYTES + // type
+        return TYPE_FIELD_BYTES +
                length( record.getNextProp(), NULL ) +
                length( record.getFirstNode() ) +
                length( record.getSecondNode() ) +
@@ -164,7 +169,6 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     protected void doWriteInternal( RelationshipRecord record, PageCursor cursor )
             throws IOException
     {
-        cursor.putShort( (short) record.getType() );
         if (record.isUseFixedReferences())
         {
             // write record in fixed reference format
@@ -172,6 +176,10 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
         }
         else
         {
+            int type = record.getType();
+            cursor.putShort( (short) type );
+            cursor.putByte( (byte) (type >>> Short.SIZE) );
+
             long recordId = record.getId();
             encode( cursor, record.getNextProp(), NULL );
             encode( cursor, record.getFirstNode() );
@@ -194,6 +202,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     protected boolean canUseFixedReferences( RelationshipRecord record, int recordSize )
     {
            return (isRecordBigEnoughForFixedReferences( recordSize ) &&
+                  (record.getType() < (1 << Short.SIZE)) &&
                   (record.getFirstNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
                   ((record.getSecondNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
                   ((record.getFirstPrevRel() == NULL) || ((record.getFirstPrevRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
@@ -285,6 +294,8 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
 
     private void writeFixedReferencesRecord( RelationshipRecord record, PageCursor cursor )
     {
+        cursor.putShort( (short) record.getType() );
+
         long firstNode = record.getFirstNode();
         short firstNodeMod = (short)((firstNode & HIGH_DWORD_LAST_BIT_MASK) >> 32);
 

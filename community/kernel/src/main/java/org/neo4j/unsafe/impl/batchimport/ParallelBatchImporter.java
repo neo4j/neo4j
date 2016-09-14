@@ -58,7 +58,6 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 import static java.lang.Math.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -90,6 +89,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final ExecutionMonitor executionMonitor;
     private final AdditionalInitialIds additionalInitialIds;
     private final Config dbConfig;
+    private final RecordFormats recordFormats;
 
     /**
      * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
@@ -98,13 +98,14 @@ public class ParallelBatchImporter implements BatchImporter
     public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, Configuration config,
             LogService logService, ExecutionMonitor executionMonitor,
             AdditionalInitialIds additionalInitialIds,
-            Config dbConfig )
+            Config dbConfig, RecordFormats recordFormats )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
         this.logService = logService;
         this.dbConfig = dbConfig;
+        this.recordFormats = recordFormats;
         this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
@@ -119,7 +120,8 @@ public class ParallelBatchImporter implements BatchImporter
             ExecutionMonitor executionMonitor, Config dbConfig )
     {
         this( storeDir, new DefaultFileSystemAbstraction(), config, logService,
-                withDynamicProcessorAssignment( executionMonitor, config ), EMPTY, dbConfig );
+                withDynamicProcessorAssignment( executionMonitor, config ), EMPTY, dbConfig,
+                RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ));
     }
 
     @Override
@@ -135,7 +137,6 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
-        RecordFormats recordFormats = RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() );
         try ( BatchingNeoStores neoStore = new BatchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
                 additionalInitialIds, dbConfig );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(

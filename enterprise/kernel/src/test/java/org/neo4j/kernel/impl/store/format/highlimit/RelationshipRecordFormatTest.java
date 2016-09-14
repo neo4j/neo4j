@@ -118,7 +118,37 @@ public class RelationshipRecordFormatTest
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
-        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), 0,
+        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), randomShortType(),
+                randomFixedReference(), randomFixedReference(), randomFixedReference(), randomFixedReference(),
+                true, true );
+
+        writeReadRecord( source, target );
+
+        assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
+    }
+
+    @Test
+    public void useVariableLengthFormatWhenTypeIsTooBig() throws IOException
+    {
+        RelationshipRecord source = new RelationshipRecord( 1 );
+        RelationshipRecord target = new RelationshipRecord( 1 );
+        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), 1 << 16,
+                randomFixedReference(), randomFixedReference(), randomFixedReference(), randomFixedReference(),
+                true, true );
+
+        writeReadRecord( source, target );
+
+        assertFalse( "Record should use variable length format.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
+    }
+
+    @Test
+    public void useFixedReferenceFormatWhenTypeIsSmallEnough() throws IOException
+    {
+        RelationshipRecord source = new RelationshipRecord( 1 );
+        RelationshipRecord target = new RelationshipRecord( 1 );
+        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), (1 << 16) - 1,
                 randomFixedReference(), randomFixedReference(), randomFixedReference(), randomFixedReference(),
                 true, true );
 
@@ -134,7 +164,7 @@ public class RelationshipRecordFormatTest
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
 
-        verifyRecordsWithPoisonedReference( source, target, NULL );
+        verifyRecordsWithPoisonedReference( source, target, NULL, randomShortType() );
     }
 
     @Test
@@ -142,7 +172,7 @@ public class RelationshipRecordFormatTest
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
-        verifyRecordsWithPoisonedReference( source, target, 1L << Integer.SIZE + 5 );
+        verifyRecordsWithPoisonedReference( source, target, 1L << Integer.SIZE + 5, randomType() );
     }
 
     @Test
@@ -150,7 +180,7 @@ public class RelationshipRecordFormatTest
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
-        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), 0,
+        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), randomType(),
                 randomFixedReference(), randomFixedReference(), randomFixedReference(), randomFixedReference(),
                 true, true );
 
@@ -165,7 +195,7 @@ public class RelationshipRecordFormatTest
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
-        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), 0,
+        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), randomShortType(),
                 randomFixedReference(), randomFixedReference(), randomFixedReference(), randomFixedReference(),
                 true, true );
 
@@ -175,53 +205,8 @@ public class RelationshipRecordFormatTest
         verifySameReferences( source, target);
     }
 
-    @Test
-    public void readSingleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
-    {
-        RelationshipRecord oldFormatRecord = new RelationshipRecord( 1 );
-        RelationshipRecord newFormatRecord = new RelationshipRecord( 1 );
-        oldFormatRecord.initialize( true, randomSmallReference(), randomSmallReference(), randomSmallReference(), 0,
-                randomSmallReference(), randomSmallReference(), randomSmallReference(), randomSmallReference(),
-                true, true );
-
-        writeRecordWithOldFormat( oldFormatRecord );
-
-        assertFalse( "This should be single unit record.", oldFormatRecord.hasSecondaryUnitId() );
-        assertFalse( "Old format is not aware about fixed references.", oldFormatRecord.isUseFixedReferences() );
-
-        format.read( newFormatRecord, cursor, RecordLoad.NORMAL, RelationshipRecordFormat.RECORD_SIZE );
-        verifySameReferences( oldFormatRecord, newFormatRecord );
-    }
-
-    @Test
-    public void readDoubleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
-    {
-        RelationshipRecord oldFormatRecord = new RelationshipRecord( 1 );
-        RelationshipRecord newFormatRecord = new RelationshipRecord( 1 );
-        oldFormatRecord.initialize( true, bigReference(), bigReference(), bigReference(), 0,
-                bigReference(), bigReference(), bigReference(), bigReference(),
-                true, true );
-
-        writeRecordWithOldFormat( oldFormatRecord );
-
-        assertTrue( "This should be double unit record.", oldFormatRecord.hasSecondaryUnitId() );
-        assertFalse( "Old format is not aware about fixed references.", oldFormatRecord.isUseFixedReferences() );
-
-        format.read( newFormatRecord, cursor, RecordLoad.NORMAL, RelationshipRecordFormat.RECORD_SIZE );
-        verifySameReferences( oldFormatRecord, newFormatRecord );
-    }
-
-    private void writeRecordWithOldFormat( RelationshipRecord oldFormatRecord ) throws IOException
-    {
-        int oldRecordSize = RelationshipRecordFormatV3_0_0.RECORD_SIZE;
-        RelationshipRecordFormatV3_0_0 recordFormatV30 = new RelationshipRecordFormatV3_0_0();
-        recordFormatV30.prepare( oldFormatRecord, oldRecordSize, idSequence );
-        recordFormatV30.write( oldFormatRecord, cursor, oldRecordSize );
-        cursor.setOffset( 0 );
-    }
-
     private void verifyRecordsWithPoisonedReference( RelationshipRecord source, RelationshipRecord target,
-            long poisonedReference ) throws IOException
+            long poisonedReference, int type ) throws IOException
     {
         boolean nullPoison = poisonedReference == NULL;
         // first and second node can't be empty references so excluding them in case if poisoned reference is null
@@ -234,7 +219,7 @@ public class RelationshipRecordFormatTest
             source.initialize( true, iterator.next(),
                     nullPoison ? randomFixedReference() : iterator.next(),
                     nullPoison ? randomFixedReference() : iterator.next(),
-                    0, iterator.next(), iterator.next(), iterator.next(), iterator.next(), true, true );
+                    type, iterator.next(), iterator.next(), iterator.next(), iterator.next(), true, true );
 
             writeReadRecord( source, target );
 
@@ -308,6 +293,7 @@ public class RelationshipRecordFormatTest
 
     private void verifySameReferences( RelationshipRecord record, RelationshipRecord recordFromStore )
     {
+        assertEquals( "Types should be equal.", record.getType(), recordFromStore.getType() );
         assertEquals( "First Next references should be equal.", record.getFirstNextRel(), recordFromStore.getFirstNextRel() );
         assertEquals( "First Node references should be equal.", record.getFirstNode(), recordFromStore.getFirstNode() );
         assertEquals( "First Prev Rel references should be equal.", record.getFirstPrevRel(), recordFromStore.getFirstPrevRel() );
@@ -336,22 +322,23 @@ public class RelationshipRecordFormatTest
         record.setSecondNextRel( 4L );
         record.setSecondNode( 5L );
         record.setSecondPrevRel( 6L );
+        record.setType( 7 );
         return record;
+    }
+
+    private int randomShortType()
+    {
+        return (int) randomReference( 1L << Short.SIZE );
+    }
+
+    private int randomType()
+    {
+        return (int) randomReference( 1L << 24 );
     }
 
     private long randomFixedReference()
     {
         return randomReference( 1L << (Integer.SIZE + 1 ) );
-    }
-
-    private long bigReference()
-    {
-        return 1L << 57;
-    }
-
-    private long randomSmallReference()
-    {
-        return randomReference( 1L << (Integer.SIZE - 4 ) );
     }
 
     private long randomReference( long maxValue )

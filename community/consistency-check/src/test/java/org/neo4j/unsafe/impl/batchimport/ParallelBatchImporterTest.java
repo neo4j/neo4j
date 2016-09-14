@@ -52,11 +52,11 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Randoms;
@@ -162,7 +162,7 @@ public class ParallelBatchImporterTest
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         final BatchImporter inserter = new ParallelBatchImporter( directory.graphDbDir(),
                 new DefaultFileSystemAbstraction(), config, NullLogService.getInstance(),
-                processorAssigner, EMPTY, new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getFormatName() ) ) );
+                processorAssigner, EMPTY, Config.empty(), getFormat() );
 
         boolean successful = false;
         IdGroupDistribution groups = new IdGroupDistribution( NODE_COUNT, 5, random.random() );
@@ -234,9 +234,9 @@ public class ParallelBatchImporterTest
                 result.isSuccessful() );
     }
 
-    protected String getFormatName()
+    protected RecordFormats getFormat()
     {
-        return StandardV3_0.NAME;
+        return StandardV3_0.RECORD_FORMATS;
     }
 
     public abstract static class InputIdGenerator

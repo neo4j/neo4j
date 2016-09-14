@@ -19,6 +19,7 @@
  */
 package batchimport;
 
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -36,8 +37,8 @@ public class ParallelBatchImporterTest extends org.neo4j.unsafe.impl.batchimport
     }
 
     @Override
-    public String getFormatName()
+    public RecordFormats getFormat()
     {
-        return HighLimit.NAME;
+        return HighLimit.RECORD_FORMATS;
     }
 }

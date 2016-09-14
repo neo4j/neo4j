@@ -112,9 +112,23 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     }
 
     @Override
+    public int get3ByteInt( long index, int offset )
+    {
+        int address = index( index, offset );
+        return get3ByteIntFromByteBuffer( buffer, address );
+    }
+
+    @Override
     public long get6ByteLong( long index, int offset )
     {
         return get6BLongFromByteBuffer( buffer, index( index, offset ) );
+    }
+
+    protected static int get3ByteIntFromByteBuffer( ByteBuffer buffer, int address )
+    {
+        int lowWord = buffer.getShort( address ) & 0xFFFF;
+        int highByte = buffer.get( address + Short.BYTES );
+        return lowWord | (highByte << Short.SIZE);
     }
 
     protected static long get6BLongFromByteBuffer( ByteBuffer buffer, int startOffset )
@@ -166,6 +180,14 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     public void setLong( long index, int offset, long value )
     {
         buffer.putLong( index( index, offset ), value );
+    }
+
+    @Override
+    public void set3ByteInt( long index, int offset, int value )
+    {
+        int address = index( index, offset );
+        buffer.putShort( address, (short) value );
+        buffer.put( address + Short.BYTES, (byte) (value >>> Short.SIZE) );
     }
 
     private int index( long index, int offset )

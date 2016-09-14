@@ -41,6 +41,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
+import org.neo4j.kernel.impl.store.format.CapabilityType;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -168,12 +171,12 @@ public class NeoStores implements AutoCloseable
     {
         try
         {
-            String expectedStoreVersion = recordFormats.storeVersion();
-            String actualStoreVersion = versionLongToString( getRecord( pageCache, neoStoreFileName, STORE_VERSION ) );
-            if ( !expectedStoreVersion.equals( actualStoreVersion ) )
+            String storeVersion = versionLongToString( getRecord( pageCache, neoStoreFileName, STORE_VERSION ) );
+            RecordFormats storeFormat = RecordFormatSelector.selectForVersion( storeVersion );
+            if ( !isCompatibleFormats( storeFormat ) )
             {
                 throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException( neoStoreFileName.getName(),
-                        actualStoreVersion );
+                        storeVersion );
             }
         }
         catch ( NoSuchFileException e )
@@ -186,6 +189,13 @@ public class NeoStores implements AutoCloseable
         {
             throw new UnderlyingStorageException( e );
         }
+    }
+
+    private boolean isCompatibleFormats( RecordFormats storeFormat )
+    {
+        return FormatFamily.isSameFamily( recordFormats, storeFormat ) &&
+               recordFormats.hasSameCapabilities( storeFormat, CapabilityType.FORMAT ) &&
+               recordFormats.generation() >= storeFormat.generation();
     }
 
     private void closeStore( StoreType type )
