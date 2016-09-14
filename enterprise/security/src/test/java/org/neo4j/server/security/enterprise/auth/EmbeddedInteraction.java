@@ -166,4 +166,10 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     {
         assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
     }
+
+    @Override
+    public String getConnectionDetails()
+    {
+        return "embedded-session";
+    }
 }

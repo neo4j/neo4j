@@ -150,7 +150,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         {
             Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
 
-            Matcher<Map<String,Object>> thisQuery = listedQuery( startTime, "adminSubject", query );
+            Matcher<Map<String,Object>> thisQuery = listedQueryOfInteractionLevel( startTime, "adminSubject", query );
             Matcher<Map<String,Object>> matcher1 = listedQuery( startTime, "readSubject", q1 );
             Matcher<Map<String,Object>> matcher2 = listedQuery( startTime, "writeSubject", q2 );
 
@@ -714,6 +714,22 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 hasNoParameters()
         );
     }
+
+    /**
+     * Executes a query through the NeoInteractionLevel required
+     */
+    private Matcher<Map<String,Object>> listedQueryOfInteractionLevel( OffsetDateTime startTime, String username,
+            String query )
+    {
+        return allOf(
+                hasQuery( query ),
+                hasUsername( username ),
+                hasQueryId(),
+                hasStartTimeAfter( startTime ),
+                hasNoParameters(),
+                hasConnectionDetails( neo.getConnectionDetails() )
+        );
+    }
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQuery( String query )
     {
@@ -759,6 +775,13 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     private Matcher<Map<String, Object>> hasNoParameters()
     {
         return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo( Collections.emptyMap() ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private Matcher<Map<String, Object>> hasConnectionDetails( String expected )
+    {
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "connectionDetails" ),
+                containsString( expected ) );
     }
 
     @Override

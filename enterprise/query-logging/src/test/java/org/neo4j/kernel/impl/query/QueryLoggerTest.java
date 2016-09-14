@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.ExecutingQuery;
@@ -245,7 +246,7 @@ public class QueryLoggerTest
         when( query.queryText() ).thenReturn( queryText );
         when( query.queryParameters() ).thenReturn( params );
         when( query.startTime() ).thenReturn( startTime );
-        when( query.username() ).thenReturn( username );
+        when( query.username() ).thenReturn( Optional.of(username) );
         return query;
     }
 }

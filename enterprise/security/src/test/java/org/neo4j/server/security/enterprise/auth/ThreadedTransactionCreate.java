@@ -78,10 +78,14 @@ public class ThreadedTransactionCreate<S>
                                 try
                                 {
                                     if ( startEarly )
+                                    {
                                         latch.start();
+                                    }
                                     result = neo.getLocalGraph().execute( query );
                                     if ( !startEarly )
+                                    {
                                         latch.startAndWaitForAllToStart();
+                                    }
                                 }
                                 catch (Throwable t)
                                 {

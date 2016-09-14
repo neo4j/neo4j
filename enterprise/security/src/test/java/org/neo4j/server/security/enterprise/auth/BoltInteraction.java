@@ -210,6 +210,12 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         assertFalse( "Should not be authenticated", subject.isAuthenticated() );
     }
 
+    @Override
+    public String getConnectionDetails()
+    {
+        return "bolt-session";
+    }
+
     private static BoltResult collectResults( TransportConnection client ) throws Exception
     {
         ResponseMessage message = TransportTestUtil.receiveOneResponseMessage( client );

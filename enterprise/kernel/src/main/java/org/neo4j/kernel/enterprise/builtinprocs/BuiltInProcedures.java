@@ -26,7 +26,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,11 +40,12 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -333,27 +333,28 @@ public class BuiltInProcedures
     private QueryStatusResult queryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
     {
         return new QueryStatusResult(
-            ofInternalId( q.internalQueryId() ),
-            q.usernameAsString(),
-            q.queryText(),
-            q.queryParameters(),
-            q.startTime(),
-            clock.instant().minusMillis( q.startTime() ).toEpochMilli()
+                ofInternalId( q.internalQueryId() ),
+                q.usernameAsString(),
+                q.queryText(),
+                q.queryParameters(),
+                q.startTime(),
+                clock.instant().minusMillis( q.startTime() ).toEpochMilli(),
+                q.querySource()
         );
     }
 
     public static class QueryStatusResult
     {
         public final String queryId;
-
         public final String username;
         public final String query;
         public final Map<String,Object> parameters;
         public final String startTime;
         public final String elapsedTime;
+        public final String connectionDetails;
 
         QueryStatusResult( QueryId queryId, String username, String query, Map<String,Object> parameters,
-                long startTime, long elapsedTime )
+                long startTime, long elapsedTime, QuerySource querySource )
         {
             this.queryId = queryId.toString();
             this.username = username;
@@ -361,6 +362,7 @@ public class BuiltInProcedures
             this.parameters = parameters;
             this.startTime = formatTime( startTime );
             this.elapsedTime = formatInterval( elapsedTime );
+            this.connectionDetails = querySource.toString();
         }
 
         private static String formatTime( final long startTime )
@@ -419,7 +421,7 @@ public class BuiltInProcedures
         }
     }
 
-    static String formatInterval( final long l )
+    private static String formatInterval( final long l )
     {
         final long hr = MILLISECONDS.toHours( l );
         final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );
