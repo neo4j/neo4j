@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.factory;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -68,7 +67,15 @@ import static java.util.Collections.singletonMap;
  */
 public abstract class EditionModule
 {
-    public abstract void setupProcedures( Procedures procedures ) throws KernelException;
+    public void registerCrossEditionProcedures( Procedures procedures ) throws KernelException
+    {
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
+        registerProceduresFromProvider( "auth-procedures-provider", procedures );
+
+        registerEditionSpecificProcedures( procedures );
+    }
+
+    protected abstract void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException;
 
     protected Log authManagerLog()
     {

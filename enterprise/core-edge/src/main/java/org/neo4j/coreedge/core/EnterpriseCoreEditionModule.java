@@ -110,25 +110,18 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     @Override
-    public void setupProcedures( Procedures procedures ) throws KernelException
+    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
-        try
-        {
-            procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-            registerProceduresFromProvider( "auth-procedures-provider", procedures );
-            registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
+        procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
+        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
 
-            procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
-            procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
-            procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
-            procedures.register( new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
-            procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
-            procedures.register( new CoreRoleProcedure( consensusModule.raftMachine()) );
-        }
-        catch ( ProcedureException e )
-        {
-            throw new RuntimeException( e );
-        }
+        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
+        procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
+        procedures.register(
+                new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
+        procedures.register(
+                new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
+        procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
     }
 
     @Override
