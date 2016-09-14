@@ -36,6 +36,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.NullLog;
@@ -126,9 +127,19 @@ public class RolesCommand implements AdminCommand
                 deleteRole( roleName );
                 break;
             case "assign":
-                throw new UnsupportedOperationException( "not implemented: assign" );
+                if ( roleName == null || username == null )
+                {
+                    throw new IncorrectUsage( "Missing arguments: 'roles assign' expects roleName and username arguments" );
+                }
+                assignRole( roleName, username );
+                break;
             case "remove":
-                throw new UnsupportedOperationException( "not implemented: remove" );
+                if ( roleName == null || username == null )
+                {
+                    throw new IncorrectUsage( "Missing arguments: 'roles remove' expects roleName and username arguments" );
+                }
+                removeRole( roleName, username );
+                break;
             default:
                 throw new IncorrectUsage( "Unknown roles command: " + command );
             }
@@ -139,11 +150,11 @@ public class RolesCommand implements AdminCommand
         }
         catch ( Exception e )
         {
-            throw new CommandFailed( "Failed run 'roles " + command + "' on '" + roleName + "': " + e.getMessage(), e );
+            throw new CommandFailed( "Failed to run 'roles " + command + "' on '" + roleName + "': " + e.getMessage(), e );
         }
         catch ( Throwable t )
         {
-            throw new CommandFailed( "Failed run 'roles " + command + "' on '" + roleName + "': " + t.getMessage(),
+            throw new CommandFailed( "Failed to run 'roles " + command + "' on '" + roleName + "': " + t.getMessage(),
                     new RuntimeException( t.getMessage() ) );
         }
     }
@@ -176,6 +187,39 @@ public class RolesCommand implements AdminCommand
         {
             outsideWorld.stdErrLine( "Failed to delete role '" + roleName + "'" );
         }
+    }
+
+    private void assignRole( String roleName, String username ) throws Throwable
+    {
+        EnterpriseAuthManager authManager = getAuthManager();
+        authManager.getUserManager().getRole( roleName ); // Will throw error on missing role
+        authManager.getUserManager().getUser( username ); // Will throw error on missing user
+        for ( String name : authManager.getUserManager().getUsernamesForRole( roleName ) )
+        {
+            if ( name.equals( username ) )
+            {
+                throw new InvalidArgumentsException( "Role '" + roleName + "' was already assigned to user 'another'" );
+            }
+        }
+        authManager.getUserManager().addRoleToUser( roleName, username );
+        outsideWorld.stdOutLine( "Assigned role '" + roleName + "' to user '" + username + "'" );
+    }
+
+    private void removeRole( String roleName, String username ) throws Throwable
+    {
+        EnterpriseAuthManager authManager = getAuthManager();
+        authManager.getUserManager().getRole( roleName ); // Will throw error on missing role
+        authManager.getUserManager().getUser( username ); // Will throw error on missing user
+        for ( String name : authManager.getUserManager().getUsernamesForRole( roleName ) )
+        {
+            if ( name.equals( username ) )
+            {
+                authManager.getUserManager().removeRoleFromUser( roleName, username );
+                outsideWorld.stdOutLine( "Removed role '" + roleName + "' from user '" + username + "'" );
+                return;
+            }
+        }
+        throw new InvalidArgumentsException( "Role '" + roleName + "' was not assigned to user 'another'" );
     }
 
     static Config loadNeo4jConfig( Path homeDir, Path configDir )

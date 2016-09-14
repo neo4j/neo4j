@@ -197,6 +197,114 @@ public class RolesCommandIT extends RolesCommandTestBase
     }
 
     //
+    // Tests for assign command
+    //
+
+    @Test
+    public void shouldGetUsageErrorsWithAssignCommandAndNoArgs() throws Throwable
+    {
+        assertFailedRolesCommand( "assign",
+                "Missing arguments: 'roles assign' expects roleName and username arguments",
+                "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
+                "Runs several possible sub-commands for managing the native roles" );
+    }
+
+    @Test
+    public void shouldGetUsageErrorsWithAssignCommandAndNoUsername() throws Throwable
+    {
+        assertFailedSubCommand( "assign", args("reader"),
+                "Missing arguments: 'roles assign' expects roleName and username arguments",
+                "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
+                "Runs several possible sub-commands for managing the native roles" );
+    }
+
+    @Test
+    public void shouldNotAssignNonexistentRole() throws Throwable
+    {
+        // Given default state
+
+        // When running 'assign' with correct parameters, expect error
+        assertFailedSubCommand( "assign", args( "another", "neo4j" ), "Role 'another' does not exist" );
+    }
+
+    @Test
+    public void shouldNotAssignToNonexistentUser() throws Throwable
+    {
+        // Given default state
+
+        // When running 'assign' with correct parameters, expect error
+        assertFailedSubCommand( "assign", args( "reader", "another" ), "User 'another' does not exist" );
+    }
+
+    @Test
+    public void shouldAssignCustomRole() throws Throwable
+    {
+        createTestRole( "test_role" );
+        createTestUser( "another", "abc" );
+
+        // When running 'assign' with correct parameters, expect success
+        assertSuccessfulSubCommand( "assign", args( "test_role", "another" ), "Assigned role 'test_role' to user 'another'" );
+    }
+
+    //
+    // Tests for assign command
+    //
+
+    @Test
+    public void shouldGetUsageErrorsWithRemoveCommandAndNoArgs() throws Throwable
+    {
+        assertFailedRolesCommand( "remove",
+                "Missing arguments: 'roles remove' expects roleName and username arguments",
+                "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
+                "Runs several possible sub-commands for managing the native roles" );
+    }
+
+    @Test
+    public void shouldGetUsageErrorsWithRemoveCommandAndNoUsername() throws Throwable
+    {
+        assertFailedSubCommand( "remove", args("reader"),
+                "Missing arguments: 'roles remove' expects roleName and username arguments",
+                "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
+                "Runs several possible sub-commands for managing the native roles" );
+    }
+
+    @Test
+    public void shouldNotRemoveNonexistentRole() throws Throwable
+    {
+        // Given default state
+
+        // When running 'assign' with correct parameters, expect error
+        assertFailedSubCommand( "remove", args( "another", "neo4j" ), "Role 'another' does not exist" );
+    }
+
+    @Test
+    public void shouldNotRemoveFromNonexistentUser() throws Throwable
+    {
+        // Given default state
+
+        // When running 'assign' with correct parameters, expect error
+        assertFailedSubCommand( "remove", args( "reader", "another" ), "User 'another' does not exist" );
+    }
+
+    @Test
+    public void shouldAssignAndRemoveCustomRole() throws Throwable
+    {
+        createTestRole( "test_role" );
+        createTestUser( "another", "abc" );
+
+        // When running 'remove' on non-assigned role, expect error
+        assertFailedSubCommand( "remove", args( "test_role", "another" ), "Role 'test_role' was not assigned to user 'another'" );
+        // When running 'assign' with correct parameters, expect success
+        assertSuccessfulSubCommand( "assign", args( "test_role", "another" ), "Assigned role 'test_role' to user 'another'" );
+        // When running 'assign' on already assigned role, expect error
+        assertFailedSubCommand( "assign", args( "test_role", "another" ), "Role 'test_role' was already assigned to user 'another'" );
+        // When running 'remove' with correct parameters, expect success
+        assertSuccessfulSubCommand( "remove", args( "test_role", "another" ), "Removed role 'test_role' from user 'another'" );
+        // When running 'assign' on already assigned role, expect error
+        assertFailedSubCommand( "remove", args( "test_role", "another" ), "Role 'test_role' was not assigned to user 'another'" );
+    }
+
+    //
     // Utilities for testing AdminTool
     //
 
