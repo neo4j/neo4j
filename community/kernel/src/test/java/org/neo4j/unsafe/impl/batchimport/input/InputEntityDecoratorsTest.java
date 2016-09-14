@@ -22,18 +22,22 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.util.function.Function;
-
 import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.decorators;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 
 public class InputEntityDecoratorsTest
 {
@@ -42,8 +46,7 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String defaultType = "TYPE";
-        Function<InputRelationship,InputRelationship> decorator =
-                InputEntityDecorators.defaultRelationshipType( defaultType );
+        Decorator<InputRelationship> decorator = defaultRelationshipType( defaultType );
 
         // WHEN
         InputRelationship relationship = new InputRelationship( "source", 1, 0, InputEntity.NO_PROPERTIES, null,
@@ -59,8 +62,7 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String defaultType = "TYPE";
-        Function<InputRelationship,InputRelationship> decorator =
-                InputEntityDecorators.defaultRelationshipType( defaultType );
+        Decorator<InputRelationship> decorator = defaultRelationshipType( defaultType );
 
         // WHEN
         String customType = "CUSTOM_TYPE";
@@ -77,8 +79,7 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String defaultType = "TYPE";
-        Function<InputRelationship,InputRelationship> decorator =
-                InputEntityDecorators.defaultRelationshipType( defaultType );
+        Decorator<InputRelationship> decorator = defaultRelationshipType( defaultType );
 
         // WHEN
         Integer typeId = 5;
@@ -96,7 +97,7 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
-        Function<InputNode,InputNode> decorator = InputEntityDecorators.additiveLabels( toAdd );
+        Decorator<InputNode> decorator = additiveLabels( toAdd );
 
         // WHEN
         InputNode node = new InputNode( "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, null, null );
@@ -111,7 +112,7 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
-        Function<InputNode,InputNode> decorator = InputEntityDecorators.additiveLabels( toAdd );
+        Decorator<InputNode> decorator = additiveLabels( toAdd );
 
         // WHEN
         String[] nodeLabels = new String[] {"SomeOther"};
@@ -127,7 +128,7 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
-        Function<InputNode,InputNode> decorator = InputEntityDecorators.additiveLabels( toAdd );
+        Decorator<InputNode> decorator = additiveLabels( toAdd );
 
         // WHEN
         long labelField = 123L;
@@ -143,9 +144,9 @@ public class InputEntityDecoratorsTest
     public void shouldCramMultipleDecoratorsIntoOne() throws Exception
     {
         // GIVEN
-        Function<InputNode,InputNode> decorator1 = spy( new IdentityDecorator() );
-        Function<InputNode,InputNode> decorator2 = spy( new IdentityDecorator() );
-        Function<InputNode,InputNode> multi = InputEntityDecorators.decorators( decorator1, decorator2 );
+        Decorator<InputNode> decorator1 = spy( new IdentityDecorator() );
+        Decorator<InputNode> decorator2 = spy( new IdentityDecorator() );
+        Decorator<InputNode> multi = decorators( decorator1, decorator2 );
 
         // WHEN
         InputNode node = mock( InputNode.class );
@@ -158,12 +159,60 @@ public class InputEntityDecoratorsTest
         order.verifyNoMoreInteractions();
     }
 
-    private static class IdentityDecorator implements Function<InputNode,InputNode>
+    @Test
+    public void shouldThinkMultiDecoratorIsntMutableIfNooneIs() throws Exception
     {
+        // GIVEN
+        Decorator<InputNode> decorator1 = spy( new IdentityDecorator() );
+        Decorator<InputNode> decorator2 = spy( new IdentityDecorator() );
+        Decorator<InputNode> multi = decorators( decorator1, decorator2 );
+
+        // WHEN
+        boolean mutable = multi.isMutable();
+
+        // THEN
+        assertFalse( mutable );
+    }
+
+    @Test
+    public void shouldThinkMultiDecoratorIsMutableIfAnyIs() throws Exception
+    {
+        // GIVEN
+        Decorator<InputNode> decorator1 = spy( new IdentityDecorator() );
+        Decorator<InputNode> decorator2 = spy( new IdentityDecorator( true ) );
+        Decorator<InputNode> multi = decorators( decorator1, decorator2 );
+
+        // WHEN
+        boolean mutable = multi.isMutable();
+
+        // THEN
+        assertTrue( mutable );
+    }
+
+    private static class IdentityDecorator implements Decorator<InputNode>
+    {
+        private final boolean mutable;
+
+        public IdentityDecorator()
+        {
+            this( false );
+        }
+
+        public IdentityDecorator( boolean mutable )
+        {
+            this.mutable = mutable;
+        }
+
         @Override
         public InputNode apply( InputNode from ) throws RuntimeException
         {
             return from;
+        }
+
+        @Override
+        public boolean isMutable()
+        {
+            return mutable;
         }
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
@@ -75,15 +75,26 @@ public class InputEntityDecorators
         };
     }
 
-    public static <ENTITY extends InputEntity> Function<ENTITY,ENTITY> decorators(
-            final Function<ENTITY,ENTITY>... decorators )
+    public static <ENTITY extends InputEntity> Decorator<ENTITY> decorators(
+            final Decorator<ENTITY>... decorators )
     {
-        return from -> {
-            for ( Function<ENTITY,ENTITY> decorator : decorators )
+        return new Decorator<ENTITY>()
+        {
+            @Override
+            public ENTITY apply( ENTITY from )
             {
-                from = decorator.apply( from );
+                for ( Decorator<ENTITY> decorator : decorators )
+                {
+                    from = decorator.apply( from );
+                }
+                return from;
             }
-            return from;
+
+            @Override
+            public boolean isMutable()
+            {
+                return Stream.of( decorators ).anyMatch( Decorator::isMutable );
+            }
         };
     }
 
