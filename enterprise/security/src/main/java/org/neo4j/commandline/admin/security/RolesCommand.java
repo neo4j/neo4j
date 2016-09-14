@@ -22,7 +22,12 @@ package org.neo4j.commandline.admin.security;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -33,7 +38,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -149,7 +153,7 @@ public class RolesCommand implements AdminCommand
         getAuthManager();   // ensure defaults are created
         RoleRepository roleRepository = getRoleRepository();
         roleRepository.getAllRoleNames().stream()
-                .filter( r -> roleName == null ||  r.toLowerCase().contains( roleName ) )
+                .filter( r -> roleName == null || r.toLowerCase().contains( roleName ) )
                 .forEach( outsideWorld::stdOutLine );
     }
 
@@ -204,13 +208,101 @@ public class RolesCommand implements AdminCommand
         if ( this.authManager == null )
         {
             Config config = loadNeo4jConfig( homeDir, configDir );
-            this.jobScheduler = new Neo4jJobScheduler();
-            this.jobScheduler.init();
+            this.jobScheduler = new NoOpJobScheduler();
             this.authManager = new EnterpriseAuthManagerFactory()
                     .newInstance( config, NullLogProvider.getInstance(),
                             NullLog.getInstance(), outsideWorld.fileSystem(), jobScheduler );
             this.authManager.start();    // required to setup default roles
         }
         return this.authManager;
+    }
+
+    public static class NoOpJobScheduler implements JobScheduler
+    {
+
+        @Override
+        public void init() throws Throwable
+        {
+
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+
+        }
+
+        @Override
+        public Executor executor( Group group )
+        {
+            return null;
+        }
+
+        @Override
+        public ThreadFactory threadFactory( Group group )
+        {
+            return null;
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable job )
+        {
+            return new NoOpJobHandle();
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
+        {
+            return new NoOpJobHandle();
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable runnable, long initialDelay,
+                TimeUnit timeUnit )
+        {
+            return new NoOpJobHandle();
+        }
+
+        @Override
+        public JobHandle scheduleRecurring( Group group, Runnable runnable, long period,
+                TimeUnit timeUnit )
+        {
+            return new NoOpJobHandle();
+        }
+
+        @Override
+        public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay,
+                long period, TimeUnit timeUnit )
+        {
+            return new NoOpJobHandle();
+        }
+
+        public static class NoOpJobHandle implements JobHandle
+        {
+
+            @Override
+            public void cancel( boolean mayInterruptIfRunning )
+            {
+
+            }
+
+            @Override
+            public void waitTermination() throws InterruptedException, ExecutionException
+            {
+
+            }
+        }
     }
 }

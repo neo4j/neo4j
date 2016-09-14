@@ -62,8 +62,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         Path homeDir = testDir.graphDbDir().toPath();
         Path configDir = testDir.directory( "conf" ).toPath();
 
-        JobScheduler jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.init();
+        JobScheduler jobScheduler = mock(JobScheduler.class);
 
         // create default roles
         new EnterpriseAuthManagerFactory().newInstance(
