@@ -34,7 +34,6 @@
     <module>cluster</module>
     <module>backup</module>
     <module>kernel</module>
-    <module>ha</module>
     <module>core-edge</module>
     <module>metrics</module>
     <module>neo4j-enterprise</module>
@@ -66,6 +65,17 @@ terms of the relevant Commercial Agreement.
   </licenses>
 
   <profiles>
+    <profile>
+      <id>include-ha</id>
+      <activation>
+        <property>
+          <name>!skipHA</name>
+        </property>
+      </activation>
+      <modules>
+        <module>ha</module>
+      </modules>
+    </profile>
     <profile>
       <id>freeze</id>
       <activation>
