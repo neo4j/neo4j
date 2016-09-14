@@ -22,10 +22,10 @@ package org.neo4j.io.pagecache.impl;
 import java.io.File;
 import java.io.IOException;
 
-public class CannotMoveMappedFileException extends IOException
+public class CannotRenameMappedFileException extends IOException
 {
-    public CannotMoveMappedFileException( File file )
+    public CannotRenameMappedFileException( File file )
     {
-        super( "Cannot move mapped file: " + file );
+        super( "Cannot rename mapped file: " + file );
     }
 }

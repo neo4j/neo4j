@@ -58,7 +58,7 @@ import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.impl.CannotMoveMappedFileException;
+import org.neo4j.io.pagecache.impl.CannotRenameMappedFileException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
@@ -4694,8 +4694,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test( expected = CannotMoveMappedFileException.class )
-    public void moveFileMustThrowIfSourceFileIsMapped() throws Exception
+    @Test( expected = CannotRenameMappedFileException.class )
+    public void renameFileMustThrowIfSourceFileIsMapped() throws Exception
     {
         File a = file( "a" );
         File b = file( "b" );
@@ -4706,8 +4706,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test( expected = CannotMoveMappedFileException.class )
-    public void moveFileMustThrowIfTargetFileIsMapped() throws Exception
+    @Test( expected = CannotRenameMappedFileException.class )
+    public void renameFileMustThrowIfTargetFileIsMapped() throws Exception
     {
         File a = file( "a" );
         File b = existingFile( "b" );
@@ -4719,7 +4719,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( expected = FileAlreadyExistsException.class )
-    public void moveFileMustThrowIfTargetFileExistsAndReplaceExistingIsNotEnabled() throws Exception
+    public void renameFileMustThrowIfTargetFileExistsAndReplaceExistingIsNotEnabled() throws Exception
     {
         File a = file( "a" );
         File b = existingFile( "b" );
@@ -4728,7 +4728,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void moveFileMustThrowIfTargetDirectoryDoesNotExist() throws Exception
+    public void renameFileMustThrowIfTargetDirectoryDoesNotExist() throws Exception
     {
         File a = file( "a" );
         File b = new File( file( "targetDir" ), "targetFile" );
@@ -4745,7 +4745,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( expected = NoSuchFileException.class )
-    public void moveFileMustThrowIfSourceFileDoesNotExist() throws Exception
+    public void renameFileMustThrowIfSourceFileDoesNotExist() throws Exception
     {
         File a = file( "doesNotExist" );
         File b = file( "b" );
@@ -4809,7 +4809,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
 
-        // Do the move
+        // Do the rename
         pageCache.renameFile( a, b, REPLACE_EXISTING );
 
         // Then verify that the old random data we put in 'b' has been replaced with the contents of 'a'
@@ -4817,7 +4817,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void moveFileMustCanonicaliseSourceFile() throws Exception
+    public void renameFileMustCanonicaliseSourceFile() throws Exception
     {
         File a = new File( new File( file( "a" ), "poke" ), ".." );
         File b = file( "b" );
@@ -4828,7 +4828,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void moveFileMustCanonicaliseTargetFile() throws Exception
+    public void renameFileMustCanonicaliseTargetFile() throws Exception
     {
         File a = file( "a" );
         File b = new File( new File( file( "b" ), "poke" ), ".." );

@@ -111,7 +111,7 @@ public class ToFileStoreWriter implements StoreWriter
     private void addPageCacheMoveAction( File file )
     {
         fileMoveActions.add( ( ( toDir, copyOptions ) ->
-                pageCache.moveFile( file, new File( toDir, file.getName() ), copyOptions ) ) );
+                pageCache.renameFile( file, new File( toDir, file.getName() ), copyOptions ) ) );
     }
 
     private int filePageSize( int recordSize )
