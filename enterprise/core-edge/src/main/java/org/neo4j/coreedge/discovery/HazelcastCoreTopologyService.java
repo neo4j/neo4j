@@ -19,14 +19,13 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.util.List;
-
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
@@ -34,9 +33,12 @@ import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.GroupProperty;
 
+import java.util.List;
+
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -49,8 +51,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final Config config;
     private final MemberId myself;
     private final Log log;
-    private final CoreTopologyListenerService listenerService;
     private final Log userLog;
+    private final CoreTopologyListenerService listenerService;
     private String membershipRegistrationId;
 
     private HazelcastInstance hazelcastInstance;
@@ -141,13 +143,14 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         log.info( "Discovering cluster with initial members: " + initialMembers );
 
         NetworkConfig networkConfig = new NetworkConfig();
-        ListenSocketAddress hazelcastAddress = config.get( CoreEdgeClusterSettings.discovery_listen_address );
+        Setting<ListenSocketAddress> discovery_listen_address = CoreEdgeClusterSettings.discovery_listen_address;
+        ListenSocketAddress hazelcastAddress = config.get( discovery_listen_address );
         InterfacesConfig interfaces = new InterfacesConfig();
         interfaces.addInterface( hazelcastAddress.getHostname() );
         networkConfig.setInterfaces( interfaces );
         networkConfig.setPort( hazelcastAddress.getPort() );
         networkConfig.setJoin( joinConfig );
-
+        networkConfig.setPortAutoIncrement( false );
         com.hazelcast.config.Config c = new com.hazelcast.config.Config();
         c.setProperty( GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS, "10000" );
         c.setProperty( GroupProperties.PROP_INITIAL_MIN_CLUSTER_SIZE,
@@ -160,7 +163,20 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         c.setMemberAttributeConfig( memberAttributeConfig );
         userLog.info( "Waiting for other members to join cluster before continuing..." );
-        return Hazelcast.newHazelcastInstance( c );
+        try
+        {
+            hazelcastInstance = Hazelcast.newHazelcastInstance( c );
+        }
+        catch ( HazelcastException e )
+        {
+            String errorMessage = String.format( "Hazelcast was unable to start with setting: %s = %s",
+                    discovery_listen_address.name(), config.get( discovery_listen_address ) );
+            userLog.error( errorMessage );
+            log.error( errorMessage, e );
+            throw new RuntimeException( e );
+        }
+
+        return hazelcastInstance;
     }
 
     private Integer minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize()

@@ -23,6 +23,7 @@ import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.LogProvider;
 
 public interface DiscoveryServiceFactory
