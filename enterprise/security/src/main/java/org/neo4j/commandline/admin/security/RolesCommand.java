@@ -66,7 +66,13 @@ public class RolesCommand implements AdminCommand
         public String description()
         {
             return "Runs several possible sub-commands for managing the native roles repository: " +
-                   "'list', 'create', 'delete', 'assign', and 'remove'.";
+                   "'list', 'create', 'delete', 'assign', 'remove', 'for' and 'users'. " +
+                   "'list' with no arguments lists all roles, and with an argument does a substring " +
+                   "filter. 'create' and 'delete' simply create and delete the specified role. " +
+                   "'assign' and 'remove' take two arguments, the role name and the username and " +
+                   "assign the role to the user, or unassign the role from the user. The 'for' command " +
+                   "takes one argument, the username, and will list all roles for that user. The 'users' " +
+                   "command takes one argument, the role name, and will list all users for that role.";
         }
 
         @Override
@@ -97,7 +103,7 @@ public class RolesCommand implements AdminCommand
         {
             throw new IncorrectUsage(
                     "Missing arguments: expected at least one sub-command as argument: " +
-                    "'list', 'create', 'delete', 'assign', or 'remove'" );
+                    "'list', 'create', 'delete', 'assign', 'remove', 'for' or 'users'." );
         }
 
         String command = parsedArgs.orphans().size() > 0 ? parsedArgs.orphans().get( 0 ) : null;
@@ -129,16 +135,33 @@ public class RolesCommand implements AdminCommand
             case "assign":
                 if ( roleName == null || username == null )
                 {
-                    throw new IncorrectUsage( "Missing arguments: 'roles assign' expects roleName and username arguments" );
+                    throw new IncorrectUsage(
+                            "Missing arguments: 'roles assign' expects roleName and username arguments" );
                 }
                 assignRole( roleName, username );
                 break;
             case "remove":
                 if ( roleName == null || username == null )
                 {
-                    throw new IncorrectUsage( "Missing arguments: 'roles remove' expects roleName and username arguments" );
+                    throw new IncorrectUsage(
+                            "Missing arguments: 'roles remove' expects roleName and username arguments" );
                 }
                 removeRole( roleName, username );
+                break;
+            case "for":
+                String user = roleName;
+                if ( user == null )
+                {
+                    throw new IncorrectUsage( "Missing arguments: 'roles for' expects username argument" );
+                }
+                rolesFor( user );
+                break;
+            case "users":
+                if ( roleName == null )
+                {
+                    throw new IncorrectUsage( "Missing arguments: 'roles users' expects roleName argument" );
+                }
+                usersFor( roleName );
                 break;
             default:
                 throw new IncorrectUsage( "Unknown roles command: " + command );
@@ -150,7 +173,8 @@ public class RolesCommand implements AdminCommand
         }
         catch ( Exception e )
         {
-            throw new CommandFailed( "Failed to run 'roles " + command + "' on '" + roleName + "': " + e.getMessage(), e );
+            throw new CommandFailed( "Failed to run 'roles " + command + "' on '" + roleName + "': " + e.getMessage(),
+                    e );
         }
         catch ( Throwable t )
         {
@@ -220,6 +244,26 @@ public class RolesCommand implements AdminCommand
             }
         }
         throw new InvalidArgumentsException( "Role '" + roleName + "' was not assigned to user 'another'" );
+    }
+
+    private void rolesFor( String username ) throws Throwable
+    {
+        EnterpriseAuthManager authManager = getAuthManager();
+        authManager.getUserManager().getUser( username ); // Will throw error on missing user
+        for ( String roleName : authManager.getUserManager().getRoleNamesForUser( username ) )
+        {
+            outsideWorld.stdOutLine( roleName );
+        }
+    }
+
+    private void usersFor( String roleName ) throws Throwable
+    {
+        EnterpriseAuthManager authManager = getAuthManager();
+        authManager.getUserManager().getRole( roleName ); // Will throw error on missing role
+        for ( String username : authManager.getUserManager().getUsernamesForRole( roleName ) )
+        {
+            outsideWorld.stdOutLine( username );
+        }
     }
 
     static Config loadNeo4jConfig( Path homeDir, Path configDir )
