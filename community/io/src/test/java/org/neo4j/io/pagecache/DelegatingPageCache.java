@@ -61,10 +61,10 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
-    public void moveFile( File sourceFile, File targetFile, CopyOption... copyOptions )
+    public void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions )
             throws IOException
     {
-        delegate.moveFile( sourceFile, targetFile, copyOptions );
+        delegate.renameFile( sourceFile, targetFile, copyOptions );
     }
 
     public void flushAndForce( IOLimiter limiter ) throws IOException

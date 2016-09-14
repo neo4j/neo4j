@@ -100,9 +100,9 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public void moveFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException
+    public void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException
     {
-        delegate.moveFile( sourceFile, targetFile, copyOptions );
+        delegate.renameFile( sourceFile, targetFile, copyOptions );
     }
 
     /**

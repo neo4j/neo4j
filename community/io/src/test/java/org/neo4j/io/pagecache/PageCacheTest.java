@@ -4702,7 +4702,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
         try ( PagedFile ignore = pageCache.map( a, filePageSize ) )
         {
-            pageCache.moveFile( a, b );
+            pageCache.renameFile( a, b );
         }
     }
 
@@ -4714,7 +4714,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
         try ( PagedFile ignore = pageCache.map( b, filePageSize ) )
         {
-            pageCache.moveFile( a, b );
+            pageCache.renameFile( a, b );
         }
     }
 
@@ -4724,7 +4724,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File b = existingFile( "b" );
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        pageCache.moveFile( a, b );
+        pageCache.renameFile( a, b );
     }
 
     @Test
@@ -4735,8 +4735,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
         try
         {
-            pageCache.moveFile( a, b );
-            fail( "pageCache.moveFile should have thrown" );
+            pageCache.renameFile( a, b );
+            fail( "pageCache.renameFile should have thrown" );
         }
         catch ( NoSuchFileException e )
         {
@@ -4750,7 +4750,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "doesNotExist" );
         File b = file( "b" );
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        pageCache.moveFile( a, b );
+        pageCache.renameFile( a, b );
     }
 
     @Test
@@ -4759,7 +4759,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File b = file( "b" );
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        pageCache.moveFile( a, b );
+        pageCache.renameFile( a, b );
         pageCache.map( b, filePageSize ).close();
     }
 
@@ -4769,7 +4769,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File b = file( "b" );
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        pageCache.moveFile( a, b );
+        pageCache.renameFile( a, b );
         pageCache.map( a, filePageSize );
         fail( "pageCache.map should have thrown" );
     }
@@ -4781,7 +4781,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File b = file( "b" );
         generateFileWithRecords( a, recordCount, recordSize );
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        pageCache.moveFile( a, b );
+        pageCache.renameFile( a, b );
         verifyRecordsInFile( b, recordCount );
     }
 
@@ -4810,7 +4810,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         // Do the move
-        pageCache.moveFile( a, b, REPLACE_EXISTING );
+        pageCache.renameFile( a, b, REPLACE_EXISTING );
 
         // Then verify that the old random data we put in 'b' has been replaced with the contents of 'a'
         verifyRecordsInFile( b, recordCount );
@@ -4824,7 +4824,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
         // File 'a' should canonicalise from 'a/poke/..' to 'a', which is a file that exists.
         // Thus, this should not throw a NoSuchFileException.
-        pageCache.moveFile( a, b );
+        pageCache.renameFile( a, b );
     }
 
     @Test
@@ -4835,6 +4835,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
         // File 'b' should canonicalise from 'b/poke/..' to 'b', which is a file that doesn't exists.
         // Thus, this should not throw a FileAlreadyExistsException.
-        pageCache.moveFile( a, b );
+        pageCache.renameFile( a, b );
     }
 }

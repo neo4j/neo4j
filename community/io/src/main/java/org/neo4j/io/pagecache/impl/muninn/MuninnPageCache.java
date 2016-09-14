@@ -400,7 +400,7 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized void moveFile( File sourceFile, File targetFile, CopyOption... copyOptions )
+    public synchronized void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions )
             throws IOException
     {
         sourceFile = sourceFile.getCanonicalFile();

@@ -117,11 +117,11 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
-    public void moveFile( File sourceFile, File targetFile, CopyOption... copyOptions )
+    public void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions )
             throws IOException
     {
         adversary.injectFailure( CannotMoveMappedFileException.class, FileAlreadyExistsException.class,
                 IOException.class, SecurityException.class );
-        delegate.moveFile( sourceFile, targetFile, copyOptions );
+        delegate.renameFile( sourceFile, targetFile, copyOptions );
     }
 }
