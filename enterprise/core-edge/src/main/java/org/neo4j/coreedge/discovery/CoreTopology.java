@@ -21,6 +21,7 @@ package org.neo4j.coreedge.discovery;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,10 +38,9 @@ public class CoreTopology
 
     public CoreTopology( ClusterId clusterId, boolean canBeBootstrapped, Map<MemberId, CoreAddresses> coreMembers )
     {
-
         this.clusterId = clusterId;
         this.canBeBootstrapped = canBeBootstrapped;
-        this.coreMembers = coreMembers;
+        this.coreMembers = new HashMap<>( coreMembers );
     }
 
     public Set<MemberId> members()
