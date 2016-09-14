@@ -26,6 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -67,12 +68,26 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class ActiveDirectoryAuthenticationIT
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(), getSettingsFunction() );
+    public Neo4jWithSocket server =
+            new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), asSettings( getSettingsFunction() ) );
 
     private void restartNeo4jServerWithOverriddenSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
             throws IOException
     {
-        server.restartDatabase( overrideSettingsFunction );
+        server.shutdownDatabase();
+        server.ensureDatabase( asSettings( overrideSettingsFunction ) );
+    }
+
+    private Consumer<Map<String,String>> asSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
+    {
+        return settings -> {
+            Map<Setting<?>,String> o = new LinkedHashMap<>();
+            overrideSettingsFunction.accept( o );
+            for ( Setting key : o.keySet() )
+            {
+                settings.put( key.name(), o.get( key ) );
+            }
+        };
     }
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
