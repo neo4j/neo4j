@@ -132,22 +132,18 @@ public class InternalJettyServletRequest extends Request
     private final String method;
     private final InternalJettyServletResponse response;
 
-    /** Optional, another HttpServletRequest to use to pull metadata, like remote address and port, out of. */
-    private HttpServletRequest outerRequest;
+    /** Contains metadata for the request, for example remote address and port. */
+    private final RequestData requestData;
 
-    public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res ) throws UnsupportedEncodingException
+    public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res,
+            RequestData requestData ) throws UnsupportedEncodingException
     {
-        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, StandardCharsets.UTF_8.name(), res );
+        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON,
+                StandardCharsets.UTF_8.name(), res, requestData );
     }
 
-    public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res, HttpServletRequest outerReq ) throws UnsupportedEncodingException
-    {
-        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, StandardCharsets.UTF_8.name(), res);
-        this.outerRequest = outerReq;
-    }
-
-    public InternalJettyServletRequest( String method, HttpURI uri, String body, Cookie[] cookies, String contentType, String encoding, InternalJettyServletResponse res )
-            throws UnsupportedEncodingException
+    public InternalJettyServletRequest( String method, HttpURI uri, String body, Cookie[] cookies, String contentType,
+            String encoding, InternalJettyServletResponse res, RequestData requestData ) throws UnsupportedEncodingException
     {
         super( null, null );
 
@@ -158,6 +154,7 @@ public class InternalJettyServletRequest extends Request
         this.cookies = cookies;
         this.method = method;
         this.response = res;
+        this.requestData = requestData;
 
         this.headers = new HashMap<>();
 
@@ -213,49 +210,49 @@ public class InternalJettyServletRequest extends Request
     @Override
     public String getRemoteAddr()
     {
-        return outerRequest == null ? null : outerRequest.getRemoteAddr();
+        return requestData.remoteAddress;
     }
 
     @Override
     public String getRemoteHost()
     {
-        return outerRequest == null ? null : outerRequest.getRemoteHost();
+        return requestData.remoteHost;
     }
 
     @Override
     public boolean isSecure()
     {
-        return outerRequest != null && outerRequest.isSecure();
+        return requestData.isSecure;
     }
 
     @Override
     public int getRemotePort()
     {
-        return outerRequest == null ? -1 : outerRequest.getRemotePort();
+        return requestData.remotePort;
     }
 
     @Override
     public String getLocalName()
     {
-        return outerRequest == null ? null : outerRequest.getLocalName();
+        return requestData.localName;
     }
 
     @Override
     public String getLocalAddr()
     {
-        return outerRequest == null ? null : outerRequest.getLocalAddr();
+        return requestData.localAddress;
     }
 
     @Override
     public int getLocalPort()
     {
-        return outerRequest == null ? -1 : outerRequest.getLocalPort();
+        return requestData.localPort;
     }
 
     @Override
     public String getAuthType()
     {
-        return outerRequest == null ? null : outerRequest.getAuthType();
+        return requestData.authType;
     }
 
     @Override
@@ -360,5 +357,51 @@ public class InternalJettyServletRequest extends Request
     public HttpChannelState getHttpChannelState()
     {
         return DUMMY_HTTP_CHANNEL_STATE;
+    }
+
+    public static class RequestData
+    {
+        public final String remoteAddress;
+        public final String remoteHost;
+        public final boolean isSecure;
+        public final int remotePort;
+        public final String localName;
+        public final String localAddress;
+        public final int localPort;
+        public final String authType;
+
+        public RequestData(
+                String remoteAddress,
+                String remoteHost,
+                boolean isSecure,
+                int remotePort,
+                String localName,
+                String localAddress,
+                int localPort,
+                String authType
+        ) {
+            this.remoteAddress = remoteAddress;
+            this.remoteHost = remoteHost;
+            this.isSecure = isSecure;
+            this.remotePort = remotePort;
+            this.localName = localName;
+            this.localAddress = localAddress;
+            this.localPort = localPort;
+            this.authType = authType;
+        }
+
+        public static RequestData from( HttpServletRequest req )
+        {
+            return new RequestData(
+                    req.getRemoteAddr(),
+                    req.getRemoteHost(),
+                    req.isSecure(),
+                    req.getRemotePort(),
+                    req.getLocalName(),
+                    req.getLocalAddr(),
+                    req.getLocalPort(),
+                    req.getAuthType()
+                );
+        }
     }
 }
