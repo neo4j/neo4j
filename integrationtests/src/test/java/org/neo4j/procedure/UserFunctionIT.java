@@ -65,6 +65,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.System.lineSeparator;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -676,6 +677,47 @@ public class UserFunctionIT
         // Then
         assertThat( res.next().get("result"), equalTo( "another string,1337,2.72,false" ) );
         assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldListAllFunctions() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL dbms.functions()" );
+
+        String expected =
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+" + lineSeparator() +
+        "| name                                                | signature                                                                                                                                                    | description             |" + lineSeparator() +
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+" + lineSeparator() +
+        "| 'org.neo4j.procedure.avgDoubleList'                 | 'org.neo4j.procedure.avgDoubleList(someValue :: LIST? OF FLOAT?) :: (FLOAT?)'                                                                                | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.avgNumberList'                 | 'org.neo4j.procedure.avgNumberList(someValue :: LIST? OF NUMBER?) :: (FLOAT?)'                                                                               | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.defaultValues'                 | 'org.neo4j.procedure.defaultValues(string = a string :: STRING?, integer = 42 :: INTEGER?, float = 3.14 :: FLOAT?, boolean = true :: BOOLEAN?) :: (STRING?)' | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.delegatingFunction'            | 'org.neo4j.procedure.delegatingFunction(someValue :: INTEGER?) :: (INTEGER?)'                                                                                | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.genericArguments'              | 'org.neo4j.procedure.genericArguments(strings :: LIST? OF LIST? OF STRING?, longs :: LIST? OF LIST? OF LIST? OF INTEGER?) :: (INTEGER?)'                     | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.indexOutOfBounds'              | 'org.neo4j.procedure.indexOutOfBounds() :: (INTEGER?)'                                                                                                       | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.integrationTestMe'             | 'org.neo4j.procedure.integrationTestMe() :: (INTEGER?)'                                                                                                      | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.listCoolPeopleInDatabase'      | 'org.neo4j.procedure.listCoolPeopleInDatabase() :: (LIST? OF ANY?)'                                                                                          | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.logAround'                     | 'org.neo4j.procedure.logAround() :: (INTEGER?)'                                                                                                              | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.mapArgument'                   | 'org.neo4j.procedure.mapArgument(map :: MAP?) :: (INTEGER?)'                                                                                                 | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.node'                          | 'org.neo4j.procedure.node(id :: INTEGER?) :: (NODE?)'                                                                                                        | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.nodeListArgument'              | 'org.neo4j.procedure.nodeListArgument(nodes :: LIST? OF NODE?) :: (INTEGER?)'                                                                                | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.nodePaths'                     | 'org.neo4j.procedure.nodePaths(someValue :: NODE?) :: (PATH?)'                                                                                               | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.nodeWithDescription'           | 'org.neo4j.procedure.nodeWithDescription(someValue :: NODE?) :: (NODE?)'                                                                                     | 'This is a description' |" + lineSeparator() +
+        "| 'org.neo4j.procedure.readOnlyCallingWriteFunction'  | 'org.neo4j.procedure.readOnlyCallingWriteFunction() :: (NODE?)'                                                                                              | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.readOnlyCallingWriteProcedure' | 'org.neo4j.procedure.readOnlyCallingWriteProcedure() :: (INTEGER?)'                                                                                          | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.readOnlyTryingToWrite'         | 'org.neo4j.procedure.readOnlyTryingToWrite() :: (NODE?)'                                                                                                     | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.readOnlyTryingToWriteSchema'   | 'org.neo4j.procedure.readOnlyTryingToWriteSchema() :: (STRING?)'                                                                                             | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.recursiveSum'                  | 'org.neo4j.procedure.recursiveSum(someValue :: INTEGER?) :: (INTEGER?)'                                                                                      | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.shutdown'                      | 'org.neo4j.procedure.shutdown() :: (STRING?)'                                                                                                                | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.simpleArgument'                | 'org.neo4j.procedure.simpleArgument(someValue :: INTEGER?) :: (INTEGER?)'                                                                                    | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.squareDouble'                  | 'org.neo4j.procedure.squareDouble(someValue :: FLOAT?) :: (FLOAT?)'                                                                                          | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.squareLong'                    | 'org.neo4j.procedure.squareLong(someValue :: INTEGER?) :: (INTEGER?)'                                                                                        | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.throwsExceptionInStream'       | 'org.neo4j.procedure.throwsExceptionInStream() :: (INTEGER?)'                                                                                                | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.unsupportedFunction'           | 'org.neo4j.procedure.unsupportedFunction() :: (STRING?)'                                                                                                     | ''                      |" + lineSeparator() +
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+" + lineSeparator() +
+        "25 rows" + lineSeparator();
+
+        assertThat(res.resultAsString(), equalTo(expected.replaceAll( "'", "\"" )));
     }
 
     @Before

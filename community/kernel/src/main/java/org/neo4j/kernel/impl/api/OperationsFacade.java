@@ -558,6 +558,13 @@ public class OperationsFacade
     }
 
     @Override
+    public Set<UserFunctionSignature> functionsGetAll()
+    {
+        statement.assertOpen();
+        return procedures.getAllFunctions();
+    }
+
+    @Override
     public Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException
     {
         return callFunction( name, input );

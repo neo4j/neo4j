@@ -55,7 +55,7 @@ public class UserFunctionsTest
     private final CallableUserFunction function = function( signature );
 
     @Test
-    public void shouldGetRegisteredProcedure() throws Throwable
+    public void shouldGetRegisteredFunction() throws Throwable
     {
         // When
         procs.register( function );
@@ -65,7 +65,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldGetAllRegisteredProcedures() throws Throwable
+    public void shouldGetAllRegisteredFunctions() throws Throwable
     {
         // When
         procs.register( function( functionSignature( "org", "myproc1" ).out(Neo4jTypes.NTAny).build() ) );
@@ -81,7 +81,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldCallRegisteredProcedure() throws Throwable
+    public void shouldCallRegisteredFunction() throws Throwable
     {
         // Given
         procs.register( function );
@@ -96,7 +96,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldNotAllowCallingNonExistingProcedure() throws Throwable
+    public void shouldNotAllowCallingNonExistingFunction() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -125,7 +125,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldSignalNonExistingProcedure() throws Throwable
+    public void shouldSignalNonExistingFunction() throws Throwable
     {
         // When
         assertThat(procs.function( signature.name() ), is( Optional.empty()));

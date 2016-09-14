@@ -561,6 +561,9 @@ public interface ReadOperations
     Optional<UserFunctionSignature> functionGet( QualifiedName name );
 
     /** Fetch all registered procedures */
+    Set<UserFunctionSignature> functionsGetAll();
+
+    /** Fetch all registered procedures */
     Set<ProcedureSignature> proceduresGetAll();
 
     /** Invoke a read-only procedure by name */
