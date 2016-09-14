@@ -102,35 +102,39 @@ public class BuiltInProcedures
         tx.acquireStatement().queryRegistration().setMetaData( data );
     }
 
-    @Procedure( name = "dbms.listTransactions", mode = DBMS )
+    /*
+    This surface is hidden in 3.1, to possibly be completely removed or reworked later
+    ==================================================================================
+     */
+    //@Procedure( name = "dbms.listTransactions", mode = DBMS )
     public Stream<TransactionResult> listTransactions()
             throws InvalidArgumentsException, IOException
     {
         ensureAdminEnterpriseAuthSubject();
 
         return countTransactionByUsername(
-            getActiveTransactions()
+            getActiveTransactions( graph.getDependencyResolver() )
                 .stream()
                 .filter( tx -> !tx.terminationReason().isPresent() )
                 .map( tx -> getUsernameFromAccessMode( tx.mode() ) )
         );
     }
 
-    @Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
+    //@Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
         ensureSelfOrAdminEnterpriseAuthSubject( username );
 
-        return terminateTransactionsForValidUser( username );
+        return terminateTransactionsForValidUser( graph.getDependencyResolver(), username, this.tx );
     }
 
-    @Procedure( name = "dbms.listConnections", mode = DBMS )
+    //@Procedure( name = "dbms.listConnections", mode = DBMS )
     public Stream<ConnectionResult> listConnections()
     {
         ensureAdminEnterpriseAuthSubject();
 
-        BoltConnectionTracker boltConnectionTracker = getBoltConnectionTracker();
+        BoltConnectionTracker boltConnectionTracker = getBoltConnectionTracker( graph.getDependencyResolver() );
         return countConnectionsByUsername(
             boltConnectionTracker
                 .getActiveConnections()
@@ -140,14 +144,18 @@ public class BuiltInProcedures
         );
     }
 
-    @Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
+    //@Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException
     {
         ensureSelfOrAdminEnterpriseAuthSubject( username );
 
-        return terminateConnectionsForValidUser( username );
+        return terminateConnectionsForValidUser( graph.getDependencyResolver(), username );
     }
+
+    /*
+    ==================================================================================
+     */
 
     @Description( "List all queries currently executing at this instance that are visible to the user." )
     @Procedure( name = "dbms.listQueries", mode = DBMS )
@@ -222,7 +230,7 @@ public class BuiltInProcedures
             Function<KernelTransactionHandle,Stream<T>> selector
     )
     {
-        return getActiveTransactions()
+        return getActiveTransactions( graph.getDependencyResolver() )
             .stream()
             .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
             .collect( toSet() );
@@ -260,20 +268,23 @@ public class BuiltInProcedures
 
     // ----------------- helpers ---------------------
 
-    private Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
+    public static Stream<TransactionTerminationResult> terminateTransactionsForValidUser(
+            DependencyResolver dependencyResolver, String username, KernelTransaction currentTx )
     {
-        long terminatedCount = getActiveTransactions()
+        long terminatedCount = getActiveTransactions( dependencyResolver )
             .stream()
-            .filter( tx -> getUsernameFromAccessMode( tx.mode() ).equals( username ) && !tx.isUnderlyingTransaction( this.tx ) )
+            .filter( tx -> getUsernameFromAccessMode( tx.mode() ).equals( username ) &&
+                            !tx.isUnderlyingTransaction( currentTx ) )
             .map( tx -> tx.markForTermination( Status.Transaction.Terminated ) )
             .filter( marked -> marked )
             .count();
         return Stream.of( new TransactionTerminationResult( username, terminatedCount ) );
     }
 
-    private Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
+    public static Stream<ConnectionResult> terminateConnectionsForValidUser(
+            DependencyResolver dependencyResolver, String username )
     {
-        Long killCount = getBoltConnectionTracker()
+        Long killCount = getBoltConnectionTracker( dependencyResolver )
             .getActiveConnections( username )
             .stream()
             .map( conn -> { conn.terminate(); return true; } )
@@ -281,17 +292,17 @@ public class BuiltInProcedures
         return Stream.of( new ConnectionResult( username, killCount ) );
     }
 
-    private Set<KernelTransactionHandle> getActiveTransactions()
+    public static Set<KernelTransactionHandle> getActiveTransactions( DependencyResolver dependencyResolver )
     {
-        return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
+        return dependencyResolver.resolveDependency( KernelTransactions.class ).activeTransactions();
     }
 
-    private BoltConnectionTracker getBoltConnectionTracker()
+    public static BoltConnectionTracker getBoltConnectionTracker( DependencyResolver dependencyResolver )
     {
-        return graph.getDependencyResolver().resolveDependency( BoltConnectionTracker.class );
+        return dependencyResolver.resolveDependency( BoltConnectionTracker.class );
     }
 
-    private Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
+    public static Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
     {
         return usernames
             .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
@@ -301,7 +312,7 @@ public class BuiltInProcedures
         );
     }
 
-    private Stream<ConnectionResult> countConnectionsByUsername( Stream<String> usernames )
+    public static Stream<ConnectionResult> countConnectionsByUsername( Stream<String> usernames )
     {
         return usernames
             .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )

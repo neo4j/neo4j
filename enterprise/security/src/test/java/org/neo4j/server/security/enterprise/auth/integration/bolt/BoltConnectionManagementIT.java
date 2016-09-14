@@ -73,7 +73,7 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-@RunWith( Parameterized.class )
+//@RunWith( Parameterized.class )
 public class BoltConnectionManagementIT
 {
     @Before
@@ -150,9 +150,14 @@ public class BoltConnectionManagementIT
                 } );
     }
 
+    /*
+    All surface tested here is hidden in 3.1, to possibly be completely removed or reworked later
+    =============================================================================================
+     */
+
     // --------------- list connections -------------------
 
-    @Test
+    //@Test
     public void shouldListOwnConnection() throws Throwable
     {
         // When
@@ -167,7 +172,7 @@ public class BoltConnectionManagementIT
         assertTrue( result.get( "neo4j" ) == 1L );
     }
 
-    @Test
+    //@Test
     public void shouldListAllConnections() throws Throwable
     {
         // When
@@ -185,7 +190,7 @@ public class BoltConnectionManagementIT
         assertTrue( result.get( "Igor" ) == 1L );
     }
 
-    @Test
+    //@Test
     public void shouldNotListConnectionsIfNotAdmin() throws Throwable
     {
         // When
@@ -201,7 +206,7 @@ public class BoltConnectionManagementIT
 
     // --------------- terminate connections -------------------
 
-    @Test
+    //@Test
     public void shouldTerminateConnectionForUser() throws Throwable
     {
         // When
@@ -225,7 +230,7 @@ public class BoltConnectionManagementIT
         verifyConnectionHasTerminated( user );
     }
 
-    @Test
+    //@Test
     public void shouldNotFailWhenTerminatingConnectionsForUserWithNoConnections() throws Throwable
     {
         // When
@@ -239,7 +244,7 @@ public class BoltConnectionManagementIT
         assertTrue( terminationResult.get( "Igor" ) == 0L );
     }
 
-    @Test
+    //@Test
     public void shouldFailWhenTerminatingConnectionsForNonExistentUser() throws Throwable
     {
         // When
@@ -252,7 +257,7 @@ public class BoltConnectionManagementIT
                 "User 'NonExistentUser' does not exist." ) ) );
     }
 
-    @Test
+    //@Test
     public void shouldFailWhenTerminatingConnectionsByNonAdmin() throws Throwable
     {
         // When
@@ -264,27 +269,27 @@ public class BoltConnectionManagementIT
         assertFailTerminateConnectionForUser( user, "" );
     }
 
-    @Test
+    //@Test
     public void shouldTerminateOwnConnectionIfAdmin() throws Throwable
     {
         assertTerminateOwnConnection( admin, "neo4j" );
     }
 
-    @Test
+    //@Test
     public void shouldTerminateOwnConnectionsIfAdmin() throws Throwable
     {
         authenticate( user, "neo4j", "123", null );
         assertTerminateOwnConnections( admin, user, "neo4j" );
     }
 
-    @Test
+    //@Test
     public void shouldTerminateOwnConnectionIfNonAdmin() throws Throwable
     {
         authenticate( user, "Igor", "123", null );
         assertTerminateOwnConnection( user, "Igor" );
     }
 
-    @Test
+    //@Test
     public void shouldTerminateOwnConnectionsIfNonAdmin() throws Throwable
     {
         // Given

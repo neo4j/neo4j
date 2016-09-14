@@ -39,12 +39,16 @@ import java.util.stream.Stream;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
@@ -69,6 +73,7 @@ import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
@@ -451,14 +456,39 @@ public abstract class ProcedureInteractionTestBase<S>
 
         assertEmpty( adminSubject, "CALL " + format(procedure, neo.nameOf( subject ) ) );
 
-        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
+        Map<String,Long> transactionsByUser = countTransactionsByUsername();
+
+        assertThat( transactionsByUser.get( neo.nameOf( subject ) ), equalTo( null ) );
 
         latch.finishAndWaitForAllToFinish();
 
         userThread.closeAndAssertTransactionTermination();
 
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
+    }
+
+    private Map<String,Long> countTransactionsByUsername()
+    {
+        return BuiltInProcedures.countTransactionByUsername(
+                    BuiltInProcedures.getActiveTransactions(
+                            neo.getLocalGraph().getDependencyResolver()
+                    ).stream()
+                            .filter( tx -> !tx.terminationReason().isPresent() )
+                            .map( tx -> getUsernameFromAccessMode( tx.mode() ) )
+                ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
+    }
+
+    protected Map<String,Long> countBoltConnectionsByUsername()
+    {
+        BoltConnectionTracker boltConnectionTracker = BuiltInProcedures.getBoltConnectionTracker(
+                neo.getLocalGraph().getDependencyResolver() );
+        return BuiltInProcedures.countConnectionsByUsername(
+                boltConnectionTracker
+                        .getActiveConnections()
+                        .stream()
+                        .filter( session -> !session.hasTerminated() )
+                        .map( ManagedBoltStateMachine::owner )
+                ).collect( Collectors.toMap( r -> r.username, r -> r.connectionCount ) );
     }
 
     @SuppressWarnings( "unchecked" )

@@ -70,16 +70,20 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
 
+    /*
+    This surface is hidden in 3.1, to possibly be completely removed or reworked later
+    ==================================================================================
+     */
     //---------- list running transactions -----------
 
-    @Test
+    //@Test
     public void shouldListSelfTransaction()
     {
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
                 r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
     }
 
-    @Test
+    //@Test
     public void shouldNotListTransactionsIfNotAdmin()
     {
         assertFail( noneSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
@@ -88,7 +92,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertFail( schemaSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
     }
 
-    @Test
+    //@Test
     public void shouldListTransactions() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
@@ -109,7 +113,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         write2.closeAndAssertSuccess();
     }
 
-    @Test
+    //@Test
     public void shouldListRestrictedTransaction()
     {
         final DoubleLatch doubleLatch = new DoubleLatch( 2 );
@@ -129,6 +133,10 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             doubleLatch.finishAndWaitForAllToFinish();
         }
     }
+
+    /*
+    ==================================================================================
+     */
 
     //---------- list running queries -----------
 
@@ -539,9 +547,14 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                         "less than 2048, got 3090" );
     }
 
+    /*
+    This surface is hidden in 3.1, to possibly be completely removed or reworked later
+    ==================================================================================
+     */
+
     //---------- terminate transactions for user -----------
 
-    @Test
+    //@Test
     public void shouldTerminateTransactionForUser() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 2 );
@@ -562,7 +575,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }
 
-    @Test
+    //@Test
     public void shouldTerminateOnlyGivenUsersTransaction() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
@@ -589,7 +602,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 r -> assertKeyIs( r, "name", "writeSubject-node" ) );
     }
 
-    @Test
+    //@Test
     public void shouldTerminateAllTransactionsForGivenUser() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3 );
@@ -614,7 +627,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }
 
-    @Test
+    //@Test
     public void shouldNotTerminateTerminationTransaction() throws InterruptedException, ExecutionException
     {
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'adminSubject' )",
@@ -623,13 +636,13 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "readSubject", "0" ) ) );
     }
 
-    @Test
+    //@Test
     public void shouldTerminateSelfTransactionsExceptTerminationTransactionIfAdmin() throws Throwable
     {
         shouldTerminateSelfTransactionsExceptTerminationTransaction( adminSubject );
     }
 
-    @Test
+    //@Test
     public void shouldTerminateSelfTransactionsExceptTerminationTransactionIfNotAdmin() throws Throwable
     {
         shouldTerminateSelfTransactionsExceptTerminationTransaction( writeSubject );
@@ -654,14 +667,14 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }
 
-    @Test
+    //@Test
     public void shouldNotTerminateTransactionsIfNonExistentUser() throws InterruptedException, ExecutionException
     {
         assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( 'Petra' )", "User 'Petra' does not exist" );
         assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( '' )", "User '' does not exist" );
     }
 
-    @Test
+    //@Test
     public void shouldNotTerminateTransactionsIfNotAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 2 );
@@ -685,7 +698,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 r -> assertKeyIs( r, "name", "writeSubject-node" ) );
     }
 
-    @Test
+    //@Test
     public void shouldTerminateRestrictedTransaction()
     {
         final DoubleLatch doubleLatch = new DoubleLatch( 2 );
@@ -706,6 +719,10 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             doubleLatch.finishAndWaitForAllToFinish();
         }
     }
+
+    /*
+    ==================================================================================
+     */
 
     //---------- jetty helpers for serving CSV files -----------
 

@@ -207,14 +207,15 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     public void shouldTerminateConnectionsOnChangeUserPassword() throws Exception
     {
         TransportConnection conn = startBoltSession( "writeSubject", "abc" );
-        assertSuccess( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
-                                     "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount",
-                r -> assertKeyIsMap( r, "username", "connectionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
+
+        Map<String,Long> boltConnections = countBoltConnectionsByUsername();
+        assertThat( boltConnections.get( "writeSubject" ), equalTo( IS_BOLT ? 2L : 1L ) );
 
         assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'writeSubject', 'newPassword' )" );
 
-        assertEmpty( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
-                                   "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount");
+        boltConnections = countBoltConnectionsByUsername();
+        assertThat( boltConnections.get( "writeSubject" ), equalTo( null ) );
+
         conn.disconnect();
     }
 
@@ -352,14 +353,15 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     public void shouldTerminateConnectionsOnUserDeletion() throws Exception
     {
         TransportConnection conn = startBoltSession( "writeSubject", "abc" );
-        assertSuccess( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
-                                     "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount",
-                r -> assertKeyIsMap( r, "username", "connectionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
+
+        Map<String,Long> boltConnections = countBoltConnectionsByUsername();
+        assertThat( boltConnections.get( "writeSubject" ), equalTo( IS_BOLT ? 2L : 1L ) );
 
         assertEmpty( adminSubject, "CALL dbms.security.deleteUser( 'writeSubject' )" );
 
-        assertEmpty( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
-                                   "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount");
+        boltConnections = countBoltConnectionsByUsername();
+        assertThat( boltConnections.get( "writeSubject" ), equalTo( null ) );
+
         conn.disconnect();
     }
 
@@ -411,14 +413,15 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     public void shouldTerminateConnectionsOnUserSuspension() throws Exception
     {
         TransportConnection conn = startBoltSession( "writeSubject", "abc" );
-        assertSuccess( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
-                                     "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount",
-                r -> assertKeyIsMap( r, "username", "connectionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
+
+        Map<String,Long> boltConnections = countBoltConnectionsByUsername();
+        assertThat( boltConnections.get( "writeSubject" ), equalTo( IS_BOLT ? 2L : 1L ) );
 
         assertEmpty( adminSubject, "CALL dbms.security.suspendUser( 'writeSubject' )" );
 
-        assertEmpty( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
-                                   "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount");
+        boltConnections = countBoltConnectionsByUsername();
+        assertThat( boltConnections.get( "writeSubject" ), equalTo( null ) );
+
         conn.disconnect();
     }
 
