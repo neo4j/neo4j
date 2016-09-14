@@ -101,7 +101,7 @@ public interface PageSwapperFactory
     void syncDevice() throws IOException;
 
     /**
-     * Move the file by the given source file name, to the path indicated by the given target file name.
+     * Rename the given source file given target file name, effectively moving the file from source to target.
      *
      * The provided list of {@link CopyOption CopyOptions} can be used to modify and influence platform specific
      * behaviour. In particular, {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} may be used to overwrite any
@@ -109,11 +109,11 @@ public interface PageSwapperFactory
      *
      * Implementors are free to assume that neither file name will be mapped by the page cache at the time of the move,
      * and thus the move will see no interference from concurrent IO operations.
-     * @param sourceFile The existing file to move.
+     * @param sourceFile The existing file to rename.
      * @param targetFile The desired new path of the source file. This file should not exist, unless
      * {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} is given as a {@code copyOption}.
      * @param copyOptions Options to modify the behaviour of the move in possibly platform specific ways.
      * @see java.nio.file.Files#move(Path, Path, CopyOption...)
      */
-    void moveUnopenedFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException;
+    void renameUnopenedFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException;
 }

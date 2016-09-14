@@ -407,7 +407,7 @@ public class MuninnPageCache implements PageCache
         targetFile = targetFile.getCanonicalFile();
         throwIfMapped( sourceFile );
         throwIfMapped( targetFile );
-        swapperFactory.moveUnopenedFile( sourceFile, targetFile, copyOptions );
+        swapperFactory.renameUnopenedFile( sourceFile, targetFile, copyOptions );
     }
 
     private void throwIfMapped( File file ) throws IOException
