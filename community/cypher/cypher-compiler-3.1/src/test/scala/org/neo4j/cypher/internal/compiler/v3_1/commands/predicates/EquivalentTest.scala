@@ -130,6 +130,7 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(Array[Int](1, 2, 3), asList(1, 2, 3))
 
   shouldMatch(asList(1, 2, 3), asList(1L, 2L, 3L))
+  shouldMatch(asList(1, 2, 3, null), asList(1L, 2L, 3L, null))
   shouldMatch(Array[Int](1, 2, 3), asList(1L, 2L, 3L))
   shouldMatch(Array[Int](1, 2, 3), asList(1.0D, 2.0D, 3.0D))
   shouldMatch(Array[Any](1, Array[Int](2, 2), 3), asList(1.0D, asList(2.0D, 2.0D), 3.0D))
