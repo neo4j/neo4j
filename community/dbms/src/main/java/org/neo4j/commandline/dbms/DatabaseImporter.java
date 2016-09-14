@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
@@ -31,7 +30,6 @@ import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 class DatabaseImporter implements Importer
 {
@@ -40,12 +38,11 @@ class DatabaseImporter implements Importer
 
     DatabaseImporter( String[] args, Config config ) throws IncorrectUsage
     {
+        this.config = config;
         Args parsedArgs = Args.parse( args );
-        String database;
 
         try
         {
-            database = parsedArgs.interpretOption( "database", Converters.mandatory(), s -> s );
             this.from = parsedArgs.interpretOption( "from", Converters.mandatory(), Converters.toFile(),
                     Validators.CONTAINS_EXISTING_DATABASE );
         }
@@ -53,8 +50,6 @@ class DatabaseImporter implements Importer
         {
             throw new IncorrectUsage( e.getMessage() );
         }
-
-        this.config = config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), database ) );
     }
 
     @Override

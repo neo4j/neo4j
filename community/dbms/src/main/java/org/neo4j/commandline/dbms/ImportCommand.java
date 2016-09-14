@@ -19,10 +19,13 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -32,6 +35,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
@@ -39,6 +43,8 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 public class ImportCommand implements AdminCommand
 {
+    private String database;
+
     public static class Provider extends AdminCommand.Provider
     {
         public Provider()
@@ -49,7 +55,7 @@ public class ImportCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "--mode=<mode> --database=<database-name> --from=<source-directory>" );
+            return Optional.of( "--mode=<mode> --database=<database-name> --from=<source>" );
         }
 
         @Override
@@ -81,11 +87,15 @@ public class ImportCommand implements AdminCommand
     {
         Args parsedArgs = Args.parse( args );
         String mode;
+        File additionalConfigFile;
 
         try
         {
             mode = parsedArgs
                     .interpretOption( "mode", Converters.mandatory(), s -> s, Validators.inList( allowedModes ) );
+            this.database = parsedArgs.interpretOption( "database", Converters.mandatory(), s -> s );
+            additionalConfigFile =
+                    parsedArgs.interpretOption( "additional-config", Converters.optional(), Converters.toFile() );
         }
         catch ( IllegalArgumentException e )
         {
@@ -94,7 +104,8 @@ public class ImportCommand implements AdminCommand
 
         try
         {
-            Config config = loadNeo4jConfig( homeDir, configDir );
+            Config config =
+                    loadNeo4jConfig( homeDir, configDir, this.database, loadAdditionalConfig( additionalConfigFile ) );
             Importer importer;
 
             switch ( mode )
@@ -117,19 +128,34 @@ public class ImportCommand implements AdminCommand
         }
     }
 
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir )
+    private Map<String,String> loadAdditionalConfig( File additionalConfigFile )
+    {
+        if ( additionalConfigFile == null )
+            return new HashMap<>();
+
+        try
+        {
+            return MapUtil.load( additionalConfigFile );
+        }
+        catch ( IOException e )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
+        }
+    }
+
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
+            Map<String,String> additionalConfig )
     {
         ConfigLoader configLoader = new ConfigLoader( settings() );
-
-        return configLoader.loadConfig( Optional.of( homeDir.toFile() ),
+        Config config = configLoader.loadConfig( Optional.of( homeDir.toFile() ),
                 Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
+        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
+        return config.with( additionalConfig );
     }
 
     private static List<Class<?>> settings()
     {
-        List<Class<?>> settings = new ArrayList<>();
-        settings.add( GraphDatabaseSettings.class );
-        settings.add( DatabaseManagementSystemSettings.class );
-        return settings;
+        return Arrays.asList( GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
     }
 }
