@@ -21,11 +21,11 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
-import org.apache.shiro.authz.SimpleRole;
-import org.apache.shiro.authz.permission.RolePermissionResolver;
+import org.apache.shiro.cache.Cache;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
 import org.apache.shiro.realm.ldap.JndiLdapRealm;
 import org.apache.shiro.realm.ldap.LdapContextFactory;
@@ -36,14 +36,12 @@ import org.apache.shiro.util.CollectionUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.naming.CommunicationException;
@@ -66,6 +64,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
 
 import static java.lang.String.format;
+import org.neo4j.server.security.auth.Credential;
 
 /**
  * Shiro realm for LDAP based on configuration settings
@@ -87,8 +86,6 @@ public class LdapRealm extends JndiLdapRealm
     private Map<String,Collection<String>> groupToRoleMapping;
     private final SecurityLog securityLog;
 
-    private Map<String, SimpleAuthorizationInfo> authorizationInfoCache = new ConcurrentHashMap<>();
-
     // Parser regex for group-to-role-mapping
     private static final String KEY_GROUP = "\\s*('(.+)'|\"(.+)\"|(\\S)|(\\S.*\\S))\\s*";
     private static final String VALUE_GROUP = "\\s*(.*)";
@@ -98,20 +95,12 @@ public class LdapRealm extends JndiLdapRealm
     {
         super();
         this.securityLog = securityLog;
-        RolePermissionResolver rolePermissionResolver = roleString ->
-        {
-            SimpleRole role = PredefinedRolesBuilder.roles.get( roleString );
-            if ( role != null )
-            {
-                return role.getPermissions();
-            }
-            else
-            {
-                return Collections.emptyList();
-            }
-        };
-        setRolePermissionResolver( rolePermissionResolver );
+        setRolePermissionResolver( PredefinedRolesBuilder.rolePermissionResolver );
         configureRealm( config );
+        setCredentialsMatcher( new HashedCredentialsMatcher( Credential.DIGEST_ALGO ) );
+        setAuthorizationCachingEnabled( true );
+        boolean authenticationCachingEnabled = config.get( SecuritySettings.ldap_authentication_cache_enabled );
+        setAuthenticationCachingEnabled( authenticationCachingEnabled );
     }
 
     private String withRealm( String template, Object... args )
@@ -166,7 +155,7 @@ public class LdapRealm extends JndiLdapRealm
         try {
             ctx = getLdapContextUsingStartTls( ldapContextFactory, principal, credentials );
 
-            return createAuthenticationInfo(token, principal, credentials, ctx);
+            return createAuthenticationInfo( token, principal, credentials, ctx );
         }
         finally
         {
@@ -249,7 +238,8 @@ public class LdapRealm extends JndiLdapRealm
                 else
                 {
                     // Authorization info is cached during authentication
-                    AuthorizationInfo authorizationInfo = authorizationInfoCache.get( username );
+                    Cache<Object,AuthorizationInfo> authorizationCache = getAuthorizationCache();
+                    AuthorizationInfo authorizationInfo = authorizationCache.get( username );
                     if ( authorizationInfo == null )
                     {
                         // TODO: Do a new LDAP search? But we need to cache the credentials for that...
@@ -285,24 +275,14 @@ public class LdapRealm extends JndiLdapRealm
             cacheAuthorizationInfo( username, roleNames );
         }
 
-        return new ShiroAuthenticationInfo( token.getPrincipal(), token.getCredentials(), getName(),
+        return new ShiroAuthenticationInfo( token.getPrincipal(), (String) token.getCredentials(), getName(),
                 AuthenticationResult.SUCCESS );
-    }
-
-    @Override
-    protected void clearCachedAuthorizationInfo( PrincipalCollection principals )
-    {
-        super.clearCachedAuthorizationInfo( principals );
-
-        String username = (String) getAvailablePrincipal( principals );
-
-        authorizationInfoCache.remove( username );
     }
 
     @Override
     public boolean supports( AuthenticationToken token )
     {
-        return super.supports( token ) && supportsSchemeAndRealm( token );
+        return supportsSchemeAndRealm( token );
     }
 
     private boolean supportsSchemeAndRealm( AuthenticationToken token )
@@ -343,9 +323,9 @@ public class LdapRealm extends JndiLdapRealm
 
     private void cacheAuthorizationInfo( String username, Set<String> roleNames )
     {
-        // Ideally we would like to use the existing authorizationCache in our base class,
-        // but unfortunately it is private to AuthorizingRealm
-        authorizationInfoCache.put( username, new SimpleAuthorizationInfo( roleNames ) );
+        // Use the existing authorizationCache in our base class
+        Cache<Object, AuthorizationInfo> authorizationCache = getAuthorizationCache();
+        authorizationCache.put( username, new SimpleAuthorizationInfo( roleNames ) );
     }
 
     private void configureRealm( Config config )

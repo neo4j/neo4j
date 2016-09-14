@@ -29,20 +29,14 @@ import org.apache.shiro.authc.UnknownAccountException;
 import org.apache.shiro.authc.credential.AllowAllCredentialsMatcher;
 import org.apache.shiro.authc.pam.UnsupportedTokenException;
 import org.apache.shiro.authz.AuthorizationInfo;
-import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
-import org.apache.shiro.authz.SimpleRole;
-import org.apache.shiro.authz.permission.RolePermissionResolver;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -82,7 +76,6 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
     private final boolean authorizationEnabled;
-    private final Map<String,SimpleRole> roles;
     private final JobScheduler jobScheduler;
     private JobScheduler.JobHandle reloadJobHandle;
 
@@ -107,27 +100,12 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
         this.authenticationEnabled = authenticationEnabled;
         this.authorizationEnabled = authorizationEnabled;
         this.jobScheduler = jobScheduler;
-        setAuthenticationCachingEnabled( false );
+        setAuthenticationCachingEnabled( false ); // NOTE: If this is ever changed to true it is not secure to use
+                                                  // AllowAllCredentialsMatcher anymore
         setAuthorizationCachingEnabled( false );
-        setCredentialsMatcher( new AllowAllCredentialsMatcher() );
-        setRolePermissionResolver( new RolePermissionResolver()
-            {
-                @Override
-                public Collection<Permission> resolvePermissionsInRole( String roleString )
-                {
-                    SimpleRole role = roles.get( roleString );
-                    if ( role != null )
-                    {
-                        return role.getPermissions();
-                    }
-                    else
-                    {
-                        return Collections.emptyList();
-                    }
-                }
-            } );
-
-        roles = new PredefinedRolesBuilder().buildRoles();
+        setCredentialsMatcher( new AllowAllCredentialsMatcher() ); // Since we do not cache authentication info we can
+                                                                   // disable the credentials matcher
+        setRolePermissionResolver( PredefinedRolesBuilder.rolePermissionResolver );
     }
 
     private void setUsersAndRoles( ListSnapshot<User> users, ListSnapshot<RoleRecord> roles )
@@ -211,7 +189,7 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
         {
             if ( numberOfRoles() == 0 )
             {
-                for ( String role : roles.keySet() )
+                for ( String role : PredefinedRolesBuilder.roles.keySet() )
                 {
                     newRole( role );
                 }
@@ -337,9 +315,6 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
             break;
         }
 
-        // TODO: This will not work if AuthenticationInfo is cached,
-        // unless you always do SecurityManager.logout properly (which will invalidate the cache)
-        // For REST we may need to connect HttpSessionListener.sessionDestroyed with logout
         if ( user.hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) )
         {
             throw new DisabledAccountException( "User '" + user.name() + "' is suspended." );
@@ -350,7 +325,11 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
             result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
         }
 
-        return new ShiroAuthenticationInfo( user.name(), user.credentials(), getName(), result );
+        // NOTE: We do not cache the authentication info using the Shiro cache manager,
+        // so all authentication request will go through this method.
+        // Hence the credentials matcher is set to AllowAllCredentialsMatcher,
+        // and we do not need to store hashed credentials in the AuthenticationInfo.
+        return new ShiroAuthenticationInfo( user.name(), null, getName(), result );
     }
 
     private int numberOfUsers()

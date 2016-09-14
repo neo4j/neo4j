@@ -100,6 +100,19 @@ public class SecuritySettings
     public static final Setting<String> ldap_user_dn_template =
             setting( "dbms.security.realms.ldap.user_dn_template", STRING, "uid={0},ou=users,dc=example,dc=com" );
 
+    @Description( "Determines if the result of authentication via the LDAP server should be cached or not. " +
+                  "Caching is used to limit the number of LDAP requests that have to be made over the network " +
+                  "for users that have already been authenticated successfully. A user can be authenticated against " +
+                  "an existing cache entry (instead of via an LDAP server) as long as it is alive " +
+                  "(see `dbms.security.realms.auth_cache_ttl`).\n" +
+                  "An important consequence of setting this to `true` than needs to be well understood, is that " +
+                  "Neo4j then needs to cache a hashed version of the credentials in order to perform credentials " +
+                  "matching. This hashing is done using a cryptographic hash function together with a random salt. " +
+                  "Preferably a conscious decision should be made if this method is considered acceptable by " +
+                  "the security standards of the organization in which this Neo4j instance is deployed." )
+    public static final Setting<Boolean> ldap_authentication_cache_enabled =
+            setting( "dbms.security.realms.ldap.authentication_cache_enabled", BOOLEAN, "true" );
+
     @Description( "Perform LDAP search for authorization info using a system account." )
     public static final Setting<Boolean> ldap_authorization_use_system_account =
             setting( "dbms.security.realms.ldap.authorization.use_system_account", BOOLEAN, "false" );
