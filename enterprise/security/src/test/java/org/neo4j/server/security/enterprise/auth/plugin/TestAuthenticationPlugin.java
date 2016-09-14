@@ -55,20 +55,7 @@ public class TestAuthenticationPlugin implements AuthenticationPlugin
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
-            return new AuthenticationInfo()
-            {
-                @Override
-                public Object getPrincipal()
-                {
-                    return "neo4j";
-                }
-
-                @Override
-                public Object getCredentials()
-                {
-                    return null;
-                }
-            };
+            return (AuthenticationInfo) () -> "neo4j";
         }
         return null;
     }

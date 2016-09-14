@@ -25,7 +25,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.server.security.enterprise.auth.SecuritySettings;
+import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthenticationPlugin;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
@@ -41,6 +45,28 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     {
         assertConnectionSucceeds( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm",
                 "plugin-TestAuthenticationPlugin" ) );
+    }
+
+    @Test
+    public void shouldAuthenticateWithTestCachingAuthenticationPlugin() throws Throwable
+    {
+        Map<String,Object> authToken = map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm",
+                "plugin-TestCacheableAuthenticationPlugin" );
+
+        TestCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.set( 0 );
+
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.auth_cache_ttl, "60m" );
+        });
+
+        // When we log in the first time our plugin should get a call
+        assertConnectionSucceeds( authToken );
+        assertThat( TestCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.get(), equalTo( 1 ) );
+
+        // When we log in the second time our plugin should _not_ get a call since authentication info should be cached
+        reconnect();
+        assertConnectionSucceeds( authToken );
+        assertThat( TestCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.get(), equalTo( 1 ) );
     }
 
     @Test

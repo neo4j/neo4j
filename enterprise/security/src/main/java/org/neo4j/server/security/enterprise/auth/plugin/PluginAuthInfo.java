@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthInfo;
 
 public class PluginAuthInfo extends SimpleAccount
 {
@@ -34,6 +35,12 @@ public class PluginAuthInfo extends SimpleAccount
     }
 
     public static PluginAuthInfo create( AuthInfo authInfo, String realmName )
+    {
+        return new PluginAuthInfo( authInfo.getPrincipal(), null, realmName,
+                new LinkedHashSet<>( authInfo.getRoles() ) );
+    }
+
+    public static PluginAuthInfo create( CacheableAuthInfo authInfo, String realmName )
     {
         return new PluginAuthInfo( authInfo.getPrincipal(), authInfo.getCredentials(), realmName,
                 new LinkedHashSet<>( authInfo.getRoles() ) );

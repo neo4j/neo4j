@@ -22,6 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import com.github.benmanes.caffeine.cache.Ticker;
 import org.apache.shiro.cache.CacheManager;
 import org.apache.shiro.realm.Realm;
+import org.slf4j.impl.StaticLoggerBinder;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -70,6 +71,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         List<Realm> realms = new ArrayList<>( 2 );
         SecurityLog securityLog = getSecurityLog( allegedSecurityLog );
+        SecureHasher secureHasher = new SecureHasher();
 
         // We always create the internal realm as it is our only UserManager implementation
         InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
@@ -87,7 +89,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         }
 
         // Load plugin realms if we have any
-        realms.addAll( createPluginRealms( config, logProvider ) );
+        realms.addAll( createPluginRealms( config, logProvider, secureHasher ) );
 
         return new MultiRealmAuthManager( internalRealm, realms, createCacheManager( config ),
                 securityLog, config.get( EnterpriseEditionSettings.security_log_successful_authentication ) );
@@ -118,7 +120,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         return new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity );
     }
 
-    private static List<Realm> createPluginRealms( Config config, LogProvider logProvider )
+    private static List<Realm> createPluginRealms( Config config, LogProvider logProvider, SecureHasher secureHasher )
     {
         List<Realm> realms = new ArrayList<>();
         Set<Class> excludedClasses = new HashSet<>();
@@ -133,7 +135,8 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
             for ( AuthPlugin plugin : authPlugins )
             {
-                PluginRealm pluginRealm = new PluginRealm( plugin, config, logProvider,  Clocks.systemClock() );
+                PluginRealm pluginRealm =
+                        new PluginRealm( plugin, config, logProvider, Clocks.systemClock(), secureHasher );
                 realms.add( pluginRealm );
             }
         }
@@ -151,7 +154,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
                 {
                     // This plugin implements both interfaces, create a combined plugin
                     pluginRealm = new PluginRealm( plugin, (AuthorizationPlugin) plugin, config, logProvider,
-                            Clocks.systemClock() );
+                            Clocks.systemClock(), secureHasher );
 
                     // We need to make sure we do not add a duplicate when the AuthorizationPlugin service gets loaded
                     // so we allow only one instance per combined plugin class
@@ -159,7 +162,8 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
                 }
                 else
                 {
-                    pluginRealm = new PluginRealm( plugin, null, config, logProvider, Clocks.systemClock() );
+                    pluginRealm =
+                            new PluginRealm( plugin, null, config, logProvider, Clocks.systemClock(), secureHasher );
                 }
                 realms.add( pluginRealm );
             }
@@ -174,7 +178,8 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
             {
                 if ( !excludedClasses.contains( plugin.getClass() ) )
                 {
-                    PluginRealm pluginRealm = new PluginRealm( null, plugin, config, logProvider, Clocks.systemClock() );
+                    PluginRealm pluginRealm =
+                            new PluginRealm( null, plugin, config, logProvider, Clocks.systemClock(), secureHasher );
                     realms.add( pluginRealm );
                 }
             }

@@ -23,5 +23,6 @@ public interface AuthToken
 {
     String PRINCIPAL = "principal";
     String CREDENTIALS = "credentials";
+    String REALM = "realm";
     String PARAMETERS = "parameters";
 }

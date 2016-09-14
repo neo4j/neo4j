@@ -19,32 +19,29 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import java.io.Serializable;
 import java.util.Collection;
 
-/**
- * TODO
- */
-public interface AuthInfo extends Serializable
+public interface CacheableAuthInfo extends AuthInfo
 {
     /**
      * TODO
      */
-    Object getPrincipal();
+    Object getCredentials();
 
-    /**
-     * TODO
-     */
-    Collection<String> getRoles();
-
-    static AuthInfo of( Object principal, Collection<String> roles )
+    static CacheableAuthInfo of( Object principal, byte[] credentials, Collection<String> roles )
     {
-        return new AuthInfo()
+        return new CacheableAuthInfo()
         {
             @Override
             public Object getPrincipal()
             {
                 return principal;
+            }
+
+            @Override
+            public byte[] getCredentials()
+            {
+                return credentials;
             }
 
             @Override

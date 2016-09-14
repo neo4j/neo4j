@@ -19,18 +19,17 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthenticationInfo;
 
-public class TestAuthPlugin implements AuthPlugin
+public class TestCacheableAuthenticationPlugin implements AuthenticationPlugin
 {
     @Override
     public String name()
@@ -39,10 +38,12 @@ public class TestAuthPlugin implements AuthPlugin
     }
 
     @Override
-    public AuthInfo getAuthInfo( Map<String,Object> authToken )
+    public AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken )
     {
         String principal;
         String credentials;
+
+        getAuthenticationInfoCallCount.incrementAndGet();
 
         try
         {
@@ -56,7 +57,7 @@ public class TestAuthPlugin implements AuthPlugin
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
-            return new AuthInfo()
+            return new CacheableAuthenticationInfo()
             {
                 @Override
                 public Object getPrincipal()
@@ -65,9 +66,9 @@ public class TestAuthPlugin implements AuthPlugin
                 }
 
                 @Override
-                public Collection<String> getRoles()
+                public byte[] getCredentials()
                 {
-                    return Collections.singleton( PredefinedRoles.READER );
+                    return credentials.getBytes();
                 }
             };
         }
@@ -75,22 +76,29 @@ public class TestAuthPlugin implements AuthPlugin
     }
 
     @Override
-    public void initialize( RealmOperations ignore ) throws Throwable
+    public void initialize( RealmOperations realmOperations ) throws Throwable
     {
+        realmOperations.setAuthenticationCachingEnabled( true );
     }
 
     @Override
     public void start() throws Throwable
     {
+
     }
 
     @Override
     public void stop() throws Throwable
     {
+
     }
 
     @Override
     public void shutdown() throws Throwable
     {
+
     }
+
+    // For testing purposes
+    public static AtomicInteger getAuthenticationInfoCallCount = new AtomicInteger( 0 );
 }

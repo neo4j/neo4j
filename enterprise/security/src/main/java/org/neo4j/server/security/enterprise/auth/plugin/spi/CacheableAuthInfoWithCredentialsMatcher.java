@@ -19,32 +19,40 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import java.io.Serializable;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * TODO
  */
-public interface AuthInfo extends Serializable
+public interface CacheableAuthInfoWithCredentialsMatcher extends AuthInfo
 {
-    /**
-     * TODO
-     */
-    Object getPrincipal();
-
-    /**
-     * TODO
-     */
-    Collection<String> getRoles();
-
-    static AuthInfo of( Object principal, Collection<String> roles )
+    interface CredentialsMatcher
     {
-        return new AuthInfo()
+        boolean doCredentialsMatch( Map<String,Object> authToken );
+    }
+
+    /**
+     * TODO
+     */
+    //Predicate<Map<String,Object>> getCredentialsMatcher();
+    CredentialsMatcher getCredentialsMatcher();
+
+    static CacheableAuthInfoWithCredentialsMatcher of( Object principal, CredentialsMatcher credentialsMatcher,
+            Collection<String> roles )
+    {
+        return new CacheableAuthInfoWithCredentialsMatcher()
         {
             @Override
             public Object getPrincipal()
             {
                 return principal;
+            }
+
+            @Override
+            public CredentialsMatcher getCredentialsMatcher()
+            {
+                return credentialsMatcher;
             }
 
             @Override

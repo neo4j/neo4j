@@ -64,7 +64,7 @@ public class LdapGroupHasUsersAuthPlugin implements AuthPlugin
             LdapContext ctx = authenticate( username, password );
             Set<String> roles = authorize( ctx, username );
 
-            return AuthInfo.of( username, null, roles );
+            return AuthInfo.of( username, roles );
         }
         catch ( NamingException e )
         {

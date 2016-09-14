@@ -31,44 +31,8 @@ public interface AuthenticationInfo extends Serializable
      */
     Object getPrincipal();
 
-    /**
-     * TODO
-     */
-    Object getCredentials();
-
-    static AuthenticationInfo of( Object principal, Object credentials )
-    {
-        return new AuthenticationInfo()
-        {
-            @Override
-            public Object getPrincipal()
-            {
-                return principal;
-            }
-
-            @Override
-            public Object getCredentials()
-            {
-                return credentials;
-            }
-        };
-    }
-
     static AuthenticationInfo of( Object principal )
     {
-        return new AuthenticationInfo()
-        {
-            @Override
-            public Object getPrincipal()
-            {
-                return principal;
-            }
-
-            @Override
-            public Object getCredentials()
-            {
-                return null;
-            }
-        };
+        return (AuthenticationInfo) () -> principal;
     }
 }

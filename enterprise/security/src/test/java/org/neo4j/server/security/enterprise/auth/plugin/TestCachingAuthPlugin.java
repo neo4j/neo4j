@@ -29,8 +29,9 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthInfo;
 
-public class TestAuthPlugin implements AuthPlugin
+public class TestCachingAuthPlugin implements AuthPlugin
 {
     @Override
     public String name()
@@ -56,12 +57,18 @@ public class TestAuthPlugin implements AuthPlugin
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
-            return new AuthInfo()
+            return new CacheableAuthInfo()
             {
                 @Override
                 public Object getPrincipal()
                 {
                     return "neo4j";
+                }
+
+                @Override
+                public byte[] getCredentials()
+                {
+                    return credentials.getBytes();
                 }
 
                 @Override

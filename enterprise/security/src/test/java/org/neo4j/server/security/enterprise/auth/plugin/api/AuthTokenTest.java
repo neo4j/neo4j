@@ -32,6 +32,7 @@ public class AuthTokenTest
         // If you change one of these you need to change the other!
         assertThat( AuthToken.PRINCIPAL, equalTo( org.neo4j.kernel.api.security.AuthToken.PRINCIPAL ) );
         assertThat( AuthToken.CREDENTIALS, equalTo( org.neo4j.kernel.api.security.AuthToken.CREDENTIALS ) );
+        assertThat( AuthToken.REALM, equalTo( org.neo4j.kernel.api.security.AuthToken.REALM_KEY ) );
         assertThat( AuthToken.PARAMETERS, equalTo( org.neo4j.kernel.api.security.AuthToken.PARAMETERS ) );
     }
 }

@@ -58,7 +58,7 @@ public class TestCombinedAuthPlugin implements AuthenticationPlugin, Authorizati
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
-            return AuthenticationInfo.of( "neo4j", null );
+            return AuthenticationInfo.of( "neo4j" );
         }
         return null;
     }

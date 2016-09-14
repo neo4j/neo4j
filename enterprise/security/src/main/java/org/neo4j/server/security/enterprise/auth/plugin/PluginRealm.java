@@ -22,9 +22,9 @@ package org.neo4j.server.security.enterprise.auth.plugin;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
-import org.apache.shiro.authc.credential.AllowAllCredentialsMatcher;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.cache.Cache;
+import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 
@@ -40,12 +40,14 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder;
+import org.neo4j.server.security.enterprise.auth.SecureHasher;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 
 public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
@@ -58,13 +60,18 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
     private AuthPlugin authPlugin;
     private final Log log;
     private final Clock clock;
+    private final SecureHasher secureHasher;
+
     private RealmOperations realmOperations = new PluginRealmOperations();
 
-    public PluginRealm( Config config, LogProvider logProvider, Clock clock )
+    public PluginRealm( Config config, LogProvider logProvider, Clock clock, SecureHasher secureHasher )
     {
         this.config = config;
         this.clock = clock;
-        setCredentialsMatcher( new AllowAllCredentialsMatcher() );
+        this.secureHasher = secureHasher;
+        this.log = logProvider.getLog( getClass() );
+
+        setCredentialsMatcher( new CredentialsMatcher() );
 
         // Synchronize this default value with the javadoc for RealmOperations.setAuthenticationCachingEnabled
         setAuthenticationCachingEnabled( false );
@@ -73,21 +80,21 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         setAuthorizationCachingEnabled( true );
 
         setRolePermissionResolver( PredefinedRolesBuilder.rolePermissionResolver );
-        log = logProvider.getLog( getClass() );
     }
 
     public PluginRealm( AuthenticationPlugin authenticationPlugin, AuthorizationPlugin authorizationPlugin,
-            Config config, LogProvider logProvider, Clock clock )
+            Config config, LogProvider logProvider, Clock clock, SecureHasher secureHasher )
     {
-        this( config, logProvider, clock );
+        this( config, logProvider, clock, secureHasher );
         this.authenticationPlugin = authenticationPlugin;
         this.authorizationPlugin = authorizationPlugin;
         resolvePluginName();
     }
 
-    public PluginRealm( AuthPlugin authPlugin, Config config, LogProvider logProvider, Clock clock )
+    public PluginRealm( AuthPlugin authPlugin, Config config, LogProvider logProvider, Clock clock,
+            SecureHasher secureHasher )
     {
-        this( config, logProvider, clock );
+        this( config, logProvider, clock, secureHasher );
         this.authPlugin = authPlugin;
         resolvePluginName();
     }
@@ -172,7 +179,16 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
                             authenticationPlugin.getAuthenticationInfo( ((ShiroAuthToken) token).getAuthTokenMap() );
                     if ( authenticationInfo != null )
                     {
-                        return PluginAuthenticationInfo.create( authenticationInfo, getName() );
+                        if ( authenticationInfo instanceof CacheableAuthenticationInfo )
+                        {
+                            byte[] credentials = ((CacheableAuthenticationInfo) authenticationInfo).getCredentials();
+                            SimpleHash hashedCredentials = secureHasher.hash( credentials );
+                            return PluginAuthenticationInfo.create( authenticationInfo, hashedCredentials, getName() );
+                        }
+                        else
+                        {
+                            return PluginAuthenticationInfo.create( authenticationInfo, getName() );
+                        }
                     }
                 }
             }
@@ -197,6 +213,13 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
     {
         return getAvailablePrincipal( principals );
     }
+
+    @Override
+    protected Object getAuthenticationCacheKey( AuthenticationToken token )
+    {
+        return token != null ? token.getPrincipal() : null;
+    }
+
 
     @Override
     public boolean supports( AuthenticationToken token )
@@ -279,6 +302,27 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         if ( authPlugin != null )
         {
             authPlugin.shutdown();
+        }
+    }
+
+    private class CredentialsMatcher implements org.apache.shiro.authc.credential.CredentialsMatcher
+    {
+        @Override
+        public boolean doCredentialsMatch( AuthenticationToken token, AuthenticationInfo info )
+        {
+            if ( info.getCredentials() == null )
+            {
+                if ( PluginRealm.this.isAuthenticationCachingEnabled() )
+                {
+                    log.warn( "Authentication caching is enabled in plugin %s but it does not return " +
+                              "cacheable credentials. This configuration is not secure.", getName() );
+                }
+                return true; // Always match if we do not cache credentials
+            }
+            else
+            {
+                return secureHasher.getHashedCredentialsMatcher().doCredentialsMatch( token, info );
+            }
         }
     }
 

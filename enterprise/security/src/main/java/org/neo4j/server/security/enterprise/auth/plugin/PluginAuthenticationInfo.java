@@ -20,8 +20,8 @@
 package org.neo4j.server.security.enterprise.auth.plugin;
 
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
-import org.apache.shiro.subject.PrincipalCollection;
-import org.apache.shiro.subject.SimplePrincipalCollection;
+import org.apache.shiro.crypto.hash.SimpleHash;
+import org.apache.shiro.util.ByteSource;
 
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 
@@ -32,9 +32,21 @@ public class PluginAuthenticationInfo extends SimpleAuthenticationInfo
         super( principal, credentials, realmName );
     }
 
+    public PluginAuthenticationInfo( Object principal, Object hashedCredentials, ByteSource credentialsSalt,
+            String realmName )
+    {
+        super( principal, hashedCredentials, credentialsSalt, realmName );
+    }
+
     public static PluginAuthenticationInfo create( AuthenticationInfo authenticationInfo, String realmName )
     {
-        return new PluginAuthenticationInfo( authenticationInfo.getPrincipal(), authenticationInfo.getCredentials(),
-                realmName );
+        return new PluginAuthenticationInfo( authenticationInfo.getPrincipal(), null, realmName );
+    }
+
+    public static PluginAuthenticationInfo create( AuthenticationInfo authenticationInfo, SimpleHash hashedCredentials,
+            String realmName )
+    {
+        return new PluginAuthenticationInfo( authenticationInfo.getPrincipal(),
+                hashedCredentials.getBytes(), hashedCredentials.getSalt(), realmName );
     }
 }

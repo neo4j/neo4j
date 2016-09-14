@@ -20,12 +20,11 @@
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * TODO
  */
-public interface AuthInfo extends Serializable
+public interface CacheableAuthenticationInfo extends AuthenticationInfo
 {
     /**
      * TODO
@@ -35,11 +34,11 @@ public interface AuthInfo extends Serializable
     /**
      * TODO
      */
-    Collection<String> getRoles();
+    byte[] getCredentials();
 
-    static AuthInfo of( Object principal, Collection<String> roles )
+    static CacheableAuthenticationInfo of( Object principal, byte[] credentials )
     {
-        return new AuthInfo()
+        return new CacheableAuthenticationInfo()
         {
             @Override
             public Object getPrincipal()
@@ -48,9 +47,9 @@ public interface AuthInfo extends Serializable
             }
 
             @Override
-            public Collection<String> getRoles()
+            public byte[] getCredentials()
             {
-                return roles;
+                return credentials;
             }
         };
     }
