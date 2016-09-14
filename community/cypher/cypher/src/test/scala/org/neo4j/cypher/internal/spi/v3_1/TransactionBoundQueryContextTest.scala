@@ -87,14 +87,14 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should mark transaction failed if not successful") {
     // GIVEN
     when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
-    val transactionalContext = TransactionalContextWrapperv3_1(createTransactionContext(graph, outerTx))
+    val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`, AccessMode.Static.FULL,
+      statement, null, locker, null, null, null)
+    val transactionalContext = TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = false)
 
     // THEN
-    verify(outerTx).transactionType()
-    verify(outerTx).mode()
     verify(outerTx).failure()
     verify(outerTx).close()
     verifyNoMoreInteractions(outerTx)
