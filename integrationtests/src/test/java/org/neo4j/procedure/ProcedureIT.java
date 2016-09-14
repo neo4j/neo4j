@@ -56,7 +56,6 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.ProcedureGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -1221,7 +1220,7 @@ public class ProcedureIT
         public Log log;
 
         @Context
-        public ProcedureGuard guard;
+        public TerminationGuard guard;
 
         @Context
         public KernelTransaction ktx;

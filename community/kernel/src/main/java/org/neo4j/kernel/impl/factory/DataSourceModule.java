@@ -40,7 +40,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.ProcedureGuard;
+import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -367,7 +367,7 @@ public class DataSourceModule
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );
         procedures.registerComponent( Log.class, ( ctx ) -> proceduresLog );
-        procedures.registerComponent( ProcedureGuard.class, procedureGuard( platform.dependencies ) );
+        procedures.registerComponent( TerminationGuard.class, procedureGuard( platform.dependencies ) );
 
         // Register injected private API components: useful to have available in procedures to access the kernel etc.
         ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir,
@@ -402,13 +402,13 @@ public class DataSourceModule
         return procedures;
     }
 
-    private ComponentRegistry.Provider<ProcedureGuard> procedureGuard( final Dependencies dependencies )
+    private ComponentRegistry.Provider<TerminationGuard> procedureGuard( final Dependencies dependencies )
     {
         Guard guard = dependencies.resolveDependency( Guard.class );
         return (ctx) ->
         {
             KernelTransaction ktx = ctx.get( KERNEL_TRANSACTION );
-            return (ProcedureGuard) () ->
+            return (TerminationGuard) () ->
             {
                 Status reason = ktx.getReasonIfTerminated();
                 if ( reason == null )

@@ -46,7 +46,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.ProcedureGuard;
+import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -972,7 +972,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public static class NeverEndingProcedure {
 
         @Context
-        public ProcedureGuard guard;
+        public TerminationGuard guard;
 
         @Procedure(name = "test.loop")
         public void loop()

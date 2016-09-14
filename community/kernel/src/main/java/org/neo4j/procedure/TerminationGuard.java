@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.procedure;
 
 /**
- * ProcedureGuard allows a long running procedure to check at regular intervals if the surrounding executing
+ * TerminationGuard allows a long running procedure to check at regular intervals if the surrounding executing
  * query has been terminated by the user or a database administrator or was timed out for some other reason.
  *
  */
-public interface ProcedureGuard
+public interface TerminationGuard
 {
     /**
      * Check that the surrounding executing query has not yet been terminated or timed out. Throws an appropriate
