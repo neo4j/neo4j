@@ -26,13 +26,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-
+import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -40,8 +40,9 @@ import static org.junit.Assert.assertTrue;
 
 public class StoreVersionCheckTest
 {
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final TestDirectory directory = TestDirectory.testDirectory( getClass() );
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
@@ -49,8 +50,8 @@ public class StoreVersionCheckTest
     public void shouldFailIfFileDoesNotExist()
     {
         // given
-        File missingFile = new File("/you/will/never/find/me");
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        File missingFile = new File( directory.directory(), "missing-file" );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
 
         // when
@@ -66,8 +67,8 @@ public class StoreVersionCheckTest
     public void shouldReportShortFileDoesNotHaveSpecifiedVersion() throws IOException
     {
         // given
-        File shortFile = fileContaining( fs.get(), "nothing interesting" );
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCacheRule.getPageCache( fs.get() ) );
+        File shortFile = fileContaining( fs, "nothing interesting" );
+        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCacheRule.getPageCache( fs ) );
 
         // when
         StoreVersionCheck.Result result = storeVersionCheck.hasVersion( shortFile, "version" );
@@ -82,9 +83,9 @@ public class StoreVersionCheckTest
     public void shouldReportFileWithIncorrectVersion() throws IOException
     {
         // given
-        File neoStore = emptyFile( fs.get() );
+        File neoStore = emptyFile( fs );
         long v1 = MetaDataStore.versionStringToLong( "V1" );
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
 
@@ -101,9 +102,9 @@ public class StoreVersionCheckTest
     public void shouldReportFileWithCorrectVersion() throws IOException
     {
         // given
-        File neoStore = emptyFile( fs.get() );
+        File neoStore = emptyFile( fs );
         long v1 = MetaDataStore.versionStringToLong( "V1" );
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
 
@@ -118,15 +119,15 @@ public class StoreVersionCheckTest
 
     private File emptyFile( FileSystemAbstraction fs ) throws IOException
     {
-        File shortFile = new File( "shortFile" );
+        File shortFile = directory.file( "empty" );
         fs.deleteFile( shortFile );
-        fs.create( shortFile );
+        fs.create( shortFile ).close();
         return shortFile;
     }
 
     private File fileContaining( FileSystemAbstraction fs, String content ) throws IOException
     {
-        File shortFile = new File( "shortFile" );
+        File shortFile = directory.file( "file" );
         fs.deleteFile( shortFile );
         try ( OutputStream outputStream = fs.openAsOutputStream( shortFile, false ) )
         {
