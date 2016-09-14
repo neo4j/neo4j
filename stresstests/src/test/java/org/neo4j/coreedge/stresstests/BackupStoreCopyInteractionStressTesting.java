@@ -34,6 +34,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 
 import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
+import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.StressTestingHelper.fromEnv;
@@ -81,13 +83,18 @@ public class BackupStoreCopyInteractionStressTesting
         BiFunction<Boolean,Integer,SocketAddress> backupAddress = ( isCore, id ) ->
                 new AdvertisedSocketAddress( "localhost", (isCore ? baseCoreBackupPort : baseEdgeBackupPort) + id );
 
-        Map<String,String> params = Collections.emptyMap();
+        Map<String,String> coreParams = new HashMap<>();
+        coreParams.put( CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );
+        coreParams.put( CoreEdgeClusterSettings.raft_log_pruning_frequency.name(), "1s" );
+        coreParams.put( CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "keep_none" );
+
         Map<String,IntFunction<String>> paramsPerCoreInstance = configureBackup( (id) -> backupAddress.apply( true, id ) );
         Map<String,IntFunction<String>> paramsPerEdgeInstance = configureBackup( (id) -> backupAddress.apply( false, id ) );
 
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
-        Cluster cluster = new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, params,
-                paramsPerCoreInstance, params, paramsPerEdgeInstance, StandardV3_0.NAME );
+        Cluster cluster =
+                new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
+                        paramsPerCoreInstance, emptyMap(), paramsPerEdgeInstance, StandardV3_0.NAME );
 
         ExecutorService service = Executors.newFixedThreadPool( 3 );
         BooleanSupplier keepGoing = untilTimeExpired( durationInMinutes, TimeUnit.MINUTES );
