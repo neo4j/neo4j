@@ -46,7 +46,6 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -101,7 +100,8 @@ public class BoltConnectionManagementIT
     }
 
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(), getSettingsFunction() );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
+            getSettingsFunction() );
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
@@ -111,11 +111,11 @@ public class BoltConnectionManagementIT
         return new TestEnterpriseGraphDatabaseFactory();
     }
 
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Consumer<Map<String, String>> getSettingsFunction()
     {
         return settings -> {
-            settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
+            settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
+            settings.put( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" );
         };
     }
 

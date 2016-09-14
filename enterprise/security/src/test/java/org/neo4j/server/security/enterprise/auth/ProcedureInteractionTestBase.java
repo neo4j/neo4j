@@ -29,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,9 +41,8 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -56,6 +54,7 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
+import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.either;
@@ -115,13 +114,11 @@ abstract class ProcedureInteractionTestBase<S>
     protected NeoInteractionLevel<S> neo;
     File securityLog;
 
-    private Map<Setting<?>,String> configure() throws IOException
+    private Map<String,String> configure() throws IOException
     {
         Path homeDir = Files.createTempDirectory( "logs" );
         securityLog = new File( homeDir.toFile(), "security.log" );
-        Map<Setting<?>,String> config = new HashMap<>( 1 );
-        config.put( GraphDatabaseSettings.logs_directory, homeDir.toAbsolutePath().toString() );
-        return config;
+        return singletonMap( GraphDatabaseSettings.logs_directory.name(), homeDir.toAbsolutePath().toString() );
     }
 
     @Before
@@ -153,12 +150,15 @@ abstract class ProcedureInteractionTestBase<S>
         executeQuery( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number, name:'node'+number})" );
     }
 
-    protected abstract NeoInteractionLevel<S> setUpNeoServer( Map<Setting<?>, String> config ) throws Throwable;
+    protected abstract NeoInteractionLevel<S> setUpNeoServer( Map<String, String> config ) throws Throwable;
 
     @After
     public void tearDown() throws Throwable
     {
-        neo.tearDown();
+        if ( neo !=null )
+        {
+            neo.tearDown();
+        }
     }
 
     protected String[] with( String[] strs, String... moreStr )

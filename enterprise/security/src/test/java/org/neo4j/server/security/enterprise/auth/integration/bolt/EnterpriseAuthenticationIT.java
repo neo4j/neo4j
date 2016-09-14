@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.transport.integration.AuthenticationIT;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -37,11 +36,11 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
     }
 
     @Override
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Consumer<Map<String, String>> getSettingsFunction()
     {
         return settings -> {
-            settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
+            settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
+            settings.put( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" );
         };
     }
 }

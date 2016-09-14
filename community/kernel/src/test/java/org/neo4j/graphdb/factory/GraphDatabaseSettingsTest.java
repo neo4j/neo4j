@@ -26,12 +26,14 @@ import java.util.HashMap;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -81,5 +83,26 @@ public class GraphDatabaseSettingsTest
                 fields.put( setting.name(), field.getName() );
             }
         }
+    }
+
+    @Test
+    public void groupToScopeSetting() throws Exception
+    {
+        // given
+        String hostname = "my_other_host";
+        int port = 9999;
+        Config config = Config.defaults();
+        config.augment( stringMap( GraphDatabaseSettings.default_advertised_hostname.name(), hostname ) );
+        String scoping = "bla";
+        config.augment( stringMap( GraphDatabaseSettings.boltConnector( scoping ).advertised_address.name(), ":" + port ) );
+
+        // when
+        GraphDatabaseSettings.BoltConnector boltConnector = GraphDatabaseSettings.boltConnector( scoping );
+        Setting<AdvertisedSocketAddress> advertised_address = boltConnector.advertised_address;
+        AdvertisedSocketAddress advertisedSocketAddress = config.get( advertised_address );
+
+        // then
+        assertEquals( hostname, advertisedSocketAddress.getHostname() );
+        assertEquals( port, advertisedSocketAddress.getPort() );
     }
 }

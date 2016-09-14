@@ -40,6 +40,13 @@ public interface Setting<T> extends Function<Function<String,String>,T>
     String name();
 
     /**
+     * Make this setting bound to a scope
+     *
+     * @param scopingRule The scoping rule to be applied to this setting
+     */
+    void withScope( Function<String, String> scopingRule );
+
+    /**
      * Get the default value of this setting, as a string.
      *
      * @return the default value

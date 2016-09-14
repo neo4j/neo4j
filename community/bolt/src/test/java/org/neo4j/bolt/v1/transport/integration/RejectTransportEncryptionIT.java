@@ -30,9 +30,9 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
 
@@ -44,8 +44,8 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 public class RejectTransportEncryptionIT
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket(
-            settings -> settings.put( boltConnector( "0" ).encryption_level, DISABLED.name() ) );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
+            settings -> settings.put( boltConnector( "0" ).encryption_level.name(), DISABLED.name() ) );
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
@@ -92,13 +92,8 @@ public class RejectTransportEncryptionIT
     @Test
     public void shouldRejectConnectionAfterHandshake() throws Throwable
     {
-        // Given
         exception.expect( expected.getClass() );
-        if ( expected.getMessage() != null )
-        {
-            exception.expectMessage( expected.getMessage() );
-        }
-        // When&Then
+        exception.expectMessage( expected.getMessage() );
         client.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
     }
 }

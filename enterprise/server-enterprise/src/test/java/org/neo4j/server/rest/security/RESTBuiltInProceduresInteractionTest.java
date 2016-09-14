@@ -44,7 +44,7 @@ public class RESTBuiltInProceduresInteractionTest extends BuiltInProceduresInter
     }
 
     @Override
-    public NeoInteractionLevel<RESTSubject> setUpNeoServer( Map<Setting<?>, String> config ) throws Throwable
+    public NeoInteractionLevel<RESTSubject> setUpNeoServer( Map<String, String> config ) throws Throwable
     {
         return new RESTInteraction( config );
     }

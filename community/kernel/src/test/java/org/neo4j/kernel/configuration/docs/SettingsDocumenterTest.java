@@ -197,7 +197,7 @@ public class SettingsDocumenterTest
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Number of spots this giraffe has, in number.%n" +
-                "|Valid values a|spot_count is an integer%n" +
+                "|Valid values a|group.(key).spot_count is an integer%n" +
                 "|Default value m|12%n" +
                 "|===%n" +
                 "endif::nonhtmloutput[]%n" +
@@ -208,7 +208,7 @@ public class SettingsDocumenterTest
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Number of spots this giraffe has, in number.%n" +
-                "|Valid values a|spot_count is an integer%n" +
+                "|Valid values a|group.(key).spot_count is an integer%n" +
                 "|Default value m|12%n" +
                 "|===%n" +
                 "endif::nonhtmloutput[]%n" +
@@ -219,7 +219,7 @@ public class SettingsDocumenterTest
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Animal type.%n" +
-                "|Valid values a|type is a string%n" +
+                "|Valid values a|group.(key).type is a string%n" +
                 "|Default value m|giraffe%n" +
                 "|===%n" +
                 "endif::nonhtmloutput[]%n" +
@@ -230,7 +230,7 @@ public class SettingsDocumenterTest
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Animal type.%n" +
-                "|Valid values a|type is a string%n" +
+                "|Valid values a|group.(key).type is a string%n" +
                 "|Default value m|giraffe%n" +
                 "|===%n" +
                 "endif::nonhtmloutput[]%n%n"

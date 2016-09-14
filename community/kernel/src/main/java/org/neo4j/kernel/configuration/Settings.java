@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,10 +32,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
-
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
+import org.neo4j.graphdb.config.ScopeAwareSetting;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -45,8 +46,6 @@ import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.Character.isDigit;
 import static java.lang.Integer.parseInt;
-import static java.lang.String.format;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_hostname;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
@@ -133,9 +132,9 @@ public class Settings
                                           final Setting<T> inheritedSetting, final BiFunction<T, Function<String,
             String>, T>... valueConverters )
     {
-        Function<Function<String, String>, String> valueLookup = named( name );
+        BiFunction<String,Function<String, String>, String> valueLookup = named();
 
-        Function<Function<String, String>, String> defaultLookup;
+        BiFunction<String,Function<String, String>, String> defaultLookup;
         if ( defaultValue != null )
         {
             // This is explicitly an identity comparison. We are comparing against the known instance above,
@@ -153,7 +152,7 @@ public class Settings
         }
         else
         {
-            defaultLookup = from -> null;
+            defaultLookup = (n, from) -> null;
         }
 
         if ( inheritedSetting != null )
@@ -170,10 +169,13 @@ public class Settings
                                                                BiFunction<IN1, IN2, OUT> derivation,
                                                                Function<String, OUT> overrideConverter)
     {
-        return new Setting<OUT>()
+        // NOTE:
+        // we do not scope the input settings here (indeed they might be shared...)
+        // if needed we can add a configuration option to allow for it
+        return new ScopeAwareSetting<OUT>()
         {
             @Override
-            public String name()
+            protected String provideName()
             {
                 return name;
             }
@@ -193,7 +195,7 @@ public class Settings
             @Override
             public OUT apply( Function<String, String> config )
             {
-                String override = config.apply( name );
+                String override = config.apply( name() );
                 if ( override != null )
                 {
                     // Derived settings are intended not to be overridden and we should throw an exception here. However
@@ -212,10 +214,10 @@ public class Settings
                                                           Function<IN1, OUT> derivation,
                                                           Function<String, OUT> overrideConverter)
     {
-        return new Setting<OUT>()
+        return new ScopeAwareSetting<OUT>()
         {
             @Override
-            public String name()
+            protected String provideName()
             {
                 return name;
             }
@@ -235,7 +237,7 @@ public class Settings
             @Override
             public OUT apply( Function<String, String> config )
             {
-                String override = config.apply( name );
+                String override = config.apply( name() );
                 if ( override != null )
                 {
                     return overrideConverter.apply( override );
@@ -247,10 +249,10 @@ public class Settings
 
     public static Setting<File> pathSetting( String name, String defaultValue )
     {
-        return new Setting<File>()
+        return new ScopeAwareSetting<File>()
         {
             @Override
-            public String name()
+            protected String provideName()
             {
                 return name;
             }
@@ -270,7 +272,7 @@ public class Settings
             @Override
             public File apply( Function<String, String> config )
             {
-                String value = config.apply( name );
+                String value = config.apply( name() );
                 if ( value == null )
                 {
                     value = defaultValue;
@@ -301,11 +303,11 @@ public class Settings
         };
     }
 
-    private static <T> Function<Function<String, String>, String> inheritedValue( final Function<Function<String,
-            String>, String> lookup, final Setting<T> inheritedSetting )
+    private static <T> BiFunction<String,Function<String, String>, String> inheritedValue(
+            final BiFunction<String,Function<String,String>, String> lookup, final Setting<T> inheritedSetting )
     {
-        return settings -> {
-            String value = lookup.apply( settings );
+        return (name, settings) -> {
+            String value = lookup.apply( name, settings );
             if ( value == null )
             {
                 value = ((SettingHelper<T>) inheritedSetting).lookup( settings );
@@ -314,11 +316,11 @@ public class Settings
         };
     }
 
-    private static <T> Function<Function<String, String>, String> inheritedDefault( final Function<Function<String,
-            String>, String> lookup, final Setting<T> inheritedSetting )
+    private static <T> BiFunction<String,Function<String, String>, String> inheritedDefault(
+            final BiFunction<String,Function<String,String>, String> lookup, final Setting<T> inheritedSetting )
     {
-        return settings -> {
-            String value = lookup.apply( settings );
+        return (name, settings) -> {
+            String value = lookup.apply( name, settings );
             if ( value == null )
             {
                 value = ((SettingHelper<T>) inheritedSetting).defaultLookup( settings );
@@ -500,7 +502,7 @@ public class Settings
                 @Override
                 public String toString()
                 {
-                    return "a socket address";
+                    return "a listen socket address";
                 }
             };
 
@@ -516,16 +518,16 @@ public class Settings
                 @Override
                 public String toString()
                 {
-                    return "a socket address";
+                    return "an advertised socket address";
                 }
             };
 
     public static Setting<ListenSocketAddress> listenAddress( String name, int defaultPort )
     {
-        return new Setting<ListenSocketAddress>()
+        return new ScopeAwareSetting<ListenSocketAddress>()
         {
             @Override
-            public String name()
+            protected String provideName()
             {
                 return name;
             }
@@ -545,6 +547,7 @@ public class Settings
             @Override
             public ListenSocketAddress apply( Function<String, String> config )
             {
+                String name = name();
                 String value = config.apply( name );
                 String hostname = default_listen_address.apply( config );
 
@@ -561,10 +564,10 @@ public class Settings
 
     public static Setting<AdvertisedSocketAddress> advertisedAddress( String name, Setting<ListenSocketAddress> listenAddressSetting )
     {
-        return new Setting<AdvertisedSocketAddress>()
+        return new ScopeAwareSetting<AdvertisedSocketAddress>()
         {
             @Override
-            public String name()
+            protected String provideName()
             {
                 return name;
             }
@@ -589,9 +592,17 @@ public class Settings
                 String hostname = default_advertised_hostname.apply( config );
                 int port = listenSocketAddress.socketAddress().getPort();
 
+                String name = name();
                 String value = config.apply( name );
 
                 return SocketAddressFormat.socketAddress( name, value, hostname, port, AdvertisedSocketAddress::new );
+            }
+
+            @Override
+            public void withScope( Function<String,String> scopingRule )
+            {
+                super.withScope( scopingRule );
+                listenAddressSetting.withScope( scopingRule );
             }
 
             @Override
@@ -1044,17 +1055,16 @@ public class Settings
     }
 
     // Setting helpers
-    private static Function<Function<String, String>, String> named( final String name )
+    private static BiFunction<String,Function<String, String>, String> named()
     {
-        return settings -> settings.apply( name );
+        return (name, settings) -> settings.apply( name );
     }
 
-    private static Function<Function<String, String>, String> withDefault( final String defaultValue,
-                                                                           final Function<Function<String, String>,
-                                                                                   String> lookup )
+    private static BiFunction<String,Function<String,String>,String> withDefault( final String defaultValue,
+            final BiFunction<String,Function<String,String>,String> lookup )
     {
-        return settings -> {
-            String value = lookup.apply( settings );
+        return (name, settings) -> {
+            String value = lookup.apply( name, settings );
             if ( value == null )
             {
                 return defaultValue;
@@ -1070,6 +1080,7 @@ public class Settings
     {
         return new Setting<T>()
         {
+            @Override
             public String name()
             {
                 return newSetting.name();
@@ -1092,6 +1103,12 @@ public class Settings
             }
 
             @Override
+            public void withScope( Function<String,String> scopingRule )
+            {
+                newSetting.withScope( scopingRule );
+            }
+
+            @Override
             public String toString()
             {
                 return newSetting.toString();
@@ -1099,11 +1116,11 @@ public class Settings
         };
     }
 
-    private static Function<Function<String, String>, String> mandatory( final Function<Function<String, String>,
-            String> lookup )
+    private static BiFunction<String,Function<String, String>, String> mandatory(
+            final BiFunction<String,Function<String, String>,String> lookup )
     {
-        return settings -> {
-            String value = lookup.apply( settings );
+        return (name, settings) -> {
+            String value = lookup.apply( name, settings );
             if ( value == null )
             {
                 throw new IllegalArgumentException( "mandatory setting is missing" );
@@ -1116,17 +1133,18 @@ public class Settings
     {
     }
 
-    public static class DefaultSetting<T> implements SettingHelper<T>
+    private static class DefaultSetting<T> extends ScopeAwareSetting<T> implements SettingHelper<T>
     {
         private final String name;
         private final Function<String, T> parser;
-        private final Function<Function<String, String>, String> valueLookup;
-        private final Function<Function<String, String>, String> defaultLookup;
+        private final BiFunction<String,Function<String, String>, String> valueLookup;
+        private final BiFunction<String,Function<String, String>, String> defaultLookup;
         private final BiFunction<T, Function<String, String>, T>[] valueConverters;
 
-        public DefaultSetting( String name, Function<String, T> parser,
-                               Function<Function<String, String>, String> valueLookup, Function<Function<String,
-                String>, String> defaultLookup, BiFunction<T, Function<String, String>, T>... valueConverters )
+        DefaultSetting( String name, Function<String,T> parser,
+                BiFunction<String,Function<String,String>,String> valueLookup,
+                BiFunction<String,Function<String,String>,String> defaultLookup,
+                BiFunction<T,Function<String,String>,T>... valueConverters )
         {
             this.name = name;
             this.parser = parser;
@@ -1136,7 +1154,7 @@ public class Settings
         }
 
         @Override
-        public String name()
+        protected String provideName()
         {
             return name;
         }
@@ -1156,13 +1174,13 @@ public class Settings
         @Override
         public String lookup( Function<String, String> settings )
         {
-            return valueLookup.apply( settings );
+            return valueLookup.apply( name(), settings );
         }
 
         @Override
         public String defaultLookup( Function<String, String> settings )
         {
-            return defaultLookup.apply( settings );
+            return defaultLookup.apply( name(), settings );
         }
 
         @Override
@@ -1213,7 +1231,7 @@ public class Settings
         public String toString()
         {
             StringBuilder builder = new StringBuilder(  );
-            builder.append( name ).append( " is " ).append( parser.toString() );
+            builder.append( name() ).append( " is " ).append( parser.toString() );
 
             if (valueConverters.length > 0)
             {

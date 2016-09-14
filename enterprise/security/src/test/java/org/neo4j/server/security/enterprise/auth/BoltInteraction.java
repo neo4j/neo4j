@@ -42,7 +42,6 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
@@ -68,27 +67,27 @@ import static org.neo4j.kernel.api.security.AuthToken.REALM_KEY;
 import static org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
-public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject>
+class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject>
 {
     protected final HostnamePort address = new HostnamePort( "localhost:7687" );
-    protected final Factory<TransportConnection> connectionFactory = SocketConnection::new;
+    private final Factory<TransportConnection> connectionFactory = SocketConnection::new;
     private final Neo4jWithSocket server;
     private Map<String,BoltSubject> subjects = new HashMap<>();
     private EphemeralFileSystemAbstraction fileSystem;
-    EnterpriseAuthManager authManager;
+    private EnterpriseAuthManager authManager;
 
-    BoltInteraction( Map<Setting<?>, String> config ) throws IOException
+    BoltInteraction( Map<String, String> config ) throws IOException
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
         fileSystem = new EphemeralFileSystemAbstraction();
-        server = new Neo4jWithSocket(
+        server = new Neo4jWithSocket( getClass(),
                 factory,
                 () -> fileSystem,
                 settings -> {
-                    settings.put( GraphDatabaseSettings.auth_enabled, "true" );
+                    settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
                     settings.putAll( config );
                 } );
-        server.restartDatabase( r -> {} );
+        server.ensureDatabase( r -> {} );
         GraphDatabaseFacade db = (GraphDatabaseFacade) server.graphDatabaseService();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
     }
@@ -260,21 +259,21 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         return new BoltResult( result );
     }
 
-    public static class BoltSubject
+    static class BoltSubject
     {
         TransportConnection client;
         String username;
         String password;
         AuthenticationResult loginResult = AuthenticationResult.FAILURE;
 
-        public BoltSubject( TransportConnection client, String username, String password )
+        BoltSubject( TransportConnection client, String username, String password )
         {
             this.client = client;
             this.username = username;
             this.password = password;
         }
 
-        public void setLoginResult( ResponseMessage result )
+        void setLoginResult( ResponseMessage result )
         {
             if ( result instanceof SuccessMessage )
             {
@@ -299,12 +298,12 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
             }
         }
 
-        public boolean isAuthenticated()
+        boolean isAuthenticated()
         {
             return loginResult.equals( AuthenticationResult.SUCCESS );
         }
 
-        public boolean passwordChangeRequired()
+        boolean passwordChangeRequired()
         {
             return loginResult.equals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
         }
@@ -315,7 +314,7 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         private int index = 0;
         private List<Map<String,Object>> data;
 
-        public BoltResult( List<Map<String,Object>> data )
+        BoltResult( List<Map<String,Object>> data )
         {
             this.data = data;
         }
