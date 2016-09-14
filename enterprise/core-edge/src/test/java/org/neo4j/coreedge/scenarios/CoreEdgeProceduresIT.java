@@ -19,14 +19,18 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.Before;
-import org.junit.Rule;
+import java.util.concurrent.ExecutionException;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
+import org.neo4j.coreedge.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
@@ -37,29 +41,33 @@ import static org.junit.Assert.assertTrue;
 
 public class CoreEdgeProceduresIT
 {
-    @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    @ClassRule
+    public static final ClusterRule clusterRule = new ClusterRule( CoreEdgeProceduresIT.class )
             .withNumberOfCoreMembers( 2 )
             .withNumberOfEdgeMembers( 1 );
 
-    private Cluster cluster;
+    private static Cluster cluster;
 
-    @Before
-    public void setup() throws Exception
+    @BeforeClass
+    public static void setup() throws Exception
     {
         cluster = clusterRule.startCluster();
     }
 
     @Test
-    public void testThatProceduresAreAvailable() throws Throwable
+    public void coreProceduresShouldBeAvailable() throws Throwable
     {
-        String[] procs = new String[]{
+        String[] coreProcs = new String[]{
+                "dbms.cluster.role", // Server role
+                "dbms.cluster.discoverEndpointAcquisitionServers", // Discover appropriate discovery service
+                "dbms.cluster.acquireEndpoints", // Get instances for read/write
+                "dbms.cluster.overview", // Discover appropriate discovery service
                 "dbms.procedures", // Kernel built procedures
 //                "dbms.security.listUsers", // Security procedure from community
                 "dbms.listQueries" // Built in procedure from enterprise
         };
 
-        for ( String procedure : procs )
+        for ( String procedure : coreProcs )
         {
             CoreClusterMember coreClusterMember = cluster.coreMembers().stream().findFirst().get();
             CoreGraphDatabase database = coreClusterMember.database();
@@ -69,13 +77,35 @@ public class CoreEdgeProceduresIT
             assertTrue( "core with procedure " + procedure, coreResult.hasNext() );
             coreResult.close();
             tx.close();
+        }
+    }
 
+    @Test
+    public void edgeProceduresShouldBeAvailable() throws Exception
+    {
+        // given
+        String[] edgeProcs = new String[]{
+                "dbms.cluster.role", // Server role
+                "dbms.procedures", // Kernel built procedures
+//                "dbms.security.listUsers", // Security procedure from community
+                "dbms.listQueries" // Built in procedure from enterprise
+        };
 
+        // when
+        for ( String procedure : edgeProcs )
+        {
             EdgeClusterMember edgeClusterMember = cluster.edgeMembers().stream().findFirst().get();
-            Result edgeResult = edgeClusterMember.database().execute( "CALL " + procedure + "()" );
 
-            assertTrue( "edge with procedure " + procedure, coreResult.hasNext() );
+            EdgeGraphDatabase database = edgeClusterMember.database();
+            InternalTransaction tx =
+                    database.beginTransaction( KernelTransaction.Type.explicit, EnterpriseAuthSubject.AUTH_DISABLED );
+            Result edgeResult = database.execute( "CALL " + procedure + "()" );
+
+            // then
+            assertTrue( "edge with procedure " + procedure, edgeResult.hasNext() );
             edgeResult.close();
+            tx.close();
         }
     }
 }
+
