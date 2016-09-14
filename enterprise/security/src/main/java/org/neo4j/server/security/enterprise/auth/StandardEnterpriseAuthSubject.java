@@ -27,7 +27,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 
 import static java.util.stream.Collectors.toSet;
@@ -41,19 +41,21 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     private final EnterpriseAuthManager authManager;
     private final ShiroSubject shiroSubject;
 
+    public static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
+    {
+        return EnterpriseAuthSubject.castOrFail( StandardEnterpriseAuthSubject.class, authSubject );
+    }
+
     public StandardEnterpriseAuthSubject( EnterpriseAuthManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;
     }
 
-    public static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
+    @Override
+    public void ensureUserExistsWithName( String username ) throws InvalidArgumentsException
     {
-        if ( !(authSubject instanceof StandardEnterpriseAuthSubject) )
-        {
-            throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
-        }
-        return (StandardEnterpriseAuthSubject) authSubject;
+        getUserManager().getUser( username );
     }
 
     @Override
@@ -101,7 +103,7 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     }
 
     @Override
-    public boolean doesUsernameMatch( String username )
+    public boolean hasUsername( String username )
     {
         Object principal = shiroSubject.getPrincipal();
         return principal != null && username != null && username.equals( principal );

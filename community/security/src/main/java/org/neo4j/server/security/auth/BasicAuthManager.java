@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
@@ -161,7 +161,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     {
         BasicAuthSubject basicAuthSubject = BasicAuthSubject.castOrFail( authSubject );
 
-        if ( !basicAuthSubject.doesUsernameMatch( username ) )
+        if ( !basicAuthSubject.hasUsername( username ) )
         {
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }

@@ -320,7 +320,7 @@ public class AuthenticationIT
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgFailure(Status.Security.InvalidArguments,
+        assertThat( client, eventuallyReceives( msgFailure(Status.General.InvalidArguments,
                 "Old password and new password cannot be the same.") ) );
     }
 
@@ -344,7 +344,7 @@ public class AuthenticationIT
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgFailure(Status.Security.InvalidArguments,
+        assertThat( client, eventuallyReceives( msgFailure(Status.General.InvalidArguments,
                 "A password cannot be empty.") ) );
     }
 

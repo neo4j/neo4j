@@ -404,7 +404,6 @@ public interface Status
     enum Security implements Status  // TODO: rework by the Security Team before these are updated
     {
         // client
-        InvalidArguments( ClientError, "The request contained fields that were empty or are not allowed." ),
         CredentialsExpired( ClientError, "The credentials have expired and need to be updated." ),
         Unauthorized( ClientError, "The client is unauthorized due to authentication failure." ),
         AuthenticationRateLimit( ClientError, "The client has provided incorrect authentication details too many times in a row." ),
@@ -429,6 +428,7 @@ public interface Status
     enum General implements Status
     {
         // client errors
+        InvalidArguments( ClientError, "The request contained fields that were empty or are not allowed." ),
         ForbiddenOnReadOnlyDatabase( ClientError,
                 "This is a read only database, writing or modifying the database is not allowed." ),
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -30,6 +32,8 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -201,9 +205,10 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    final String authSubjectName()
+    final Optional<String> username()
     {
-        return transaction.mode().name();
+        AccessMode mode = transaction.mode();
+        return ( mode instanceof AuthSubject ) ? Optional.of( ((AuthSubject) mode).username() ) : Optional.empty();
     }
 
     final ExecutingQueryList executingQueryList()

@@ -68,7 +68,7 @@ import static java.util.Collections.singletonMap;
  */
 public abstract class EditionModule
 {
-    public abstract void registerProcedures( Procedures procedures ) throws KernelException;
+    public abstract void setupProcedures( Procedures procedures ) throws KernelException;
 
     protected Log authManagerLog()
     {

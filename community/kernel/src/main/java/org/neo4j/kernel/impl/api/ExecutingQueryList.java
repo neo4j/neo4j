@@ -61,7 +61,7 @@ interface ExecutingQueryList
         @Override
         public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
         {
-            assert( newExecutingQuery.queryId() > query.queryId() );
+            assert( newExecutingQuery.internalQueryId() > query.internalQueryId() );
             return new Entry( newExecutingQuery, this );
         }
 

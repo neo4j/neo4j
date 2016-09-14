@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 public class BasicPasswordPolicy implements PasswordPolicy
 {

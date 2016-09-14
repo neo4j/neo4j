@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -337,7 +337,7 @@ public class UserServiceTest
         assertThat( response.getStatus(), equalTo( 422 ) );
         String json = new String( (byte[]) response.getEntity() );
         assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Security.InvalidArguments\"" ) );
+        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.General.InvalidArguments\"" ) );
         assertThat( json, containsString( "\"message\" : \"A password cannot be empty.\"" ) );
     }
 
@@ -358,7 +358,7 @@ public class UserServiceTest
         assertThat( response.getStatus(), equalTo( 422 ) );
         String json = new String( (byte[]) response.getEntity() );
         assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Security.InvalidArguments\"" ) );
+        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.General.InvalidArguments\"" ) );
         assertThat( json, containsString( "\"message\" : \"Old password and new password cannot be the same.\"" ) );
     }
 

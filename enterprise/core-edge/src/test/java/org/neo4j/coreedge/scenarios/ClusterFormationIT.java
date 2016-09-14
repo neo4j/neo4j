@@ -23,16 +23,25 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
+import org.neo4j.coreedge.discovery.EdgeClusterMember;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ClusterFormationIT
 {
@@ -47,6 +56,38 @@ public class ClusterFormationIT
     public void setup() throws Exception
     {
         cluster = clusterRule.startCluster();
+    }
+
+    @Test
+    public void shouldSupportBuiltInProcedures() throws Exception
+    {
+        cluster.addEdgeMemberWithId( 0 ).start();
+
+        Stream.concat(
+            cluster.edgeMembers().stream().map(EdgeClusterMember::database),
+            cluster.coreMembers().stream().map(CoreClusterMember::database)
+        ).forEach( gdb ->
+        {
+            // (1) BuiltInProcedures from community
+            {
+                Result result = gdb.execute( "CALL dbms.procedures()" );
+                assertTrue( result.hasNext() );
+                result.close();
+            }
+
+            // (2) BuiltInProcedures from enterprise
+            try( InternalTransaction tx = gdb.beginTransaction(
+                    KernelTransaction.Type.explicit,
+                    EnterpriseAuthSubject.AUTH_DISABLED
+            ) )
+            {
+                Result result = gdb.execute( tx, "CALL dbms.listQueries()", Collections.emptyMap() );
+                assertTrue( result.hasNext() );
+                result.close();
+
+                tx.success();
+            }
+        } );
     }
 
     @Test

@@ -110,7 +110,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     @Override
-    public void registerProcedures( Procedures procedures ) throws KernelException
+    public void setupProcedures( Procedures procedures ) throws KernelException
     {
         try
         {
@@ -118,6 +118,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
             registerProceduresFromProvider( "auth-procedures-provider", procedures );
             registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
 
+            procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
+            procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
             procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );

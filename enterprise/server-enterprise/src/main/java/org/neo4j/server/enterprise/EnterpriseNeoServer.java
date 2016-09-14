@@ -43,7 +43,9 @@ import org.neo4j.metrics.source.server.ServerThreadViewSetter;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
+import org.neo4j.server.enterprise.modules.EnterpriseAuthorizationModule;
 import org.neo4j.server.enterprise.modules.JMXManagementModule;
+import org.neo4j.server.modules.AuthorizationModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.DatabaseRoleInfoServerModule;
 import org.neo4j.server.rest.MasterInfoService;
@@ -155,6 +157,13 @@ public class EnterpriseNeoServer extends CommunityNeoServer
             }
         } );
         return webServer;
+    }
+
+    @Override
+    protected AuthorizationModule createAuthorizationModule()
+    {
+        return new EnterpriseAuthorizationModule( webServer, authManagerSupplier, logProvider, getConfig(),
+                getUriWhitelist() );
     }
 
     @SuppressWarnings( "unchecked" )

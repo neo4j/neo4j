@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static java.lang.String.format;
 
@@ -28,18 +29,25 @@ import static java.lang.String.format;
  */
 public class ExecutingQuery
 {
+    public static String UNAVAILABLE_USERNAME = "<unavailable>";
+
     private final long queryId;
 
-    private final String authSubjectName;
+    private final Optional<String> username;
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime;
 
-    public ExecutingQuery( long queryId, String authSubjectName, String queryText, Map<String,Object>
-            queryParameters, long startTime )
+    public ExecutingQuery(
+        long queryId,
+        Optional<String> username,
+        String queryText,
+        Map<String,Object> queryParameters,
+        long startTime
+    )
     {
         this.queryId = queryId;
-        this.authSubjectName = authSubjectName;
+        this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
         this.startTime = startTime;
@@ -69,16 +77,21 @@ public class ExecutingQuery
         return (int) (queryId ^ (queryId >>> 32));
     }
 
-    public long queryId()
+    public long internalQueryId()
     {
         return queryId;
     }
 
-    public String authSubjectName()
+    public Optional<String> username()
     {
-        return authSubjectName;
+        return username;
     }
 
+    public String usernameAsString()
+    {
+        return username().orElse( UNAVAILABLE_USERNAME );
+
+    }
     public String queryText()
     {
         return queryText;
@@ -98,7 +111,7 @@ public class ExecutingQuery
     public String toString()
     {
         return format(
-                "ExecutingQuery{queryId=%d, authSubjectName='%s', queryText='%s', queryParameters=%s, startTime=%d}",
-                queryId, authSubjectName, queryText, queryParameters, startTime );
+            "ExecutingQuery{queryId=%d, username='%s', queryText='%s', queryParameters=%s, startTime=%d}",
+            queryId, usernameAsString(), queryText, queryParameters, startTime );
     }
 }

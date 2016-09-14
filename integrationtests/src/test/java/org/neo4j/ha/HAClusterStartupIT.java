@@ -28,18 +28,24 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Collections;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
@@ -77,6 +83,41 @@ public class HAClusterStartupIT
                 clusterRule.shutdownCluster();
             }
             assertAllStoreConsistent( cluster );
+        }
+
+        @Test
+        public void allClusterNodesShouldSupportTheBuiltInProcedures() throws Throwable
+        {
+            ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+            try
+            {
+                for ( HighlyAvailableGraphDatabase gdb : cluster.getAllMembers() )
+                {
+                    // (1) BuiltInProcedures from community
+                    {
+                        Result result = gdb.execute( "CALL dbms.procedures()" );
+                        assertTrue( result.hasNext() );
+                        result.close();
+                    }
+
+                    // (2) BuiltInProcedures from enterprise
+                    try( InternalTransaction tx = gdb.beginTransaction(
+                        KernelTransaction.Type.explicit,
+                        EnterpriseAuthSubject.AUTH_DISABLED
+                    ) )
+                    {
+                        Result result = gdb.execute( tx, "CALL dbms.listQueries()", Collections.emptyMap() );
+                        assertTrue( result.hasNext() );
+                        result.close();
+
+                        tx.success();
+                    }
+                }
+            }
+            finally
+            {
+                cluster.shutdown();
+            }
         }
 
         @Test

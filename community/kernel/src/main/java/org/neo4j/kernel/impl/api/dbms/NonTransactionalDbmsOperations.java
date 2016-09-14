@@ -24,8 +24,10 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.proc.Procedures;
 
@@ -47,10 +49,10 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     {
         BasicContext ctx = new BasicContext();
         ctx.put( Context.KERNEL_TRANSACTION, transaction );
-        if ( transaction.mode() instanceof AuthSubject )
+        AccessMode mode = transaction.mode();
+        if ( mode instanceof AuthSubject )
         {
-            AuthSubject subject = (AuthSubject) transaction.mode();
-            ctx.put( Context.AUTH_SUBJECT, subject );
+            ctx.put( Context.AUTH_SUBJECT, (AuthSubject) mode );
         }
         return procedures.callProcedure( ctx, name, input );
     }

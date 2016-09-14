@@ -24,12 +24,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.stream.Stream;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -39,8 +38,8 @@ import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 
 import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
@@ -656,7 +655,7 @@ public class AuthProceduresLoggingTest
         }
 
         @Override
-        public boolean doesUsernameMatch( String username )
+        public boolean hasUsername( String username )
         {
             return name.equals( username );
         }
@@ -689,19 +688,17 @@ public class AuthProceduresLoggingTest
         }
 
         @Override
-        Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
+        protected void terminateTransactionsForValidUser( String username )
         {
             if ( failTerminateTransactions )
             {
                 throw new RuntimeException( "Unexpected error" );
             }
-            return Stream.empty();
         }
 
         @Override
-        Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
+        protected void terminateConnectionsForValidUser( String username )
         {
-            return Stream.empty();
         }
     }
 

@@ -24,18 +24,32 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.function.UncaughtCheckedException;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.time.Clocks;
 
@@ -44,6 +58,13 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toSet;
+import static org.neo4j.function.ThrowingFunction.catchThrown;
+import static org.neo4j.function.ThrowingFunction.throwIfPresent;
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
+import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.fromExternalString;
+import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
+import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
 
 public class BuiltInProcedures
@@ -54,18 +75,164 @@ public class BuiltInProcedures
     public DependencyResolver resolver;
 
     @Context
+    public GraphDatabaseAPI graph;
+
+    @Context
     public KernelTransaction tx;
 
     @Context
     public AuthSubject authSubject;
 
+    @Procedure( name = "dbms.listTransactions", mode = DBMS )
+    public Stream<TransactionResult> listTransactions()
+            throws InvalidArgumentsException, IOException
+    {
+        ensureAdminEnterpriseAuthSubject();
+
+        return countTransactionByUsername(
+            getActiveTransactions()
+                .stream()
+                .filter( tx -> !tx.terminationReason().isPresent() )
+                .map( tx -> getUsernameFromAccessMode( tx.mode() ) )
+        );
+    }
+
+    @Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
+    public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
+            throws InvalidArgumentsException, IOException
+    {
+        ensureSelfOrAdminEnterpriseAuthSubject( username );
+
+        return terminateTransactionsForValidUser( username );
+    }
+
+    @Procedure( name = "dbms.listConnections", mode = DBMS )
+    public Stream<ConnectionResult> listConnections()
+    {
+        ensureAdminEnterpriseAuthSubject();
+
+        BoltConnectionTracker boltConnectionTracker = getBoltConnectionTracker();
+        return countConnectionsByUsername(
+            boltConnectionTracker
+                .getActiveConnections()
+                .stream()
+                .filter( session -> !session.hasTerminated() )
+                .map( ManagedBoltStateMachine::owner )
+        );
+    }
+
+    @Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
+    public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
+            throws InvalidArgumentsException
+    {
+        ensureSelfOrAdminEnterpriseAuthSubject( username );
+
+        return terminateConnectionsForValidUser( username );
+    }
+
+    @Description( "List all queries currently executing at this instance that are visible to the user." )
     @Procedure( name = "dbms.listQueries", mode = DBMS )
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
     {
-        return getKernelTransactions().activeTransactions().stream()
+        try
+        {
+            return getKernelTransactions()
+                .activeTransactions()
+                .stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
-                .filter( ( query ) -> isAdmin() || authSubject.doesUsernameMatch( query.authSubjectName() ) )
-                .map( this::queryStatusResult );
+                .filter( ( query ) -> isAdminEnterpriseAuthSubject() || query.username().map( authSubject::hasUsername ).orElse( false ) )
+                .map( catchThrown( InvalidArgumentsException.class, this::queryStatusResult ) );
+        }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
+    }
+
+    @Description( "Kill all transactions executing the query with the given query id." )
+    @Procedure( name = "dbms.killQuery", mode = DBMS )
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
+            throws InvalidArgumentsException, IOException
+    {
+        try
+        {
+            long queryId = fromExternalString( idText ).kernelQueryId();
+
+            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
+                getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) );
+
+            return executingQueries
+                .stream()
+                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+         }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
+    }
+
+    @Description( "Kill all transactions executing a query with any of the given query ids." )
+    @Procedure( name = "dbms.killQueries", mode = DBMS )
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts )
+            throws InvalidArgumentsException, IOException
+    {
+        try
+        {
+            Set<Long> queryIds = idTexts
+                .stream()
+                .map( catchThrown( InvalidArgumentsException.class, QueryId::fromExternalString ) )
+                .map( catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) )
+                .collect( toSet() );
+
+            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
+                getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) );
+
+            return executingQueries
+                .stream()
+                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+        }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
+    }
+
+    private <T> Set<Pair<KernelTransactionHandle, T>> getActiveTransactions(
+            Function<KernelTransactionHandle,Stream<T>> selector
+    )
+    {
+        return getActiveTransactions()
+            .stream()
+            .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
+            .collect( toSet() );
+    }
+
+    private Stream<ExecutingQuery> executingQueriesWithIds( Set<Long> ids, KernelTransactionHandle txHandle )
+    {
+        return txHandle.executingQueries().filter( q -> ids.contains( q.internalQueryId() ) );
+    }
+
+    private Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
+    {
+        return txHandle.executingQueries().filter( q -> q.internalQueryId() == id );
+    }
+
+    private QueryTerminationResult killQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )
+            throws InvalidArgumentsException
+    {
+        ExecutingQuery query = pair.other();
+        if ( isAdminEnterpriseAuthSubject() || query.username().map( authSubject::hasUsername ).orElse( false ) )
+        {
+            pair.first().markForTermination( Status.Transaction.Terminated );
+            return new QueryTerminationResult( ofInternalId( query.internalQueryId() ), query.usernameAsString() );
+        }
+        else
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
     }
 
     private KernelTransactions getKernelTransactions()
@@ -73,27 +240,111 @@ public class BuiltInProcedures
         return resolver.resolveDependency( KernelTransactions.class );
     }
 
-    private boolean isAdmin()
+    // ----------------- helpers ---------------------
+
+    private Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
     {
-        EnterpriseAuthSubject enterpriseAuthSubject = (EnterpriseAuthSubject) authSubject;
-        return enterpriseAuthSubject.isAdmin();
+        long terminatedCount = getActiveTransactions()
+            .stream()
+            .filter( tx -> getUsernameFromAccessMode( tx.mode() ).equals( username ) && !tx.isUnderlyingTransaction( this.tx ) )
+            .map( tx -> tx.markForTermination( Status.Transaction.Terminated ) )
+            .filter( marked -> marked )
+            .count();
+        return Stream.of( new TransactionTerminationResult( username, terminatedCount ) );
     }
 
-    private QueryStatusResult queryStatusResult( ExecutingQuery q )
+    private Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
+    {
+        Long killCount = getBoltConnectionTracker()
+            .getActiveConnections( username )
+            .stream()
+            .map( conn -> { conn.terminate(); return true; } )
+            .count();
+        return Stream.of( new ConnectionResult( username, killCount ) );
+    }
+
+    private Set<KernelTransactionHandle> getActiveTransactions()
+    {
+        return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
+    }
+
+    private BoltConnectionTracker getBoltConnectionTracker()
+    {
+        return graph.getDependencyResolver().resolveDependency( BoltConnectionTracker.class );
+    }
+
+    private Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
+    {
+        return usernames
+            .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
+            .entrySet()
+            .stream()
+            .map( entry -> new TransactionResult( entry.getKey(), entry.getValue() )
+        );
+    }
+
+    private Stream<ConnectionResult> countConnectionsByUsername( Stream<String> usernames )
+    {
+        return usernames
+            .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
+            .entrySet()
+            .stream()
+            .map( entry -> new ConnectionResult( entry.getKey(), entry.getValue() )
+        );
+    }
+
+    private boolean isAdminEnterpriseAuthSubject()
+    {
+        if ( authSubject instanceof EnterpriseAuthSubject )
+        {
+            EnterpriseAuthSubject enterpriseAuthSubject = (EnterpriseAuthSubject) authSubject;
+            return enterpriseAuthSubject.isAdmin();
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private EnterpriseAuthSubject ensureAdminEnterpriseAuthSubject()
+    {
+        EnterpriseAuthSubject enterpriseAuthSubject = EnterpriseAuthSubject.castOrFail( authSubject );
+        if ( !enterpriseAuthSubject.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        return enterpriseAuthSubject;
+    }
+
+    private EnterpriseAuthSubject ensureSelfOrAdminEnterpriseAuthSubject( String username )
+            throws InvalidArgumentsException
+    {
+        EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
+
+        if ( subject.isAdmin() || subject.hasUsername( username ) )
+        {
+            subject.ensureUserExistsWithName( username );
+            return subject;
+        }
+
+        throw new AuthorizationViolationException( PERMISSION_DENIED );
+    }
+
+    private QueryStatusResult queryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
     {
         return new QueryStatusResult(
-                q.queryId(),
-                q.authSubjectName(),
-                q.queryText(),
-                q.queryParameters(),
-                q.startTime(),
-                clock.instant().minusMillis( q.startTime() ).toEpochMilli()
+            ofInternalId( q.internalQueryId() ),
+            q.usernameAsString(),
+            q.queryText(),
+            q.queryParameters(),
+            q.startTime(),
+            clock.instant().minusMillis( q.startTime() ).toEpochMilli()
         );
     }
 
     public static class QueryStatusResult
     {
-        public final long queryId;
+        public final String queryId;
 
         public final String username;
         public final String query;
@@ -101,10 +352,10 @@ public class BuiltInProcedures
         public final String startTime;
         public final String elapsedTime;
 
-        QueryStatusResult( long queryId, String username, String query, Map<String,Object> parameters,
+        QueryStatusResult( QueryId queryId, String username, String query, Map<String,Object> parameters,
                 long startTime, long elapsedTime )
         {
-            this.queryId = queryId;
+            this.queryId = queryId.toString();
             this.username = username;
             this.query = query;
             this.parameters = parameters;
@@ -114,19 +365,66 @@ public class BuiltInProcedures
 
         private static String formatTime( final long startTime )
         {
-            return OffsetDateTime.ofInstant(
-                Instant.ofEpochMilli( startTime ),
-                ZoneId.systemDefault()
-            ).format( ISO_OFFSET_DATE_TIME );
+            return OffsetDateTime
+                .ofInstant( Instant.ofEpochMilli( startTime ), ZoneId.systemDefault() )
+                .format( ISO_OFFSET_DATE_TIME );
         }
+    }
 
-        private static String formatInterval( final long l )
+    public static class QueryTerminationResult
+    {
+        public final String queryId;
+        public final String username;
+
+        public QueryTerminationResult( QueryId queryId, String username )
         {
-            final long hr = MILLISECONDS.toHours( l );
-            final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );
-            final long sec = MILLISECONDS.toSeconds( l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) );
-            final long ms = l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) - SECONDS.toMillis( sec );
-            return String.format( "%02d:%02d:%02d.%03d", hr, min, sec, ms );
+            this.queryId = queryId.toString();
+            this.username = username;
         }
+    }
+
+    public static class TransactionResult
+    {
+        public final String username;
+        public final Long activeTransactions;
+
+        TransactionResult( String username, Long activeTransactions )
+        {
+            this.username = username;
+            this.activeTransactions = activeTransactions;
+        }
+    }
+
+    public static class TransactionTerminationResult
+    {
+        public final String username;
+        public final Long transactionsTerminated;
+
+        TransactionTerminationResult( String username, Long transactionsTerminated )
+        {
+            this.username = username;
+            this.transactionsTerminated = transactionsTerminated;
+        }
+    }
+
+    public static class ConnectionResult
+    {
+        public final String username;
+        public final Long connectionCount;
+
+        ConnectionResult( String username, Long connectionCount )
+        {
+            this.username = username;
+            this.connectionCount = connectionCount;
+        }
+    }
+
+    static String formatInterval( final long l )
+    {
+        final long hr = MILLISECONDS.toHours( l );
+        final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );
+        final long sec = MILLISECONDS.toSeconds( l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) );
+        final long ms = l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) - SECONDS.toMillis( sec );
+        return String.format( "%02d:%02d:%02d.%03d", hr, min, sec, ms );
     }
 }

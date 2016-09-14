@@ -404,12 +404,14 @@ public class DataSourceModule
         procedures.registerComponent( DependencyResolver.class, ( ctx ) -> platform.dependencies );
         procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
         procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
-        procedures.registerComponent( AuthSubject.class, ctx -> ctx.get( AUTH_SUBJECT ) );
+
+        // Security procedures
+        procedures.registerComponent( AuthSubject.class, ctx -> ctx.getOrElse( AUTH_SUBJECT, AuthSubject.ANONYMOUS ) );
 
         // Edition procedures
         try
         {
-            editionModule.registerProcedures( procedures );
+            editionModule.setupProcedures( procedures );
         }
         catch ( KernelException e )
         {

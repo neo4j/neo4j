@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -54,11 +53,16 @@ public class ThreadedTransactionCreate<S>
 
     String execute( ThreadingRule threading, S subject, String query )
     {
-        return execute( threading, subject, KernelTransaction.Type.explicit, new AtomicBoolean( false ), query );
+        return doExecute( threading, subject, KernelTransaction.Type.explicit, false, query );
     }
 
-    String execute( ThreadingRule threading, S subject, KernelTransaction.Type txType, AtomicBoolean drain, String
-            query )
+    String executeEarly( ThreadingRule threading, S subject, KernelTransaction.Type txType, String query )
+    {
+        return doExecute( threading, subject, txType, true, query );
+    }
+
+    private String doExecute(
+        ThreadingRule threading, S subject, KernelTransaction.Type txType, boolean startEarly, String query )
     {
         NamedFunction<S, Throwable> startTransaction =
                 new NamedFunction<S, Throwable>( "start-transaction-" + query.hashCode() )
@@ -70,9 +74,20 @@ public class ThreadedTransactionCreate<S>
                         {
                             try ( InternalTransaction tx = neo.beginLocalTransactionAsUser( subject, txType ) )
                             {
-                                Result result = neo.getLocalGraph().execute( query );
-                                latch.startAndWaitForAllToStart();
-                                while (drain.get() && result.hasNext()) result.next();
+                                Result result;
+                                try
+                                {
+                                    if ( startEarly )
+                                        latch.start();
+                                    result = neo.getLocalGraph().execute( query );
+                                    if ( !startEarly )
+                                        latch.startAndWaitForAllToStart();
+                                }
+                                catch (Throwable t)
+                                {
+                                    latch.finish();
+                                    return t;
+                                }
                                 latch.finishAndWaitForAllToFinish();
                                 result.close();
                                 tx.success();
