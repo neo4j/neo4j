@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -54,22 +56,25 @@ public class BuiltInProcedures
     @Context
     public KernelTransaction tx;
 
-    @Description("List all labels in the database.")
-    @Procedure(name = "db.labels", mode = READ)
+    @Context
+    public DependencyResolver resolver;
+
+    @Description( "List all labels in the database." )
+    @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
         return TokenAccess.LABELS.inUse( tx.acquireStatement() ).map( LabelResult::new ).stream();
     }
 
     @Description( "List all property keys in the database." )
-    @Procedure(name = "db.propertyKeys", mode = READ)
+    @Procedure( name = "db.propertyKeys", mode = READ )
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
         return TokenAccess.PROPERTY_KEYS.inUse( tx.acquireStatement() ).map( PropertyKeyResult::new ).stream();
     }
 
     @Description( "List all relationship types in the database." )
-    @Procedure(name = "db.relationshipTypes", mode = READ)
+    @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
         return TokenAccess.RELATIONSHIP_TYPES.inUse( tx.acquireStatement() )
@@ -77,7 +82,7 @@ public class BuiltInProcedures
     }
 
     @Description( "List all indexes in the database." )
-    @Procedure(name = "db.indexes", mode = READ)
+    @Procedure( name = "db.indexes", mode = READ )
     public Stream<IndexResult> listIndexes() throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
@@ -120,21 +125,40 @@ public class BuiltInProcedures
         }
     }
 
-    @Description("Await indexes in the database to come online.")
-    @Procedure(name = "db.awaitIndex", mode = READ)
-    public void awaitIndex( @Name("label") String labelName,
-                            @Name("property") String propertyKeyName,
-                            @Name(value = "timeOutSeconds", defaultValue = "300") long timeout )
+    @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
+    @Procedure( name = "db.awaitIndex", mode = READ )
+    public void awaitIndex( @Name( "index" ) String index,
+                            @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
             throws ProcedureException
     {
-        try ( AwaitIndexProcedure awaitIndexProcedure = new AwaitIndexProcedure( tx ) )
+        try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            awaitIndexProcedure.execute( labelName, propertyKeyName, timeout, TimeUnit.SECONDS );
+            indexProcedures.awaitIndex( index, timeout, TimeUnit.SECONDS );
+        }
+    }
+
+    @Description( "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))." )
+    @Procedure( name = "db.resampleIndex", mode = READ )
+    public void resampleIndex( @Name( "index" ) String index ) throws ProcedureException
+    {
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.resampleIndex( index );
+        }
+    }
+
+    @Description( "Schedule resampling of all outdated indexes." )
+    @Procedure( name = "db.resampleOutdatedIndexes", mode = READ )
+    public void resampleOutdatedIndexes()
+    {
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.resampleOutdatedIndexes();
         }
     }
 
     @Description( "List all constraints in the database." )
-    @Procedure(name = "db.constraints", mode = READ)
+    @Procedure( name = "db.constraints", mode = READ )
     public Stream<ConstraintResult> listConstraints()
     {
         Statement statement = tx.acquireStatement();
@@ -150,7 +174,7 @@ public class BuiltInProcedures
     }
 
     @Description( "List all procedures in the DBMS." )
-    @Procedure(name = "dbms.procedures", mode = READ)
+    @Procedure( name = "dbms.procedures", mode = READ )
     public Stream<ProcedureResult> listProcedures()
     {
         try ( Statement statement = tx.acquireStatement() )
@@ -173,6 +197,11 @@ public class BuiltInProcedures
                     .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
                     .map( FunctionResult::new );
         }
+    }
+
+    private IndexProcedures indexProcedures()
+    {
+        return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
     }
 
     @SuppressWarnings( "unused" )

@@ -107,8 +107,12 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)", "List all constraints in the database."} ),
                 equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "List all indexes in the database."} ),
-                equalTo( new Object[]{"db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, " +
-                        "timeOutSeconds = 300 :: INTEGER?) :: VOID", "Await indexes in the database to come online."} ),
+                equalTo( new Object[]{"db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
+                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))."} ),
+                equalTo( new Object[]{"db.resampleIndex", "db.resampleIndex(index :: STRING?) :: VOID",
+                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))."} ),
+                equalTo( new Object[]{"db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID",
+                        "Schedule resampling of all outdated indexes."} ),
                 equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)", "List all property keys in the database."} ),
                 equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database."} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +
