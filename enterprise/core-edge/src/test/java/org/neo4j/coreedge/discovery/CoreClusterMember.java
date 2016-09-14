@@ -43,7 +43,7 @@ import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_
 import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class CoreClusterMember
+public class CoreClusterMember implements ClusterMember
 {
     private final File neo4jHome;
     private final DiscoveryServiceFactory discoveryServiceFactory;
@@ -98,12 +98,14 @@ public class CoreClusterMember
         storeDir.mkdirs();
     }
 
+    @Override
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, config,
                 GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
     }
 
+    @Override
     public void shutdown()
     {
         if ( database != null )
@@ -113,6 +115,7 @@ public class CoreClusterMember
         }
     }
 
+    @Override
     public CoreGraphDatabase database()
     {
         return database;

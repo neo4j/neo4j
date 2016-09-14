@@ -22,7 +22,6 @@ package org.neo4j.backup.stresstests;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.Callable;
 
 import org.neo4j.backup.BackupServiceStressTestingBuilder;
@@ -31,12 +30,11 @@ import org.neo4j.io.fs.FileUtils;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
-import static java.lang.System.getenv;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.StressTestingHelper.fromEnv;
-import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
+import static org.neo4j.function.Suppliers.untilTimeExpired;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
