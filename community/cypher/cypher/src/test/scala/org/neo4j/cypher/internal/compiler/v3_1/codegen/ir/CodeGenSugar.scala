@@ -57,26 +57,21 @@ trait CodeGenSugar extends MockitoSugar {
 
   def compileAndExecute(plan: LogicalPlan,
                         graphDb: GraphDatabaseQueryService,
-                        mode: ExecutionMode = NormalMode,
-                        params: Map[String, AnyRef] = Map.empty,
-                        taskCloser: TaskCloser = new TaskCloser) = {
-    executeCompiled(compile(plan), graphDb, mode, params, taskCloser)
+                        mode: ExecutionMode = NormalMode) = {
+    executeCompiled(compile(plan), graphDb, mode)
   }
 
   def executeCompiled(plan: CompiledPlan,
                       graphDb: GraphDatabaseQueryService,
-                      mode: ExecutionMode = NormalMode,
-                      params: Map[String, AnyRef] = Map.empty,
-                      taskCloser: TaskCloser = new TaskCloser): InternalExecutionResult = {
+                      mode: ExecutionMode = NormalMode): InternalExecutionResult = {
     val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
     try {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
-      // TODO: Get query and parameters down here somehow
       val contextFactory = new Neo4jTransactionalContextFactory(graphDb, locker)
-      ???
-      val transactionalContext = TransactionalContextWrapperv3_1(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
+      val transactionalContext = TransactionalContextWrapperv3_1(contextFactory.newContext(QuerySource.UNKNOWN, tx,
+        "no query text exists for this test", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
-      val result = plan.executionResultBuilder(queryContext, mode, tracer(mode), params, taskCloser)
+      val result = plan.executionResultBuilder(queryContext, mode, tracer(mode), Map.empty, new TaskCloser)
       tx.success()
       result.size
       result
