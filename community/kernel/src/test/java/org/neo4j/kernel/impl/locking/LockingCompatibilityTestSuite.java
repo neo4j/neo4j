@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -32,6 +34,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WaitDetails;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
@@ -56,6 +60,19 @@ public abstract class LockingCompatibilityTestSuite
 {
     protected abstract Locks createLockManager();
 
+    /**
+     * Implementing this requires intricate knowledge of implementation of the particular locks client.
+     * This is the most efficient way of telling whether or not a thread awaits a lock acquisition or not
+     * so the price we pay for the potential fragility introduced here we gain in much snappier testing
+     * when testing deadlocks and lock acquisitions.
+     *
+     * @param details {@link WaitDetails} gotten at a confirmed thread wait/block or similar,
+     * see {@link OtherThreadExecutor}.
+     * @return {@code true} if the wait details marks a wait on a lock acquisition, otherwise {@code false}
+     * so that a new thread wait/block will be registered and this method called again.
+     */
+    protected abstract boolean isAwaitingLockAcquisition( WaitDetails details );
+
     public abstract static class Compatibility
     {
         @Rule
@@ -70,14 +87,22 @@ public abstract class LockingCompatibilityTestSuite
         @Rule
         public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
 
-        protected final Locks locks;
-        protected final Locks.Client clientA;
-        protected final Locks.Client clientB;
-        protected final Locks.Client clientC;
+        protected final LockingCompatibilityTestSuite suite;
+
+        protected Locks locks;
+        protected Locks.Client clientA;
+        protected Locks.Client clientB;
+        protected Locks.Client clientC;
 
         private final Map<Locks.Client, OtherThreadRule<Void>> clientToThreadMap = new HashMap<>();
 
         public Compatibility( LockingCompatibilityTestSuite suite )
+        {
+            this.suite = suite;
+        }
+
+        @Before
+        public void before()
         {
             this.locks = suite.createLockManager();
             clientA = this.locks.newClient();
@@ -87,6 +112,16 @@ public abstract class LockingCompatibilityTestSuite
             clientToThreadMap.put( clientA, threadA );
             clientToThreadMap.put( clientB, threadB );
             clientToThreadMap.put( clientC, threadC );
+        }
+
+        @After
+        public void after()
+        {
+            clientA.close();
+            clientB.close();
+            clientC.close();
+            locks.close();
+            clientToThreadMap.clear();
         }
 
         // Utilities

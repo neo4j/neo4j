@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking.community;
 
 import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.test.OtherThreadExecutor.WaitDetails;
 
 public class CommunityLocksTest extends LockingCompatibilityTestSuite
 {
@@ -28,5 +29,11 @@ public class CommunityLocksTest extends LockingCompatibilityTestSuite
     protected Locks createLockManager()
     {
         return new CommunityLockManger();
+    }
+
+    @Override
+    protected boolean isAwaitingLockAcquisition( WaitDetails details )
+    {
+        return details.isAt( RWLock.class, "waitUninterruptedly" );
     }
 }
