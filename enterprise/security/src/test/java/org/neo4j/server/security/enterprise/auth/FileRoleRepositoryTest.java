@@ -162,14 +162,14 @@ public class FileRoleRepositoryTest
         FileSystemAbstraction craschingFileSystem =
                 new DelegatingFileSystemAbstraction( fs ) {
                     @Override
-                    public boolean move( File oldLocation, File newLocation, CopyOption... copyOptions ) throws
+                    public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws
                             IOException
                     {
                         if ( roleFile.getName().equals( newLocation.getName().toString() ) )
                         {
                             throw exception;
                         }
-                        return super.move( oldLocation, newLocation, copyOptions );
+                        super.renameFile( oldLocation, newLocation, copyOptions );
                     }
                 };
 

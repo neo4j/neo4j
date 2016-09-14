@@ -78,7 +78,7 @@ public abstract class FileRepositorySerializer<S>
         try
         {
             writeToFile( fileSystem, tempFile, serialize( records ) );
-            fileSystem.move( tempFile, recordsFile, ATOMIC_MOVE, REPLACE_EXISTING );
+            fileSystem.renameFile( tempFile, recordsFile, ATOMIC_MOVE, REPLACE_EXISTING );
         }
         catch ( Throwable e )
         {
