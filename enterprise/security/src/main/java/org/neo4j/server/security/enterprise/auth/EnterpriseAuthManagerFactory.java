@@ -59,7 +59,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     }
 
     @Override
-    public AuthManager newInstance( Config config, LogProvider logProvider, Log allegedSecurityLog,
+    public EnterpriseAuthManager newInstance( Config config, LogProvider logProvider, Log allegedSecurityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
 //        StaticLoggerBinder.setNeo4jLogProvider( logProvider );
@@ -106,17 +106,19 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        // Resolve auth store and roles file names
-        File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
-        File roleStoreFile = new File( authStoreDir, ROLE_STORE_FILENAME );
-        final UserRepository userRepository = getUserRepository( config, logProvider, fileSystem );
-        final RoleRepository roleRepository = new FileRoleRepository( fileSystem, roleStoreFile, logProvider );
-        final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-
-        AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
-
-        return new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
+        return new InternalFlatFileRealm(
+                getUserRepository( config, logProvider, fileSystem ),
+                getRoleRepository( config, logProvider, fileSystem ),
+                new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
                 config.get( SecuritySettings.internal_authentication_enabled ),
                 config.get( SecuritySettings.internal_authorization_enabled ), jobScheduler );
+    }
+
+    public static RoleRepository getRoleRepository( Config config, LogProvider logProvider,
+            FileSystemAbstraction fileSystem )
+    {
+        File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
+        File roleStoreFile = new File( authStoreDir, ROLE_STORE_FILENAME );
+        return new FileRoleRepository( fileSystem, roleStoreFile, logProvider );
     }
 }

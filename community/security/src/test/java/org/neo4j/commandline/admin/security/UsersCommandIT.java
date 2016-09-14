@@ -31,7 +31,7 @@ import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class UsersCommandIT extends CommandTestBase
+public class UsersCommandIT extends UsersCommandTestBase
 {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDir );
@@ -281,11 +281,6 @@ public class UsersCommandIT extends CommandTestBase
     // Utilities for testing AdminTool
     //
 
-    private String[] args(String... args)
-    {
-        return args;
-    }
-
     private void assertFailedUserCommand( String command, String... errors )
     {
         // When running users command without a command or with incorrect command
@@ -307,46 +302,4 @@ public class UsersCommandIT extends CommandTestBase
         verify( out, times( 0 ) ).stdOutLine( anyString() );
         verify( out ).exit( 1 );
     }
-
-    private String[] makeArgs(String command, String... args)
-    {
-        String[] allArgs = new String[args.length + 2];
-        System.arraycopy( args, 0, allArgs, 2, args.length );
-        allArgs[0] = "users";
-        allArgs[1] = command;
-        return allArgs;
-    }
-
-    private void assertFailedSubCommand( String command, String[] args, String... errors )
-    {
-        // When running set password on a failing case (missing user, or other error)
-        resetOutsideWorldMock();
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ) );
-
-        // Then we get the expected error
-        for ( String error : errors )
-        {
-            verify( out ).stdErrLine( contains( error ) );
-        }
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
-        verify( out ).exit( 1 );
-    }
-
-    private void assertSuccessfulSubCommand( String command, String[] args, String... messages )
-    {
-        // When running set password on a successful case (user exists)
-        resetOutsideWorldMock();
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ));
-
-        // Then we get the expected output messages
-        for ( String message : messages )
-        {
-            verify( out ).stdOutLine( contains( message ) );
-        }
-        verify( out, times( 0 ) ).stdErrLine( anyString() );
-        verify( out ).exit( 0 );
-    }
-
 }
