@@ -59,8 +59,8 @@ public class SchemaProcedure
 
     public GraphResult buildSchemaGraph()
     {
-        final Map<String,NodeImpl> vertices = new HashMap<>();
-        final Map<String,Set<RelationshipImpl>> edges = new HashMap<>();
+        final Map<String,NodeImpl> nodes = new HashMap<>();
+        final Map<String,Set<RelationshipImpl>> relationships = new HashMap<>();
 
         ReadOperations readOperations = kernelTransaction.acquireStatement().readOperations();
         StatementTokenNameLookup statementTokenNameLookup = new StatementTokenNameLookup( readOperations );
@@ -94,7 +94,7 @@ public class SchemaProcedure
                 }
                 properties.put( "constraints", constraints );
 
-                getOrCreateLabel( label.name(), properties, vertices );
+                getOrCreateLabel( label.name(), properties, nodes );
             }
 
             //add all relationships
@@ -108,36 +108,36 @@ public class SchemaProcedure
                 int relId = readOperations.relationshipTypeGetForName( relationshipTypeGetName );
                 ResourceIterator<Label> labelsInUse = graphDatabaseAPI.getAllLabelsInUse().iterator();
 
-                List<NodeImpl> startVertices = new LinkedList<>();
-                List<NodeImpl> endVertices = new LinkedList<>();
+                List<NodeImpl> startNodes = new LinkedList<>();
+                List<NodeImpl> endNodes = new LinkedList<>();
 
                 while ( labelsInUse.hasNext() )
                 {
                     Label labelToken = labelsInUse.next();
                     String labelName = labelToken.name();
                     Map<String,Object> properties = new HashMap<>();
-                    NodeImpl vertex = getOrCreateLabel( labelName, properties, vertices );
+                    NodeImpl node = getOrCreateLabel( labelName, properties, nodes );
                     int labelId = readOperations.labelGetForName( labelName );
 
                     if ( readOperations.countsForRelationship( labelId, relId, ReadOperations.ANY_LABEL ) > 0 )
                     {
-                        startVertices.add( vertex );
+                        startNodes.add( node );
                     }
                     if ( readOperations.countsForRelationship( ReadOperations.ANY_LABEL, relId, labelId ) > 0 )
                     {
-                        endVertices.add( vertex );
+                        endNodes.add( node );
                     }
                 }
-                for ( NodeImpl startVertex : startVertices )
+                for ( NodeImpl startNode : startNodes )
                 {
-                    for ( NodeImpl endVertex : endVertices )
+                    for ( NodeImpl endNode : endNodes )
                     {
-                        RelationshipImpl edge = addEdge( startVertex, endVertex, relationshipTypeGetName, edges );
+                        RelationshipImpl relationship = addRelationship( startNode, endNode, relationshipTypeGetName, relationships );
                     }
                 }
             }
             transaction.success();
-            return getGraphResult( vertices, edges );
+            return getGraphResult( nodes, relationships );
         }
     }
 
@@ -154,49 +154,49 @@ public class SchemaProcedure
     }
 
     private NodeImpl getOrCreateLabel( String label, Map<String,Object> properties,
-            final Map<String,NodeImpl> vertices )
+            final Map<String,NodeImpl> nodeMap )
     {
-        if ( vertices.containsKey( label ) )
+        if ( nodeMap.containsKey( label ) )
         {
-            return vertices.get( label );
+            return nodeMap.get( label );
         }
-        NodeImpl vertex = new NodeImpl( label, properties );
-        vertices.put( label, vertex );
-        return vertex;
+        NodeImpl node = new NodeImpl( label, properties );
+        nodeMap.put( label, node );
+        return node;
     }
 
-    private RelationshipImpl addEdge( NodeImpl startVertex, NodeImpl endVertex, String relType,
-            final Map<String,Set<RelationshipImpl>> edges )
+    private RelationshipImpl addRelationship( NodeImpl startNode, NodeImpl endNode, String relType,
+            final Map<String,Set<RelationshipImpl>> relationshipMap )
     {
-        Set<RelationshipImpl> edgesForRel;
-        if ( !edges.containsKey( relType ) )
+        Set<RelationshipImpl> relationshipsForType;
+        if ( !relationshipMap.containsKey( relType ) )
         {
-            edgesForRel = new HashSet<>();
-            edges.put( relType, edgesForRel );
+            relationshipsForType = new HashSet<>();
+            relationshipMap.put( relType, relationshipsForType );
         }
         else
         {
-            edgesForRel = edges.get( relType );
+            relationshipsForType = relationshipMap.get( relType );
         }
-        RelationshipImpl edge = new RelationshipImpl( startVertex, endVertex, relType );
-        if ( !edgesForRel.contains( edge ) )
+        RelationshipImpl relationship = new RelationshipImpl( startNode, endNode, relType );
+        if ( !relationshipsForType.contains( relationship ) )
         {
-            edgesForRel.add( edge );
+            relationshipsForType.add( relationship );
         }
-        return edge;
+        return relationship;
     }
 
-    private GraphResult getGraphResult( final Map<String,NodeImpl> vertices,
-            final Map<String,Set<RelationshipImpl>> edges )
+    private GraphResult getGraphResult( final Map<String,NodeImpl> nodeMap,
+            final Map<String,Set<RelationshipImpl>> relationshipMap )
     {
         List<Relationship> relationships = new LinkedList<>();
-        for ( Set<RelationshipImpl> edge : edges.values() )
+        for ( Set<RelationshipImpl> relationship : relationshipMap.values() )
         {
-            relationships.addAll( edge );
+            relationships.addAll( relationship );
         }
 
         GraphResult graphResult;
-        graphResult = new GraphResult( new ArrayList<Node>( vertices.values() ), relationships );
+        graphResult = new GraphResult( new ArrayList<Node>( nodeMap.values() ), relationships );
 
         return graphResult;
     }
