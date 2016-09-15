@@ -20,11 +20,11 @@
 package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -35,28 +35,36 @@ public class Recovery extends LifecycleAdapter
 {
     public interface Monitor
     {
-        void recoveryRequired( LogPosition recoveryPosition );
+        default void recoveryRequired( LogPosition recoveryPosition )
+        { // no-op by default
+        }
 
-        void logRecovered( LogPosition endPosition );
+        default void transactionRecovered( long txId )
+        { // no-op by default
+        }
 
-        void recoveryCompleted();
+        default void recoveryCompleted( int numberOfRecoveredTransactions )
+        { // no-op by default
+        }
     }
 
     public interface SPI
     {
         void forceEverything();
 
-        Visitor<LogVersionedStoreChannel,Exception> getRecoverer();
-
-        Iterator<LogVersionedStoreChannel> getLogFiles( long fromVersion ) throws IOException;
+        TransactionCursor getTransactions( LogPosition position ) throws IOException;
 
         LogPosition getPositionToRecoverFrom() throws IOException;
 
-        public void recoveryRequired();
+        Visitor<CommittedTransactionRepresentation,Exception> startRecovery();
+
+        void allTransactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
+                LogPosition positionAfterLastRecoveredTransaction ) throws Exception;
     }
 
     private final SPI spi;
     private final Monitor monitor;
+    private int numberOfRecoveredTransactions;
 
     private boolean recoveredLog = false;
 
@@ -69,26 +77,37 @@ public class Recovery extends LifecycleAdapter
     @Override
     public void init() throws Throwable
     {
-        LogPosition recoveryPosition = spi.getPositionToRecoverFrom();
-        if ( LogPosition.UNSPECIFIED.equals( recoveryPosition ) )
+        LogPosition recoveryFromPosition = spi.getPositionToRecoverFrom();
+        if ( LogPosition.UNSPECIFIED.equals( recoveryFromPosition ) )
         {
             return;
         }
-        Iterator<LogVersionedStoreChannel> logFiles = spi.getLogFiles( recoveryPosition.getLogVersion() );
-        monitor.recoveryRequired( recoveryPosition );
-        spi.recoveryRequired();
-        Visitor<LogVersionedStoreChannel,Exception> recoverer = spi.getRecoverer();
-        while ( logFiles.hasNext() )
+
+        monitor.recoveryRequired( recoveryFromPosition );
+
+        LogPosition recoveryToPosition;
+        CommittedTransactionRepresentation lastTransaction = null;
+        Visitor<CommittedTransactionRepresentation,Exception> recoveryVisitor = spi.startRecovery();
+        try ( TransactionCursor transactionsToRecover = spi.getTransactions( recoveryFromPosition ) )
         {
-            try ( LogVersionedStoreChannel toRecover = logFiles.next() )
+            while ( transactionsToRecover.next() )
             {
-                toRecover.position( recoveryPosition.getByteOffset() );
-                recoverer.visit( toRecover );
-                recoveryPosition = LogPosition.start( recoveryPosition.getLogVersion() + 1 );
+                lastTransaction = transactionsToRecover.get();
+                long txId = lastTransaction.getCommitEntry().getTxId();
+                recoveryVisitor.visit( lastTransaction );
+                monitor.transactionRecovered( txId );
+                numberOfRecoveredTransactions++;
             }
+            recoveryToPosition = transactionsToRecover.position();
         }
+
+        if ( lastTransaction != null )
+        {
+            // There were transactions recovered
+            spi.allTransactionsRecovered( lastTransaction, recoveryToPosition );
+        }
+
         recoveredLog = true;
-        monitor.logRecovered( recoveryPosition );
         spi.forceEverything();
     }
 
@@ -99,7 +118,7 @@ public class Recovery extends LifecycleAdapter
         if ( recoveredLog )
         {
             spi.forceEverything();
-            monitor.recoveryCompleted();
+            monitor.recoveryCompleted( numberOfRecoveredTransactions );
         }
     }
 }

@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 
 /**
  * Accessor of meta data information about transactions.
@@ -31,18 +32,34 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.Transactio
 public interface LogicalTransactionStore
 {
     /**
-     * Acquires a {@link IOCursor cursor} which will provide {@link CommittedTransactionRepresentation}
+     * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}
      * instances for committed transactions, starting from the specified {@code transactionIdToStartFrom}.
      * Transactions will be returned from the cursor in transaction-id-sequential order.
      *
      * @param transactionIdToStartFrom id of the first transaction that the cursor will return.
-     * @return an {@link IOCursor} capable of returning {@link CommittedTransactionRepresentation} instances
+     * @return an {@link TransactionCursor} capable of returning {@link CommittedTransactionRepresentation} instances
      * for committed transactions, starting from the specified {@code transactionIdToStartFrom}.
      * @throws NoSuchTransactionException if the requested transaction hasn't been committed,
      * or if the transaction has been committed, but information about it is no longer available for some reason.
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
-    IOCursor<CommittedTransactionRepresentation> getTransactions( long transactionIdToStartFrom )
+    TransactionCursor getTransactions( long transactionIdToStartFrom )
+            throws NoSuchTransactionException, IOException;
+
+    /**
+     * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}
+     * instances for committed transactions, starting from the specified {@link LogPosition}.
+     * This is useful for placing a cursor at a position referred to by a {@link CheckPoint}.
+     * Transactions will be returned from the cursor in transaction-id-sequential order.
+     *
+     * @param position {@link LogPosition} of the first transaction that the cursor will return.
+     * @return an {@link TransactionCursor} capable of returning {@link CommittedTransactionRepresentation} instances
+     * for committed transactions, starting from the specified {@code position}.
+     * @throws NoSuchTransactionException if the requested transaction hasn't been committed,
+     * or if the transaction has been committed, but information about it is no longer available for some reason.
+     * @throws IOException if there was an I/O related error looking for the start transaction.
+     */
+    TransactionCursor getTransactions( LogPosition position )
             throws NoSuchTransactionException, IOException;
 
     /**
