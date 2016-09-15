@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.io.PrintStream;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public interface OutsideWorld
@@ -32,4 +34,6 @@ public interface OutsideWorld
     void printStacktrace( Exception exception );
 
     FileSystemAbstraction fileSystem();
+
+    PrintStream errorStream();
 }

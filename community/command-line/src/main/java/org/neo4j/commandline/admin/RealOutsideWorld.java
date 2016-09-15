@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.io.PrintStream;
+
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -54,5 +56,11 @@ class RealOutsideWorld implements OutsideWorld
     public FileSystemAbstraction fileSystem()
     {
         return fileSystemAbstraction;
+    }
+
+    @Override
+    public PrintStream errorStream()
+    {
+        return System.err;
     }
 }

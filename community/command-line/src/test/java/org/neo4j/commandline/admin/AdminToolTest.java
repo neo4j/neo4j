@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -218,6 +219,12 @@ public class AdminToolTest
         public FileSystemAbstraction fileSystem()
         {
             return null;
+        }
+
+        @Override
+        public PrintStream errorStream()
+        {
+            throw new UnsupportedOperationException( "not implemented" );
         }
     }
 
