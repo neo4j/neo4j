@@ -46,7 +46,7 @@ public interface TransactionalContext
 
     void cleanForReuse();
 
-    TransactionalContext provideContext();
+    TransactionalContext getOrBeginNewIfClosed();
 
     boolean isOpen();
 

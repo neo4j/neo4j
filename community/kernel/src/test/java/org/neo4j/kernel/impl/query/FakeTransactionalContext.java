@@ -81,7 +81,7 @@ public class FakeTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public TransactionalContext provideContext()
+    public TransactionalContext getOrBeginNewIfClosed()
     {
         throw new UnsupportedOperationException( "fake test class" );
     }

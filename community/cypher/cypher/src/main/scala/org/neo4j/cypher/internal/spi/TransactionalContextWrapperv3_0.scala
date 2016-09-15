@@ -35,7 +35,7 @@ case class TransactionalContextWrapperv3_0(tc: TransactionalContext) extends Que
 
   override type DbmsOps = DbmsOperations
 
-  def provideContext(): TransactionalContextWrapperv3_0 = TransactionalContextWrapperv3_0(tc.provideContext())
+  def getOrBeginNewIfClosed(): TransactionalContextWrapperv3_0 = TransactionalContextWrapperv3_0(tc.getOrBeginNewIfClosed())
 
   def isOpen: Boolean = tc.isOpen
 

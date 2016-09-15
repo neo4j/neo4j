@@ -147,7 +147,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
       var n = 0
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
         // create transaction and query context
-        val tc = externalTransactionalContext.provideContext()
+        val tc = externalTransactionalContext.getOrBeginNewIfClosed()
 
         // Temporarily change access mode during query planning
         // NOTE: The OVERRIDE_READ mode will force read access even if the current transaction did not have it

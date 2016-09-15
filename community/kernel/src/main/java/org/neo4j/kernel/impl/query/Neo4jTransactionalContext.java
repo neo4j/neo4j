@@ -194,7 +194,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public TransactionalContext provideContext()
+    public TransactionalContext getOrBeginNewIfClosed()
     {
         if ( isOpen )
         {
