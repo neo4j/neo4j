@@ -19,17 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -39,16 +42,19 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.REAL_FS;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.Direction.BOTH;
@@ -63,17 +69,13 @@ public class StoreNodeRelationshipCursorTest
     private static final long SECOND_OWNING_NODE = 2;
     private static final int TYPE = 0;
 
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( pageCacheRule )
-            .around( fileSystemRule );
+    private static PageCache pageCache;
+    private static NeoStores neoStores;
+
     @Parameterized.Parameter
     public Direction direction;
     @Parameterized.Parameter( value = 1 )
     public boolean dense;
-    private NeoStores neoStores;
 
     @Parameterized.Parameters
     public static Iterable<Object[]> parameters()
@@ -88,22 +90,22 @@ public class StoreNodeRelationshipCursorTest
         } );
     }
 
-    @After
-    public void tearDown()
+    @BeforeClass
+    public static void setupStores() throws IOException
     {
-        if ( neoStores != null )
-        {
-            neoStores.close();
-        }
+        File directory = TestDirectory.testDataDirectoryOf( REAL_FS, StoreNodeRelationshipCursor.class, true );
+        pageCache = new ConfiguringPageCacheFactory( REAL_FS,
+                Config.defaults().augment( stringMap( pagecache_memory.name(), "8m" ) ), NULL, NullLog.getInstance() )
+                .getOrCreatePageCache();
+        StoreFactory storeFactory = new StoreFactory( directory, pageCache, REAL_FS, NullLogProvider.getInstance() );
+        neoStores = storeFactory.openAllNeoStores( true );
     }
 
-    @Before
-    public void setUp()
+    @AfterClass
+    public static void shutDownStores() throws IOException
     {
-        StoreFactory storeFactory = new StoreFactory( testDirectory.directory(),
-                pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(),
-                NullLogProvider.getInstance() );
-        neoStores = storeFactory.openAllNeoStores( true );
+        neoStores.close();
+        pageCache.close();
     }
 
     @Test
