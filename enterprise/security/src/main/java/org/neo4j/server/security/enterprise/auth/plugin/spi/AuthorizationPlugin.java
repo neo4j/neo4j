@@ -58,7 +58,7 @@ public interface AuthorizationPlugin extends RealmLifecycle
     /**
      * TODO
      */
-    AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals );
+    AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals );
 
     class Adapter implements AuthorizationPlugin
     {
@@ -70,7 +70,7 @@ public interface AuthorizationPlugin extends RealmLifecycle
         }
 
         @Override
-        public AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals )
+        public AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals )
         {
             return null;
         }

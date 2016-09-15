@@ -25,7 +25,7 @@ import java.util.Collection;
 /**
  * An object that can be returned as the result of authorization by an <tt>AuthorizationPlugin</tt>.
  *
- * @see AuthorizationPlugin#getAuthorizationInfo(Collection)
+ * @see AuthorizationPlugin#authorize(Collection)
  */
 public interface AuthorizationInfo extends Serializable
 {

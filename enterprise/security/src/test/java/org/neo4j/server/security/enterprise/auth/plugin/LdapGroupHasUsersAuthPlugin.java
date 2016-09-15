@@ -37,11 +37,10 @@ import javax.naming.ldap.LdapContext;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 
-public class LdapGroupHasUsersAuthPlugin implements AuthPlugin
+public class LdapGroupHasUsersAuthPlugin extends AuthPlugin.Adapter
 {
     private static final String GROUP_SEARCH_BASE = "ou=groups,dc=example,dc=com";
     private static final String GROUP_SEARCH_FILTER = "(&(objectClass=posixGroup)(memberUid={0}))";
@@ -54,7 +53,7 @@ public class LdapGroupHasUsersAuthPlugin implements AuthPlugin
     }
 
     @Override
-    public AuthInfo getAuthInfo( Map<String,Object> authToken ) throws AuthenticationException
+    public AuthInfo authenticateAndAuthorize( Map<String,Object> authToken ) throws AuthenticationException
     {
         try
         {
@@ -70,26 +69,6 @@ public class LdapGroupHasUsersAuthPlugin implements AuthPlugin
         {
             throw new AuthenticationException( e.getMessage() );
         }
-    }
-
-    @Override
-    public void initialize( RealmOperations realmOperations ) throws Throwable
-    {
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
     }
 
     private LdapContext authenticate( String username, String password ) throws NamingException

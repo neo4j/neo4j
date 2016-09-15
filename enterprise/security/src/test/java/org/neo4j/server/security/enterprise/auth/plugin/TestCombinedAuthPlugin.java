@@ -40,7 +40,7 @@ public class TestCombinedAuthPlugin implements AuthenticationPlugin, Authorizati
     }
 
     @Override
-    public AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken )
+    public AuthenticationInfo authenticate( Map<String,Object> authToken )
     {
         String principal = (String) authToken.get( AuthToken.PRINCIPAL );
         String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
@@ -53,7 +53,7 @@ public class TestCombinedAuthPlugin implements AuthenticationPlugin, Authorizati
     }
 
     @Override
-    public AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals )
+    public AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals )
     {
         if ( principals.stream().anyMatch( p -> "neo4j".equals( p.principal() ) ) )
         {

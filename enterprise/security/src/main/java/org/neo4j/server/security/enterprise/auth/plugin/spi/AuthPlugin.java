@@ -37,7 +37,7 @@ public interface AuthPlugin extends RealmLifecycle
     /**
      * TODO
      */
-    AuthInfo getAuthInfo( Map<String,Object> authToken ) throws AuthenticationException;
+    AuthInfo authenticateAndAuthorize( Map<String,Object> authToken ) throws AuthenticationException;
 
     abstract class Adapter implements AuthPlugin
     {

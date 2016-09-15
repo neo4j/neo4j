@@ -33,7 +33,7 @@ import java.util.Map;
  *
  * <p>NOTE: Caching only occurs if it is explicitly enabled by the plugin.
  *
- * @see AuthenticationPlugin#getAuthenticationInfo(Map)
+ * @see AuthenticationPlugin#authenticate(Map)
  * @see org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations#setAuthenticationCachingEnabled(boolean)
  * @see CustomCacheableAuthenticationInfo
  */
@@ -63,7 +63,7 @@ public interface CacheableAuthenticationInfo extends AuthenticationInfo
      * @return credentials that can be cached
      *
      * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken#CREDENTIALS
-     * @see AuthenticationPlugin#getAuthenticationInfo(Map)
+     * @see AuthenticationPlugin#authenticate(Map)
      */
     byte[] getCredentials();
 

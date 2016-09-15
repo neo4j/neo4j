@@ -30,7 +30,7 @@ import java.util.Map;
  *
  * <p>NOTE: If authentication caching is enabled the result type <tt>CacheableAuthInfo</tt> should be used instead.
  *
- * @see AuthPlugin#getAuthInfo(Map)
+ * @see AuthPlugin#authenticateAndAuthorize(Map)
  * @see CacheableAuthInfo
  */
 public interface AuthInfo extends Serializable

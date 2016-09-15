@@ -145,7 +145,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         if ( authorizationPlugin != null )
         {
             org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo authorizationInfo =
-                    authorizationPlugin.getAuthorizationInfo( getPrincipalAndRealmCollection( principals ) );
+                    authorizationPlugin.authorize( getPrincipalAndRealmCollection( principals ) );
             if ( authorizationInfo != null )
             {
                 return PluginAuthorizationInfo.create( authorizationInfo );
@@ -163,7 +163,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
             {
                 if ( authPlugin != null )
                 {
-                    AuthInfo authInfo = authPlugin.getAuthInfo( ((ShiroAuthToken) token).getAuthTokenMap() );
+                    AuthInfo authInfo = authPlugin.authenticateAndAuthorize( ((ShiroAuthToken) token).getAuthTokenMap() );
                     if ( authInfo != null )
                     {
                         PluginAuthInfo pluginAuthInfo =
@@ -177,7 +177,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
                 else if ( authenticationPlugin != null )
                 {
                     org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo authenticationInfo =
-                            authenticationPlugin.getAuthenticationInfo( ((ShiroAuthToken) token).getAuthTokenMap() );
+                            authenticationPlugin.authenticate( ((ShiroAuthToken) token).getAuthTokenMap() );
                     if ( authenticationInfo != null )
                     {
                         return PluginAuthenticationInfo.createCacheable( authenticationInfo, getName(), secureHasher );

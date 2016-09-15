@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -38,27 +37,14 @@ public class TestAuthPlugin implements AuthPlugin
     }
 
     @Override
-    public AuthInfo getAuthInfo( Map<String,Object> authToken )
+    public AuthInfo authenticateAndAuthorize( Map<String,Object> authToken )
     {
         String principal = (String) authToken.get( AuthToken.PRINCIPAL );
         String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
-            return new AuthInfo()
-            {
-                @Override
-                public Object getPrincipal()
-                {
-                    return "neo4j";
-                }
-
-                @Override
-                public Collection<String> getRoles()
-                {
-                    return Collections.singleton( PredefinedRoles.READER );
-                }
-            };
+            return AuthInfo.of( "neo4j", Collections.singleton( PredefinedRoles.READER ) );
         }
         return null;
     }

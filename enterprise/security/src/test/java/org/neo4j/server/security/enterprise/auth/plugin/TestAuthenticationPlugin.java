@@ -34,7 +34,7 @@ public class TestAuthenticationPlugin extends AuthenticationPlugin.Adapter
     }
 
     @Override
-    public AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken )
+    public AuthenticationInfo authenticate( Map<String,Object> authToken )
     {
         String principal = (String) authToken.get( AuthToken.PRINCIPAL );
         String credentials = (String) authToken.get( AuthToken.CREDENTIALS );

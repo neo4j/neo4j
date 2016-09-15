@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * An object that can be returned as the result of successful authentication by an <tt>AuthenticationPlugin</tt>.
  *
- * @see AuthenticationPlugin#getAuthenticationInfo(Map)
+ * @see AuthenticationPlugin#authenticate(Map)
  */
 public interface AuthenticationInfo extends Serializable
 {

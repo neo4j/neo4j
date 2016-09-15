@@ -35,7 +35,7 @@ public class TestAuthorizationPlugin extends AuthorizationPlugin.Adapter
     }
 
     @Override
-    public AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals )
+    public AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals )
     {
         if ( principals.stream().anyMatch( p -> "neo4j".equals( p.principal() ) ) )
         {

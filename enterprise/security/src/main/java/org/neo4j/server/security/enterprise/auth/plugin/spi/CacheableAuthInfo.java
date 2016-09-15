@@ -40,7 +40,7 @@ import java.util.Map;
  * <p>NOTE: Caching of the authorization info (assigned roles) does not require the use of a <tt>CacheableAuthInfo</tt>
  * but will work fine with a regular <tt>AuthInfo</tt>.
  *
- * @see AuthPlugin#getAuthInfo(Map)
+ * @see AuthPlugin#authenticateAndAuthorize(Map)
  * @see org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations#setAuthenticationCachingEnabled(boolean)
  * @see AuthInfo
  * @see AuthenticationPlugin
@@ -73,7 +73,7 @@ public interface CacheableAuthInfo extends AuthInfo
      * @return credentials that can be cached
      *
      * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken#CREDENTIALS
-     * @see AuthPlugin#getAuthInfo(Map)
+     * @see AuthPlugin#authenticateAndAuthorize(Map)
      */
     byte[] getCredentials();
 

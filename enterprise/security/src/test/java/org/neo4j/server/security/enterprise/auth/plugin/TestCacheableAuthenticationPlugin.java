@@ -36,7 +36,7 @@ public class TestCacheableAuthenticationPlugin extends AuthenticationPlugin.Cach
     }
 
     @Override
-    public AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken )
+    public AuthenticationInfo authenticate( Map<String,Object> authToken )
     {
         getAuthenticationInfoCallCount.incrementAndGet();
 

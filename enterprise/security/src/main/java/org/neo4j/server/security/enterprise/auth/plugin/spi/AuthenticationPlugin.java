@@ -36,7 +36,7 @@ public interface AuthenticationPlugin extends RealmLifecycle
     /**
      * TODO
      */
-    AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken );
+    AuthenticationInfo authenticate( Map<String,Object> authToken );
 
     abstract class Adapter implements AuthenticationPlugin
     {
