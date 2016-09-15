@@ -32,12 +32,11 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -46,9 +45,9 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -277,12 +276,12 @@ public class RecoveryTest
                 Consumer<LogPositionMarker> consumer = pair.other();
 
                 // last committed tx
-                writer.writeStartEntry( 0, 1, 2l, 3l, new byte[0] );
-                writer.writeCommitEntry( 4l, 5l );
+                writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
+                writer.writeCommitEntry( 4L, 5L );
 
                 // incomplete tx
                 consumer.accept( marker ); // <-- marker has the last good position
-                writer.writeStartEntry( 0, 1, 5l, 4l, new byte[0] );
+                writer.writeStartEntry( 0, 1, 5L, 4L, new byte[0] );
 
                 return true;
             }
@@ -318,7 +317,7 @@ public class RecoveryTest
                 Consumer<LogPositionMarker> consumer = pair.other();
 
                 // last committed tx
-                writer.writeStartEntry( masterId, authorId, 2l, 3l, additionalHeaderData );
+                writer.writeStartEntry( masterId, authorId, 2L, 3L, additionalHeaderData );
                 writer.writeCommitEntry( transactionId, commitTimestamp );
                 consumer.accept( marker );
 
