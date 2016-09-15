@@ -66,7 +66,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     {
         this.commitProcess = commitProcess;
         this.lastCommittedIndex = lastCommittedIndex;
-        log.info( format("Updated lastCommittedIndex to %d", lastCommittedIndex) );
+        log.info( format("(%s) Updated lastCommittedIndex to %d", tokenRegistry.getTokenType(), lastCommittedIndex) );
     }
 
     @Override

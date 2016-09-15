@@ -27,9 +27,11 @@ import org.neo4j.storageengine.api.Token;
 public class TokenRegistry<TOKEN extends Token>
 {
     private final InMemoryTokenCache<TOKEN> tokenCache;
+    private final String tokenType;
 
     public TokenRegistry( String tokenType )
     {
+        this.tokenType = tokenType;
         this.tokenCache = new InMemoryTokenCache<>( tokenType );
     }
 
@@ -37,6 +39,11 @@ public class TokenRegistry<TOKEN extends Token>
     {
         tokenCache.clear();
         tokenCache.putAll( tokens );
+    }
+
+    public String getTokenType()
+    {
+        return tokenType;
     }
 
     public int size()
