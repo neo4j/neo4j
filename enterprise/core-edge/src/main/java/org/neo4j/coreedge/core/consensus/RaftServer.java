@@ -41,6 +41,7 @@ import org.neo4j.coreedge.VersionPrepender;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
+import org.neo4j.coreedge.handlers.ExceptionSwallowingHandler;
 import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
@@ -129,7 +130,9 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
                         pipeline.addLast( new RaftMessageDecoder( marshal ) );
                         pipeline.addLast( new RaftMessageHandler() );
+
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
+                        pipeline.addLast( new ExceptionSwallowingHandler() );
                     }
                 } );
 

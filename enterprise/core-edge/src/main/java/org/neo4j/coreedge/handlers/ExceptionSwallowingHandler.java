@@ -22,30 +22,11 @@ package org.neo4j.coreedge.handlers;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 
-import org.neo4j.logging.Log;
-
-import static java.lang.String.format;
-
-public class ExceptionLoggingHandler extends ChannelHandlerAdapter
+public class ExceptionSwallowingHandler extends ChannelHandlerAdapter
 {
-    private final Log log;
-
-    public ExceptionLoggingHandler( Log log )
-    {
-        this.log = log;
-    }
-
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
-        if ( ctx != null )
-        {
-            log.error( format( "Failed to process message on channel %s.", ctx.channel() ), cause );
-        }
-        else
-        {
-            log.error( format( "Failed to process message on a null channel." ), cause );
-        }
-        ctx.fireExceptionCaught(cause);
+        // yummy
     }
 }
