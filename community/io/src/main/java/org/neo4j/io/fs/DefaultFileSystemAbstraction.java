@@ -135,14 +135,9 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
-        if ( copyOptions.length > 0 )
-        {
-            Files.move( from.toPath(), to.toPath(), copyOptions );
-            return true; // will throw if failure
-        }
-        return FileUtils.renameFile( from, to );
+        Files.move( from.toPath(), to.toPath(), copyOptions );
     }
 
     @Override

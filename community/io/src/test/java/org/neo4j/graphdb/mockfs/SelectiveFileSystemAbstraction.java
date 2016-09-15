@@ -126,9 +126,9 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
-        return chooseFileSystem( from ).move( from, to, copyOptions );
+        chooseFileSystem( from ).renameFile( from, to, copyOptions );
     }
 
     @Override

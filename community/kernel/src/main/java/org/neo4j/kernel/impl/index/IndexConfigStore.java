@@ -264,9 +264,9 @@ public class IndexConfigStore extends LifecycleAdapter
         fileSystem.deleteFile( oldFile );
         try
         {
-            if ( fileSystem.fileExists( file ) && !fileSystem.move( file, oldFile ) )
+            if ( fileSystem.fileExists( file ) )
             {
-                throw new RuntimeException( "Couldn't rename " + file + " -> " + oldFile );
+                fileSystem.renameFile( file, oldFile );
             }
         }
         catch ( IOException e )
@@ -277,10 +277,7 @@ public class IndexConfigStore extends LifecycleAdapter
         // Rename the .tmp file to the current name
         try
         {
-            if ( !fileSystem.move( tmpFile, this.file ) )
-            {
-                throw new RuntimeException( "Couldn't rename " + tmpFile + " -> " + file );
-            }
+            fileSystem.renameFile( tmpFile, this.file );
         }
         catch ( IOException e )
         {

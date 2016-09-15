@@ -24,6 +24,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.CopyOption;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
@@ -33,6 +35,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.CannotMoveMappedFileException;
 
 /**
  * A {@linkplain PageCache page cache} that wraps another page cache and an {@linkplain Adversary adversary} to provide
@@ -111,5 +114,14 @@ public class AdversarialPageCache implements PageCache
     public int maxCachedPages()
     {
         return delegate.maxCachedPages();
+    }
+
+    @Override
+    public void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions )
+            throws IOException
+    {
+        adversary.injectFailure( CannotMoveMappedFileException.class, FileAlreadyExistsException.class,
+                IOException.class, SecurityException.class );
+        delegate.renameFile( sourceFile, targetFile, copyOptions );
     }
 }

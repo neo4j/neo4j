@@ -21,6 +21,7 @@ package org.neo4j.com.storecopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.util.Map;
 import java.util.Optional;
@@ -96,6 +97,12 @@ public class ExternallyManagedPageCache implements PageCache
     public int maxCachedPages()
     {
         return delegate.maxCachedPages();
+    }
+
+    @Override
+    public void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException
+    {
+        delegate.renameFile( sourceFile, targetFile, copyOptions );
     }
 
     /**

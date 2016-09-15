@@ -69,10 +69,10 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.open( fileName, mode ), adversary );
     }
 
-    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, SecurityException.class );
-        return delegate.move( from, to, copyOptions );
+        delegate.renameFile( from, to, copyOptions );
     }
 
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException

@@ -157,13 +157,13 @@ public class FileUserRepositoryTest
         FileSystemAbstraction craschingFileSystem =
             new DelegatingFileSystemAbstraction( fs ) {
                 @Override
-                public boolean move( File oldLocation, File newLocation, CopyOption... copyOptions ) throws IOException
+                public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws IOException
                 {
                     if ( authFile.getName().equals( newLocation.getName().toString() ) )
                     {
                         throw exception;
                     }
-                    return super.move( oldLocation, newLocation, copyOptions );
+                    super.renameFile( oldLocation, newLocation, copyOptions );
                 }
             };
 

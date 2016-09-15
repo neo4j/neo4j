@@ -197,7 +197,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                 if ( fileSystem.fileExists( outputFile ) )
                 {
                     shiftArchivedOutputFiles();
-                    fileSystem.move( outputFile, archivedOutputFile( 1 ) );
+                    fileSystem.renameFile( outputFile, archivedOutputFile( 1 ) );
                 }
                 newStream = openOutputFile();
             }
@@ -252,7 +252,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                 fileSystem.deleteFile( archive );
             } else
             {
-                fileSystem.move( archive, archivedOutputFile( i + 1 ) );
+                fileSystem.renameFile( archive, archivedOutputFile( i + 1 ) );
             }
         }
     }
