@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
@@ -38,35 +39,31 @@ import org.neo4j.logging.async.AsyncLog;
 import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.security_log_filename;
 
-public class SecurityLog implements Log
+public class SecurityLog extends LifecycleAdapter implements Log
 {
+    private RotatingFileOutputStreamSupplier rotatingSupplier;
     private final Log inner;
 
     public SecurityLog( Config config, FileSystemAbstraction fileSystem, Executor executor ) throws IOException
     {
-        this( createLog( config, fileSystem, executor ) );
-    }
-
-    public SecurityLog( Log log )
-    {
-        inner = log;
-    }
-
-    private static AsyncLog createLog( Config config, FileSystemAbstraction fileSystem, Executor executor )
-            throws IOException
-    {
         FormattedLog.Builder builder = FormattedLog.withUTCTimeZone();
         File logFile = config.get( security_log_filename );
 
-        RotatingFileOutputStreamSupplier rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile,
+        rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile,
                 config.get( EnterpriseEditionSettings.store_security_log_rotation_threshold ),
                 config.get( EnterpriseEditionSettings.store_security_log_rotation_delay ),
                 config.get( EnterpriseEditionSettings.store_security_log_max_archives ), executor );
 
-        return new AsyncLog(
+        this.inner = new AsyncLog(
                 event -> executor.execute( event::process ),
                 builder.toOutputStream( rotatingSupplier )
-            );
+        );
+    }
+
+    /* Only used for tests */
+    public SecurityLog( Log log )
+    {
+        inner = log;
     }
 
     private static String withSubject( AuthSubject subject, String msg )
@@ -218,6 +215,16 @@ public class SecurityLog implements Log
         catch ( IOException ioe ){
             log.warn( "Unable to create log for auth-manager. Auth logging turned off." );
             return null;
+        }
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        if ( this.rotatingSupplier != null )
+        {
+            this.rotatingSupplier.close();
+            this.rotatingSupplier = null;
         }
     }
 }
