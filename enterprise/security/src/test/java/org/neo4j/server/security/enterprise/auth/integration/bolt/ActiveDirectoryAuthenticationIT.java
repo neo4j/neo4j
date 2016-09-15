@@ -260,7 +260,6 @@ public class ActiveDirectoryAuthenticationIT
         assertWriteSucceeds();
     }
 
-
     @Before
     public void setup()
     {
