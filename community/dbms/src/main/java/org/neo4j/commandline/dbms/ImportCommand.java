@@ -55,14 +55,20 @@ public class ImportCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "--mode=<mode> --database=<database-name> --from=<source>" );
+            return Optional.of(
+                    "--mode={database|csv} --database=<database-name> [--additional-config=<config-file-path>] " +
+                            DatabaseImporter.arguments() + " " + CsvImporter.arguments() );
         }
 
         @Override
         public String description()
         {
-            return "Import a database from a pre-3.0 Neo4j installation. <source-directory> " +
-                    "is the database location (e.g. <neo4j-root>/data/graph.db).";
+            return "Import a collection of CSV files with --mode=csv, or a database from a\n" +
+                    "pre-3.0 installation with --mode=database." +
+                    "\n" +
+                    DatabaseImporter.description() +
+                    "\n\n" +
+                    CsvImporter.description();
         }
 
         @Override
@@ -131,7 +137,9 @@ public class ImportCommand implements AdminCommand
     private Map<String,String> loadAdditionalConfig( File additionalConfigFile )
     {
         if ( additionalConfigFile == null )
+        {
             return new HashMap<>();
+        }
 
         try
         {

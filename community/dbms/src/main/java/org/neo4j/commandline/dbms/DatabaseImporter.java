@@ -33,6 +33,19 @@ import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 
 class DatabaseImporter implements Importer
 {
+    public static String arguments()
+    {
+        return "[--from=<source-directory>]";
+    }
+
+    public static String description()
+    {
+        return "--mode=database" +
+                "        Import a database from a pre-3.0 Neo4j installation. \n" +
+                "        <source-directory> is the database location\n" +
+                "        (e.g. <neo4j-root>/data/graph.db).\n";
+    }
+
     private final File from;
     private final Config config;
 
