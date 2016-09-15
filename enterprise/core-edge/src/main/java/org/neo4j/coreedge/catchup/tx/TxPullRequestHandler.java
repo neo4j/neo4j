@@ -69,7 +69,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, final TxPullRequest msg ) throws Exception
     {
-        long firstTxId = Math.max( msg.txId() + 1, BASE_TX_ID + 1 );
+        long firstTxId = Math.max( msg.txId(), BASE_TX_ID + 1 );
         long lastTxId = firstTxId;
         CatchupResult status = SUCCESS;
         StoreId localStoreId = storeIdSupplier.get();
