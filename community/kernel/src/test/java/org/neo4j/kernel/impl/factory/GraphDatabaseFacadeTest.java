@@ -67,7 +67,8 @@ public class GraphDatabaseFacadeTest
         when( contextBridge.get() ).thenReturn( statement );
         defaultConfig = Config.defaults();
 
-        graphDatabaseFacade.init( spi, defaultConfig );
+        graphDatabaseFacade.initSPI( spi, defaultConfig );
+        graphDatabaseFacade.initTransactionalContextFactoryFromSPI();
     }
 
     @Test

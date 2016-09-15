@@ -27,6 +27,7 @@ import org.mockito.Mockito;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -98,7 +100,7 @@ public class GraphDatabaseFacadeFactoryTest
         try
         {
             // When
-            db.initFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
+            db.initFacade( dir.graphDbDir(), Collections.emptyMap(), deps, mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
         catch ( RuntimeException exception )
@@ -131,9 +133,10 @@ public class GraphDatabaseFacadeFactoryTest
                     }
                 };
             }
+
             @Override
-            protected DataSourceModule createDataSource(
-                    Dependencies dependencies, PlatformModule platformModule, EditionModule editionModule )
+            protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
+                    Supplier<QueryExecutionEngine> queryExecutionEngineSupplier )
             {
                 return null;
             }

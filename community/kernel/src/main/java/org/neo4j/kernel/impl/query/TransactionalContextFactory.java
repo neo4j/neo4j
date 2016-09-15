@@ -21,13 +21,16 @@ package org.neo4j.kernel.impl.query;
 
 import java.util.Map;
 
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
-public interface TransactionalContextFactory<C extends TransactionalContext>
+public interface TransactionalContextFactory
 {
-    C newContext( QuerySource descriptor,
+    TransactionalContext newContext( QuerySource descriptor,
                   InternalTransaction tx,
                   String queryText,
                   Map<String,Object> queryParameters
     );
+
+    TransactionalContext newContext( ExecutingQuery query, InternalTransaction tx );
 }

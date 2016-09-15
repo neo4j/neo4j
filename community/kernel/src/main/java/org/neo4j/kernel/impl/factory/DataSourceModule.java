@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.time.Clock;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -67,7 +66,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -118,8 +116,8 @@ public class DataSourceModule
 
     public final AutoIndexing autoIndexing;
 
-    public DataSourceModule( final GraphDatabaseFacadeFactory.Dependencies dependencies,
-            final PlatformModule platformModule, EditionModule editionModule )
+    public DataSourceModule( final PlatformModule platformModule, EditionModule editionModule,
+            Supplier<QueryExecutionEngine> queryExecutionEngineSupplier )
     {
         final Dependencies deps = platformModule.dependencies;
         Config config = platformModule.config;
@@ -131,6 +129,7 @@ public class DataSourceModule
         RelationshipTypeTokenHolder relationshipTypeTokenHolder = editionModule.relationshipTypeTokenHolder;
         File storeDir = platformModule.storeDir;
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
+        this.queryExecutor = queryExecutionEngineSupplier;
 
         threadToTransactionBridge = deps.satisfyDependency( life.add( new ThreadToStatementContextBridge() ) );
 
@@ -169,8 +168,6 @@ public class DataSourceModule
 
         autoIndexing = new InternalAutoIndexing( platformModule.config, editionModule.propertyKeyTokenHolder );
 
-        AtomicReference<QueryExecutionEngine> queryExecutor = new AtomicReference<>( QueryEngineProvider.noEngine() );
-        this.queryExecutor = queryExecutor::get;
         Procedures procedures = setupProcedures( platformModule, editionModule );
 
         deps.satisfyDependency( new NonTransactionalDbmsOperations.Factory( procedures ) );
@@ -227,29 +224,6 @@ public class DataSourceModule
 
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
-
-        dataSourceManager.addListener( new DataSourceManager.Listener()
-        {
-            private QueryExecutionEngine engine;
-
-            @Override
-            public void registered( NeoStoreDataSource dataSource )
-            {
-                if ( engine == null )
-                {
-                    engine = QueryEngineProvider.initialize( deps, platformModule.graphDatabaseFacade,
-                            dependencies.executionEngines() );
-                }
-
-                queryExecutor.set( engine );
-            }
-
-            @Override
-            public void unregistered( NeoStoreDataSource dataSource )
-            {
-                queryExecutor.set( QueryEngineProvider.noEngine() );
-            }
-        } );
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;

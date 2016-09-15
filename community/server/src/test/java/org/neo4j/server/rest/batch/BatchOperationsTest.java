@@ -36,6 +36,7 @@ import org.neo4j.server.rest.web.InternalJettyServletResponse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BatchOperationsTest {
 
@@ -84,7 +85,7 @@ public class BatchOperationsTest {
     {
         // Given
         RequestData mock = new RequestData(
-                "127.0.0.1", () -> "localhost", true, 1,
+                "127.0.0.1", true, 1,
                 "TheLocalName", "129.0.0.1", 2, "authorization/auth" );
 
         InternalJettyServletRequest req = new InternalJettyServletRequest( "POST",
@@ -93,7 +94,8 @@ public class BatchOperationsTest {
 
         // When & then
         assertEquals( "127.0.0.1", req.getRemoteAddr());
-        assertEquals( "localhost", req.getRemoteHost());
+        assertException( () -> req.getRemoteHost(), UnsupportedOperationException.class,
+                "Remote host-name lookup might prove expensive, this should be explicitly considered." );
         assertTrue( req.isSecure() );
         assertEquals( 1, req.getRemotePort());
         assertEquals( "TheLocalName", req.getLocalName());

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.query;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.Statement;
@@ -33,32 +32,54 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
-public class Neo4jTransactionalContextFactory implements TransactionalContextFactory<Neo4jTransactionalContext>
+public class Neo4jTransactionalContextFactory implements TransactionalContextFactory
 {
     private final GraphDatabaseQueryService queryService;
     private final Supplier<Statement> statementSupplier;
     private final ThreadToStatementContextBridge txBridge;
     private final PropertyContainerLocker locker;
     private final DbmsOperations.Factory dbmsOpsFactory;
+    private final Guard guard;
 
     public Neo4jTransactionalContextFactory( GraphDatabaseFacade.SPI spi, PropertyContainerLocker locker )
     {
-        this.queryService = spi.queryService();
-        this.locker = locker;
-        DependencyResolver dependencyResolver = queryService.getDependencyResolver();
-        this.txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-        this.dbmsOpsFactory = dependencyResolver.resolveDependency( DbmsOperations.Factory.class );
-        this.statementSupplier = spi::currentStatement;
+        this( spi.queryService(), locker, spi::currentStatement );
     }
 
+    @Deprecated
     public Neo4jTransactionalContextFactory( GraphDatabaseQueryService queryService, PropertyContainerLocker locker )
     {
+        this( queryService, locker, queryService.getDependencyResolver().resolveDependency(
+                ThreadToStatementContextBridge.class ) );
+    }
+
+    public Neo4jTransactionalContextFactory( GraphDatabaseQueryService queryService, PropertyContainerLocker locker,
+            Supplier<Statement> statementSupplier )
+    {
+        this(
+            queryService,
+            statementSupplier,
+            queryService.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ),
+            locker,
+            queryService.getDependencyResolver().resolveDependency( DbmsOperations.Factory.class ),
+            queryService.getDependencyResolver().resolveDependency( Guard.class )
+        );
+    }
+
+    public Neo4jTransactionalContextFactory(
+            GraphDatabaseQueryService queryService,
+            Supplier<Statement> statementSupplier,
+            ThreadToStatementContextBridge txBridge,
+            PropertyContainerLocker locker,
+            DbmsOperations.Factory dbmsOpsFactory,
+            Guard guard
+    ) {
         this.queryService = queryService;
+        this.statementSupplier = statementSupplier;
+        this.txBridge = txBridge;
         this.locker = locker;
-        DependencyResolver dependencyResolver = queryService.getDependencyResolver();
-        this.txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-        this.dbmsOpsFactory = dependencyResolver.resolveDependency( DbmsOperations.Factory.class );
-        this.statementSupplier = this.txBridge;
+        this.dbmsOpsFactory = dbmsOpsFactory;
+        this.guard = guard;
     }
 
     @Override
@@ -69,7 +90,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         Map<String,Object> queryParameters
     )
     {
-        Statement statement = txBridge.get();
+        Statement statement = statementSupplier.get();
         QuerySource querySourceWithUserName = querySource.append( tx.mode().name() );
         ExecutingQuery executingQuery = statement.queryRegistration().startQueryExecution(
             querySourceWithUserName, queryText, queryParameters
@@ -79,12 +100,33 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
                 tx,
                 tx.transactionType(),
                 tx.mode(),
-                statementSupplier.get(),
+                statement,
                 executingQuery,
                 locker,
                 txBridge,
                 dbmsOpsFactory,
-                queryService.getDependencyResolver().resolveDependency( Guard.class )
+                guard,
+                this
         );
+    }
+
+    @Override
+    public Neo4jTransactionalContext newContext( ExecutingQuery query, InternalTransaction transaction )
+    {
+        Statement statement = statementSupplier.get();
+        statement.queryRegistration().registerExecutingQuery( query );
+
+        return new Neo4jTransactionalContext(
+                queryService,
+                transaction,
+                transaction.transactionType(),
+                transaction.mode(),
+                statement,
+                query,
+                locker,
+                txBridge,
+                dbmsOpsFactory,
+                guard,
+                this );
     }
 }

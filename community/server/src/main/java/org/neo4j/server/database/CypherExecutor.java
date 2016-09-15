@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContext;
-import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.ServerQuerySession;
@@ -47,7 +46,7 @@ public class CypherExecutor extends LifecycleAdapter
     private final Database database;
     private final Log log;
     private ExecutionEngine executionEngine;
-    private TransactionalContextFactory contextFactory;
+    private Neo4jTransactionalContextFactory contextFactory;
 
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private GraphDatabaseQueryService service;

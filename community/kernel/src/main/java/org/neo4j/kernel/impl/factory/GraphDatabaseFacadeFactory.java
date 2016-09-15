@@ -21,16 +21,21 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
@@ -40,6 +45,7 @@ import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.impl.query.QueryEngineProvider.noEngine;
 
 /**
  * This is the main factory for creating database instances. It delegates creation to three different modules
@@ -133,13 +139,39 @@ public class GraphDatabaseFacadeFactory
     {
         PlatformModule platform = createPlatform( storeDir, params, dependencies, graphDatabaseFacade );
         EditionModule edition = editionFactory.apply( platform );
-        final DataSourceModule dataSource = createDataSource( dependencies, platform, edition );
+
+        AtomicReference<QueryExecutionEngine> queryEngine = new AtomicReference<>( noEngine() );
+        final DataSourceModule dataSource = createDataSource( platform, edition, queryEngine::get );
         Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;
 
         // Start it
-        graphDatabaseFacade.init( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ),
+        graphDatabaseFacade.initSPI( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ),
                 platform.config );
+
+        platform.dataSourceManager.addListener( new DataSourceManager.Listener()
+        {
+            private QueryExecutionEngine engine;
+
+            @Override
+            public void registered( NeoStoreDataSource dataSource )
+            {
+                if ( engine == null )
+                {
+                    engine = QueryEngineProvider.initialize(
+                            platform.dependencies, platform.graphDatabaseFacade, dependencies.executionEngines() );
+                    graphDatabaseFacade.initTransactionalContextFactoryFromSPI();
+                }
+
+                queryEngine.set( engine );
+            }
+
+            @Override
+            public void unregistered( NeoStoreDataSource dataSource )
+            {
+                queryEngine.set( noEngine() );
+            }
+        } );
 
         Throwable error = null;
         try
@@ -191,10 +223,10 @@ public class GraphDatabaseFacadeFactory
     /**
      * Create the datasource module. Override to replace with custom module.
      */
-    protected DataSourceModule createDataSource( final Dependencies dependencies, final PlatformModule platformModule,
-            EditionModule editionModule )
+    protected DataSourceModule createDataSource( final PlatformModule platformModule, EditionModule editionModule,
+            Supplier<QueryExecutionEngine> queryEngine )
     {
-        return new DataSourceModule( dependencies, platformModule, editionModule );
+        return new DataSourceModule( platformModule, editionModule, queryEngine );
     }
 
     private void enableAvailabilityLogging( AvailabilityGuard availabilityGuard, final Logger msgLog )

@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -580,20 +582,20 @@ public class TransactionGuardIntegrationTest
         }
 
         @Override
-        protected DataSourceModule createDataSource( Dependencies dependencies,
-                PlatformModule platformModule, EditionModule editionModule )
+        protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
+                Supplier<QueryExecutionEngine> queryEngine )
         {
-            return new CustomClockDataSourceModule( dependencies, platformModule, editionModule );
+            return new CustomClockDataSourceModule( platformModule, editionModule, queryEngine );
         }
     }
 
     private class CustomClockDataSourceModule extends DataSourceModule
     {
 
-        CustomClockDataSourceModule( GraphDatabaseFacadeFactory.Dependencies dependencies,
-                PlatformModule platformModule, EditionModule editionModule )
+        CustomClockDataSourceModule( PlatformModule platformModule, EditionModule editionModule,
+                Supplier<QueryExecutionEngine> queryEngine  )
         {
-            super( dependencies, platformModule, editionModule );
+            super( platformModule, editionModule, queryEngine );
         }
 
         @Override
@@ -613,20 +615,20 @@ public class TransactionGuardIntegrationTest
         }
 
         @Override
-        protected DataSourceModule createDataSource( Dependencies dependencies,
-                PlatformModule platformModule, EditionModule editionModule )
+        protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
+                Supplier<QueryExecutionEngine> queryEngine )
         {
-            return new GuardedCustomClockDataSourceModule( dependencies, platformModule, editionModule );
+            return new GuardedCustomClockDataSourceModule( platformModule, editionModule, queryEngine );
         }
     }
 
     private class GuardedCustomClockDataSourceModule extends CustomClockDataSourceModule
     {
 
-        GuardedCustomClockDataSourceModule( GraphDatabaseFacadeFactory.Dependencies dependencies,
-                PlatformModule platformModule, EditionModule editionModule )
+        GuardedCustomClockDataSourceModule( PlatformModule platformModule, EditionModule editionModule,
+                Supplier<QueryExecutionEngine> queryEngine )
         {
-            super( dependencies, platformModule, editionModule );
+            super( platformModule, editionModule, queryEngine );
         }
 
         @Override

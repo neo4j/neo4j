@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.function.Function;
-
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -46,6 +44,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final AccessMode mode;
     private final DbmsOperations.Factory dbmsOperationsFactory;
     private final Guard guard;
+    private final TransactionalContextFactory factory;
 
     private InternalTransaction transaction;
     private Statement statement;
@@ -64,8 +63,9 @@ public class Neo4jTransactionalContext implements TransactionalContext
             PropertyContainerLocker locker,
             ThreadToStatementContextBridge txBridge,
             DbmsOperations.Factory dbmsOperationsFactory,
-            Guard guard )
-    {
+            Guard guard,
+            TransactionalContextFactory factory
+    ) {
         this.graph = graph;
         this.transaction = initialTransaction;
         this.transactionType = transactionType;
@@ -76,6 +76,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.txBridge = txBridge;
         this.dbmsOperationsFactory = dbmsOperationsFactory;
         this.guard = guard;
+        this.factory = factory;
     }
 
     @Override
@@ -203,20 +204,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         else
         {
             InternalTransaction transaction = graph.beginTransaction( transactionType, mode );
-            Statement statement = txBridge.get();
-            statement.queryRegistration().registerExecutingQuery( executingQuery );
-            return new Neo4jTransactionalContext(
-                    graph,
-                    transaction,
-                    transaction.transactionType(),
-                    transaction.mode(),
-                    statement,
-                    executingQuery,
-                    locker,
-                    graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ),
-                    graph.getDependencyResolver().resolveDependency( DbmsOperations.Factory.class ),
-                    guard
-            );
+            return factory.newContext( this.executingQuery, transaction );
         }
     }
 
