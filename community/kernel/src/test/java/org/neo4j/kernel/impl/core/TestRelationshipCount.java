@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,21 +32,19 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
-
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -67,20 +65,29 @@ public class TestRelationshipCount
         return data;
     }
 
-    @Rule
-    public final DatabaseRule dbRule;
+    private static GraphDatabaseAPI db;
     private Transaction tx;
+
+    @AfterClass
+    public static void shutdownDb()
+    {
+        db.shutdown();
+    }
 
     public TestRelationshipCount( final int denseNodeThreshold )
     {
-        this.dbRule = new ImpermanentDatabaseRule()
+        // This code below basically turns "db" into a ClassRule, but per dense node threshold
+        if ( db == null || db.getDependencyResolver().resolveDependency( Config.class )
+                .get( GraphDatabaseSettings.dense_node_threshold ) != denseNodeThreshold )
         {
-            @Override
-            protected void configure( GraphDatabaseBuilder builder )
+            if ( db != null )
             {
-                builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) );
+                db.shutdown();
             }
-        };
+            db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                    .setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) )
+                    .newGraphDatabase();
+        }
     }
 
     @Test
@@ -589,6 +596,6 @@ public class TestRelationshipCount
 
     private GraphDatabaseService getGraphDb()
     {
-        return dbRule.getGraphDatabaseAPI();
+        return db;
     }
 }
