@@ -45,13 +45,19 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.unsafe.impl.batchimport.RelationshipGroupDefragmenter.Monitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 @RunWith( Parameterized.class )
@@ -97,7 +103,7 @@ public class RelationshipGroupDefragmenterTest
     public void shouldDefragmentRelationshipGroupsWhenAllDense() throws Exception
     {
         // GIVEN some nodes which has their groups scattered
-        int nodeCount = 10_000;
+        int nodeCount = 100;
         int relationshipTypeCount = 50;
         RecordStore<RelationshipGroupRecord> groupStore = stores.getTemporaryRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = groupStore.newRecord();
@@ -126,7 +132,7 @@ public class RelationshipGroupDefragmenterTest
         }
 
         // WHEN
-        defrag( nodeCount );
+        defrag( nodeCount, groupStore );
 
         // THEN all groups should sit sequentially in the store
         verifyGroupsAreSequentiallyOrderedByNode();
@@ -136,7 +142,7 @@ public class RelationshipGroupDefragmenterTest
     public void shouldDefragmentRelationshipGroupsWhenSomeDense() throws Exception
     {
         // GIVEN some nodes which has their groups scattered
-        int nodeCount = 10_000;
+        int nodeCount = 100;
         int relationshipTypeCount = 50;
         RecordStore<RelationshipGroupRecord> groupStore = stores.getTemporaryRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = groupStore.newRecord();
@@ -174,17 +180,26 @@ public class RelationshipGroupDefragmenterTest
         }
 
         // WHEN
-        defrag( nodeCount );
+        defrag( nodeCount, groupStore );
 
         // THEN all groups should sit sequentially in the store
         verifyGroupsAreSequentiallyOrderedByNode();
     }
 
-    private void defrag( long nodeCount )
+    private void defrag( long nodeCount, RecordStore<RelationshipGroupRecord> groupStore )
     {
+        Monitor monitor = mock( Monitor.class );
         RelationshipGroupDefragmenter defragmenter = new RelationshipGroupDefragmenter( CONFIG,
-                ExecutionMonitors.invisible() );
-        defragmenter.run( mebiBytes( 1 ), stores, nodeCount );
+                ExecutionMonitors.invisible(), monitor );
+
+        // Calculation below correlates somewhat to calculation in RelationshipGroupDefragmenter.
+        // Anyway we verify below that we exercise the multi-pass bit, which is what we want
+        long memory = groupStore.getHighId() * 8 + 200;
+        defragmenter.run( memory, stores, nodeCount );
+
+        // Verify that we exercise the multi-pass functionality
+        verify( monitor, atLeast( 2 ) ).defragmentingNodeRange( anyLong(), anyLong() );
+        verify( monitor, atMost( 10 ) ).defragmentingNodeRange( anyLong(), anyLong() );
     }
 
     private void verifyGroupsAreSequentiallyOrderedByNode()
