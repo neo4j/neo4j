@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.servlet.DispatcherType;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
@@ -43,6 +44,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.function.Suppliers;
 import org.neo4j.string.UTF8;
 
 public class InternalJettyServletRequest extends Request
@@ -216,7 +218,7 @@ public class InternalJettyServletRequest extends Request
     @Override
     public String getRemoteHost()
     {
-        return requestData.remoteHost;
+        return requestData.remoteHost.get();
     }
 
     @Override
@@ -362,7 +364,7 @@ public class InternalJettyServletRequest extends Request
     public static class RequestData
     {
         public final String remoteAddress;
-        public final String remoteHost;
+        public final Supplier<String> remoteHost;
         public final boolean isSecure;
         public final int remotePort;
         public final String localName;
@@ -372,7 +374,7 @@ public class InternalJettyServletRequest extends Request
 
         public RequestData(
                 String remoteAddress,
-                String remoteHost,
+                Supplier<String> remoteHost,
                 boolean isSecure,
                 int remotePort,
                 String localName,
@@ -394,7 +396,7 @@ public class InternalJettyServletRequest extends Request
         {
             return new RequestData(
                     req.getRemoteAddr(),
-                    req.getRemoteHost(),
+                    Suppliers.lazySingleton( req::getRemoteHost ),
                     req.isSecure(),
                     req.getRemotePort(),
                     req.getLocalName(),

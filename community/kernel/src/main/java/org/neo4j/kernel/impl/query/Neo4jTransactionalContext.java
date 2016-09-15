@@ -267,9 +267,4 @@ public class Neo4jTransactionalContext implements TransactionalContext
     {
         return mode;
     }
-
-    public static Function<TransactionalContext, String> describe()
-    {
-        return transactionalContext -> "We didn't really care to describe this for you in this test";
-    }
 }

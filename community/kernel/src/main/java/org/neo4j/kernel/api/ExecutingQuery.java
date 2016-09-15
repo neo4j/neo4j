@@ -123,6 +123,6 @@ public class ExecutingQuery
         return format(
             "ExecutingQuery{queryId=%d, querySource='%s', username='%s', queryText='%s', queryParameters=%s, " +
             "startTime=%d}",
-            queryId, querySource.toString( ':' ), usernameAsString(), queryText, queryParameters, startTime );
+            queryId, querySource.toString( ":" ), usernameAsString(), queryText, queryParameters, startTime );
     }
 }

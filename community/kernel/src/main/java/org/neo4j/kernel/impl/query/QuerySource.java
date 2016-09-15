@@ -41,27 +41,11 @@ public class QuerySource
     @Override
     public String toString()
     {
-        return toString( '\t' );
+        return toString( "\t" );
     }
 
-    public String toString( Character sep )
+    public String toString( String sep )
     {
-        StringBuilder builder = new StringBuilder(  );
-
-        boolean isFirst = true;
-        for ( String part : parts )
-        {
-            if ( isFirst )
-            {
-                isFirst = false;
-            }
-            else
-            {
-                builder.append( sep );
-            }
-            builder.append( part );
-        }
-
-        return builder.toString();
+        return String.join( sep, parts );
     }
 }

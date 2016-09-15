@@ -29,6 +29,6 @@ public class ServerQuerySession
     {
         return request == null ?
             new QuerySource( "server-session" ) :
-            new QuerySource( "server-session", "http", request.getRemoteAddr(), request.getRequestURI() );
+            new QuerySource( "server-session", request.getScheme(), request.getRemoteAddr(), request.getRequestURI() );
     }
 }

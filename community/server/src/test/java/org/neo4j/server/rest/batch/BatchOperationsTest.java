@@ -34,6 +34,7 @@ import org.neo4j.server.rest.web.InternalJettyServletRequest.RequestData;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class BatchOperationsTest {
@@ -83,7 +84,7 @@ public class BatchOperationsTest {
     {
         // Given
         RequestData mock = new RequestData(
-                "127.0.0.1", "localhost", true, 1,
+                "127.0.0.1", () -> "localhost", true, 1,
                 "TheLocalName", "129.0.0.1", 2, "authorization/auth" );
 
         InternalJettyServletRequest req = new InternalJettyServletRequest( "POST",
@@ -93,7 +94,7 @@ public class BatchOperationsTest {
         // When & then
         assertEquals( "127.0.0.1", req.getRemoteAddr());
         assertEquals( "localhost", req.getRemoteHost());
-        assertEquals( true, req.isSecure() );
+        assertTrue( req.isSecure() );
         assertEquals( 1, req.getRemotePort());
         assertEquals( "TheLocalName", req.getLocalName());
         assertEquals( "129.0.0.1", req.getLocalAddr());

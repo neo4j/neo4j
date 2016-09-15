@@ -225,11 +225,5 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
             return builder.toString();
         }
-
-        @SuppressWarnings( "unchecked" )
-        private static Class<Map<String,Object>> paramsClass()
-        {
-            return (Class<Map<String,Object>>) (Object) Map.class;
-        }
     }
 }
