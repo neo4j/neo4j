@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -58,6 +59,9 @@ public class BuiltInProcedures
 
     @Context
     public DependencyResolver resolver;
+
+    @Context
+    public GraphDatabaseAPI graphDatabaseAPI;
 
     @Description( "List all labels in the database." )
     @Procedure( name = "db.labels", mode = READ )
@@ -155,6 +159,13 @@ public class BuiltInProcedures
         {
             indexProcedures.resampleOutdatedIndexes();
         }
+    }
+
+    @Description( "Show the schema of the data." )
+    @Procedure(name = "db.schema", mode = READ)
+    public Stream<SchemaProcedure.GraphResult> metaGraph() throws ProcedureException
+    {
+        return Stream.of(new SchemaProcedure(graphDatabaseAPI, tx).buildSchemaGraph());
     }
 
     @Description( "List all constraints in the database." )
