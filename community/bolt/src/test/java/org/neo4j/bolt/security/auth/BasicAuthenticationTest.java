@@ -24,13 +24,10 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.BasicAuthManager;
@@ -42,7 +39,6 @@ import org.neo4j.time.FakeClock;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyMap;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -192,13 +188,12 @@ public class BasicAuthenticationTest
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenThrow( new InvalidAuthTokenException( "foo" ) );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
-        exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
         authentication.authenticate( map( "principal", "bob", "credentials", "secret" ) );
@@ -211,13 +206,12 @@ public class BasicAuthenticationTest
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenThrow( new InvalidAuthTokenException( "foo" ) );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
-        exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
         authentication.authenticate( map( "scheme", "UNKNOWN", "principal", "bob", "credentials", "secret" ) );

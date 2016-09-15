@@ -43,4 +43,10 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
             settings.put( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" );
         };
     }
+
+    @Override
+    public void shouldFailIfMalformedAuthTokenUnknownScheme() throws Throwable
+    {
+        // Ignore this test in enterprise since custom schemes may be allowed
+    }
 }

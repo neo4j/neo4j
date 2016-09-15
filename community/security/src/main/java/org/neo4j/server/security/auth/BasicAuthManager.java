@@ -97,6 +97,12 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     @Override
     public BasicAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
+        String scheme = AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken );
+        if ( !scheme.equals( AuthToken.BASIC_SCHEME ) )
+        {
+            throw new InvalidAuthTokenException( "Unsupported authentication scheme '" + scheme + "'." );
+        }
+
         String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
         String password = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
 

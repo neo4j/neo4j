@@ -195,7 +195,7 @@ public class MultiRealmAuthManagerTest
         assertException( () -> manager.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ),
                 InvalidAuthTokenException.class, "does not support authentication token" );
         assertException( () -> manager.login( map( "key", "value" ) ),
-                InvalidAuthTokenException.class, "does not support authentication token" );
+                InvalidAuthTokenException.class, "The value associated with the key `scheme` must be a String but was: null" );
         assertException( () -> manager.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ),
                 InvalidAuthTokenException.class, "The value associated with the key `credentials` must be a String but was: null" );
     }

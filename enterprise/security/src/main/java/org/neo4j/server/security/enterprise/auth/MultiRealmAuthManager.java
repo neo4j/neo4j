@@ -40,6 +40,7 @@ import org.apache.shiro.util.Initializable;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
@@ -88,6 +89,7 @@ class MultiRealmAuthManager implements EnterpriseAuthManager
     {
         EnterpriseAuthSubject subject;
 
+        AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken ); // Scheme must be set
         ShiroAuthToken token = new ShiroAuthToken( authToken );
 
         try
