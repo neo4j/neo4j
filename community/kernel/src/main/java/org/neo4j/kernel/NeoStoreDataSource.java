@@ -487,6 +487,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             dependencies.satisfyDependency( storageEngine.storeReadLayer() );
             dependencies.satisfyDependency( logEntryReader );
             dependencies.satisfyDependency( storageEngine );
+            dependencies.satisfyDependency( transactionLogModule.checkPointing() );
             satisfyDependencies( kernelModule );
         }
         catch ( Throwable e )
