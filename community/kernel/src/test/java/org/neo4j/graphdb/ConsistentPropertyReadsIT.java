@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
  * Test for how properties are read and that they should be read consistently, i.e. adhere to neo4j's
  * interpretation of the ACID guarantees.
  */
-public class ConsistentPropertyReadsTest
+public class ConsistentPropertyReadsIT
 {
     @Rule
     public DatabaseRule db = new EmbeddedDatabaseRule( getClass() );
