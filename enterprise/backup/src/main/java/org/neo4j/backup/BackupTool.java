@@ -58,7 +58,6 @@ public class BackupTool
     private static final String HOST = "host";
     private static final String PORT = "port";
 
-    @Deprecated // preferred -host and -port separately
     private static final String FROM = "from";
 
     private static final String VERIFY = "verify";
@@ -85,6 +84,9 @@ public class BackupTool
 
     public static void main( String[] args )
     {
+        System.err.println("WARNING: neo4j-backup is deprecated and support for it will be removed in a future " +
+                "version of Neo4j. Please use neo4j-admin backup.");
+
         BackupTool tool = new BackupTool( new BackupService(), System.out );
         try
         {
@@ -195,8 +197,9 @@ public class BackupTool
         return executeBackup( hostnamePort, new File( to ), consistencyCheck, tuningConfiguration, timeout, forensics );
     }
 
-    private BackupOutcome executeBackup( HostnamePort hostnamePort, File to, ConsistencyCheck consistencyCheck,
-            Config tuningConfiguration, long timeout, boolean forensics ) throws ToolFailureException
+    BackupOutcome executeBackup( HostnamePort hostnamePort, File to, ConsistencyCheck consistencyCheck,
+                                 Config tuningConfiguration, long timeout, boolean forensics )
+            throws ToolFailureException
     {
         try
         {
@@ -231,7 +234,7 @@ public class BackupTool
     }
 
     private BackupOutcome doBackup( HostnamePort hostnamePort, File to, ConsistencyCheck consistencyCheck,
-            Config config, long timeout, boolean forensics ) throws ToolFailureException
+                                    Config config, long timeout, boolean forensics ) throws ToolFailureException
     {
         try
         {
@@ -259,7 +262,7 @@ public class BackupTool
 
     private static Config readConfiguration( Args arguments ) throws ToolFailureException
     {
-        Map<String,String> specifiedConfig = stringMap();
+        Map<String, String> specifiedConfig = stringMap();
 
         String configFilePath = arguments.get( CONFIG, null );
         if ( configFilePath != null )

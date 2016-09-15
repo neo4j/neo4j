@@ -28,6 +28,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
+import org.neo4j.helpers.HostnamePort;
+
 public class Converters
 {
     public static <T> Function<String,T> mandatory()
@@ -102,5 +104,26 @@ public class Converters
     public static Function<String,Integer> toInt()
     {
         return Integer::new;
+    }
+
+    public static Function<String, HostnamePort> toHostnamePort( HostnamePort defaultAddress )
+    {
+        return from ->
+        {
+            if ( !from.contains( ":" ) )
+            {
+                from = from + ":" + defaultAddress.getPort();
+            }
+            if ( from.endsWith( ":" ) )
+            {
+                from = from + defaultAddress.getPort();
+            }
+            if ( from.startsWith( ":" ) )
+            {
+                from = defaultAddress.getHost() + from;
+            }
+            String[] parts = from.split( ":" );
+            return new HostnamePort( parts[0], Integer.parseInt( parts[1] ) );
+        };
     }
 }
