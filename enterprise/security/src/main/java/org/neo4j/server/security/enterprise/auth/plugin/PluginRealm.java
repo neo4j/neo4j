@@ -212,7 +212,6 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         return token != null ? token.getPrincipal() : null;
     }
 
-
     @Override
     public boolean supports( AuthenticationToken token )
     {
