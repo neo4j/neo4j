@@ -29,30 +29,14 @@ import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.annotations.LoadSchema;
 import org.apache.directory.server.core.integ.FrameworkRunner;
 import org.apache.directory.server.ldap.handlers.extended.StartTlsHandler;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.security.enterprise.auth.SecuritySettings;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
-import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.helpers.collection.MapUtil.map;
 
 @RunWith( FrameworkRunner.class )
 @CreateDS(
@@ -89,8 +73,6 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 @ApplyLdifFiles( "ldap_group_has_users_test_data.ldif" )
 public class LdapExamplePluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 {
-    final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
-
     @Before
     @Override
     public void setup()
@@ -102,19 +84,16 @@ public class LdapExamplePluginAuthenticationIT extends EnterpriseAuthenticationT
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
         return super.getSettingsFunction().andThen( pluginOnlyAuthSettings ).andThen( settings -> {
-            settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
-            settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
-            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
-            settings.put( SecuritySettings.ldap_authorization_user_search_base, "dc=example,dc=com" );
-            settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(uid={0}))" );
-            settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "gidnumber" );
-            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=reader;501=publisher;502=architect;503=admin" );
         } );
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeReader() throws Throwable
+    public void shouldBeAbleToLoginAndAuthorizeWithLdapGroupHasUsersAuthPlugin() throws Throwable
     {
         testAuthWithReaderUser();
+        reconnect();
+        testAuthWithPublisherUser();
+        reconnect();
+        testAuthWithNoPermissionUser( "smith" );
     }
 }

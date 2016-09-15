@@ -75,9 +75,9 @@ public class LdapGroupHasUsersAuthPlugin extends AuthPlugin.Adapter
     {
         Hashtable<String,Object> env = new Hashtable<>();
         env.put( Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory" );
-        env.put( Context.PROVIDER_URL, "" );
+        env.put( Context.PROVIDER_URL, "ldap://0.0.0.0:10389" );
 
-        env.put( Context.SECURITY_PRINCIPAL, username );
+        env.put( Context.SECURITY_PRINCIPAL, String.format( "cn=%s,ou=users,dc=example,dc=com", username ) );
         env.put( Context.SECURITY_CREDENTIALS, password );
 
         return new InitialLdapContext( env, null );
@@ -87,13 +87,15 @@ public class LdapGroupHasUsersAuthPlugin extends AuthPlugin.Adapter
     {
         Set<String> roleNames = new LinkedHashSet<>();
 
+        // Setup our search controls
         SearchControls searchCtls = new SearchControls();
         searchCtls.setSearchScope( SearchControls.SUBTREE_SCOPE );
         searchCtls.setReturningAttributes( new String[]{GROUP_ID} );
 
-        // Use search argument to prevent potential code injection
+        // Use a search argument to prevent potential code injection
         Object[] searchArguments = new Object[]{username};
 
+        // Search for groups that has the user as a member
         NamingEnumeration result = ctx.search( GROUP_SEARCH_BASE, GROUP_SEARCH_FILTER, searchArguments, searchCtls );
 
         if ( result.hasMoreElements() )
@@ -108,11 +110,14 @@ public class LdapGroupHasUsersAuthPlugin extends AuthPlugin.Adapter
                 {
                     Attribute attribute = (Attribute) attributeEnumeration.next();
                     String attributeId = attribute.getID();
-                    if ( attributeId.equals( GROUP_ID ) )
+                    if ( attributeId.equalsIgnoreCase( GROUP_ID ) )
                     {
-                        String neo4jGroup = getNeo4jRoleForGroupId( attributeId );
+                        // We found a group that the user is a member of. See if it has a role mapped to it
+                        String groupId = (String) attribute.get();
+                        String neo4jGroup = getNeo4jRoleForGroupId( groupId );
                         if ( neo4jGroup != null )
                         {
+                            // Yay! Add it to our set of roles
                             roleNames.add( neo4jGroup );
                         }
                     }
