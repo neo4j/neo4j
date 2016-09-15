@@ -620,14 +620,20 @@ public class Neo4jMatchers
 
     public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String property )
     {
+        IndexDefinition indexDef = createIndexNoWait( beansAPI, label, property );
+
+        waitForIndex( beansAPI, indexDef );
+        return indexDef;
+    }
+
+    public static IndexDefinition createIndexNoWait( GraphDatabaseService beansAPI, Label label, String property )
+    {
         IndexDefinition indexDef;
         try ( Transaction tx = beansAPI.beginTx() )
         {
             indexDef = beansAPI.schema().indexFor( label ).on( property ).create();
             tx.success();
         }
-
-        waitForIndex( beansAPI, indexDef );
         return indexDef;
     }
 
@@ -636,6 +642,14 @@ public class Neo4jMatchers
         try ( Transaction ignored = beansAPI.beginTx() )
         {
             beansAPI.schema().awaitIndexOnline( indexDef, 10, SECONDS );
+        }
+    }
+
+    public static void waitForIndexes( GraphDatabaseService beansAPI )
+    {
+        try ( Transaction ignored = beansAPI.beginTx() )
+        {
+            beansAPI.schema().awaitIndexesOnline( 10, SECONDS );
         }
     }
 

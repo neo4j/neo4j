@@ -19,12 +19,13 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -51,7 +52,6 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndPr
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
 public class IndexingAcceptanceTest
 {
@@ -86,16 +86,8 @@ public class IndexingAcceptanceTest
                 tx.success();
             }
         }
-        {
-            IndexDefinition indexDefinition;
-            try ( Transaction tx = beansAPI.beginTx() )
-            {
-                indexDefinition = beansAPI.schema().indexFor( LABEL1 ).on( "key" ).create();
 
-                tx.success();
-            }
-            waitForIndex( beansAPI, indexDefinition );
-        }
+        Neo4jMatchers.createIndex( beansAPI, LABEL1, "key" );
 
         // WHEN
         try ( Transaction tx = beansAPI.beginTx() )
@@ -129,16 +121,8 @@ public class IndexingAcceptanceTest
                 tx.success();
             }
         }
-        {
-            IndexDefinition indexDefinition;
-            try ( Transaction tx = beansAPI.beginTx() )
-            {
-                indexDefinition = beansAPI.schema().indexFor( LABEL1 ).on( "key2" ).create();
 
-                tx.success();
-            }
-            waitForIndex( beansAPI, indexDefinition );
-        }
+        Neo4jMatchers.createIndex( beansAPI, LABEL1, "key2" );
         Node myNode;
         {
             try ( Transaction tx = beansAPI.beginTx() )
@@ -445,8 +429,9 @@ public class IndexingAcceptanceTest
 
         for ( int i = 0; i < indexesCount; i++ )
         {
-            Neo4jMatchers.createIndex( db, Label.label( labelPrefix + i ), propertyKeyPrefix + i );
+            Neo4jMatchers.createIndexNoWait( db, Label.label( labelPrefix + i ), propertyKeyPrefix + i );
         }
+        Neo4jMatchers.waitForIndexes( db );
 
         // When
         long nodeId;
@@ -489,7 +474,7 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = createIndex( db, LABEL1, "name" );
+        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias", "Mats", "Carla" );
         PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl", "Karlsson" );
 
@@ -513,7 +498,7 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = createIndex( db, LABEL1, "name" );
+        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias", "Mats" );
         PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Carl", "Carlsson" );
         // WHEN
@@ -537,7 +522,7 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = createIndex( db, LABEL1, "name" );
+        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias" );
         PrimitiveLongSet toDelete = createNodes( db, LABEL1, "name", "Karlsson", "Mats" );
         PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl" );
@@ -567,7 +552,7 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = createIndex( db, LABEL1, "name" );
+        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias" );
         PrimitiveLongSet toChangeToMatch = createNodes( db, LABEL1, "name", "Mats" );
         PrimitiveLongSet toChangeToNotMatch = createNodes( db, LABEL1, "name", "Karlsson" );
@@ -598,23 +583,6 @@ public class IndexingAcceptanceTest
         }
         // THEN
         assertThat( found, equalTo( expected ) );
-    }
-
-    private IndexDefinition createIndex( GraphDatabaseService db, Label label, String propertyKey )
-    {
-        IndexDefinition index = null;
-        try ( Transaction tx = db.beginTx() )
-        {
-            // create index
-            index = db.schema().indexFor( label ).on( propertyKey ).create();
-            tx.success();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexOnline( index, 10, TimeUnit.SECONDS );
-            tx.success();
-        }
-        return index;
     }
 
     private PrimitiveLongSet createNodes( GraphDatabaseService db, Label label, String propertyKey, String... propertyValues )
@@ -661,12 +629,22 @@ public class IndexingAcceptanceTest
 
     public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
 
+    @ClassRule
+    public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final TestName testName = new TestName();
 
-    private Label LABEL1 = Label.label( "LABEL1" );
-    private Label LABEL2 = Label.label( "LABEL2" );
-    private Label LABEL3 = Label.label( "LABEL3" );
+    private Label LABEL1;
+    private Label LABEL2;
+    private Label LABEL3;
+
+    @Before
+    public void setupLabels()
+    {
+        LABEL1 = Label.label( "LABEL1-" + testName.getMethodName() );
+        LABEL2 = Label.label( "LABEL2-" + testName.getMethodName() );
+        LABEL3 = Label.label( "LABEL3-" + testName.getMethodName() );
+    }
 
     private Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )
     {
