@@ -40,7 +40,7 @@ import org.neo4j.coreedge.VersionDecoder;
 import org.neo4j.coreedge.VersionPrepender;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
-import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
+import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
 import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;

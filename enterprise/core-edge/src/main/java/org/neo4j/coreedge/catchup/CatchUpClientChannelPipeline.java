@@ -44,7 +44,7 @@ import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseHandler;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotDecoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestEncoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotResponseHandler;
-import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
+import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
 import org.neo4j.logging.LogProvider;
 
 class CatchUpClientChannelPipeline

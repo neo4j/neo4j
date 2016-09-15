@@ -55,7 +55,7 @@ import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotEncoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestHandler;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
+import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
