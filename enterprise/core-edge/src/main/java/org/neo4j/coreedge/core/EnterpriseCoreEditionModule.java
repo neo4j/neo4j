@@ -38,10 +38,9 @@ import org.neo4j.coreedge.core.state.ClusteringModule;
 import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
 import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.coreedge.discovery.procedures.CoreRoleProcedure;
-import org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedure;
+import org.neo4j.coreedge.discovery.procedures.GetServersProcedure;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.logging.BetterMessageLogger;
 import org.neo4j.coreedge.logging.MessageLogger;
@@ -61,7 +60,6 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -116,9 +114,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
 
         procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
-        procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
         procedures.register(
-                new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
+                new GetServersProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register(
                 new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
