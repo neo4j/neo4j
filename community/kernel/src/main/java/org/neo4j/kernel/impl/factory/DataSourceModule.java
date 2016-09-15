@@ -410,7 +410,7 @@ public class DataSourceModule
         // Edition procedures
         try
         {
-            editionModule.registerCrossEditionProcedures( procedures );
+            editionModule.registerProcedures( procedures );
         }
         catch ( KernelException e )
         {

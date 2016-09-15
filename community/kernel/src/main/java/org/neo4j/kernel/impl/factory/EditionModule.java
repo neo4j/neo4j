@@ -67,7 +67,7 @@ import static java.util.Collections.singletonMap;
  */
 public abstract class EditionModule
 {
-    public void registerCrossEditionProcedures( Procedures procedures ) throws KernelException
+    public void registerProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
         registerProceduresFromProvider( "auth-procedures-provider", procedures );

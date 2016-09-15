@@ -102,6 +102,7 @@ public class StoreCopyClient
         }
         catch ( CatchUpClientException | NoKnownAddressesException e )
         {
+            e.printStackTrace();
             throw new StoreIdDownloadFailedException( e );
         }
     }
