@@ -19,15 +19,21 @@
  */
 package org.neo4j.coreedge.stresstests;
 
+import io.netty.channel.Channel;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
+import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.function.Predicates.await;
 
@@ -59,9 +65,11 @@ class CatchUpLoad extends RepeatUntilCallable
         int newMemberId = cluster.edgeMembers().size();
         final EdgeClusterMember edgeClusterMember = cluster.addEdgeMemberWithId( newMemberId );
 
+        AtomicReference<Throwable> exception;
         try
         {
-            edgeClusterMember.start();
+            exception = startAndRegisterExceptionMonitor( edgeClusterMember );
+
             await( () -> txIdBeforeStartingNewEdge <= txId( edgeClusterMember ), 3, TimeUnit.MINUTES );
         }
         catch ( Exception e )
@@ -73,7 +81,33 @@ class CatchUpLoad extends RepeatUntilCallable
         {
             cluster.removeEdgeMemberWithMemberId( newMemberId );
         }
+
+        if ( exception.get() != null )
+        {
+            exception.get().printStackTrace();
+            return false;
+        }
+
         return true;
+    }
+
+    private AtomicReference<Throwable> startAndRegisterExceptionMonitor( EdgeClusterMember edgeClusterMember )
+    {
+        edgeClusterMember.start();
+
+        // the database is create when starting the edge...
+        final Monitors monitors =
+                edgeClusterMember.database().getDependencyResolver().resolveDependency( Monitors.class );
+        AtomicReference<Throwable> exception = new AtomicReference<>();
+        monitors.addMonitorListener( new ExceptionMonitoringHandler.Monitor()
+        {
+            @Override
+            public void exceptionCaught( Channel channel, Throwable cause )
+            {
+                exception.set( cause );
+            }
+        }, CatchUpClient.class.getName() );
+        return exception;
     }
 
     private long txId( ClusterMember leader )
