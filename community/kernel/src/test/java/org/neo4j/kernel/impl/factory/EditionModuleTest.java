@@ -62,7 +62,7 @@ public class EditionModuleTest
         // When
         new EditionModule() {
             @Override
-            public void setupProcedures( Procedures procedures ) throws KernelException
+            public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
             {
 
             }

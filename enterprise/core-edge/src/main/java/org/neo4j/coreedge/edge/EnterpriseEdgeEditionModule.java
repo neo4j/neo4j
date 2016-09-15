@@ -102,14 +102,12 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     private SecurityLog securityLog;
 
     @Override
-    public void setupProcedures( Procedures procedures ) throws KernelException
+    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
         procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
         procedures.register( new EdgeRoleProcedure() );
 
         procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-        registerProceduresFromProvider( "auth-procedures-provider" , procedures );
         registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
     }
 

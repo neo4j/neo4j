@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import java.io.IOException;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -49,18 +47,15 @@ import org.neo4j.logging.NullLog;
  */
 public class EnterpriseEditionModule extends CommunityEditionModule
 {
-    @Override
-    public void setupProcedures( Procedures procedures ) throws KernelException
-    {
-        super.setupProcedures( procedures );
-        // If you change this, don't forget to update the HA and Core|Edge editions, too
-        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
+    private SecurityLog securityLog;
 
+    @Override
+    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
+    {
+        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
         procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
         registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
     }
-
-    private SecurityLog securityLog;
 
     public EnterpriseEditionModule( PlatformModule platformModule )
     {

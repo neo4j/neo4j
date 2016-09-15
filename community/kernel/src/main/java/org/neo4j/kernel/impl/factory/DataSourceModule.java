@@ -34,7 +34,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -411,7 +410,7 @@ public class DataSourceModule
         // Edition procedures
         try
         {
-            editionModule.setupProcedures( procedures );
+            editionModule.registerProcedures( procedures );
         }
         catch ( KernelException e )
         {
