@@ -37,16 +37,15 @@ Controls how much the above statistical information is allowed to change before 
 If the relative change in any of statistics is larger than this threshold, the plan will be thrown away and a new one will be created.
 A threshold of 0.0 means _always replan_, and a value of 1.0 means _never replan_.
 
-== Managing statistics from the shell
+== Manual index sampling
 
-Usage:
+Index resampling can be triggered using two built-in procedures `db.resampleIndex()` and `db.resampleOutdatedIndexes()`.
 
-`schema sample -a`::
-will sample all indexes.
-`schema sample -l Person -p name`::
-will sample the index for label `Person` on property `name` (if existing).
-`schema sample -a -f`::
-will force a sample of all indexes.
-`schema sample -f -l :Person -p name`::
-will force sampling of a specific index.
+Here is an example of using `cypher-shell` to trigger resampling.
 
+[source,shell]
+----
+> cypher-shell 'CALL db.resampleIndex(":Person(name)");'
+
+> cypher-shell 'CALL db.resampleOutdatedIndexes();'
+----
