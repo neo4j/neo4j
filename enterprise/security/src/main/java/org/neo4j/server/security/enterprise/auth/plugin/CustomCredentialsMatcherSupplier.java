@@ -17,29 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth.plugin.spi;
+package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.io.Serializable;
-import java.util.Map;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.CustomCacheableAuthenticationInfo;
 
-/**
- * An object that can be returned as the result of successful authentication by an <tt>AuthenticationPlugin</tt>.
- *
- * @see AuthenticationPlugin#getAuthenticationInfo(Map)
- */
-public interface AuthenticationInfo extends Serializable
+public interface CustomCredentialsMatcherSupplier
 {
-    /**
-     * Should return a principal that uniquely identifies the authenticated subject within this realm.
-     *
-     * <p>Typically this is the same as the principal within the auth token map.
-     *
-     * @return a principal that uniquely identifies the authenticated subject within this realm.
-     */
-    Object getPrincipal();
-
-    static AuthenticationInfo of( Object principal )
-    {
-        return (AuthenticationInfo) () -> principal;
-    }
+    CustomCacheableAuthenticationInfo.CredentialsMatcher getCredentialsMatcher();
 }

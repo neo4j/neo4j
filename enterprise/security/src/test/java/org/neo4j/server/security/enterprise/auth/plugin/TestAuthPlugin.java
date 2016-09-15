@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
@@ -41,18 +40,8 @@ public class TestAuthPlugin implements AuthPlugin
     @Override
     public AuthInfo getAuthInfo( Map<String,Object> authToken )
     {
-        String principal;
-        String credentials;
-
-        try
-        {
-            principal = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
-            credentials = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
-        }
-        catch ( InvalidAuthTokenException e )
-        {
-            return null;
-        }
+        String principal = (String) authToken.get( AuthToken.PRINCIPAL );
+        String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {

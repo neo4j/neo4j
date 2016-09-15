@@ -21,19 +21,33 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Map;
 
 /**
- * TODO
+ * An object that can be returned as the result of successful authentication by an <tt>AuthPlugin</tt>.
+ *
+ * <p>This result type combines authentication and authorization information.
+ *
+ * <p>NOTE: If authentication caching is enabled the result type <tt>CacheableAuthInfo</tt> should be used instead.
+ *
+ * @see AuthPlugin#getAuthInfo(Map)
+ * @see CacheableAuthInfo
  */
 public interface AuthInfo extends Serializable
 {
     /**
-     * TODO
+     * Should return a principal that uniquely identifies the authenticated subject within this realm.
+     *
+     * <p>Typically this is the same as the principal within the auth token map.
+     *
+     * @return a principal that uniquely identifies the authenticated subject within this realm.
      */
     Object getPrincipal();
 
     /**
-     * TODO
+     * Should return the roles assigned to this principal.
+     *
+     * @return the roles assigned to this principal
      */
     Collection<String> getRoles();
 

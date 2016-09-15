@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.api;
 
+/**
+ * An exception that can be thrown on authentication.
+ * Throwing this exception will cause authentication to fail.
+ */
 public class AuthenticationException extends Exception
 {
     public AuthenticationException( String message )

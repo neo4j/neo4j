@@ -19,19 +19,17 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthInfo;
 
-public class TestCachingAuthPlugin implements AuthPlugin
+public class TestCacheableAuthPlugin extends AuthPlugin.CachingEnabledAdapter
 {
     @Override
     public String name()
@@ -42,62 +40,19 @@ public class TestCachingAuthPlugin implements AuthPlugin
     @Override
     public AuthInfo getAuthInfo( Map<String,Object> authToken )
     {
-        String principal;
-        String credentials;
+        getAuthInfoCallCount.incrementAndGet();
 
-        try
-        {
-            principal = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
-            credentials = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
-        }
-        catch ( InvalidAuthTokenException e )
-        {
-            return null;
-        }
+        String principal = (String) authToken.get( AuthToken.PRINCIPAL );
+        String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
-            return new CacheableAuthInfo()
-            {
-                @Override
-                public Object getPrincipal()
-                {
-                    return "neo4j";
-                }
-
-                @Override
-                public byte[] getCredentials()
-                {
-                    return credentials.getBytes();
-                }
-
-                @Override
-                public Collection<String> getRoles()
-                {
-                    return Collections.singleton( PredefinedRoles.READER );
-                }
-            };
+            return CacheableAuthInfo.of( "neo4j", "neo4j".getBytes(),
+                    Collections.singleton( PredefinedRoles.READER ) );
         }
         return null;
     }
 
-    @Override
-    public void initialize( RealmOperations ignore ) throws Throwable
-    {
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-    }
+    // For testing purposes
+    public static AtomicInteger getAuthInfoCallCount = new AtomicInteger( 0 );
 }

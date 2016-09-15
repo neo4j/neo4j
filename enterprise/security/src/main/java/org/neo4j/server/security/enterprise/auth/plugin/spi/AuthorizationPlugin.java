@@ -21,6 +21,8 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.util.Collection;
 
+import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
+
 /**
  * TODO
  */
@@ -57,4 +59,40 @@ public interface AuthorizationPlugin extends RealmLifecycle
      * TODO
      */
     AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals );
+
+    class Adapter implements AuthorizationPlugin
+    {
+
+        @Override
+        public String name()
+        {
+            return getClass().getName();
+        }
+
+        @Override
+        public AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals )
+        {
+            return null;
+        }
+
+        @Override
+        public void initialize( RealmOperations realmOperations ) throws Throwable
+        {
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
+    }
 }

@@ -22,6 +22,7 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 import java.util.Map;
 
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException;
+import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 
 /**
  * TODO
@@ -37,4 +38,63 @@ public interface AuthPlugin extends RealmLifecycle
      * TODO
      */
     AuthInfo getAuthInfo( Map<String,Object> authToken ) throws AuthenticationException;
+
+    abstract class Adapter implements AuthPlugin
+    {
+        @Override
+        public String name()
+        {
+            return getClass().getName();
+        }
+
+        @Override
+        public void initialize( RealmOperations realmOperations ) throws Throwable
+        {
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
+    }
+
+    abstract class CachingEnabledAdapter implements AuthPlugin
+    {
+        @Override
+        public String name()
+        {
+            return getClass().getName();
+        }
+
+        @Override
+        public void initialize( RealmOperations realmOperations ) throws Throwable
+        {
+            realmOperations.setAuthenticationCachingEnabled( true );
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
+    }
 }

@@ -23,13 +23,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthenticationInfo;
 
-public class TestCacheableAuthenticationPlugin implements AuthenticationPlugin
+public class TestCacheableAuthenticationPlugin extends AuthenticationPlugin.CachingEnabledAdapter
 {
     @Override
     public String name()
@@ -40,20 +38,10 @@ public class TestCacheableAuthenticationPlugin implements AuthenticationPlugin
     @Override
     public AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken )
     {
-        String principal;
-        String credentials;
-
         getAuthenticationInfoCallCount.incrementAndGet();
 
-        try
-        {
-            principal = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
-            credentials = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
-        }
-        catch ( InvalidAuthTokenException e )
-        {
-            return null;
-        }
+        String principal = (String) authToken.get( AuthToken.PRINCIPAL );
+        String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
@@ -73,30 +61,6 @@ public class TestCacheableAuthenticationPlugin implements AuthenticationPlugin
             };
         }
         return null;
-    }
-
-    @Override
-    public void initialize( RealmOperations realmOperations ) throws Throwable
-    {
-        realmOperations.setAuthenticationCachingEnabled( true );
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-
     }
 
     // For testing purposes

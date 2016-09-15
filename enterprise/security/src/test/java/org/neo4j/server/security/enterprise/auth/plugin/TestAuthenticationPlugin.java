@@ -19,17 +19,13 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 
-public class TestAuthenticationPlugin implements AuthenticationPlugin
+public class TestAuthenticationPlugin extends AuthenticationPlugin.Adapter
 {
     @Override
     public String name()
@@ -40,47 +36,13 @@ public class TestAuthenticationPlugin implements AuthenticationPlugin
     @Override
     public AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken )
     {
-        String principal;
-        String credentials;
-
-        try
-        {
-            principal = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
-            credentials = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
-        }
-        catch ( InvalidAuthTokenException e )
-        {
-            return null;
-        }
+        String principal = (String) authToken.get( AuthToken.PRINCIPAL );
+        String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
             return (AuthenticationInfo) () -> "neo4j";
         }
         return null;
-    }
-
-    @Override
-    public void initialize( RealmOperations ignore ) throws Throwable
-    {
-
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-
     }
 }

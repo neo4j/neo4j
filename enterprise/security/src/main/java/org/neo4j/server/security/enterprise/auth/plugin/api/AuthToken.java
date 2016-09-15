@@ -19,10 +19,20 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.api;
 
+/**
+ * The predefined keys of the auth token <tt>Map&lt;String,Object&gt;</tt>.
+ */
 public interface AuthToken
 {
     String PRINCIPAL = "principal";
     String CREDENTIALS = "credentials";
     String REALM = "realm";
+
+    /**
+     * The corresponding value of this key is a <tt>Map<String,Object></tt> of custom parameters
+     * as provided by the client. This can be used as a vehicle to connect a client application
+     * with a server-side auth plugin.
+     * Neo4j will act as a pure transport and will not inspect the contents of this map.
+     */
     String PARAMETERS = "parameters";
 }

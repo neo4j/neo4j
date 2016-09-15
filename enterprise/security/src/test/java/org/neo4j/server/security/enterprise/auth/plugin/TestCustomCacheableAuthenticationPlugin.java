@@ -19,19 +19,16 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.CustomCacheableAuthenticationInfo;
 
-public class TestCombinedAuthPlugin implements AuthenticationPlugin, AuthorizationPlugin
+public class TestCustomCacheableAuthenticationPlugin implements AuthenticationPlugin
 {
     @Override
     public String name()
@@ -42,47 +39,43 @@ public class TestCombinedAuthPlugin implements AuthenticationPlugin, Authorizati
     @Override
     public AuthenticationInfo getAuthenticationInfo( Map<String,Object> authToken )
     {
+        getAuthenticationInfoCallCount.incrementAndGet();
+
         String principal = (String) authToken.get( AuthToken.PRINCIPAL );
         String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
-            return AuthenticationInfo.of( "neo4j" );
+            return CustomCacheableAuthenticationInfo.of( "neo4j",
+                    ( token ) -> {
+                        String tokenCredentials = (String) token.get( AuthToken.CREDENTIALS );
+                        return tokenCredentials.equals( "neo4j" );
+                    } );
         }
         return null;
     }
 
     @Override
-    public AuthorizationInfo getAuthorizationInfo( Collection<PrincipalAndRealm> principals )
+    public void initialize( RealmOperations realmOperations ) throws Throwable
     {
-        if ( principals.stream().anyMatch( p -> "neo4j".equals( p.principal() ) ) )
-        {
-            return (AuthorizationInfo) () -> Collections.singleton( PredefinedRoles.READER );
-        }
-        return null;
-    }
-
-    @Override
-    public void initialize( RealmOperations ignore ) throws Throwable
-    {
-
+        realmOperations.setAuthenticationCachingEnabled( true );
     }
 
     @Override
     public void start() throws Throwable
     {
-
     }
 
     @Override
     public void stop() throws Throwable
     {
-
     }
 
     @Override
     public void shutdown() throws Throwable
     {
-
     }
+
+    // For testing purposes
+    public static AtomicInteger getAuthenticationInfoCallCount = new AtomicInteger( 0 );
 }

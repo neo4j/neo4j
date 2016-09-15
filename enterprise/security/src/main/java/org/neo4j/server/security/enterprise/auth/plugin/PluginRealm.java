@@ -24,7 +24,6 @@ import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.cache.Cache;
-import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 
@@ -32,6 +31,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -47,7 +47,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthenticationInfo;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.CustomCacheableAuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 
 public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
@@ -166,7 +166,8 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
                     AuthInfo authInfo = authPlugin.getAuthInfo( ((ShiroAuthToken) token).getAuthTokenMap() );
                     if ( authInfo != null )
                     {
-                        PluginAuthInfo pluginAuthInfo = PluginAuthInfo.create( authInfo, getName() );
+                        PluginAuthInfo pluginAuthInfo =
+                                PluginAuthInfo.createCacheable( authInfo, getName(), secureHasher );
 
                         cacheAuthorizationInfo( pluginAuthInfo );
 
@@ -179,16 +180,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
                             authenticationPlugin.getAuthenticationInfo( ((ShiroAuthToken) token).getAuthTokenMap() );
                     if ( authenticationInfo != null )
                     {
-                        if ( authenticationInfo instanceof CacheableAuthenticationInfo )
-                        {
-                            byte[] credentials = ((CacheableAuthenticationInfo) authenticationInfo).getCredentials();
-                            SimpleHash hashedCredentials = secureHasher.hash( credentials );
-                            return PluginAuthenticationInfo.create( authenticationInfo, hashedCredentials, getName() );
-                        }
-                        else
-                        {
-                            return PluginAuthenticationInfo.create( authenticationInfo, getName() );
-                        }
+                        return PluginAuthenticationInfo.createCacheable( authenticationInfo, getName(), secureHasher );
                     }
                 }
             }
@@ -305,23 +297,46 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         }
     }
 
+    private static CustomCacheableAuthenticationInfo.CredentialsMatcher getCustomCredentialsMatcherIfPresent(
+            AuthenticationInfo info
+    )
+    {
+        if ( info instanceof CustomCredentialsMatcherSupplier )
+        {
+            return ((CustomCredentialsMatcherSupplier) info).getCredentialsMatcher();
+        }
+        return null;
+    }
+
     private class CredentialsMatcher implements org.apache.shiro.authc.credential.CredentialsMatcher
     {
         @Override
         public boolean doCredentialsMatch( AuthenticationToken token, AuthenticationInfo info )
         {
-            if ( info.getCredentials() == null )
+            CustomCacheableAuthenticationInfo.CredentialsMatcher
+                    customCredentialsMatcher = getCustomCredentialsMatcherIfPresent( info );
+
+            if ( customCredentialsMatcher != null )
             {
-                if ( PluginRealm.this.isAuthenticationCachingEnabled() )
-                {
-                    log.warn( "Authentication caching is enabled in plugin %s but it does not return " +
-                              "cacheable credentials. This configuration is not secure.", getName() );
-                }
-                return true; // Always match if we do not cache credentials
+                // Authentication info is originating from a CustomCacheableAuthenticationInfo
+                Map<String,Object> authToken = ((ShiroAuthToken) token).getAuthTokenMap();
+                return customCredentialsMatcher.doCredentialsMatch( authToken );
+            }
+            else if ( info.getCredentials() != null )
+            {
+                // Authentication info is originating from a CacheableAuthenticationInfo or a CacheableAuthInfo
+                return secureHasher.getHashedCredentialsMatcher().doCredentialsMatch( token, info );
             }
             else
             {
-                return secureHasher.getHashedCredentialsMatcher().doCredentialsMatch( token, info );
+                // Authentication info is originating from an AuthenticationInfo or an AuthInfo
+                if ( PluginRealm.this.isAuthenticationCachingEnabled() )
+                {
+                    log.error( "Authentication caching is enabled in plugin %s but it does not return " +
+                               "cacheable credentials. This configuration is not secure.", getName() );
+                    return false;
+                }
+                return true; // Always match if we do not cache credentials
             }
         }
     }

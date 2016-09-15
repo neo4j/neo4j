@@ -20,10 +20,13 @@
 package org.neo4j.server.security.enterprise.auth.plugin;
 
 import org.apache.shiro.authc.SimpleAccount;
+import org.apache.shiro.crypto.hash.SimpleHash;
+import org.apache.shiro.util.ByteSource;
 
-import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.neo4j.server.security.enterprise.auth.SecureHasher;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthInfo;
 
@@ -34,15 +37,39 @@ public class PluginAuthInfo extends SimpleAccount
         super( principal, credentials, realmName, roles, null );
     }
 
+    public PluginAuthInfo( Object principal, Object hashedCredentials, ByteSource credentialsSalt,
+            String realmName, Set<String> roles )
+    {
+        super( principal, hashedCredentials, credentialsSalt, realmName );
+        setRoles( roles );
+    }
+
     public static PluginAuthInfo create( AuthInfo authInfo, String realmName )
     {
         return new PluginAuthInfo( authInfo.getPrincipal(), null, realmName,
-                new LinkedHashSet<>( authInfo.getRoles() ) );
+                authInfo.getRoles().stream().collect( Collectors.toSet() ) );
     }
 
-    public static PluginAuthInfo create( CacheableAuthInfo authInfo, String realmName )
+    private static PluginAuthInfo create( AuthInfo authInfo, SimpleHash hashedCredentials,
+            String realmName )
     {
-        return new PluginAuthInfo( authInfo.getPrincipal(), authInfo.getCredentials(), realmName,
-                new LinkedHashSet<>( authInfo.getRoles() ) );
+        return new PluginAuthInfo( authInfo.getPrincipal(),
+                hashedCredentials.getBytes(), hashedCredentials.getSalt(), realmName,
+                authInfo.getRoles().stream().collect( Collectors.toSet()) );
+    }
+
+    public static PluginAuthInfo createCacheable( AuthInfo authInfo, String realmName, SecureHasher secureHasher )
+    {
+        if ( authInfo instanceof CacheableAuthInfo )
+        {
+            byte[] credentials = ((CacheableAuthInfo) authInfo).getCredentials();
+            SimpleHash hashedCredentials = secureHasher.hash( credentials );
+            return PluginAuthInfo.create( authInfo, hashedCredentials, realmName );
+        }
+        else
+        {
+            return new PluginAuthInfo( authInfo.getPrincipal(), null, realmName,
+                    authInfo.getRoles().stream().collect( Collectors.toSet() ) );
+        }
     }
 }

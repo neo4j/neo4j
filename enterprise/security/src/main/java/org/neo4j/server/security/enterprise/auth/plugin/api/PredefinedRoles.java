@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.api;
 
+/**
+ * The role names of the built-in predefined roles of Neo4j.
+ */
 public class PredefinedRoles
 {
     public static final String ADMIN = "admin";

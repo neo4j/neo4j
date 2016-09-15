@@ -21,14 +21,12 @@ package org.neo4j.server.security.enterprise.auth.plugin;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Optional;
 
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
 
-public class TestAuthorizationPlugin implements AuthorizationPlugin
+public class TestAuthorizationPlugin extends AuthorizationPlugin.Adapter
 {
     @Override
     public String name()
@@ -44,29 +42,5 @@ public class TestAuthorizationPlugin implements AuthorizationPlugin
             return (AuthorizationInfo) () -> Collections.singleton( PredefinedRoles.READER );
         }
         return null;
-    }
-
-    @Override
-    public void initialize( RealmOperations realmOperations ) throws Throwable
-    {
-
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-
     }
 }
