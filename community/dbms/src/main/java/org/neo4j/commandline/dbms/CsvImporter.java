@@ -36,7 +36,7 @@ class CsvImporter implements Importer
     {
         List argsList = Arrays.asList( args );
         argsList.add( String.format( "--into=%s", config.get( database_path ) ) );
-        argsList.toArray(this.args);
+        argsList.toArray( this.args );
     }
 
     @Override
