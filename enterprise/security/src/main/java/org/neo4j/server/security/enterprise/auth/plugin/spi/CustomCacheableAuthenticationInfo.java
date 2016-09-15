@@ -22,12 +22,13 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 import java.util.Map;
 
 /**
- * TODO
+ * A cacheable object that can be returned as the result of successful authentication by an
+ * <tt>AuthenticationPlugin</tt>.
  *
  * <p>This object can be cached by the authentication cache within the realm
  * that the authentication plugin is connected to.
  *
- * <p>This is an alternative to <tt>CacheableAuthenticationInfo</tt> if you want to manage your own way of
+ * <p>This is an alternative to <tt>CacheableAuthenticationInfo</tt> to use if you want to manage your own way of
  * hashing and matching credentials. On authentication, when a cached authentication info from a previous successful
  * authentication attempt is found for the principal within the auth token map, then <tt>doCredentialsMatch</tt>
  * of the <tt>CredentialsMatcher</tt> returned by <tt>getCredentialsMatcher</tt> will be called to determine
@@ -55,12 +56,15 @@ public interface CustomCacheableAuthenticationInfo extends AuthenticationInfo
     }
 
     /**
-     * TODO
+     * Returns the credentials matcher that will be used to verify the credentials of an auth token against the
+     * cached credentials in this object.
      *
      * <p>NOTE: The returned object implementing the <tt>CredentialsMatcher</tt> interface need to have a
      * reference to the actual credentials in a matcheable form within its context in order to benefit from caching,
      * so it is typically stateful. The simplest way is to return a lambda from this method.
      *
+     * @return the credentials matcher that will be used to verify the credentials of an auth token against the
+     *         cached credentials in this object
      */
     CredentialsMatcher getCredentialsMatcher();
 

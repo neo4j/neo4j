@@ -25,17 +25,46 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationExcept
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 
 /**
- * TODO
+ * A simplified combined authentication and authorization plugin realm for the Neo4j enterprise security module.
+ *
+ * <p>If either the configuration setting <tt>dbms.security.realms.plugin.authentication_enabled</tt> or
+ * <tt>dbms.security.realms.plugin.authorization_enabled</tt> is set to <tt>true</tt>,
+ * all objects that implements this interface that exists in the class path at Neo4j startup, will be
+ * loaded as services.
+ *
+ * @see AuthPlugin
+ * @see AuthorizationPlugin
+
  */
 public interface AuthPlugin extends RealmLifecycle
 {
     /**
-     * TODO
+     * The name of this realm.
+     *
+     * <p>This name, prepended with the prefix "plugin-", can be used by a client to direct an auth token directly
+     * to this realm.
+     *
+     * @return the name of this realm
      */
     String name();
 
     /**
-     * TODO
+     * Should perform both authentication and authorization of the identity in the given auth token and return an
+     * <tt>AuthInfo</tt> result if successful. The <tt>AuthInfo</tt> result can also contain a collection of roles
+     * that are assigned to the given identity, which constitutes the authorization part.
+     *
+     * If authentication failed, either <tt>null</tt> should be returned,
+     * or an <tt>AuthenticationException</tt> should be thrown.
+     *
+     * <p>If authentication caching is enabled, then a <tt>CacheableAuthInfo</tt> should be returned.
+     *
+     * @return an <tt>AuthInfo</tt> object if authentication was successful, otherwise <tt>null</tt>
+     *
+     * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken
+     * @see AuthenticationInfo
+     * @see CacheableAuthenticationInfo
+     * @see CustomCacheableAuthenticationInfo
+     * @see RealmOperations#setAuthenticationCachingEnabled(boolean)
      */
     AuthInfo authenticateAndAuthorize( Map<String,Object> authToken ) throws AuthenticationException;
 

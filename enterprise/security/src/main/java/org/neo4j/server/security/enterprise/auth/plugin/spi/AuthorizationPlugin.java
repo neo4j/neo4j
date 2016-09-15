@@ -24,10 +24,22 @@ import java.util.Collection;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 
 /**
- * TODO
+ * An authorization plugin realm for the Neo4j enterprise security module.
+ *
+ * <p>If the configuration setting <tt>dbms.security.realms.plugin.authorization_enabled</tt> is set to <tt>true</tt>,
+ * all objects that implements this interface that exists in the class path at Neo4j startup, will be
+ * loaded as services.
+ *
+ * <p>NOTE: If the same object also implements <tt>AuthenticationPlugin</tt>, it will not be loaded twice.
+ *
+ * @see AuthenticationPlugin
+ * @see AuthPlugin
  */
 public interface AuthorizationPlugin extends RealmLifecycle
 {
+    /**
+     * An object containing a principal and its corresponding realm.
+     */
     final class PrincipalAndRealm
     {
         private final Object principal;
@@ -51,12 +63,23 @@ public interface AuthorizationPlugin extends RealmLifecycle
     };
 
     /**
-     * TODO
+     * The name of this realm.
+     *
+     * <p>This name, prepended with the prefix "plugin-", can be used by a client to direct an auth token directly
+     * to this realm.
+     *
+     * @return the name of this realm
      */
     String name();
 
     /**
-     * TODO
+     * Should perform authorization of the given collection of principals and their corresponding realms (that
+     * authenticated them), and return an <tt>AuthorizationInfo</tt> result that contains a collection of roles
+     * that are assigned to the given principals.
+     *
+     * @param principals a collection of principals and their corresponding realms (that authenticated them)
+     *
+     * @return an <tt>AuthorizationInfo</tt> result that contains the roles that are assigned to the given principals.
      */
     AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals );
 
