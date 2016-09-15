@@ -27,9 +27,11 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import org.neo4j.coreedge.VersionPrepender;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
+import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
 import org.neo4j.coreedge.handlers.ExceptionSwallowingHandler;
 import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.coreedge.messaging.marshalling.RaftMessageEncoder;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -37,11 +39,14 @@ public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
 {
     private final ChannelMarshal<ReplicatedContent> marshal;
     private final Log log;
+    private final Monitors monitors;
 
-    public RaftChannelInitializer( ChannelMarshal<ReplicatedContent> marshal, LogProvider logProvider )
+    public RaftChannelInitializer( ChannelMarshal<ReplicatedContent> marshal, LogProvider logProvider,
+            Monitors monitors )
     {
         this.marshal = marshal;
-        log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
+        this.monitors = monitors;
     }
 
     @Override
@@ -53,6 +58,8 @@ public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
         pipeline.addLast( "raftMessageEncoder", new RaftMessageEncoder( marshal ) );
 
         pipeline.addLast( new ExceptionLoggingHandler( log ) );
+        pipeline.addLast( new ExceptionMonitoringHandler(
+                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, SenderService.class ) ) );
         pipeline.addLast( new ExceptionSwallowingHandler() );
     }
 }

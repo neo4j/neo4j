@@ -83,6 +83,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -130,6 +131,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         PageCache pageCache = platformModule.pageCache;
         File storeDir = platformModule.storeDir;
         LifeSupport life = platformModule.life;
+        Monitors monitors = platformModule.monitors;
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
@@ -188,7 +190,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
         Clock clock = Clocks.systemClock();
-        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, clock ) );
+        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, clock, monitors ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 

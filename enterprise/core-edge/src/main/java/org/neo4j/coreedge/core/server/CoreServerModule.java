@@ -54,7 +54,6 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingInbound;
-import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -65,6 +64,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
@@ -84,6 +84,8 @@ public class CoreServerModule
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final LifeSupport life = platformModule.life;
+        final Monitors monitors = platformModule.monitors;
+
         LogProvider logProvider = logging.getInternalLogProvider();
         LogProvider userLogProvider = logging.getUserLogProvider();
 
@@ -98,12 +100,14 @@ public class CoreServerModule
 
         consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
-        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), config, logProvider, userLogProvider );
+        RaftServer raftServer =
+                new RaftServer( new CoreReplicatedContentMarshal(), config, logProvider, userLogProvider, monitors );
 
         LoggingInbound<RaftMessages.StoreIdAwareMessage> loggingRaftInbound =
                 new LoggingInbound<>( raftServer, messageLogger, myself );
 
-        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, Clocks.systemClock() ) );
+        CatchUpClient catchUpClient =
+                life.add( new CatchUpClient( discoveryService, logProvider, Clocks.systemClock(), monitors ) );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),

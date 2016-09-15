@@ -54,6 +54,7 @@ import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotEncoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestHandler;
+import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
 import org.neo4j.coreedge.handlers.ExceptionSwallowingHandler;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
@@ -155,6 +156,8 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
+                        pipeline.addLast( new ExceptionMonitoringHandler(
+                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, CatchupServer.class ) ) );
                         pipeline.addLast( new ExceptionSwallowingHandler() );
                     }
                 } );
