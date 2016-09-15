@@ -31,7 +31,6 @@ import org.junit.runners.Parameterized.Parameters;
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.Collection;
-
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -186,7 +185,7 @@ public class RelationshipGroupDefragmenterTest
         verifyGroupsAreSequentiallyOrderedByNode();
     }
 
-    private void defrag( long nodeCount, RecordStore<RelationshipGroupRecord> groupStore )
+    private void defrag( int nodeCount, RecordStore<RelationshipGroupRecord> groupStore )
     {
         Monitor monitor = mock( Monitor.class );
         RelationshipGroupDefragmenter defragmenter = new RelationshipGroupDefragmenter( CONFIG,
@@ -194,7 +193,7 @@ public class RelationshipGroupDefragmenterTest
 
         // Calculation below correlates somewhat to calculation in RelationshipGroupDefragmenter.
         // Anyway we verify below that we exercise the multi-pass bit, which is what we want
-        long memory = groupStore.getHighId() * 8 + 200;
+        long memory = groupStore.getHighId() * 15 + 200;
         defragmenter.run( memory, stores, nodeCount );
 
         // Verify that we exercise the multi-pass functionality
