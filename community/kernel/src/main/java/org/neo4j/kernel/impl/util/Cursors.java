@@ -28,6 +28,9 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 
 public class Cursors
 {
@@ -137,6 +140,37 @@ public class Cursors
                 }
 
                 return current;
+            }
+        };
+    }
+
+    public static TransactionCursor txCursor( Cursor<CommittedTransactionRepresentation> cursor )
+    {
+        return new TransactionCursor()
+        {
+            @Override
+            public LogPosition position()
+            {
+                throw new UnsupportedOperationException(
+                        "LogPosition does not apply when moving a generic cursor over a list of transactions" );
+            }
+
+            @Override
+            public boolean next() throws IOException
+            {
+                return cursor.next();
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                cursor.close();
+            }
+
+            @Override
+            public CommittedTransactionRepresentation get()
+            {
+                return cursor.get();
             }
         };
     }
