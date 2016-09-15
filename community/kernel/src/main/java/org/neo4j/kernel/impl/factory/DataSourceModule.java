@@ -30,8 +30,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.TransactionGuardException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
@@ -40,20 +38,18 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
 import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.guard.GuardException;
 import org.neo4j.kernel.guard.TimeoutGuard;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
@@ -69,7 +65,6 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.ComponentRegistry;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
@@ -367,7 +362,9 @@ public class DataSourceModule
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );
         procedures.registerComponent( Log.class, ( ctx ) -> proceduresLog );
-        procedures.registerComponent( TerminationGuard.class, procedureGuard( platform.dependencies ) );
+
+        Guard guard = platform.dependencies.resolveDependency( Guard.class );
+        procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ) );
 
         // Register injected private API components: useful to have available in procedures to access the kernel etc.
         ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir,
@@ -402,37 +399,6 @@ public class DataSourceModule
         return procedures;
     }
 
-    private ComponentRegistry.Provider<TerminationGuard> procedureGuard( final Dependencies dependencies )
-    {
-        Guard guard = dependencies.resolveDependency( Guard.class );
-        return (ctx) ->
-        {
-            KernelTransaction ktx = ctx.get( KERNEL_TRANSACTION );
-            return (TerminationGuard) () ->
-            {
-                Status reason = ktx.getReasonIfTerminated();
-                if ( reason == null )
-                {
-                    if ( ktx.isOpen() )
-                    {
-                        try
-                        {
-                            guard.check( (KernelTransactionImplementation) ktx );
-                        }
-                        catch ( GuardException e )
-                        {
-                            throw new TransactionGuardException( e.status(), "Transaction guard check failed", e );
-                        }
-                    }
-                }
-                else
-                {
-                    throw new TransactionTerminatedException( reason );
-                }
-            };
-        };
-    }
-
     /**
      * At end of startup, wait for instance to become available for transactions.
      * <p>
@@ -456,4 +422,5 @@ public class DataSourceModule
             availabilityGuard.isAvailable( timeout );
         }
     }
+
 }
