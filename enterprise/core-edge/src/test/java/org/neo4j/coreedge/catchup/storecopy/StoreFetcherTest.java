@@ -94,7 +94,7 @@ public class StoreFetcherTest
         fetcher.copyStore( localhost, wantedStoreId, new File( "destination" ) );
 
         // then
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( lastFlushedTxId ), any( TxPullResponseListener.class ) );
+        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( lastFlushedTxId - 1 ), any( TxPullResponseListener.class ) );
     }
 
     @Test

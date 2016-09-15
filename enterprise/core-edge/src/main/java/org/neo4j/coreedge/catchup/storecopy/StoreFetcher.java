@@ -89,12 +89,13 @@ public class StoreFetcher
             log.info( "Copying store from %s", from );
             long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, expectedStoreId, new StreamToDisk( destDir, fs ) );
 
-            /* Strictly we do not require lastFlushedTxId, but we do not know if a later one exists
-             * and we require at least one transaction usually, e.g. for extracting the log index
-             * of the consensus log. */
-            log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
+            // We require at least one transaction for extracting the log index of the consensus log.
+            // Given there might not have been any activity on the source server we need to ask for the
+            // log entry for the lastFlushedTxId even though we've already applied its contents
+            long pullTxIndex = lastFlushedTxId - 1;
+            log.info( "Store files need to be recovered starting from: %d", pullTxIndex );
 
-            CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId );
+            CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, pullTxIndex );
             if ( catchupResult != SUCCESS )
             {
                 throw new StoreCopyFailedException( "Failed to pull transactions: " + catchupResult );

@@ -27,18 +27,21 @@ import org.neo4j.coreedge.messaging.CatchUpRequest;
 
 public class TxPullRequest implements CatchUpRequest
 {
-    private long txId;
+    private long previousTxId;
     private final StoreId expectedStoreId;
 
-    public TxPullRequest( long txId, StoreId expectedStoreId )
+    public TxPullRequest( long previousTxId, StoreId expectedStoreId )
     {
-        this.txId = txId;
+        this.previousTxId = previousTxId;
         this.expectedStoreId = expectedStoreId;
     }
 
-    public long txId()
+    /**
+     * Request is for transactions after this id
+     */
+    public long previousTxId()
     {
-        return txId;
+        return previousTxId;
     }
 
     public StoreId expectedStoreId()
@@ -58,19 +61,19 @@ public class TxPullRequest implements CatchUpRequest
             return false;
         }
         TxPullRequest that = (TxPullRequest) o;
-        return txId == that.txId && Objects.equals( expectedStoreId, that.expectedStoreId );
+        return previousTxId == that.previousTxId && Objects.equals( expectedStoreId, that.expectedStoreId );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( txId, expectedStoreId );
+        return Objects.hash( previousTxId, expectedStoreId );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "TxPullRequest{txId=%d, storeId=%s}", txId, expectedStoreId );
+        return String.format( "TxPullRequest{txId=%d, storeId=%s}", previousTxId, expectedStoreId );
     }
 
     @Override

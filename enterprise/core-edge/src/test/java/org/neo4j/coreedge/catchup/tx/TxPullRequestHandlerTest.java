@@ -62,8 +62,7 @@ public class TxPullRequestHandlerTest
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
 
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
-        when( logicalTransactionStore.getTransactions( 13L ) ).thenReturn( txCursor( cursor(
-                tx( 13 ),
+        when( logicalTransactionStore.getTransactions( 14L ) ).thenReturn( txCursor( cursor(
                 tx( 14 ),
                 tx( 15 )
         ) ) );
@@ -77,8 +76,7 @@ public class TxPullRequestHandlerTest
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
 
         // then
-        verify( context, times( 3 ) ).write( ResponseMessageType.TX );
-        verify( context ).write( new TxPullResponse( storeId, tx( 13 ) ) );
+        verify( context, times( 2 ) ).write( ResponseMessageType.TX );
         verify( context ).write( new TxPullResponse( storeId, tx( 14 ) ) );
         verify( context ).write( new TxPullResponse( storeId, tx( 15 ) ) );
 
@@ -96,7 +94,7 @@ public class TxPullRequestHandlerTest
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
 
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
-        when( logicalTransactionStore.getTransactions( 13L ) ).thenThrow( new NoSuchTransactionException( 13 ) );
+        when( logicalTransactionStore.getTransactions( 14L ) ).thenThrow( new NoSuchTransactionException( 14 ) );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(),
@@ -112,7 +110,7 @@ public class TxPullRequestHandlerTest
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
         verify( context ).write( new TxStreamFinishedResponse( E_TRANSACTION_PRUNED ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
-                .info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", 13L ) );
+                .info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", 14L ) );
     }
 
     @Test
