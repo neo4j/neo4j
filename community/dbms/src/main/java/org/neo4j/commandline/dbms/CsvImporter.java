@@ -20,17 +20,23 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.tooling.ImportTool;
 
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
+
 class CsvImporter implements Importer
 {
-    private final String[] args;
+    private final String[] args = new String[]{};
 
     CsvImporter( String[] args, Config config )
     {
-        this.args = args;
+        List argsList = Arrays.asList( args );
+        argsList.add( String.format( "--into=%s", config.get( database_path ) ) );
+        argsList.toArray(this.args);
     }
 
     @Override
