@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -34,13 +33,19 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.test.Race;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.test.Race.until;
+
 public class NeoStoresIT
 {
-    @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule()
+    @ClassRule
+    public static final DatabaseRule db = new EmbeddedDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )
@@ -85,36 +90,30 @@ public class NeoStoresIT
 
     @Test
     public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
-            throws InterruptedException
+            throws Throwable
     {
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-
-        final long[] latestNodeId = new long[1];
-
-        for ( int i = 0; i < 100_000; i++ )
+        Race race = new Race();
+        long[] latestNodeId = new long[1];
+        AtomicLong writes = new AtomicLong();
+        AtomicLong reads = new AtomicLong();
+        long endTime = currentTimeMillis() + SECONDS.toMillis( 2 );
+        BooleanSupplier end = () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime;
+        race.addContestant( until( end, () ->
         {
-            executor.scheduleAtFixedRate( new Runnable()
+            try ( Transaction tx = db.beginTx() )
             {
-                @Override
-                public void run()
-                {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        Node node = db.createNode();
-                        latestNodeId[0] = node.getId();
-                        node.setProperty( "largeProperty", LONG_STRING_VALUE );
-                        tx.success();
-                    }
-                }
-            }, 5, 25, TimeUnit.MILLISECONDS );
-        }
-
-        for ( int i = 0; i < 100_000; i++ )
+                Node node = db.createNode();
+                latestNodeId[0] = node.getId();
+                node.setProperty( "largeProperty", LONG_STRING_VALUE );
+                tx.success();
+            }
+            writes.incrementAndGet();
+        } ) );
+        race.addContestant( until( end, () ->
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
                 Node node = db.getGraphDatabaseAPI().getNodeById( latestNodeId[0] );
-
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
                     node.getProperty( propertyKey );
@@ -126,39 +125,33 @@ public class NeoStoresIT
                 // This will catch nodes not found (expected) and also PropertyRecords not found (shouldn't happen
                 // but handled in shouldWriteOutThePropertyRecordBeforeReferencingItFromANodeRecord)
             }
-        }
-
-        executor.shutdown();
-        executor.awaitTermination( 2000, TimeUnit.MILLISECONDS );
+            reads.incrementAndGet();
+        } ) );
+        race.go();
     }
 
     @Test
     public void shouldWriteOutThePropertyRecordBeforeReferencingItFromANodeRecord()
-            throws InterruptedException
+            throws Throwable
     {
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-
-        final long[] latestNodeId = new long[1];
-
-        for ( int i = 0; i < 100_000; i++ )
+        Race race = new Race();
+        long[] latestNodeId = new long[1];
+        AtomicLong writes = new AtomicLong();
+        AtomicLong reads = new AtomicLong();
+        long endTime = currentTimeMillis() + SECONDS.toMillis( 2 );
+        BooleanSupplier end = () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime;
+        race.addContestant( until( end, () ->
         {
-            executor.scheduleAtFixedRate( new Runnable()
+            try ( Transaction tx = db.beginTx() )
             {
-                @Override
-                public void run()
-                {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        Node node = db.createNode();
-                        latestNodeId[0] = node.getId();
-                        node.setProperty( "largeProperty", LONG_STRING_VALUE );
-                        tx.success();
-                    }
-                }
-            }, 5, 25, TimeUnit.MILLISECONDS );
-        }
-
-        for ( int i = 0; i < 100_000; i++ )
+                Node node = db.createNode();
+                latestNodeId[0] = node.getId();
+                node.setProperty( "largeProperty", LONG_STRING_VALUE );
+                tx.success();
+            }
+            writes.incrementAndGet();
+        } ) );
+        race.addContestant( until( end, () ->
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
@@ -177,15 +170,14 @@ public class NeoStoresIT
                     throw e;
                 }
             }
-        }
-
-        executor.shutdown();
-        executor.awaitTermination( 2000, TimeUnit.MILLISECONDS );
+            reads.incrementAndGet();
+        } ) );
+        race.go();
     }
 
     @Test
     public void shouldWriteOutThePropertyRecordBeforeReferencingItFromARelationshipRecord()
-            throws InterruptedException
+            throws Throwable
     {
         final long node1Id;
         final long node2Id;
@@ -200,33 +192,28 @@ public class NeoStoresIT
             tx.success();
         }
 
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-
+        Race race = new Race();
         final long[] latestRelationshipId = new long[1];
-
-        for ( int i = 0; i < 100_000; i++ )
+        AtomicLong writes = new AtomicLong();
+        AtomicLong reads = new AtomicLong();
+        long endTime = currentTimeMillis() + SECONDS.toMillis( 2 );
+        BooleanSupplier end = () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime;
+        race.addContestant( until( end, () ->
         {
-            executor.scheduleAtFixedRate( new Runnable()
+            try ( Transaction tx = db.beginTx() )
             {
-                @Override
-                public void run()
-                {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        Node node1 = db.getGraphDatabaseAPI().getNodeById( node1Id );
-                        Node node2 = db.getGraphDatabaseAPI().getNodeById( node2Id );
+                Node node1 = db.getGraphDatabaseAPI().getNodeById( node1Id );
+                Node node2 = db.getGraphDatabaseAPI().getNodeById( node2Id );
 
-                        Relationship rel = node1.createRelationshipTo( node2, FRIEND );
-                        latestRelationshipId[0] = rel.getId();
-                        rel.setProperty( "largeProperty", LONG_STRING_VALUE );
+                Relationship rel = node1.createRelationshipTo( node2, FRIEND );
+                latestRelationshipId[0] = rel.getId();
+                rel.setProperty( "largeProperty", LONG_STRING_VALUE );
 
-                        tx.success();
-                    }
-                }
-            }, 5, 25, TimeUnit.MILLISECONDS );
-        }
-
-        for ( int i = 0; i < 100_000; i++ )
+                tx.success();
+            }
+            writes.incrementAndGet();
+        } ) );
+        race.addContestant( until( end, () ->
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
@@ -245,9 +232,8 @@ public class NeoStoresIT
                     throw e;
                 }
             }
-        }
-
-        executor.shutdown();
-        executor.awaitTermination( 2000, TimeUnit.MILLISECONDS );
+            reads.incrementAndGet();
+        } ) );
+        race.go();
     }
 }
