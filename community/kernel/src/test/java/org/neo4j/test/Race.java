@@ -25,6 +25,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
+
+import org.neo4j.helpers.Exceptions;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -37,6 +40,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class Race
 {
+    public interface ThrowingRunnable
+    {
+        void run() throws Throwable;
+    }
+
     private final List<Contestant> contestants = new ArrayList<>();
     private volatile CountDownLatch readySet;
     private final CountDownLatch go = new CountDownLatch( 1 );
@@ -50,6 +58,52 @@ public class Race
     public Race( boolean addSomeMinorRandomStartDelays )
     {
         this.addSomeMinorRandomStartDelays = addSomeMinorRandomStartDelays;
+    }
+
+    public static Runnable timed( long time, TimeUnit unit, Runnable singleOperation )
+    {
+        return () ->
+        {
+            long endTime = currentTimeMillis() + unit.toMillis( time );
+            while ( currentTimeMillis() < endTime )
+            {
+                singleOperation.run();
+            }
+        };
+    }
+
+    public static Runnable until( BooleanSupplier end, Runnable singleOperation )
+    {
+        return () ->
+        {
+            while ( !end.getAsBoolean() )
+            {
+                singleOperation.run();
+            }
+        };
+    }
+
+    public static Runnable throwing( ThrowingRunnable runnable )
+    {
+        return () ->
+        {
+            try
+            {
+                runnable.run();
+            }
+            catch ( Throwable e )
+            {
+                throw Exceptions.launderedException( e );
+            }
+        };
+    }
+
+    public void addContestants( int count, Runnable contestant )
+    {
+        for ( int i = 0; i < count; i++ )
+        {
+            addContestant( contestant );
+        }
     }
 
     public void addContestant( Runnable contestant )
