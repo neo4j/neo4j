@@ -41,9 +41,9 @@ class CatchUpLoad extends RepeatUntilCallable
 {
     private Cluster cluster;
 
-    CatchUpLoad( BooleanSupplier keepGoing, Cluster cluster )
+    CatchUpLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
     {
-        super( keepGoing );
+        super( keepGoing, onFailure );
         this.cluster = cluster;
     }
 
@@ -69,13 +69,11 @@ class CatchUpLoad extends RepeatUntilCallable
         try
         {
             exception = startAndRegisterExceptionMonitor( edgeClusterMember );
-
             await( () -> txIdBeforeStartingNewEdge <= txId( edgeClusterMember ), 3, TimeUnit.MINUTES );
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException( e );
         }
         finally
         {
@@ -84,8 +82,7 @@ class CatchUpLoad extends RepeatUntilCallable
 
         if ( exception.get() != null )
         {
-            exception.get().printStackTrace();
-            return false;
+            throw new RuntimeException( exception.get() );
         }
 
         return true;

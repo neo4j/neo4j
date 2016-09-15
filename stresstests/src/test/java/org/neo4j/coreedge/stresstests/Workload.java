@@ -29,9 +29,9 @@ class Workload extends RepeatUntilCallable
 {
     private Cluster cluster;
 
-    Workload( BooleanSupplier keepGoing,  Cluster cluster )
+    Workload( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
     {
-        super( keepGoing );
+        super( keepGoing, onFailure );
         this.cluster = cluster;
     }
 

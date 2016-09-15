@@ -34,10 +34,10 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
     private final File baseDirectory;
     private final BiFunction<Boolean,Integer,SocketAddress> backupAddress;
 
-    BackupLoad( BooleanSupplier keepGoing, Cluster cluster, File baseDirectory,
+    BackupLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster, File baseDirectory,
             BiFunction<Boolean, Integer, SocketAddress> backupAddress )
     {
-        super( keepGoing, cluster, cluster.edgeMembers().isEmpty() );
+        super( keepGoing, onFailure, cluster, cluster.edgeMembers().isEmpty() );
         this.baseDirectory = baseDirectory;
         this.backupAddress = backupAddress;
     }
@@ -64,11 +64,11 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
             throw e;
         }
 
-        if ( !backup.isConsistent() )
+        boolean success = backup.isConsistent();
+        if ( !success )
         {
             System.err.println( "Not consistent backup from " + address );
-            return false;
         }
-        return true;
+        return success;
     }
 }

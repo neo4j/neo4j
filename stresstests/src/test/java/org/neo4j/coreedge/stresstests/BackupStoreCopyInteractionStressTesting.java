@@ -22,13 +22,13 @@ package org.neo4j.coreedge.stresstests;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
@@ -96,16 +96,19 @@ public class BackupStoreCopyInteractionStressTesting
                 new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
                         paramsPerCoreInstance, emptyMap(), paramsPerEdgeInstance, StandardV3_0.NAME );
 
-        ExecutorService service = Executors.newFixedThreadPool( 3 );
-        BooleanSupplier keepGoing = untilTimeExpired( durationInMinutes, TimeUnit.MINUTES );
+        AtomicBoolean stopTheWorld = new AtomicBoolean();
+        BooleanSupplier keepGoing =
+                () -> !stopTheWorld.get() && untilTimeExpired( durationInMinutes, TimeUnit.MINUTES ).getAsBoolean();
+        Runnable onFailure = () -> stopTheWorld.set( true );
 
+        ExecutorService service = Executors.newFixedThreadPool( 3 );
         try
         {
             cluster.start();
-            Future<Boolean> workload = service.submit( new Workload( keepGoing, cluster ) );
-            Future<Boolean> startStopWorker = service.submit( new StartStopLoad( keepGoing, cluster ) );
+            Future<Boolean> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
+            Future<Boolean> startStopWorker = service.submit( new StartStopLoad( keepGoing, onFailure, cluster ) );
             Future<Boolean> backupWorker =
-                    service.submit( new BackupLoad( keepGoing, cluster, backupDirectory, backupAddress ) );
+                    service.submit( new BackupLoad( keepGoing, onFailure, cluster, backupDirectory, backupAddress ) );
 
             assertTrue( workload.get() );
             assertTrue( startStopWorker.get() );
