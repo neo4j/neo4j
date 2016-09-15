@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -39,12 +40,15 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class LuceneLabelScanStoreIT extends LabelScanStoreIT
+public class LuceneLabelScanStoreIT
 {
+    @Rule
+    public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
 
     @Test
     public void scanStoreStartWithoutExistentIndex() throws IOException

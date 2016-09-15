@@ -19,15 +19,18 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -39,64 +42,76 @@ import static org.neo4j.helpers.collection.Iterators.single;
 
 public class LabelScanStoreIT
 {
+    @ClassRule
+    public static final DatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     @Rule
-    public final DatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public final TestName testName = new TestName();
+
+    private Label First, Second, Third;
+
+    @Before
+    public void setupLabels()
+    {
+        First = Label.label( "First-" + testName.getMethodName() );
+        Second = Label.label( "Second-" + testName.getMethodName() );
+        Third = Label.label( "Third-" + testName.getMethodName() );
+    }
 
     @Test
     public void shouldGetNodesWithCreatedLabel() throws Exception
     {
         // GIVEN
-        Node node1 = createLabeledNode( Labels.First );
-        Node node2 = createLabeledNode( Labels.Second );
-        Node node3 = createLabeledNode( Labels.Third );
-        Node node4 = createLabeledNode( Labels.First, Labels.Second, Labels.Third );
-        Node node5 = createLabeledNode( Labels.First, Labels.Third );
+        Node node1 = createLabeledNode( First );
+        Node node2 = createLabeledNode( Second );
+        Node node3 = createLabeledNode( Third );
+        Node node4 = createLabeledNode( First, Second, Third );
+        Node node5 = createLabeledNode( First, Third );
 
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
-                Iterables.asSet( getAllNodesWithLabel( Labels.First ) ) );
+                Iterables.asSet( getAllNodesWithLabel( First ) ) );
         assertEquals(
                 asSet( node2, node4 ),
-                Iterables.asSet( getAllNodesWithLabel( Labels.Second ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Second ) ) );
         assertEquals(
                 asSet( node3, node4, node5 ),
-                Iterables.asSet( getAllNodesWithLabel( Labels.Third ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Third ) ) );
     }
 
     @Test
     public void shouldGetNodesWithAddedLabel() throws Exception
     {
         // GIVEN
-        Node node1 = createLabeledNode( Labels.First );
-        Node node2 = createLabeledNode( Labels.Second );
-        Node node3 = createLabeledNode( Labels.Third );
-        Node node4 = createLabeledNode( Labels.First );
-        Node node5 = createLabeledNode( Labels.First );
+        Node node1 = createLabeledNode( First );
+        Node node2 = createLabeledNode( Second );
+        Node node3 = createLabeledNode( Third );
+        Node node4 = createLabeledNode( First );
+        Node node5 = createLabeledNode( First );
 
         // WHEN
-        addLabels( node4, Labels.Second, Labels.Third );
-        addLabels( node5, Labels.Third );
+        addLabels( node4, Second, Third );
+        addLabels( node5, Third );
 
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
-                Iterables.asSet( getAllNodesWithLabel( Labels.First ) ) );
+                Iterables.asSet( getAllNodesWithLabel( First ) ) );
         assertEquals(
                 asSet( node2, node4 ),
-                Iterables.asSet( getAllNodesWithLabel( Labels.Second ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Second ) ) );
         assertEquals(
                 asSet( node3, node4, node5 ),
-                Iterables.asSet( getAllNodesWithLabel( Labels.Third ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Third ) ) );
     }
 
     @Test
     public void shouldGetNodesAfterDeletedNodes() throws Exception
     {
         // GIVEN
-        Node node1 = createLabeledNode( Labels.First, Labels.Second );
-        Node node2 = createLabeledNode( Labels.First, Labels.Third );
+        Node node1 = createLabeledNode( First, Second );
+        Node node2 = createLabeledNode( First, Third );
 
         // WHEN
         deleteNode( node1 );
@@ -104,36 +119,36 @@ public class LabelScanStoreIT
         // THEN
         assertEquals(
                 asSet( node2 ),
-                getAllNodesWithLabel( Labels.First ) );
+                getAllNodesWithLabel( First ) );
         assertEquals(
                 emptySetOf( Node.class ),
-                getAllNodesWithLabel( Labels.Second ) );
+                getAllNodesWithLabel( Second ) );
         assertEquals(
                 asSet( node2 ),
-                getAllNodesWithLabel( Labels.Third ) );
+                getAllNodesWithLabel( Third ) );
     }
 
     @Test
     public void shouldGetNodesAfterRemovedLabels() throws Exception
     {
         // GIVEN
-        Node node1 = createLabeledNode( Labels.First, Labels.Second );
-        Node node2 = createLabeledNode( Labels.First, Labels.Third );
+        Node node1 = createLabeledNode( First, Second );
+        Node node2 = createLabeledNode( First, Third );
 
         // WHEN
-        removeLabels( node1, Labels.First );
-        removeLabels( node2, Labels.Third );
+        removeLabels( node1, First );
+        removeLabels( node2, Third );
 
         // THEN
         assertEquals(
                 asSet( node2 ),
-                getAllNodesWithLabel( Labels.First ) );
+                getAllNodesWithLabel( First ) );
         assertEquals(
                 asSet( node1 ),
-                getAllNodesWithLabel( Labels.Second ) );
+                getAllNodesWithLabel( Second ) );
         assertEquals(
                 emptySetOf( Node.class ),
-                getAllNodesWithLabel( Labels.Third ) );
+                getAllNodesWithLabel( Third ) );
     }
 
     @Test
@@ -227,12 +242,5 @@ public class LabelScanStoreIT
             }
             tx.success();
         }
-    }
-
-    private enum Labels implements Label
-    {
-        First,
-        Second,
-        Third
     }
 }
