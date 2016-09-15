@@ -207,7 +207,7 @@ public class Neo4jMetricsBuilder
             else
             {
                 logService.getUserLog( getClass() )
-                        .warn( "Core Edge metrics was enabled but the graph database is not in Core/Edge mode." );
+                        .warn( "Core Edge metrics was enabled but the graph database is not in Core-Edge mode." );
             }
         }
 
