@@ -97,12 +97,12 @@ public interface PageCache extends AutoCloseable
     int maxCachedPages();
 
     /**
-     * Rename source file to the given target file.
+     * Rename source file to the given target file, effectively moving the file from source to target.
      *
-     * Both files have to be unmapped when performing the move, otherwise an exception will be thrown.
+     * Both files have to be unmapped when performing the rename, otherwise an exception will be thrown.
      *
-     * @param sourceFile The name of the file to move.
-     * @param targetFile The new name of the file after the move.
+     * @param sourceFile The name of the file to rename.
+     * @param targetFile The new name of the file after the rename.
      * @param copyOptions Options to modify the behaviour of the move in possibly platform specific ways. In particular,
      * {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} may be used to overwrite any existing file at the
      * target path name, instead of throwing an exception.
