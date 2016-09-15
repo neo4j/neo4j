@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Clock;
 import java.util.Collection;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -66,10 +64,10 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -89,10 +87,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
+import static org.neo4j.kernel.api.security.AccessMode.Static.WRITE;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
 
 public class KernelTransactionsTest
 {
+    @Rule
+    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2-" + getClass().getName() );
+
     @Test
     public void shouldListActiveTransactions() throws Exception
     {
@@ -332,10 +335,10 @@ public class KernelTransactionsTest
         KernelTransactions kernelTransactions = newKernelTransactions();
         kernelTransactions.blockNewTransactions();
 
-        CountDownLatch aboutToStartTx = new CountDownLatch( 1 );
-        Future<KernelTransaction> txOpener = startTxInSeparateThread( kernelTransactions, aboutToStartTx );
+        Future<KernelTransaction> txOpener =
+                t2.execute( state -> kernelTransactions.newInstance( explicit, WRITE, 0L ) );
+        t2.get().waitUntilWaiting( location -> location.isAt( KernelTransactions.class, "newInstance" ) );
 
-        await( aboutToStartTx );
         assertNotDone( txOpener );
 
         kernelTransactions.unblockNewTransactions();
@@ -348,10 +351,10 @@ public class KernelTransactionsTest
         KernelTransactions kernelTransactions = newKernelTransactions();
         kernelTransactions.blockNewTransactions();
 
-        CountDownLatch aboutToStartTx = new CountDownLatch( 1 );
-        Future<KernelTransaction> txOpener = startTxInSeparateThread( kernelTransactions, aboutToStartTx );
+        Future<KernelTransaction> txOpener =
+                t2.execute( state -> kernelTransactions.newInstance( explicit, WRITE, 0L ) );
+        t2.get().waitUntilWaiting( location -> location.isAt( KernelTransactions.class, "newInstance" ) );
 
-        await( aboutToStartTx );
         assertNotDone( txOpener );
 
         Future<?> wrongUnblocker = unblockTxsInSeparateThread( kernelTransactions );
@@ -472,41 +475,14 @@ public class KernelTransactionsTest
         return commitProcess;
     }
 
-    private static Future<KernelTransaction> startTxInSeparateThread( final KernelTransactions kernelTransactions,
-            final CountDownLatch aboutToStartTx )
-    {
-        return Executors.newSingleThreadExecutor().submit( new Callable<KernelTransaction>()
-        {
-            @Override
-            public KernelTransaction call()
-            {
-                aboutToStartTx.countDown();
-                return kernelTransactions.newInstance( KernelTransaction.Type.explicit, AccessMode.Static.WRITE, 0L );
-            }
-        } );
-    }
-
     private static Future<?> unblockTxsInSeparateThread( final KernelTransactions kernelTransactions )
     {
         return Executors.newSingleThreadExecutor().submit( kernelTransactions::unblockNewTransactions );
     }
 
-    private void await( CountDownLatch latch ) throws InterruptedException
-    {
-        assertTrue( latch.await( 1, MINUTES ) );
-    }
-
     private static void assertNotDone( Future<?> future )
     {
-        try
-        {
-            future.get( 2, TimeUnit.SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( TimeoutException.class ) );
-        }
+        assertFalse( future.isDone() );
     }
 
     private static KernelTransactionHandle newHandle( KernelTransaction tx )
