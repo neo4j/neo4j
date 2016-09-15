@@ -31,9 +31,9 @@ import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
@@ -129,14 +129,17 @@ public class ClusterSettings
      *  ha.phase2_timeout
      *  ha.election_timeout
      */
-    @Description( "Default timeout for all Paxos timeouts. Defaults to ha.default_timeout. This value is the default" +
-            " value for the ha.phase1_timeout, ha.phase2_timeout and ha.election_timeout settings." )
+    @Description( "Default value for all Paxos timeouts. Defaults to ha.default_timeout. " +
+            "This value is the default value for the ha.phase1_timeout, ha.phase2_timeout and ha.election_timeout settings. " +
+            "This is an advanced parameter which should only be changed if specifically advised by Neo4j Professional Services." )
     public static final Setting<Long> paxos_timeout = setting( "ha.paxos_timeout", DURATION, default_timeout );
 
-    @Description( "Timeout for Paxos phase 1. Defaults to ha.paxos_timeout." )
+    @Description( "Timeout for Paxos phase 1. Defaults to ha.paxos_timeout. " +
+            "This is an advanced parameter which should only be changed if specifically advised by Neo4j Professional Services. " )
     public static final Setting<Long> phase1_timeout = setting( "ha.phase1_timeout", DURATION, paxos_timeout );
 
-    @Description( "Timeout for Paxos phase 2. Defaults to ha.paxos_timeout." )
+    @Description( "Timeout for Paxos phase 2. Defaults to ha.paxos_timeout. " +
+            "This is an advanced parameter which should only be changed if specifically advised by Neo4j Professional Services." )
     public static final Setting<Long> phase2_timeout = setting( "ha.phase2_timeout", DURATION, paxos_timeout );
 
     @Description( "Timeout for learning values. Defaults to ha.default_timeout." )
