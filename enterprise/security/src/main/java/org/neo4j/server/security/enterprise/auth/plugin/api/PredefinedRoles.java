@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.auth.plugin.api;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.server.security.auth.UserManagerSupplier;
-
-public interface EnterpriseAuthManager extends AuthManager, UserManagerSupplier
+/**
+ * The role names of the built-in predefined roles of Neo4j.
+ */
+public class PredefinedRoles
 {
-    @Override
-    EnterpriseUserManager getUserManager();
-
-    void clearAuthCache();
+    public static final String ADMIN = "admin";
+    public static final String ARCHITECT = "architect";
+    public static final String PUBLISHER = "publisher";
+    public static final String READER = "reader";
 }

@@ -1,0 +1,133 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.server.security.enterprise.auth.plugin.api;
+
+import java.nio.file.Path;
+import java.time.Clock;
+import java.util.Optional;
+
+/**
+ * These are the methods that the plugin can perform on Neo4j.
+ */
+public interface RealmOperations
+{
+    /**
+     * Returns the path to the Neo4j home directory.
+     *
+     * @return the path to the Neo4j home directory
+     */
+    Path neo4jHome();
+
+    /**
+     * Returns the path to the Neo4j configuration file if one exists.
+     *
+     * @return the path to the Neo4j configuration file if one exists
+     */
+    Optional<Path> neo4jConfigFile();
+
+    /**
+     * Returns the Neo4j version.
+     *
+     * @return the Neo4j version
+     */
+    String neo4jVersion();
+
+    /**
+     * Returns the clock that is used by the Neo4j security module within which this plugin realm is running.
+     *
+     * @return the clock that is used by the Neo4j security module
+     */
+    Clock clock();
+
+    /**
+     * Returns the security log that is used by the Neo4j security module within which this plugin realm is running.
+     *
+     * @return the security log that is used by the Neo4j security module
+     */
+    Log log();
+
+    /**
+     * An interface to the security log that is used by the Neo4j security module.
+     */
+    interface Log
+    {
+        /**
+         * Writes to the security log at log level debug.
+         *
+         * @param message the message to write to the security log
+         */
+        void debug( String message );
+
+        /**
+         * Writes to the security log at log level info.
+         *
+         * @param message the message to write to the security log
+         */
+        void info( String message );
+
+        /**
+         * Writes to the security log at log level warning.
+         *
+         * @param message the message to write to the security log
+         */
+        void warn( String message );
+
+        /**
+         * Writes to the security log at log level error.
+         *
+         * @param message the message to write to the security log
+         */
+        void error( String message );
+
+        /**
+         * Returns <tt>true</tt> if log level debug is enabled.
+         *
+         * @return <tt>true</tt> if log level debug is enabled, otherwise <tt>false</tt>
+         */
+        boolean isDebugEnabled();
+    }
+
+    /**
+     * If set to <tt>true</tt> the authentication information returned by the plugin will be cached.
+     * The expiration time of the cached information is configured by the
+     * <tt>dbms.security.realms.auth_cache_ttl</tt> configuration setting.
+     *
+     * <p>Since a principal can be authenticated against cached authentication information this requires
+     * the capability of matching the credentials of an authentication token against the credentials of the
+     * authentication information returned by the plugin.
+     *
+     * <p>The default value is <tt>false</tt>.
+     *
+     * @param authenticationCachingEnabled if caching of authentication information should be enabled or not
+     */
+    void setAuthenticationCachingEnabled( boolean authenticationCachingEnabled );
+
+    /**
+     * If set to <tt>true</tt> the authorization information (i.e. the list of roles for a given principal)
+     * returned by the plugin will be cached.
+     * The expiration time of the cached information is configured by the
+     * <tt>dbms.security.realms.auth_cache_ttl</tt> configuration setting.
+     *
+     * The default value is <tt>true</tt>.
+     *
+     * @param authorizationCachingEnabled if caching of authorization information should be enabled or not
+     */
+    void setAuthorizationCachingEnabled( boolean authorizationCachingEnabled );
+}

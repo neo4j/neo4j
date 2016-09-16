@@ -52,11 +52,6 @@ public class BasicAuthentication implements Authentication
     @Override
     public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
-        if ( !authManager.supports( authToken ) )
-        {
-            throw new AuthenticationException( Status.Security.Unauthorized );
-        }
-
         if ( authToken.containsKey( NEW_CREDENTIALS ) )
         {
             return update( authToken, false );

@@ -31,7 +31,6 @@ import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.enterprise.auth.EnterpriseAuthManagerFactory;
@@ -46,10 +45,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import static org.neo4j.commandline.admin.security.RolesCommand.loadNeo4jConfig;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
 
 public class RolesCommandIT extends RolesCommandTestBase
 {

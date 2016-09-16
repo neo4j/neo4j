@@ -40,15 +40,16 @@ import org.apache.shiro.util.Initializable;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
-import org.neo4j.server.security.auth.UserManagerSupplier;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 
 import static org.neo4j.helpers.Strings.escape;
 
-class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplier
+class MultiRealmAuthManager implements EnterpriseAuthManager
 {
     private final EnterpriseUserManager userManager;
     private final Collection<Realm> realms;
@@ -84,17 +85,11 @@ class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplie
     }
 
     @Override
-    public boolean supports( final Map<String,Object> authToken )
-    {
-        final ShiroAuthToken token = new ShiroAuthToken( authToken );
-        return realms.stream().anyMatch( realm -> realm.supports( token ) );
-    }
-
-    @Override
     public EnterpriseAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
         EnterpriseAuthSubject subject;
 
+        AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken ); // Scheme must be set
         ShiroAuthToken token = new ShiroAuthToken( authToken );
 
         try
@@ -144,7 +139,7 @@ class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplie
             }
             if ( realm instanceof RealmLifecycle )
             {
-                ((RealmLifecycle) realm).initialize();
+                ((RealmLifecycle) realm).initialize( null );
             }
         }
     }

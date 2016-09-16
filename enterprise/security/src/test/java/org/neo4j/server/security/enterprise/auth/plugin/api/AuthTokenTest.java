@@ -17,15 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.auth.plugin.api;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.server.security.auth.UserManagerSupplier;
+import org.junit.Test;
 
-public interface EnterpriseAuthManager extends AuthManager, UserManagerSupplier
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+public class AuthTokenTest
 {
-    @Override
-    EnterpriseUserManager getUserManager();
-
-    void clearAuthCache();
+    @Test
+    public void shouldMatchKernelSecurityApiConstants()
+    {
+        // If you change one of these you need to change the other!
+        assertThat( AuthToken.PRINCIPAL, equalTo( org.neo4j.kernel.api.security.AuthToken.PRINCIPAL ) );
+        assertThat( AuthToken.CREDENTIALS, equalTo( org.neo4j.kernel.api.security.AuthToken.CREDENTIALS ) );
+        assertThat( AuthToken.REALM, equalTo( org.neo4j.kernel.api.security.AuthToken.REALM_KEY ) );
+        assertThat( AuthToken.PARAMETERS, equalTo( org.neo4j.kernel.api.security.AuthToken.PARAMETERS ) );
+    }
 }

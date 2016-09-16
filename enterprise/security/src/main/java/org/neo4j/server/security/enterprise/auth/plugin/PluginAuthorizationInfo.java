@@ -17,15 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.auth.plugin;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.server.security.auth.UserManagerSupplier;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
 
-public interface EnterpriseAuthManager extends AuthManager, UserManagerSupplier
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
+
+public class PluginAuthorizationInfo extends SimpleAuthorizationInfo
 {
-    @Override
-    EnterpriseUserManager getUserManager();
+    public PluginAuthorizationInfo( Set<String> roles )
+    {
+        super( roles );
+    }
 
-    void clearAuthCache();
+    public static PluginAuthorizationInfo create( AuthorizationInfo authorizationInfo )
+    {
+        return new PluginAuthorizationInfo( new LinkedHashSet<>( authorizationInfo.getRoles() ) );
+    }
 }

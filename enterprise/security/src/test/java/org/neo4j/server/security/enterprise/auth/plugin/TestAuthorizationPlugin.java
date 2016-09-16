@@ -17,15 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.auth.plugin;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.server.security.auth.UserManagerSupplier;
+import java.util.Collection;
+import java.util.Collections;
 
-public interface EnterpriseAuthManager extends AuthManager, UserManagerSupplier
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
+
+public class TestAuthorizationPlugin extends AuthorizationPlugin.Adapter
 {
     @Override
-    EnterpriseUserManager getUserManager();
+    public String name()
+    {
+        return getClass().getSimpleName();
+    }
 
-    void clearAuthCache();
+    @Override
+    public AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals )
+    {
+        if ( principals.stream().anyMatch( p -> "neo4j".equals( p.principal() ) ) )
+        {
+            return (AuthorizationInfo) () -> Collections.singleton( PredefinedRoles.READER );
+        }
+        return null;
+    }
 }

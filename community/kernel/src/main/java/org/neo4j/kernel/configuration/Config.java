@@ -21,6 +21,7 @@ package org.neo4j.kernel.configuration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +58,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final Iterable<Class<?>> settingsClasses;
     private final ConfigurationMigrator migrator;
     private final ConfigurationValidator validator;
+    private final Optional<File> configFile;
 
     private ConfigValues settingsFunction;
 
@@ -98,6 +100,7 @@ public class Config implements DiagnosticsProvider, Configuration
             Consumer<Map<String, String>> settingsPostProcessor,
             Function<Map<String, String> ,Iterable<Class<?>>> settingClassesProvider)
     {
+        this.configFile = configFile;
         Map<String,String> settings = initSettings( configFile, settingsPostProcessor, overriddenSettings );
         this.settingsClasses = settingClassesProvider.apply( settings );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
@@ -195,6 +198,11 @@ public class Config implements DiagnosticsProvider, Configuration
                 logger.log( "%s=%s", param.getKey(), param.getValue() );
             }
         }
+    }
+
+    public Optional<Path> getConfigFile()
+    {
+        return configFile.map( File::toPath );
     }
 
     @Override

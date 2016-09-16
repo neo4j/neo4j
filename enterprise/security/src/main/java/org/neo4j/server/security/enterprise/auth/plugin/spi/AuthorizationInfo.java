@@ -17,15 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.server.security.auth.UserManagerSupplier;
+import java.io.Serializable;
+import java.util.Collection;
 
-public interface EnterpriseAuthManager extends AuthManager, UserManagerSupplier
+/**
+ * An object that can be returned as the result of authorization by an <tt>AuthorizationPlugin</tt>.
+ *
+ * @see AuthorizationPlugin#authorize(Collection)
+ */
+public interface AuthorizationInfo extends Serializable
 {
-    @Override
-    EnterpriseUserManager getUserManager();
+    /**
+     * Should return a collection of roles assigned to the principals recognized by an <tt>AuthorizationPlugin</tt>.
+     *
+     * @return the roles assigned to the principals recognized by an <tt>AuthorizationPlugin</tt>
+     */
+    Collection<String> getRoles();
 
-    void clearAuthCache();
+    static AuthorizationInfo of( Collection<String> roles )
+    {
+        return () -> roles;
+    }
 }

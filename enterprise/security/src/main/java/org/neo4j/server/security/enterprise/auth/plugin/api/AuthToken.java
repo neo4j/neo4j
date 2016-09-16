@@ -17,15 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.auth.plugin.api;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.server.security.auth.UserManagerSupplier;
-
-public interface EnterpriseAuthManager extends AuthManager, UserManagerSupplier
+/**
+ * The predefined keys of the auth token <tt>Map&lt;String,Object&gt;</tt>.
+ */
+public interface AuthToken
 {
-    @Override
-    EnterpriseUserManager getUserManager();
+    String PRINCIPAL = "principal";
+    String CREDENTIALS = "credentials";
+    String REALM = "realm";
 
-    void clearAuthCache();
+    /**
+     * The corresponding value of this key is a <tt>Map<String,Object></tt> of custom parameters
+     * as provided by the client. This can be used as a vehicle to connect a client application
+     * with a server-side auth plugin.
+     * Neo4j will act as a pure transport and will not inspect the contents of this map.
+     */
+    String PARAMETERS = "parameters";
 }

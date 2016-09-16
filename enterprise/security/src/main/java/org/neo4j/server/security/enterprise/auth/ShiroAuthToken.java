@@ -52,7 +52,7 @@ public class ShiroAuthToken implements AuthenticationToken
         return AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken );
     }
 
-    Map<String,Object> getAuthTokenMap()
+    public Map<String,Object> getAuthTokenMap()
     {
         return authToken;
     }

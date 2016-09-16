@@ -205,6 +205,39 @@ public class AuthenticationIT
     }
 
     @Test
+    public void shouldFailIfMalformedAuthTokenMissingScheme() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        InitMessage.init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "neo4j" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+                "The value associated with the key `scheme` must be a String but was: null" ) ) );
+    }
+
+    @Test
+    public void shouldFailIfMalformedAuthTokenUnknownScheme() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        InitMessage.init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "neo4j",
+                                        "scheme", "unknown" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+                "Unsupported authentication scheme 'unknown'." ) ) );
+    }
+
+    @Test
     public void shouldBeAbleToUpdateCredentials() throws Throwable
     {
         // When

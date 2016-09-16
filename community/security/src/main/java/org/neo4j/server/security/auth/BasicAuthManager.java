@@ -95,15 +95,14 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
-    public boolean supports( Map<String,Object> authToken )
-    {
-        return authToken.containsKey( SCHEME_KEY ) && BASIC_SCHEME.equals( authToken.get( SCHEME_KEY ) ) &&
-               (!authToken.containsKey( REALM_KEY ) || NATIVE_REALM.equals( authToken.get( REALM_KEY ) ));
-    }
-
-    @Override
     public BasicAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
+        String scheme = AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken );
+        if ( !scheme.equals( AuthToken.BASIC_SCHEME ) )
+        {
+            throw new InvalidAuthTokenException( "Unsupported authentication scheme '" + scheme + "'." );
+        }
+
         String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
         String password = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
 
