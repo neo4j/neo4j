@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.store.StoreId;
 
 class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
@@ -133,13 +133,13 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, QuerySession querySession )
+    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext tc )
     {
         try
         {
             availability.assertDatabaseAvailable();
             assertSameThread();
-            return queryExecutor.get().executeQuery( query, parameters, querySession );
+            return queryExecutor.get().executeQuery( query, parameters, tc );
         }
         catch ( QueryExecutionKernelException e )
         {

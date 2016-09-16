@@ -203,6 +203,12 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
         assertThat( authenticate( subject.principalCredentials ).status(), not( equalTo( 200 ) ) );
     }
 
+    @Override
+    public String getConnectionDetails()
+    {
+        return "server-session";
+    }
+
     private String parseErrorMessage( HTTP.Response response )
     {
         try

@@ -24,10 +24,12 @@ import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.AcceptVisitor
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -36,6 +38,7 @@ import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -494,7 +497,7 @@ order by a.COL1""")
 
     try {
       // This syntax is valid today, but should give an exception in 1.5
-      engine.execute("create a", Map.empty[String, Any], graph.session())
+      engine.execute("create a", Map.empty[String, Any])
     } catch {
       case x: SyntaxException =>
       case _: Throwable => fail("expected exception")
@@ -641,7 +644,7 @@ order by a.COL1""")
 
     val engine = new ExecutionEngine(graph)
 
-    intercept[Throwable](engine.execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING.", Map.empty[String, Any], graph.session()))
+    intercept[Throwable](engine.execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING.", Map.empty[String, Any]))
 
     // Until we have a clean cut way where statement context is injected into cypher,
     // I don't know a non-hairy way to tell if this was done correctly, so here goes:
@@ -762,7 +765,7 @@ order by a.COL1""")
     val engine = createReadOnlyEngine()
 
     //WHEN
-    val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n", Map.empty[String, Any], graph.session())
+    val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n", Map.empty[String, Any])
 
     //THEN
     result.toList shouldBe empty
@@ -970,7 +973,7 @@ order by a.COL1""")
       writer.println("1,2,3")
       writer.println("4,5,6")
     }
-    val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x", Map.empty[String, Any], graph.session())
+    val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x", Map.empty[String, Any])
     result should have size 2
   }
 
@@ -995,12 +998,12 @@ order by a.COL1""")
     (0 until 100).foreach { _ => createLabeledNode("Person") }
 
     // WHEN
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any], graph.session()).toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
     planningListener.planRequests.toSeq should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 150).foreach { _ => createLabeledNode("Person") }
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any], graph.session()).toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
 
     //THEN
     planningListener.planRequests.toSeq should equal (Seq(
@@ -1016,12 +1019,12 @@ order by a.COL1""")
 
     (0 until 100).foreach { _ => createLabeledNode("Person") }
     //WHEN
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any], graph.session()).toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
     planningListener.planRequests.toSeq should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 9).foreach { _ => createLabeledNode("Dog") }
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any], graph.session()).toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
 
     //THEN
     planningListener.planRequests.toSeq should equal(Seq(
@@ -1033,14 +1036,14 @@ order by a.COL1""")
     val planningListener = PlanningListener()
     kernelMonitors.addMonitorListener(planningListener)
 
-    val result1 = eengine.execute("match (n) return n", Map.empty[String, Any], graph.session()).toList
+    val result1 = eengine.execute("match (n) return n", Map.empty[String, Any]).toList
     result1 shouldBe empty
 
     val ds = graph.getDependencyResolver.resolveDependency(classOf[NeoStoreDataSource])
     ds.stop()
     ds.start()
 
-    val result2 = eengine.execute("match (n) return n", Map.empty[String, Any], graph.session()).toList
+    val result2 = eengine.execute("match (n) return n", Map.empty[String, Any]).toList
     result2 shouldBe empty
 
     planningListener.planRequests.toSeq should equal(Seq(

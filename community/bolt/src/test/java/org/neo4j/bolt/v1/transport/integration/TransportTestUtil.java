@@ -91,7 +91,7 @@ public class TransportTestUtil
 
     public static byte[] chunk( int chunkSize, byte[] ... messages )
     {
-        ByteBuffer output = ByteBuffer.allocate( 1024 ).order( ByteOrder.BIG_ENDIAN );
+        ByteBuffer output = ByteBuffer.allocate( 10000 ).order( ByteOrder.BIG_ENDIAN );
 
         for ( byte[] wholeMessage : messages )
         {

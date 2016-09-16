@@ -29,10 +29,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Strings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.query.QuerySession.MetadataKey;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -43,6 +43,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.time.Clocks;
 
+import static java.lang.String.format;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 @Service.Implementation( KernelExtensionFactory.class )
@@ -131,10 +132,6 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
     static class QueryLogger implements QueryExecutionMonitor
     {
-        private static final MetadataKey<Long> START_TIME = new MetadataKey<>( Long.class, "start time" );
-        private static final MetadataKey<String> QUERY_STRING = new MetadataKey<>( String.class, "query string" );
-        private static final MetadataKey<Map<String,Object>> PARAMS = new MetadataKey<>( paramsClass(), "parameters" );
-
         private final Clock clock;
         private final Log log;
         private final long thresholdMillis;
@@ -149,87 +146,41 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         }
 
         @Override
-        public void startQueryExecution( QuerySession session, String query, Map<String,Object> parameters )
+        public void startQueryExecution( ExecutingQuery query )
         {
-            long startTime = clock.millis();
-            Object oldTime = session.put( START_TIME, startTime );
-            Object oldQuery = session.put( QUERY_STRING, query );
-            if ( logQueryParameters )
-            {
-                session.put( PARAMS, parameters );
-            }
-            if ( oldTime != null || oldQuery != null )
-            {
-                log.error( "Concurrent queries for session %s: \"%s\" @ %s and \"%s\" @ %s",
-                        session.toString(), oldQuery, oldTime, query, startTime );
-            }
         }
 
         @Override
-        public void endFailure( QuerySession session, Throwable failure )
+        public void endFailure( ExecutingQuery query, Throwable failure )
         {
-            String query = extractQueryString( session );
-            Long startTime = session.remove( START_TIME );
-            if ( startTime != null )
-            {
-                long time = clock.millis() - startTime;
-                logFailure( time, session, query, failure );
-            }
+            long time = clock.millis() - query.startTime();
+            log.error( logEntry( time, query ), failure );
         }
 
         @Override
-        public void endSuccess( QuerySession session )
+        public void endSuccess( ExecutingQuery query )
         {
-            String query = extractQueryString( session );
-            Long startTime = session.remove( START_TIME );
-            if ( startTime != null )
+            long time = clock.millis() - query.startTime();
+            if ( time >= thresholdMillis )
             {
-                long time = clock.millis() - startTime;
-                if ( time >= thresholdMillis )
-                {
-                    logSuccess( time, session, query );
-                }
+                log.info( logEntry( time, query ) );
             }
         }
 
-        private void logFailure( long time, QuerySession session, String query, Throwable failure )
+        private String logEntry( long time, ExecutingQuery query )
         {
-            String sessionString = session.toString();
+            String sourceString = query.querySource().toString();
+            String queryText = query.queryText();
+            String metaData = mapAsString( query.metaData() );
             if ( logQueryParameters )
             {
-                String params = extractParamsString( session );
-                log.error( String.format( "%d ms: %s - %s - %s", time, sessionString, query, params ), failure );
+                String params = mapAsString( query.queryParameters() );
+                return format( "%d ms: %s - %s - %s - %s", time, sourceString, queryText, params, metaData );
             }
             else
             {
-                log.error( String.format( "%d ms: %s - %s", time, sessionString, query ), failure );
+                return format( "%d ms: %s - %s - %s", time, sourceString, queryText, metaData );
             }
-        }
-
-        private void logSuccess( long time, QuerySession session, String query )
-        {
-            String sessionString = session.toString();
-            if ( logQueryParameters )
-            {
-                String params = extractParamsString( session );
-                log.info( "%d ms: %s - %s - %s", time, sessionString, query, params );
-            }
-            else
-            {
-                log.info( "%d ms: %s - %s", time, sessionString, query );
-            }
-        }
-
-        private static String extractQueryString( QuerySession session )
-        {
-            String query = session.remove( QUERY_STRING );
-            return query == null ? "<unknown query>" : query;
-        }
-
-        private static String extractParamsString( QuerySession session )
-        {
-            Map<String,Object> params = session.remove( PARAMS );
-            return mapAsString( params );
         }
 
         @SuppressWarnings( "unchecked" )
@@ -244,17 +195,12 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             String sep = "";
             for ( Map.Entry<String,Object> entry : params.entrySet() )
             {
-                builder.append( sep ).append( entry.getKey() ).append( ": " );
+                builder
+                    .append( sep )
+                    .append( entry.getKey() )
+                    .append( ": " )
+                    .append( valueToString( entry.getValue() ) );
 
-                Object value = entry.getValue();
-                if ( value instanceof Map<?,?> )
-                {
-                    builder.append( mapAsString( (Map<String,Object>) value ) );
-                }
-                else
-                {
-                    builder.append( Strings.prettyPrint( value ) );
-                }
                 sep = ", ";
             }
             builder.append( "}" );
@@ -262,10 +208,17 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             return builder.toString();
         }
 
-        @SuppressWarnings( "unchecked" )
-        private static Class<Map<String,Object>> paramsClass()
+        private static String valueToString( Object value )
         {
-            return (Class<Map<String,Object>>) (Object) Map.class;
+            if ( value instanceof Map<?,?> )
+            {
+                return mapAsString( (Map<String,Object>) value );
+            }
+            if ( value instanceof String )
+            {
+                return format( "'%s'", String.valueOf( value ) );
+            }
+            return Strings.prettyPrint( value );
         }
     }
 }

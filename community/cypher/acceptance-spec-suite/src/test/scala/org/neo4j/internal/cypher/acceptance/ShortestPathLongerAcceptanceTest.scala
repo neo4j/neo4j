@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_1
+import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, ExecutionResultWrapperFor3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.Rows
@@ -588,7 +588,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
                     |create (_31818)-[:`SE`]->(_31817)
                     |create (_31819)-[:`SE`]->(_31818)
                     |create (_31820)-[:`SE`]->(_31813)""".stripMargin
-      eengine.execute(query, Map.empty[String, Any], graph.session())
+      eengine.execute(query, Map.empty[String, Any])
     }
 
     createTestGraph()
@@ -778,13 +778,13 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   def executeUsingRulePlannerOnly(query: String) =
-    eengine.execute(s"CYPHER planner=RULE $query", Map.empty[String, Any], graph.session()) match {
-      case e:ExecutionResultWrapperFor3_1 => RewindableExecutionResult(e)
+    eengine.execute(s"CYPHER planner=RULE $query", Map.empty[String, Any]) match {
+      case e:ClosingExecutionResult => RewindableExecutionResult(e.inner)
     }
 
   def executeUsingCostPlannerOnly(query: String) =
-    eengine.execute(s"CYPHER planner=COST $query", Map.empty[String, Any], graph.session()) match {
-      case e:ExecutionResultWrapperFor3_1 => RewindableExecutionResult(e)
+    eengine.execute(s"CYPHER planner=COST $query", Map.empty[String, Any]) match {
+      case e: ClosingExecutionResult => RewindableExecutionResult(e.inner)
     }
 
   private class DebugDataMonitor extends DataMonitor {

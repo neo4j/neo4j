@@ -25,9 +25,11 @@ import org.neo4j.graphdb.Result;
 
 public interface QueryExecutionEngine
 {
-    Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession ) throws QueryExecutionKernelException;
+    Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+            throws QueryExecutionKernelException;
 
-    Result profileQuery( String query, Map<String, Object> parameters, QuerySession querySession) throws QueryExecutionKernelException;
+    Result profileQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+            throws QueryExecutionKernelException;
 
     boolean isPeriodicCommit( String query );
 

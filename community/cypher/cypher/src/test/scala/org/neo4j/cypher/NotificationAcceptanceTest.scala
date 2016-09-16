@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_1.notification._
 import org.neo4j.kernel.impl.proc.Procedures
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.procedure.Procedure
 
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -419,7 +420,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("2.3 can warn about bare nodes") {
-    val res = eengine.execute("EXPLAIN CYPHER 2.3 MATCH n RETURN n", Map.empty[String, Any], graph.session())
+    val res = innerExecute("EXPLAIN CYPHER 2.3 MATCH n RETURN n")
 
     res.notifications should not be empty
   }

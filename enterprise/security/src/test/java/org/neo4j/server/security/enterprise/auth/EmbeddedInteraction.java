@@ -108,7 +108,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
         try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.implicit, subject ) )
         {
             Map<String,Object> p = (params == null) ? Collections.emptyMap() : params;
-            resultConsumer.accept( db.execute( tx, call, p ) );
+            resultConsumer.accept( db.execute( call, p ) );
             tx.success();
             return "";
         }
@@ -165,5 +165,11 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     public void assertInitFailed( EnterpriseAuthSubject subject )
     {
         assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+    }
+
+    @Override
+    public String getConnectionDetails()
+    {
+        return "embedded-session";
     }
 }

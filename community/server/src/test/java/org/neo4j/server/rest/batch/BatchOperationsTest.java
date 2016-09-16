@@ -26,16 +26,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Test;
 
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
+import org.neo4j.server.rest.web.InternalJettyServletRequest.RequestData;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BatchOperationsTest {
 
@@ -59,7 +60,9 @@ public class BatchOperationsTest {
     public void testSchemeInInternalJettyServletRequestForHttp() throws UnsupportedEncodingException
     {
         // when
-        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST", "http://localhost:7473/db/data/node", "{'name':'node1'}", new InternalJettyServletResponse(), mock( HttpServletRequest.class ) );
+        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST",
+                "http://localhost:7473/db/data/node", "{'name':'node1'}", new InternalJettyServletResponse(),
+                mock( RequestData.class ) );
 
         // then
         assertEquals("http",req.getScheme());
@@ -69,36 +72,36 @@ public class BatchOperationsTest {
     public void testSchemeInInternalJettyServletRequestForHttps() throws UnsupportedEncodingException
     {
         // when
-        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST", "https://localhost:7473/db/data/node", "{'name':'node1'}", new InternalJettyServletResponse(), mock( HttpServletRequest.class ) );
+        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST",
+                "https://localhost:7473/db/data/node", "{'name':'node1'}", new InternalJettyServletResponse(),
+                mock( RequestData.class ) );
 
         // then
         assertEquals("https",req.getScheme());
     }
 
     @Test
-    public void shouldForwardMetadataFromOuterRequest() throws Exception
+    public void shouldForwardMetadataFromRequestData() throws Exception
     {
         // Given
-        HttpServletRequest mock = mock( HttpServletRequest.class );
-
-        when(mock.getAuthType()).thenReturn( "authorization/auth" );
-        when(mock.getRemoteAddr()).thenReturn( "127.0.0.1" );
-        when(mock.getRemoteHost()).thenReturn( "localhost" );
-        when(mock.getRemotePort()).thenReturn( 1 );
-        when(mock.getLocalAddr()).thenReturn( "129.0.0.1" );
-        when(mock.getLocalPort()).thenReturn( 2 );
+        RequestData mock = new RequestData(
+                "127.0.0.1", true, 1,
+                "TheLocalName", "129.0.0.1", 2, "authorization/auth" );
 
         InternalJettyServletRequest req = new InternalJettyServletRequest( "POST",
                 "https://localhost:7473/db/data/node", "", new InternalJettyServletResponse(),
                 mock );
 
         // When & then
-        assertEquals( "authorization/auth", req.getAuthType());
         assertEquals( "127.0.0.1", req.getRemoteAddr());
-        assertEquals( "localhost", req.getRemoteHost());
+        assertException( () -> req.getRemoteHost(), UnsupportedOperationException.class,
+                "Remote host-name lookup might prove expensive, this should be explicitly considered." );
+        assertTrue( req.isSecure() );
         assertEquals( 1, req.getRemotePort());
-        assertEquals( 2, req.getLocalPort());
+        assertEquals( "TheLocalName", req.getLocalName());
         assertEquals( "129.0.0.1", req.getLocalAddr());
+        assertEquals( 2, req.getLocalPort());
+        assertEquals( "authorization/auth", req.getAuthType());
 
     }
 

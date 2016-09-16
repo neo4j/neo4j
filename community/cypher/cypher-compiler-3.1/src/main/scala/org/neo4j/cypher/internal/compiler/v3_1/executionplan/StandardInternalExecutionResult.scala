@@ -100,10 +100,12 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   def toEagerResultForTestingOnly(planner: PlannerName, runtime: RuntimeName): InternalExecutionResult = {
     val dumpToStringBuilder = Seq.newBuilder[Map[String, String]]
     val result = new util.ArrayList[util.Map[String, Any]]()
-    doInAccept { (row) =>
-      populateResults(result)(row)
-      populateDumpToStringResults(dumpToStringBuilder)(row)
-    }
+    if (isOpen)
+      doInAccept { (row) =>
+        populateResults(result)(row)
+        populateDumpToStringResults(dumpToStringBuilder)(row)
+      }
+
     new StandardInternalExecutionResult(context, taskCloser)
       with StandardInternalExecutionResult.AcceptByIterating {
 

@@ -17,20 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query;
+package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.ExecutingQuery
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 
-/**
- * The current (December 2014) usage of this interface expects the {@code end*} methods to be idempotent.
- * That is, once either of them have been invoked with a particular session as parameter, invoking either
- * of them with the same session parameter should do nothing.
- */
-public interface QueryExecutionMonitor
-{
-    void startQueryExecution( ExecutingQuery query );
+case class OnlyOnceQueryExecutionMonitor(monitor: QueryExecutionMonitor) extends QueryExecutionMonitor {
+  private var closed = false
 
-    void endFailure( ExecutingQuery query , Throwable failure );
+  override def startQueryExecution(query: ExecutingQuery): Unit =
+    monitor.startQueryExecution(query)
 
-    void endSuccess( ExecutingQuery query  );
+  override def endFailure(query: ExecutingQuery, failure: Throwable): Unit =
+    if (!closed) {
+      closed = true
+      monitor.endFailure(query, failure)
+    }
+
+  override def endSuccess(query: ExecutingQuery): Unit =
+    if (!closed) {
+      closed = true
+      monitor.endSuccess(query)
+    }
 }

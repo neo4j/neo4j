@@ -23,6 +23,7 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.ExecutionResult
 import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_1
 import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
@@ -30,55 +31,55 @@ class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
   test("specifying no planner should provide IDP") {
     val query = "PROFILE RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(IDPPlannerName)
+    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
   }
 
   test("specifying cost planner should provide IDP") {
     val query = "PROFILE CYPHER planner=cost RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(IDPPlannerName)
+    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
   }
 
   test("specifying idp planner should provide IDP") {
     val query = "PROFILE CYPHER planner=idp RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(IDPPlannerName)
+    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
   }
 
   test("specifying dp planner should provide DP") {
     val query = "PROFILE CYPHER planner=dp RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(DPPlannerName)
+    eengine.execute(query, Map.empty[String,Any]) should havePlanner(DPPlannerName)
   }
 
   test("specifying rule planner should provide RULE") {
     val query = "PROFILE CYPHER planner=rule RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(RulePlannerName)
+    eengine.execute(query, Map.empty[String,Any]) should havePlanner(RulePlannerName)
   }
 
   test("specifying cost planner should provide IDP using old syntax") {
     val query = "PROFILE CYPHER planner=cost RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(IDPPlannerName)
+    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
   }
 
   test("specifying idp planner should provide IDP using old syntax") {
     val query = "PROFILE CYPHER planner=idp RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(IDPPlannerName)
+    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
   }
 
   test("specifying dp planner should provide DP using old syntax") {
     val query = "PROFILE CYPHER planner=dp RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(DPPlannerName)
+    eengine.execute(query, Map.empty[String,Any]) should havePlanner(DPPlannerName)
   }
 
   test("specifying rule planner should provide RULE using old syntax") {
     val query = "PROFILE CYPHER planner=rule RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(RulePlannerName)
+    eengine.execute(query, Map.empty[String,Any]) should havePlanner(RulePlannerName)
   }
 
   private def havePlanner(expected: PlannerName): Matcher[ExecutionResult] = new Matcher[ExecutionResult] {

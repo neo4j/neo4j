@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.query;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -41,8 +43,11 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.enterprise.auth.EmbeddedInteraction;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
@@ -52,11 +57,10 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
-import static org.neo4j.kernel.impl.query.QueryEngineProvider.embeddedSession;
 
 public class QueryLoggerIT
 {
@@ -65,12 +69,20 @@ public class QueryLoggerIT
     public final EphemeralFileSystemRule fileSystem = new EphemeralFileSystemRule();
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     private GraphDatabaseBuilder databaseBuilder;
     private static final String QUERY = "CREATE (n:Foo {bar: 'baz'})";
+
+    private File logsDirectory;
+    private File logFilename;
 
     @Before
     public void setUp()
     {
+        logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
+        logFilename = new File( logsDirectory, "query.log" );
         AssertableLogProvider inMemoryLog = new AssertableLogProvider();
         databaseBuilder = new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystem.get() )
                 .setInternalLogProvider( inMemoryLog )
@@ -80,8 +92,6 @@ public class QueryLoggerIT
     @Test
     public void shouldLogCustomUserName() throws Throwable
     {
-        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
-        final File logFilename = new File( logsDirectory, "query.log" );
         // turn on query logging
         databaseBuilder.setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() );
         databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
@@ -103,6 +113,8 @@ public class QueryLoggerIT
         EnterpriseAuthSubject andres = db.login( "andres", "neo4j" );
         db.executeQuery( andres, "MATCH (n:Label) RETURN n", Collections.emptyMap(), ResourceIterator::close );
 
+        db.tearDown();
+
         // THEN
         List<String> logLines = readAllLines( logFilename );
 
@@ -113,10 +125,61 @@ public class QueryLoggerIT
     }
 
     @Test
+    public void shouldLogTXMetaDataInQueryLog() throws Throwable
+    {
+        // turn on query logging
+        databaseBuilder.setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() );
+        databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
+        EmbeddedInteraction db = new EmbeddedInteraction( databaseBuilder );
+        GraphDatabaseFacade graph = db.getLocalGraph();
+
+        db.getLocalUserManager().setUserPassword( "neo4j", "123", false );
+
+        EnterpriseAuthSubject subject = db.login( "neo4j", "123" );
+        db.executeQuery( subject, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(),
+                ResourceIterator::close );
+
+        // Set meta data and execute query in transaction
+        try (InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ))
+        {
+            graph.execute( "CALL dbms.setTXMetaData( { User: 'Johan' } )", Collections.emptyMap() );
+            graph.execute( "CALL dbms.procedures() YIELD name RETURN name", Collections.emptyMap() ).close();
+            graph.execute( "MATCH (n) RETURN n", Collections.emptyMap() ).close();
+            graph.execute( QUERY, Collections.emptyMap() );
+            tx.success();
+        }
+
+        // Ensure that old meta data is not retained
+        try (InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ))
+        {
+            graph.execute( "CALL dbms.setTXMetaData( { Location: 'Sweden' } )", Collections.emptyMap() );
+            graph.execute( "MATCH ()-[r]-() RETURN count(r)", Collections.emptyMap() ).close();
+            tx.success();
+        }
+
+        db.tearDown();
+
+        // THEN
+        List<String> logLines = readAllLines( logFilename );
+
+        System.out.println( String.join( "\n", logLines ) );
+
+        assertThat( logLines, hasSize( 7 ) );
+        assertThat( logLines.get( 0 ), not( containsString( "User: 'Johan'" ) ) );
+        // we don't care if setTXMetaData contains the meta data
+        //assertThat( logLines.get( 1 ), containsString( "User: Johan" ) );
+        assertThat( logLines.get( 2 ), containsString( "User: 'Johan'" ) );
+        assertThat( logLines.get( 3 ), containsString( "User: 'Johan'" ) );
+        assertThat( logLines.get( 4 ), containsString( "User: 'Johan'" ) );
+
+        // we want to make sure that the new transaction does not carry old meta data
+        assertThat( logLines.get( 5 ), not( containsString( "User: 'Johan'" ) ) );
+        assertThat( logLines.get( 6 ), containsString( "Location: 'Sweden'" ) );
+    }
+
+    @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception
     {
-        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
-        final File logFilename = new File( logsDirectory, "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .setConfig( GraphDatabaseSettings.log_queries_parameter_logging_enabled, Settings.FALSE )
@@ -126,16 +189,13 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
-        assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s",
-                embeddedSession( new FakeTransactionalContext( FULL ) ), QUERY ) ) );
+        assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s - {}", querySource(), QUERY ) ) );
         assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 
     @Test
     public void shouldLogParametersWhenNestedMap() throws Exception
     {
-        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
-        final File logFilename = new File( logsDirectory, "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .setConfig( GraphDatabaseSettings.log_queries_parameter_logging_enabled, Settings.TRUE )
@@ -154,17 +214,21 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
+        QuerySource querySource = querySource();
         assertThat( logLines.get( 0 ), endsWith( String.format(
-                " ms: %s - %s - {props: {name: Roland, position: Gunslinger, followers: [Jake, Eddie, Susannah]}}",
-                embeddedSession( new FakeTransactionalContext( FULL ) ), query) ) );
+                " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: [Jake, Eddie, Susannah]}} - {}",
+                querySource, query) ) );
         assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
+    }
+
+    private QuerySource querySource()
+    {
+        return QueryEngineProvider.describe().append( FULL.name() );
     }
 
     @Test
     public void shouldLogParametersWhenList() throws Exception
     {
-        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
-        final File logFilename = new File( logsDirectory, "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .newGraphDatabase();
@@ -178,30 +242,27 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
                 endsWith( String.format(
-                        " ms: %s - %s - {ids: [0, 1, 2]}",
-                        embeddedSession( new FakeTransactionalContext( FULL ) ), query) ) );
+                        " ms: %s - %s - {ids: [0, 1, 2]} - {}",
+                        querySource(), query) ) );
         assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 
     @Test
     public void disabledQueryLogging() throws IOException
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
                 .newGraphDatabase();
 
         executeQueryAndShutdown( database );
 
-        List<String> lines = readAllLines( logFilename );
-        assertTrue( "Should not have any queries logged since query log is disabled", lines.isEmpty() );
+        expectedException.expect( FileNotFoundException.class );
+        readAllLines( logFilename );
     }
 
     @Test
     public void queryLogRotation() throws Exception
     {
-        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
-        final File logFilename = new File( logsDirectory, "query.log" );
         final File shiftedLogFilename = new File( logsDirectory, "query.log.1" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
@@ -237,6 +298,13 @@ public class QueryLoggerIT
     private List<String> readAllLines( File logFilename ) throws IOException
     {
         List<String> logLines = new ArrayList<>();
+        // this is needed as the EphemeralFSA is broken, and creates a new file when reading a non-existent file from
+        // a valid directory
+        if ( !fileSystem.get().fileExists( logFilename ) )
+        {
+            throw new FileNotFoundException( "File does not exist." );
+        }
+
         try ( BufferedReader reader = new BufferedReader(
                 fileSystem.get().openAsReader( logFilename, StandardCharsets.UTF_8 ) ) )
         {

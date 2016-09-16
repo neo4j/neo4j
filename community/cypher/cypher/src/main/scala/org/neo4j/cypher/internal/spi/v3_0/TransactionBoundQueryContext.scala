@@ -76,7 +76,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     if (transactionalContext.isOpen) {
       work(this)
     } else {
-      val context = transactionalContext.provideContext()
+      val context = transactionalContext.getOrBeginNewIfClosed()
       var success = false
       try {
         val result = work(new TransactionBoundQueryContext(context))

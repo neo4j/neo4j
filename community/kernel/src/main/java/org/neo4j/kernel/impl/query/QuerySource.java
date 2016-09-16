@@ -19,27 +19,33 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.api.security.AccessMode.Static.WRITE_ONLY;
-
-public class EmbeddedQuerySessionTest
+public class QuerySource
 {
+    private final String[] parts;
 
-    @Test
-    public void shouldIncludeUserNameInToString()
+    public static final QuerySource UNKNOWN = new QuerySource( "<unknown>");
+
+    public QuerySource( String ... parts )
     {
-        TransactionalContext mock = mock( TransactionalContext.class );
-        when( mock.accessMode() ).thenReturn( WRITE_ONLY );
-        QuerySession session = QueryEngineProvider.embeddedSession( mock );
+        this.parts = parts;
+    }
 
-        assertThat( session.toString(),
-                equalTo( String.format( "embedded-session\tthread\t%s\t%s",
-                        Thread.currentThread().getName(), WRITE_ONLY.name() ) ) );
+    public QuerySource append( String newPart )
+    {
+        String[] newParts = new String[parts.length + 1];
+        System.arraycopy( parts, 0, newParts, 0, parts.length );
+        newParts[parts.length] = newPart;
+        return new QuerySource( newParts );
+    }
+
+    @Override
+    public String toString()
+    {
+        return toString( "\t" );
+    }
+
+    public String toString( String sep )
+    {
+        return String.join( sep, parts );
     }
 }

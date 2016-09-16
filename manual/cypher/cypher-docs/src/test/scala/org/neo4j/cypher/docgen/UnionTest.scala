@@ -26,9 +26,9 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class UnionTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
-  
+
   override val setupQueries = List("""
 create (ah:Actor{name: 'Anthony Hopkins'}),
   (hm:Actor {name: 'Helen Mirren'}),

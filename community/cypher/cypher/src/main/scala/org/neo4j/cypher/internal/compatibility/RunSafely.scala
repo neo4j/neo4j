@@ -17,20 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query;
+package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.kernel.api.ExecutingQuery;
-
-/**
- * The current (December 2014) usage of this interface expects the {@code end*} methods to be idempotent.
- * That is, once either of them have been invoked with a particular session as parameter, invoking either
- * of them with the same session parameter should do nothing.
- */
-public interface QueryExecutionMonitor
-{
-    void startQueryExecution( ExecutingQuery query );
-
-    void endFailure( ExecutingQuery query , Throwable failure );
-
-    void endSuccess( ExecutingQuery query  );
+trait RunSafely {
+  def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default): T
 }

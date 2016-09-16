@@ -44,7 +44,7 @@ public class AuthProcedures
     public void createUser(
             @Name( "username" ) String username,
             @Name( "password" ) String password,
-            @Name( value = "requirePasswordChange", defaultValue = "true") boolean requirePasswordChange )
+            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );

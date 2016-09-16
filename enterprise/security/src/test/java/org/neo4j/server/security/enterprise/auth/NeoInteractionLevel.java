@@ -69,4 +69,6 @@ public interface NeoInteractionLevel<S>
     void assertPasswordChangeRequired( S subject ) throws Exception;
 
     void assertInitFailed( S subject );
+
+    String getConnectionDetails();
 }

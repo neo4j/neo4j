@@ -35,10 +35,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.proc.Procedures
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory, QuerySource}
 import org.neo4j.storageengine.api.StorageStatement
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -61,7 +60,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val storeStatement = mock[StorageStatement]
     val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
     statement = new KernelStatement(kernelTransaction, null, storeStatement, new Procedures())
-    statement.initialize(null, operations);
+    statement.initialize(null, operations)
     statement.acquire()
   }
 
@@ -73,8 +72,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
     val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`, AccessMode.Static.FULL,
-      statement, null, locker, null, null, null)
-    val transactionalContext = new TransactionalContextWrapperv3_1(tc)
+      statement, null, locker, null, null, null, null)
+    val transactionalContext = TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = true)
@@ -88,14 +87,14 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should mark transaction failed if not successful") {
     // GIVEN
     when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
-    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, statement, "X", Collections.emptyMap(), locker))
+    val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`, AccessMode.Static.FULL,
+      statement, null, locker, null, null, null, null)
+    val transactionalContext = TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = false)
 
     // THEN
-    verify(outerTx).transactionType()
-    verify(outerTx).mode()
     verify(outerTx).failure()
     verify(outerTx).close()
     verifyNoMoreInteractions(outerTx)
@@ -107,8 +106,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val node = createMiniGraph(relTypeName)
 
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
-    val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, stmt, "X", Collections.emptyMap(), locker))
+    val transactionalContext = TransactionalContextWrapperv3_1(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
@@ -128,8 +126,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should deny non-whitelisted URL protocols for loading") {
     // GIVEN
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
-    val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, stmt, "X", Collections.emptyMap(), locker))
+    val transactionalContext = TransactionalContextWrapperv3_1(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN
@@ -147,8 +144,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val config = Map[Setting[_], String](GraphDatabaseSettings.allow_file_urls -> "false")
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
-    val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, stmt, "X", Collections.emptyMap(), locker))
+    val transactionalContext = TransactionalContextWrapperv3_1(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN
@@ -157,6 +153,11 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     tx.success()
     tx.close()
+  }
+
+  private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
+    val contextFactory = new Neo4jTransactionalContextFactory(graphDatabaseCypherService, new PropertyContainerLocker)
+    contextFactory.newContext(QuerySource.UNKNOWN, transaction, "no query", Collections.emptyMap())
   }
 
   private def createMiniGraph(relTypeName: String): Node = {

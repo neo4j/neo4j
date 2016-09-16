@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.{StringCacheMonitor, ExecutionEngine}
+import org.neo4j.cypher.internal.{ExecutionEngine, StringCacheMonitor}
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -124,11 +125,11 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    engine.execute(query, Map.empty[String, Any], graph.session()).toList
+    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).toList
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    engine.execute(query, Map.empty[String, Any], graph.session()).toList
+    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).toList
 
     // then
     logProvider.assertAtLeastOnce(

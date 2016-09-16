@@ -28,14 +28,13 @@ import java.util.Collections;
 import org.neo4j.cypher.internal.DocsExecutionEngine;
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
+import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -47,6 +46,7 @@ public class DocsExecutionEngineTest
 {
     private static GraphDatabaseCypherService database;
     private static DocsExecutionEngine engine;
+    private static Neo4jTransactionalContextFactory contextFactory;
 
     @Before
     public void setup()
@@ -54,6 +54,7 @@ public class DocsExecutionEngineTest
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         database = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase());
         engine = new DocsExecutionEngine( database, NullLogProvider.getInstance() );
+        contextFactory = new Neo4jTransactionalContextFactory( database, new PropertyContainerLocker() );
     }
 
     @After
@@ -65,8 +66,9 @@ public class DocsExecutionEngineTest
     @Test
     public void actually_works_in_rewindable_fashion()
     {
-        InternalExecutionResult result = engine.internalProfile( "CREATE (n:Person {name:'Adam'}) RETURN n",
-                Collections.emptyMap(), createSession() );
+        String query = "CREATE (n:Person {name:'Adam'}) RETURN n";
+        InternalExecutionResult result = engine.internalProfile( query, Collections.emptyMap(),
+                createTransactionalContext( query ) );
         String dump = result.dumpToString();
         assertThat( dump, containsString( "1 row" ) );
         assertThat( result.javaIterator().hasNext(), equalTo( true ) );
@@ -75,19 +77,18 @@ public class DocsExecutionEngineTest
     @Test
     public void should_work_in_rewindable_fashion()
     {
-        InternalExecutionResult result = engine.internalProfile( "RETURN 'foo'", Collections.emptyMap(), createSession() );
+        String query = "RETURN 'foo'";
+        InternalExecutionResult result = engine.internalProfile( query, Collections.emptyMap(),
+                createTransactionalContext( query ) );
         String dump = result.dumpToString();
         assertThat( dump, containsString( "1 row" ) );
         assertThat( result.javaIterator().hasNext(), equalTo( true ) );
     }
 
-    public static QuerySession createSession()
+    public static Neo4jTransactionalContext createTransactionalContext( String query )
     {
         InternalTransaction transaction = database.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
-        ThreadToStatementContextBridge bridge =
-                database.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        Neo4jTransactionalContext context =
-                new Neo4jTransactionalContext( database, transaction, bridge.get(), "X", Collections.emptyMap(), new PropertyContainerLocker() );
-        return QueryEngineProvider.embeddedSession( context );
+        return contextFactory.newContext(
+                QuerySource.UNKNOWN, transaction, query, Collections.emptyMap() );
     }
 }

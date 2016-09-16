@@ -20,20 +20,25 @@
 package org.neo4j.cypher.docgen
 
 import java.io.{File, FileOutputStream, OutputStreamWriter, PrintWriter, Writer}
+import java.lang.Iterable
 import java.nio.charset.StandardCharsets
+import java.util
 
 import org.junit.{After, Before, Test}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.RuntimeJavaValueConverter
 import org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.javacompat.GraphImpl
-import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult, RewindableExecutionResult}
+import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult, RewindableExecutionResult, isGraphKernelResultValue}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.index.Index
-import org.neo4j.kernel.impl.query.QueryEngineProvider
-import org.neo4j.test.{GraphDescription, GraphDatabaseServiceCleaner, TestGraphDatabaseFactory}
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QueryEngineProvider, QuerySource, TransactionalContext}
+import org.neo4j.test.{GraphDatabaseServiceCleaner, GraphDescription, TestGraphDatabaseFactory}
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.scalatest.Assertions
 
@@ -43,6 +48,8 @@ import scala.collection.JavaConverters._
 Use this base class for refcard tests
  */
 abstract class RefcardTest extends Assertions with DocumentationHelper with GraphIcing {
+
+  private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
 
   var db: GraphDatabaseCypherService = null
   implicit var engine: ExecutionEngine = null
@@ -81,7 +88,16 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(docQuery), true)
     allQueriesWriter.append(fullQuerySnippet).append("\n\n")
 
-    val result = engine.execute(testQuery, params, db.session())
+    val contextFactory = new Neo4jTransactionalContextFactory( db, new PropertyContainerLocker )
+    val result = db.withTx(
+      tx => engine.execute(testQuery, params,
+        contextFactory.newContext(
+          QuerySource.UNKNOWN,
+          tx,
+          testQuery,
+          javaValues.asDeepJavaMap(params).asInstanceOf[java.util.Map[String,AnyRef]]
+        )
+      ), KernelTransaction.Type.`implicit` )
     result
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)

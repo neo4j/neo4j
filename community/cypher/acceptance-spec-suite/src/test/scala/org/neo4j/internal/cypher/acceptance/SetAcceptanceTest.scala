@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.kernel.impl.query.TransactionalContext
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -225,7 +226,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
       val threads = (0 until updates).map { i =>
         new Thread(new Runnable {
           override def run(): Unit = {
-            eengine.execute(queryWithPlanner, Map.empty[String, Any], graph.session())
+            eengine.execute(queryWithPlanner, Map.empty[String, Any])
           }
         })
       }
@@ -236,7 +237,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
       assert(result == resultValue, s": we lost updates with $planner planner!")
 
       // Reset for run on next planner
-      eengine.execute("MATCH (n) DETACH DELETE n", Map.empty[String, Any], graph.session())
+      eengine.execute("MATCH (n) DETACH DELETE n", Map.empty[String, Any])
     }
   }
 }

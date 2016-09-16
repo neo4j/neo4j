@@ -86,10 +86,10 @@ import org.neo4j.kernel.impl.coreapi.StandardNodeActions;
 import org.neo4j.kernel.impl.coreapi.StandardRelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
@@ -116,6 +116,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private NodeProxy.NodeActions nodeActions;
     private RelationshipProxy.RelationshipActions relActions;
     private SPI spi;
+    private TransactionalContextFactory contextFactory;
     private long defaultTransactionTimeout;
 
     /**
@@ -170,7 +171,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         Statement currentStatement();
 
         /** Execute a cypher statement */
-        Result executeQuery( String query, Map<String,Object> parameters, QuerySession querySession );
+        Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context );
 
         AutoIndexing autoIndexing();
 
@@ -196,17 +197,16 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
      */
     public void init( SPI spi, Config config )
     {
-        defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
-        IndexProviderImpl idxProvider = new IndexProviderImpl( this, spi::currentStatement );
-
         this.spi = spi;
+        this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
+        this.schema = new SchemaImpl( spi::currentStatement );
 
         this.relActions = new StandardRelationshipActions( spi::currentStatement, spi::currentTransaction,
                 this::assertTransactionOpen, ( id ) -> new NodeProxy( nodeActions, id ), this );
-        this.nodeActions =
-                new StandardNodeActions( spi::currentStatement, spi::currentTransaction, this::assertTransactionOpen,
-                        relActions, this );
-        this.schema = new SchemaImpl( spi::currentStatement );
+        this.nodeActions = new StandardNodeActions( spi::currentStatement, spi::currentTransaction,
+                this::assertTransactionOpen, relActions, this );
+
+        IndexProviderImpl idxProvider = new IndexProviderImpl( this, spi::currentStatement );
         AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
                 () -> new ReadOnlyIndexFacade<>(
                         idxProvider.getOrCreateNodeIndex( InternalAutoIndexing.NODE_AUTO_INDEX, null ) ),
@@ -216,6 +216,17 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                         .getOrCreateRelationshipIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, null ) ),
                 spi.autoIndexing().relationships() );
         this.indexManager = new IndexManagerImpl( spi::currentStatement, idxProvider, nodeAutoIndexer, relAutoIndexer );
+    }
+
+    /**
+     * This needs to be called after data source creation, when the execution engine dependency is satisfied by the
+     * cypher module
+     *
+     * @see GraphDatabaseFacadeFactory#initFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)
+     */
+    public void initTransactionalContextFactoryFromSPI()
+    {
+        this.contextFactory = new Neo4jTransactionalContextFactory( spi, locker );
     }
 
     @Override
@@ -375,7 +386,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
         // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
         InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
-        return execute( transaction, query, parameters );
+
+        TransactionalContext context =
+                contextFactory.newContext( QueryEngineProvider.describe(), transaction, query, parameters );
+        return spi.executeQuery( query, parameters, context );
     }
 
     @Override
@@ -391,9 +405,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public Result execute( InternalTransaction transaction, String query, Map<String,Object> parameters )
             throws QueryExecutionException
     {
-        TransactionalContext transactionalContext = new Neo4jTransactionalContext( spi.queryService(),
-            transaction, spi.currentStatement(), query, parameters, locker );
-        return spi.executeQuery( query, parameters, QueryEngineProvider.embeddedSession( transactionalContext ) );
+        TransactionalContext context =
+                contextFactory.newContext( QueryEngineProvider.describe(), transaction, query, parameters );
+        return spi.executeQuery( query, parameters, context );
     }
 
     @Override

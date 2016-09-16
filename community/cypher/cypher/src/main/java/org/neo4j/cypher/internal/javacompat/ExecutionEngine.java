@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -51,12 +51,12 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession ) throws
-            QueryExecutionKernelException
+    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+            throws QueryExecutionKernelException
     {
         try
         {
-            return new ExecutionResult( inner.execute( query, parameters, querySession ) );
+            return new ExecutionResult( inner.execute( query, parameters, context ) );
         }
         catch ( CypherException e )
         {
@@ -65,11 +65,12 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result profileQuery( String query, Map<String, Object> parameters, QuerySession session ) throws QueryExecutionKernelException
+    public Result profileQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+            throws QueryExecutionKernelException
     {
         try
         {
-            return new ExecutionResult( inner.profile( query, parameters, session ) );
+            return new ExecutionResult( inner.profile( query, parameters, context ) );
         }
         catch ( CypherException e )
         {

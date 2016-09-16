@@ -424,8 +424,8 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         neo.assertAuthenticated( henrik );
 
         DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
-        write.execute( threading, henrik );
+        ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
+        write.executeCreateNode( threading, henrik );
         latch.startAndWaitForAllToStart();
 
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'Henrik')" );

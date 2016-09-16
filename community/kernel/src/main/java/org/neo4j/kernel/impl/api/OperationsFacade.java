@@ -92,6 +92,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -1470,6 +1471,13 @@ public class OperationsFacade
     // query monitoring
 
     @Override
+    public void setMetaData( Map<String,Object> data )
+    {
+        statement.assertOpen();
+        statement.getTransaction().setMetaData( data );
+    }
+
+    @Override
     public Stream<ExecutingQuery> executingQueries()
     {
         statement.assertOpen();
@@ -1477,10 +1485,13 @@ public class OperationsFacade
     }
 
     @Override
-    public ExecutingQuery startQueryExecution( String queryText, Map<String,Object> queryParameters )
+    public ExecutingQuery startQueryExecution(
+        QuerySource descriptor,
+        String queryText,
+        Map<String,Object> queryParameters )
     {
         statement.assertOpen();
-        return queryRegistrationOperations().startQueryExecution( statement, queryText, queryParameters );
+        return queryRegistrationOperations().startQueryExecution( statement, descriptor, queryText, queryParameters );
     }
 
     @Override

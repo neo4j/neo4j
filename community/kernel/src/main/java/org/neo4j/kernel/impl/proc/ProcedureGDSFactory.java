@@ -73,6 +73,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
         facade.init( new ProcedureGDBFacadeSPI( owningThread, transaction, queryExecutor, storeDir, resolver,
                 AutoIndexing.UNSUPPORTED, storeId, availability, urlValidator ), config );
+        facade.initTransactionalContextFactoryFromSPI();
         return facade;
     }
 

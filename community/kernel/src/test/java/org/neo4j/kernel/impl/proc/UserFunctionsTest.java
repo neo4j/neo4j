@@ -87,9 +87,7 @@ public class UserFunctionsTest
         procs.register( function );
 
         // When
-        Object result = procs.callFunction( new BasicContext()
-        {
-        }, signature.name(), new Object[]{1337} );
+        Object result = procs.callFunction( new BasicContext(), signature.name(), new Object[]{1337} );
 
         // Then
         assertThat( result , equalTo( new Object[]{1337} ) );
@@ -105,9 +103,7 @@ public class UserFunctionsTest
                                  "function name correctly and that the function is properly deployed." );
 
         // When
-        procs.callFunction( new BasicContext()
-        {
-        }, signature.name(), new Object[]{1337} );
+        procs.callFunction( new BasicContext(), signature.name(), new Object[]{1337} );
     }
 
     @Test

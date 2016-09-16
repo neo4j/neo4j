@@ -142,36 +142,6 @@ Feature: ProcedureCallAcceptance
     Then the result should be empty
     And no side effects
 
-  Scenario: In-query call to procedure that takes no arguments and yields no results
-    And there exists a procedure test.doNothing() :: ():
-      |
-    When executing query:
-    """
-    CALL test.doNothing() RETURN 1
-    """
-    Then the result should be empty
-    And no side effects
-
-  Scenario: Standalone call to procedure that takes no arguments and yields no results
-    And there exists a procedure test.doNothing() :: ():
-      |
-    When executing query:
-    """
-    CALL test.doNothing()
-    """
-    Then the result should be empty
-    And no side effects
-
-  Scenario: Standalone call to procedure that takes no arguments and yields no results, called with implicit arguments
-    And there exists a procedure test.doNothing() :: ():
-      |
-    When executing query:
-    """
-    CALL test.doNothing
-    """
-    Then the result should be empty
-    And no side effects
-
   Scenario: In-query call to procedure with explicit arguments
     And there exists a procedure test.my.proc(name :: STRING?, id :: INTEGER?) :: (city :: STRING?, country_code :: INTEGER?):
       | name     | id | city      | country_code |

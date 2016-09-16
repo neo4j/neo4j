@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.kernel.impl.query.TransactionalContext
+
 class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with QueryStatisticsTestSupport {
 
   test("should understand symbols introduced by FOREACH") {
@@ -33,7 +35,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
         |  CREATE UNIQUE (n)-[:SELF]->(b))""".stripMargin
 
     // should work
-    eengine.execute(query, Map.empty[String, Any], graph.session())
+    eengine.execute(query, Map.empty[String, Any])
   }
 
   test("nested foreach") {

@@ -22,6 +22,8 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.kernel.impl.query.QuerySource;
+
 import static java.lang.String.format;
 
 /**
@@ -34,23 +36,28 @@ public class ExecutingQuery
     private final long queryId;
 
     private final Optional<String> username;
+    private final QuerySource querySource;
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime;
+    private Map<String,Object> metaData;
 
     public ExecutingQuery(
-        long queryId,
-        Optional<String> username,
-        String queryText,
-        Map<String,Object> queryParameters,
-        long startTime
-    )
-    {
+            long queryId,
+            QuerySource querySource,
+            Optional<String> username,
+            String queryText,
+            Map<String,Object> queryParameters,
+            long startTime,
+            Map<String,Object> metaData
+    ) {
         this.queryId = queryId;
+        this.querySource = querySource;
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
         this.startTime = startTime;
+        this.metaData = metaData;
     }
 
     @Override
@@ -87,6 +94,11 @@ public class ExecutingQuery
         return username;
     }
 
+    public QuerySource querySource()
+    {
+        return querySource;
+    }
+
     public String usernameAsString()
     {
         return username().orElse( UNAVAILABLE_USERNAME );
@@ -111,7 +123,13 @@ public class ExecutingQuery
     public String toString()
     {
         return format(
-            "ExecutingQuery{queryId=%d, username='%s', queryText='%s', queryParameters=%s, startTime=%d}",
-            queryId, usernameAsString(), queryText, queryParameters, startTime );
+            "ExecutingQuery{queryId=%d, querySource='%s', username='%s', queryText='%s', queryParameters=%s, " +
+            "startTime=%d}",
+            queryId, querySource.toString( ":" ), usernameAsString(), queryText, queryParameters, startTime );
+    }
+
+    public Map<String,Object> metaData()
+    {
+        return metaData;
     }
 }

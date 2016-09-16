@@ -26,7 +26,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,11 +40,12 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -53,6 +53,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.time.Clocks;
 
+import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -67,6 +68,7 @@ import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
 
+@SuppressWarnings( "unused" )
 public class BuiltInProcedures
 {
     public static Clock clock = Clocks.systemClock();
@@ -83,35 +85,56 @@ public class BuiltInProcedures
     @Context
     public AuthSubject authSubject;
 
-    @Procedure( name = "dbms.listTransactions", mode = DBMS )
+    @Procedure( name = "dbms.setTXMetaData", mode = DBMS )
+    public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
+    {
+        int totalCharSize = data.entrySet().stream()
+                .mapToInt( e -> e.getKey().length() + e.getValue().toString().length() ).sum();
+
+        final int HARD_CHAR_LIMIT = 2048;
+        if ( totalCharSize >= HARD_CHAR_LIMIT )
+        {
+            throw new IllegalArgumentException(
+                    format( "Invalid transaction meta-data, expected the total number of chars for " +
+                            "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
+        }
+
+        tx.acquireStatement().queryRegistration().setMetaData( data );
+    }
+
+    /*
+    This surface is hidden in 3.1, to possibly be completely removed or reworked later
+    ==================================================================================
+     */
+    //@Procedure( name = "dbms.listTransactions", mode = DBMS )
     public Stream<TransactionResult> listTransactions()
             throws InvalidArgumentsException, IOException
     {
         ensureAdminEnterpriseAuthSubject();
 
         return countTransactionByUsername(
-            getActiveTransactions()
+            getActiveTransactions( graph.getDependencyResolver() )
                 .stream()
                 .filter( tx -> !tx.terminationReason().isPresent() )
                 .map( tx -> getUsernameFromAccessMode( tx.mode() ) )
         );
     }
 
-    @Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
+    //@Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
         ensureSelfOrAdminEnterpriseAuthSubject( username );
 
-        return terminateTransactionsForValidUser( username );
+        return terminateTransactionsForValidUser( graph.getDependencyResolver(), username, this.tx );
     }
 
-    @Procedure( name = "dbms.listConnections", mode = DBMS )
+    //@Procedure( name = "dbms.listConnections", mode = DBMS )
     public Stream<ConnectionResult> listConnections()
     {
         ensureAdminEnterpriseAuthSubject();
 
-        BoltConnectionTracker boltConnectionTracker = getBoltConnectionTracker();
+        BoltConnectionTracker boltConnectionTracker = getBoltConnectionTracker( graph.getDependencyResolver() );
         return countConnectionsByUsername(
             boltConnectionTracker
                 .getActiveConnections()
@@ -121,14 +144,18 @@ public class BuiltInProcedures
         );
     }
 
-    @Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
+    //@Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException
     {
         ensureSelfOrAdminEnterpriseAuthSubject( username );
 
-        return terminateConnectionsForValidUser( username );
+        return terminateConnectionsForValidUser( graph.getDependencyResolver(), username );
     }
+
+    /*
+    ==================================================================================
+     */
 
     @Description( "List all queries currently executing at this instance that are visible to the user." )
     @Procedure( name = "dbms.listQueries", mode = DBMS )
@@ -136,11 +163,10 @@ public class BuiltInProcedures
     {
         try
         {
-            return getKernelTransactions()
-                .activeTransactions()
-                .stream()
+            return getKernelTransactions().activeTransactions().stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
-                .filter( ( query ) -> isAdminEnterpriseAuthSubject() || query.username().map( authSubject::hasUsername ).orElse( false ) )
+                .filter( query -> isAdminEnterpriseAuthSubject() ||
+                        query.username().map( authSubject::hasUsername ).orElse( false ) )
                 .map( catchThrown( InvalidArgumentsException.class, this::queryStatusResult ) );
         }
         catch ( UncaughtCheckedException uncaught )
@@ -204,7 +230,7 @@ public class BuiltInProcedures
             Function<KernelTransactionHandle,Stream<T>> selector
     )
     {
-        return getActiveTransactions()
+        return getActiveTransactions( graph.getDependencyResolver() )
             .stream()
             .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
             .collect( toSet() );
@@ -242,20 +268,23 @@ public class BuiltInProcedures
 
     // ----------------- helpers ---------------------
 
-    private Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
+    public static Stream<TransactionTerminationResult> terminateTransactionsForValidUser(
+            DependencyResolver dependencyResolver, String username, KernelTransaction currentTx )
     {
-        long terminatedCount = getActiveTransactions()
+        long terminatedCount = getActiveTransactions( dependencyResolver )
             .stream()
-            .filter( tx -> getUsernameFromAccessMode( tx.mode() ).equals( username ) && !tx.isUnderlyingTransaction( this.tx ) )
+            .filter( tx -> getUsernameFromAccessMode( tx.mode() ).equals( username ) &&
+                            !tx.isUnderlyingTransaction( currentTx ) )
             .map( tx -> tx.markForTermination( Status.Transaction.Terminated ) )
             .filter( marked -> marked )
             .count();
         return Stream.of( new TransactionTerminationResult( username, terminatedCount ) );
     }
 
-    private Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
+    public static Stream<ConnectionResult> terminateConnectionsForValidUser(
+            DependencyResolver dependencyResolver, String username )
     {
-        Long killCount = getBoltConnectionTracker()
+        Long killCount = getBoltConnectionTracker( dependencyResolver )
             .getActiveConnections( username )
             .stream()
             .map( conn -> { conn.terminate(); return true; } )
@@ -263,17 +292,17 @@ public class BuiltInProcedures
         return Stream.of( new ConnectionResult( username, killCount ) );
     }
 
-    private Set<KernelTransactionHandle> getActiveTransactions()
+    public static Set<KernelTransactionHandle> getActiveTransactions( DependencyResolver dependencyResolver )
     {
-        return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
+        return dependencyResolver.resolveDependency( KernelTransactions.class ).activeTransactions();
     }
 
-    private BoltConnectionTracker getBoltConnectionTracker()
+    public static BoltConnectionTracker getBoltConnectionTracker( DependencyResolver dependencyResolver )
     {
-        return graph.getDependencyResolver().resolveDependency( BoltConnectionTracker.class );
+        return dependencyResolver.resolveDependency( BoltConnectionTracker.class );
     }
 
-    private Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
+    public static Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
     {
         return usernames
             .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
@@ -283,7 +312,7 @@ public class BuiltInProcedures
         );
     }
 
-    private Stream<ConnectionResult> countConnectionsByUsername( Stream<String> usernames )
+    public static Stream<ConnectionResult> countConnectionsByUsername( Stream<String> usernames )
     {
         return usernames
             .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
@@ -330,37 +359,50 @@ public class BuiltInProcedures
         throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 
-    private QueryStatusResult queryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
+    private QueryStatusResult queryStatusResult( ExecutingQuery q )
+            throws InvalidArgumentsException
     {
         return new QueryStatusResult(
-            ofInternalId( q.internalQueryId() ),
-            q.usernameAsString(),
-            q.queryText(),
-            q.queryParameters(),
-            q.startTime(),
-            clock.instant().minusMillis( q.startTime() ).toEpochMilli()
+                ofInternalId( q.internalQueryId() ),
+                q.usernameAsString(),
+                q.queryText(),
+                q.queryParameters(),
+                q.startTime(),
+                clock.instant().minusMillis( q.startTime() ).toEpochMilli(),
+                q.querySource(),
+                q.metaData()
         );
     }
 
     public static class QueryStatusResult
     {
         public final String queryId;
-
         public final String username;
         public final String query;
         public final Map<String,Object> parameters;
         public final String startTime;
         public final String elapsedTime;
+        public final String connectionDetails;
+        public final Map<String,Object> metaData;
 
-        QueryStatusResult( QueryId queryId, String username, String query, Map<String,Object> parameters,
-                long startTime, long elapsedTime )
-        {
+        QueryStatusResult(
+                QueryId queryId,
+                String username,
+                String query,
+                Map<String,Object> parameters,
+                long startTime,
+                long elapsedTime,
+                QuerySource querySource,
+                Map<String,Object> txMetaData
+        ) {
             this.queryId = queryId.toString();
             this.username = username;
             this.query = query;
             this.parameters = parameters;
             this.startTime = formatTime( startTime );
             this.elapsedTime = formatInterval( elapsedTime );
+            this.connectionDetails = querySource.toString();
+            this.metaData = txMetaData;
         }
 
         private static String formatTime( final long startTime )
@@ -419,7 +461,7 @@ public class BuiltInProcedures
         }
     }
 
-    static String formatInterval( final long l )
+    private static String formatInterval( final long l )
     {
         final long hr = MILLISECONDS.toHours( l );
         final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );

@@ -64,11 +64,8 @@ public class AuthProcedures
 
     @Description( "Create a new user." )
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
-    public void createUser(
-            @Name( "username" ) String username,
-            @Name( "password" ) String password,
-            @Name( value = "requirePasswordChange", defaultValue = "true"  ) boolean requirePasswordChange
-    )
+    public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
+            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
         try
@@ -108,11 +105,8 @@ public class AuthProcedures
 
     @Description( "Change the given user's password." )
     @Procedure( name = "dbms.security.changeUserPassword", mode = DBMS )
-    public void changeUserPassword(
-            @Name( "username" ) String username,
-            @Name( "newPassword" ) String newPassword,
-            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange
-    )
+    public void changeUserPassword( @Name( "username" ) String username, @Name( "newPassword" ) String newPassword,
+            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
         String ownOrOther = format("password for user `%s`", username );
@@ -148,7 +142,7 @@ public class AuthProcedures
 
     @Description( "Assign a role to the user." )
     @Procedure( name = "dbms.security.addRoleToUser", mode = DBMS )
-    public void addRoleToUser(@Name( "roleName" ) String roleName, @Name( "username" ) String username )
+    public void addRoleToUser( @Name( "roleName" ) String roleName, @Name( "username" ) String username )
             throws IOException, InvalidArgumentsException
     {
         try
@@ -253,10 +247,9 @@ public class AuthProcedures
 
     @Description( "Activate a suspended user." )
     @Procedure( name = "dbms.security.activateUser", mode = DBMS )
-    public void activateUser(
-            @Name( "username" ) String username,
-            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange
-    ) throws IOException, InvalidArgumentsException
+    public void activateUser( @Name( "username" ) String username,
+            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException
     {
         try
         {
@@ -369,9 +362,8 @@ public class AuthProcedures
     }
 
     @Description( "Create a new role." )
-    @Procedure( name = "dbms.security.createRole", mode = DBMS)
-    public void createRole( @Name( "roleName" ) String roleName )
-        throws InvalidArgumentsException, IOException
+    @Procedure( name = "dbms.security.createRole", mode = DBMS )
+    public void createRole( @Name( "roleName" ) String roleName ) throws InvalidArgumentsException, IOException
     {
         try
         {
@@ -386,9 +378,8 @@ public class AuthProcedures
     }
 
     @Description( "Delete the specified role. Any role assignments will be removed." )
-    @Procedure( name = "dbms.security.deleteRole", mode = DBMS)
-    public void deleteRole( @Name( "roleName" ) String roleName )
-        throws InvalidArgumentsException, IOException
+    @Procedure( name = "dbms.security.deleteRole", mode = DBMS )
+    public void deleteRole( @Name( "roleName" ) String roleName ) throws InvalidArgumentsException, IOException
     {
         try
         {

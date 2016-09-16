@@ -28,17 +28,22 @@ import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api.KernelTransaction.Type._
 import org.neo4j.kernel.api.security.AccessMode.Static.FULL
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
+
+  private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
+    val contextFactory = new Neo4jTransactionalContextFactory(graphDatabaseCypherService, new PropertyContainerLocker)
+    contextFactory.newContext(QuerySource.UNKNOWN, transaction, "no query", Collections.emptyMap())
+  }
+
   test("statistics should default to single cardinality on empty db") {
     val graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     val transaction = graph.beginTransaction(explicit, FULL)
-    val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-    val transactionalContext = new Neo4jTransactionalContext(graph, transaction, bridge.get(), "X", Collections.emptyMap(), null)
+    val transactionalContext = createTransactionContext(graph, transaction)
     val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext))
     val statistics = planContext.statistics
 
@@ -62,8 +67,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     graph.getGraphDatabaseService.execute("UNWIND range(1, 100) AS i CREATE (:L1)-[:T]->()")
 
     val transaction = graph.beginTransaction(explicit, FULL)
-    val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-    val transactionalContext = new Neo4jTransactionalContext(graph, transaction, bridge.get(), "X", Collections.emptyMap(), null)
+    val transactionalContext = createTransactionContext(graph, transaction)
     val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext))
     val statistics = planContext.statistics
 

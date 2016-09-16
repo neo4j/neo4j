@@ -43,11 +43,11 @@ public class BasicContext implements Context
     }
 
     @Override
-    public <T> T getOrElse( Key<T> key, T defaultValue ) throws ProcedureException
+    public <T> T getOrElse( Key<T> key, T orElse )
     {
         Object o = values.get( key.name() );
         if( o == null ) {
-            return defaultValue;
+            return orElse;
         }
         return (T) o;
     }

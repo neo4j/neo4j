@@ -32,8 +32,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.configuration.Config
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession, TransactionalContext}
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api, monitoring}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
@@ -79,35 +78,33 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, identity)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, scalaParams: Map[String, Any], session: QuerySession): ExecutionResult = {
+  def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext): ExecutionResult = {
     // we got deep scala parameters => convert to deep java parameters
     val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
-    profile(query, javaParams, session)
+    profile(query, javaParams, context)
   }
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, javaParams: JavaMap[String, AnyRef], session: QuerySession): ExecutionResult = {
+  def profile(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): ExecutionResult = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
-    executionMonitor.startQueryExecution(session, query, javaParams)
-    val (preparedPlanExecution, transactionalContext) = planQuery(query, session)
-    preparedPlanExecution.profile(transactionalContext, scalaParams, session)
+    val (preparedPlanExecution, wrappedContext) = planQuery(context)
+    preparedPlanExecution.profile(wrappedContext, scalaParams)
   }
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, scalaParams: Map[String, Any], session: QuerySession): ExecutionResult = {
+  def execute(query: String, scalaParams: Map[String, Any], context: TransactionalContext): ExecutionResult = {
     // we got deep scala parameters => convert to deep java parameters
     val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
-    execute(query, javaParams, session)
+    execute(query, javaParams, context)
   }
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, javaParams: JavaMap[String, AnyRef], session: QuerySession): ExecutionResult = {
+  def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): ExecutionResult = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
-    executionMonitor.startQueryExecution(session, query, javaParams)
-    val (preparedPlanExecution, transactionalContext) = planQuery(query, session)
-    preparedPlanExecution.execute(transactionalContext, scalaParams, session)
+    val (preparedPlanExecution, wrappedContext) = planQuery(context)
+    preparedPlanExecution.execute(wrappedContext, scalaParams)
   }
 
   @throws(classOf[SyntaxException])
@@ -129,11 +126,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
     preParsedQueries.getOrElseUpdate(queryText, compiler.preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(queryText: String, session: QuerySession): (PreparedPlanExecution, TransactionalContextWrapperv3_1) = {
+  protected def planQuery(transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapperv3_1) = {
+    val executingQuery = transactionalContext.executingQuery()
+    val queryText = executingQuery.queryText()
+    executionMonitor.startQueryExecution(executingQuery)
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
 
-      val externalTransactionalContext = new TransactionalContextWrapperv3_1(session.get(TransactionalContext.METADATA_KEY))
+      val externalTransactionalContext = new TransactionalContextWrapperv3_1(transactionalContext)
       val preParsedQuery = try {
         preParseQuery(queryText)
       } catch {
@@ -147,7 +147,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
       var n = 0
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
         // create transaction and query context
-        val tc = externalTransactionalContext.provideContext()
+        val tc = externalTransactionalContext.getOrBeginNewIfClosed()
 
         // Temporarily change access mode during query planning
         // NOTE: The OVERRIDE_READ mode will force read access even if the current transaction did not have it

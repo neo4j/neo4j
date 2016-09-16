@@ -454,7 +454,7 @@ return p""")
     graph.createIndex("User", "email")
 
     // when
-    val result = eengine.execute("CYPHER planner=rule MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n", Map.empty[String, Any], graph.session())
+    val result = innerExecute("CYPHER planner=rule MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -469,7 +469,7 @@ return p""")
     graph.createIndex("User", "email")
 
     // when
-    val result = eengine.execute("CYPHER planner=rule MATCH (n:User) WHERE exists(n.email) RETURN n", Map.empty[String, Any], graph.session())
+    val result = innerExecute("CYPHER planner=rule MATCH (n:User) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))

@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Logger;
@@ -69,12 +69,12 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, QuerySession querySession )
+    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext transactionalContext )
     {
         try
         {
             availability.assertDatabaseAvailable();
-            return dataSource.queryExecutor.get().executeQuery( query, parameters, querySession );
+            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext );
         }
         catch ( QueryExecutionKernelException e )
         {
