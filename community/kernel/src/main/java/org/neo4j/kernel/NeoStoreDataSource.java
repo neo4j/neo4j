@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -296,6 +297,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private SchemaIndexProvider schemaIndexProvider;
     private File storeDir;
     private boolean readOnly;
+    private final AccessCapability accessCapability;
 
     private StorageEngine storageEngine;
     private TransactionLogModule transactionLogModule;
@@ -339,7 +341,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             Tracers tracers,
             Procedures procedures,
             IOLimiter ioLimiter,
-            Clock clock )
+            Clock clock,
+            AccessCapability accessCapability )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -372,6 +375,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.procedures = procedures;
         this.ioLimiter = ioLimiter;
         this.clock = clock;
+        this.accessCapability = accessCapability;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -780,7 +784,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperationContainer, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor, life,
-                tracers, storageEngine, procedures, transactionIdStore, clock ) );
+                tracers, storageEngine, procedures, transactionIdStore, clock, accessCapability ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
                 config );

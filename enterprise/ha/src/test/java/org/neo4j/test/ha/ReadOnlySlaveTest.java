@@ -28,11 +28,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 
+import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
@@ -59,11 +61,11 @@ public class ReadOnlySlaveTest
         {
             readOnlySlave.createNode();
             tx.success();
+            fail( "Should have thrown exception" );
         }
-        catch ( TransactionFailureException ex )
+        catch ( WriteOperationsNotAllowedException ex )
         {
             // Then
-            assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
         }
     }
 
@@ -90,11 +92,11 @@ public class ReadOnlySlaveTest
             // Then
             slaveNode.setProperty( "foo", "bar" );
             tx.success();
+            fail( "Should have thrown exception" );
         }
-        catch ( TransactionFailureException ex )
+        catch ( WriteOperationsNotAllowedException ex )
         {
             // Ok!
-            assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
         }
     }
 
@@ -121,11 +123,11 @@ public class ReadOnlySlaveTest
             // Then
             slaveNode.addLabel( Label.label( "FOO" ) );
             tx.success();
+            fail( "Should have thrown exception" );
         }
-        catch ( TransactionFailureException ex )
+        catch ( WriteOperationsNotAllowedException ex )
         {
             // Ok!
-            assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
         }
     }
 
@@ -155,11 +157,11 @@ public class ReadOnlySlaveTest
             // Then
             slaveNode.createRelationshipTo( slaveNode2, RelationshipType.withName( "KNOWS" ) );
             tx.success();
+            fail( "Should have thrown exception" );
         }
-        catch ( TransactionFailureException ex )
+        catch ( WriteOperationsNotAllowedException ex )
         {
             // Ok!
-            assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
         }
     }
 }

@@ -32,10 +32,12 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
+import org.neo4j.kernel.impl.factory.CanWrite
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory, QuerySource}
 import org.neo4j.storageengine.api.StorageStatement
@@ -59,7 +61,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(kernelTransaction.mode()).thenReturn(AccessMode.Static.FULL)
     val storeStatement = mock[StorageStatement]
     val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
-    statement = new KernelStatement(kernelTransaction, null, storeStatement, new Procedures())
+    statement = new KernelStatement(kernelTransaction, null, storeStatement, new Procedures(), new CanWrite())
     statement.initialize(null, operations)
     statement.acquire()
   }

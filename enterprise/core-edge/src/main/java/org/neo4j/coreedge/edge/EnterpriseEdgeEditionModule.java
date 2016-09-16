@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -132,6 +133,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         File storeDir = platformModule.storeDir;
         LifeSupport life = platformModule.life;
         Monitors monitors = platformModule.monitors;
+
+        this.accessCapability = new ReadOnly();
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 

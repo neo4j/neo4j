@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
@@ -136,7 +137,7 @@ public class KernelTransactionTestBase
     {
         return new KernelTransactionImplementation( operationContainer, schemaWriteGuard,
                 hooks, null, null, headerInformationFactory, commitProcess, transactionMonitor, legacyIndexStateSupplier,
-                txPool, clock, TransactionTracer.NULL, storageEngine );
+                txPool, clock, TransactionTracer.NULL, storageEngine, new CanWrite() );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

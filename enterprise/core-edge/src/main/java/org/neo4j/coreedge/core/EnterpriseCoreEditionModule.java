@@ -187,6 +187,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
         this.lockManager = coreStateMachinesModule.lockManager;
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
+        this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
         CoreServerModule coreServerModule = new CoreServerModule( identityModule.myself(), platformModule, consensusModule,
                 coreStateMachinesModule, replicationModule, clusterStateDirectory, topologyService, localDatabase,
@@ -333,4 +334,5 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         return new StandardBoltConnectionTracker();
     }
+
 }

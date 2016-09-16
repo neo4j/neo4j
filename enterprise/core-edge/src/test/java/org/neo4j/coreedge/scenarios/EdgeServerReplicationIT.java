@@ -47,6 +47,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
@@ -111,7 +112,7 @@ public class EdgeServerReplicationIT
             node.addLabel( Label.label( "Foo" ) );
             tx.success();
         }
-        catch ( TransactionFailureException e )
+        catch ( WriteOperationsNotAllowedException e )
         {
             // expected
             transactionFailed = true;

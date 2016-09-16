@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
+import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -84,6 +85,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final StorageEngine storageEngine;
     private final Procedures procedures;
     private final TransactionIdStore transactionIdStore;
+    private final AccessCapability accessCapability;
     private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
     private final Clock clock;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
@@ -118,7 +120,7 @@ public class KernelTransactions extends LifecycleAdapter
                                StorageEngine storageEngine,
                                Procedures procedures,
                                TransactionIdStore transactionIdStore,
-                               Clock clock )
+                               Clock clock, AccessCapability accessCapability )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -133,6 +135,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.storageEngine = storageEngine;
         this.procedures = procedures;
         this.transactionIdStore = transactionIdStore;
+        this.accessCapability = accessCapability;
         this.legacyIndexTxStateSupplier = () -> new CachingLegacyIndexTransactionState(
                 new LegacyIndexTransactionStateImpl( indexConfigStore, legacyIndexProviderLookup ) );
         this.clock = clock;
@@ -150,7 +153,7 @@ public class KernelTransactions extends LifecycleAdapter
                     statementOperations, schemaWriteGuard, hooks, constraintIndexCreator, procedures,
                     transactionHeaderInformationFactory, transactionCommitProcess, transactionMonitor,
                     legacyIndexTxStateSupplier, localTxPool, clock, tracers.transactionTracer,
-                    storageEngine );
+                    storageEngine, accessCapability );
 
             allTransactions.add( tx );
             return tx;

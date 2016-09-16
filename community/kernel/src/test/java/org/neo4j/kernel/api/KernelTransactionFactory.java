@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -86,7 +87,7 @@ public class KernelTransactionFactory
                 mock( Pool.class ),
                 Clocks.systemClock(),
                 NULL,
-                storageEngine );
+                storageEngine, new CanWrite() );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

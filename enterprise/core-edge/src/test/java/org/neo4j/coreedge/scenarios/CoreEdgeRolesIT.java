@@ -27,6 +27,7 @@ import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.test.coreedge.ClusterRule;
 
 public class CoreEdgeRolesIT
@@ -46,12 +47,12 @@ public class CoreEdgeRolesIT
         Cluster cluster = clusterRule.startCluster();
         GraphDatabaseService db = cluster.findAnEdgeMember().database();
         Transaction tx = db.beginTx();
-        db.createNode();
 
         // then
-        exceptionMatcher.expect( TransactionFailureException.class );
+        exceptionMatcher.expect( WriteOperationsNotAllowedException.class );
 
         // when
+        db.createNode();
         tx.success();
         tx.close();
     }
