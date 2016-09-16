@@ -52,12 +52,6 @@ class SharedDiscoveryEdgeClient extends LifecycleAdapter implements TopologyServ
     }
 
     @Override
-    public EdgeTopology edgeServers()
-    {
-        return sharedDiscoveryService.edgeTopology();
-    }
-
-    @Override
     public CoreTopology coreServers()
     {
         CoreTopology topology = sharedDiscoveryService.coreTopology( null );

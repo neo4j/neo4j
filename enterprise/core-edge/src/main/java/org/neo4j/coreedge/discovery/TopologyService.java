@@ -23,7 +23,5 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface TopologyService extends Lifecycle
 {
-    EdgeTopology edgeServers();
-
     CoreTopology coreServers();
 }
