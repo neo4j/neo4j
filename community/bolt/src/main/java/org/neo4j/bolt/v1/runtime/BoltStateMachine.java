@@ -435,7 +435,8 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     {
                         try
                         {
-                            machine.ctx.statementProcessor.streamResult( recordStream -> machine.ctx.responseHandler.onRecords( recordStream, false ) );
+                            machine.ctx.statementProcessor.streamResult( recordStream ->
+                                    machine.ctx.responseHandler.onRecords( recordStream, false ) );
 
                             return READY;
                         }

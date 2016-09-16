@@ -41,7 +41,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     // while there are in-flight requests.
     private final MessageProcessingHandler initHandler;
     private final MessageProcessingHandler runHandler;
-    private final MessageProcessingHandler pullAllHandler;
+    private final MessageProcessingHandler resultHandler;
     private final MessageProcessingHandler defaultHandler;
 
     private BoltWorker worker;
@@ -51,7 +51,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     {
         this.initHandler = new InitHandler( output, onEachCompletedRequest, log );
         this.runHandler = new RunHandler( output, onEachCompletedRequest, log );
-        this.pullAllHandler = new ResultHandler( output, onEachCompletedRequest, log );
+        this.resultHandler = new ResultHandler( output, onEachCompletedRequest, log );
         this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, log );
 
         this.worker = worker;
@@ -86,13 +86,13 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     @Override
     public void onDiscardAll()
     {
-        worker.enqueue( session -> session.discardAll( defaultHandler ) );
+        worker.enqueue( session -> session.discardAll( resultHandler ) );
     }
 
     @Override
     public void onPullAll()
     {
-        worker.enqueue( session -> session.pullAll( pullAllHandler ) );
+        worker.enqueue( session -> session.pullAll( resultHandler ) );
     }
 
     static class MessageProcessingHandler implements BoltResponseHandler

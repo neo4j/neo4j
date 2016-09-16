@@ -55,6 +55,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.neo4j.bolt.v1.messaging.message.AckFailureMessage.ackFailure;
+import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
@@ -67,17 +68,17 @@ import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
 @SuppressWarnings( "unchecked" )
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class TransportSessionIT
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
-            settings.put( GraphDatabaseSettings.auth_enabled.name(), "false"  ));
+            settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
 
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter( 0 )
     public Factory<TransportConnection> cf;
 
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter( 1 )
     public HostnamePort address;
 
     private TransportConnection client;
@@ -147,7 +148,30 @@ public class TransportSessionIT
                 msgRecord( eqRecord( equalTo( 1L ), equalTo( 1L ) ) ),
                 msgRecord( eqRecord( equalTo( 2L ), equalTo( 4L ) ) ),
                 msgRecord( eqRecord( equalTo( 3L ), equalTo( 9L ) ) ),
-                msgSuccess() ) );
+                msgSuccess( allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
+                        hasKey( "result_consumed_after" ) ) ) ) );
+    }
+
+    @Test
+    public void shouldRespondWithMetadataToDiscardAll() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
+                        discardAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgSuccess(
+                        allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
+                                hasKey( "result_available_after" ) ) ),
+                msgSuccess( allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
+                        hasKey( "result_consumed_after" ) ) ) ) );
     }
 
     @Test
@@ -165,19 +189,19 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
-                        String.format("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))%n" +
-                        "\"INVALID\"%n" +
-                        " ^")), msgIgnored()));
+                        String.format( "Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))%n" +
+                                       "\"INVALID\"%n" +
+                                       " ^" ) ), msgIgnored() ) );
 
         // When
-        client.send( TransportTestUtil.chunk( ackFailure(), run("RETURN 1"), pullAll()) );
+        client.send( TransportTestUtil.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo(1L) ) ),
-                msgSuccess()));
+                msgRecord( eqRecord( equalTo( 1L ) ) ),
+                msgSuccess() ) );
     }
 
     @Test
@@ -228,8 +252,8 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgSuccess(  allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
-                        hasKey( "result_available_after" ) ) )));
+                msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
+                        hasKey( "result_available_after" ) ) ) ) );
 
         //
         //Record(0x71) {
@@ -239,9 +263,9 @@ public class TransportSessionIT
         //                  props: {} (A)]
         //}
         assertThat( client,
-                eventuallyReceives(bytes(0x00, 0x08, 0xB1, 0x71,  0x91,
-                        0xB3, 0x4E,  0x00, 0x90, 0xA0, 0x00, 0x00) ));
-        assertThat(client, eventuallyReceives( msgSuccess()));
+                eventuallyReceives( bytes( 0x00, 0x08, 0xB1, 0x71, 0x91,
+                        0xB3, 0x4E, 0x00, 0x90, 0xA0, 0x00, 0x00 ) ) );
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -273,7 +297,7 @@ public class TransportSessionIT
         //}
         assertThat( client,
                 eventuallyReceives( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
-                        0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00,0x00  ) ) );
+                        0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00, 0x00 ) ) );
         assertThat( client, eventuallyReceives( msgSuccess() ) );
     }
 
@@ -303,7 +327,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( 1L ) ) ),
-                msgSuccess( allOf( hasEntry( is( "type" ), equalTo(  "r" ) ),
+                msgSuccess( allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
 
@@ -350,9 +374,9 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
-                        hasKey( "result_available_after" ) )),
-                msgRecord(eqRecord( nullValue() )),
-                msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt")) );
+                        hasKey( "result_available_after" ) ) ),
+                msgRecord( eqRecord( nullValue() ) ),
+                msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" ) ) );
     }
 
     @Test
@@ -360,10 +384,10 @@ public class TransportSessionIT
     {
         //Given
         GraphDatabaseService db = server.graphDatabaseService();
-        try ( Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
-            node.setProperty( "binary", new byte[]{(byte)0xB0, 0x17} );
+            node.setProperty( "binary", new byte[]{(byte) 0xB0, 0x17} );
             tx.success();
         }
 
@@ -379,13 +403,13 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgSuccess(  allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n.binary" ) ) ),
+                msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n.binary" ) ) ),
                         hasKey( "result_available_after" ) ) ),
-                msgRecord(eqRecord( nullValue() )),
-                msgFailure( Status.Request.Invalid, "Byte array is not yet supported in Bolt")) );
+                msgRecord( eqRecord( nullValue() ) ),
+                msgFailure( Status.Request.Invalid, "Byte array is not yet supported in Bolt" ) ) );
     }
 
-    private byte[] bytes( int...ints )
+    private byte[] bytes( int... ints )
     {
         byte[] bytes = new byte[ints.length];
         for ( int i = 0; i < ints.length; i++ )
