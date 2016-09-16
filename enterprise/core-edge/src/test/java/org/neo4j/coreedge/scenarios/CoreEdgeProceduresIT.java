@@ -59,8 +59,7 @@ public class CoreEdgeProceduresIT
     {
         String[] coreProcs = new String[]{
                 "dbms.cluster.role", // Server role
-                "dbms.cluster.discoverEndpointAcquisitionServers", // Discover appropriate discovery service
-                "dbms.cluster.acquireEndpoints", // Get instances for read/write
+                "dbms.cluster.routing.getServers", // Discover the cluster topology
                 "dbms.cluster.overview", // Discover appropriate discovery service
                 "dbms.procedures", // Kernel built procedures
 //                "dbms.security.listUsers", // Security procedure from community

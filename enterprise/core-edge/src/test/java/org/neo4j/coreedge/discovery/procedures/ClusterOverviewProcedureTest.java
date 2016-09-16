@@ -28,11 +28,11 @@ import java.util.UUID;
 import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.Test;
 
+import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
-import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.discovery.EdgeTopology;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
@@ -41,7 +41,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedureTest.addresses;
+import static org.neo4j.coreedge.discovery.procedures.GetServersProcedureTest.*;
+import static org.neo4j.coreedge.discovery.procedures.GetServersProcedureTest.addresses;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class ClusterOverviewProcedureTest
@@ -57,9 +58,9 @@ public class ClusterOverviewProcedureTest
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
 
-        coreMembers.put( theLeader, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 0 ) );
-        coreMembers.put( follower1, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 1 ) );
-        coreMembers.put( follower2, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 2 ) );
+        coreMembers.put( theLeader, coreAddresses( 0 ) );
+        coreMembers.put( follower1, coreAddresses( 1 ) );
+        coreMembers.put( follower2, coreAddresses( 2 ) );
 
         Set<EdgeAddresses> edges = addresses( 4, 5 );
 

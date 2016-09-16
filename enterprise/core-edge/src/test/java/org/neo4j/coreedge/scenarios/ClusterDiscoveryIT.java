@@ -19,14 +19,13 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.List;
-
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
-import org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedure;
+import org.neo4j.coreedge.discovery.procedures.GetServersProcedure;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -41,6 +40,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
@@ -52,39 +52,20 @@ public class ClusterDiscoveryIT
             .withNumberOfCoreMembers( 3 );
 
     @Test
-    public void shouldDiscoverCoreClusterMembers() throws Exception
-    {
-        // when
-        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).startCluster();
-
-        // then
-
-        List<Object[]> currentMembers;
-        for ( int i = 0; i < 3; i++ )
-        {
-            currentMembers = discoverClusterMembers( cluster.getCoreMemberById( i ).database() );
-            assertThat( currentMembers, containsInAnyOrder(
-                    new Object[]{"127.0.0.1:8000"},
-                    new Object[]{"127.0.0.1:8001"},
-                    new Object[]{"127.0.0.1:8002"} ) );
-        }
-    }
-
-    @Test
-    public void shouldFindReadAndWriteServers() throws Exception
+    public void shouldFindReadWriteAndRouteServers() throws Exception
     {
         // when
         Cluster cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
 
         // then
-
         List<Object[]> currentMembers;
         for ( int i = 0; i < 3; i++ )
         {
-            currentMembers = endPoints( cluster.getCoreMemberById( i ).database() );
+            currentMembers = getMembers( cluster.getCoreMemberById( i ).database() );
 
             assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "WRITE" ) ).count());
-            assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "READ" ) ).count());
+            assertEquals(4, currentMembers.stream().filter( x -> x[1].equals( "READ" ) ).count());
+            assertEquals(3, currentMembers.stream().filter( x -> x[1].equals( "ROUTE" ) ).count());
         }
     }
 
@@ -97,7 +78,7 @@ public class ClusterDiscoveryIT
         try
         {
             // when
-            discoverClusterMembers( cluster.getEdgeMemberById( 0 ).database() );
+            getMembers( cluster.getEdgeMemberById( 0 ).database() );
             fail( "Should not be able to discover members from edge members" );
         }
         catch ( ProcedureException ex )
@@ -107,7 +88,7 @@ public class ClusterDiscoveryIT
         }
     }
 
-    private List<Object[]> discoverClusterMembers( GraphDatabaseFacade db ) throws TransactionFailureException, org
+    private List<Object[]> getMembers( GraphDatabaseFacade db ) throws TransactionFailureException, org
             .neo4j.kernel.api.exceptions.ProcedureException
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
@@ -116,21 +97,7 @@ public class ClusterDiscoveryIT
         {
             // when
             return asList( statement.readOperations().procedureCallRead(
-                    procedureName( "dbms", "cluster", DiscoverEndpointAcquisitionServersProcedure.NAME ),
-                    new Object[0] ) );
-        }
-    }
-
-    private List<Object[]> endPoints( GraphDatabaseFacade db ) throws TransactionFailureException, org
-            .neo4j.kernel.api.exceptions.ProcedureException
-    {
-        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        KernelTransaction transaction = kernel.newTransaction( Type.implicit, READ );
-        try ( Statement statement = transaction.acquireStatement() )
-        {
-            // when
-            return asList( statement.readOperations().procedureCallRead(
-                    procedureName( "dbms", "cluster", AcquireEndpointsProcedure.NAME ),
+                    procedureName( "dbms", "cluster", "routing", GetServersProcedure.NAME ),
                     new Object[0] ) );
         }
     }
