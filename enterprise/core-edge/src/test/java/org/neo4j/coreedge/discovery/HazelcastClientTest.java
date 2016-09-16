@@ -289,13 +289,12 @@ public class HazelcastClientTest
                 renewableTimeoutService, 60_000, 5_000 );
 
         hazelcastClient.start();
-        renewableTimeoutService.invokeTimeout( REFRESH_EDGE );
 
         // when
-        EdgeTopology clusterTopology = hazelcastClient.edgeServers();
+        renewableTimeoutService.invokeTimeout( REFRESH_EDGE );
 
         // then
-        assertEquals( 1, clusterTopology.members().size() );
+        assertEquals( 1, hazelcastMap.size() );
     }
 
     @Test
@@ -334,15 +333,14 @@ public class HazelcastClientTest
                 renewableTimeoutService, 60_000, 5_000 );
 
         hazelcastClient.start();
-        renewableTimeoutService.invokeTimeout( REFRESH_EDGE );
 
-        int numberOfStartedEdgeServers = hazelcastClient.edgeServers().members().size();
+        renewableTimeoutService.invokeTimeout( REFRESH_EDGE );
 
         // when
         hazelcastClient.stop();
 
         // then
-        assertEquals( 0, numberOfStartedEdgeServers - 1 );
+        assertEquals( 0, hazelcastMap.size() );
     }
 
     private Member makeMember( int id ) throws UnknownHostException

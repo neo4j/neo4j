@@ -199,9 +199,6 @@ public class EdgeServerReplicationIT
         }
         catch ( RuntimeException required )
         {
-
-            required.printStackTrace();
-
             // Lifecycle should throw exception, server should not start.
             assertThat( required.getCause(), instanceOf( LifecycleException.class ) );
             assertThat( required.getCause().getCause(), instanceOf( IllegalStateException.class ) );

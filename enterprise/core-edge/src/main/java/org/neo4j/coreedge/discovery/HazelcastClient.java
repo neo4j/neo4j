@@ -37,7 +37,7 @@ import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVER_
 
 class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
-    public static final RenewableTimeoutService.TimeoutName REFRESH_EDGE = () -> "Refresh Edge";
+    static final RenewableTimeoutService.TimeoutName REFRESH_EDGE = () -> "Refresh Edge";
     private final Log log;
     private final AdvertisedSocketAddress boltAddress;
     private final HazelcastConnector connector;
@@ -56,22 +56,6 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         this.log = logProvider.getLog( getClass() );
         this.boltAddress = boltAddress;
         this.edgeTimeToLiveTimeout = edgeTimeToLiveTimeout;
-    }
-
-    @Override
-    public EdgeTopology edgeServers()
-    {
-        try
-        {
-            return retry( ( hazelcastInstance ) ->
-                    HazelcastClusterTopology.getEdgeTopology( hazelcastInstance, log ) );
-        }
-        catch ( Exception e )
-        {
-            log.info( "Failed to read cluster topology from Hazelcast. Continuing with empty (disconnected) topology. "
-                    + "Connection will be reattempted on next polling attempt.", e );
-            return EdgeTopology.EMPTY;
-        }
     }
 
     @Override
@@ -95,7 +79,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     {
         edgeRefreshTimer = renewableTimeoutService.create( REFRESH_EDGE, edgeRefreshRate, 0, timeout -> {
             timeout.renew();
-            retry( ( hazelcastInstance ) -> addEdgeServer( hazelcastInstance ) );
+            retry( this::addEdgeServer );
         } );
     }
 

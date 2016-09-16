@@ -23,6 +23,8 @@ import org.neo4j.coreedge.identity.ClusterId;
 
 public interface CoreTopologyService extends TopologyService
 {
+    EdgeTopology edgeServers();
+
     void addCoreTopologyListener( Listener listener );
 
     /**

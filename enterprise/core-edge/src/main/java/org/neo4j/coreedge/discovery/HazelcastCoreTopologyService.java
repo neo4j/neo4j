@@ -24,6 +24,8 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
+import com.hazelcast.core.EntryAdapter;
+import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
@@ -32,6 +34,7 @@ import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.map.impl.MapListenerAdapter;
 
 import java.util.List;
 
@@ -46,7 +49,9 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService, MembershipListener
+import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVER_BOLT_ADDRESS_MAP_NAME;
+
+class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
 {
     private final Config config;
     private final MemberId myself;
@@ -54,8 +59,10 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final Log userLog;
     private final CoreTopologyListenerService listenerService;
     private String membershipRegistrationId;
+    private String mapRegistrationId;
 
     private HazelcastInstance hazelcastInstance;
+    private EdgeTopology latestEdgeTopology;
 
     HazelcastCoreTopologyService( Config config, MemberId myself, LogProvider logProvider, LogProvider userLogProvider )
     {
@@ -80,33 +87,14 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     }
 
     @Override
-    public void memberAdded( MembershipEvent membershipEvent )
-    {
-        log.info( "Core member added %s", membershipEvent );
-        log.info( "Current core topology is %s", coreServers() );
-        listenerService.notifyListeners( coreServers());
-    }
-
-    @Override
-    public void memberRemoved( MembershipEvent membershipEvent )
-    {
-        log.info( "Core member removed %s", membershipEvent );
-        log.info( "Current core topology is %s", coreServers() );
-        listenerService.notifyListeners( coreServers());
-    }
-
-    @Override
-    public void memberAttributeChanged( MemberAttributeEvent memberAttributeEvent )
-    {
-    }
-
-    @Override
     public void start()
     {
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
-        membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( this );
+        membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
+        mapRegistrationId = hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME ).addEntryListener( new OurEntryListener(), true );
         listenerService.notifyListeners( coreServers());
+        refreshEdgeTopology();
     }
 
     @Override
@@ -117,6 +105,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         try
         {
             hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
+            hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME ).removeEntryListener( mapRegistrationId );
             hazelcastInstance.getLifecycleService().terminate();
         }
         catch ( Throwable e )
@@ -187,12 +176,50 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     @Override
     public EdgeTopology edgeServers()
     {
-        return HazelcastClusterTopology.getEdgeTopology( hazelcastInstance, log );
+        return latestEdgeTopology;
     }
 
     @Override
     public CoreTopology coreServers()
     {
         return HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log );
+    }
+
+    private void refreshEdgeTopology()
+    {
+        latestEdgeTopology = HazelcastClusterTopology.getEdgeTopology( hazelcastInstance, log );
+    }
+
+    private class OurEntryListener extends MapListenerAdapter
+    {
+        @Override
+        public void onEntryEvent( EntryEvent event )
+        {
+            refreshEdgeTopology();
+        }
+    }
+
+    private class OurMembershipListener implements MembershipListener
+    {
+        @Override
+        public void memberAdded( MembershipEvent membershipEvent )
+        {
+            log.info( "Core member added %s", membershipEvent );
+            log.info( "Current core topology is %s", coreServers() );
+            listenerService.notifyListeners( coreServers());
+        }
+
+        @Override
+        public void memberRemoved( MembershipEvent membershipEvent )
+        {
+            log.info( "Core member removed %s", membershipEvent );
+            log.info( "Current core topology is %s", coreServers() );
+            listenerService.notifyListeners( coreServers());
+        }
+
+        @Override
+        public void memberAttributeChanged( MemberAttributeEvent memberAttributeEvent )
+        {
+        }
     }
 }
