@@ -26,8 +26,6 @@ import io.netty.channel.ChannelPromise;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -50,6 +48,8 @@ public class ChunkedOutputTest
     @Test
     public void shouldChunkSingleMessage() throws Throwable
     {
+        setupWriteAndFlush();
+
         // When
         out.writeByte( (byte) 1 ).writeShort( (short) 2 );
         out.onMessageComplete();
@@ -64,6 +64,8 @@ public class ChunkedOutputTest
     @Test
     public void shouldChunkMessageSpanningMultipleChunks() throws Throwable
     {
+        setupWriteAndFlush();
+
         // When
         out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
         out.onMessageComplete();
@@ -79,6 +81,8 @@ public class ChunkedOutputTest
     @Test
     public void shouldReserveSpaceForChunkHeaderWhenWriteDataToNewChunk() throws IOException
     {
+        setupWriteAndFlush();
+
         // Given 2 bytes left in buffer + chunk is closed
         out.writeBytes( new byte[10], 0, 10 );  // 2 (header) + 10
         out.onMessageComplete();                // 2 (ending)
@@ -95,6 +99,8 @@ public class ChunkedOutputTest
     @Test
     public void shouldChunkDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
     {
+        setupWriteAndFlush();
+
         // Given
         out.writeBytes( new byte[16], 0, 16 ); // 2 + 16 is greater than the default max size 16
         out.onMessageComplete();
@@ -109,6 +115,8 @@ public class ChunkedOutputTest
     @Test
     public void shouldNotThrowIfOutOfSyncFlush() throws Throwable
     {
+        setupWriteAndFlush();
+
         // When
         out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
         out.onMessageComplete();
@@ -124,21 +132,58 @@ public class ChunkedOutputTest
                          "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
     }
 
+    @Test
+    public void shouldBeAbleToWriteWhileFlushing() throws Throwable
+    {
+        // When
+        out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
+        out.onMessageComplete();
+
+        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( invocation -> {
+            out.writeShort( (short) 42 );
+            return null;
+        } );
+
+        out.flush();
+
+        // Then
+        assertThat( writtenData.limit(), equalTo( 32 ) );
+        assertThat( HexPrinter.hex( writtenData, 0, 32 ),
+                equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
+                        "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
+    }
+
+    @Test
+    public void shouldNotBeAbleToWriteAfterClose() throws Throwable
+    {
+        // When
+        out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
+        out.onMessageComplete();
+        out.flush();
+        out.close();
+        out.writeShort( (short) 42 );
+
+        // Then
+        assertThat( writtenData.limit(), equalTo( 32 ) );
+        assertThat( HexPrinter.hex( writtenData, 0, 32 ),
+                equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
+                        "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
+    }
+
+    private void setupWriteAndFlush()
+    {
+        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( invocation -> {
+            ByteBuf byteBuf = (ByteBuf) invocation.getArguments()[0];
+            writtenData.limit( writtenData.position() + byteBuf.readableBytes() );
+            byteBuf.readBytes( writtenData );
+            return null;
+        } );
+    }
+
     @Before
     public void setup()
     {
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( new Answer<Object>()
-        {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                ByteBuf byteBuf = (ByteBuf) invocation.getArguments()[0];
-                writtenData.limit( writtenData.position() + byteBuf.readableBytes() );
-                byteBuf.readBytes( writtenData );
-                return null;
-            }
-        } );
         this.out = new ChunkedOutput( ch, 16 );
     }
 
