@@ -22,7 +22,6 @@ package org.neo4j.coreedge.stresstests;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -31,10 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-import java.util.function.IntFunction;
 
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.io.fs.FileUtils;
@@ -47,6 +43,8 @@ import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.StressTestingHelper.fromEnv;
+import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureRaftLogRotationAndPruning;
+import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureTxLogRotationAndPruning;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 
 public class CatchupStoreCopyInteractionStressTesting
@@ -70,15 +68,14 @@ public class CatchupStoreCopyInteractionStressTesting
 
         File clusterDirectory = ensureExistsAndEmpty( new File( workingDirectory, "cluster" ) );
 
-        Map<String,String> coreParams = new HashMap<>();
-        coreParams.put( CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );
-        coreParams.put( CoreEdgeClusterSettings.raft_log_pruning_frequency.name(), "1s" );
-        coreParams.put( CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "keep_none" );
+        Map<String,String> coreParams =
+                configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>() ) );
+        Map<String,String> edgeParams = configureTxLogRotationAndPruning( new HashMap<>() );
 
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
         Cluster cluster =
                 new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
-                        emptyMap(), emptyMap(), emptyMap(), StandardV3_0.NAME );
+                        emptyMap(), edgeParams, emptyMap(), StandardV3_0.NAME );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier keepGoing =

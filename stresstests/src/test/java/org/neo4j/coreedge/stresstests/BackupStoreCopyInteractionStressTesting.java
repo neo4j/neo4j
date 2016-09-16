@@ -33,8 +33,6 @@ import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 
-import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -45,12 +43,13 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
-import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.StressTestingHelper.fromEnv;
+import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureBackup;
+import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureRaftLogRotationAndPruning;
+import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureTxLogRotationAndPruning;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class BackupStoreCopyInteractionStressTesting
 {
@@ -83,18 +82,19 @@ public class BackupStoreCopyInteractionStressTesting
         BiFunction<Boolean,Integer,SocketAddress> backupAddress = ( isCore, id ) ->
                 new AdvertisedSocketAddress( "localhost", (isCore ? baseCoreBackupPort : baseEdgeBackupPort) + id );
 
-        Map<String,String> coreParams = new HashMap<>();
-        coreParams.put( CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );
-        coreParams.put( CoreEdgeClusterSettings.raft_log_pruning_frequency.name(), "1s" );
-        coreParams.put( CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "keep_none" );
+        Map<String,String> coreParams =
+                configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>() ) );
+        Map<String,String> edgeParams = configureTxLogRotationAndPruning( new HashMap<>() );
 
-        Map<String,IntFunction<String>> paramsPerCoreInstance = configureBackup( (id) -> backupAddress.apply( true, id ) );
-        Map<String,IntFunction<String>> paramsPerEdgeInstance = configureBackup( (id) -> backupAddress.apply( false, id ) );
+        Map<String,IntFunction<String>> instanceCoreParams =
+                configureBackup( new HashMap<>(), id -> backupAddress.apply( true, id ) );
+        Map<String,IntFunction<String>> instanceEdgeParams =
+                configureBackup( new HashMap<>(), id -> backupAddress.apply( false, id ) );
 
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
         Cluster cluster =
                 new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
-                        paramsPerCoreInstance, emptyMap(), paramsPerEdgeInstance, StandardV3_0.NAME );
+                        instanceCoreParams, edgeParams, instanceEdgeParams, StandardV3_0.NAME );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier keepGoing =
@@ -122,13 +122,5 @@ public class BackupStoreCopyInteractionStressTesting
         // let's cleanup disk space when everything went well
         FileUtils.deleteRecursively( clusterDirectory );
         FileUtils.deleteRecursively( backupDirectory );
-    }
-
-    private static Map<String,IntFunction<String>> configureBackup( IntFunction<SocketAddress> address )
-    {
-        Map<String,IntFunction<String>> settings = new HashMap<>();
-        settings.put( OnlineBackupSettings.online_backup_enabled.name(), id -> TRUE );
-        settings.put( OnlineBackupSettings.online_backup_server.name(), id -> address.apply( id ).toString() );
-        return settings;
     }
 }

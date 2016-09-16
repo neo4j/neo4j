@@ -24,6 +24,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.Node;
 
 class Workload extends RepeatUntilCallable
 {
@@ -42,7 +43,15 @@ class Workload extends RepeatUntilCallable
         {
             cluster.coreTx( ( db, tx ) ->
             {
-                db.createNode();
+                Node node = db.createNode();
+                node.setProperty( "prop1", "let's add some data here so the transaction logs rotate more often..." );
+                node.setProperty( "prop2", "let's add some data here so the transaction logs rotate more often..." );
+                node.setProperty( "prop3", "let's add some data here so the transaction logs rotate more often..." );
+                node.setProperty( "prop4", "let's add some data here so the transaction logs rotate more often..." );
+                node.setProperty( "prop5", "let's add some data here so the transaction logs rotate more often..." );
+                node.setProperty( "prop6", "let's add some data here so the transaction logs rotate more often..." );
+                node.setProperty( "prop7", "let's add some data here so the transaction logs rotate more often..." );
+                node.setProperty( "prop8", "let's add some data here so the transaction logs rotate more often..." );
                 tx.success();
             } );
         }
