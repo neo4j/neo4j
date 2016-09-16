@@ -4837,4 +4837,29 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         // Thus, this should not throw a FileAlreadyExistsException.
         pageCache.renameFile( a, b );
     }
+
+    @Test
+    public void sizeOfEmptyFileMustBeZero() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            assertThat( pf.fileSize(), is( 0L ) );
+        }
+    }
+
+    @Test
+    public void fileSizeMustIncreaseInPageIncriments() throws Exception
+    {
+        long increment = filePageSize;
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            assertThat( pf.fileSize(), is( increment ) );
+            assertTrue( cursor.next() );
+            assertThat( pf.fileSize(), is( 2 * increment ) );
+        }
+    }
 }
