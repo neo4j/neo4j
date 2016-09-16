@@ -27,7 +27,8 @@ import java.util.List;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedure;
+
+import org.neo4j.coreedge.discovery.procedures.GetServersProcedure;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -89,6 +90,6 @@ public class ClusterMembershipChangeIT
 
         // when
         return asList( statement.readOperations().procedureCallRead(
-                procedureName( "dbms", "cluster", DiscoverEndpointAcquisitionServersProcedure.NAME ), new Object[0] ) );
+                procedureName( "dbms", "cluster", GetServersProcedure.NAME ), new Object[0] ) );
     }
 }
