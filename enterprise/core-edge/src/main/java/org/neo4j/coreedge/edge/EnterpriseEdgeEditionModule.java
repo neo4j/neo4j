@@ -155,6 +155,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
                 platformModule.fileSystem, platformModule.jobScheduler );
 
+        life.add( securityLog );
+
         life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
                 platformModule.fileSystem, platformModule.jobScheduler ) ) );
 

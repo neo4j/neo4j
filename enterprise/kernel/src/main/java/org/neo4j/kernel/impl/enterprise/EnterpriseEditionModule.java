@@ -63,6 +63,10 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
         platformModule.dependencies.satisfyDependency( createSessionTracker() );
+        if ( securityLog != null )
+        {
+            platformModule.life.add( securityLog );
+        }
     }
 
     @Override
