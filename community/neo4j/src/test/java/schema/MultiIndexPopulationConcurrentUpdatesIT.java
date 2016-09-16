@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,14 +43,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
@@ -63,20 +61,19 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.AdaptableIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
-import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
 //[NodePropertyUpdate[1, prop:0 add:USA, labelsBefore:[], labelsAfter:[0]]]
@@ -120,11 +117,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     @Test
     public void applyConcurrentDeletesToPopulatedIndex() throws Throwable
     {
-        Map<Long,NodePropertyUpdate> updateMap = new HashMap<>();
-        updateMap.put( 2L, NodePropertyUpdate.remove( 0, propertyId, "Sweden", new long[]{labelsNameIdMap.get( COUNTRY_LABEL )} ) );
-        updateMap.put( 4L, NodePropertyUpdate.remove( 3, propertyId, "green", new long[]{labelsNameIdMap.get( COLOR_LABEL )} ) );
+        List<NodePropertyUpdate> updates = new ArrayList<>(2);
+        updates.add(NodePropertyUpdate.remove( 0, propertyId, "Sweden", new long[]{labelsNameIdMap.get( COUNTRY_LABEL )} ) );
+        updates.add(NodePropertyUpdate.remove( 3, propertyId, "green", new long[]{labelsNameIdMap.get( COLOR_LABEL )} ) );
 
-        launchCustomIndexPopulation( labelsNameIdMap, propertyId, updateMap );
+        launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
         try ( Transaction ignored = embeddedDatabase.beginTx() )
@@ -148,11 +145,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     @Test
     public void applyConcurrentAddsToPopulatedIndex() throws Throwable
     {
-        Map<Long,NodePropertyUpdate> updateMap = new HashMap<>();
-        updateMap.put( 3L, NodePropertyUpdate.add( 6, propertyId, "Denmark", new long[]{labelsNameIdMap.get( COUNTRY_LABEL )} ) );
-        updateMap.put( 4L, NodePropertyUpdate.add( 7, propertyId, "BMW", new long[]{labelsNameIdMap.get( CAR_LABEL )} ) );
+        List<NodePropertyUpdate> updates = new ArrayList<>(2);
+        updates.add( NodePropertyUpdate.add( 6, propertyId, "Denmark", new long[]{labelsNameIdMap.get( COUNTRY_LABEL )} ) );
+        updates.add( NodePropertyUpdate.add( 7, propertyId, "BMW", new long[]{labelsNameIdMap.get( CAR_LABEL )} ) );
 
-        launchCustomIndexPopulation( labelsNameIdMap, propertyId, updateMap );
+        launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
         try ( Transaction ignored = embeddedDatabase.beginTx() )
@@ -174,13 +171,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     @Test
     public void applyConcurrentChangesToPopulatedIndex() throws Exception
     {
-        Map<Long,NodePropertyUpdate> updateMap = new HashMap<>();
-        updateMap.put( 2L, NodePropertyUpdate.change( 3, propertyId, "green", new long[]{labelsNameIdMap.get( COLOR_LABEL )},
+        List<NodePropertyUpdate> updates = new ArrayList<>(2);
+        updates.add( NodePropertyUpdate.change( 3, propertyId, "green", new long[]{labelsNameIdMap.get( COLOR_LABEL )},
                 "pink", new long[]{labelsNameIdMap.get( COLOR_LABEL )} ) );
-        updateMap.put( 3L, NodePropertyUpdate.change( 5, propertyId, "Ford", new long[]{labelsNameIdMap.get( CAR_LABEL )},
+        updates.add( NodePropertyUpdate.change( 5, propertyId, "Ford", new long[]{labelsNameIdMap.get( CAR_LABEL )},
                 "SAAB", new long[]{labelsNameIdMap.get( CAR_LABEL )} ) );
 
-        launchCustomIndexPopulation( labelsNameIdMap, propertyId, updateMap );
+        launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
         try ( Transaction ignored = embeddedDatabase.beginTx() )
@@ -208,7 +205,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return indexService.getIndexProxy( new IndexDescriptor( countryLabelId, propertyId ) ).newReader();
     }
 
-    private void launchCustomIndexPopulation( Map<String,Integer> labelNameIdMap, int propertyId, Map<Long,NodePropertyUpdate> updateMap ) throws Exception
+    private void launchCustomIndexPopulation( Map<String,Integer> labelNameIdMap, int propertyId,
+            List<NodePropertyUpdate> updates ) throws Exception
     {
         NeoStores neoStores = getNeoStores();
         LabelScanStore labelScanStore = getLabelScanStore();
@@ -218,10 +216,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             Statement statement = transactionStatementContextBridge.get();
 
-
             AdaptableIndexStoreView storeView =
                     new AdaptableIndexStoreViewWrapper( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores,
-                            updateMap, propertyId );
+                            updates );
 
             SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( getSchemaIndexProvider() );
             JobScheduler scheduler = getJobScheduler();
@@ -231,7 +228,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),
                     NullLogProvider.getInstance(), IndexingService.NO_MONITOR, () -> {} );
             indexService.start();
-
 
             IndexRule[] rules = createIndexRules( labelNameIdMap, propertyId );
 
@@ -369,15 +365,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private class AdaptableIndexStoreViewWrapper extends AdaptableIndexStoreView
     {
-        private int propertyId;
-        private Map<Long,NodePropertyUpdate> updateMap;
+        private List<NodePropertyUpdate> updates;
 
         AdaptableIndexStoreViewWrapper( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores,
-                Map<Long,NodePropertyUpdate> updateMap, int propertyId )
+                List<NodePropertyUpdate> updates )
         {
             super( labelScanStore, locks, neoStores );
-            this.updateMap = updateMap;
-            this.propertyId = propertyId;
+            this.updates = updates;
         }
 
         @Override
@@ -388,8 +382,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             StoreScan<FAILURE> failureStoreScan =
                     super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
-            return new LabelScanViewNodeStoreWrapper( (LabelScanViewNodeStoreScan) failureStoreScan, nodeStore,
-                    updateMap, labelIds, propertyId );
+            return new LabelScanViewNodeStoreWrapper( nodeStore, locks, propertyStore, getLabelScanStore(),
+                    element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
+                    (LabelScanViewNodeStoreScan) failureStoreScan, this, updates);
         }
 
         @Override
@@ -400,21 +395,26 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
     }
 
-    private class LabelScanViewNodeStoreWrapper extends NodeStoreScan
+    private class LabelScanViewNodeStoreWrapper extends LabelScanViewNodeStoreScan
     {
         private LabelScanViewNodeStoreScan delegate;
-        private int[] labelIds;
-        private int propertyId;
-        private Map<Long,NodePropertyUpdate> updateMap;
+        private AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
+        private List<NodePropertyUpdate> updates;
 
-        public LabelScanViewNodeStoreWrapper( LabelScanViewNodeStoreScan delegate, NodeStore nodeStore,
-                Map<Long,NodePropertyUpdate> updateMap, int[] labelIds, int propertyId )
+        public LabelScanViewNodeStoreWrapper( NodeStore nodeStore, LockService locks,
+                PropertyStore propertyStore,
+                LabelScanStore labelScanStore, Visitor labelUpdateVisitor,
+                Visitor propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
+                LabelScanViewNodeStoreScan delegate,
+                AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
+                List<NodePropertyUpdate> updates )
         {
-            super( nodeStore, LockService.NO_LOCK_SERVICE, 0 );
+            super( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor,
+                    labelIds,
+                    propertyKeyIdFilter );
             this.delegate = delegate;
-            this.labelIds = labelIds;
-            this.propertyId = propertyId;
-            this.updateMap = updateMap;
+            this.adaptableIndexStoreViewWrapper = adaptableIndexStoreViewWrapper;
+            this.updates = updates;
         }
 
         @Override
@@ -424,29 +424,28 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
 
         @Override
-        protected PrimitiveLongResourceIterator getNodeIdIterator()
+        public PrimitiveLongResourceIterator getNodeIdIterator()
         {
             PrimitiveLongResourceIterator originalIterator = delegate.getNodeIdIterator();
-            return new DelegatingPrimitiveLongResourceIterator( originalIterator, updateMap, labelIds, propertyId );
+            return new DelegatingPrimitiveLongResourceIterator( originalIterator, adaptableIndexStoreViewWrapper,
+                    updates );
         }
     }
 
     private class DelegatingPrimitiveLongResourceIterator implements PrimitiveLongResourceIterator
     {
 
-        private final int[] labelIds;
-        private final int propertyId;
-        private Map<Long,NodePropertyUpdate> updateMap;
+        private AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
+        private List<NodePropertyUpdate> updates;
         private PrimitiveLongResourceIterator delegate;
 
         DelegatingPrimitiveLongResourceIterator( PrimitiveLongResourceIterator delegate,
-                Map<Long,NodePropertyUpdate> updateMap, int[] labelIds,
-                int propertyId )
+                AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
+                List<NodePropertyUpdate> updates )
         {
             this.delegate = delegate;
-            this.updateMap = updateMap;
-            this.labelIds = labelIds;
-            this.propertyId = propertyId;
+            this.adaptableIndexStoreViewWrapper = adaptableIndexStoreViewWrapper;
+            this.updates = updates;
         }
 
         @Override
@@ -459,28 +458,32 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         public long next()
         {
             long value = delegate.next();
-            NodePropertyUpdate nodePropertyUpdate = updateMap.get( value );
-            if ( nodePropertyUpdate != null )
+            if ( !hasNext() )
             {
-                postUpdate( nodePropertyUpdate );
-            }
-            return value;
-        }
-
-        private void postUpdate( NodePropertyUpdate nodePropertyUpdate )
-        {
-            try
-            {
-                IndexProxy indexProxy = indexService.getIndexProxy( new IndexDescriptor( labelIds[0], propertyId ) );
-                try ( IndexUpdater indexUpdater = indexProxy.newUpdater( IndexUpdateMode.ONLINE ) )
+                for ( NodePropertyUpdate update : updates )
                 {
-                    indexUpdater.process( nodePropertyUpdate );
+                    adaptableIndexStoreViewWrapper.acceptUpdate( null, update, Long.MAX_VALUE );
+                }
+
+                for ( NodePropertyUpdate update : updates )
+                {
+                    try ( Transaction transaction = embeddedDatabase.beginTx() )
+                    {
+                        Node node = embeddedDatabase.getNodeById( update.getNodeId() );
+                        switch ( update.getUpdateMode() )
+                        {
+                        case CHANGED:
+                        case ADDED:
+                            node.setProperty( NAME_PROPERTY, update.getValueAfter() );
+                            break;
+                        case REMOVED:
+                            node.delete();
+                        }
+                        transaction.success();
+                    }
                 }
             }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
+            return value;
         }
 
         @Override

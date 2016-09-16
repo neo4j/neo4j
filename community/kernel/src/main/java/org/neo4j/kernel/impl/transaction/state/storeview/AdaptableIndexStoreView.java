@@ -115,7 +115,7 @@ public class AdaptableIndexStoreView extends NeoStoreIndexStoreView
                 case CHANGED:
                     //TODO: should it be like that????
                     labels = Arrays.stream( update.getLabelsBefore() )
-                            .filter( item -> Arrays.binarySearch( update.getLabelsAfter(), item ) > 0 )
+                            .filter( item -> Arrays.binarySearch( update.getLabelsAfter(), item ) >= 0 )
                             .toArray();
                     break;
                 case REMOVED:

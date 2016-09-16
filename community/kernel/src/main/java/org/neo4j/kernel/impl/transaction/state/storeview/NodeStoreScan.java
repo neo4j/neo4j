@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -61,17 +60,19 @@ public abstract class NodeStoreScan<FAILURE extends Exception> implements StoreS
     @Override
     public void run() throws FAILURE
     {
-        PrimitiveLongIterator nodeIds = getNodeIdIterator();
-        continueScanning = true;
-        while ( continueScanning && nodeIds.hasNext() )
+        try (PrimitiveLongResourceIterator nodeIds = getNodeIdIterator())
         {
-            long id = nodeIds.next();
-            try ( Lock ignored = locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
+            continueScanning = true;
+            while ( continueScanning && nodeIds.hasNext() )
             {
-                count++;
-                if ( nodeStore.getRecord( id, record, FORCE ).inUse() )
+                long id = nodeIds.next();
+                try ( Lock ignored = locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
                 {
-                    process( record );
+                    count++;
+                    if ( nodeStore.getRecord( id, record, FORCE ).inUse() )
+                    {
+                        process( record );
+                    }
                 }
             }
         }

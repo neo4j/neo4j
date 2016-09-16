@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -84,18 +83,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
         @Override
         public long next()
         {
-            long value = idIterator.next();
-
-            //TODO: remove
-            try
-            {
-                Thread.sleep( TimeUnit.SECONDS.toMillis( 2 ) );
-            }
-            catch ( InterruptedException e )
-            {
-                e.printStackTrace();
-            }
-            return value;
+            return idIterator.next();
         }
     }
 }

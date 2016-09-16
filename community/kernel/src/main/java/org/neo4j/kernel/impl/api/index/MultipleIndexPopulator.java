@@ -468,7 +468,6 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private void flipToFailed( Throwable t )
         {
-            t.printStackTrace( System.out );
             flipper.flipTo( new FailedIndexProxy( descriptor, config, providerDescriptor, indexUserDescription,
                     populator, failure( t ), indexCountsRemover, logProvider ) );
         }

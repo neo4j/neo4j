@@ -241,20 +241,22 @@ public class IndexingServiceTest
 
         waitForIndexesToComeOnline( indexingService, 0 );
         verify( populator, timeout( 1000 ) ).close( true );
+        verify( populator ).configureSampling( false );
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
-        order.verify( populator ).configureSampling( true );
         order.verify( populator ).includeSample( add( 1, "value1" ) );
         order.verify( populator ).add( Mockito.anyListOf (NodePropertyUpdate.class));
+
 
         // invoked from indexAllNodes(), empty because the id we added (2) is bigger than the one we indexed (1)
         //
         // (We don't get an update for value2 here because we mock a fake store that doesn't contain it
         //  just for the purpose of testing this behavior)
         order.verify( populator ).newPopulatingUpdater( storeView );
+
         order.verify( updater ).close();
         order.verify( populator ).verifyDeferredConstraints( storeView );
         order.verify( populator ).sampleResult();
