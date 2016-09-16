@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -566,30 +567,37 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             .resolveDependency( Procedures.class )
             .registerProcedure( NeverEndingProcedure.class );
 
-        DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransaction<S> loopProc = new ThreadedTransaction<S>( neo, latch );
-        String loopQuery =
-            loopProc.executeEarly( threading, readSubject, KernelTransaction.Type.explicit, "CALL test.loop" );
+        final DoubleLatch latch = new DoubleLatch( 2 );
+        NeverEndingProcedure.setTestLatch( new ClassWithProcedures.LatchedRunnables( latch, () -> {}, () -> {} ) );
+
+        String loopQuery = "CALL test.loop";
+
+        new Thread( () -> assertFail( readSubject, loopQuery, "Explicitly terminated by the user." ) )
+                .start();
         latch.startAndWaitForAllToStart();
 
-        String loopId = extractQueryId( loopQuery );
+        try
+        {
+            String loopId = extractQueryId( loopQuery );
 
-        assertSuccess(
-                adminSubject,
-                "CALL dbms.killQuery('" + loopId + "') YIELD username " +
-                        "RETURN count(username) AS count, username", r ->
-                {
-                    List<Map<String,Object>> actual = r.stream().collect( toList() );
-                    Matcher<Map<String,Object>> mapMatcher = allOf(
-                            (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
-                            (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
-                    );
-                    assertThat( actual, matchesOneToOneInAnyOrder( mapMatcher ) );
-                }
-        );
-
-        latch.finishAndWaitForAllToFinish();
-        loopProc.closeAndAssertTransactionTermination();
+            assertSuccess(
+                    adminSubject,
+                    "CALL dbms.killQuery('" + loopId + "') YIELD username " +
+                    "RETURN count(username) AS count, username", r ->
+                    {
+                        List<Map<String,Object>> actual = r.stream().collect( toList() );
+                        Matcher<Map<String,Object>> mapMatcher = allOf(
+                                (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
+                                (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
+                        );
+                        assertThat( actual, matchesOneToOneInAnyOrder( mapMatcher ) );
+                    }
+            );
+        }
+        finally
+        {
+            latch.finishAndWaitForAllToFinish();
+        }
 
         assertEmpty(
                 adminSubject,
@@ -969,7 +977,9 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         return threading;
     }
 
-    public static class NeverEndingProcedure {
+    public static class NeverEndingProcedure
+    {
+        private static final AtomicReference<ClassWithProcedures.LatchedRunnables> testLatch = new AtomicReference<>();
 
         @Context
         public TerminationGuard guard;
@@ -977,18 +987,31 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         @Procedure(name = "test.loop")
         public void loop()
         {
-            while ( true )
+            testLatch.get().doubleLatch.startAndWaitForAllToStart();
+            try
             {
-                try
+                while ( true )
                 {
-                    Thread.sleep( 100 );
+                    try
+                    {
+                        Thread.sleep( 100 );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.interrupted();
+                    }
+                    guard.check();
                 }
-                catch ( InterruptedException e )
-                {
-                    Thread.interrupted();
-                }
-                guard.check();
             }
+            finally
+            {
+                testLatch.get().doubleLatch.finish();
+            }
+        }
+
+        static void setTestLatch( ClassWithProcedures.LatchedRunnables testLatch )
+        {
+            NeverEndingProcedure.testLatch.set( testLatch );
         }
     }
 }

@@ -586,7 +586,7 @@ public abstract class ProcedureInteractionTestBase<S>
             }
         }
 
-        static class LatchedRunnables implements AutoCloseable
+        protected static class LatchedRunnables implements AutoCloseable
         {
             DoubleLatch doubleLatch;
             Runnable runBefore;
