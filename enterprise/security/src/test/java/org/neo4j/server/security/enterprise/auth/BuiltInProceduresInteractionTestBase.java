@@ -568,12 +568,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             .registerProcedure( NeverEndingProcedure.class );
 
         final DoubleLatch latch = new DoubleLatch( 2 );
-        NeverEndingProcedure.setTestLatch( new ClassWithProcedures.LatchedRunnables( latch, () -> {}, () -> {} ) );
+        NeverEndingProcedure.testLatch = latch;
 
         String loopQuery = "CALL test.loop";
 
-        new Thread( () -> assertFail( readSubject, loopQuery, "Explicitly terminated by the user." ) )
-                .start();
+        new Thread( () -> assertFail( readSubject, loopQuery, "Explicitly terminated by the user." ) ).start();
         latch.startAndWaitForAllToStart();
 
         try
@@ -610,7 +609,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         neo.tearDown();
         Map<String, String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.transaction_timeout.name(), "3s" );
+        config.put( GraphDatabaseSettings.transaction_timeout.name(), "2s" );
         neo = setUpNeoServer( config );
         reSetUp();
 
@@ -620,11 +619,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
            .resolveDependency( Procedures.class )
            .registerProcedure( NeverEndingProcedure.class );
 
-        assertFail(
-            adminSubject,
-            "CALL test.loop",
-            "Transaction guard check failed"
-       );
+        assertFail( adminSubject, "CALL test.loop", "Transaction guard check failed" );
 
         Result result = neo
             .getLocalGraph()
@@ -979,7 +974,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     public static class NeverEndingProcedure
     {
-        private static final AtomicReference<ClassWithProcedures.LatchedRunnables> testLatch = new AtomicReference<>();
+        public static volatile DoubleLatch testLatch = null;
 
         @Context
         public TerminationGuard guard;
@@ -987,14 +982,19 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         @Procedure(name = "test.loop")
         public void loop()
         {
-            testLatch.get().doubleLatch.startAndWaitForAllToStart();
+            DoubleLatch latch = testLatch;
+
+            if ( latch != null )
+            {
+                latch.startAndWaitForAllToStart();
+            }
             try
             {
                 while ( true )
                 {
                     try
                     {
-                        Thread.sleep( 100 );
+                        Thread.sleep( 250 );
                     }
                     catch ( InterruptedException e )
                     {
@@ -1005,13 +1005,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             }
             finally
             {
-                testLatch.get().doubleLatch.finish();
+                if ( latch != null )
+                {
+                    latch.finish();
+                }
             }
-        }
-
-        static void setTestLatch( ClassWithProcedures.LatchedRunnables testLatch )
-        {
-            NeverEndingProcedure.testLatch.set( testLatch );
         }
     }
 }
