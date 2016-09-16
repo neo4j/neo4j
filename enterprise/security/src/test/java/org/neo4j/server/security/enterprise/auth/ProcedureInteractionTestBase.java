@@ -76,7 +76,7 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.A
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
-abstract class ProcedureInteractionTestBase<S>
+public abstract class ProcedureInteractionTestBase<S>
 {
     protected boolean PWD_CHANGE_CHECK_FIRST = false;
     protected String CHANGE_PWD_ERR_MSG = AuthorizationViolationException.PERMISSION_DENIED;

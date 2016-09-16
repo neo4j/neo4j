@@ -57,10 +57,14 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase;
 import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -472,6 +476,28 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
             // Then
             testAuthWithReaderUser();
         }
+    }
+
+    @Test
+    public void shouldBeAbleToUseProcedureAllowedAnnotationWithLdapGroupToRoleMapping() throws Throwable
+    {
+        // When
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=role1" );
+        } ) );
+
+        GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) server.graphDatabaseService();
+        graphDatabaseAPI.getDependencyResolver().resolveDependency( Procedures.class )
+                .registerProcedure( ProcedureInteractionTestBase.ClassWithProcedures.class );
+
+        assertAuth( "neo", "abc123" );
+        client.send( TransportTestUtil.chunk( run( "CALL test.allowedProcedure1()" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgRecord( eqRecord( equalTo( "foo" ) ) ),
+                msgSuccess() ) );
     }
 
     //------------------------------------------------------------------
