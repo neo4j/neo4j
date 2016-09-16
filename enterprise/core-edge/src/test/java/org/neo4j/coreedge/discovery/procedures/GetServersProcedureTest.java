@@ -258,41 +258,4 @@ public class GetServersProcedureTest
         AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
         return new EdgeAddresses( advertisedSocketAddress );
     }
-
-    @Test
-    public void shouldDELETEME() throws Exception
-    {
-        // given
-        // given
-        final CoreTopologyService topologyService = mock( CoreTopologyService.class );
-
-        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
-        MemberId theLeader = member( 0 );
-        coreMembers.put( theLeader, coreAddresses( 0 ) );
-
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, GetServersProcedureTest
-                .addresses( 1 ) ) );
-
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( theLeader );
-
-        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator, getInstance() );
-
-        // when
-
-        // then
-        RawIterator<Object[], ProcedureException> iterator = procedure.apply( null, new Object[0] );
-
-        while ( iterator.hasNext() )
-        {
-            Object[] objects = iterator.next();
-            for ( Object object : objects )
-            {
-                System.out.print( object + " " );
-            }
-            System.out.println();
-        }
-
-    }
 }
