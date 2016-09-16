@@ -19,13 +19,14 @@
  */
 package org.neo4j.coreedge.core.state.machines.tx;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import org.neo4j.coreedge.messaging.MessageTooBigException;
 import org.neo4j.coreedge.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
@@ -39,9 +40,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.neo4j.io.ByteUnit.gibiBytes;
+
 public class ReplicatedTransactionFactory
 {
-    private static final long MAX_SERIALIZED_TX_SIZE = 1024 * 1024 * 1024L; // 1 GB
+    private static final long MAX_SERIALIZED_TX_SIZE = gibiBytes( 1 );
 
     public static ReplicatedTransaction createImmutableReplicatedTransaction( TransactionRepresentation tx  )
     {

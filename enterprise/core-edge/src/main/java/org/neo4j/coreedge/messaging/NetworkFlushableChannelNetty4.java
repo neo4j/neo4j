@@ -19,12 +19,14 @@
  */
 package org.neo4j.coreedge.messaging;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.Flushable;
 
-import io.netty.buffer.ByteBuf;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 
 import static java.lang.String.format;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
 public class NetworkFlushableChannelNetty4 implements FlushableChannel
 {
@@ -33,7 +35,7 @@ public class NetworkFlushableChannelNetty4 implements FlushableChannel
      * value for that should be sufficient for all replicated state except for transactions, the size of which
      * is unbounded.
      */
-    private static final long DEFAULT_SIZE_LIMIT = 2 * 1024 * 1024; // 2 MB
+    private static final long DEFAULT_SIZE_LIMIT = mebiBytes( 2 );
 
     private final ByteBuf delegate;
     private final int initialWriterIndex;
