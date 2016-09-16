@@ -129,17 +129,20 @@ public class ClusterSettings
      *  ha.phase2_timeout
      *  ha.election_timeout
      */
-    @Description( "Default value for all Paxos timeouts. Defaults to ha.default_timeout. " +
-            "This value is the default value for the ha.phase1_timeout, ha.phase2_timeout and ha.election_timeout settings. " +
-            "This is an advanced parameter which should only be changed if specifically advised by Neo4j Professional Services." )
+    @Description( "Default value for all Paxos timeouts. This setting controls the default value for the ha.phase1_timeout, " +
+            "ha.phase2_timeout and ha.election_timeout settings. If it is not given a value it " +
+            "defaults to ha.default_timeout and will implicitly change if ha.default_timeout changes. This is an " +
+            "advanced parameter which should only be changed if specifically advised by Neo4j Professional Services." )
     public static final Setting<Long> paxos_timeout = setting( "ha.paxos_timeout", DURATION, default_timeout );
 
-    @Description( "Timeout for Paxos phase 1. Defaults to ha.paxos_timeout. " +
-            "This is an advanced parameter which should only be changed if specifically advised by Neo4j Professional Services. " )
+    @Description( "Timeout for Paxos phase 1. If it is not given a value it defaults to ha.paxos_timeout and will " +
+            "implicitly change if ha.paxos_timeout changes. This is an advanced parameter which should only be " +
+            "changed if specifically advised by Neo4j Professional Services. " )
     public static final Setting<Long> phase1_timeout = setting( "ha.phase1_timeout", DURATION, paxos_timeout );
 
-    @Description( "Timeout for Paxos phase 2. Defaults to ha.paxos_timeout. " +
-            "This is an advanced parameter which should only be changed if specifically advised by Neo4j Professional Services." )
+    @Description( "Timeout for Paxos phase 2. If it is not given a value it defaults to ha.paxos_timeout and will " +
+            "implicitly change if ha.paxos_timeout changes. This is an advanced parameter which should only be " +
+            "changed if specifically advised by Neo4j Professional Services. " )
     public static final Setting<Long> phase2_timeout = setting( "ha.phase2_timeout", DURATION, paxos_timeout );
 
     @Description( "Timeout for learning values. Defaults to ha.default_timeout." )
