@@ -76,7 +76,8 @@ public class IndexStatisticsTest
             "Chris"
     };
 
-    private static final int CREATION_MULTIPLIER = 10_000;
+    private static final int CREATION_MULTIPLIER =
+            Integer.getInteger( IndexStatisticsTest.class.getName() + ".creationMultiplier", 1_000 );
     private static final int MISSED_UPDATES_TOLERANCE = NAMES.length;
     private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
 
