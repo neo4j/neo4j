@@ -29,8 +29,11 @@ Apache Software License, Version 2.0
   Apache Shiro :: Core
   Caffeine cache
   Commons BeanUtils
+  Lucene codecs
+  Lucene Common Analyzers
   Lucene Core
   Lucene Memory
+  Lucene QueryParsers
 
 MIT License
   SLF4J API Module
