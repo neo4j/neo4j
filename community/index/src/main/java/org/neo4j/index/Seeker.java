@@ -22,7 +22,7 @@ package org.neo4j.index;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.index.btree.BTreeNode;
+import org.neo4j.index.btree.TreeNode;
 import org.neo4j.io.pagecache.PageCursor;
 
 public interface Seeker
@@ -33,7 +33,7 @@ public interface Seeker
      * @param resultList    {@link java.util.List} where found results will be stored
      * @throws IOException  on cursor failure
      */
-    void seek( PageCursor cursor, BTreeNode bTreeNode, List<SCResult> resultList ) throws IOException;
+    void seek( PageCursor cursor, TreeNode bTreeNode, List<SCResult> resultList ) throws IOException;
 
     public abstract class CommonSeeker implements Seeker
     {
@@ -41,7 +41,7 @@ public interface Seeker
         // TODO: A lot of time is spent in the seek method, both for seek and scan. Can we make it faster?
         // TODO: Maybe with binary search in IndexSearch.
         @Override
-        public void seek( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException
+        public void seek( PageCursor cursor, TreeNode BTreeNode, List<SCResult> resultList ) throws IOException
         {
             if ( BTreeNode.isInternal( cursor ) )
             {
@@ -57,8 +57,8 @@ public interface Seeker
             }
         }
 
-        protected abstract void seekLeaf( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException;
+        protected abstract void seekLeaf( PageCursor cursor, TreeNode BTreeNode, List<SCResult> resultList ) throws IOException;
 
-        protected abstract void seekInternal( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException;
+        protected abstract void seekInternal( PageCursor cursor, TreeNode BTreeNode, List<SCResult> resultList ) throws IOException;
     }
 }

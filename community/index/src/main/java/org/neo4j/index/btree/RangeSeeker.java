@@ -55,7 +55,7 @@ public class RangeSeeker extends Seeker.CommonSeeker
     }
 
     @Override
-    protected void seekLeaf( PageCursor cursor, BTreeNode bTreeNode, List<SCResult> resultList ) throws IOException
+    protected void seekLeaf( PageCursor cursor, TreeNode bTreeNode, List<SCResult> resultList ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
         long[] key = new long[2];
@@ -89,7 +89,7 @@ public class RangeSeeker extends Seeker.CommonSeeker
 
             // Continue in right sibling
             long rightSibling = bTreeNode.rightSibling( cursor );
-            if ( rightSibling != BTreeNode.NO_NODE_FLAG )
+            if ( bTreeNode.isNode( rightSibling ) )
             {
                 cursor.next( rightSibling );
                 seekLeaf( cursor, bTreeNode, resultList );
@@ -131,7 +131,7 @@ public class RangeSeeker extends Seeker.CommonSeeker
 
             // Continue in left sibling
             long leftSibling = bTreeNode.leftSibling( cursor );
-            if ( leftSibling != BTreeNode.NO_NODE_FLAG )
+            if ( bTreeNode.isNode( leftSibling ) )
             {
                 cursor.next( leftSibling );
                 seekLeaf( cursor, bTreeNode, resultList );
@@ -140,7 +140,7 @@ public class RangeSeeker extends Seeker.CommonSeeker
     }
 
     @Override
-    protected void seekInternal( PageCursor cursor, BTreeNode bTreeNode, List<SCResult> resultList ) throws IOException
+    protected void seekInternal( PageCursor cursor, TreeNode bTreeNode, List<SCResult> resultList ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
         long[] key = new long[2];

@@ -27,6 +27,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -43,6 +44,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.index.btree.RangePredicate.greaterOrEqual;
@@ -97,7 +99,8 @@ public class IndexTest
         // GIVEN
         try ( Index index = new Index( pageCache, indexFile, description, pageSize ) )
         {
-            Map<long[],long[]> data = new TreeMap<>( BTreeNode.KEY_COMPARATOR );
+            Comparator<long[]> keyComparator = index.getTreeNode().keyComparator();
+            Map<long[],long[]> data = new TreeMap<>( keyComparator );
             Random random = ThreadLocalRandom.current();
             int count = 1_000;
             for ( int i = 0; i < count; i++ )
@@ -132,7 +135,7 @@ public class IndexTest
                 }
                 RangePredicate fromPredicate = greaterOrEqual( from[0], from[1] );
                 RangePredicate toPredicate = lower( to[0], to[1] );
-                Map<long[],long[]> expectedHits = expectedHits( data, fromPredicate, toPredicate );
+                Map<long[],long[]> expectedHits = expectedHits( data, fromPredicate, toPredicate, keyComparator );
                 try ( Cursor<BTreeHit> result = index.seek( fromPredicate, toPredicate ) )
                 {
                     while ( result.next() )
@@ -143,16 +146,19 @@ public class IndexTest
                         assertTrue( toPredicate.inRange( key ) <= 0 ); // apparently "lower" range predicate
                                                                        // returns 0 for equal ids, even if prop is lower
                     }
-                    assertTrue( expectedHits.isEmpty() );
+                    if ( !expectedHits.isEmpty() )
+                    {
+                        fail( "There were results which were expected to be returned, but weren't:" + expectedHits );
+                    }
                 }
             }
         }
     }
 
     private Map<long[],long[]> expectedHits( Map<long[],long[]> data, RangePredicate fromPredicate,
-            RangePredicate toPredicate )
+            RangePredicate toPredicate, Comparator<long[]> comparator )
     {
-        Map<long[],long[]> hits = new TreeMap<>( BTreeNode.KEY_COMPARATOR );
+        Map<long[],long[]> hits = new TreeMap<>( comparator );
         for ( Map.Entry<long[],long[]> candidate : data.entrySet() )
         {
             if ( fromPredicate.inRange( candidate.getKey() ) >= 0 && toPredicate.inRange( candidate.getKey() ) <= 0 )

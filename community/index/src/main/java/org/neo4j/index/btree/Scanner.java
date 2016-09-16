@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.PageCursor;
 public class Scanner extends Seeker.CommonSeeker
 {
     @Override
-    protected void seekLeaf( PageCursor cursor, BTreeNode bTreeNode, List<SCResult> resultList ) throws IOException
+    protected void seekLeaf( PageCursor cursor, TreeNode bTreeNode, List<SCResult> resultList ) throws IOException
     {
         while ( true )
         {
@@ -43,7 +43,7 @@ public class Scanner extends Seeker.CommonSeeker
                 resultList.add( new SCResult( new SCKey( key[0], key[1] ), new SCValue( value[0], value[1] ) ) );
             }
             long rightSibling = bTreeNode.rightSibling( cursor );
-            if ( rightSibling == BTreeNode.NO_NODE_FLAG )
+            if ( !bTreeNode.isNode( rightSibling ) )
             {
                 break;
             }
@@ -52,7 +52,7 @@ public class Scanner extends Seeker.CommonSeeker
     }
 
     @Override
-    protected void seekInternal( PageCursor cursor, BTreeNode BTreeNode, List<SCResult> resultList ) throws IOException
+    protected void seekInternal( PageCursor cursor, TreeNode BTreeNode, List<SCResult> resultList ) throws IOException
     {
         cursor.next( BTreeNode.childAt( cursor, 0 ) );
         seek( cursor, BTreeNode, resultList );

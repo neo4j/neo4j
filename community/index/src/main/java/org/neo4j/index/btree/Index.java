@@ -53,7 +53,7 @@ public class Index implements SCIndex, IdProvider
     private long rootId;
     private long lastId = META_PAGE_ID + 1; // first page (page 0) is for meta data (even actual page size)
 
-    private final BTreeNode bTreeNode;
+    private final TreeNode bTreeNode;
     private final PageCursor metaCursor;
     private final ThreadLocal<TheInserter> inserters = new ThreadLocal<TheInserter>()
     {
@@ -290,7 +290,7 @@ public class Index implements SCIndex, IdProvider
                     if ( pos >= keyCount )
                     {
                         long rightSibling = bTreeNode.rightSibling( cursor );
-                        if ( rightSibling != BTreeNode.NO_NODE_FLAG )
+                        if ( bTreeNode.isNode( rightSibling ) )
                         {
                             gotoTreeNode( rightSibling );
                             continue;
@@ -378,13 +378,13 @@ public class Index implements SCIndex, IdProvider
     }
 
     // Utility method
-    protected static void printKeysOfSiblings( PageCursor cursor, BTreeNode bTreeNode ) throws IOException
+    protected static void printKeysOfSiblings( PageCursor cursor, TreeNode bTreeNode ) throws IOException
     {
         while ( true )
         {
             printKeys( cursor, bTreeNode );
             long rightSibling = bTreeNode.rightSibling( cursor );
-            if ( rightSibling == BTreeNode.NO_NODE_FLAG )
+            if ( !bTreeNode.isNode( rightSibling ) )
             {
                 break;
             }
@@ -393,7 +393,7 @@ public class Index implements SCIndex, IdProvider
     }
 
     // Utility method
-    protected static void printKeys( PageCursor cursor, BTreeNode bTreeNode )
+    protected static void printKeys( PageCursor cursor, TreeNode bTreeNode )
     {
         int keyCount = bTreeNode.keyCount( cursor );
         System.out.print( "|" );
@@ -444,5 +444,10 @@ public class Index implements SCIndex, IdProvider
         {
             cursor.close();
         }
+    }
+
+    public TreeNode getTreeNode()
+    {
+        return bTreeNode;
     }
 }
