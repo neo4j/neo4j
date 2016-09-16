@@ -145,10 +145,10 @@ public class GraphDatabaseFacadeFactory
         Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;
 
-        // Start it
-        graphDatabaseFacade.initSPI( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ),
+        graphDatabaseFacade.init( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ),
                 platform.config );
 
+        // Start it
         platform.dataSourceManager.addListener( new DataSourceManager.Listener()
         {
             private QueryExecutionEngine engine;

@@ -135,6 +135,16 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
     verify(monitor, times(1)).endSuccess(context)
   }
 
+  test("monitor is called directly when proc return is void") {
+    graph.execute("CREATE INDEX ON :Person(name)").close()
+
+    val (context, result) = runQuery("CALL db.awaitIndex(':Person(name)')")
+
+    // then
+    verify(monitor, times(1)).startQueryExecution(context)
+    verify(monitor, times(1)).endSuccess(context)
+  }
+
   test("monitor is called when iterator closes") {
    // given
    val (context, result) = runQuery("RETURN 42")

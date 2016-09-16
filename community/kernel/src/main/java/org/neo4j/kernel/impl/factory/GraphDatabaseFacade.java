@@ -195,19 +195,18 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     /**
      * Create a new Core API facade, backed by the given SPI.
      */
-    public void initSPI( SPI spi, Config config )
+    public void init( SPI spi, Config config )
     {
-        defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
-        IndexProviderImpl idxProvider = new IndexProviderImpl( this, spi::currentStatement );
-
         this.spi = spi;
+        this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
+        this.schema = new SchemaImpl( spi::currentStatement );
 
         this.relActions = new StandardRelationshipActions( spi::currentStatement, spi::currentTransaction,
                 this::assertTransactionOpen, ( id ) -> new NodeProxy( nodeActions, id ), this );
-        this.nodeActions =
-                new StandardNodeActions( spi::currentStatement, spi::currentTransaction, this::assertTransactionOpen,
-                        relActions, this );
-        this.schema = new SchemaImpl( spi::currentStatement );
+        this.nodeActions = new StandardNodeActions( spi::currentStatement, spi::currentTransaction,
+                this::assertTransactionOpen, relActions, this );
+
+        IndexProviderImpl idxProvider = new IndexProviderImpl( this, spi::currentStatement );
         AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
                 () -> new ReadOnlyIndexFacade<>(
                         idxProvider.getOrCreateNodeIndex( InternalAutoIndexing.NODE_AUTO_INDEX, null ) ),
@@ -220,14 +219,14 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     /**
-     * This needs to be called after data source creation, and the execution engine dependency is satisfied by the
-     * cypher module GraphData
+     * This needs to be called after data source creation, when the execution engine dependency is satisfied by the
+     * cypher module
      *
      * @see GraphDatabaseFacadeFactory#initFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)
      */
     public void initTransactionalContextFactoryFromSPI()
     {
-        contextFactory = new Neo4jTransactionalContextFactory( spi, locker );
+        this.contextFactory = new Neo4jTransactionalContextFactory( spi, locker );
     }
 
     @Override

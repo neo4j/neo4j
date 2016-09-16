@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSear
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, QuerySource}
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory, QuerySource}
 import org.scalatest.{Assertions, Matchers}
 
 /**
@@ -120,8 +120,12 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 // Used to format values coming from Cypher. Maps, lists, nodes, relationships and paths all have custom
 // formatting applied to them
 class ValueFormatter(db: GraphDatabaseQueryService, tx: InternalTransaction) extends (Any => String) with CypherSerializer with GraphIcing {
+  val contextFactory = new Neo4jTransactionalContextFactory( db, new PropertyContainerLocker )
   def apply(x: Any): String = {
-    val transactionalContext = TransactionalContextWrapperv3_1(Neo4jTransactionalContext.create(db, QuerySource.UNKNOWN, tx, db.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
+
+    val transactionalContext = TransactionalContextWrapperv3_1(
+      contextFactory.newContext( QuerySource.UNKNOWN, tx, "QUERY", Collections.emptyMap() )
+    )
     val ctx = new TransactionBoundQueryContext(transactionalContext)(QuietMonitor)
     serialize(x, ctx)
   }
