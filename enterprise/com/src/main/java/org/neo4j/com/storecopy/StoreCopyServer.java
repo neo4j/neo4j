@@ -182,7 +182,7 @@ public class StoreCopyServer
                     {
                         try ( ReadableByteChannel fileChannel = fileSystem.open( file, "r" ) )
                         {
-                            long fileSize = file.length();
+                            long fileSize = fileSystem.getFileSize( file );
                             doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize );
                         }
                     }
