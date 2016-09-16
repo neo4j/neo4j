@@ -28,10 +28,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.time.Clock;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -50,14 +46,12 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 public class CatchUpClient extends LifecycleAdapter
 {
-    private final Map<AdvertisedSocketAddress, CatchUpChannel> idleChannels = new HashMap<>();
-    private final Set<CatchUpChannel> activeChannels = new HashSet<>();
-
     private final LogProvider logProvider;
     private final TopologyService discoveryService;
     private final Log log;
     private final Clock clock;
     private final Monitors monitors;
+    private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
 
     private NioEventLoopGroup eventLoopGroup;
 
@@ -76,16 +70,18 @@ public class CatchUpClient extends LifecycleAdapter
             throws CatchUpClientException, NoKnownAddressesException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
-        CatchUpChannel channel = acquireChannel( memberId );
+        AdvertisedSocketAddress catchUpAddress =
+                discoveryService.coreServers().find( memberId ).getCatchupServer();
+        CatchUpChannel channel = pool.acquire( catchUpAddress );
 
         future.whenComplete( ( result, e ) -> {
             if ( e == null )
             {
-                release( channel );
+                pool.release( channel );
             }
             else
             {
-                dispose( channel );
+                pool.dispose( channel );
             }
         } );
 
@@ -98,32 +94,7 @@ public class CatchUpClient extends LifecycleAdapter
                 channel::millisSinceLastResponse, inactivityTimeout, timeUnit );
     }
 
-    private synchronized void dispose( CatchUpChannel channel )
-    {
-        activeChannels.remove( channel );
-        channel.close();
-    }
-
-    private synchronized void release( CatchUpChannel channel )
-    {
-        activeChannels.remove( channel );
-        idleChannels.put( channel.destination, channel );
-    }
-
-    private synchronized CatchUpChannel acquireChannel( MemberId memberId ) throws NoKnownAddressesException
-    {
-        AdvertisedSocketAddress catchUpAddress =
-                discoveryService.coreServers().find( memberId ).getCatchupServer();
-        CatchUpChannel channel = idleChannels.remove( catchUpAddress );
-        if ( channel == null )
-        {
-            channel = new CatchUpChannel( catchUpAddress );
-        }
-        activeChannels.add( channel );
-        return channel;
-    }
-
-    private class CatchUpChannel
+    private class CatchUpChannel implements CatchUpChannelPool.Channel
     {
         private final TrackingResponseHandler handler;
         private final AdvertisedSocketAddress destination;
@@ -166,7 +137,14 @@ public class CatchUpClient extends LifecycleAdapter
             return clock.millis() - handler.lastResponseTime();
         }
 
-        void close()
+        @Override
+        public AdvertisedSocketAddress destination()
+        {
+            return destination;
+        }
+
+        @Override
+        public void close()
         {
             nettyChannel.close();
         }
@@ -184,8 +162,7 @@ public class CatchUpClient extends LifecycleAdapter
         log.info( "CatchUpClient stopping" );
         try
         {
-            idleChannels.values().forEach( CatchUpChannel::close );
-            activeChannels.forEach( CatchUpChannel::close );
+            pool.close();
             eventLoopGroup.shutdownGracefully( 0, 0, MICROSECONDS ).sync();
         }
         catch ( InterruptedException e )
