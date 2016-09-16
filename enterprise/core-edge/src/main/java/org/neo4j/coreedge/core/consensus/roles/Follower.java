@@ -51,12 +51,6 @@ class Follower implements RaftMessageHandler
                 leaderSegmentPrevIndex > -1 &&
                 (leaderSegmentPrevIndex <= localLogPrevIndex || localSegmentPrevTerm == leaderSegmentPrevTerm);
 
-        if ( !logHistoryMatches )
-        {
-            log.info( "Log history mismatch: index:[%s, %s], term:[%s, %s]",
-                    localLogPrevIndex, leaderSegmentPrevIndex, localSegmentPrevTerm, leaderSegmentPrevTerm );
-        }
-
         return logHistoryMatches;
     }
 
