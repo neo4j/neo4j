@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.neo4j.kernel.impl.store.StoreType.isStoreType;
+import static org.neo4j.kernel.impl.store.StoreType.findStoreType;
 import static org.neo4j.kernel.impl.store.format.RecordFormat.NO_RECORD_SIZE;
 
 public class ToFileStoreWriter implements StoreWriter
@@ -42,7 +42,7 @@ public class ToFileStoreWriter implements StoreWriter
     private final File basePath;
     private final StoreCopyClient.Monitor monitor;
     private final PageCache pageCache;
-    private final List<FileMoveAction> fileMoveActions; // Todo need thread safe?
+    private final List<FileMoveAction> fileMoveActions;
 
     public ToFileStoreWriter( File graphDbStoreDir, StoreCopyClient.Monitor monitor, PageCache pageCache,
             List<FileMoveAction> fileMoveActions )
@@ -64,7 +64,7 @@ public class ToFileStoreWriter implements StoreWriter
             file.getParentFile().mkdirs();
 
             String filename = file.getName();
-            final Optional<StoreType> storeType = isStoreType( filename );
+            final Optional<StoreType> storeType = findStoreType( filename );
             final Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
 
             monitor.startReceivingStoreFile( file );

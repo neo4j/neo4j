@@ -228,7 +228,7 @@ public enum StoreType
      */
     public static StoreType typeOf( String storeFileName )
     {
-        final Optional<StoreType> optional = isStoreType( storeFileName );
+        final Optional<StoreType> optional = findStoreType( storeFileName );
         return optional.orElseThrow(
                 () -> new IllegalArgumentException( "No enum constant for " + storeFileName + " file." ) );
     }
@@ -239,7 +239,7 @@ public enum StoreType
      * @param fileName - name of the file to check for corresponding store type
      * @return {@link Optional} wrapping store type, or empty optional if no store type corresponds to file name
      */
-    public static Optional<StoreType> isStoreType( String fileName )
+    public static Optional<StoreType> findStoreType( String fileName )
     {
         StoreType[] values = StoreType.values();
         for ( StoreType value : values )
