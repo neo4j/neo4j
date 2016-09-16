@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.logging;
+package org.neo4j.coreedge.handlers;
 
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
@@ -38,13 +38,13 @@ public class ExceptionLoggingHandler extends ChannelHandlerAdapter
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
-        if ( ctx != null )
-        {
-            log.error( format( "Failed to process message on channel %s.", ctx.channel() ), cause );
-        }
-        else
-        {
-            log.error( format( "Failed to process message on a null channel." ), cause );
-        }
+        log.error( message( ctx ), cause );
+        ctx.fireExceptionCaught( cause );
+    }
+
+    private String message( ChannelHandlerContext ctx )
+    {
+        return ctx != null ? format( "Failed to process message on channel %s.", ctx.channel() )
+                           : "Failed to process message on a null channel.";
     }
 }

@@ -38,9 +38,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.VersionDecoder;
 import org.neo4j.coreedge.VersionPrepender;
+import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
-import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
+import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
+import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
+import org.neo4j.coreedge.handlers.ExceptionSwallowingHandler;
 import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
@@ -49,6 +52,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -57,11 +61,13 @@ import static java.lang.String.format;
 public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.StoreIdAwareMessage>
 {
     private static final Setting<ListenSocketAddress> setting = CoreEdgeClusterSettings.raft_listen_address;
-    private final Log log;
-    private final Log userLog;
-    private final LogProvider logProvider;
     private final ChannelMarshal<ReplicatedContent> marshal;
     private final ListenSocketAddress listenAddress;
+    private final LogProvider logProvider;
+    private final Log log;
+    private final Log userLog;
+    private final Monitors monitors;
+
     private MessageHandler<RaftMessages.StoreIdAwareMessage> messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
@@ -69,13 +75,14 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
     public RaftServer( ChannelMarshal<ReplicatedContent> marshal, Config config, LogProvider logProvider,
-            LogProvider userLogProvider )
+            LogProvider userLogProvider, Monitors monitors )
     {
         this.marshal = marshal;
         this.listenAddress = config.get( setting );
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
+        this.monitors = monitors;
     }
 
     @Override
@@ -129,7 +136,11 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
                         pipeline.addLast( new RaftMessageDecoder( marshal ) );
                         pipeline.addLast( new RaftMessageHandler() );
+
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
+                        pipeline.addLast( new ExceptionMonitoringHandler(
+                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, RaftServer.class ) ) );
+                        pipeline.addLast( new ExceptionSwallowingHandler() );
                     }
                 } );
 

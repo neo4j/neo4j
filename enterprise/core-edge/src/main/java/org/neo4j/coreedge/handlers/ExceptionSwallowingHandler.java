@@ -17,28 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.stresstests;
+package org.neo4j.coreedge.handlers;
 
-import java.util.concurrent.locks.LockSupport;
-import java.util.function.BooleanSupplier;
+import io.netty.channel.ChannelHandlerAdapter;
+import io.netty.channel.ChannelHandlerContext;
 
-import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.ClusterMember;
-
-class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
+public class ExceptionSwallowingHandler extends ChannelHandlerAdapter
 {
-    StartStopLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
-    {
-        super( keepGoing, onFailure, cluster, cluster.edgeMembers().isEmpty() );
-    }
-
     @Override
-    protected boolean doWorkOnMember( boolean isCore, int id )
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
-        ClusterMember member = isCore ? cluster.getCoreMemberById( id ) : cluster.getEdgeMemberById( id );
-        member.shutdown();
-        LockSupport.parkNanos( 2_000_000_000 );
-        member.start();
-        return true;
+        // yummy
     }
 }

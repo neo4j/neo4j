@@ -23,14 +23,18 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.io.fs.FileUtils;
@@ -39,6 +43,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
+import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.StressTestingHelper.fromEnv;
@@ -65,22 +70,28 @@ public class CatchupStoreCopyInteractionStressTesting
 
         File clusterDirectory = ensureExistsAndEmpty( new File( workingDirectory, "cluster" ) );
 
-        Map<String,String> params = Collections.emptyMap();
-        Map<String,IntFunction<String>> paramsPerInstance = Collections.emptyMap();
+        Map<String,String> coreParams = new HashMap<>();
+        coreParams.put( CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );
+        coreParams.put( CoreEdgeClusterSettings.raft_log_pruning_frequency.name(), "1s" );
+        coreParams.put( CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "keep_none" );
 
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
-        Cluster cluster = new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, params,
-                paramsPerInstance, params, paramsPerInstance, StandardV3_0.NAME );
+        Cluster cluster =
+                new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
+                        emptyMap(), emptyMap(), emptyMap(), StandardV3_0.NAME );
+
+        AtomicBoolean stopTheWorld = new AtomicBoolean();
+        BooleanSupplier keepGoing =
+                () -> !stopTheWorld.get() && untilTimeExpired( durationInMinutes, TimeUnit.MINUTES ).getAsBoolean();
+        Runnable onFailure = () -> stopTheWorld.set( true );
 
         ExecutorService service = Executors.newFixedThreadPool( 3 );
-        BooleanSupplier keepGoing = untilTimeExpired( durationInMinutes, TimeUnit.MINUTES );
-
         try
         {
             cluster.start();
-            Future<Boolean> workload = service.submit( new Workload( keepGoing, cluster ) );
-            Future<Boolean> startStopWorker = service.submit( new StartStopLoad( keepGoing, cluster ) );
-            Future<Boolean> catchUpWorker = service.submit( new CatchUpLoad( keepGoing, cluster ) );
+            Future<Boolean> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
+            Future<Boolean> startStopWorker = service.submit( new StartStopLoad( keepGoing, onFailure, cluster ) );
+            Future<Boolean> catchUpWorker = service.submit( new CatchUpLoad( keepGoing, onFailure, cluster ) );
 
             assertTrue( workload.get() );
             assertTrue( startStopWorker.get() );

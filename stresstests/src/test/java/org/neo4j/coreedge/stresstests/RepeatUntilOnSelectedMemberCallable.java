@@ -32,9 +32,9 @@ abstract class RepeatUntilOnSelectedMemberCallable extends RepeatUntilCallable
     final Cluster cluster;
     private final boolean onlyCores;
 
-    RepeatUntilOnSelectedMemberCallable( BooleanSupplier keepGoing, Cluster cluster, boolean onlyCores )
+    RepeatUntilOnSelectedMemberCallable( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster, boolean onlyCores )
     {
-        super( keepGoing );
+        super( keepGoing , onFailure );
         this.cluster = cluster;
         this.onlyCores = onlyCores;
     }

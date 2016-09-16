@@ -44,12 +44,15 @@ import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseHandler;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotDecoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestEncoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotResponseHandler;
-import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
+import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
+import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
+import org.neo4j.coreedge.handlers.ExceptionSwallowingHandler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 class CatchUpClientChannelPipeline
 {
-    static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider )
+    static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider, Monitors monitors )
             throws Exception
     {
         CatchupClientProtocol protocol = new CatchupClientProtocol();
@@ -93,5 +96,8 @@ class CatchUpClientChannelPipeline
         pipeline.addLast( new GetStoreIdResponseHandler( protocol, handler ) );
 
         pipeline.addLast( new ExceptionLoggingHandler( logProvider.getLog( CatchUpClient.class ) ) );
+        pipeline.addLast( new ExceptionMonitoringHandler(
+                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, CatchUpClient.class ) ) );
+        pipeline.addLast( new ExceptionSwallowingHandler() );
     }
 }

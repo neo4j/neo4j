@@ -42,6 +42,7 @@ import org.neo4j.coreedge.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -49,22 +50,24 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 public class CatchUpClient extends LifecycleAdapter
 {
-    private final LogProvider logProvider;
-    private final TopologyService discoveryService;
-    private final Clock clock;
-
     private final Map<AdvertisedSocketAddress, CatchUpChannel> idleChannels = new HashMap<>();
     private final Set<CatchUpChannel> activeChannels = new HashSet<>();
+
+    private final LogProvider logProvider;
+    private final TopologyService discoveryService;
     private final Log log;
+    private final Clock clock;
+    private final Monitors monitors;
 
     private NioEventLoopGroup eventLoopGroup;
 
-    public CatchUpClient( TopologyService discoveryService, LogProvider logProvider, Clock clock )
+    public CatchUpClient( TopologyService discoveryService, LogProvider logProvider, Clock clock, Monitors monitors )
     {
         this.logProvider = logProvider;
         this.discoveryService = discoveryService;
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
+        this.monitors = monitors;
     }
 
     public <T> T makeBlockingRequest( MemberId memberId, CatchUpRequest request,
@@ -138,7 +141,7 @@ public class CatchUpClient extends LifecycleAdapter
                         @Override
                         protected void initChannel( SocketChannel ch ) throws Exception
                         {
-                            CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider );
+                            CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors );
                         }
                     } );
 

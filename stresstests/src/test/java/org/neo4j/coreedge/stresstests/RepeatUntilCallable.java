@@ -25,10 +25,12 @@ import java.util.function.BooleanSupplier;
 abstract class RepeatUntilCallable implements Callable<Boolean>
 {
     private BooleanSupplier keepGoing;
+    private Runnable onFailure;
 
-    RepeatUntilCallable( BooleanSupplier keepGoing )
+    RepeatUntilCallable( BooleanSupplier keepGoing, Runnable onFailure )
     {
         this.keepGoing = keepGoing;
+        this.onFailure = onFailure;
     }
 
     @Override
@@ -40,12 +42,17 @@ abstract class RepeatUntilCallable implements Callable<Boolean>
             while ( keepGoing.getAsBoolean() )
             {
                 success &= doWork();
+                if ( !success )
+                {
+                    onFailure.run();
+                }
             }
             return success;
         }
         catch ( Throwable t )
         {
             t.printStackTrace();
+            onFailure.run();
             return false;
         }
     }

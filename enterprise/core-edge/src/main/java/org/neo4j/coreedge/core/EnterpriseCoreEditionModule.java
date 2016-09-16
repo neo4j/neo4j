@@ -87,6 +87,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
@@ -140,6 +141,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final File storeDir = platformModule.storeDir;
         final File clusterStateDirectory = createClusterStateDirectory( storeDir, fileSystem );
         final LifeSupport life = platformModule.life;
+        final Monitors monitors = platformModule.monitors;
 
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
@@ -161,7 +163,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
 
         final SenderService raftSender = new SenderService(
-                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider ),
+                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors ),
                 logProvider, platformModule.monitors, maxQueueSize );
         life.add( raftSender );
 
