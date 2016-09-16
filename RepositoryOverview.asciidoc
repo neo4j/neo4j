@@ -55,17 +55,6 @@ For example, to add a new section or make a new top-level chapter.
 If you are looking to fix or expand existing documentation,
 the specific manual files can be found in the directory of the component that they document.
 
-=== Main Modules ===
-
-.Module overview
-image::docs/images/module-overview.png?raw=true[Module overview]
-
-This figure gives an overview of the modules of which the main components are comprised.
-The arrows indicate dependencies between modules.
-Some modules and their dependencies are colored to help keep crossing arrows apart.
-
-We will now briefly describe the modules and their roles.
-
 ==== Community Modules ====
 
 server-api::
