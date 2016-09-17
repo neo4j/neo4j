@@ -58,8 +58,10 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         this.buffer = channel.alloc().buffer( this.bufferSize, this.bufferSize );
     }
 
+    //Flush can be called from a separate thread, we therefor need to synchronize
+    //on everything that touches the buffer
     @Override
-    public PackOutput flush() throws IOException
+    public synchronized PackOutput flush() throws IOException
     {
         if ( buffer != null && buffer.readableBytes() > 0 )
         {
@@ -186,7 +188,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         chunkOpen = false;
     }
 
-    public void close()
+    public synchronized void close()
     {
         if(buffer != null)
         {
