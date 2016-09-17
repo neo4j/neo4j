@@ -24,6 +24,7 @@ import io.netty.channel.Channel;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Semaphore;
 
 import org.neo4j.bolt.v1.messaging.MessageBoundaryHook;
 import org.neo4j.bolt.v1.packstream.PackOutput;
@@ -42,10 +43,12 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
 
     private final int bufferSize;
     private final int maxChunkSize;
+    private final Semaphore bufferToken = new Semaphore( 1 );
 
     private ByteBuf buffer;
     private Channel channel;
     private int currentChunkHeaderOffset;
+    private boolean closed = false;
 
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
@@ -65,13 +68,22 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
         {
             closeChunkIfOpen();
 
-            // Local copy and clear the buffer field. This ensures that the buffer is not re-released if the flush call fails
-            ByteBuf out = this.buffer;
-            this.buffer = null;
+            bufferToken.acquireUninterruptibly();
+            try
+            {
+                // Local copy and clear the buffer field. This ensures that the buffer is not re-released if the flush call fails
+                ByteBuf out = this.buffer;
+                this.buffer = null;
 
-            channel.writeAndFlush( out, channel.voidPromise() );
+                channel.writeAndFlush( out, channel.voidPromise() );
 
-            newBuffer();
+                newBuffer();
+            }
+            finally
+            {
+                bufferToken.release();
+            }
+
         }
         return this;
     }
@@ -150,19 +162,42 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
 
     private void ensure( int size ) throws IOException
     {
+        if (closed)
+        {
+            throw new IOException( "Cannot write to buffer when closed" );
+        }
+
         assert size <= maxChunkSize : size + " > " + maxChunkSize;
 
-        int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
-        if ( buffer.writableBytes() < toWriteSize )
+        boolean flushRequired;
+        bufferToken.acquireUninterruptibly();
+        try
+        {
+            int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
+            flushRequired = ( buffer.writableBytes() < toWriteSize );
+        }
+        finally
+        {
+            bufferToken.release();
+        }
+        if ( flushRequired )
         {
             flush();
         }
 
         if ( !chunkOpen )
         {
-            currentChunkHeaderOffset = buffer.writerIndex();
-            buffer.writerIndex( buffer.writerIndex() + CHUNK_HEADER_SIZE );
-            chunkOpen = true;
+            bufferToken.acquireUninterruptibly();
+            try
+            {
+                currentChunkHeaderOffset = buffer.writerIndex();
+                buffer.writerIndex( buffer.writerIndex() + CHUNK_HEADER_SIZE );
+                chunkOpen = true;
+            }
+            finally
+            {
+                bufferToken.release();
+            }
         }
     }
 
@@ -188,10 +223,22 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
 
     public void close()
     {
-        if(buffer != null)
+        if ( buffer != null )
         {
-            buffer.release();
-            buffer = null;
+            try
+            {
+                flush();
+            }
+            catch ( IOException e )
+            {
+                // well, we tried
+            }
+            finally
+            {
+                buffer.release();
+                buffer = null;
+                closed = true;
+            }
         }
     }
 

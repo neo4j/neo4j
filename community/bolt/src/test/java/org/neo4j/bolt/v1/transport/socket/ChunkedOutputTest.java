@@ -25,16 +25,21 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
+import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -133,24 +138,53 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldBeAbleToWriteWhileFlushing() throws Throwable
+    public void shouldQueueWritesMadeWhileFlushing() throws Throwable
     {
-        // When
-        out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
-        out.onMessageComplete();
+        final CountDownLatch startLatch = new CountDownLatch( 1 );
+        final CountDownLatch finishLatch = new CountDownLatch( 1 );
+        final AtomicBoolean parallelException = new AtomicBoolean( false );
 
         when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( invocation -> {
-            out.writeShort( (short) 42 );
+            startLatch.countDown();
+            ByteBuf byteBuf = (ByteBuf) invocation.getArguments()[0];
+            writtenData.limit( writtenData.position() + byteBuf.readableBytes() );
+            byteBuf.readBytes( writtenData );
             return null;
         } );
 
+        class ParallelWriter extends Thread
+        {
+            public void run()
+            {
+                try
+                {
+                    startLatch.await();
+                    out.writeShort( (short) 2 );
+                    out.flush();
+                }
+                catch ( Exception e )
+                {
+                    e.printStackTrace( System.err );
+                    parallelException.set( true );
+                }
+                finally
+                {
+                    finishLatch.countDown();
+                }
+            }
+        }
+        new ParallelWriter().start();
+
+        // When
+        out.writeShort( (short) 1 );
         out.flush();
 
+        finishLatch.await();
+
         // Then
-        assertThat( writtenData.limit(), equalTo( 32 ) );
-        assertThat( HexPrinter.hex( writtenData, 0, 32 ),
-                equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
-                        "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
+        assertFalse( parallelException.get() );
+        assertThat( writtenData.limit(), equalTo( 8 ) );
+        assertThat( HexPrinter.hex( writtenData, 0, 8 ), equalTo( "00 02 00 01 00 02 00 02" ) );
     }
 
     @Test
@@ -161,7 +195,26 @@ public class ChunkedOutputTest
         out.onMessageComplete();
         out.flush();
         out.close();
-        out.writeShort( (short) 42 );
+        try
+        {
+            out.writeShort( (short) 42 );
+            fail( "Should have thrown IOException" );
+        }
+        catch ( IOException e )
+        {
+            // We've been expecting you Mr Bond.
+        }
+    }
+
+    @Test
+    public void shouldFlushOnClose() throws Throwable
+    {
+        setupWriteAndFlush();
+
+        // When
+        out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
+        out.onMessageComplete();
+        out.close();
 
         // Then
         assertThat( writtenData.limit(), equalTo( 32 ) );
