@@ -38,6 +38,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
+import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -81,9 +83,9 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
 import static org.neo4j.kernel.api.proc.Context.AUTH_SUBJECT;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPoint;
@@ -361,6 +363,9 @@ public class DataSourceModule
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );
         procedures.registerComponent( Log.class, ( ctx ) -> proceduresLog );
 
+        Guard guard = platform.dependencies.resolveDependency( Guard.class );
+        procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ) );
+
         // Register injected private API components: useful to have available in procedures to access the kernel etc.
         ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir,
                 platform.dependencies, storeId, this.queryExecutor, editionModule.coreAPIAvailabilityGuard,
@@ -417,4 +422,5 @@ public class DataSourceModule
             availabilityGuard.isAvailable( timeout );
         }
     }
+
 }

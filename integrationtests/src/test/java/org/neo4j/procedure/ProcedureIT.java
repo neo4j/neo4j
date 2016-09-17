@@ -57,6 +57,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -1065,6 +1066,16 @@ public class ProcedureIT
         assertFalse( res.hasNext() );
     }
 
+    @Test
+    public void shouldUseGuardToDetectTransactionTermination() throws Throwable
+    {
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. Explicitly terminated by the user. " );
+
+        // When
+        db.execute( "CALL org.neo4j.procedure.guardMe" );
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -1207,6 +1218,20 @@ public class ProcedureIT
 
         @Context
         public Log log;
+
+        @Context
+        public TerminationGuard guard;
+
+        @Context
+        public KernelTransaction ktx;
+
+        @Procedure
+        public Stream<Output> guardMe()
+        {
+            ktx.markForTermination( Status.Transaction.Terminated );
+            guard.check();
+            throw new IllegalStateException( "Should never have executed this!" );
+        }
 
         @Procedure
         public Stream<Output> integrationTestMe()

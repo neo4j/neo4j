@@ -127,9 +127,16 @@ public abstract class ProcedureInteractionTestBase<S>
     public void setUp() throws Throwable
     {
         neo = setUpNeoServer( configure() );
+        reSetUp();
+    }
 
-        neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class )
-                .registerProcedure( ClassWithProcedures.class );
+    protected void reSetUp() throws Exception
+    {
+        neo
+            .getLocalGraph()
+            .getDependencyResolver()
+            .resolveDependency( Procedures.class )
+            .registerProcedure( ClassWithProcedures.class );
         userManager = neo.getLocalUserManager();
         userManager.newUser( "noneSubject", "abc", false );
         userManager.newUser( "pwdSubject", "abc", true );
@@ -579,7 +586,7 @@ public abstract class ProcedureInteractionTestBase<S>
             }
         }
 
-        static class LatchedRunnables implements AutoCloseable
+        protected static class LatchedRunnables implements AutoCloseable
         {
             DoubleLatch doubleLatch;
             Runnable runBefore;

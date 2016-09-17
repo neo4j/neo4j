@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -58,8 +59,12 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
         init( builder );
     }
 
-    public EmbeddedInteraction( GraphDatabaseBuilder builder ) throws Throwable
+    public EmbeddedInteraction( Map<Setting<?>, String> config, GraphDatabaseBuilder builder ) throws Throwable
     {
+        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
+        {
+            builder.setConfig( entry.getKey(), entry.getValue() );
+        }
         init( builder );
     }
 

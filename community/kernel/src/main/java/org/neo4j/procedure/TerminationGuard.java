@@ -17,17 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.guard;
-
-import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+package org.neo4j.procedure;
 
 /**
- * Guard that check entities for compatibility with some kind of guard criteria.
- * As soon as entity do not satisfy that criteria {@link GuardException } will be thrown.
+ * TerminationGuard allows a long running procedure to check at regular intervals if the surrounding executing
+ * query has been terminated by the user or a database administrator or was timed out for some other reason.
+ *
  */
-public interface Guard
+public interface TerminationGuard
 {
-    void check( KernelTransactionImplementation transaction );
-    void check( KernelStatement statement );
+    /**
+     * Check that the surrounding executing query has not yet been terminated or timed out. Throws an appropriate
+     * exception if it has.
+     */
+    void check();
 }

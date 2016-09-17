@@ -17,17 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.guard;
+package org.neo4j.graphdb;
 
-import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.api.exceptions.Status;
 
-/**
- * Guard that check entities for compatibility with some kind of guard criteria.
- * As soon as entity do not satisfy that criteria {@link GuardException } will be thrown.
- */
-public interface Guard
+public class TransactionGuardException
+        extends TransientTransactionFailureException implements Status.HasStatus
 {
-    void check( KernelTransactionImplementation transaction );
-    void check( KernelStatement statement );
+    private final Status status;
+
+    public TransactionGuardException( Status status, String message, Throwable cause )
+    {
+        super( message, cause );
+        this.status = status;
+    }
+
+    @Override
+    public Status status()
+    {
+        return status;
+    }
 }

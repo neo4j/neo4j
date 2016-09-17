@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -93,9 +94,10 @@ public class QueryLoggerIT
     public void shouldLogCustomUserName() throws Throwable
     {
         // turn on query logging
-        databaseBuilder.setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() );
-        databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
-        EmbeddedInteraction db = new EmbeddedInteraction( databaseBuilder );
+        final Map<Setting<?>, String> config = new HashMap<>( 2 );
+        config.put( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() );
+        config.put( GraphDatabaseSettings.log_queries, Settings.TRUE );
+        EmbeddedInteraction db = new EmbeddedInteraction( config, databaseBuilder );
 
         // create users
         db.getLocalUserManager().newUser( "mats", "neo4j", false );
@@ -130,7 +132,7 @@ public class QueryLoggerIT
         // turn on query logging
         databaseBuilder.setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() );
         databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
-        EmbeddedInteraction db = new EmbeddedInteraction( databaseBuilder );
+        EmbeddedInteraction db = new EmbeddedInteraction( Collections.emptyMap(), databaseBuilder );
         GraphDatabaseFacade graph = db.getLocalGraph();
 
         db.getLocalUserManager().setUserPassword( "neo4j", "123", false );
