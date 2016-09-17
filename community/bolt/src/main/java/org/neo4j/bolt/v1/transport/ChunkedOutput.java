@@ -24,6 +24,7 @@ import io.netty.channel.Channel;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.v1.messaging.MessageBoundaryHook;
 import org.neo4j.bolt.v1.packstream.PackOutput;
@@ -42,6 +43,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
 
     private final int bufferSize;
     private final int maxChunkSize;
+    private final AtomicBoolean closed = new AtomicBoolean( false );
 
     private ByteBuf buffer;
     private Channel channel;
@@ -119,7 +121,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     }
 
     @Override
-    public synchronized PackOutput writeBytes( ByteBuffer data ) throws IOException
+    public PackOutput writeBytes( ByteBuffer data ) throws IOException
     {
         // TODO: If data is larger than our chunk size or so, we're very likely better off just passing this ByteBuffer on rather than doing the copy here
         // TODO: *however* note that we need some way to find out when the data has been written (and thus the buffer can be re-used) if we take that approach
@@ -130,10 +132,12 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
             ensure( 1 );
 
             int oldLimit = data.limit();
-            data.limit( data.position() + Math.min( buffer.writableBytes(), data.remaining() ) );
+            synchronized ( this )
+            {
+                data.limit( data.position() + Math.min( buffer.writableBytes(), data.remaining() ) );
 
-            buffer.writeBytes( data );
-
+                buffer.writeBytes( data );
+            }
             data.limit( oldLimit );
         }
         return this;
@@ -150,21 +154,28 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
         return writeBytes( ByteBuffer.wrap( data, offset, length ) );
     }
 
-    private synchronized void ensure( int size ) throws IOException
+    //must be called from within a synchronized block
+    private void ensure( int size ) throws IOException
     {
         assert size <= maxChunkSize : size + " > " + maxChunkSize;
-
-        int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
-        if ( buffer.writableBytes() < toWriteSize )
+        if ( closed.get() )
         {
-            flush();
+            throw new IOException( "Cannot write to buffer when closed" );
         }
-
-        if ( !chunkOpen )
+        int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
+        synchronized ( this )
         {
-            currentChunkHeaderOffset = buffer.writerIndex();
-            buffer.writerIndex( buffer.writerIndex() + CHUNK_HEADER_SIZE );
-            chunkOpen = true;
+            if ( buffer.writableBytes() < toWriteSize )
+            {
+                flush();
+            }
+
+            if ( !chunkOpen )
+            {
+                currentChunkHeaderOffset = buffer.writerIndex();
+                buffer.writerIndex( buffer.writerIndex() + CHUNK_HEADER_SIZE );
+                chunkOpen = true;
+            }
         }
     }
 
@@ -178,6 +189,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
         }
     }
 
+    //must be called from within a synchronized block
     private void newBuffer()
     {
         // Assumption: We're using nettys buffer pooling here
@@ -192,8 +204,20 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     {
         if(buffer != null)
         {
-            buffer.release();
-            buffer = null;
+            try
+            {
+                flush();
+            }
+            catch ( IOException e )
+            {
+                //
+            }
+            finally
+            {
+                closed.set( true );
+                buffer.release();
+                buffer = null;
+            }
         }
     }
 
