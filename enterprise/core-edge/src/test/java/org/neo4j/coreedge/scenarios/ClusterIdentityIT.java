@@ -28,17 +28,22 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.state.storage.SimpleFileStorage;
+import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -47,6 +52,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
+import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
+import static org.neo4j.coreedge.core.server.CoreServerModule.CLUSTER_ID_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
@@ -196,7 +203,7 @@ public class ClusterIdentityIT
 
         File storeDir = cluster.getCoreMemberById( 0 ).storeDir();
         cluster.removeCoreMemberWithMemberId( 0 );
-        changeStoreId( storeDir );
+        changeClusterId( storeDir );
 
         SampleData.createSomeData( 100, cluster );
 
@@ -251,6 +258,13 @@ public class ClusterIdentityIT
     private List<File> storeDirs( Collection<CoreClusterMember> dbs )
     {
         return dbs.stream().map( CoreClusterMember::storeDir ).collect( Collectors.toList() );
+    }
+
+    private void changeClusterId( File storeDir ) throws IOException
+    {
+        SimpleStorage<ClusterId> clusterIdStorage = new SimpleFileStorage<>( fs, new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME ),
+                CLUSTER_ID_NAME, new ClusterId.Marshal(), NullLogProvider.getInstance() );
+        clusterIdStorage.writeState( new ClusterId( UUID.randomUUID() ) );
     }
 
     private void changeStoreId( File storeDir ) throws IOException

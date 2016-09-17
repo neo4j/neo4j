@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.core.state;
+package org.neo4j.coreedge.identity;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -26,11 +26,11 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.core.state.CoreBootstrapper;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
-import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
@@ -46,7 +46,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class BindingServiceTest
+public class ClusterIdentityTest
 {
     private final CoreBootstrapper coreBootstrapper = mock( CoreBootstrapper.class );
     private final FakeClock clock = Clocks.fakeClock();
@@ -59,7 +59,7 @@ public class BindingServiceTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.coreServers() ).thenReturn( unboundTopology );
 
-        BindingService binder = new BindingService( new StubClusterIdStorage(), topologyService,
+        ClusterIdentity binder = new ClusterIdentity( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
@@ -89,15 +89,15 @@ public class BindingServiceTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.coreServers() ).thenReturn( unboundTopology ).thenReturn( boundTopology );
 
-        BindingService binder = new BindingService( new StubClusterIdStorage(), topologyService,
+        ClusterIdentity binder = new ClusterIdentity( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
         // when
-        ClusterId boundClusterId = binder.bindToCluster( null );
+        binder.bindToCluster( null );
 
         // then
-        assertEquals( publishedClusterId, boundClusterId );
+        assertEquals( publishedClusterId, binder.clusterId() );
         verify( topologyService, atLeast( 2 ) ).coreServers();
     }
 
@@ -113,16 +113,16 @@ public class BindingServiceTest
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
-        BindingService binder = new BindingService( clusterIdStorage, topologyService,
+        ClusterIdentity binder = new ClusterIdentity( clusterIdStorage, topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
         // when
-        ClusterId boundClusterId = binder.bindToCluster( null );
+        binder.bindToCluster( null );
 
         // then
         verify( topologyService ).casClusterId( previouslyBoundClusterId );
-        assertEquals( previouslyBoundClusterId, boundClusterId );
+        assertEquals( previouslyBoundClusterId, binder.clusterId() );
     }
 
     @Test
@@ -137,7 +137,7 @@ public class BindingServiceTest
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
-        BindingService binder = new BindingService( clusterIdStorage, topologyService,
+        ClusterIdentity binder = new ClusterIdentity( clusterIdStorage, topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
@@ -163,18 +163,18 @@ public class BindingServiceTest
         when( topologyService.coreServers() ).thenReturn( bootstrappableTopology );
         when( topologyService.casClusterId( any() ) ).thenReturn( true );
 
-        BindingService binder = new BindingService( new StubClusterIdStorage(), topologyService,
+        ClusterIdentity binder = new ClusterIdentity( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
         ThrowingConsumer<CoreSnapshot, Throwable> snapshotInstaller = mock( ThrowingConsumer.class );
 
         // when
-        ClusterId boundClusterId = binder.bindToCluster( snapshotInstaller );
+        binder.bindToCluster( snapshotInstaller );
 
         // then
         verify( coreBootstrapper ).bootstrap( any() );
-        verify( topologyService ).casClusterId( boundClusterId );
+        verify( topologyService ).casClusterId( binder.clusterId() );
         verify( snapshotInstaller ).accept( any() );
     }
 

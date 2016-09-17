@@ -151,7 +151,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory );
 
         ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
-                platformModule );
+                platformModule, clusterStateDirectory );
         topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
@@ -164,16 +164,18 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
 
-        Outbound<MemberId,RaftMessages.RaftMessage> raftOutbound = new LoggingOutbound<>(
-                new RaftOutbound( topologyService, raftSender, localDatabase, logProvider, logThresholdMillis ),
+        RaftOutbound raftOutbound = new RaftOutbound( topologyService, raftSender, clusteringModule.clusterIdentity(),
+                logProvider, logThresholdMillis );
+        Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>( raftOutbound,
                 identityModule.myself(), messageLogger );
 
-        consensusModule = new ConsensusModule( identityModule.myself(), platformModule, raftOutbound, clusterStateDirectory, topologyService );
+        consensusModule = new ConsensusModule( identityModule.myself(), platformModule, loggingOutbound,
+                clusterStateDirectory, topologyService );
 
         dependencies.satisfyDependency( consensusModule.raftMachine() );
 
         ReplicationModule replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
-                raftOutbound, clusterStateDirectory, fileSystem, logProvider );
+                loggingOutbound, clusterStateDirectory, fileSystem, logProvider );
 
         CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory, config,
                 replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
@@ -187,8 +189,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
-        CoreServerModule coreServerModule = new CoreServerModule( identityModule.myself(), platformModule, consensusModule,
-                coreStateMachinesModule, replicationModule, clusterStateDirectory, topologyService, localDatabase,
+        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
+                coreStateMachinesModule, replicationModule, clusterStateDirectory, clusteringModule, localDatabase,
                 messageLogger, databaseHealthSupplier );
 
         editionInvariants( platformModule, dependencies, config, logging, life );

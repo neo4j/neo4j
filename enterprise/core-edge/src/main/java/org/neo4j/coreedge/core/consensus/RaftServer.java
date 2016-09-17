@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.VersionDecoder;
 import org.neo4j.coreedge.VersionPrepender;
-import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
@@ -58,7 +57,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.StoreIdAwareMessage>
+public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.ClusterIdAwareMessage>
 {
     private static final Setting<ListenSocketAddress> setting = CoreEdgeClusterSettings.raft_listen_address;
     private final ChannelMarshal<ReplicatedContent> marshal;
@@ -68,7 +67,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     private final Log userLog;
     private final Monitors monitors;
 
-    private MessageHandler<RaftMessages.StoreIdAwareMessage> messageHandler;
+    private MessageHandler<RaftMessages.ClusterIdAwareMessage> messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
 
@@ -163,24 +162,24 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     }
 
     @Override
-    public void registerHandler( Inbound.MessageHandler<RaftMessages.StoreIdAwareMessage> handler )
+    public void registerHandler( Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> handler )
     {
         this.messageHandler = handler;
     }
 
-    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.StoreIdAwareMessage>
+    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.ClusterIdAwareMessage>
     {
         @Override
         protected void channelRead0( ChannelHandlerContext channelHandlerContext,
-                                     RaftMessages.StoreIdAwareMessage storeIdAwareMessage ) throws Exception
+                                     RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage ) throws Exception
         {
             try
             {
-                messageHandler.handle( storeIdAwareMessage );
+                messageHandler.handle( clusterIdAwareMessage );
             }
             catch ( Exception e )
             {
-                log.error( format( "Failed to process message %s", storeIdAwareMessage ), e );
+                log.error( format( "Failed to process message %s", clusterIdAwareMessage ), e );
             }
         }
     }

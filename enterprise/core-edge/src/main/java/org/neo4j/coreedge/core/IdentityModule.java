@@ -34,6 +34,7 @@ import org.neo4j.logging.LogProvider;
 public class IdentityModule
 {
     public static final String CORE_MEMBER_ID_NAME = "core-member-id";
+
     private MemberId myself;
 
     IdentityModule( PlatformModule platformModule, File clusterStateDirectory )
@@ -71,7 +72,7 @@ public class IdentityModule
         }
     }
 
-    MemberId myself()
+    public MemberId myself()
     {
         return myself;
     }

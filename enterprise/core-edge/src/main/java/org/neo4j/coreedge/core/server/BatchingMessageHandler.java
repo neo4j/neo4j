@@ -26,24 +26,24 @@ import java.util.concurrent.BlockingQueue;
 
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
-import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMessages.StoreIdAwareMessage>
+public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMessages.ClusterIdAwareMessage>
 {
     private final Log log;
-    private final BlockingQueue<RaftMessages.StoreIdAwareMessage> messageQueue;
+    private final BlockingQueue<RaftMessages.ClusterIdAwareMessage> messageQueue;
 
     private final int maxBatch;
-    private final List<RaftMessages.StoreIdAwareMessage> batch;
+    private final List<RaftMessages.ClusterIdAwareMessage> batch;
 
-    private MessageHandler<RaftMessages.StoreIdAwareMessage> handler;
+    private MessageHandler<RaftMessages.ClusterIdAwareMessage> handler;
 
-    public BatchingMessageHandler( MessageHandler<RaftMessages.StoreIdAwareMessage> handler,
+    public BatchingMessageHandler( MessageHandler<RaftMessages.ClusterIdAwareMessage> handler,
                                    int queueSize, int maxBatch, LogProvider logProvider )
     {
         this.handler = handler;
@@ -55,7 +55,7 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
     }
 
     @Override
-    public void handle( RaftMessages.StoreIdAwareMessage message )
+    public void handle( RaftMessages.ClusterIdAwareMessage message )
     {
         try
         {
@@ -70,7 +70,7 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
     @Override
     public void run()
     {
-        RaftMessages.StoreIdAwareMessage message = null;
+        RaftMessages.ClusterIdAwareMessage message = null;
         try
         {
             message = messageQueue.poll( 1, SECONDS );
@@ -96,32 +96,32 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
         }
     }
 
-    private void drain( BlockingQueue<RaftMessages.StoreIdAwareMessage> messageQueue,
-                        List<RaftMessages.StoreIdAwareMessage> batch, int maxElements )
+    private void drain( BlockingQueue<RaftMessages.ClusterIdAwareMessage> messageQueue,
+                        List<RaftMessages.ClusterIdAwareMessage> batch, int maxElements )
     {
-        List<RaftMessages.StoreIdAwareMessage> tempDraining = new ArrayList<>();
+        List<RaftMessages.ClusterIdAwareMessage> tempDraining = new ArrayList<>();
         messageQueue.drainTo( tempDraining, maxElements );
 
-        for ( RaftMessages.StoreIdAwareMessage storeIdAwareMessage : tempDraining )
+        for ( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage : tempDraining )
         {
-            batch.add( storeIdAwareMessage );
+            batch.add( clusterIdAwareMessage );
         }
     }
 
-    private void collateAndHandleBatch( List<RaftMessages.StoreIdAwareMessage> batch )
+    private void collateAndHandleBatch( List<RaftMessages.ClusterIdAwareMessage> batch )
     {
         RaftMessages.NewEntry.BatchRequest batchRequest = null;
-        StoreId storeId = batch.get( 0 ).storeId();
+        ClusterId clusterId = batch.get( 0 ).clusterId();
 
-        for ( RaftMessages.StoreIdAwareMessage storeIdAwareMessage : batch )
+        for ( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage : batch )
         {
-            if ( batchRequest != null && !storeIdAwareMessage.storeId().equals( storeId ))
+            if ( batchRequest != null && !clusterIdAwareMessage.clusterId().equals( clusterId ))
             {
-                handler.handle( new RaftMessages.StoreIdAwareMessage( storeId, batchRequest ) );
+                handler.handle( new RaftMessages.ClusterIdAwareMessage( clusterId, batchRequest ) );
                 batchRequest = null;
             }
-            storeId = storeIdAwareMessage.storeId();
-            RaftMessage message = storeIdAwareMessage.message();
+            clusterId = clusterIdAwareMessage.clusterId();
+            RaftMessage message = clusterIdAwareMessage.message();
             if ( message instanceof RaftMessages.NewEntry.Request )
             {
                 RaftMessages.NewEntry.Request newEntryRequest = (RaftMessages.NewEntry.Request) message;
@@ -134,13 +134,13 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
             }
             else
             {
-                handler.handle( storeIdAwareMessage );
+                handler.handle( clusterIdAwareMessage );
             }
         }
 
         if ( batchRequest != null )
         {
-            handler.handle( new RaftMessages.StoreIdAwareMessage( storeId, batchRequest ) );
+            handler.handle( new RaftMessages.ClusterIdAwareMessage( clusterId, batchRequest ) );
         }
     }
 }

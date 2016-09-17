@@ -25,11 +25,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.StoreId;
 
 import static java.lang.String.format;
 
@@ -633,21 +633,21 @@ public interface RaftMessages
         }
     }
 
-    class StoreIdAwareMessage implements Message
+    class ClusterIdAwareMessage implements Message
     {
-        private final StoreId storeId;
+        private final ClusterId clusterId;
         private final RaftMessage message;
 
-        public StoreIdAwareMessage( StoreId storeId, RaftMessage message )
+        public ClusterIdAwareMessage( ClusterId clusterId, RaftMessage message )
         {
             Objects.requireNonNull( message );
-            this.storeId = storeId;
+            this.clusterId = clusterId;
             this.message = message;
         }
 
-        public StoreId storeId()
+        public ClusterId clusterId()
         {
-            return storeId;
+            return clusterId;
         }
 
         public RaftMessage message()
@@ -666,20 +666,20 @@ public interface RaftMessages
             {
                 return false;
             }
-            StoreIdAwareMessage that = (StoreIdAwareMessage) o;
-            return Objects.equals( storeId, that.storeId ) && Objects.equals( message, that.message );
+            ClusterIdAwareMessage that = (ClusterIdAwareMessage) o;
+            return Objects.equals( clusterId, that.clusterId ) && Objects.equals( message, that.message );
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash( storeId, message );
+            return Objects.hash( clusterId, message );
         }
 
         @Override
         public String toString()
         {
-            return format( "{storeId: %s, message: %s}", storeId, message );
+            return format( "{clusterId: %s, message: %s}", clusterId, message );
         }
 
     }

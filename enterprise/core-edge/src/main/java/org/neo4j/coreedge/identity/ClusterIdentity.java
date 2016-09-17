@@ -17,24 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.core.state;
+package org.neo4j.coreedge.identity;
 
 import java.io.IOException;
 import java.time.Clock;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.coreedge.core.state.CoreBootstrapper;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
-import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class BindingService
+public class ClusterIdentity
 {
     private final SimpleStorage<ClusterId> clusterIdStorage;
     private final CoreTopologyService topologyService;
@@ -44,9 +44,11 @@ public class BindingService
     private final ThrowingAction<InterruptedException> retryWaiter;
     private final long timeoutMillis;
 
-    public BindingService( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService,
-                           LogProvider logProvider, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
-                           long timeoutMillis, CoreBootstrapper coreBootstrapper )
+    private ClusterId clusterId;
+
+    public ClusterIdentity( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService,
+                            LogProvider logProvider, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
+                            long timeoutMillis, CoreBootstrapper coreBootstrapper )
     {
         this.clusterIdStorage = clusterIdStorage;
         this.topologyService = topologyService;
@@ -61,18 +63,17 @@ public class BindingService
      * The cluster binding process tries to establish a common cluster ID. If there is no common cluster ID
      * then a single instance will eventually create one and publish it through the underlying topology service.
      *
-     * @return The common cluster ID.
      * @throws IOException If there is an issue with I/O.
      * @throws InterruptedException If the process gets interrupted.
      * @throws TimeoutException If the process times out.
      */
-    ClusterId bindToCluster( ThrowingConsumer<CoreSnapshot, Throwable> snapshotInstaller ) throws Throwable
+    public void bindToCluster( ThrowingConsumer<CoreSnapshot, Throwable> snapshotInstaller ) throws Throwable
     {
         if ( clusterIdStorage.exists() )
         {
             ClusterId localClusterId = clusterIdStorage.readState();
             publishClusterId( localClusterId );
-            return localClusterId;
+            clusterId = localClusterId;
         }
         else
         {
@@ -110,8 +111,17 @@ public class BindingService
 
             clusterIdStorage.writeState( commonClusterId );
 
-            return commonClusterId;
+            clusterId = commonClusterId;
         }
+    }
+
+    public ClusterId clusterId()
+    {
+        if ( clusterId == null )
+        {
+            throw new IllegalStateException( "Cannot ask for cluster id before bound to a cluster" );
+        }
+        return clusterId;
     }
 
     private void publishClusterId( ClusterId localClusterId ) throws BindingException
@@ -126,4 +136,5 @@ public class BindingService
             log.info( "Published: " + localClusterId );
         }
     }
+
 }

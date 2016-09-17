@@ -31,6 +31,7 @@ import org.neo4j.coreedge.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.identity.ClusterId;
+import org.neo4j.coreedge.identity.ClusterIdentity;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -39,52 +40,60 @@ import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessage>, LogPruner, Lifecycle
+public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMessage>, LogPruner, Lifecycle
 {
     private final RaftMachine raftMachine;
     private final LocalDatabase localDatabase;
     private final Log log;
+    private final ClusterIdentity clusterIdentity;
     private final CoreStateDownloader downloader;
-    private final BindingService bindingService;
     private final CommandApplicationProcess applicationProcess;
     private final CountDownLatch bootstrapLatch = new CountDownLatch( 1 );
-
-    private ClusterId boundClusterId; // TODO: Use for network message filtering.
 
     public CoreState(
             RaftMachine raftMachine,
             LocalDatabase localDatabase,
+            ClusterIdentity clusterIdentity,
             LogProvider logProvider,
             CoreStateDownloader downloader,
-            BindingService bindingService,
             CommandApplicationProcess commandApplicationProcess )
     {
         this.raftMachine = raftMachine;
         this.localDatabase = localDatabase;
+        this.clusterIdentity = clusterIdentity;
         this.downloader = downloader;
-        this.bindingService = bindingService;
         this.log = logProvider.getLog( getClass() );
         this.applicationProcess = commandApplicationProcess;
     }
 
-    public void handle( RaftMessages.StoreIdAwareMessage storeIdAwareMessage )
+    public void handle( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage )
     {
-        try
+        ClusterId clusterId = clusterIdAwareMessage.clusterId();
+        if ( clusterId.equals( clusterIdentity.clusterId() ) )
         {
-            ConsensusOutcome outcome = raftMachine.handle( storeIdAwareMessage.message() );
-            if ( outcome.needsFreshSnapshot() )
+            try
             {
-                downloadSnapshot( storeIdAwareMessage.message().from() );
+                ConsensusOutcome outcome = raftMachine.handle( clusterIdAwareMessage.message() );
+                if ( outcome.needsFreshSnapshot() )
+                {
+                    downloadSnapshot( clusterIdAwareMessage.message().from() );
+                }
+                else
+                {
+                    notifyCommitted( outcome.getCommitIndex() );
+                }
             }
-            else
+            catch ( Throwable e )
             {
-                notifyCommitted( outcome.getCommitIndex() );
+                raftMachine.stopTimers();
+                localDatabase.panic( e );
             }
         }
-        catch ( Throwable e )
+        else
         {
-            raftMachine.stopTimers();
-            localDatabase.panic( e );
+            log.info( "Discarding message[%s] owing to mismatched storeId and non-empty store. " +
+                    "Expected: %s, Encountered: %s",
+                    clusterIdAwareMessage.message(), clusterId, clusterIdentity.clusterId() );
         }
     }
 
@@ -149,8 +158,7 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
         // 2. Bootstrap (single selected server)
         // 3. Download from someone else (others)
 
-        // TODO: Binding service can return whether or not we are allowed to bootstrap. ClusterId can be exposed at the interface.
-        boundClusterId = bindingService.bindToCluster( this::installSnapshot );
+        clusterIdentity.bindToCluster( this::installSnapshot );
 
         // TODO: Move haveState and CoreBootstrapper into CommandApplicationProcess, which perhaps needs a better name.
         // TODO: Include the None/Partial/Full in the move.

@@ -106,7 +106,7 @@ public class CoreBootstrapper
         this.config = config;
     }
 
-    CoreSnapshot bootstrap( Set<MemberId> members ) throws IOException
+    public CoreSnapshot bootstrap( Set<MemberId> members ) throws IOException
     {
         StoreFactory factory = new StoreFactory( storeDir, config,
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance() );
