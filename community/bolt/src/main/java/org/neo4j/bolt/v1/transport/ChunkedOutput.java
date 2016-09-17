@@ -79,7 +79,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     }
 
     @Override
-    public PackOutput writeByte( byte value ) throws IOException
+    public synchronized PackOutput writeByte( byte value ) throws IOException
     {
         ensure(1);
         buffer.writeByte( value );
@@ -87,7 +87,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     }
 
     @Override
-    public PackOutput writeShort( short value ) throws IOException
+    public synchronized PackOutput writeShort( short value ) throws IOException
     {
         ensure(2);
         buffer.writeShort( value );
@@ -95,7 +95,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     }
 
     @Override
-    public PackOutput writeInt( int value ) throws IOException
+    public synchronized PackOutput writeInt( int value ) throws IOException
     {
         ensure(4);
         buffer.writeInt( value );
@@ -103,7 +103,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     }
 
     @Override
-    public PackOutput writeLong( long value ) throws IOException
+    public synchronized PackOutput writeLong( long value ) throws IOException
     {
         ensure(8);
         buffer.writeLong( value );
@@ -111,7 +111,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     }
 
     @Override
-    public PackOutput writeDouble( double value ) throws IOException
+    public synchronized PackOutput writeDouble( double value ) throws IOException
     {
         ensure(8);
         buffer.writeDouble( value );
@@ -119,7 +119,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     }
 
     @Override
-    public PackOutput writeBytes( ByteBuffer data ) throws IOException
+    public synchronized PackOutput writeBytes( ByteBuffer data ) throws IOException
     {
         // TODO: If data is larger than our chunk size or so, we're very likely better off just passing this ByteBuffer on rather than doing the copy here
         // TODO: *however* note that we need some way to find out when the data has been written (and thus the buffer can be re-used) if we take that approach
@@ -150,7 +150,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
         return writeBytes( ByteBuffer.wrap( data, offset, length ) );
     }
 
-    private void ensure( int size ) throws IOException
+    private synchronized void ensure( int size ) throws IOException
     {
         assert size <= maxChunkSize : size + " > " + maxChunkSize;
 
@@ -168,7 +168,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
         }
     }
 
-    private void closeChunkIfOpen()
+    private synchronized void closeChunkIfOpen()
     {
         if ( chunkOpen )
         {
@@ -198,7 +198,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     }
 
     @Override
-    public void onMessageComplete() throws IOException
+    public synchronized void onMessageComplete() throws IOException
     {
         closeChunkIfOpen();
 

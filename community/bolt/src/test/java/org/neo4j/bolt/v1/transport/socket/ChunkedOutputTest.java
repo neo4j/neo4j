@@ -31,6 +31,10 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.kernel.impl.util.HexPrinter;
@@ -45,7 +49,7 @@ public class ChunkedOutputTest
 {
     private final Channel ch = mock( Channel.class );
     private final ByteBuffer writtenData = ByteBuffer.allocate( 1024 );
-    private ChunkedOutput out ;
+    private ChunkedOutput out;
 
     @Test
     public void shouldChunkSingleMessage() throws Throwable
@@ -122,6 +126,52 @@ public class ChunkedOutputTest
         assertThat( HexPrinter.hex( writtenData, 0, 32 ),
                 equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
                          "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
+    }
+
+    @Test
+    public void shouldNotNPE() throws Throwable
+    {
+        ExecutorService runner = Executors.newFixedThreadPool( 10 );
+        // When
+        runner.execute( () -> {
+            try
+            {
+                for ( int i = 0; i < 10; i++ )
+                {
+
+                    out.writeByte( (byte) 1 ).writeShort( (short) 2 );
+                    out.onMessageComplete();
+                    out.flush();
+                    Thread.sleep( ThreadLocalRandom.current().nextLong( 10 ) );
+
+                }
+            }
+            catch ( IOException | InterruptedException e )
+            {
+                throw new AssertionError( e );
+            }
+        } );
+        for ( int i = 0; i < 9; i++ )
+        {
+
+            runner.execute( () -> {
+                try
+                {
+                    for ( int j = 0; j < 10; j++ )
+                    {
+                        out.flush();
+                        Thread.sleep( ThreadLocalRandom.current().nextLong( 10 ) );
+                    }
+                }
+                catch ( IOException | InterruptedException e )
+                {
+                    throw new AssertionError( e );
+                }
+            } );
+        }
+
+        runner.awaitTermination( 30, TimeUnit.SECONDS );
+
     }
 
     @Before
