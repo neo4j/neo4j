@@ -21,7 +21,6 @@ package org.neo4j.coreedge.core.replication;
 
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -222,11 +221,5 @@ public class RaftReplicatorTest
             this.count++;
         }
 
-        @Override
-        public void send( MemberId to, Collection<MESSAGE> messages )
-        {
-            this.lastTo = to;
-            this.count+=messages.size();
-        }
     }
 }

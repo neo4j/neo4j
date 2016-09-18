@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.messaging;
 
-import java.util.Collection;
-
 /**
  * A best effort service for delivery of messages to members. No guarantees are made about any of the methods
  * in terms of eventual delivery. The only non trivial promises is that no messages get duplicated and nothing gets
@@ -35,11 +33,4 @@ public interface Outbound<MEMBER, MESSAGE extends Message>
      * @param message The message to send
      */
     void send( MEMBER to, MESSAGE message );
-
-    /**
-     * Asynchronous, best effort delivery to destination.
-     * @param to destination
-     * @param messages The messages to send
-     */
-    void send( MEMBER to, Collection<MESSAGE> messages );
 }

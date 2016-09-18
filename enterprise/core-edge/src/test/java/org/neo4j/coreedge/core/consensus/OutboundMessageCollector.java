@@ -21,7 +21,6 @@ package org.neo4j.coreedge.core.consensus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,12 +44,6 @@ public class OutboundMessageCollector implements Outbound<MemberId, RaftMessages
     public void send( MemberId to, RaftMessages.RaftMessage message )
     {
         raftMessages( to ).add( message );
-    }
-
-    @Override
-    public void send( MemberId to, Collection<RaftMessages.RaftMessage> messages )
-    {
-        raftMessages( to ).addAll( messages );
     }
 
     private List<RaftMessages.RaftMessage> raftMessages( MemberId to )

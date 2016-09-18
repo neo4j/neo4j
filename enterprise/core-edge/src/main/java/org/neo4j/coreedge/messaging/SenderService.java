@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.messaging;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -80,26 +79,6 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
             }
 
             channel( to ).send( message );
-        }
-        finally
-        {
-            serviceLock.readLock().unlock();
-        }
-    }
-
-    @Override
-    public void send( AdvertisedSocketAddress to, Collection<Message> messages )
-    {
-        serviceLock.readLock().lock();
-        try
-        {
-            if ( !senderServiceRunning )
-            {
-                return;
-            }
-
-            NonBlockingChannel channel = channel( to );
-            messages.forEach( channel::send );
         }
         finally
         {

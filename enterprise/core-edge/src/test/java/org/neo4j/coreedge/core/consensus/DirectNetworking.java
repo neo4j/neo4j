@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.core.consensus;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -92,15 +91,6 @@ public class DirectNetworking
             if ( canDeliver( to ) )
             {
                 messageQueues.get( to ).add( message );
-            }
-        }
-
-        @Override
-        public void send( MemberId to, Collection<RaftMessages.RaftMessage> messages )
-        {
-            if ( canDeliver( to ) )
-            {
-                messageQueues.get( to ).addAll( messages );
             }
         }
 

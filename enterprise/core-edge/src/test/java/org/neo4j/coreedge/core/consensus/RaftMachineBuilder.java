@@ -21,7 +21,6 @@ package org.neo4j.coreedge.core.consensus;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.util.Collection;
 
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
@@ -62,21 +61,8 @@ public class RaftMachineBuilder
     private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clocks.systemClock(),
             getInstance() );
 
-    private Inbound<RaftMessages.RaftMessage> inbound = handler -> {
-    };
-    private Outbound<MemberId, RaftMessages.RaftMessage> outbound =
-            new Outbound<MemberId, RaftMessages.RaftMessage>()
-            {
-                @Override
-                public void send( MemberId to, RaftMessages.RaftMessage message )
-                {
-                }
-
-                @Override
-                public void send( MemberId to, Collection<RaftMessages.RaftMessage> raftMessages )
-                {
-                }
-            };
+    private Inbound<RaftMessages.RaftMessage> inbound = handler -> {};
+    private Outbound<MemberId, RaftMessages.RaftMessage> outbound = ( to, message ) -> {};
 
     private LogProvider logProvider = NullLogProvider.getInstance();
     private Clock clock = Clocks.systemClock();

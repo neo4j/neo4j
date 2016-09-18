@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.messaging;
 
-import java.util.Collection;
-
 import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.core.consensus.RaftMessages.ClusterIdAwareMessage;
 import org.neo4j.coreedge.discovery.CoreAddresses;
@@ -34,8 +32,6 @@ import org.neo4j.coreedge.messaging.address.UnknownAddressMonitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
-
-import static java.util.stream.Collectors.toList;
 
 public class RaftOutbound implements Outbound<MemberId, RaftMessage>
 {
@@ -74,21 +70,6 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
             {
                 unknownAddressMonitor.logAttemptToSendToMemberWithNoKnownAddress( to );
             }
-        }
-    }
-
-    @Override
-    public void send( MemberId to, Collection<RaftMessage> messages )
-    {
-        try
-        {
-            CoreAddresses coreAddresses = discoveryService.coreServers().find( to );
-            outbound.send( coreAddresses.getRaftServer(),
-                    messages.stream().map( ( m ) -> new ClusterIdAwareMessage( clusterIdentity.clusterId(), m ) ).collect( toList() ) );
-        }
-        catch ( NoKnownAddressesException e )
-        {
-            unknownAddressMonitor.logAttemptToSendToMemberWithNoKnownAddress( to );
         }
     }
 
