@@ -66,7 +66,7 @@ public class StoreFetcher
     {
         ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
         long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId );
+        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId - 1 );
     }
 
     private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId ) throws IOException, StoreCopyFailedException
