@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Cost
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LegacyIndexSeek, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.legacyHintLeafPlanner
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.Cost
 
 class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 

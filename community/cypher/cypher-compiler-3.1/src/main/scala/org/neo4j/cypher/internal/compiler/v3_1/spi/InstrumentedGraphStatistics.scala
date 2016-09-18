@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.spi
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.frontend.v3_1.{PropertyKeyId, RelTypeId, LabelId}
 
 import scala.collection.mutable

@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.spi.v3_1
 import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v3_1.devNullLogger
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Cardinality
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, RelTypeId}
+import org.neo4j.cypher.internal.ir.v3_1.Cardinality
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api.KernelTransaction.Type._

@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner
 
-import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cost, _}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticTable, PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, Cost}
 
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable

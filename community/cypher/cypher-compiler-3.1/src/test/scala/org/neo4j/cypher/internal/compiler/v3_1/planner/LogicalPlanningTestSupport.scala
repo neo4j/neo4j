@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.ir.v3_1.Cardinality
 
 import scala.collection.mutable
 

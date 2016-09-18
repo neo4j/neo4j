@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_1
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, NameId, PropertyKeyId, RelTypeId}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException

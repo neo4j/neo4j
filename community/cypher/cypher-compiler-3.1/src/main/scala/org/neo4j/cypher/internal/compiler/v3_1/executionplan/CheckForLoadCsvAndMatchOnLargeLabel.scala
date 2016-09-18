@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_1.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.{MergeNodeAction, PlainMergeNodeProducer, UpdateAction}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.LabelId
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{InternalNotification, LargeLabelWithLoadCsvNotification}
+import org.neo4j.cypher.internal.ir.v3_1.Cardinality
 
 case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonIndexedLabelWarningThreshold: Long) extends (Pipe => Option[InternalNotification]) {
 

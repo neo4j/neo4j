@@ -24,11 +24,12 @@ import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, LogicalPlanningContext, Metrics, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_1.Cardinality
 
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
