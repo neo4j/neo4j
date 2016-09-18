@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 import org.neo4j.cypher.internal.frontend.v3_1.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, StrictnessMode}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, Cost}
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, Cost, StrictnessMode}
 
 import scala.language.implicitConversions
 

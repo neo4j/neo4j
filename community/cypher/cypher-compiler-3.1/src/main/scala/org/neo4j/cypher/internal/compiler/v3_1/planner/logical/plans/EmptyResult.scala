@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_1.StrictnessMode
 
 case class EmptyResult(inner: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {

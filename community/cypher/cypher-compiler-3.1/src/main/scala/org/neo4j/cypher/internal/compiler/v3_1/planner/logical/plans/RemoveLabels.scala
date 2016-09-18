@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.LabelName
+import org.neo4j.cypher.internal.ir.v3_1.StrictnessMode
 
 case class RemoveLabels(source: LogicalPlan, idName: IdName, labelNames: Seq[LabelName])
                     (val solved: PlannerQuery with CardinalityEstimation)

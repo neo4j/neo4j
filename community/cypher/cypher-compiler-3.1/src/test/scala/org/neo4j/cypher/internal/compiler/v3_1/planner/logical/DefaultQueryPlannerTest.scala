@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.{ASTAnnotationMap, Expression
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{ExpressionTypeInfo, Rewriter, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_1.LazyMode
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
