@@ -19,6 +19,10 @@
  */
 package org.neo4j.coreedge.discovery.procedures;
 
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -27,11 +31,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.Test;
-
-import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.discovery.CoreAddresses;
@@ -42,25 +41,40 @@ import org.neo4j.coreedge.discovery.EdgeTopology;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.logging.NullLogProvider.getInstance;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 
 public class GetServersProcedureTest
 {
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+
+    @Test
+    public void shouldHaveCorrectSignature() throws Exception
+    {
+        // given
+        final GetServersProcedure proc = new GetServersProcedure( null, null, NullLogProvider.getInstance() );
+
+        // when
+        ProcedureSignature signature = proc.signature();
+
+        // then
+        assertThat( signature.outputSignature(), containsInAnyOrder( new FieldSignature( "address", NTString ),
+                        new FieldSignature( "role", NTString ),
+                        new FieldSignature( "expiry", NTInteger ) ) );
+    }
 
     @Test
     public void shouldReturnCoreServersWithReadRouteAndSingleWriteActions() throws Exception
@@ -71,7 +85,7 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
-        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );
@@ -94,8 +108,7 @@ public class GetServersProcedureTest
                 new Object[]{coreAddresses( 1 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE},
                 new Object[]{coreAddresses( 1 ).getRaftServer().toString(), "READ", Long.MAX_VALUE},
                 new Object[]{coreAddresses( 2 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 2 ).getRaftServer().toString(), "READ", Long.MAX_VALUE} )
-        );
+                new Object[]{coreAddresses( 2 ).getRaftServer().toString(), "READ", Long.MAX_VALUE} ) );
     }
 
     @Test
@@ -107,7 +120,7 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
-        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
@@ -133,7 +146,7 @@ public class GetServersProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
@@ -143,8 +156,8 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator,
-                NullLogProvider.getInstance() );
+        GetServersProcedure procedure =
+                new GetServersProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
@@ -154,8 +167,7 @@ public class GetServersProcedureTest
                 new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE},
                 new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "WRITE", Long.MAX_VALUE},
                 new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "READ", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 1 ).getRaftServer().toString(), "READ", Long.MAX_VALUE}
-        ) );
+                new Object[]{coreAddresses( 1 ).getRaftServer().toString(), "READ", Long.MAX_VALUE} ) );
     }
 
     @Test
@@ -164,7 +176,7 @@ public class GetServersProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
@@ -174,8 +186,8 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator,
-                NullLogProvider.getInstance() );
+        GetServersProcedure procedure =
+                new GetServersProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
@@ -184,8 +196,7 @@ public class GetServersProcedureTest
         assertThat( members, containsInAnyOrder(
                 new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "WRITE", Long.MAX_VALUE},
                 new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "READ", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE}
-        ) );
+                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE} ) );
     }
 
     @Test
@@ -194,7 +205,7 @@ public class GetServersProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
@@ -203,8 +214,8 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenThrow( new NoLeaderFoundException() );
 
-        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator,
-                NullLogProvider.getInstance() );
+        GetServersProcedure procedure =
+                new GetServersProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
@@ -220,7 +231,7 @@ public class GetServersProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
@@ -229,8 +240,8 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 1 ) );
 
-        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator,
-                NullLogProvider.getInstance() );
+        GetServersProcedure procedure =
+                new GetServersProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
@@ -242,9 +253,7 @@ public class GetServersProcedureTest
 
     static Set<EdgeAddresses> addresses( int... ids )
     {
-        return Arrays.stream( ids )
-                .mapToObj( GetServersProcedureTest::edgeAddresses )
-                .collect( Collectors.toSet() );
+        return Arrays.stream( ids ).mapToObj( GetServersProcedureTest::edgeAddresses ).collect( Collectors.toSet() );
     }
 
     static CoreAddresses coreAddresses( int id )
