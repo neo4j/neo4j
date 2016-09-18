@@ -117,10 +117,6 @@ public class ClusterIdentity
 
     public ClusterId clusterId()
     {
-        if ( clusterId == null )
-        {
-            throw new IllegalStateException( "Cannot ask for cluster id before bound to a cluster" );
-        }
         return clusterId;
     }
 

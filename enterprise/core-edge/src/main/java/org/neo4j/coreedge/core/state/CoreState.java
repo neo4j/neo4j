@@ -91,8 +91,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
         }
         else
         {
-            log.info( "Discarding message[%s] owing to mismatched storeId and non-empty store. " +
-                    "Expected: %s, Encountered: %s",
+            log.info( "Discarding message[%s] owing to mismatched storeId. Expected: %s, Encountered: %s",
                     clusterIdAwareMessage.message(), clusterId, clusterIdentity.clusterId() );
         }
     }

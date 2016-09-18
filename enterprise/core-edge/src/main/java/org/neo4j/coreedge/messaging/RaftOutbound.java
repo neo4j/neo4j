@@ -26,10 +26,12 @@ import org.neo4j.coreedge.core.consensus.RaftMessages.ClusterIdAwareMessage;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.ClusterIdentity;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.address.UnknownAddressMonitor;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
@@ -41,6 +43,7 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
     private final Outbound<AdvertisedSocketAddress,Message> outbound;
     private final ClusterIdentity clusterIdentity;
     private final UnknownAddressMonitor unknownAddressMonitor;
+    private final Log log;
 
     public RaftOutbound( CoreTopologyService discoveryService, Outbound<AdvertisedSocketAddress,Message> outbound,
                          ClusterIdentity clusterIdentity, LogProvider logProvider, long logThresholdMillis )
@@ -48,21 +51,29 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
         this.discoveryService = discoveryService;
         this.outbound = outbound;
         this.clusterIdentity = clusterIdentity;
-        this.unknownAddressMonitor = new UnknownAddressMonitor(
-                logProvider.getLog( this.getClass() ), Clocks.systemClock(), logThresholdMillis );
+        this.log = logProvider.getLog( getClass() );
+        this.unknownAddressMonitor = new UnknownAddressMonitor( log, Clocks.systemClock(), logThresholdMillis );
     }
 
     @Override
     public void send( MemberId to, RaftMessage message )
     {
-        try
+        ClusterId clusterId = clusterIdentity.clusterId();
+        if ( clusterId == null )
         {
-            CoreAddresses coreAddresses = discoveryService.coreServers().find( to );
-            outbound.send( coreAddresses.getRaftServer(), decorateWithClusterId( message ) );
+            log.warn( "Attempting to send a message before bound to a cluster" );
         }
-        catch ( NoKnownAddressesException e )
+        else
         {
-            unknownAddressMonitor.logAttemptToSendToMemberWithNoKnownAddress( to );
+            try
+            {
+                CoreAddresses coreAddresses = discoveryService.coreServers().find( to );
+                outbound.send( coreAddresses.getRaftServer(), new ClusterIdAwareMessage( clusterId, message ) );
+            }
+            catch ( NoKnownAddressesException e )
+            {
+                unknownAddressMonitor.logAttemptToSendToMemberWithNoKnownAddress( to );
+            }
         }
     }
 
@@ -73,7 +84,7 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
         {
             CoreAddresses coreAddresses = discoveryService.coreServers().find( to );
             outbound.send( coreAddresses.getRaftServer(),
-                    messages.stream().map( this::decorateWithClusterId ).collect( toList() ) );
+                    messages.stream().map( ( m ) -> new ClusterIdAwareMessage( clusterIdentity.clusterId(), m ) ).collect( toList() ) );
         }
         catch ( NoKnownAddressesException e )
         {
@@ -81,8 +92,4 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
         }
     }
 
-    private ClusterIdAwareMessage decorateWithClusterId( RaftMessage m )
-    {
-        return new ClusterIdAwareMessage( clusterIdentity.clusterId(), m );
-    }
 }
