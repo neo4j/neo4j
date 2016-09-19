@@ -57,7 +57,7 @@ public class ToNetworkStoreWriter implements StoreWriter
         if ( hasData )
         {
             targetBuffer.writeInt( recordSize );
-            totalWritten += 4;
+            totalWritten += Integer.BYTES;
             totalWritten += buffer.write( data );
             buffer.close();
         }

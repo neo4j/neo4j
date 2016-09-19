@@ -80,9 +80,9 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         }
     }
 
-    private static void dumpFile( Function<File, StoreFactory> createStoreFactory, String arg ) throws Exception
+    private static void dumpFile( Function<File, StoreFactory> createStoreFactory, String fileName ) throws Exception
     {
-        File file = new File( arg );
+        File file = new File( fileName );
         long[] ids = null; // null means all possible ids
 
         if( file.isFile() )
@@ -95,22 +95,23 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
                    of the path contains a colon, thus it is very likely an attempt to use the
                    id-specifying syntax. */
 
-            int idStart = arg.lastIndexOf( ':' );
+            int idStart = fileName.lastIndexOf( ':' );
 
-            String[] idStrings = arg.substring( idStart + 1 ).split( "," );
+            String[] idStrings = fileName.substring( idStart + 1 ).split( "," );
             ids = new long[idStrings.length];
             for ( int i = 0; i < ids.length; i++ )
             {
                 ids[i] = Long.parseLong( idStrings[i] );
             }
-            file = new File( arg.substring( 0, idStart ) );
+            file = new File( fileName.substring( 0, idStart ) );
 
             if ( !file.isFile() )
             {
-                throw new IllegalArgumentException( "No such file: " + arg );
+                throw new IllegalArgumentException( "No such file: " + fileName );
             }
         }
-        StoreType storeType = StoreType.typeOf( file.getName() );
+        StoreType storeType = StoreType.typeOf( file.getName() ).orElseThrow(
+                () -> new IllegalArgumentException( "Not a store file: " + fileName ) );
         try ( NeoStores neoStores = createStoreFactory.apply( file ).openNeoStores( storeType ) )
         {
             switch ( storeType )

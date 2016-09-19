@@ -19,29 +19,26 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
+import java.util.Optional;
+
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class StoreTypeTest
 {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void storeTypeOfValidStoreFile() throws Exception
     {
-        assertEquals( StoreType.NODE, StoreType.typeOf( "neostore.nodestore.db" ) );
+        //noinspection OptionalGetWithoutIsPresent
+        assertEquals( StoreType.NODE, StoreType.typeOf( "neostore.nodestore.db" ).get() );
     }
 
     @Test
     public void storeTypeofSomeInvalidFile()
     {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "No enum constant for test.txt file." );
-        StoreType.typeOf( "test.txt" );
+        assertThat( StoreType.typeOf( "test.txt" ), is( Optional.empty() ) );
     }
 }
