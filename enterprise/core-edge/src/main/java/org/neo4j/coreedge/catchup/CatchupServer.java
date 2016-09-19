@@ -54,10 +54,10 @@ import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotEncoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestHandler;
+import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
 import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
 import org.neo4j.coreedge.handlers.ExceptionSwallowingHandler;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.handlers.ExceptionLoggingHandler;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -93,9 +93,10 @@ public class CatchupServer extends LifecycleAdapter
     private Supplier<CheckPointer> checkPointerSupplier;
 
     public CatchupServer( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> storeIdSupplier,
-            Supplier<TransactionIdStore> transactionIdStoreSupplier, Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
-            Supplier<NeoStoreDataSource> dataSourceSupplier, Supplier<CheckPointer> checkPointerSupplier, CoreState coreState,
-            Config config, Monitors monitors )
+            Supplier<TransactionIdStore> transactionIdStoreSupplier,
+            Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
+            Supplier<NeoStoreDataSource> dataSourceSupplier, Supplier<CheckPointer> checkPointerSupplier,
+            CoreState coreState, Config config, Monitors monitors )
     {
         this.coreState = coreState;
         this.listenAddress = config.get( setting );
@@ -113,6 +114,7 @@ public class CatchupServer extends LifecycleAdapter
     @Override
     public synchronized void start() throws Throwable
     {
+        assert channel == null && workerGroup == null : "Starting an already started catchup server???";
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -194,20 +196,24 @@ public class CatchupServer extends LifecycleAdapter
     @Override
     public synchronized void stop() throws Throwable
     {
+        assert channel != null && workerGroup != null : "Stopping an already stopped catchup server???";
         log.info( "CatchupServer stopping and unbinding from " + listenAddress );
         try
         {
             channel.close().sync();
+            channel = null;
         }
-        catch( InterruptedException e )
+        catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
             log.warn( "Interrupted while closing channel." );
         }
 
-        if ( workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
+        if ( workerGroup != null &&
+                workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
         {
             log.warn( "Worker group not shutdown within 10 seconds." );
         }
+        workerGroup = null;
     }
 }

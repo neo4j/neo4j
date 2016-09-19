@@ -30,6 +30,7 @@ import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
+import org.neo4j.coreedge.core.server.StartStopLife;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
@@ -47,6 +48,7 @@ import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 public class CoreStateDownloaderTest
 {
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
+    private final StartStopLife startStopLife = mock( StartStopLife.class );
     private final StoreFetcher storeFetcher = mock( StoreFetcher.class );
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final CopiedStoreRecovery recovery = mock( CopiedStoreRecovery.class );
@@ -59,8 +61,8 @@ public class CoreStateDownloaderTest
     private final File storeDir = new File( "graph.db" );
     private final File tempDir = new File( "graph.db/temp-copy" );
 
-    // DUT
-    private final CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, catchUpClient, logProvider, recovery );
+    private final CoreStateDownloader downloader =
+            new CoreStateDownloader( localDatabase, startStopLife, storeFetcher, catchUpClient, logProvider, recovery );
 
     @Before
     public void commonMocking()
@@ -96,8 +98,10 @@ public class CoreStateDownloaderTest
         downloader.downloadSnapshot( remoteMember, coreState );
 
         // then
+        verify( startStopLife ).stop();
         verify( localDatabase ).stop();
         verify( localDatabase ).start();
+        verify( startStopLife ).start();
     }
 
     @Test

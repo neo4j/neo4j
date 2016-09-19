@@ -22,6 +22,8 @@ package org.neo4j.coreedge.core.server;
 import java.io.File;
 import java.util.function.Supplier;
 
+import org.neo4j.backup.OnlineBackupKernelExtension;
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.ReplicationModule;
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchupServer;
@@ -56,11 +58,13 @@ import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingInbound;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -121,8 +125,33 @@ public class CoreServerModule
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
-        CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
-                catchUpClient, logProvider, copiedStoreRecovery );
+        StartStopLife servicesToStopOnStoreCopy = new StartStopLife();
+        CoreStateDownloader downloader =
+                new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, storeFetcher, catchUpClient,
+                        logProvider, copiedStoreRecovery );
+
+        if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
+        {
+            platformModule.dataSourceManager.addListener( new DataSourceManager.Listener()
+            {
+                @Override
+                public void registered( NeoStoreDataSource dataSource )
+                {
+                    servicesToStopOnStoreCopy.register( pickBackupExtension( dataSource ) );
+                }
+
+                @Override
+                public void unregistered( NeoStoreDataSource dataSource )
+                {
+                    servicesToStopOnStoreCopy.unregister( pickBackupExtension( dataSource ) );
+                }
+
+                private OnlineBackupKernelExtension pickBackupExtension( NeoStoreDataSource dataSource )
+                {
+                    return dataSource.getDependencyResolver().resolveDependency( OnlineBackupKernelExtension.class );
+                }
+            } );
+        }
 
         CoreState coreState = new CoreState(
                 consensusModule.raftMachine(), localDatabase, clusteringModule.clusterIdentity(),
@@ -163,10 +192,12 @@ public class CoreServerModule
                 new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
                 coreState, config, platformModule.monitors );
 
+        servicesToStopOnStoreCopy.register( catchupServer );
+
         life.add( raftServer );
+        life.add( catchupServer );
         life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler, logProvider ) );
         life.add( coreState );
-        life.add( catchupServer );
     }
 }

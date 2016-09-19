@@ -33,6 +33,7 @@ import org.neo4j.coreedge.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -43,16 +44,18 @@ import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 public class CoreStateDownloader
 {
     private final LocalDatabase localDatabase;
+    private final Lifecycle startStopOnStoreCopy;
     private final StoreFetcher storeFetcher;
     private final CatchUpClient catchUpClient;
     private final Log log;
     private final CopiedStoreRecovery copiedStoreRecovery;
 
-    public CoreStateDownloader( LocalDatabase localDatabase, StoreFetcher storeFetcher,
-            CatchUpClient catchUpClient, LogProvider logProvider,
+    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
+            StoreFetcher storeFetcher, CatchUpClient catchUpClient, LogProvider logProvider,
             CopiedStoreRecovery copiedStoreRecovery )
     {
         this.localDatabase = localDatabase;
+        this.startStopOnStoreCopy = startStopOnStoreCopy;
         this.storeFetcher = storeFetcher;
         this.catchUpClient = catchUpClient;
         this.log = logProvider.getLog( getClass() );
@@ -75,6 +78,7 @@ public class CoreStateDownloader
                 throw new StoreCopyFailedException( "StoreId mismatch and not empty" );
             }
 
+            startStopOnStoreCopy.stop();
             localDatabase.stop();
 
             log.info( "Downloading snapshot from core server at %s", source );
@@ -124,6 +128,7 @@ public class CoreStateDownloader
              * the EnterpriseCoreEditionModule, which has important side-effects. */
             log.info( "Restarting local database", source );
             localDatabase.start();
+            startStopOnStoreCopy.start();
             log.info( "Local database started", source );
         }
         catch ( Throwable e )
