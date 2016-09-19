@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{PatternRelationship, ShortestPathPattern}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.ir.v3_1.IdName
 import org.neo4j.cypher.internal.ir.v3_1.helpers.FreshIdNameGenerator
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship, ShortestPathPattern}
 
 object PatternConverters {
 

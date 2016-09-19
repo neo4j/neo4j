@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, Monitors, pipe
 import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
-import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, VarPatternLength}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.mutable

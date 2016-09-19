@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_1
 
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, ast}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.RelTypeName
-import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, ast}
 
 final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: SemanticDirection,
                                      types: Seq[RelTypeName], length: PatternLength) {
@@ -83,4 +82,3 @@ object VarPatternLength {
 
   def fixed(length: Int) = VarPatternLength(length, Some(length))
 }
-

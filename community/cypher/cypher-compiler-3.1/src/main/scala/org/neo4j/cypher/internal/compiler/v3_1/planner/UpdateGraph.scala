@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.PatternRelationship
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.ir.v3_1.IdName
 
@@ -199,7 +198,7 @@ trait UpdateGraph {
       //MATCH () CREATE ()?
       qg.allKnownLabelsOnNode(p).isEmpty && readProps.isEmpty ||
         //MATCH (:B {prop:..}) CREATE (:B {prop:..})
-        labelsOverlap(qg.allKnownLabelsOnNode(p).toSet, createLabels) &&
+        labelsOverlap(qg.allKnownLabelsOnNode(p), createLabels) &&
           propsOverlap(readProps, createNodeProperties)
     })
   }

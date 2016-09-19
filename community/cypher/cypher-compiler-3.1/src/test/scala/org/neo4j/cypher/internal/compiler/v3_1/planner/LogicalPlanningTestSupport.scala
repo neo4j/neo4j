@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_1.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.{DefaultIDPSolverConfig, IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, IdName, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, IdName, PatternLength, PatternRelationship, SimplePatternLength, StrictnessMode}
 
 import scala.collection.mutable
 

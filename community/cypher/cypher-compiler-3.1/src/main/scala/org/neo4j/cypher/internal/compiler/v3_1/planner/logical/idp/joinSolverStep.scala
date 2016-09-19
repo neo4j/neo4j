@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.joinSolverStep._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{LogicalPlan, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
-import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship}
 
 object joinSolverStep {
   val VERBOSE = false
@@ -90,7 +90,7 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
     plan.solved.queryGraph.patternNodes
 
   private def show(goal: Goal, symbols: Set[IdName]) =
-    s"${showIds(goal.toSet)}: ${showNames(symbols)}"
+    s"${showIds(goal)}: ${showNames(symbols)}"
 
   private def goalSymbols(goal: Goal, registry: IdRegistry[PatternRelationship]) =
     registry.explode(goal).flatMap(_.coveredIds)
