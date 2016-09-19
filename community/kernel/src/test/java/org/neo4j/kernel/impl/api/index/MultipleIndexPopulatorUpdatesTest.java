@@ -41,7 +41,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -53,8 +52,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.transaction.state.storeview.AdaptableIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
@@ -205,36 +202,6 @@ public class MultipleIndexPopulatorUpdatesTest
         }
     }
 
-    private class ProcessListenableAdaptableIndexView extends AdaptableIndexStoreView
-    {
-
-        private LabelScanStore labelScanStore;
-        private Listener<NodeRecord> processListener;
-
-        public ProcessListenableAdaptableIndexView( LabelScanStore labelScanStore, LockService locks,
-                NeoStores neoStores )
-        {
-            super( labelScanStore, locks, neoStores );
-            this.labelScanStore = labelScanStore;
-        }
-
-        @Override
-        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
-                IntPredicate propertyKeyIdFilter,
-                Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
-                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
-        {
-
-            return new ListenableLabelScanViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
-                    propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, processListener );
-        }
-
-        public void setProcessListener( Listener<NodeRecord> processListener )
-        {
-            this.processListener = processListener;
-        }
-    }
-
     private class ProcessListenableNeoStoreIndexView extends NeoStoreIndexStoreView
     {
 
@@ -259,31 +226,6 @@ public class MultipleIndexPopulatorUpdatesTest
         public void setProcessListener( Listener<NodeRecord> processListener )
         {
             this.processListener = processListener;
-        }
-    }
-
-    private class ListenableLabelScanViewNodeStoreScan<FAILURE extends Exception> extends LabelScanViewNodeStoreScan<FAILURE>
-    {
-
-        private Listener<NodeRecord> processListener;
-
-        ListenableLabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks,
-                PropertyStore propertyStore, LabelScanStore labelScanStore,
-                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-                Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
-                IntPredicate propertyKeyIdFilter, Listener<NodeRecord> processListener )
-        {
-            super( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor,
-                    labelIds, propertyKeyIdFilter );
-            this.processListener = processListener;
-        }
-
-
-        @Override
-        public void process( NodeRecord nodeRecord) throws FAILURE
-        {
-            processListener.receive( nodeRecord );
-            super.process( nodeRecord );
         }
     }
 

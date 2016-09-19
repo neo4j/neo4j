@@ -19,22 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -97,37 +92,6 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             updater.incrementIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId(), updatesDelta );
         }
-    }
-
-    /**
-     * Accept updates in cases if updated node id is bellow or equal to currently indexed node.
-     *
-     * @param updater
-     * @param update update to check
-     * @param currentlyIndexedNodeId id of currently indexed node
-     * @return true if update is applicable
-     */
-    @Override
-    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
-            long currentlyIndexedNodeId )
-    {
-        if ( update.getNodeId() <= currentlyIndexedNodeId )
-        {
-            updater.process( update );
-        }
-    }
-
-    @Override
-    public void complete( IndexPopulator populator, IndexDescriptor descriptor )
-            throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
-    {
-        // no-op
-    }
-
-    @Override
-    public boolean isFullScan()
-    {
-        return true;
     }
 
     @Override

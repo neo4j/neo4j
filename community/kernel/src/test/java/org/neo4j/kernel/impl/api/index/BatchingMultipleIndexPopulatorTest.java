@@ -22,12 +22,17 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.After;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -37,6 +42,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -98,8 +104,12 @@ public class BatchingMultipleIndexPopulatorTest
     {
         setProperty( QUEUE_THRESHOLD_NAME, 2 );
 
+        NeoStores neoStores = mock( NeoStores.class );
+        NodeStore nodeStore = mock( NodeStore.class );
+        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
+
         NeoStoreIndexStoreView storeView =
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, mock( NeoStores.class ) );
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
                 storeView, mock( ExecutorService.class ), NullLogProvider.getInstance() );
 
@@ -112,6 +122,7 @@ public class BatchingMultipleIndexPopulatorTest
         IndexUpdater updater2 = mock( IndexUpdater.class );
         when( populator2.newPopulatingUpdater( any() ) ).thenReturn( updater2 );
 
+        batchingPopulator.indexAllNodes();
         NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} );
         NodePropertyUpdate update2 = NodePropertyUpdate.add( 2, 2, "bar", new long[]{2} );
         NodePropertyUpdate update3 = NodePropertyUpdate.add( 3, 1, "baz", new long[]{1} );
@@ -370,9 +381,29 @@ public class BatchingMultipleIndexPopulatorTest
         }
 
         @Override
+        public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
+                throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
+        {
+
+        }
+
+        @Override
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+                long currentlyIndexedNodeId )
+        {
+
+        }
+
+        @Override
         public PopulationProgress getProgress()
         {
             return PopulationProgress.NONE;
+        }
+
+        @Override
+        public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+        {
+
         }
     }
 }

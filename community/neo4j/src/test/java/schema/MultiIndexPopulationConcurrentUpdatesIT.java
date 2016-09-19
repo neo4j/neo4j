@@ -51,7 +51,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -68,6 +67,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.AdaptableIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -382,17 +382,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             StoreScan<FAILURE> failureStoreScan =
                     super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
-            return new LabelScanViewNodeStoreWrapper( nodeStore, locks, propertyStore, getLabelScanStore(),
+            return new LabelScanViewNodeStoreWrapper( this, nodeStore, locks, propertyStore, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelScanViewNodeStoreScan) failureStoreScan, this, updates);
         }
 
-        @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
-                long currentlyIndexedNodeId )
-        {
-            super.acceptUpdate( updater, update, currentlyIndexedNodeId );
-        }
     }
 
     private class LabelScanViewNodeStoreWrapper extends LabelScanViewNodeStoreScan
@@ -401,7 +395,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         private AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
         private List<NodePropertyUpdate> updates;
 
-        public LabelScanViewNodeStoreWrapper( NodeStore nodeStore, LockService locks,
+        public LabelScanViewNodeStoreWrapper( NeoStoreIndexStoreView storeView, NodeStore nodeStore, LockService locks,
                 PropertyStore propertyStore,
                 LabelScanStore labelScanStore, Visitor labelUpdateVisitor,
                 Visitor propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
@@ -409,9 +403,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
                 List<NodePropertyUpdate> updates )
         {
-            super( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor,
-                    labelIds,
-                    propertyKeyIdFilter );
+            super( storeView, nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
+                    propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
             this.delegate = delegate;
             this.adaptableIndexStoreViewWrapper = adaptableIndexStoreViewWrapper;
             this.updates = updates;
@@ -427,7 +420,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         public PrimitiveLongResourceIterator getNodeIdIterator()
         {
             PrimitiveLongResourceIterator originalIterator = delegate.getNodeIdIterator();
-            return new DelegatingPrimitiveLongResourceIterator( originalIterator, adaptableIndexStoreViewWrapper,
+            return new DelegatingPrimitiveLongResourceIterator( this, originalIterator, adaptableIndexStoreViewWrapper,
                     updates );
         }
     }
@@ -437,12 +430,16 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
         private AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
         private List<NodePropertyUpdate> updates;
+        private LabelScanViewNodeStoreWrapper storeScan;
         private PrimitiveLongResourceIterator delegate;
 
-        DelegatingPrimitiveLongResourceIterator( PrimitiveLongResourceIterator delegate,
+        DelegatingPrimitiveLongResourceIterator(
+                LabelScanViewNodeStoreWrapper storeScan,
+                PrimitiveLongResourceIterator delegate,
                 AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
                 List<NodePropertyUpdate> updates )
         {
+            this.storeScan = storeScan;
             this.delegate = delegate;
             this.adaptableIndexStoreViewWrapper = adaptableIndexStoreViewWrapper;
             this.updates = updates;
@@ -462,7 +459,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             {
                 for ( NodePropertyUpdate update : updates )
                 {
-                    adaptableIndexStoreViewWrapper.acceptUpdate( null, update, Long.MAX_VALUE );
+                    storeScan.acceptUpdate( null, update, Long.MAX_VALUE );
                 }
 
                 for ( NodePropertyUpdate update : updates )

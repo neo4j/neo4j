@@ -480,7 +480,7 @@ public class SchemaIndexHaIT
         @Override
         public void configureSampling( boolean fullIndexSampling )
         {
-            //nothing
+            delegate.configureSampling( fullIndexSampling );
         }
 
         @Override

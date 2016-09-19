@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
@@ -64,10 +65,19 @@ public class MultipleIndexPopulatorTest
 
     @Mock
     private IndexStoreView indexStoreView;
+    @Mock
+    private StoreScan storeScan;
     @Mock( answer = Answers.RETURNS_MOCKS )
     private LogProvider logProvider;
     @InjectMocks
     private MultipleIndexPopulator multipleIndexPopulator;
+
+    @Before
+    public void setUp()
+    {
+        when( indexStoreView.visitNodes( any( int[].class ), any( IntPredicate.class ), any(Visitor.class),
+                any(Visitor.class) )).thenReturn( storeScan );
+    }
 
     @Test
     public void testMultiplePopulatorsCreation() throws Exception
@@ -300,6 +310,7 @@ public class MultipleIndexPopulatorTest
 
         when( indexPopulator1.sampleResult() ).thenThrow( getSampleError() );
 
+        multipleIndexPopulator.indexAllNodes();
         multipleIndexPopulator.flipAfterPopulation();
 
         verify( indexPopulator1 ).close( false );

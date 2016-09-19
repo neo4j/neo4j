@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
@@ -68,21 +69,6 @@ public interface IndexStoreView extends PropertyAccessor
 
     void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta );
 
-    /**
-     * Check if provided node update is applicable in a context of current store view.
-     *
-     * @param updater
-     * @param update update to check
-     * @param currentlyIndexedNodeId id of currently indexed node
-     */
-    void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
-            long currentlyIndexedNodeId );
-
-    void complete( IndexPopulator populator, IndexDescriptor descriptor )
-            throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException;
-
-    boolean isFullScan();
-
     StoreScan EMPTY_SCAN = new StoreScan()
     {
         @Override
@@ -96,9 +82,29 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
+        public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
+                throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
+        {
+
+        }
+
+        @Override
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+                long currentlyIndexedNodeId )
+        {
+
+        }
+
+        @Override
         public PopulationProgress getProgress()
         {
             return PopulationProgress.DONE;
+        }
+
+        @Override
+        public void configure( List list )
+        {
+
         }
     };
 
@@ -146,25 +152,5 @@ public interface IndexStoreView extends PropertyAccessor
         {
         }
 
-        @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
-                long currentlyIndexedNodeId )
-        {
-        }
-
-        @Override
-        public void complete( IndexPopulator populator, IndexDescriptor descriptor )
-        {
-
-        }
-
-        @Override
-        public boolean isFullScan()
-        {
-            return true;
-        }
     };
-
-
-
 }

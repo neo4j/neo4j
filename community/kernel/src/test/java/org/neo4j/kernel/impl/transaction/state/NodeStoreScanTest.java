@@ -21,8 +21,17 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -61,6 +70,26 @@ public class NodeStoreScanTest
         final NodeStoreScan scan = new NodeStoreScan( nodeStore, locks,  total )
         {
             private int read = 0;
+
+            @Override
+            public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
+                    throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
+            {
+                // no-op
+            }
+
+            @Override
+            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+                    long currentlyIndexedNodeId )
+            {
+                // no-op
+            }
+
+            @Override
+            public void configure( List list )
+            {
+                // no-op
+            }
 
             @Override
             public void process( NodeRecord node )

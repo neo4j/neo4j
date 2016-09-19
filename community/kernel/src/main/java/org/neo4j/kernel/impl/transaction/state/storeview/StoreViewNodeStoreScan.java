@@ -21,17 +21,23 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -40,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -137,6 +142,29 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
             }
         }
         return false;
+    }
+
+    @Override
+    public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
+            throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
+    {
+        // no-op
+    }
+
+    @Override
+    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+            long currentlyIndexedNodeId )
+    {
+        if ( update.getNodeId() <= currentlyIndexedNodeId )
+        {
+            updater.process( update );
+        }
+    }
+
+    @Override
+    public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+    {
+        populations.forEach( population -> population.populator.configureSampling( true ) );
     }
 
     private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>

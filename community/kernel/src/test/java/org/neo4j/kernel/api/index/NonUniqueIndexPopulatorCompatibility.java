@@ -129,6 +129,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
+        populator.configureSampling( true );
         long nodeId = 1;
         int propertyKeyId = 10, labelId = 11; // Can we just use arbitrary ids here?
         final String propertyValue = "value1";

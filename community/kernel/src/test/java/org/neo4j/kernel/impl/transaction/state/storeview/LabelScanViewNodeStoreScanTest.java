@@ -43,6 +43,7 @@ import static org.mockito.Mockito.when;
 
 public class LabelScanViewNodeStoreScanTest
 {
+    private NeoStoreIndexStoreView storeView = mock( NeoStoreIndexStoreView.class );
     private NodeStore nodeStore = mock( NodeStore.class );
     private PropertyStore propertyStore = mock( PropertyStore.class );
     private LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -55,6 +56,7 @@ public class LabelScanViewNodeStoreScanTest
     public void iterateOverLabeledNodeIds() throws Exception
     {
         PrimitiveLongIterator labeledNodes = PrimitiveLongCollections.iterator( 1, 2, 4, 8 );
+
 
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
         when( nodeStore.getHighId() ).thenReturn( 15L );
@@ -72,8 +74,8 @@ public class LabelScanViewNodeStoreScanTest
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
     {
-        return new LabelScanViewNodeStoreScan<>( nodeStore, LockService.NO_LOCK_SERVICE, propertyStore, labelScanStore,
-                labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter );
+        return new LabelScanViewNodeStoreScan<>( storeView, nodeStore, LockService.NO_LOCK_SERVICE, propertyStore,
+                labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter );
     }
 
 }

@@ -39,6 +39,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -408,9 +410,29 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         }
 
         @Override
+        public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
+                throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
+        {
+            delegate.complete( indexPopulator, descriptor );
+        }
+
+        @Override
+        public void acceptUpdate( MultipleIndexUpdater updater, NodePropertyUpdate update,
+                long currentlyIndexedNodeId )
+        {
+            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
+        }
+
+        @Override
         public PopulationProgress getProgress()
         {
             return delegate.getProgress();
+        }
+
+        @Override
+        public void configure( List<IndexPopulation> populations )
+        {
+            delegate.configure( populations );
         }
     }
 }

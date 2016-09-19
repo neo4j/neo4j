@@ -56,11 +56,6 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
                                          : new DirectNonUniqueIndexSampler( luceneIndex );
     }
 
-    private DefaultNonUniqueIndexSampler createDefaultSampler()
-    {
-        return new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
-    }
-
     @Override
     public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
@@ -77,18 +72,10 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     @Override
     public void includeSample( NodePropertyUpdate update )
     {
-        if (updateSampling)
+        if ( updateSampling )
         {
             checkSampler();
             sampler.include( LuceneDocumentStructure.encodedStringValue( update.getValueAfter() ) );
-        }
-    }
-
-    private void checkSampler()
-    {
-        if (sampler == null)
-        {
-            sampler = createDefaultSampler();
         }
     }
 
@@ -97,5 +84,18 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     {
         checkSampler();
         return sampler.result();
+    }
+
+    private DefaultNonUniqueIndexSampler createDefaultSampler()
+    {
+        return new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+    }
+
+    private void checkSampler()
+    {
+        if (sampler == null)
+        {
+            throw new IllegalStateException( "Please configure populator sampler before using it." );
+        }
     }
 }

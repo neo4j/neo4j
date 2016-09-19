@@ -28,6 +28,10 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
+/**
+ * Non unique index sampler that ignores all include/exclude calls and builds
+ * sample based on values obtained directly from targeted index.
+ */
 public class DirectNonUniqueIndexSampler implements NonUniqueIndexSampler
 {
 
@@ -41,25 +45,25 @@ public class DirectNonUniqueIndexSampler implements NonUniqueIndexSampler
     @Override
     public void include( String value )
     {
-
+        // no-op
     }
 
     @Override
     public void include( String value, long increment )
     {
-
+        // no-op
     }
 
     @Override
     public void exclude( String value )
     {
-
+        // no-op
     }
 
     @Override
     public void exclude( String value, long decrement )
     {
-
+        // no-op
     }
 
     @Override

@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
+import java.util.List;
+
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 public interface StoreScan<FAILURE extends Exception>
@@ -27,5 +36,13 @@ public interface StoreScan<FAILURE extends Exception>
 
     void stop();
 
+    void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
+            throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException;
+
+    void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+            long currentlyIndexedNodeId );
+
     PopulationProgress getProgress();
+
+    void configure( List<MultipleIndexPopulator.IndexPopulation> populations );
 }

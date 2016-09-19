@@ -93,6 +93,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final IndexStoreView storeView;
     private final LogProvider logProvider;
     protected final Log log;
+    private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
     {
@@ -155,13 +156,9 @@ public class MultipleIndexPopulator implements IndexPopulator
         int[] propertyKeyIds = propertyKeyIds();
         IntPredicate propertyKeyIdFilter = (propertyKeyId) -> contains( propertyKeyIds, propertyKeyId );
 
-        StoreScan<IndexPopulationFailedKernelException> storeScan =
-                storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null );
-
-        populations.forEach( population -> population.populator.configureSampling( storeView.isFullScan() ) );
-
+        storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null );
+        storeScan.configure(populations);
         return storeScan;
-
     }
 
     /**
@@ -337,7 +334,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                 {
                     // no need to check for null as nobody else is emptying this queue
                     NodePropertyUpdate update = queue.poll();
-                    storeView.acceptUpdate( updater, update, currentlyIndexedNodeId );
+                    storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                 }
                 while ( !queue.isEmpty() );
             }
@@ -435,9 +432,9 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    protected class IndexPopulation
+    public class IndexPopulation
     {
-        final IndexPopulator populator;
+        public final IndexPopulator populator;
         final IndexDescriptor descriptor;
         final IndexConfiguration config;
         final SchemaIndexProvider.Descriptor providerDescriptor;
@@ -506,7 +503,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             flipper.flip( () -> {
                 populateFromQueueIfAvailable( Long.MAX_VALUE );
-                storeView.complete(populator, descriptor);
+                storeScan.complete(populator, descriptor);
                 IndexSample sample = populator.sampleResult();
                 storeView.replaceIndexCounts( descriptor, sample.uniqueValues(), sample.sampleSize(),
                         sample.indexSize() );
