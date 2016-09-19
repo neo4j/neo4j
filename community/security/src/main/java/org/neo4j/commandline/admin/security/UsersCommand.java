@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,8 +32,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.DelegateFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -71,21 +69,24 @@ public class UsersCommand implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem )
         {
-            return new UsersCommand( homeDir, configDir, outsideWorld );
+            return new UsersCommand( homeDir, configDir, outsideWorld, fileSystem );
         }
     }
 
     private final Path homeDir;
     private final Path configDir;
     private OutsideWorld outsideWorld;
+    private final FileSystemAbstraction fileSystem;
 
-    public UsersCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public UsersCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld, FileSystemAbstraction fileSystem )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.outsideWorld = outsideWorld;
+        this.fileSystem = fileSystem;
     }
 
     @Override
@@ -221,7 +222,7 @@ public class UsersCommand implements AdminCommand
         Config config = loadNeo4jConfig( homeDir, configDir );
         FileUserRepository userRepository =
                 BasicAuthManagerFactory.getUserRepository( config,
-                        NullLogProvider.getInstance(), outsideWorld.fileSystem() );
+                        NullLogProvider.getInstance(), fileSystem );
         userRepository.start();
         return userRepository;
     }

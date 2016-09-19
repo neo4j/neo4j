@@ -34,11 +34,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.impl.util.Converters.mandatory;
 import static org.neo4j.kernel.impl.util.Converters.optional;
 import static org.neo4j.kernel.impl.util.Converters.toFile;
@@ -84,7 +84,8 @@ public class OnlineBackupCommand implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem )
         {
             return new OnlineBackupCommand(
                     new BackupTool( new BackupService(), outsideWorld.errorStream() ), homeDir, configDir );

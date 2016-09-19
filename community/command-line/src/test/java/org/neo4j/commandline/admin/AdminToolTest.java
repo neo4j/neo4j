@@ -19,11 +19,11 @@
  */
 package org.neo4j.commandline.admin;
 
+import org.junit.Test;
+
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Optional;
-
-import org.junit.Test;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,7 +38,8 @@ public class AdminToolTest
     public void shouldExecuteTheCommand() throws CommandFailed, IncorrectUsage
     {
         AdminCommand command = mock( AdminCommand.class );
-        new AdminTool( cannedCommand( "command", command ), new NullOutsideWorld(), false )
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        new AdminTool( cannedCommand( "command", command ), new NullOutsideWorld(), fs, false )
                 .execute( null, null, "command", "the", "other", "args" );
         verify( command ).execute( new String[]{"the", "other", "args"} );
     }
@@ -47,7 +48,8 @@ public class AdminToolTest
     public void shouldExit0WhenEverythingWorks()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        new AdminTool( new CannedLocator( new NullCommandProvider() ), outsideWorld, false )
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        new AdminTool( new CannedLocator( new NullCommandProvider() ), outsideWorld, fs, false )
                 .execute( null, null, "null" );
         verify( outsideWorld ).exit( 0 );
     }
@@ -56,7 +58,8 @@ public class AdminToolTest
     public void shouldAddTheHelpCommandToThoseProvidedByTheLocator()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null, "help" );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        new AdminTool( new NullCommandLocator(), outsideWorld, fs, false ).execute( null, null, "help" );
         verify( outsideWorld ).stdOutLine( "neo4j-admin help" );
     }
 
@@ -64,7 +67,8 @@ public class AdminToolTest
     public void shouldProvideFeedbackWhenNoCommandIsProvided()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        new AdminTool( new NullCommandLocator(), outsideWorld, fs, false ).execute( null, null );
         verify( outsideWorld ).stdErrLine( "you must provide a command" );
         verify( outsideWorld ).stdErrLine( "Usage:" );
         verify( outsideWorld ).exit( 1 );
@@ -74,11 +78,12 @@ public class AdminToolTest
     public void shouldProvideFeedbackIfTheCommandThrowsARuntimeException()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         AdminCommand command = args ->
         {
             throw new RuntimeException( "the-exception-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, fs, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "unexpected error: the-exception-message" );
         verify( outsideWorld ).exit( 1 );
@@ -88,12 +93,13 @@ public class AdminToolTest
     public void shouldPrintTheStacktraceWhenTheCommandThrowsARuntimeExceptionIfTheDebugFlagIsSet()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         RuntimeException exception = new RuntimeException( "" );
         AdminCommand command = args ->
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, fs, true )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).printStacktrace( exception );
     }
@@ -102,12 +108,13 @@ public class AdminToolTest
     public void shouldNotPrintTheStacktraceWhenTheCommandThrowsARuntimeExceptionIfTheDebugFlagIsNotSet()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         RuntimeException exception = new RuntimeException( "" );
         AdminCommand command = args ->
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, fs, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld, never() ).printStacktrace( exception );
     }
@@ -116,11 +123,12 @@ public class AdminToolTest
     public void shouldProvideFeedbackIfTheCommandFails()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         AdminCommand command = args ->
         {
             throw new CommandFailed( "the-failure-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, fs, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "command failed: the-failure-message" );
         verify( outsideWorld ).exit( 1 );
@@ -130,12 +138,13 @@ public class AdminToolTest
     public void shouldPrintTheStacktraceWhenTheCommandFailsIfTheDebugFlagIsSet()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         CommandFailed exception = new CommandFailed( "" );
         AdminCommand command = args ->
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, fs, true )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).printStacktrace( exception );
     }
@@ -144,12 +153,13 @@ public class AdminToolTest
     public void shouldNotPrintTheStacktraceWhenTheCommandFailsIfTheDebugFlagIsNotSet()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         CommandFailed exception = new CommandFailed( "" );
         AdminCommand command = args ->
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, fs, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld, never() ).printStacktrace( exception );
     }
@@ -158,11 +168,12 @@ public class AdminToolTest
     public void shouldProvideFeedbackIfTheCommandReportsAUsageProblem()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         AdminCommand command = args ->
         {
             throw new IncorrectUsage( "the-usage-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, fs, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "neo4j-admin exception" );
         verify( outsideWorld ).stdErrLine( "the-usage-message" );
@@ -186,7 +197,8 @@ public class AdminToolTest
             }
 
             @Override
-            public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+            public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                    FileSystemAbstraction fileSystem )
             {
                 return command;
             }
@@ -213,12 +225,6 @@ public class AdminToolTest
         @Override
         public void printStacktrace( Exception exception )
         {
-        }
-
-        @Override
-        public FileSystemAbstraction fileSystem()
-        {
-            return null;
         }
 
         @Override
@@ -263,7 +269,8 @@ public class AdminToolTest
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem  )
         {
             return args ->
             {

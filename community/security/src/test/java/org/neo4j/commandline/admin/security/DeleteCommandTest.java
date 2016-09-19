@@ -45,7 +45,7 @@ public class DeleteCommandTest extends UsersCommandTestBase
         // When - trying to delete a user
         try
         {
-            UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+            UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
             usersCommand.execute( new String[]{"delete", "another"} );
             fail( "Should not have succeeded without exception" );
         }
@@ -63,7 +63,7 @@ public class DeleteCommandTest extends UsersCommandTestBase
         createTestUser( "another", "abc" );
 
         // When - creating new user
-        UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+        UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
         usersCommand.execute( new String[]{"delete", "another"} );
 
         // Then - the specified user is found

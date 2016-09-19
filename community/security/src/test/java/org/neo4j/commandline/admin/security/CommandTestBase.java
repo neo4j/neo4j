@@ -42,7 +42,6 @@ import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 abstract class CommandTestBase
 {
@@ -76,7 +75,6 @@ abstract class CommandTestBase
     protected void resetOutsideWorldMock()
     {
         out = mock( OutsideWorld.class );
-        when( out.fileSystem() ).thenReturn( fileSystem );
     }
 
     private File authFile()
@@ -122,7 +120,7 @@ abstract class CommandTestBase
     {
         // When running set password on a failing case (missing user, or other error)
         resetOutsideWorldMock();
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
+        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, fileSystem, true );
         tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ) );
 
         // Then we get the expected error
@@ -138,7 +136,7 @@ abstract class CommandTestBase
     {
         // When running set password on a successful case (user exists)
         resetOutsideWorldMock();
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
+        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, fileSystem, true );
         tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ));
 
         // Then we get the expected output messages

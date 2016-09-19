@@ -19,6 +19,10 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -27,22 +31,18 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -53,7 +53,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 
 public class LoadCommandTest
@@ -64,6 +63,7 @@ public class LoadCommandTest
     private Path configDir;
     private Path archive;
     private Loader loader;
+    private FileSystemAbstraction fileSystem;
 
     @Before
     public void setUp() throws Exception
@@ -71,6 +71,7 @@ public class LoadCommandTest
         homeDir = testDirectory.directory( "home-dir" ).toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
         archive = testDirectory.directory( "some-archive.dump" ).toPath();
+        fileSystem = new DefaultFileSystemAbstraction();
         loader = mock( Loader.class );
     }
 
@@ -150,7 +151,7 @@ public class LoadCommandTest
     {
         try
         {
-            new LoadCommand( null, null, null ).execute( new String[]{"--from=something"} );
+            new LoadCommand( null, null, null, null ).execute( new String[]{"--from=something"} );
             fail( "expected exception" );
         }
         catch ( IncorrectUsage e )
@@ -164,7 +165,7 @@ public class LoadCommandTest
     {
         try
         {
-            new LoadCommand( homeDir, configDir, null ).execute( new String[]{"--database=something"} );
+            new LoadCommand( homeDir, configDir, null, null ).execute( new String[]{"--database=something"} );
             fail( "expected exception" );
         }
         catch ( IncorrectUsage e )
@@ -255,7 +256,7 @@ public class LoadCommandTest
 
     private void execute( String database, String... otherArgs ) throws IncorrectUsage, CommandFailed
     {
-        new LoadCommand( homeDir, configDir, loader )
+        new LoadCommand( homeDir, configDir, loader, fileSystem )
                 .execute( ArrayUtil.concat( new String[]{"--database=" + database, "--from=" + archive}, otherArgs ) );
     }
 }

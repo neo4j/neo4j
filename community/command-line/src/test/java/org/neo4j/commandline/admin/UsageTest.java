@@ -19,15 +19,17 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.function.Consumer;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.function.Consumer;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.mockito.Mockito.inOrder;
 
@@ -94,7 +96,8 @@ public class UsageTest
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }

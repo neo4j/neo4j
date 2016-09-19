@@ -36,6 +36,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -76,23 +77,26 @@ public class RolesCommand implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem )
         {
-            return new RolesCommand( homeDir, configDir, outsideWorld );
+            return new RolesCommand( homeDir, configDir, outsideWorld, fileSystem );
         }
     }
 
     private final Path homeDir;
     private final Path configDir;
     private OutsideWorld outsideWorld;
+    private final FileSystemAbstraction fileSystem;
     private JobScheduler jobScheduler;
     private EnterpriseAuthManager authManager;
 
-    public RolesCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public RolesCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld, FileSystemAbstraction fileSystem )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.outsideWorld = outsideWorld;
+        this.fileSystem = fileSystem;
     }
 
     @Override
@@ -286,7 +290,7 @@ public class RolesCommand implements AdminCommand
     {
         Config config = loadNeo4jConfig( homeDir, configDir );
         RoleRepository repo = EnterpriseAuthManagerFactory
-                .getRoleRepository( config, NullLogProvider.getInstance(), outsideWorld.fileSystem() );
+                .getRoleRepository( config, NullLogProvider.getInstance(), fileSystem );
         repo.start();
         return repo;
     }
@@ -299,7 +303,7 @@ public class RolesCommand implements AdminCommand
             this.jobScheduler = new NoOpJobScheduler();
             this.authManager = new EnterpriseAuthManagerFactory()
                     .newInstance( config, NullLogProvider.getInstance(),
-                            NullLog.getInstance(), outsideWorld.fileSystem(), jobScheduler );
+                            NullLog.getInstance(), fileSystem, jobScheduler );
             this.authManager.start();    // required to setup default roles
         }
         return this.authManager;

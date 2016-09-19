@@ -39,6 +39,7 @@ import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -75,7 +76,8 @@ public class DumpCommand implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem )
         {
             return new DumpCommand( homeDir, configDir, new Dumper() );
         }
