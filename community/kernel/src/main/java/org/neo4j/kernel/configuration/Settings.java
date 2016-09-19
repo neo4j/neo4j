@@ -46,7 +46,7 @@ import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.Character.isDigit;
 import static java.lang.Integer.parseInt;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_hostname;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
 
@@ -575,7 +575,7 @@ public class Settings
             @Override
             public String getDefaultValue()
             {
-                return default_advertised_hostname.getDefaultValue() + ":" +
+                return default_advertised_address.getDefaultValue() + ":" +
                         LISTEN_SOCKET_ADDRESS.apply( listenAddressSetting.getDefaultValue() ).socketAddress().getPort();
             }
 
@@ -589,7 +589,7 @@ public class Settings
             public AdvertisedSocketAddress apply( Function<String, String> config )
             {
                 ListenSocketAddress listenSocketAddress = listenAddressSetting.apply( config );
-                String hostname = default_advertised_hostname.apply( config );
+                String hostname = default_advertised_address.apply( config );
                 int port = listenSocketAddress.socketAddress().getPort();
 
                 String name = name();

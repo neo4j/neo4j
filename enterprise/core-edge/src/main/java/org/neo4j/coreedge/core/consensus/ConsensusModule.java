@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.core.consensus;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.EnterpriseCoreEditionModule;
@@ -140,7 +139,7 @@ public class ConsensusModule
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftMachine ) );
 
-        life.add(logShipping);
+        life.add( logShipping );
     }
 
     private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,

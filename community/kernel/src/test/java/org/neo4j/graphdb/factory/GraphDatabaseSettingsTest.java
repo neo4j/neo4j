@@ -92,7 +92,7 @@ public class GraphDatabaseSettingsTest
         String hostname = "my_other_host";
         int port = 9999;
         Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_advertised_hostname.name(), hostname ) );
+        config.augment( stringMap( GraphDatabaseSettings.default_advertised_address.name(), hostname ) );
         String scoping = "bla";
         config.augment( stringMap( GraphDatabaseSettings.boltConnector( scoping ).advertised_address.name(), ":" + port ) );
 
