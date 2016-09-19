@@ -21,16 +21,12 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.locking.LockWrapper;
@@ -56,12 +52,14 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private RotationTimerFactory rotationTimerFactory;
     private volatile ProgressiveState<Key> state;
     private DataInitializer<EntryUpdater<Key>> stateInitializer;
+    private final FileSystemAbstraction fs;
     final int keySize;
     final int valueSize;
 
     public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, RotationMonitor monitor,
             RotationTimerFactory timerFactory, int keySize, int valueSize, HeaderField<?>... headerFields )
     {
+        this.fs = fs;
         this.keySize = keySize;
         this.valueSize = valueSize;
         Rotation rotation = getClass().getAnnotation( Rotation.class );
@@ -251,11 +249,9 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 
     public Iterable<File> allFiles()
     {
-        List<File> existingFiles = new ArrayList<>();
-        StreamSupport.stream( rotationStrategy.candidateFiles().spliterator(), false )
-                .filter( File::exists )
-                .collect( Collectors.toCollection( () -> existingFiles ) );
-        return existingFiles;
+        return StreamSupport.stream( rotationStrategy.candidateFiles().spliterator(), false )
+                .filter( fs::fileExists )
+                .collect( Collectors.toList() );
     }
 
     private class RotationTask implements PreparedRotation, Runnable

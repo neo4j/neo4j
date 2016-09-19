@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.neo4j.kernel.impl.store.StoreType.findStoreType;
+import static org.neo4j.kernel.impl.store.StoreType.typeOf;
 import static org.neo4j.kernel.impl.store.format.RecordFormat.NO_RECORD_SIZE;
 
 public class ToFileStoreWriter implements StoreWriter
@@ -64,7 +64,7 @@ public class ToFileStoreWriter implements StoreWriter
             file.getParentFile().mkdirs();
 
             String filename = file.getName();
-            final Optional<StoreType> storeType = findStoreType( filename );
+            final Optional<StoreType> storeType = typeOf( filename );
             final Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
 
             monitor.startReceivingStoreFile( file );
@@ -89,11 +89,7 @@ public class ToFileStoreWriter implements StoreWriter
                         return written;
                     }
                 }
-                else
-                {
-
-                    return writeDataThroughFileSystem( file, data, temporaryBuffer, hasData );
-                }
+                return writeDataThroughFileSystem( file, data, temporaryBuffer, hasData );
             }
             finally
             {
@@ -117,8 +113,8 @@ public class ToFileStoreWriter implements StoreWriter
     private int filePageSize( int recordSize )
     {
         final int pageCacheSize = pageCache.pageSize();
-        return recordSize == NO_RECORD_SIZE ? pageCacheSize
-                                            : pageCacheSize - pageCacheSize % recordSize;
+        return (recordSize == NO_RECORD_SIZE) ? pageCacheSize
+                                              : (pageCacheSize - (pageCacheSize % recordSize));
     }
 
     private long writeDataThroughFileSystem( File file, ReadableByteChannel data, ByteBuffer temporaryBuffer,

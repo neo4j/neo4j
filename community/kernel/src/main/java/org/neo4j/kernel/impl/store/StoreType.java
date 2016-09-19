@@ -222,24 +222,11 @@ public enum StoreType
     /**
      * Determine type of a store base on a store file name.
      *
-     * @param storeFileName - name of the store to map
-     * @return store type of specified file
-     * @throws IllegalStateException if can't determine store type for specified file
+     * @param fileName - name of the store to map
+     * @return an {@link Optional} that wraps the matching store type of the specified file,
+     * or {@link Optional#empty()} if the given file name does not match any store file name.
      */
-    public static StoreType typeOf( String storeFileName )
-    {
-        final Optional<StoreType> optional = findStoreType( storeFileName );
-        return optional.orElseThrow(
-                () -> new IllegalArgumentException( "No enum constant for " + storeFileName + " file." ) );
-    }
-
-    /**
-     * Determine if a file name corresponds to any store type.
-     *
-     * @param fileName - name of the file to check for corresponding store type
-     * @return {@link Optional} wrapping store type, or empty optional if no store type corresponds to file name
-     */
-    public static Optional<StoreType> findStoreType( String fileName )
+    public static Optional<StoreType> typeOf( String fileName )
     {
         StoreType[] values = StoreType.values();
         for ( StoreType value : values )
