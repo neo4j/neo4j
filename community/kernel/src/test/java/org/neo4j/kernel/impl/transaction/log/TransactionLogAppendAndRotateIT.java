@@ -72,6 +72,7 @@ public class TransactionLogAppendAndRotateIT
 {
     private final LifeRule life = new LifeRule( true );
     private final TestDirectory directory = TestDirectory.testDirectory();
+
     @Rule
     public final RuleChain chain = outerRule( directory ).around( life );
 

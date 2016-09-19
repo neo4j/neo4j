@@ -26,17 +26,23 @@ import io.netty.channel.ChannelPromise;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -45,11 +51,58 @@ public class ChunkedOutputTest
 {
     private final Channel ch = mock( Channel.class );
     private final ByteBuffer writtenData = ByteBuffer.allocate( 1024 );
-    private ChunkedOutput out ;
+    private ChunkedOutput out;
+
+    @Test
+    public void shouldNotNPE() throws Throwable
+    {
+        ExecutorService runner = Executors.newFixedThreadPool( 4 );
+        // When
+        runner.execute( () -> {
+            try
+            {
+                for ( int i = 0; i < 5; i++ )
+                {
+
+                    out.writeByte( (byte) 1 ).writeShort( (short) 2 );
+                    out.onMessageComplete();
+                    out.flush();
+                    Thread.sleep( ThreadLocalRandom.current().nextLong( 5 ) );
+
+                }
+            }
+            catch ( IOException | InterruptedException e )
+            {
+                throw new AssertionError( e );
+            }
+        } );
+        for ( int i = 0; i < 9; i++ )
+        {
+
+            runner.execute( () -> {
+                try
+                {
+                    for ( int j = 0; j < 5; j++ )
+                    {
+                        out.flush();
+                        Thread.sleep( ThreadLocalRandom.current().nextLong( 5 ) );
+                    }
+                }
+                catch ( IOException | InterruptedException e )
+                {
+                    throw new AssertionError( e );
+                }
+            } );
+        }
+
+        runner.awaitTermination( 2, TimeUnit.SECONDS );
+    }
 
     @Test
     public void shouldChunkSingleMessage() throws Throwable
     {
+        setupWriteAndFlush();
+
         // When
         out.writeByte( (byte) 1 ).writeShort( (short) 2 );
         out.onMessageComplete();
@@ -64,6 +117,8 @@ public class ChunkedOutputTest
     @Test
     public void shouldChunkMessageSpanningMultipleChunks() throws Throwable
     {
+        setupWriteAndFlush();
+
         // When
         out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
         out.onMessageComplete();
@@ -79,6 +134,8 @@ public class ChunkedOutputTest
     @Test
     public void shouldReserveSpaceForChunkHeaderWhenWriteDataToNewChunk() throws IOException
     {
+        setupWriteAndFlush();
+
         // Given 2 bytes left in buffer + chunk is closed
         out.writeBytes( new byte[10], 0, 10 );  // 2 (header) + 10
         out.onMessageComplete();                // 2 (ending)
@@ -95,6 +152,8 @@ public class ChunkedOutputTest
     @Test
     public void shouldChunkDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
     {
+        setupWriteAndFlush();
+
         // Given
         out.writeBytes( new byte[16], 0, 16 ); // 2 + 16 is greater than the default max size 16
         out.onMessageComplete();
@@ -109,6 +168,8 @@ public class ChunkedOutputTest
     @Test
     public void shouldNotThrowIfOutOfSyncFlush() throws Throwable
     {
+        setupWriteAndFlush();
+
         // When
         out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
         out.onMessageComplete();
@@ -124,21 +185,106 @@ public class ChunkedOutputTest
                          "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
     }
 
+    @Test
+    public void shouldQueueWritesMadeWhileFlushing() throws Throwable
+    {
+        final CountDownLatch startLatch = new CountDownLatch( 1 );
+        final CountDownLatch finishLatch = new CountDownLatch( 1 );
+        final AtomicBoolean parallelException = new AtomicBoolean( false );
+
+        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( invocation -> {
+            startLatch.countDown();
+            ByteBuf byteBuf = (ByteBuf) invocation.getArguments()[0];
+            writtenData.limit( writtenData.position() + byteBuf.readableBytes() );
+            byteBuf.readBytes( writtenData );
+            return null;
+        } );
+
+        class ParallelWriter extends Thread
+        {
+            public void run()
+            {
+                try
+                {
+                    startLatch.await();
+                    out.writeShort( (short) 2 );
+                    out.flush();
+                }
+                catch ( Exception e )
+                {
+                    e.printStackTrace( System.err );
+                    parallelException.set( true );
+                }
+                finally
+                {
+                    finishLatch.countDown();
+                }
+            }
+        }
+        new ParallelWriter().start();
+
+        // When
+        out.writeShort( (short) 1 );
+        out.flush();
+
+        finishLatch.await();
+
+        // Then
+        assertFalse( parallelException.get() );
+        assertThat( writtenData.limit(), equalTo( 8 ) );
+        assertThat( HexPrinter.hex( writtenData, 0, 8 ), equalTo( "00 02 00 01 00 02 00 02" ) );
+    }
+
+    @Test
+    public void shouldNotBeAbleToWriteAfterClose() throws Throwable
+    {
+        // When
+        out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
+        out.onMessageComplete();
+        out.flush();
+        out.close();
+        try
+        {
+            out.writeShort( (short) 42 );
+            fail( "Should have thrown IOException" );
+        }
+        catch ( IOException e )
+        {
+            // We've been expecting you Mr Bond.
+        }
+    }
+
+    @Test
+    public void shouldFlushOnClose() throws Throwable
+    {
+        setupWriteAndFlush();
+
+        // When
+        out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
+        out.onMessageComplete();
+        out.close();
+
+        // Then
+        assertThat( writtenData.limit(), equalTo( 32 ) );
+        assertThat( HexPrinter.hex( writtenData, 0, 32 ),
+                equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
+                         "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
+    }
+
+    private void setupWriteAndFlush()
+    {
+        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( invocation -> {
+            ByteBuf byteBuf = (ByteBuf) invocation.getArguments()[0];
+            writtenData.limit( writtenData.position() + byteBuf.readableBytes() );
+            byteBuf.readBytes( writtenData );
+            return null;
+        } );
+    }
+
     @Before
     public void setup()
     {
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( new Answer<Object>()
-        {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                ByteBuf byteBuf = (ByteBuf) invocation.getArguments()[0];
-                writtenData.limit( writtenData.position() + byteBuf.readableBytes() );
-                byteBuf.readBytes( writtenData );
-                return null;
-            }
-        } );
         this.out = new ChunkedOutput( ch, 16 );
     }
 
