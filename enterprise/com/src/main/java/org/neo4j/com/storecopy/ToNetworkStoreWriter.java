@@ -53,7 +53,7 @@ public class ToNetworkStoreWriter implements StoreWriter
         targetBuffer.writeByte( hasData ? 1 : 0 );
         // TODO Make use of temporaryBuffer?
         BlockLogBuffer buffer = new BlockLogBuffer( targetBuffer, bufferMonitor );
-        long totalWritten = 2 + chars.length*2 + 1;
+        long totalWritten = Short.BYTES + chars.length* Character.BYTES + Byte.BYTES;
         if ( hasData )
         {
             targetBuffer.writeInt( recordSize );
