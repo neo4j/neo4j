@@ -122,6 +122,8 @@ public class CoreReplicationIT
             tx.success();
         }
 
+        dataMatchesEventually( leader, cluster.coreMembers() );
+
         CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
 
         // when
