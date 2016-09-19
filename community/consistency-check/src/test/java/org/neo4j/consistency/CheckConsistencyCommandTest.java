@@ -61,9 +61,10 @@ public class CheckConsistencyCommandTest
     public void requiresDatabaseArgument() throws Exception
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
-                        outsideWorld );
+                        outsideWorld, fs );
 
         String[] arguments = {""};
         try
@@ -84,8 +85,9 @@ public class CheckConsistencyCommandTest
 
         Path homeDir = testDir.directory( "home" ).toPath();
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld, fs,
                         consistencyCheckService );
 
         File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
@@ -109,8 +111,9 @@ public class CheckConsistencyCommandTest
 
         Path homeDir = testDir.directory( "home" ).toPath();
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld, fs,
                         consistencyCheckService );
 
         File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
@@ -134,8 +137,9 @@ public class CheckConsistencyCommandTest
 
         Path homeDir = testDir.directory( "home" ).toPath();
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld, fs,
                         consistencyCheckService );
         File databasePath = new File( homeDir.toFile(), "data/databases/mydb" );
 

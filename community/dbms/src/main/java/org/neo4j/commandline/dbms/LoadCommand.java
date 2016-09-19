@@ -37,7 +37,7 @@ import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.StoreLocker;
@@ -45,7 +45,6 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.identity;
@@ -76,21 +75,24 @@ public class LoadCommand implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem )
         {
-            return new LoadCommand( homeDir, configDir, new Loader() );
+            return new LoadCommand( homeDir, configDir, new Loader(), fileSystem );
         }
     }
 
     private final Path homeDir;
     private final Path configDir;
     private final Loader loader;
+    private final FileSystemAbstraction fileSystem;
 
-    public LoadCommand( Path homeDir, Path configDir, Loader loader )
+    public LoadCommand( Path homeDir, Path configDir, Loader loader, FileSystemAbstraction fileSystem )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.loader = loader;
+        this.fileSystem = fileSystem;
     }
 
     @Override
@@ -149,7 +151,7 @@ public class LoadCommand implements AdminCommand
     {
         try
         {
-            StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
+            StoreLocker storeLocker = new StoreLocker( fileSystem );
             storeLocker.checkLock( databaseDirectory.toFile() );
             storeLocker.release();
         }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.nio.file.Path;
-import java.util.stream.Stream;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import java.nio.file.Path;
+import java.util.stream.Stream;
 
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.CommandLocator;
@@ -37,15 +37,16 @@ import org.neo4j.server.security.enterprise.auth.EnterpriseAuthManagerFactory;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Stream.concat;
-
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.commandline.admin.security.RolesCommand.loadNeo4jConfig;
-import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
 public class RolesCommandIT extends RolesCommandTestBase
 {
@@ -374,7 +375,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         Path homeDir = testDir.graphDbDir().toPath();
         Path configDir = testDir.directory( "conf" ).toPath();
         OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
+        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, fileSystem, true );
         if ( command == null )
         {
             tool.execute( homeDir, configDir, "roles" );

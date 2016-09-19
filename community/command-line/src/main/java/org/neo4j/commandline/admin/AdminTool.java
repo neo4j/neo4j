@@ -25,6 +25,9 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+
 import static java.lang.String.format;
 
 public class AdminTool
@@ -35,20 +38,24 @@ public class AdminTool
         Path configDir = Paths.get( System.getenv( "NEO4J_CONF" ) );
         boolean debug = System.getenv( "NEO4J_DEBUG" ) != null;
 
-        new AdminTool( CommandLocator.fromServiceLocator(), new RealOutsideWorld(), debug )
+        new AdminTool( CommandLocator.fromServiceLocator(), new RealOutsideWorld(), new DefaultFileSystemAbstraction(),
+                debug )
                 .execute( homeDir, configDir, args );
     }
 
     private final String scriptName = "neo4j-admin";
     private final CommandLocator locator;
     private final OutsideWorld outsideWorld;
+    private final FileSystemAbstraction fileSystem;
     private final boolean debug;
     private final Usage usage;
 
-    public AdminTool( CommandLocator locator, OutsideWorld outsideWorld, boolean debug )
+    public AdminTool( CommandLocator locator, OutsideWorld outsideWorld, FileSystemAbstraction fileSystem,
+            boolean debug )
     {
         this.locator = CommandLocator.withAdditionalCommand( help(), locator );
         this.outsideWorld = outsideWorld;
+        this.fileSystem = fileSystem;
         this.debug = debug;
         this.usage = new Usage( scriptName, this.locator );
     }
@@ -76,7 +83,7 @@ public class AdminTool
                 return;
             }
 
-            AdminCommand command = provider.create( homeDir, configDir, outsideWorld );
+            AdminCommand command = provider.create( homeDir, configDir, outsideWorld, fileSystem );
             try
             {
                 command.execute( commandArgs );

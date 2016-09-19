@@ -41,7 +41,7 @@ public class ListCommandTest extends UsersCommandTestBase
     public void shouldFailWithoutSubcommand() throws Exception
     {
         UsersCommand usersCommand = new UsersCommand( testDir.directory( "home" ).toPath(),
-                testDir.directory( "conf" ).toPath(), out );
+                testDir.directory( "conf" ).toPath(), out, fileSystem );
 
         String[] arguments = {};
         try
@@ -62,7 +62,7 @@ public class ListCommandTest extends UsersCommandTestBase
     public void shouldFailWithUnknownSubcommand() throws Exception
     {
         UsersCommand usersCommand = new UsersCommand( testDir.directory( "home" ).toPath(),
-                testDir.directory( "conf" ).toPath(), out );
+                testDir.directory( "conf" ).toPath(), out, fileSystem );
 
         String[] arguments = {"make-love-not-war"};
         try
@@ -84,7 +84,7 @@ public class ListCommandTest extends UsersCommandTestBase
 
         // When - listing users
         UsersCommand usersCommand =
-                new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+                new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
         usersCommand.execute( new String[]{"list"} );
 
         // Then - the default user and new user are found
@@ -101,7 +101,7 @@ public class ListCommandTest extends UsersCommandTestBase
 
         // When - listing users
         UsersCommand usersCommand =
-                new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+                new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
         usersCommand.execute( new String[]{"list", "other"} );
 
         // Then - the specified user is found

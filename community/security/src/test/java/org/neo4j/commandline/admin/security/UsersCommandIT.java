@@ -284,7 +284,7 @@ public class UsersCommandIT extends UsersCommandTestBase
     private void assertFailedUserCommand( String command, String... errors )
     {
         // When running users command without a command or with incorrect command
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
+        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, fileSystem, true );
         if ( command == null )
         {
             tool.execute( graphDir.toPath(), confDir.toPath(), "users" );

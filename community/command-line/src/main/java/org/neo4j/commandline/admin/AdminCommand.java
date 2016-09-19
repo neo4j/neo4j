@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
  * To create a command for {@code neo4j-admin}:
@@ -68,7 +69,8 @@ public interface AdminCommand
          */
         public abstract String description();
 
-        public abstract AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld );
+        public abstract AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem );
     }
 
     void execute( String[] args ) throws IncorrectUsage, CommandFailed;

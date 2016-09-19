@@ -35,7 +35,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -46,6 +46,7 @@ public class RestoreDatabaseCli implements AdminCommand
 {
     private final Path homeDir;
     private final Path configDir;
+    private final FileSystemAbstraction fileSystem;
 
     public static class Provider extends AdminCommand.Provider
     {
@@ -67,17 +68,18 @@ public class RestoreDatabaseCli implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem )
         {
-            return new RestoreDatabaseCli( homeDir, configDir );
+            return new RestoreDatabaseCli( homeDir, configDir, fileSystem );
         }
     }
 
-    public RestoreDatabaseCli( Path homeDir, Path configDir )
+    public RestoreDatabaseCli( Path homeDir, Path configDir, FileSystemAbstraction fileSystem )
     {
-
         this.homeDir = homeDir;
         this.configDir = configDir;
+        this.fileSystem = fileSystem;
     }
 
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
@@ -112,7 +114,7 @@ public class RestoreDatabaseCli implements AdminCommand
         Config config = loadNeo4jConfig( homeDir, configDir, databaseName );
 
         RestoreDatabaseCommand restoreDatabaseCommand = new RestoreDatabaseCommand(
-                new DefaultFileSystemAbstraction(),
+                fileSystem,
                 new File( fromPath ),
                 config,
                 databaseName,

@@ -46,7 +46,7 @@ public class CreateCommandTest extends UsersCommandTestBase
         // When - trying to create it again
         try
         {
-            UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+            UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
             usersCommand.execute( new String[]{"create", "another", "abc"} );
             fail( "Should not have succeeded without exception" );
         }
@@ -63,7 +63,7 @@ public class CreateCommandTest extends UsersCommandTestBase
         // Given - no existing user
 
         // When - creating new user
-        UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+        UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
         usersCommand.execute( new String[]{"create", "another", "abc"} );
 
         // Then - the specified user is found
@@ -80,7 +80,7 @@ public class CreateCommandTest extends UsersCommandTestBase
         // Given - no existing user
 
         // When - creating new user with password change requirement
-        UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+        UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
         usersCommand.execute( new String[]{"create", "another", "abc", "--requires-password-change=true"} );
 
         // Then - the specified user is found
@@ -97,7 +97,7 @@ public class CreateCommandTest extends UsersCommandTestBase
         // Given - no existing user
 
         // When - creating new user with password change requirement
-        UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+        UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
         usersCommand.execute( new String[]{"create", "--requires-password-change=true", "another", "abc"} );
 
         // Then - the specified user is found

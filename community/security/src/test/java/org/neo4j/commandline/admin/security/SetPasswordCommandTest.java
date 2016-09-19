@@ -40,7 +40,7 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
     public void shouldFailSetPasswordWithNoArguments() throws Exception
     {
         UsersCommand usersCommand = new UsersCommand( homeDir.toPath(),
-                testDir.directory( "conf" ).toPath(),out );
+                testDir.directory( "conf" ).toPath(),out, fileSystem );
 
         String[] arguments = {"set-password"};
         try
@@ -58,7 +58,7 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
     public void shouldFailSetPasswordWithOnlyOneArgument() throws Exception
     {
         UsersCommand usersCommand = new UsersCommand( homeDir.toPath(),
-                testDir.directory( "conf" ).toPath(),out );
+                testDir.directory( "conf" ).toPath(),out, fileSystem );
 
         String[] arguments = {"set-password", "neo4j"};
         try
@@ -76,7 +76,7 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
     public void shouldFailSetPasswordWithNonExistingUser() throws Exception
     {
         UsersCommand usersCommand = new UsersCommand( homeDir.toPath(),
-                testDir.directory( "conf" ).toPath(), out );
+                testDir.directory( "conf" ).toPath(), out, fileSystem );
 
         String[] arguments = {"set-password", "nosuchuser", "whatever"};
         try
@@ -97,7 +97,7 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
 
         // When - the admin command sets the password
         UsersCommand usersCommand =
-                new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+                new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
         usersCommand.execute( new String[]{"set-password", "neo4j", "abc"} );
 
         // Then - the default user does not require a password change
@@ -113,7 +113,7 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
 
         // When - the admin command sets the password
         UsersCommand usersCommand =
-                new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+                new UsersCommand( graphDir.toPath(), confDir.toPath(), out, fileSystem );
         usersCommand.execute( new String[]{"set-password", "another", "abc"} );
 
         // Then - the new user no longer requires a password change

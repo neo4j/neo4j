@@ -39,7 +39,6 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -73,9 +72,10 @@ public class CheckConsistencyCommand implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem )
         {
-            return new CheckConsistencyCommand( homeDir, configDir, outsideWorld );
+            return new CheckConsistencyCommand( homeDir, configDir, outsideWorld, fileSystem );
         }
     }
 
@@ -85,19 +85,20 @@ public class CheckConsistencyCommand implements AdminCommand
     private final ConsistencyCheckService consistencyCheckService;
     private final FileSystemAbstraction fileSystemAbstraction;
 
-    public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+            FileSystemAbstraction fileSystem )
     {
-        this( homeDir, configDir, outsideWorld, new ConsistencyCheckService() );
+        this( homeDir, configDir, outsideWorld, fileSystem, new ConsistencyCheckService() );
     }
 
     public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld,
-            ConsistencyCheckService consistencyCheckService )
+            FileSystemAbstraction fileSystem, ConsistencyCheckService consistencyCheckService )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.outsideWorld = outsideWorld;
         this.consistencyCheckService = consistencyCheckService;
-        this.fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        this.fileSystemAbstraction = fileSystem;
     }
 
     @Override

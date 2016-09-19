@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+
 public class HelpCommand implements AdminCommand
 {
     public static class Provider extends AdminCommand.Provider
@@ -48,7 +50,8 @@ public class HelpCommand implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld,
+                FileSystemAbstraction fileSystem )
         {
             return new HelpCommand( usage, outsideWorld::stdOutLine );
         }

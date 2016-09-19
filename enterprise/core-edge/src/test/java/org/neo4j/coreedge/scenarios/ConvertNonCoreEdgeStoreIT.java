@@ -19,15 +19,14 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
-
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -36,6 +35,7 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
@@ -43,10 +43,8 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.coreedge.backup.RestoreClusterUtils.createClassicNeo4jStore;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
@@ -61,6 +59,8 @@ public class ConvertNonCoreEdgeStoreIT
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( CLUSTER_SIZE )
             .withNumberOfEdgeMembers( 0 );
+
+    FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Parameterized.Parameter()
     public String recordFormat;
@@ -79,7 +79,7 @@ public class ConvertNonCoreEdgeStoreIT
         // given
         File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
         int classicNodeCount = 1024;
-        File classicNeo4jStore = createClassicNeo4jStore( dbDir, new DefaultFileSystemAbstraction(), classicNodeCount, recordFormat );
+        File classicNeo4jStore = createClassicNeo4jStore( dbDir, fs, classicNodeCount, recordFormat );
 
         Cluster cluster = this.clusterRule.withRecordFormat( recordFormat ).createCluster();
 
