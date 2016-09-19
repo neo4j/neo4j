@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.ir.v3_1.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{IdentityMap, Rewriter, topDown}
 

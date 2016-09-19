@@ -17,15 +17,66 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner
+package org.neo4j.cypher.internal.ir.v3_1
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, Predicate}
+import org.neo4j.cypher.internal.ir.v3_1.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.ir.v3_1.Selections.asPredicates
 
 object Selections {
-  def from(expressions: Expression*): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
+  def from(expressions: Expression*): Selections = new Selections(expressions.flatMap(asPredicates).toSet)
+
+  def asPredicates(predicate: Expression): Set[Predicate] = {
+    predicate.treeFold(Set.empty[Predicate]) {
+      // n:Label
+      case p@HasLabels(Variable(name), labels) =>
+        acc => val newAcc = acc ++ labels.map { label =>
+          Predicate(Set(IdName(name)), p.copy(labels = Seq(label))(p.position))
+        }
+          (newAcc, None)
+      // and
+      case _: Ands =>
+        acc => (acc, Some(identity))
+      case p: Expression =>
+        acc => (acc + Predicate(p.idNames, p), None)
+    }.map(filterUnnamed)
+  }
+
+  private def filterUnnamed(predicate: Predicate): Predicate = predicate match {
+    case Predicate(deps, e: PatternExpression) =>
+      Predicate(deps.filter(x => isNamed(x.name)), e)
+    case Predicate(deps, e@Not(_: PatternExpression)) =>
+      Predicate(deps.filter(x => isNamed(x.name)), e)
+    case Predicate(deps, ors@Ors(exprs)) =>
+      val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
+        exp match {
+          case e: PatternExpression =>
+            acc ++ e.idNames.filter(x => isNamed(x.name))
+          case e@Not(_: PatternExpression) =>
+            acc ++ e.idNames.filter(x => isNamed(x.name))
+          case e if e.exists { case _: PatternExpression => true } =>
+            acc ++ (e.idNames -- unnamedIdNamesInNestedPatternExpressions(e))
+          case e =>
+            acc ++ e.idNames
+        }
+      }
+      Predicate(newDeps, ors)
+    case Predicate(deps, expr) if expr.exists { case _: PatternExpression => true } =>
+      Predicate(deps -- unnamedIdNamesInNestedPatternExpressions(expr), expr)
+    case p => p
+  }
+
+  private def unnamedIdNamesInNestedPatternExpressions(expression: Expression) = {
+    val patternExpressions = expression.treeFold(Seq.empty[PatternExpression]) {
+      case p: PatternExpression => acc => (acc :+ p, None)
+    }
+
+    val unnamedIdsInPatternExprs = patternExpressions.flatMap(_.idNames)
+      .filterNot(x => isNamed(x.name))
+      .toSet
+
+    unnamedIdsInPatternExprs
+  }
 }
 
 case class Selections(predicates: Set[Predicate] = Set.empty) {
@@ -38,10 +89,6 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def predicatesGivenForRequiredSymbol(allowed: Set[IdName], required: IdName): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMetForRequiredSymbol(allowed, required) => predicate
   }.toIndexedSeq
-
-  def unsolvedPredicates(plan: LogicalPlan): Seq[Expression] =
-    scalarPredicatesGiven(plan.availableSymbols)
-      .filterNot(predicate => plan.solved.exists(_.queryGraph.selections.contains(predicate)))
 
   def scalarPredicatesGiven(ids: Set[IdName]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
 
@@ -98,7 +145,8 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
     val otherPredicates = other.predicates
     val keptPredicates  = predicates.filter {
       case pred@Predicate(_, expr: PartialPredicate[_]) =>
-        !expr.coveringPredicate.asPredicates.forall(expr => otherPredicates.contains(expr) || predicates.contains(expr))
+        val predicates = asPredicates(expr.coveringPredicate)
+        !predicates.forall(expr => otherPredicates.contains(expr) || predicates.contains(expr))
 
       case pred =>
         true
@@ -116,7 +164,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
          r.dependencies != l.dependencies => e
   }.toSet
 
-  def ++(expressions: Expression*): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
+  def ++(expressions: Expression*): Selections = Selections(predicates ++ expressions.flatMap(asPredicates))
 
   def nonEmpty: Boolean = !isEmpty
 }

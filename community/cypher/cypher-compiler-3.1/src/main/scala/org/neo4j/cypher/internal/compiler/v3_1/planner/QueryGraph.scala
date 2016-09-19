@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, Selections}
 
 import scala.collection.{GenTraversableOnce, mutable}
 
@@ -88,7 +88,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     copy(selections = Selections(selections.predicates ++ this.selections.predicates))
 
   def addPredicates(predicates: Expression*): QueryGraph = {
-    val newSelections = Selections(predicates.flatMap(_.asPredicates).toSet)
+    val newSelections = Selections(predicates.flatMap(Selections.asPredicates).toSet)
     copy(selections = selections ++ newSelections)
   }
 

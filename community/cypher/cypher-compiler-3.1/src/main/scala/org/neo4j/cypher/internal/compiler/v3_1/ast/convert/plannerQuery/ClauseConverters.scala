@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{HasHeaders, NoHeaders}
+import org.neo4j.cypher.internal.ir.v3_1.Selections.asPredicates
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, SemanticTable, SyntaxException}
-import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, Selections}
 
 import scala.collection.mutable
 
@@ -62,7 +62,7 @@ object ClauseConverters {
     ).withTail(PlannerQuery.empty)
 
   private def asSelections(optWhere: Option[Where]) = Selections(optWhere.
-    map(_.expression.asPredicates).
+    map(where => asPredicates(where.expression)).
     getOrElse(Set.empty))
 
   private def asQueryShuffle(optOrderBy: Option[OrderBy]) = {

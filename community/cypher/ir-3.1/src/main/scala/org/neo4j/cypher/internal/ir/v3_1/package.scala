@@ -17,19 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v3_1
+package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
 
-case class Predicate(dependencies: Set[IdName], expr: Expression) {
-
-  def hasDependenciesMet(symbols: Set[IdName]): Boolean =
-    (dependencies -- symbols).isEmpty
-
-  def hasDependenciesMetForRequiredSymbol(symbols: Set[IdName], required: IdName): Boolean =
-    dependencies.contains(required) && hasDependenciesMet(symbols)
-}
-
-object Predicate {
-  implicit val byPosition = Ordering.by { (predicate: Predicate) => predicate.expr.position }
+package object v3_1 {
+  implicit class IdExtractor(val exp: Expression) extends AnyVal {
+    def idNames: Set[IdName] = exp.dependencies.map(id => IdName(id.name))
+  }
 }

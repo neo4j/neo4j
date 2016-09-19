@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.ir.v3_1.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable

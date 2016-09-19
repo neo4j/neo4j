@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.ir.v3_1.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningContext, PatternExpressionPatternElementNamer, patternExpressionRewriter}
@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.Exists
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, ast, topDown}
 import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.helpers.FreshIdNameGenerator
 
 import scala.collection.mutable
 import scala.reflect.ClassTag

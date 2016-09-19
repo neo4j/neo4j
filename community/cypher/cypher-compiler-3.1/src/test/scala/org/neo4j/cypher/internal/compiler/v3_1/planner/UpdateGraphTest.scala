@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{PatternRel
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{HasLabels, In, LabelName, MapExpression, Property, PropertyKeyName, RelTypeName, SignedDecimalIntegerLiteral, Variable}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, SemanticDirection}
-import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, Selections}
 
 class UpdateGraphTest extends CypherFunSuite {
   private val pos = DummyPosition(0)

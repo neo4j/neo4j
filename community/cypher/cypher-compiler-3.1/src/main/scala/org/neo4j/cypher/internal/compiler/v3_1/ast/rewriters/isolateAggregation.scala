@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.AggregationNameGenerator
+import org.neo4j.cypher.internal.ir.v3_1.helpers.AggregationNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_1.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._

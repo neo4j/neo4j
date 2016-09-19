@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.ir.v3_1.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection

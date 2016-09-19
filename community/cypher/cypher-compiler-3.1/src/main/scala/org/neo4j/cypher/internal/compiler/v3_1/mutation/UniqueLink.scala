@@ -21,17 +21,18 @@ package org.neo4j.cypher.internal.compiler.v3_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands._
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression, Variable, Literal}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, _}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.{IsMap, MapSupport, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, SyntaxException, UniquePathNotUniqueException}
-import org.neo4j.graphdb.{Node}
+import org.neo4j.cypher.internal.ir.v3_1.helpers.UnNamedNameGenerator
+import org.neo4j.graphdb.Node
 
 import scala.collection.Map
 

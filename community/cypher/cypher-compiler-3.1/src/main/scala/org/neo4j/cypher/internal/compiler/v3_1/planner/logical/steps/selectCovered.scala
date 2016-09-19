@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
+import org.neo4j.cypher.internal.ir.v3_1.Selections
 
 case object selectCovered extends CandidateGenerator[LogicalPlan] {
   val patternExpressionSolver = PatternExpressionSolver()
   def apply(in: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val unsolvedPredicates = queryGraph.selections.unsolvedPredicates(in)
+    val unsolvedPredicates = predicatesLeftToSolve(queryGraph.selections, in)
 
     if (unsolvedPredicates.isEmpty)
       Seq()
@@ -35,5 +37,9 @@ case object selectCovered extends CandidateGenerator[LogicalPlan] {
       Seq(context.logicalPlanProducer.planSelection(plan, predicates, unsolvedPredicates))
     }
   }
+
+  def predicatesLeftToSolve(selections: Selections, plan: LogicalPlan): Seq[Expression] =
+    selections.scalarPredicatesGiven(plan.availableSymbols)
+      .filterNot(predicate => plan.solved.exists(_.queryGraph.selections.contains(predicate)))
 }
 
