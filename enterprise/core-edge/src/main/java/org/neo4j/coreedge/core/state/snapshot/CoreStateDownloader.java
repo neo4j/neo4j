@@ -107,7 +107,7 @@ public class CoreStateDownloader
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {
-                    // TODO: Delete store before copying to avoid double-storage issue.
+                    localDatabase.delete();
                     copyWholeStoreFrom( source, localStoreId, storeFetcher );
                 }
                 else if( catchupResult != SUCCESS )
@@ -141,7 +141,7 @@ public class CoreStateDownloader
         storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
         copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
         localDatabase.replaceWith( tempStore.storeDir() );
-        // TODO: Delete tempDir.
+        tempStore.cleanDirectory();
         log.info( "Replaced store with one downloaded from %s", source );
     }
 }
