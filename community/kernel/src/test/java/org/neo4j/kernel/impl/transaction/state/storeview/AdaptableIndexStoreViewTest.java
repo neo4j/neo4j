@@ -28,6 +28,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
@@ -59,11 +60,13 @@ public class AdaptableIndexStoreViewTest
     private Visitor<NodePropertyUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
+    private AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
 
     @Before
     public void setUp()
     {
         NodeRecord nodeRecord = getNodeRecord();
+        when( labelScanStore.allNodeLabelRanges()).thenReturn( nodeLabelRanges );
         when( neoStores.getCounts() ).thenReturn( countStore );
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
         when( nodeStore.newRecord() ).thenReturn( nodeRecord );
@@ -97,6 +100,7 @@ public class AdaptableIndexStoreViewTest
     {
         LabelScanReader labelScanReader = mock( LabelScanReader.class );
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
+        when( nodeLabelRanges.maxCount() ).thenReturn( 1L );
 
         PrimitiveLongIterator labeledNodesIterator = PrimitiveLongCollections.iterator( 1, 2, 3, 4, 5, 6, 7, 8 );
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 20L );

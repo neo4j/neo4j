@@ -81,7 +81,7 @@ public class AdaptableIndexStoreView extends NeoStoreIndexStoreView
             IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
             Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
     {
-        if ( ArrayUtils.isEmpty( labelIds ) || isNumberOfLabeledNodesExceedThreshold( labelIds ) )
+        if ( ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore() || isNumberOfLabeledNodesExceedThreshold( labelIds ) )
         {
             usingLabelScan = false;
             return super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
@@ -166,41 +166,51 @@ public class AdaptableIndexStoreView extends NeoStoreIndexStoreView
     public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
             throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
     {
-        PrimitiveLongObjectMap<PrimitiveLongSet> labelNodes = propertyLabelNodes.get( descriptor.getPropertyKeyId() );
-        if ( labelNodes != null )
+        if (usingLabelScan)
         {
-            int labelId = descriptor.getLabelId();
-            PrimitiveLongSet nodes = labelNodes.get( labelId );
-            if ( nodes != null )
+            PrimitiveLongObjectMap<PrimitiveLongSet> labelNodes = propertyLabelNodes.get( descriptor.getPropertyKeyId() );
+            if ( labelNodes != null )
             {
-                long[] labels = new long[labelId];
-                PrimitiveLongIterator nodeIterator = nodes.iterator();
-                NodeRecord nodeRecord = new NodeRecord( -1 );
-                try ( IndexUpdater updater = indexPopulator.newPopulatingUpdater( this ) )
+                int labelId = descriptor.getLabelId();
+                PrimitiveLongSet nodes = labelNodes.get( labelId );
+                if ( nodes != null )
                 {
-                    while ( nodeIterator.hasNext() )
+                    long[] labels = new long[labelId];
+                    PrimitiveLongIterator nodeIterator = nodes.iterator();
+                    NodeRecord nodeRecord = new NodeRecord( -1 );
+                    try ( IndexUpdater updater = indexPopulator.newPopulatingUpdater( this ) )
                     {
-                        long nodeId = nodeIterator.next();
-                        NodeRecord record = nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.FORCE );
-
-                        int propertyKeyId = descriptor.getPropertyKeyId();
-
-                        updater.process( NodePropertyUpdate.remove( nodeId, propertyKeyId, StringUtils.EMPTY, labels ) );
-                        if ( record.inUse() )
+                        while ( nodeIterator.hasNext() )
                         {
-                            Property property = getProperty( nodeId, propertyKeyId );
-                            if (property.isDefined())
-                            {
-                                Object propertyValue = property.value();
-                                updater.process( NodePropertyUpdate.change( nodeId, propertyKeyId, StringUtils.EMPTY,
-                                        labels, propertyValue, labels ) );
-                            }
-                        }
+                            long nodeId = nodeIterator.next();
+                            NodeRecord record = nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.FORCE );
 
+                            int propertyKeyId = descriptor.getPropertyKeyId();
+
+                            updater.process(
+                                    NodePropertyUpdate.remove( nodeId, propertyKeyId, StringUtils.EMPTY, labels ) );
+                            if ( record.inUse() )
+                            {
+                                Property property = getProperty( nodeId, propertyKeyId );
+                                if ( property.isDefined() )
+                                {
+                                    Object propertyValue = property.value();
+                                    updater.process(
+                                            NodePropertyUpdate.change( nodeId, propertyKeyId, StringUtils.EMPTY,
+                                                    labels, propertyValue, labels ) );
+                                }
+                            }
+
+                        }
                     }
                 }
             }
         }
+    }
+
+    private boolean isEmptyLabelScanStore()
+    {
+        return labelScanStore.allNodeLabelRanges().maxCount() == 0;
     }
 
     private boolean isNumberOfLabeledNodesExceedThreshold( int[] labelIds )
