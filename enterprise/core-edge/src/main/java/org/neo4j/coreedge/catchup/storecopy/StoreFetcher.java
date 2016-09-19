@@ -82,7 +82,8 @@ public class StoreFetcher
         }
     }
 
-    public void copyStore( MemberId from, StoreId expectedStoreId, File destDir ) throws StoreCopyFailedException
+    public void copyStore( MemberId from, StoreId expectedStoreId, File destDir )
+            throws StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try
         {
@@ -98,7 +99,7 @@ public class StoreFetcher
             CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, pullTxIndex );
             if ( catchupResult != SUCCESS )
             {
-                throw new StoreCopyFailedException( "Failed to pull transactions: " + catchupResult );
+                throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
             }
         }
         catch ( IOException e )
@@ -109,36 +110,6 @@ public class StoreFetcher
 
     public StoreId getStoreIdOf( MemberId from ) throws StoreIdDownloadFailedException
     {
-        String operation = "get store id from " + from;
-        long retryInterval = 5_000;
-        int attempts = 0;
-
-        while ( attempts++ < 5 )
-        {
-            log.info( "Attempt #%d to %s.", attempts, operation );
-
-            try
-            {
-                return storeCopyClient.fetchStoreId( from );
-            }
-            catch ( StoreIdDownloadFailedException e )
-            {
-                log.info( "Attempt #%d to %s failed.", attempts, operation );
-            }
-
-            try
-            {
-                log.info( "Next attempt to %s in %d ms.", operation, retryInterval );
-                Thread.sleep( retryInterval );
-                retryInterval = retryInterval * 2;
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-                throw new StoreIdDownloadFailedException( e );
-            }
-        }
-
-        throw new StoreIdDownloadFailedException( "Failed to " + operation + " after " + (attempts - 1) + " attempts" );
+        return storeCopyClient.fetchStoreId( from );
     }
 }

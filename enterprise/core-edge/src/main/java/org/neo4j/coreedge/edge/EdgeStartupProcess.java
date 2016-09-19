@@ -27,6 +27,7 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.catchup.storecopy.StoreIdDownloadFailedException;
+import org.neo4j.coreedge.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.coreedge.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.coreedge.core.state.machines.tx.RetryStrategy;
 import org.neo4j.coreedge.identity.MemberId;
@@ -76,7 +77,47 @@ class EdgeStartupProcess implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        MemberId source = findCoreMemberToCopyFrom();
+        long retryInterval = 5_000;
+        int attempts = 0;
+        while ( attempts++ < 5 )
+        {
+            MemberId source = findCoreMemberToCopyFrom();
+            try
+            {
+                tryToStart( source );
+                return;
+            }
+            catch ( StoreCopyFailedException e )
+            {
+                log.info( "Attempt #%d to start edge server failed while copying store files from %s.", attempts,
+                        source );
+            }
+            catch ( StreamingTransactionsFailedException e )
+            {
+                log.info( "Attempt #%d to start edge server failed while streaming transactions from %s.", attempts,
+                        source );
+            }
+            catch ( StoreIdDownloadFailedException e )
+            {
+                log.info( "Attempt #%d to start edge server failed while getting store id from %s.", attempts, source );
+            }
+
+            try
+            {
+                Thread.sleep( retryInterval );
+                retryInterval = retryInterval * 2;
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                throw new RuntimeException( "Interrupted while trying to start edge server. Shutting down.", e );
+            }
+        }
+        throw new Exception( "Failed to start edge server after " + (attempts - 1) + " attempts" );
+    }
+
+    private void tryToStart( MemberId source ) throws Throwable
+    {
         if ( localDatabase.isEmpty() )
         {
             log.info( "Local database is empty, attempting to replace with copy from core server %s", source );
@@ -112,7 +153,8 @@ class EdgeStartupProcess implements Lifecycle
         }
     }
 
-    private void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher ) throws IOException, StoreCopyFailedException
+    private void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher )
+            throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
     {
         TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( localDatabase.storeDir() );
         storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );

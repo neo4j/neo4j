@@ -109,9 +109,9 @@ public class EdgeStartupProcessTest
             edgeStartupProcess.start();
             fail( "should have thrown" );
         }
-        catch ( IllegalStateException ex )
+        catch ( Exception ex )
         {
-            // expected
+            //expected.
         }
 
         // then
