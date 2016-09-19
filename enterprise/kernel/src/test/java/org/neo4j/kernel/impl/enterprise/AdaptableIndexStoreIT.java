@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.enterprise;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,13 +39,17 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
 public class AdaptableIndexStoreIT
 {
 
+    private SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( suppressOutput );
 
     @Test
     public void populateDb() throws Exception
