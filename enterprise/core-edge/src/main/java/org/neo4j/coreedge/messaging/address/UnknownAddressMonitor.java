@@ -20,7 +20,8 @@
 package org.neo4j.coreedge.messaging.address;
 
 import java.time.Clock;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.Log;
@@ -29,26 +30,98 @@ public class UnknownAddressMonitor
 {
     private final Log log;
     private final Clock clock;
-    private final long logThreshold;
+    private final long initialTimeoutMs;
+    private Map<MemberId,PeriodicLogger> loggers = new ConcurrentHashMap<>();
 
-    private HashMap<MemberId, Long> throttle = new HashMap<>(  );
-
-    public UnknownAddressMonitor( Log log, Clock clock, long logThresholdMillis )
+    public UnknownAddressMonitor( Log log, Clock clock, long initialTimeoutMs )
     {
         this.log = log;
         this.clock = clock;
-        this.logThreshold = logThresholdMillis;
+        this.initialTimeoutMs = initialTimeoutMs;
     }
 
-    public void logAttemptToSendToMemberWithNoKnownAddress( MemberId to )
+    public long logAttemptToSendToMemberWithNoKnownAddress( MemberId to )
     {
-        long currentTime = clock.millis();
-        Long lastLogged = throttle.get( to );
-        if ( lastLogged == null || (currentTime - lastLogged) > logThreshold )
+        PeriodicLogger logger = loggers.get( to );
+        if ( logger == null )
         {
-            log.info( "No address found for member %s, probably because the member has been shut down; " +
-                    "dropping message.", to );
-            throttle.put( to, currentTime );
+            logger = new PeriodicLogger( clock, log );
+            loggers.put( to, logger );
+        }
+        return logger.attemptLog( to );
+    }
+
+    private static class PeriodicLogger
+    {
+        private final Clock clock;
+        private final Log log;
+        private long numberOfAttemps;
+        private final Penalty penalty = new Penalty();
+
+        PeriodicLogger( Clock clock, Log log )
+        {
+            this.clock = clock;
+            this.log = log;
+        }
+
+        long attemptLog( MemberId to )
+        {
+            numberOfAttemps++;
+
+            if ( clock.millis() > penalty.blockedUntil() )
+            {
+                penalty.cancel();
+            }
+
+            if ( shouldLog() )
+            {
+                log.info( "No address found for member %s, probably because the member has been shut down; " +
+                        "dropped %d message(s) over last %d milliseconds", to, numberOfAttemps, clock.millis() -
+                        penalty.blockedUntil() );
+
+                numberOfAttemps = 0;
+            }
+
+            penalty.increase();
+
+            return penalty.blockedUntil();
+        }
+
+        private boolean shouldLog()
+        {
+            return clock.millis() >= penalty.blockedUntil();
+        }
+    }
+
+    private static class Penalty
+    {
+        private static final long MAX_PENALTY = 60 * 1000;
+        private long currentPenalty = 0;
+
+        void increase()
+        {
+            if ( currentPenalty == 0 )
+            {
+                currentPenalty = 10_000L;
+            }
+            else
+            {
+                currentPenalty = currentPenalty * 2;
+                if ( currentPenalty > MAX_PENALTY )
+                {
+                    currentPenalty = MAX_PENALTY;
+                }
+            }
+        }
+
+        long blockedUntil()
+        {
+            return currentPenalty;
+        }
+
+        public void cancel()
+        {
+            currentPenalty = 0;
         }
     }
 }

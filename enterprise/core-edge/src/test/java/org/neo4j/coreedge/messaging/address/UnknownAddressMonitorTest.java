@@ -21,12 +21,17 @@ package org.neo4j.coreedge.messaging.address;
 
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
 
 import org.neo4j.logging.Log;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -47,7 +52,7 @@ public class UnknownAddressMonitorTest
         logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
 
         // then
-        verify( log ).info( anyString(), eq( member( 0 ) ) );
+        verify( log ).info( anyString(), eq( member( 0 ) ), anyLong(), anyLong() );
     }
 
     @Test
@@ -60,11 +65,11 @@ public class UnknownAddressMonitorTest
 
         // when
         logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
-        clock.forward( 1000, TimeUnit.MILLISECONDS );
+        clock.forward( 1, MILLISECONDS );
         logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
 
         // then
-        verify( log, times( 1 ) ).info( anyString(), eq( member( 0 ) ) );
+        verify( log, times( 1 ) ).info( anyString(), eq( member( 0 ) ), anyLong(), anyLong() );
     }
 
     @Test
@@ -77,10 +82,57 @@ public class UnknownAddressMonitorTest
 
         // when
         logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
-        clock.forward( 11000, TimeUnit.MILLISECONDS );
+        clock.forward( 20001, MILLISECONDS );
+        logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
+        clock.forward( 80001, MILLISECONDS );
         logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
 
         // then
-        verify( log, times( 2 ) ).info( anyString(), eq( member( 0 ) ) );
+        verify( log, times( 3 ) ).info( anyString(), eq( member( 0 ) ), anyLong(), anyLong() );
+    }
+
+    @Test
+    public void shouldIncreaseThrottlingWhenClientFloodsLogUpToOneMinute() throws Exception
+    {
+        // given
+        Log log = mock( Log.class );
+        FakeClock clock = Clocks.fakeClock();
+        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 10000 );
+
+        // when
+        ArrayList<Long> tryAfter = new ArrayList<>();
+        for ( int i = 0; i < 10; i++ )
+        {
+            tryAfter.add( logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) ) );
+            clock.forward( 1, SECONDS );
+        }
+
+        // then
+        assertEquals( 10_000L, (long) tryAfter.get( 0 ) );
+        assertEquals( 20_000L, (long) tryAfter.get( 1 ) );
+        assertEquals( 40_000L, (long) tryAfter.get( 2 ) );
+        assertEquals( 60_000L, (long) tryAfter.get( 3 ) );
+        assertEquals( 60_000L, (long) tryAfter.get( 4 ) );
+        assertEquals( 60_000L, (long) tryAfter.get( 9 ) );
+    }
+
+    @Test
+    public void shouldReduceThrottlingWhenClientCallRateDropsOff() throws Exception
+    {
+        // given
+        Log log = mock( Log.class );
+        FakeClock clock = Clocks.fakeClock();
+        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 10000 );
+
+        // when
+        for ( int i = 0; i < 100; i++ ) // aggravate the logger
+        {
+            logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
+        }
+
+        clock.forward( 1, HOURS );
+
+        // then
+        assertEquals( 10_000L, logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) ) );
     }
 }
