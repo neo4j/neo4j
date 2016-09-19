@@ -218,11 +218,12 @@ public class EdgeServerReplicationIT
 
         executeOnLeaderWithRetry( this::createData, cluster );
 
-        cluster.addEdgeMemberWithId( edgeServerId );
+        cluster.addEdgeMemberWithId( edgeServerId ).start();
 
         // let's spend some time by adding more data
         executeOnLeaderWithRetry( this::createData, cluster );
 
+        awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeMembers() ), 1, TimeUnit.MINUTES );
         cluster.removeEdgeMemberWithMemberId( edgeServerId );
 
         // let's spend some time by adding more data
