@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
@@ -93,9 +94,13 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     }
 
     @Override
-    public EnterpriseUserManager getLocalUserManager()
+    public EnterpriseUserManager getLocalUserManager() throws Exception
     {
-        return authManager.getUserManager();
+        if ( authManager instanceof EnterpriseAuthAndUserManager )
+        {
+            return ((EnterpriseAuthAndUserManager) authManager).getUserManager();
+        }
+        throw new Exception( "The used configuration does not have a user manager" );
     }
 
     @Override

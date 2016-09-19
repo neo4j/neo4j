@@ -41,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -61,6 +60,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
 
 public class QueryLoggerIT
@@ -94,10 +94,10 @@ public class QueryLoggerIT
     public void shouldLogCustomUserName() throws Throwable
     {
         // turn on query logging
-        final Map<Setting<?>, String> config = new HashMap<>( 2 );
-        config.put( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() );
-        config.put( GraphDatabaseSettings.log_queries, Settings.TRUE );
-        EmbeddedInteraction db = new EmbeddedInteraction( config, databaseBuilder );
+        final Map<String, String> config = stringMap(
+            GraphDatabaseSettings.logs_directory.name(), logsDirectory.getPath(),
+            GraphDatabaseSettings.log_queries.name(), Settings.TRUE );
+        EmbeddedInteraction db = new EmbeddedInteraction( databaseBuilder, config );
 
         // create users
         db.getLocalUserManager().newUser( "mats", "neo4j", false );
@@ -132,7 +132,7 @@ public class QueryLoggerIT
         // turn on query logging
         databaseBuilder.setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() );
         databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
-        EmbeddedInteraction db = new EmbeddedInteraction( Collections.emptyMap(), databaseBuilder );
+        EmbeddedInteraction db = new EmbeddedInteraction( databaseBuilder, Collections.emptyMap() );
         GraphDatabaseFacade graph = db.getLocalGraph();
 
         db.getLocalUserManager().setUserPassword( "neo4j", "123", false );

@@ -49,7 +49,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 
 import static org.neo4j.helpers.Strings.escape;
 
-class MultiRealmAuthManager implements EnterpriseAuthManager
+class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
 {
     private final EnterpriseUserManager userManager;
     private final Collection<Realm> realms;

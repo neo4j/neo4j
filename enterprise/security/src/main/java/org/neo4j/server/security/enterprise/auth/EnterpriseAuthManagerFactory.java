@@ -64,7 +64,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     }
 
     @Override
-    public EnterpriseAuthManager newInstance( Config config, LogProvider logProvider, Log allegedSecurityLog,
+    public EnterpriseAuthAndUserManager newInstance( Config config, LogProvider logProvider, Log allegedSecurityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
 //        StaticLoggerBinder.setNeo4jLogProvider( logProvider );

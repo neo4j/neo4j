@@ -25,13 +25,13 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -46,29 +46,24 @@ import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
 {
     private GraphDatabaseFacade db;
-    private MultiRealmAuthManager manager;
-    private EnterpriseUserManager userManager;
+    private EnterpriseAuthManager authManager;
     private FileSystemAbstraction fileSystem;
 
     EmbeddedInteraction( Map<String, String> config ) throws Throwable
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
         factory.setFileSystem( new EphemeralFileSystemAbstraction() );
-        GraphDatabaseBuilder builder = factory.newImpermanentDatabaseBuilder().setConfig( config );
+        GraphDatabaseBuilder builder = factory.newImpermanentDatabaseBuilder();
         this.fileSystem = factory.getFileSystem();
-        init( builder );
+        init( builder, config );
     }
 
-    public EmbeddedInteraction( Map<Setting<?>, String> config, GraphDatabaseBuilder builder ) throws Throwable
+    public EmbeddedInteraction( GraphDatabaseBuilder builder, Map<String, String> config ) throws Throwable
     {
-        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
-        {
-            builder.setConfig( entry.getKey(), entry.getValue() );
-        }
-        init( builder );
+        init( builder, config );
     }
 
-    private void init( GraphDatabaseBuilder builder ) throws Throwable
+    private void init( GraphDatabaseBuilder builder, Map<String, String> config ) throws Throwable
     {
         builder.setConfig( boltConnector( "0" ).enabled, "true" );
         builder.setConfig( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
@@ -77,17 +72,23 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
                 NeoInteractionLevel.tempPath( "cert", ".cert" ) );
         builder.setConfig( GraphDatabaseSettings.auth_enabled, "true" );
         builder.setConfig( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
+
+        builder.setConfig( config );
+
         db = (GraphDatabaseFacade) builder.newGraphDatabase();
-        manager = db.getDependencyResolver().resolveDependency( MultiRealmAuthManager.class );
-        manager.init();
-        manager.start();
-        userManager = manager.getUserManager();
+        authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        authManager.init();
+        authManager.start();
     }
 
     @Override
-    public EnterpriseUserManager getLocalUserManager()
+    public EnterpriseUserManager getLocalUserManager() throws Exception
     {
-        return userManager;
+        if ( authManager instanceof EnterpriseAuthAndUserManager )
+        {
+            return ((EnterpriseAuthAndUserManager) authManager).getUserManager();
+        }
+        throw new Exception( "The configuration used does not have a user manager" );
     }
 
     @Override
@@ -126,7 +127,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     @Override
     public EnterpriseAuthSubject login( String username, String password ) throws Exception
     {
-        return manager.login( authToken( username, password ) );
+        return authManager.login( authToken( username, password ) );
     }
 
     @Override
@@ -149,8 +150,8 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     @Override
     public void tearDown() throws Throwable
     {
-        manager.stop();
-        manager.shutdown();
+        authManager.stop();
+        authManager.shutdown();
         db.shutdown();
     }
 
