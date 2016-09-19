@@ -22,6 +22,7 @@ package org.neo4j.coreedge.core.replication.session;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
@@ -99,11 +100,34 @@ public class GlobalSessionTrackerState
     public GlobalSessionTrackerState newInstance()
     {
         GlobalSessionTrackerState copy = new GlobalSessionTrackerState();
+        copy.logIndex = logIndex;
         for ( Map.Entry<MemberId,LocalSessionTracker> entry : sessionTrackers.entrySet() )
         {
             copy.sessionTrackers.put( entry.getKey(), entry.getValue().newInstance() );
         }
         return copy;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        GlobalSessionTrackerState that = (GlobalSessionTrackerState) o;
+        return logIndex == that.logIndex &&
+                Objects.equals( sessionTrackers, that.sessionTrackers );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( sessionTrackers, logIndex );
     }
 
     @Override

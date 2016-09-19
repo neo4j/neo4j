@@ -27,12 +27,11 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
-import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
 
-public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.StoreIdAwareMessage>
+public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.ClusterIdAwareMessage>
 {
     private final ChannelMarshal<ReplicatedContent> marshal;
 
@@ -43,15 +42,15 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
 
     @Override
     protected synchronized void encode( ChannelHandlerContext ctx,
-            RaftMessages.StoreIdAwareMessage decoratedMessage,
+            RaftMessages.ClusterIdAwareMessage decoratedMessage,
             List<Object> list ) throws Exception
     {
         RaftMessages.RaftMessage message = decoratedMessage.message();
-        StoreId storeId = decoratedMessage.storeId();
+        ClusterId clusterId = decoratedMessage.clusterId();
         MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
-        StoreIdMarshal.INSTANCE.marshal( storeId, channel );
+        ClusterId.Marshal.INSTANCE.marshal( clusterId, channel );
         channel.putInt( message.type().ordinal() );
         memberMarshal.marshal( message.from(), channel );
 

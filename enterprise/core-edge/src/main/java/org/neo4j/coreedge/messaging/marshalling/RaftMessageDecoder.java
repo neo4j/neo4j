@@ -29,11 +29,10 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 
 import static org.neo4j.coreedge.core.consensus.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
@@ -57,7 +56,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
     protected void decode( ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list ) throws Exception
     {
         ReadableChannel channel = new NetworkReadableClosableChannelNetty4( buffer );
-        StoreId storeId = StoreIdMarshal.INSTANCE.unmarshal( channel );
+        ClusterId clusterId = ClusterId.Marshal.INSTANCE.unmarshal( channel );
 
         int messageTypeWire = channel.getInt();
         RaftMessages.Type[] values = RaftMessages.Type.values();
@@ -140,7 +139,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             throw new IllegalArgumentException( "Unknown message type" );
         }
 
-        list.add( new RaftMessages.StoreIdAwareMessage( storeId, result ) );
+        list.add( new RaftMessages.ClusterIdAwareMessage( clusterId, result ) );
     }
 
     private MemberId retrieveMember( ReadableChannel buffer ) throws IOException, EndOfStreamException

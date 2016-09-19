@@ -49,6 +49,7 @@ import org.neo4j.time.Clocks;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -314,6 +315,17 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public StoreId getStoreId()
     {
         return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion(), getUpgradeTime(), upgradeTxIdField );
+    }
+
+    public static StoreId getStoreId( PageCache pageCache, File neoStore ) throws IOException
+    {
+        return new StoreId(
+                getRecord( pageCache, neoStore, Position.TIME ),
+                getRecord( pageCache, neoStore, Position.RANDOM_NUMBER ),
+                getRecord( pageCache, neoStore, Position.STORE_VERSION ),
+                getRecord( pageCache, neoStore, Position.UPGRADE_TIME ),
+                getRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID )
+        );
     }
 
     public long getUpgradeTime()

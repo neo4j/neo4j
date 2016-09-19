@@ -217,8 +217,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
                 platformModule.dataSourceManager,
-                dependencies.provideDependency( TransactionIdStore.class ),
-                databaseHealthSupplier, logProvider );
+                pageCache,
+                databaseHealthSupplier );
 
         TxPollingClient txPuller = new TxPollingClient( logProvider,
                 localDatabase, catchUpClient, new ConnectToRandomCoreMember( discoveryService ),

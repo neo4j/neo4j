@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.neo4j.coreedge.core.consensus.membership.RaftMembershipState;
 import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -68,6 +69,8 @@ public class ClusterId
 
     public static class Marshal extends SafeChannelMarshal<ClusterId>
     {
+        public static Marshal INSTANCE = new Marshal();
+
         @Override
         public void marshal( ClusterId clusterId, WritableChannel channel ) throws IOException
         {

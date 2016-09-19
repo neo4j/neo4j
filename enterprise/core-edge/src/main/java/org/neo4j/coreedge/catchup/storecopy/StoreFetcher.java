@@ -66,7 +66,7 @@ public class StoreFetcher
     {
         ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
         long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId );
+        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId - 1 );
     }
 
     private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId ) throws IOException, StoreCopyFailedException
@@ -109,7 +109,7 @@ public class StoreFetcher
 
     public StoreId getStoreIdOf( MemberId from ) throws StoreIdDownloadFailedException
     {
-        String operation = "get store id";
+        String operation = "get store id from " + from;
         long retryInterval = 5_000;
         int attempts = 0;
 
@@ -139,6 +139,6 @@ public class StoreFetcher
             }
         }
 
-        throw new StoreIdDownloadFailedException( "Failed to get store id after " + (attempts - 1) + " attempts" );
+        throw new StoreIdDownloadFailedException( "Failed to " + operation + " after " + (attempts - 1) + " attempts" );
     }
 }

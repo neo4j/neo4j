@@ -33,21 +33,21 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
  * Finds the last committed transaction in the transaction log, then decodes the header as a raft index.
  * This allows us to correlate raft log with transaction log on recovery.
  */
-class LastCommittedIndexFinder
+public class LastCommittedIndexFinder
 {
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore transactionStore;
     private final Log log;
 
-    LastCommittedIndexFinder( TransactionIdStore transactionIdStore,
-                              LogicalTransactionStore transactionStore, LogProvider logProvider )
+    public LastCommittedIndexFinder( TransactionIdStore transactionIdStore,
+                                     LogicalTransactionStore transactionStore, LogProvider logProvider )
     {
         this.transactionIdStore = transactionIdStore;
         this.transactionStore = transactionStore;
         this.log = logProvider.getLog( getClass() );
     }
 
-    long getLastCommittedIndex()
+    public long getLastCommittedIndex()
     {
         long lastCommittedIndex;
         long lastTxId = transactionIdStore.getLastCommittedTransactionId();

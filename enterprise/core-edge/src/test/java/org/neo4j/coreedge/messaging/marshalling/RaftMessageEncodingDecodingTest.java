@@ -38,8 +38,8 @@ import org.neo4j.coreedge.core.consensus.vote.VoteResponseBuilder;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -49,8 +49,7 @@ import static org.mockito.Mockito.when;
 
 public class RaftMessageEncodingDecodingTest
 {
-
-    private StoreId storeId = new StoreId( 1, 2, 3, 4 );
+    private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
 
     @Test
     public void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
@@ -104,7 +103,7 @@ public class RaftMessageEncodingDecodingTest
 
         // When
         MemberId sender = new MemberId( UUID.randomUUID() );
-        RaftMessages.StoreIdAwareMessage message = new RaftMessages.StoreIdAwareMessage( storeId,
+        RaftMessages.ClusterIdAwareMessage message = new RaftMessages.ClusterIdAwareMessage( clusterId,
         new RaftMessages.Heartbeat( sender, 1, 2, 3 ) );
         encoder.encode( setupContext(), message, resultingBuffers );
 
@@ -157,8 +156,8 @@ public class RaftMessageEncodingDecodingTest
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
-        RaftMessages.StoreIdAwareMessage decoratedMessage =
-                new RaftMessages.StoreIdAwareMessage( storeId, message );
+        RaftMessages.ClusterIdAwareMessage decoratedMessage =
+                new RaftMessages.ClusterIdAwareMessage( clusterId, message );
         encoder.encode( setupContext(), decoratedMessage, resultingBuffers );
 
         // Then

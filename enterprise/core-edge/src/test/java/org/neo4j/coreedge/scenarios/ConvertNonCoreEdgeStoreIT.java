@@ -19,28 +19,24 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import org.neo4j.coreedge.backup.RestoreClusterCliTest;
-import org.neo4j.coreedge.backup.RestoreExistingClusterCli;
-import org.neo4j.coreedge.backup.RestoreNewClusterCli;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -51,8 +47,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.coreedge.backup.ArgsBuilder.args;
-import static org.neo4j.coreedge.backup.ArgsBuilder.toArray;
 import static org.neo4j.coreedge.backup.RestoreClusterUtils.createClassicNeo4jStore;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
@@ -85,26 +79,14 @@ public class ConvertNonCoreEdgeStoreIT
         // given
         File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
         int classicNodeCount = 1024;
-        File classicNeo4jStore = createClassicNeo4jStore( dbDir, classicNodeCount, recordFormat );
+        File classicNeo4jStore = createClassicNeo4jStore( dbDir, new DefaultFileSystemAbstraction(), classicNodeCount, recordFormat );
 
         Cluster cluster = this.clusterRule.withRecordFormat( recordFormat ).createCluster();
 
-        Path homeDir = Paths.get(cluster.getCoreMemberById( 0 ).homeDir().getPath());
-
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        PrintStream sysOut = new PrintStream( output );
-
-        new RestoreNewClusterCli( homeDir, homeDir, sysOut ).execute(
-                toArray( args().from( classicNeo4jStore ).database( "graph.db" ).force().build() )  );
-
-        String seed = RestoreClusterCliTest.extractSeed( output.toString() );
-
-        for ( int serverId = 1; serverId < CLUSTER_SIZE; serverId++ )
+        for ( int serverId = 0; serverId < CLUSTER_SIZE; serverId++ )
         {
-            Path destination = Paths.get(cluster.getCoreMemberById( serverId ).homeDir().getPath());
-
-            new RestoreExistingClusterCli( destination, destination ).execute(
-                    toArray( args().from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).force().build() )  );
+            File destination = cluster.getCoreMemberById( serverId ).storeDir();
+            FileUtils.copyRecursively( classicNeo4jStore, destination );
         }
 
         cluster.start();

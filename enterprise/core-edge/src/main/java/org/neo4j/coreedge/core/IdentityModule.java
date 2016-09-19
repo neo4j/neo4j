@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.neo4j.coreedge.core.state.storage.SimpleFileStorage;
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -33,6 +34,7 @@ import org.neo4j.logging.LogProvider;
 public class IdentityModule
 {
     public static final String CORE_MEMBER_ID_NAME = "core-member-id";
+
     private MemberId myself;
 
     IdentityModule( PlatformModule platformModule, File clusterStateDirectory )
@@ -42,7 +44,7 @@ public class IdentityModule
 
         Log log = logProvider.getLog( getClass() );
 
-        SimpleStorage<MemberId> memberIdStorage = new SimpleStorage<>( fileSystem, clusterStateDirectory,
+        SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fileSystem, clusterStateDirectory,
                 CORE_MEMBER_ID_NAME, new MemberId.Marshal(), logProvider );
 
         try
@@ -70,7 +72,7 @@ public class IdentityModule
         }
     }
 
-    MemberId myself()
+    public MemberId myself()
     {
         return myself;
     }

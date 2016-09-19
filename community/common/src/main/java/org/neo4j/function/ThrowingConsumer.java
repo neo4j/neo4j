@@ -26,7 +26,7 @@ package org.neo4j.function;
  * @param <T> the type of the input to the operation
  * @param <E> the type of exception that may be thrown from the function
  */
-public interface ThrowingConsumer<T, E extends Exception>
+public interface ThrowingConsumer<T, E extends Throwable>
 {
     /**
      * Performs this operation on the given argument.

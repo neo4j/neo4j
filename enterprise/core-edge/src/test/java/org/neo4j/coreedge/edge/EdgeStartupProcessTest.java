@@ -87,9 +87,8 @@ public class EdgeStartupProcessTest
         edgeStartupProcess.start();
 
         // then
-        verify( localDatabase ).stop();
         verify( storeFetcher ).copyStore( any(), any(), any() );
-        verify( localDatabase, times( 2 ) ).start(); // once for initial start, once for after store copy
+        verify( localDatabase ).start();
         verify( txPulling ).start();
     }
 

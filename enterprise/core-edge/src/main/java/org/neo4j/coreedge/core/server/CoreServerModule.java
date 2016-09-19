@@ -34,6 +34,7 @@ import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.TxPullClient;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.IdentityModule;
 import org.neo4j.coreedge.core.consensus.ConsensusModule;
 import org.neo4j.coreedge.core.consensus.ContinuousJob;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
@@ -41,6 +42,7 @@ import org.neo4j.coreedge.core.consensus.RaftServer;
 import org.neo4j.coreedge.core.consensus.log.pruning.PruningScheduler;
 import org.neo4j.coreedge.core.consensus.membership.MembershipWaiter;
 import org.neo4j.coreedge.core.consensus.membership.MembershipWaiterLifecycle;
+import org.neo4j.coreedge.core.state.ClusteringModule;
 import org.neo4j.coreedge.core.state.CommandApplicationProcess;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.core.state.CoreStateApplier;
@@ -49,7 +51,6 @@ import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
@@ -72,12 +73,15 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THR
 
 public class CoreServerModule
 {
+    public static final String CLUSTER_ID_NAME = "cluster-id";
+    public static final String LAST_FLUSHED_NAME = "last-flushed";
+
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
 
-    public CoreServerModule( MemberId myself, final PlatformModule platformModule, ConsensusModule consensusModule,
-            CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule,
-            File clusterStateDirectory, CoreTopologyService discoveryService,
-            LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger, Supplier<DatabaseHealth> dbHealthSupplier )
+    public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
+                             CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule,
+                             File clusterStateDirectory, ClusteringModule clusteringModule,
+                             LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger, Supplier<DatabaseHealth> dbHealthSupplier )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -94,7 +98,7 @@ public class CoreServerModule
         StateStorage<Long> lastFlushedStorage;
 
         lastFlushedStorage = life.add(
-                new DurableStateStorage<>( fileSystem, clusterStateDirectory, ReplicationModule.LAST_FLUSHED_NAME,
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, LAST_FLUSHED_NAME,
                         new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
                         logProvider ) );
 
@@ -103,11 +107,11 @@ public class CoreServerModule
         RaftServer raftServer =
                 new RaftServer( new CoreReplicatedContentMarshal(), config, logProvider, userLogProvider, monitors );
 
-        LoggingInbound<RaftMessages.StoreIdAwareMessage> loggingRaftInbound =
-                new LoggingInbound<>( raftServer, messageLogger, myself );
+        LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound =
+                new LoggingInbound<>( raftServer, messageLogger, identityModule.myself() );
 
-        CatchUpClient catchUpClient =
-                life.add( new CatchUpClient( discoveryService, logProvider, Clocks.systemClock(), monitors ) );
+        CatchUpClient catchUpClient = life.add( new CatchUpClient( clusteringModule.topologyService(), logProvider,
+                Clocks.systemClock(), monitors ) );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
@@ -121,7 +125,7 @@ public class CoreServerModule
                 catchUpClient, logProvider, copiedStoreRecovery );
 
         CoreState coreState = new CoreState(
-                consensusModule.raftMachine(), localDatabase,
+                consensusModule.raftMachine(), localDatabase, clusteringModule.clusterIdentity(),
                 logProvider,
                 downloader,
                 new CommandApplicationProcess( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(),
@@ -145,7 +149,7 @@ public class CoreServerModule
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
 
         MembershipWaiter membershipWaiter =
-                new MembershipWaiter( myself, platformModule.jobScheduler, dbHealthSupplier,
+                new MembershipWaiter( identityModule.myself(), platformModule.jobScheduler, dbHealthSupplier,
                         electionTimeout * 4, logProvider );
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter,
@@ -159,10 +163,10 @@ public class CoreServerModule
                 new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
                 coreState, config, platformModule.monitors );
 
-        life.add( coreState );
+        life.add( raftServer );
         life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler, logProvider ) );
-        life.add( raftServer );
+        life.add( coreState );
         life.add( catchupServer );
     }
 }

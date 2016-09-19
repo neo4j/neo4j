@@ -40,7 +40,7 @@ public class SimpleStorageTest
     public void shouldWriteAndReadState() throws Exception
     {
         // given
-        SimpleStorage<MemberId> storage = new SimpleStorage<>( fsa.get(), new File( "state-dir" ), "member-id-a", new MemberId.Marshal(), NullLogProvider.getInstance() );
+        SimpleStorage<MemberId> storage = new SimpleFileStorage<>( fsa.get(), new File( "state-dir" ), "member-id-a", new MemberId.Marshal(), NullLogProvider.getInstance() );
 
         // when
         MemberId idA = new MemberId( UUID.randomUUID() );

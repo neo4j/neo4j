@@ -21,15 +21,16 @@ package org.neo4j.coreedge.core.state;
 
 import java.io.File;
 
+import org.neo4j.coreedge.core.state.storage.SimpleFileStorage;
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.identity.ClusterId;
+import org.neo4j.coreedge.identity.ClusterIdentity;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
@@ -37,12 +38,15 @@ import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;
 
+import static org.neo4j.coreedge.core.server.CoreServerModule.CLUSTER_ID_NAME;
+
 public class ClusteringModule
 {
-    private static final String CLUSTER_ID_NAME = "cluster-id";
     private final CoreTopologyService topologyService;
+    private final ClusterIdentity clusterIdentity;
 
-    public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself, PlatformModule platformModule, File clusterStateDirectory )
+    public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself,
+                             PlatformModule platformModule, File clusterStateDirectory )
     {
         LifeSupport life = platformModule.life;
         Config config = platformModule.config;
@@ -51,21 +55,29 @@ public class ClusteringModule
         Dependencies dependencies = platformModule.dependencies;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
 
-        SimpleStorage<ClusterId> clusterIdStorage = new SimpleStorage<>( fileSystem, clusterStateDirectory,
-                CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
-
         topologyService = discoveryServiceFactory.coreTopologyService( config, myself, logProvider, userLogProvider );
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService, logProvider,
-                Clocks.systemClock(), () -> sleep( 100 ), 300_000 );
 
         life.add( topologyService );
-        life.add( bindingService );
 
         dependencies.satisfyDependency( topologyService ); // for tests
+
+        SimpleStorage<ClusterId> clusterIdStorage = new SimpleFileStorage<>( fileSystem, clusterStateDirectory,
+                CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
+
+        CoreBootstrapper coreBootstrapper = new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache,
+                fileSystem, config );
+
+        clusterIdentity = new ClusterIdentity( clusterIdStorage, topologyService, logProvider,
+                Clocks.systemClock(), () -> sleep( 100 ), 300_000, coreBootstrapper );
     }
 
     public CoreTopologyService topologyService()
     {
         return topologyService;
+    }
+
+    public ClusterIdentity clusterIdentity()
+    {
+        return clusterIdentity;
     }
 }

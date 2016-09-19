@@ -153,4 +153,9 @@ public class CoreClusterMember implements ClusterMember
     {
         return format( "CoreClusterMember{serverId=%d}", serverId );
     }
+
+    public int serverId()
+    {
+        return serverId;
+    }
 }

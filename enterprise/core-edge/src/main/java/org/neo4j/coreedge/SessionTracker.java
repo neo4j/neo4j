@@ -21,17 +21,15 @@ package org.neo4j.coreedge;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.core.state.snapshot.CoreStateType;
 import org.neo4j.coreedge.core.replication.session.GlobalSession;
 import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.core.replication.session.LocalOperationId;
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
 
 public class SessionTracker
 {
     private final StateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
-    private GlobalSessionTrackerState sessionState = new GlobalSessionTrackerState();
+    private GlobalSessionTrackerState sessionState = null;
 
     public SessionTracker( StateStorage<GlobalSessionTrackerState> sessionTrackerStorage )
     {
@@ -40,7 +38,10 @@ public class SessionTracker
 
     public void start()
     {
-        sessionState = sessionTrackerStorage.getInitialState();
+        if ( sessionState == null )
+        {
+            sessionState = sessionTrackerStorage.getInitialState();
+        }
     }
 
     public long getLastAppliedIndex()

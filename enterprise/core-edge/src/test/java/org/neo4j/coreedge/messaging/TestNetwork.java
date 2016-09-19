@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.messaging;
 
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -151,13 +150,6 @@ public class TestNetwork<T>
         public void send( T destination, Message message )
         {
             doSend( destination, message, System.currentTimeMillis() );
-        }
-
-        @Override
-        public void send( T destination, Collection<Message> messages )
-        {
-            long now = System.currentTimeMillis();
-            messages.forEach( message -> doSend( destination, message, now ) );
         }
 
         private void doSend( T destination, Message message, long now )

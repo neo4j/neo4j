@@ -35,6 +35,7 @@ import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
 import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
+import org.neo4j.coreedge.core.state.storage.SimpleFileStorage;
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.core.state.storage.StateMarshal;
 import org.neo4j.coreedge.identity.MemberId;
@@ -43,7 +44,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.coreedge.ReplicationModule.LAST_FLUSHED_NAME;
+import static org.neo4j.coreedge.core.server.CoreServerModule.LAST_FLUSHED_NAME;
 import static org.neo4j.coreedge.ReplicationModule.SESSION_TRACKER_NAME;
 import static org.neo4j.coreedge.core.IdentityModule.CORE_MEMBER_ID_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_MEMBERSHIP_NAME;
@@ -76,7 +77,7 @@ public class DumpClusterStateTest
 
     private void createStates() throws IOException
     {
-        SimpleStorage<MemberId> memberIdStorage = new SimpleStorage<>( fsa.get(), clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.Marshal(), NullLogProvider.getInstance() );
+        SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fsa.get(), clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.Marshal(), NullLogProvider.getInstance() );
         memberIdStorage.writeState( new MemberId( UUID.randomUUID() ) );
 
         createDurableState( LAST_FLUSHED_NAME, new LongIndexMarshal() );

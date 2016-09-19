@@ -192,6 +192,7 @@ public class EdgeServerReplicationIT
 
         EdgeClusterMember edgeClusterMember = cluster.addEdgeMemberWithId( 4 );
         putSomeDataWithDifferentStoreId( edgeClusterMember.storeDir(), follower.storeDir() );
+        follower.start();
 
         try
         {
