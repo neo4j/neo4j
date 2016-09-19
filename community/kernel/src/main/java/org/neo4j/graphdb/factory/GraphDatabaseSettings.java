@@ -531,8 +531,8 @@ public abstract class GraphDatabaseSettings
     @Description("Default hostname or IP address the server uses to advertise itself to its connectors. " +
             "To advertise a specific hostname or IP address for a specific connector, " +
             "specify the +advertised_address+ property for the specific connector.")
-    public static final Setting<String> default_advertised_hostname =
-            setting( "dbms.connectors.default_advertised_hostname", STRING, "localhost" );
+    public static final Setting<String> default_advertised_address =
+            setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
 
     @Group("dbms.connector")
     public static class Connector

@@ -30,7 +30,7 @@ import org.neo4j.logging.Log;
 
 public class Election
 {
-    public static  boolean start( ReadableRaftState ctx, Outcome outcome, Log log ) throws IOException
+    public static boolean start( ReadableRaftState ctx, Outcome outcome, Log log ) throws IOException
     {
         Set<MemberId> currentMembers = ctx.votingMembers();
         if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )

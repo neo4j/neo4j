@@ -43,7 +43,7 @@ public class AdvertisedAddressSettingsTest
     {
         // given
         Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_advertised_hostname.name(), "server1.example.com" ) );
+        config.augment( stringMap( GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com" ) );
         config.augment( stringMap( advertised_address_setting.name(), "server1.internal:4000" ) );
 
         // when
@@ -59,7 +59,7 @@ public class AdvertisedAddressSettingsTest
     {
         // given
         Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_advertised_hostname.name(), "server1.example.com" ) );
+        config.augment( stringMap( GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com" ) );
 
         // when
         AdvertisedSocketAddress advertisedSocketAddress = config.get( advertised_address_setting );
@@ -74,7 +74,7 @@ public class AdvertisedAddressSettingsTest
     {
         // given
         Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_advertised_hostname.name(), "server1.example.com" ) );
+        config.augment( stringMap( GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com" ) );
         config.augment( stringMap( advertised_address_setting.name(), ":4000" ) );
 
         // when
