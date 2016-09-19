@@ -168,7 +168,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long transactionId;
     private long commitTime;
     private volatile int reuseCount;
-    private Map<String,Object> userMetaData;
+    private volatile Map<String,Object> userMetaData;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with

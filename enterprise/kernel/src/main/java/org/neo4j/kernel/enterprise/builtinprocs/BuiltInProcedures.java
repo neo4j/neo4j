@@ -71,7 +71,8 @@ import static org.neo4j.procedure.Mode.DBMS;
 @SuppressWarnings( "unused" )
 public class BuiltInProcedures
 {
-    public static Clock clock = Clocks.systemClock();
+    private static Clock clock = Clocks.systemClock();
+    private static final int HARD_CHAR_LIMIT = 2048;
 
     @Context
     public DependencyResolver resolver;
@@ -81,7 +82,6 @@ public class BuiltInProcedures
 
     @Context
     public KernelTransaction tx;
-
     @Context
     public AuthSubject authSubject;
 
@@ -89,9 +89,9 @@ public class BuiltInProcedures
     public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
     {
         int totalCharSize = data.entrySet().stream()
-                .mapToInt( e -> e.getKey().length() + e.getValue().toString().length() ).sum();
+                .mapToInt( e -> e.getKey().length() + e.getValue().toString().length() )
+                .sum();
 
-        final int HARD_CHAR_LIMIT = 2048;
         if ( totalCharSize >= HARD_CHAR_LIMIT )
         {
             throw new IllegalArgumentException(

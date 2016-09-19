@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Map;
-
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
