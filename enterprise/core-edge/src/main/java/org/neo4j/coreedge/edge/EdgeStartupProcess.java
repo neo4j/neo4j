@@ -118,7 +118,7 @@ class EdgeStartupProcess implements Lifecycle
         storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
         copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
         localDatabase.replaceWith( tempStore.storeDir() );
-        // TODO: Delete tempDir.
+        tempStore.cleanDirectory();
         log.info( "Replaced store with one downloaded from %s", source );
     }
 
