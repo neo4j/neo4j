@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.{PipeMonitor, AllNodesScanPipe, EagerPipe, HasHeaders, LoadCSVPipe}
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.{AllNodesScanPipe, EagerPipe, LoadCSVPipe, PipeMonitor}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.HasHeaders
 
 class CheckForEagerLoadCsvTest extends CypherFunSuite {
   implicit val monitor = mock[PipeMonitor]
