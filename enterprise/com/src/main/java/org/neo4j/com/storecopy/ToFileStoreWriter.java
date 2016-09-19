@@ -65,20 +65,12 @@ public class ToFileStoreWriter implements StoreWriter
 
             String filename = file.getName();
             final Optional<StoreType> storeType = typeOf( filename );
-            final Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
 
             monitor.startReceivingStoreFile( file );
             try
             {
-                if ( existingMapping.isPresent() )
-                {
-                    try ( PagedFile pagedFile = existingMapping.get() )
-                    {
-                        final long written = writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
-                        addPageCacheMoveAction( file );
-                        return written;
-                    }
-                }
+                // Note that we don't bother checking if the page cache already has a mapping for the given file.
+                // The reason is that we are copying to a temporary store location, and then we'll move the files later.
                 if ( storeType.isPresent() && storeType.get().isRecordStore() )
                 {
                     int filePageSize = filePageSize( recordSize );
