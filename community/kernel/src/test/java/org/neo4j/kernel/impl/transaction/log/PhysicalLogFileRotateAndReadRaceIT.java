@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +39,7 @@ import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import static java.lang.System.currentTimeMillis;
@@ -89,9 +91,11 @@ public class PhysicalLogFileRotateAndReadRaceIT
         byte[] dataChunk = new byte[100];
         // one thread constantly writing to and rotating the channel
         AtomicInteger rotations = new AtomicInteger();
+        CountDownLatch startSignal = new CountDownLatch( 1 );
         Future<Void> writeFuture = t2.execute( ignored ->
         {
             ThreadLocalRandom random = ThreadLocalRandom.current();
+            startSignal.countDown();
             while ( !end.get() )
             {
                 writer.put( dataChunk, random.nextInt( 1, dataChunk.length ) );
@@ -106,6 +110,7 @@ public class PhysicalLogFileRotateAndReadRaceIT
             }
             return null;
         } );
+        assertTrue( startSignal.await( 10, SECONDS ) );
         // one thread reading through the channel
         long maxEndTime = currentTimeMillis() + LIMIT_TIME;
         int reads = 0;

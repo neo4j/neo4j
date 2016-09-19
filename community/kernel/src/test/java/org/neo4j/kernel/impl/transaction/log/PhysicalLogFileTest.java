@@ -46,6 +46,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -231,6 +232,36 @@ public class PhysicalLogFileTest
         {
             // THEN good
             verify( channel ).close();
+        }
+    }
+
+    @Test
+    public void shouldSuppressFailueToCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception
+    {
+        // GIVEN a file which returns 1/2 log header size worth of bytes
+        File directory = new File( "/dir" );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
+        int logVersion = 0;
+        File logFile = logFiles.getLogFileForVersion( logVersion );
+        StoreChannel channel = mock( StoreChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( LogHeader.LOG_HEADER_SIZE / 2 );
+        when( fs.fileExists( logFile ) ).thenReturn( true );
+        when( fs.open( eq( logFile ), anyString() ) ).thenReturn( channel );
+        doThrow( IOException.class ).when( channel ).close();
+
+        // WHEN
+        try
+        {
+            PhysicalLogFile.openForVersion( logFiles, fs, logVersion, false );
+            fail( "Should have failed" );
+        }
+        catch ( IncompleteLogHeaderException e )
+        {
+            // THEN good
+            verify( channel ).close();
+            assertEquals( 1, e.getSuppressed().length );
+            assertTrue( e.getSuppressed()[0] instanceof IOException );
         }
     }
 

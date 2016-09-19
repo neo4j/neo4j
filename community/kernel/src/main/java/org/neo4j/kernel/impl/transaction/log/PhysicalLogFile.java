@@ -178,7 +178,8 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
      * {@link FileNotFoundException} and tell the reader that the stream has ended</li>
      * <li>2-3: Same as (1-2)</li>
      * <li>3-4: Here the new log file exists, but the header may not be fully written yet.
-     * TODO currently the reader will fail when trying to read the header since it's reading it strictly</li>
+     * the reader will fail when trying to read the header since it's reading it strictly and bridge
+     * catches that exception, treating it the same as if the file didn't exist.</li>
      * </ol>
      *
      * @param currentLog current {@link LogVersionedStoreChannel channel} to flush and close.
@@ -268,7 +269,6 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         }
 
         StoreChannel rawChannel = null;
-        boolean successful = false;
         try
         {
             rawChannel = fileSystem.open( fileToOpen, write ? "rw" : "r" );
@@ -278,7 +278,6 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             assert header != null && header.logVersion == version;
             PhysicalLogVersionedStoreChannel result =
                     new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
-            successful = true;
             return result;
         }
         catch ( FileNotFoundException cause )
@@ -286,17 +285,21 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             throw Exceptions.withCause( new FileNotFoundException( String.format( "File could not be opened [%s]",
                     fileToOpen.getCanonicalPath() ) ), cause );
         }
-        finally
+        catch ( Throwable unexpectedError )
         {
-            if (    // we managed to open the file
-                    rawChannel != null &&
-                    // but we didn't successfully do the rest, f.ex. reading the header
-                    !successful )
+            if ( rawChannel != null )
             {
-                // then close the channel
-                rawChannel.close();
-                // ... and the exception causing us to not be successful will be thrown
+                // If we managed to open the file before failing, then close the channel
+                try
+                {
+                    rawChannel.close();
+                }
+                catch ( IOException e )
+                {
+                    unexpectedError.addSuppressed( e );
+                }
             }
+            throw unexpectedError;
         }
     }
 
