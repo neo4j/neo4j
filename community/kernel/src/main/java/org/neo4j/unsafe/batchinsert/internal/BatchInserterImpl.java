@@ -1106,7 +1106,6 @@ public class BatchInserterImpl implements BatchInserter
     // test-access
     NeoStores getNeoStores()
     {
-        forceFlushChanges();
         return neoStores;
     }
 

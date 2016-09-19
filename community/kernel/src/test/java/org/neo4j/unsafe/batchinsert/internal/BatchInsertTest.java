@@ -207,7 +207,7 @@ public class BatchInsertTest
         // Global inserter can be used in tests which simply want to verify "local" behaviour,
         // e.g. create a node with some properties and read them back.
         globalInserter = BatchInserters.inserter(
-                TestDirectory.testDataDirectoryOf( REAL_FS, BatchInsertTest.class, true ),
+                TestDirectory.testDataDirectoryOf( fs, BatchInsertTest.class, true ),
                 fs, stringMap() );
     }
 
@@ -1172,7 +1172,7 @@ public class BatchInsertTest
             }
         }
 
-        NeoStores neoStores = ((BatchInserterImpl) inserter).getNeoStores();
+        NeoStores neoStores = getFlushedNeoStores( inserter );
         NodeRecord record = getRecord( neoStores.getNodeStore(), node1 );
         assertTrue( "Node " + record + " should have been dense", record.isDense() );
     }
@@ -1204,7 +1204,7 @@ public class BatchInsertTest
                 label( "Item" ) );
 
         // THEN
-        NodeStore nodeStore = ((BatchInserterImpl) inserter).getNeoStores().getNodeStore();
+        NodeStore nodeStore = getFlushedNeoStores( inserter ).getNodeStore();
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
         long[] labelIds = labels.get( nodeStore );
@@ -1224,7 +1224,7 @@ public class BatchInsertTest
                 label( "DD" ), label( "EE" ), label( "FF" ) );
 
         // THEN
-        NodeStore nodeStore = ((BatchInserterImpl) inserter).getNeoStores().getNodeStore();
+        NodeStore nodeStore = getFlushedNeoStores( inserter ).getNodeStore();
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL );
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
@@ -1569,7 +1569,13 @@ public class BatchInsertTest
 
     private void forceFlush( BatchInserter inserter )
     {
-        ((BatchInserterImpl)inserter).getNeoStores();
+        ((BatchInserterImpl)inserter).forceFlushChanges();
+    }
+
+    private NeoStores getFlushedNeoStores( BatchInserter inserter )
+    {
+        forceFlush( inserter );
+        return ((BatchInserterImpl) inserter).getNeoStores();
     }
 
     private enum Labels implements Label

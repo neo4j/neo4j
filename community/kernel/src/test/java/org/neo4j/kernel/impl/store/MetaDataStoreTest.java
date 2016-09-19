@@ -400,15 +400,18 @@ public class MetaDataStoreTest
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
-            int limit = 10_000;
-            long endTime = currentTimeMillis() + SECONDS.toMillis( 1 );
+            int upperLimit = 10_000;
+            int lowerLimit = 100;
+            long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
 
             Race race = new Race();
             BooleanSupplier end = () ->
             {
-                boolean doContinue = writeCount.get() < limit ||
-                        fileReadCount.get() < limit || apiReadCount.get() < limit;
-                return !doContinue || currentTimeMillis() >= endTime;
+                boolean upperBoundReached = writeCount.get() >= upperLimit &&
+                        fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit;
+                boolean lowerBoundReached = writeCount.get() >= lowerLimit &&
+                        fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit;
+                return !upperBoundReached || (currentTimeMillis() >= endTime && lowerBoundReached);
             };
             // writers
             race.addContestants( 3, until( end, () -> {
@@ -481,13 +484,17 @@ public class MetaDataStoreTest
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
-            long endTime = currentTimeMillis() + SECONDS.toMillis( 1 );
+            int upperLimit = 10_000;
+            int lowerLimit = 100;
+            long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
 
             BooleanSupplier end = () ->
             {
-                boolean doContinue = writeCount.get() < 10_000 ||
-                        fileReadCount.get() < 10_000 || apiReadCount.get() < 10_000;
-                return !doContinue || currentTimeMillis() >= endTime;
+                boolean upperBoundReached = writeCount.get() >= upperLimit &&
+                        fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit;
+                boolean lowerBoundReached = writeCount.get() >= lowerLimit &&
+                        fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit;
+                return !upperBoundReached || (currentTimeMillis() >= endTime && lowerBoundReached);
             };
             Race race = new Race();
             race.addContestants( 3, until( end, () ->
@@ -534,13 +541,17 @@ public class MetaDataStoreTest
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
-            long endTime = currentTimeMillis() + SECONDS.toMillis( 1 );
+            int upperLimit = 10_000;
+            int lowerLimit = 100;
+            long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
 
             BooleanSupplier end = () ->
             {
-                boolean doContinue = writeCount.get() < 10_000 ||
-                        fileReadCount.get() < 10_000 || apiReadCount.get() < 10_000;
-                return !doContinue || currentTimeMillis() >= endTime;
+                boolean upperBoundReached = writeCount.get() >= upperLimit &&
+                        fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit;
+                boolean lowerBoundReached = writeCount.get() >= lowerLimit &&
+                        fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit;
+                return !upperBoundReached || (currentTimeMillis() >= endTime && lowerBoundReached);
             };
             Race race = new Race();
             race.addContestants( 3, until( end, () -> {
