@@ -164,6 +164,8 @@ public class StoreCopyServer
                     int recordSize = meta.recordSize();
 
                     // Read from paged file if mapping exists. Otherwise read through file system.
+                    // A file is mapped if it is a store, and we have a running database, which will be the case for
+                    // both online backup, and when we are the master of an HA cluster.
                     final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
                     if ( optionalPagedFile.isPresent() )
                     {
