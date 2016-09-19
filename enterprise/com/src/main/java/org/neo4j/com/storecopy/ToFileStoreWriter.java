@@ -55,7 +55,7 @@ public class ToFileStoreWriter implements StoreWriter
 
     @Override
     public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer, boolean hasData,
-            int recordSize ) throws IOException
+            int requiredElementAlignment ) throws IOException
     {
         try
         {
@@ -73,7 +73,7 @@ public class ToFileStoreWriter implements StoreWriter
                 // The reason is that we are copying to a temporary store location, and then we'll move the files later.
                 if ( storeType.isPresent() && storeType.get().isRecordStore() )
                 {
-                    int filePageSize = filePageSize( recordSize );
+                    int filePageSize = filePageSize( requiredElementAlignment );
                     try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )
                     {
                         final long written = writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
@@ -102,11 +102,13 @@ public class ToFileStoreWriter implements StoreWriter
                 pageCache.renameFile( file, new File( toDir, file.getName() ), copyOptions ) ) );
     }
 
-    private int filePageSize( int recordSize )
+    private int filePageSize( int alignment )
     {
+        // We know we are dealing with a record store at this point, so the required alignment is the record size,
+        // and we can use this to do the page size calculation in the same way as the stores would.
         final int pageCacheSize = pageCache.pageSize();
-        return (recordSize == NO_RECORD_SIZE) ? pageCacheSize
-                                              : (pageCacheSize - (pageCacheSize % recordSize));
+        return (alignment == NO_RECORD_SIZE) ? pageCacheSize
+                                              : (pageCacheSize - (pageCacheSize % alignment));
     }
 
     private long writeDataThroughFileSystem( File file, ReadableByteChannel data, ByteBuffer temporaryBuffer,
