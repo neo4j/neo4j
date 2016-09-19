@@ -105,12 +105,12 @@ class EdgeStartupProcess implements Lifecycle
             try
             {
                 Thread.sleep( retryInterval );
-                retryInterval = retryInterval * 2;
+                retryInterval = Math.min( 60_000, retryInterval * 2 );
             }
             catch ( InterruptedException e )
             {
                 Thread.interrupted();
-                throw new RuntimeException( "Interrupted while trying to start edge server. Shutting down.", e );
+                throw new RuntimeException( "Interrupted while trying to start edge server.", e );
             }
         }
         throw new Exception( "Failed to start edge server after " + (attempts - 1) + " attempts" );

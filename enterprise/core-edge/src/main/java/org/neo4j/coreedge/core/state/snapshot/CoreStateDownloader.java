@@ -29,6 +29,7 @@ import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
+import org.neo4j.coreedge.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.coreedge.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
@@ -133,7 +134,8 @@ public class CoreStateDownloader
         }
     }
 
-    private void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher ) throws IOException, StoreCopyFailedException
+    private void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher )
+            throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
     {
         TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( localDatabase.storeDir() );
         storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
