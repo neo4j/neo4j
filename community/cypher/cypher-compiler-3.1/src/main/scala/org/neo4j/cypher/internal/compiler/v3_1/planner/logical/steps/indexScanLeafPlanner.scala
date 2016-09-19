@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LeafPlanner, Log
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.notification.IndexLookupUnfulfillableNotification
+import org.neo4j.cypher.internal.ir.v3_1.IdName
 
 object indexScanLeafPlanner extends LeafPlanner {
   override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_1.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.ir.v3_1.IdName
 
 case class NodeUniqueIndexSeek(idName: IdName,
                                label: LabelToken,

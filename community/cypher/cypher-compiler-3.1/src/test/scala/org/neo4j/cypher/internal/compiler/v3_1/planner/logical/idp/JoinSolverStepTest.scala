@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
+import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{LogicalPlan, NodeHashJoin, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_1.Cardinality
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, IdName}
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 

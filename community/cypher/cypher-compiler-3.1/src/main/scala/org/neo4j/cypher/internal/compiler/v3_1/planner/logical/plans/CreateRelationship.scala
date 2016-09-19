@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, RelTypeName}
-import org.neo4j.cypher.internal.ir.v3_1.StrictnessMode
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, StrictnessMode}
 
 case class CreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: RelTypeName, endNode: IdName,
                               properties: Option[Expression])

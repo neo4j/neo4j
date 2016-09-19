@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, LabelName, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.ir.v3_1.IdName
 
 sealed trait MutatingPattern {
   def coveredIds: Set[IdName]

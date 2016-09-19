@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.LazyTypes
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.LabelName
+import org.neo4j.cypher.internal.ir.v3_1.IdName
 
 case class RelationshipCountFromCountStore(idName: IdName, startLabel: Option[LabelName],
                                            typeNames: LazyTypes, endLabel: Option[LabelName], argumentIds: Set[IdName])

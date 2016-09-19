@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_1.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{IdentityMap, Rewriter, ast, topDown}
+import org.neo4j.cypher.internal.ir.v3_1.IdName
 
 /*
 Rewrite pattern expressions and pattern comprehensions to nested plan expressions by planning them using the given context.

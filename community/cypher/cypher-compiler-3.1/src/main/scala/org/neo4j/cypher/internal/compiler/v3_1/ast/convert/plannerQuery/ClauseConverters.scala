@@ -24,9 +24,10 @@ import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.Expressi
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, SemanticTable, SyntaxException}
+import org.neo4j.cypher.internal.ir.v3_1.IdName
 
 import scala.collection.mutable
 

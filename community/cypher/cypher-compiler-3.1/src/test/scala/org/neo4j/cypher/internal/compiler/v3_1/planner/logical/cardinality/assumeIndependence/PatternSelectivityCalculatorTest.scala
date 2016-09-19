@@ -24,9 +24,9 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.cardinality.IndependenceCombiner
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength, VarPatternLength}
-import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanConstructionTestSupport, Predicate, Selections}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{PatternRelationship, SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, IdName, Predicate, Selectivity}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanConstructionTestSupport, Selections}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite

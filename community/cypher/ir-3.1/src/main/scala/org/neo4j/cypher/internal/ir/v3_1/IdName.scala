@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_1
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Variable
 
-case class UnwindCollection(left: LogicalPlan, variable: IdName, expression: Expression)
-                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
-  val lhs = Some(left)
-  def rhs = None
+final case class IdName(name: String)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + variable
+object IdName {
+  implicit val byName = Ordering[String].on[IdName](_.name)
+
+  def fromVariable(variable: Variable) = IdName(variable.name)
 }

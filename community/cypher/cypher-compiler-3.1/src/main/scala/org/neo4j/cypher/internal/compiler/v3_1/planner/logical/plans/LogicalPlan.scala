@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, Variable}
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, Rewritable}
-import org.neo4j.cypher.internal.ir.v3_1.Strictness
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, Strictness}
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -127,10 +127,6 @@ abstract class IndexLeafPlan extends NodeLogicalLeafPlan {
   def valueExpr: QueryExpression[Expression]
 }
 
-final case class IdName(name: String)
 
-object IdName {
-  implicit val byName = Ordering[String].on[IdName](_.name)
 
-  def fromVariable(variable: Variable) = IdName(variable.name)
-}
+

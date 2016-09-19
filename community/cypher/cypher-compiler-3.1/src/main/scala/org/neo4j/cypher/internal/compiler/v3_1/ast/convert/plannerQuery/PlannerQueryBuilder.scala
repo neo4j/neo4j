@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
+import org.neo4j.cypher.internal.ir.v3_1.IdName
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
   extends ListSupport {

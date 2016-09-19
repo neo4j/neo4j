@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_1.IdName
 
 case class NodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
                        (val solved: PlannerQuery with CardinalityEstimation)

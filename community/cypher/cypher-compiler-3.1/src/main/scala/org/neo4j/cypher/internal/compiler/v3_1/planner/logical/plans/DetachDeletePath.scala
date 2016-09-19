@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_1.StrictnessMode
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, StrictnessMode}
 
 case class DetachDeletePath(source: LogicalPlan, expression: Expression)
                            (val solved: PlannerQuery with CardinalityEstimation)

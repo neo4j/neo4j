@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, HasLabels}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, Cost, Selectivity}
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, Cost, IdName, Selectivity}
 
 class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {

@@ -22,13 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, ShortestPathPattern, _}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{LogicalPlan, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Ascending, LogicalPlanningContext}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{Predicate, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.{Length, Nodes}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.frontend.v3_1.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, Predicate}
 
 case object planShortestPaths {
 

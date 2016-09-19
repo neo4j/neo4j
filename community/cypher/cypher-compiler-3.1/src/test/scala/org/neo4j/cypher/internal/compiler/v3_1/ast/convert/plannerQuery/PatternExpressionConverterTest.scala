@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, Predicate, Selections}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, Selections}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, Variable}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, Predicate}
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
