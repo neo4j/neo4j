@@ -126,7 +126,8 @@ class EdgeStartupProcess implements Lifecycle
 
             log.info( "Copying store from core server %s", source );
             localDatabase.delete();
-            copyWholeStoreFrom( source, storeId, storeFetcher );
+            new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log )
+                    .copyWholeStoreFrom( source, storeId, storeFetcher );
 
             log.info( "Restarting local database after copy.", source );
         }
@@ -149,18 +150,6 @@ class EdgeStartupProcess implements Lifecycle
                             "The local database is not empty and has a mismatching storeId: expected %s actual %s.",
                     remoteStoreId, localStoreId ) );
         }
-    }
-
-    private void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher )
-            throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
-    {
-        try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, localDatabase.storeDir() ) )
-        {
-            storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
-            copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
-            localDatabase.replaceWith( tempStore.storeDir() );
-        }
-        log.info( "Replaced store with one downloaded from %s", source );
     }
 
     private MemberId findCoreMemberToCopyFrom()

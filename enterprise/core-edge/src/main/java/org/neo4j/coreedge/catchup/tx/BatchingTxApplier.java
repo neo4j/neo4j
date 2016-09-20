@@ -57,8 +57,9 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
     private volatile long lastQueuedTxId;
     private volatile long lastAppliedTxId;
 
-    public BatchingTxApplier( int maxBatchSize, Supplier<TransactionIdStore> txIdStoreSupplier, Supplier<TransactionCommitProcess> commitProcessSupplier,
-            Supplier<DatabaseHealth> healthSupplier, Monitors monitors, LogProvider logProvider )
+    public BatchingTxApplier( int maxBatchSize, Supplier<TransactionIdStore> txIdStoreSupplier,
+            Supplier<TransactionCommitProcess> commitProcessSupplier, Supplier<DatabaseHealth> healthSupplier,
+            Monitors monitors, LogProvider logProvider )
     {
         this.maxBatchSize = maxBatchSize;
         this.txIdStoreSupplier = txIdStoreSupplier;
@@ -75,7 +76,8 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
     public void start() throws Throwable
     {
         TransactionCommitProcess commitProcess = commitProcessSupplier.get();
-        txBatcher = new TransactionQueue( maxBatchSize, ( first, last ) -> commitProcess.commit( first, NULL, EXTERNAL ) );
+        txBatcher =
+                new TransactionQueue( maxBatchSize, ( first, last ) -> commitProcess.commit( first, NULL, EXTERNAL ) );
         lastQueuedTxId = lastAppliedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
     }
 
@@ -157,5 +159,10 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
     long lastAppliedTxId()
     {
         return lastAppliedTxId;
+    }
+
+    void refreshLastAppliedTx()
+    {
+        lastAppliedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
     }
 }

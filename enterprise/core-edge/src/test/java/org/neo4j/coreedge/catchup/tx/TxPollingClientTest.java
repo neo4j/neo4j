@@ -19,18 +19,24 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchUpResponseCallback;
+import org.neo4j.coreedge.catchup.CatchupResult;
+import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -44,7 +50,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.coreedge.catchup.tx.TxPollingClient.Timeouts.TX_PULLER_TIMEOUT;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -59,10 +64,19 @@ public class TxPollingClientTest
     private final ControlledRenewableTimeoutService timeoutService = new ControlledRenewableTimeoutService();
 
     private final long txPullIntervalMillis = 100;
+    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+    private final StoreFetcher storeFetcher = mock( StoreFetcher.class );
+    private final CopiedStoreRecovery copiedStoreRecovery = mock( CopiedStoreRecovery.class );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
+    private final LocalDatabase localDatabase = mock( LocalDatabase.class );
+    {
+        when( localDatabase.storeId() ).thenReturn( storeId );
+    }
 
-    private final TxPollingClient txPuller = new TxPollingClient( NullLogProvider.getInstance(), () -> storeId,
-            catchUpClient, serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors() );
+    private final TxPollingClient txPuller =
+            new TxPollingClient( NullLogProvider.getInstance(), fs, localDatabase, storeFetcher, catchUpClient,
+                    serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
+                    copiedStoreRecovery );
 
     @Before
     public void before() throws Throwable
@@ -112,8 +126,8 @@ public class TxPollingClientTest
         verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
                 captor.capture() );
 
-        captor.getValue().onTxPullResponse( null, new TxPullResponse( storeId,
-                mock( CommittedTransactionRepresentation.class ) ) );
+        captor.getValue().onTxPullResponse( null,
+                new TxPullResponse( storeId, mock( CommittedTransactionRepresentation.class ) ) );
 
         verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), times( 2 ) ).renew();
     }
@@ -126,5 +140,25 @@ public class TxPollingClientTest
 
         // then
         verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).renew();
+    }
+
+    @Test
+    public void shouldCopyStoreIfCatchUpClientFails() throws Throwable
+    {
+        // given
+        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) ) ).thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
+
+        // when
+        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+
+        // then
+        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).cancel();
+        verify( localDatabase ).stop();
+        verify( storeFetcher ).copyStore( any( MemberId.class ), eq( storeId ), any( File.class ) );
+        verify( localDatabase ).start();
+        verify( txApplier ).refreshLastAppliedTx();
+        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ),
+                times( 2 ) /* at the beginning and after store copy */ ).renew();
     }
 }

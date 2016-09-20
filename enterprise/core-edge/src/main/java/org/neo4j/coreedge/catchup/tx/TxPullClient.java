@@ -44,8 +44,7 @@ public class TxPullClient
     }
 
     public CatchupResult pullTransactions( MemberId from, StoreId storeId, long startTxId,
-            TxPullResponseListener txPullResponseListener )
-            throws CatchUpClientException, NoKnownAddressesException
+            TxPullResponseListener txPullResponseListener ) throws CatchUpClientException, NoKnownAddressesException
     {
         pullRequestMonitor.txPullRequest( startTxId );
         return catchUpClient.makeBlockingRequest( from, new TxPullRequest( startTxId, storeId ),
@@ -58,7 +57,8 @@ public class TxPullClient
                     }
 
                     @Override
-                    public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal, TxStreamFinishedResponse response )
+                    public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal,
+                            TxStreamFinishedResponse response )
                     {
                         signal.complete( response.status() );
                     }

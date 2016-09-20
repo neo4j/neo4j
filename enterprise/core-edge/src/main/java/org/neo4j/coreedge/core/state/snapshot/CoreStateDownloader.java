@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.core.state.snapshot;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.catchup.CatchUpClient;
@@ -29,9 +28,8 @@ import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
-import org.neo4j.coreedge.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.coreedge.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.coreedge.core.state.CoreState;
+import org.neo4j.coreedge.edge.CopyStoreSafely;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -105,7 +103,8 @@ public class CoreStateDownloader
 
             if ( isEmptyStore )
             {
-                copyWholeStoreFrom( source, remoteStoreId, storeFetcher );
+                new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
+                        copyWholeStoreFrom( source, remoteStoreId, storeFetcher );
             }
             else
             {
@@ -113,8 +112,9 @@ public class CoreStateDownloader
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {
-                    // TODO: Delete store before copying to avoid double-storage issue.
-                    copyWholeStoreFrom( source, localStoreId, storeFetcher );
+                    localDatabase.delete();
+                    new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
+                        copyWholeStoreFrom( source, localStoreId, storeFetcher );
                 }
                 else if( catchupResult != SUCCESS )
                 {
@@ -139,17 +139,5 @@ public class CoreStateDownloader
             localDatabase.panic( e );
             throw new StoreCopyFailedException( e );
         }
-    }
-
-    private void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher )
-            throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
-    {
-        try( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, localDatabase.storeDir() ) )
-        {
-            storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
-            copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
-            localDatabase.replaceWith( tempStore.storeDir() );
-        }
-        log.info( "Replaced store with one downloaded from %s", source );
     }
 }

@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -313,8 +314,9 @@ public class EdgeServerReplicationIT
     private boolean edgesUpToDateAsTheLeader( CoreClusterMember leader,
             Collection<EdgeClusterMember> edgeClusterMembers )
     {
-        long leaderTxId = lastClosedTransactionId( leader.database() );
-        return edgeClusterMembers.stream().map( EdgeClusterMember::database ).map( this::lastClosedTransactionId )
+        long leaderTxId = lastClosedTransactionId( true, leader.database() );
+        return edgeClusterMembers.stream().map( EdgeClusterMember::database )
+                .map( db -> lastClosedTransactionId( false, db ) )
                 .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
     }
 
@@ -333,9 +335,26 @@ public class EdgeServerReplicationIT
         }
     }
 
-    private long lastClosedTransactionId( GraphDatabaseFacade db )
+    private long lastClosedTransactionId( boolean fail, GraphDatabaseFacade db )
     {
-        return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+        try
+        {
+            long lastClosedTransactionId = db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                    .getLastClosedTransactionId();
+            return lastClosedTransactionId;
+        }
+        catch ( IllegalStateException  | UnsatisfiedDependencyException /* db is shutdown or not available */ ex )
+        {
+            if ( !fail )
+            {
+                // the db is down we'll try again...
+                return -1;
+            }
+            else
+            {
+                throw ex;
+            }
+        }
     }
 
     @Test
