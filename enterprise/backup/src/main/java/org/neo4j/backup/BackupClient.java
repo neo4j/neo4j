@@ -44,8 +44,8 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.backup.BackupServer.BACKUP_PROTOCOL_VERSION;
 import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
-import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
 
 
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
@@ -59,8 +59,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
             LogEntryReader<ReadableClosablePositionAwareChannel> reader )
     {
         super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId, FRAME_LENGTH,
-                new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), timeout,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, unpacker,
+                timeout, Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, unpacker,
                 byteCounterMonitor, requestMonitor, reader );
     }
 
@@ -74,7 +73,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
             {
                 buffer.writeByte( forensics ? (byte) 1 : (byte) 0 );
             }
-        }, new Protocol.FileStreamsDeserializer( storeWriter ) );
+        }, new Protocol.FileStreamsDeserializer310( storeWriter ) );
     }
 
     @Override
@@ -82,6 +81,12 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
     {
         return sendRequest( BackupRequestType.INCREMENTAL_BACKUP, context, Protocol.EMPTY_SERIALIZER,
                 Protocol.VOID_DESERIALIZER );
+    }
+
+    @Override
+    public ProtocolVersion getProtocolVersion()
+    {
+        return BACKUP_PROTOCOL_VERSION;
     }
 
     @Override

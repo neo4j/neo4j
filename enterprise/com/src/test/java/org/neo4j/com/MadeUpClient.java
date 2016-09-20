@@ -40,22 +40,17 @@ import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.Protocol.writeString;
 import static org.neo4j.com.RequestContext.EMPTY;
 
-public class MadeUpClient extends Client<MadeUpCommunicationInterface> implements MadeUpCommunicationInterface
+public abstract class MadeUpClient extends Client<MadeUpCommunicationInterface> implements MadeUpCommunicationInterface
 {
-    private final byte internalProtocolVersion;
-
-    public MadeUpClient( int port, StoreId storeIdToExpect, byte internalProtocolVersion,
-                         byte applicationProtocolVersion, int chunkSize, ResponseUnpacker responseUnpacker )
+    public MadeUpClient( int port, StoreId storeIdToExpect, int chunkSize, ResponseUnpacker responseUnpacker )
     {
         super( localhost(), port, null, NullLogProvider.getInstance(), storeIdToExpect, FRAME_LENGTH,
-                new ProtocolVersion( applicationProtocolVersion, internalProtocolVersion ),
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 chunkSize, responseUnpacker,
                 new Monitors().newMonitor( ByteCounterMonitor.class ),
                 new Monitors().newMonitor( RequestMonitor.class ),
                 new VersionAwareLogEntryReader<>() );
-        this.internalProtocolVersion = internalProtocolVersion;
     }
 
     private static String localhost()
@@ -73,7 +68,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     @Override
     protected byte getInternalProtocolVersion()
     {
-        return internalProtocolVersion;
+        return getProtocolVersion().getInternalProtocol();
     }
 
     @Override
