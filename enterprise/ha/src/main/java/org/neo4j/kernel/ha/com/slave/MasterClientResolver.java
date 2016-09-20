@@ -128,11 +128,11 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
 
     private abstract static class StaticMasterClientFactory implements MasterClientFactory
     {
-        protected final LogProvider logProvider;
-        protected final int readTimeoutSeconds;
-        protected final int lockReadTimeout;
-        protected final int maxConcurrentChannels;
-        protected final int chunkSize;
+        final LogProvider logProvider;
+        final int readTimeoutSeconds;
+        final int lockReadTimeout;
+        final int maxConcurrentChannels;
+        final int chunkSize;
 
         StaticMasterClientFactory( LogProvider logProvider, int readTimeoutSeconds, int lockReadTimeout,
                                    int maxConcurrentChannels, int chunkSize )
@@ -147,7 +147,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
 
     private final class F210 extends StaticMasterClientFactory
     {
-        public F210( LogProvider logProvider, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+        private F210( LogProvider logProvider, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
                      int chunkSize )
         {
             super( logProvider, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
@@ -166,7 +166,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
 
     private final class F214 extends StaticMasterClientFactory
     {
-        public F214( LogProvider logProvider, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+        private F214( LogProvider logProvider, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
                      int chunkSize )
         {
             super( logProvider, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
@@ -185,7 +185,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
 
     private final class F310 extends StaticMasterClientFactory
     {
-        public F310( LogProvider logProvider, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+        private F310( LogProvider logProvider, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
                      int chunkSize )
         {
             super( logProvider, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );

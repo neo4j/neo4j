@@ -47,7 +47,6 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.backup.BackupServer.BACKUP_PROTOCOL_VERSION;
 import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
 
-
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {
 
@@ -97,59 +96,41 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
 
     public enum BackupRequestType implements RequestType<TheBackupInterface>
     {
-        FULL_BACKUP( new TargetCaller<TheBackupInterface, Void>()
+        FULL_BACKUP( (TargetCaller<TheBackupInterface, Void>) ( master, context, input, target ) ->
         {
-            @Override
-            public Response<Void> call( TheBackupInterface master, RequestContext context,
-                    ChannelBuffer input, ChannelBuffer target )
-            {
-                boolean forensics = input.readable() ? booleanOf( input.readByte() ) : false;
-                return master.fullBackup( new ToNetworkStoreWriter( target, new Monitors() ), forensics );
-            }
-
-            private boolean booleanOf( byte value )
-            {
-                switch ( value )
-                {
-                case 0: return false;
-                case 1: return true;
-                default: throw new IllegalArgumentException( "Invalid 'boolean' byte value " + value );
-                }
-            }
+            boolean forensics = input.readable() && booleanOf( input.readByte() );
+            return master.fullBackup( new ToNetworkStoreWriter( target, new Monitors() ), forensics );
         }, Protocol.VOID_SERIALIZER ),
-        INCREMENTAL_BACKUP( new TargetCaller<TheBackupInterface, Void>()
-        {
-            @Override
-            public Response<Void> call( TheBackupInterface master, RequestContext context,
-                    ChannelBuffer input, ChannelBuffer target )
-            {
-                return master.incrementalBackup( context );
-            }
-        }, Protocol.VOID_SERIALIZER )
+        INCREMENTAL_BACKUP( (TargetCaller<TheBackupInterface, Void>) ( master, context, input, target ) ->
+                master.incrementalBackup( context ), Protocol.VOID_SERIALIZER );
 
-        ;
-        @SuppressWarnings( "rawtypes" )
-        private final TargetCaller masterCaller;
-        @SuppressWarnings( "rawtypes" )
-        private final ObjectSerializer serializer;
+        private final TargetCaller<?,?> masterCaller;
+        private final ObjectSerializer<?> serializer;
 
-        @SuppressWarnings( "rawtypes" )
-        BackupRequestType( TargetCaller masterCaller, ObjectSerializer serializer )
+        BackupRequestType( TargetCaller<?,?> masterCaller, ObjectSerializer<?> serializer )
         {
             this.masterCaller = masterCaller;
             this.serializer = serializer;
         }
 
+        private static boolean booleanOf( byte value )
+        {
+            switch ( value )
+            {
+            case 0: return false;
+            case 1: return true;
+            default: throw new IllegalArgumentException( "Invalid 'boolean' byte value " + value );
+            }
+        }
+
         @Override
-        @SuppressWarnings( "rawtypes" )
-        public TargetCaller getTargetCaller()
+        public TargetCaller<?,?> getTargetCaller()
         {
             return masterCaller;
         }
 
         @Override
-        @SuppressWarnings( "rawtypes" )
-        public ObjectSerializer getObjectSerializer()
+        public ObjectSerializer<?> getObjectSerializer()
         {
             return serializer;
         }

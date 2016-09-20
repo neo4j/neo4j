@@ -267,19 +267,15 @@ public class StoreCopyClient
                 @Override
                 public Visitor<CommittedTransactionRepresentation,Exception> transactions()
                 {
-                    return new Visitor<CommittedTransactionRepresentation,Exception>()
+                    return transaction ->
                     {
-                        @Override
-                        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
+                        long txId = transaction.getCommitEntry().getTxId();
+                        if ( firstTxId.compareAndSet( BASE_TX_ID, txId ) )
                         {
-                            long txId = transaction.getCommitEntry().getTxId();
-                            if ( firstTxId.compareAndSet( BASE_TX_ID, txId ) )
-                            {
-                                monitor.startReceivingTransactions( txId );
-                            }
-                            writer.append( transaction.getTransactionRepresentation(), txId );
-                            return false;
+                            monitor.startReceivingTransactions( txId );
                         }
+                        writer.append( transaction.getTransactionRepresentation(), txId );
+                        return false;
                     };
                 }
             } );

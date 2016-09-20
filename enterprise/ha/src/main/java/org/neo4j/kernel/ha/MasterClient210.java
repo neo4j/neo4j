@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha;
 import org.jboss.netty.buffer.ChannelBuffer;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -123,85 +122,33 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     @Override
     public Response<IdAllocation> allocateIds( RequestContext context, final IdType idType )
     {
-        return sendRequest( requestTypes.type( Type.ALLOCATE_IDS ), context, new Serializer()
-                {
-                    @Override
-                    public void write( ChannelBuffer buffer ) throws IOException
-                    {
-                        buffer.writeByte( idType.ordinal() );
-                    }
-                }, new Deserializer<IdAllocation>()
-                {
-                    @Override
-                    public IdAllocation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
-                    {
-                        return readIdAllocation( buffer );
-                    }
-                }
-        );
+        Serializer serializer = buffer -> buffer.writeByte( idType.ordinal() );
+        Deserializer<IdAllocation> deserializer = ( buffer, temporaryBuffer ) -> readIdAllocation( buffer );
+        return sendRequest( requestTypes.type( Type.ALLOCATE_IDS ), context, serializer, deserializer );
     }
 
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, final String name )
     {
-        return sendRequest( requestTypes.type( Type.CREATE_RELATIONSHIP_TYPE ), context, new Serializer()
-        {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                writeString( buffer, name );
-            }
-        }, new Deserializer<Integer>()
-        {
-            @Override
-            @SuppressWarnings("boxing")
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-            {
-                return buffer.readInt();
-            }
-        } );
+        Serializer serializer = buffer -> writeString( buffer, name );
+        Deserializer<Integer> deserializer = ( buffer, temporaryBuffer ) -> buffer.readInt();
+        return sendRequest( requestTypes.type( Type.CREATE_RELATIONSHIP_TYPE ), context, serializer, deserializer );
     }
 
     @Override
     public Response<Integer> createPropertyKey( RequestContext context, final String name )
     {
-        return sendRequest( requestTypes.type( Type.CREATE_PROPERTY_KEY ), context, new Serializer()
-        {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                writeString( buffer, name );
-            }
-        }, new Deserializer<Integer>()
-        {
-            @Override
-            @SuppressWarnings("boxing")
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-            {
-                return buffer.readInt();
-            }
-        } );
+        Serializer serializer = buffer -> writeString( buffer, name );
+        Deserializer<Integer> deserializer = ( buffer, temporaryBuffer ) -> buffer.readInt();
+        return sendRequest( requestTypes.type( Type.CREATE_PROPERTY_KEY ), context, serializer, deserializer );
     }
 
     @Override
     public Response<Integer> createLabel( RequestContext context, final String name )
     {
-        return sendRequest( requestTypes.type( Type.CREATE_LABEL ), context, new Serializer()
-                {
-                    @Override
-                    public void write( ChannelBuffer buffer ) throws IOException
-                    {
-                writeString( buffer, name );
-            }
-        }, new Deserializer<Integer>()
-        {
-            @Override
-            @SuppressWarnings("boxing")
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-            {
-                return buffer.readInt();
-            }
-        });
+        Serializer serializer = buffer -> writeString( buffer, name );
+        Deserializer<Integer> deserializer = ( buffer, temporaryBuffer ) -> buffer.readInt();
+        return sendRequest( requestTypes.type( Type.CREATE_LABEL ), context, serializer, deserializer );
     }
 
     @Override
@@ -211,16 +158,16 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<LockResult> acquireSharedLock( RequestContext context, ResourceType type, long...
-            resourceIds )
+    public Response<LockResult> acquireSharedLock(
+            RequestContext context, ResourceType type, long... resourceIds )
     {
         return sendRequest( requestTypes.type( Type.ACQUIRE_SHARED_LOCK ), context,
                 new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
-    public Response<LockResult> acquireExclusiveLock( RequestContext context, ResourceType type, long...
-            resourceIds )
+    public Response<LockResult> acquireExclusiveLock(
+            RequestContext context, ResourceType type, long... resourceIds )
     {
         return sendRequest( requestTypes.type( Type.ACQUIRE_EXCLUSIVE_LOCK ), context,
                 new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
@@ -229,30 +176,16 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     @Override
     public Response<Long> commit( RequestContext context, TransactionRepresentation tx )
     {
-        return sendRequest( requestTypes.type( Type.COMMIT ), context, new Protocol.TransactionSerializer( tx ),
-                new Deserializer<Long>()
-                {
-                    @Override
-                    @SuppressWarnings("boxing")
-                    public Long read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-                    {
-                        return buffer.readLong();
-                    }
-                }
-        );
+        Serializer serializer = new Protocol.TransactionSerializer( tx );
+        Deserializer<Long> deserializer = ( buffer, temporaryBuffer ) -> buffer.readLong();
+        return sendRequest( requestTypes.type( Type.COMMIT ), context, serializer, deserializer );
     }
 
     @Override
     public Response<Void> endLockSession( RequestContext context, final boolean success )
     {
-        return sendRequest( requestTypes.type( Type.END_LOCK_SESSION ), context, new Serializer()
-        {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                buffer.writeByte( success ? 1 : 0 );
-            }
-        }, VOID_DESERIALIZER );
+        Serializer serializer = buffer -> buffer.writeByte( success ? 1 : 0 );
+        return sendRequest( requestTypes.type( Type.END_LOCK_SESSION ), context, serializer, VOID_DESERIALIZER );
     }
 
     @Override
@@ -271,23 +204,11 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     @Override
     public Response<HandshakeResult> handshake( final long txId, StoreId storeId )
     {
-        return sendRequest( requestTypes.type( Type.HANDSHAKE ), RequestContext.EMPTY, new Serializer()
-                {
-                    @Override
-                    public void write( ChannelBuffer buffer ) throws IOException
-                    {
-                        buffer.writeLong( txId );
-                    }
-                }, new Deserializer<HandshakeResult>()
-                {
-                    @Override
-                    public HandshakeResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
-                            IOException
-                    {
-                        return new HandshakeResult( buffer.readLong(), buffer.readLong() );
-                    }
-                }, storeId, ResponseUnpacker.NO_OP_TX_HANDLER
-        );
+        Serializer serializer = buffer -> buffer.writeLong( txId );
+        Deserializer<HandshakeResult> deserializer =
+                ( buffer, temporaryBuffer ) -> new HandshakeResult( buffer.readLong(), buffer.readLong() );
+        return sendRequest( requestTypes.type( Type.HANDSHAKE ), RequestContext.EMPTY,
+                serializer, deserializer, storeId, ResponseUnpacker.NO_OP_TX_HANDLER );
     }
 
     @Override
@@ -315,7 +236,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         return PROTOCOL_VERSION;
     }
 
-    protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
+    private static IdAllocation readIdAllocation( ChannelBuffer buffer )
     {
         int numberOfDefragIds = buffer.readInt();
         long[] defragIds = new long[numberOfDefragIds];
@@ -331,7 +252,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                 highId, defragCount );
     }
 
-    protected static class AcquireLockSerializer implements Serializer
+    private static class AcquireLockSerializer implements Serializer
     {
         private final ResourceType type;
         private final long[] resourceIds;

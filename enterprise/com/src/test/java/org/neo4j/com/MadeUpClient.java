@@ -19,12 +19,8 @@
  */
 package org.neo4j.com;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.com.MadeUpServer.MadeUpRequestType;
@@ -74,15 +70,13 @@ public abstract class MadeUpClient extends Client<MadeUpCommunicationInterface> 
     @Override
     public Response<Integer> multiply( final int value1, final int value2 )
     {
-        return sendRequest( MadeUpServer.MadeUpRequestType.MULTIPLY, getRequestContext(), new Serializer()
+        Serializer serializer = buffer ->
         {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                buffer.writeInt( value1 );
-                buffer.writeInt( value2 );
-            }
-        }, Protocol.INTEGER_DESERIALIZER );
+            buffer.writeInt( value1 );
+            buffer.writeInt( value2 );
+        };
+        return sendRequest( MadeUpServer.MadeUpRequestType.MULTIPLY, getRequestContext(), serializer,
+                Protocol.INTEGER_DESERIALIZER );
     }
 
     private RequestContext getRequestContext()
@@ -94,102 +88,64 @@ public abstract class MadeUpClient extends Client<MadeUpCommunicationInterface> 
     @Override
     public Response<Void> fetchDataStream( final MadeUpWriter writer, final int dataSize )
     {
-        return sendRequest( MadeUpServer.MadeUpRequestType.FETCH_DATA_STREAM, getRequestContext(), new Serializer()
+        Serializer serializer = buffer -> buffer.writeInt( dataSize );
+        Deserializer<Void> deserializer = ( buffer, temporaryBuffer ) ->
         {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                buffer.writeInt( dataSize );
-            }
-        }, new Deserializer<Void>()
-        {
-            @Override
-            public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
-                    throws IOException
-            {
-                writer.write( new BlockLogReader( buffer ) );
-                return null;
-            }
-        } );
+            writer.write( new BlockLogReader( buffer ) );
+            return null;
+        };
+        return sendRequest( MadeUpServer.MadeUpRequestType.FETCH_DATA_STREAM, getRequestContext(),
+                serializer, deserializer );
     }
 
     @Override
     public Response<Void> sendDataStream( final ReadableByteChannel data )
     {
-        return sendRequest( MadeUpServer.MadeUpRequestType.SEND_DATA_STREAM, getRequestContext(), new Serializer()
+        Serializer serializer = buffer ->
         {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
+            try ( BlockLogBuffer writer = new BlockLogBuffer( buffer,
+                    new Monitors().newMonitor( ByteCounterMonitor.class ) ) )
             {
-                try ( BlockLogBuffer writer = new BlockLogBuffer( buffer, new Monitors().newMonitor( ByteCounterMonitor.class ) ) )
-                {
-                    writer.write( data );
-                }
+                writer.write( data );
             }
-        }, Protocol.VOID_DESERIALIZER );
+        };
+        return sendRequest( MadeUpServer.MadeUpRequestType.SEND_DATA_STREAM, getRequestContext(), serializer,
+                Protocol.VOID_DESERIALIZER );
     }
 
     @Override
     public Response<Integer> throwException( final String messageInException )
     {
-        return sendRequest( MadeUpServer.MadeUpRequestType.THROW_EXCEPTION, getRequestContext(), new Serializer()
-        {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                writeString( buffer, messageInException );
-            }
-        }, new Deserializer<Integer>()
-        {
-            @Override
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
-                    throws IOException
-            {
-                return buffer.readInt();
-            }
-        } );
+        Serializer serializer = buffer -> writeString( buffer, messageInException );
+        Deserializer<Integer> deserializer = ( buffer, temporaryBuffer ) -> buffer.readInt();
+        return sendRequest( MadeUpServer.MadeUpRequestType.THROW_EXCEPTION, getRequestContext(),
+                serializer, deserializer );
     }
 
     @Override
     public Response<Integer> streamBackTransactions( final int responseToSendBack, final int txCount )
     {
-        return sendRequest( MadeUpRequestType.STREAM_BACK_TRANSACTIONS, getRequestContext(), new Serializer()
+        Serializer serializer = buffer ->
         {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                buffer.writeInt( responseToSendBack );
-                buffer.writeInt( txCount );
-            }
-        }, new Deserializer<Integer>()
-        {
-            @Override
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-            {
-                return buffer.readInt();
-            }
-        } );
+            buffer.writeInt( responseToSendBack );
+            buffer.writeInt( txCount );
+        };
+        Deserializer<Integer> integerDeserializer = ( buffer, temporaryBuffer ) -> buffer.readInt();
+        return sendRequest( MadeUpRequestType.STREAM_BACK_TRANSACTIONS, getRequestContext(), serializer,
+                integerDeserializer );
     }
 
     @Override
     public Response<Integer> informAboutTransactionObligations( final int responseToSendBack,
             final long desiredObligation )
     {
-        return sendRequest( MadeUpRequestType.INFORM_ABOUT_TX_OBLIGATIONS, getRequestContext(), new Serializer()
+        Serializer serializer = buffer ->
         {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                buffer.writeInt( responseToSendBack );
-                buffer.writeLong( desiredObligation );
-            }
-        }, new Deserializer<Integer>()
-        {
-            @Override
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-            {
-                return buffer.readInt();
-            }
-        } );
+            buffer.writeInt( responseToSendBack );
+            buffer.writeLong( desiredObligation );
+        };
+        Deserializer<Integer> deserializer = ( buffer, temporaryBuffer ) -> buffer.readInt();
+        return sendRequest( MadeUpRequestType.INFORM_ABOUT_TX_OBLIGATIONS, getRequestContext(), serializer,
+                deserializer );
     }
 }

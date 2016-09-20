@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.neo4j.kernel.impl.util.Bits.numbersToBitString;
 
-public class DechunkingChannelBuffer implements ChannelBuffer
+class DechunkingChannelBuffer implements ChannelBuffer
 {
     private final BlockingReadHandler<ChannelBuffer> reader;
     private ChannelBuffer buffer;
@@ -59,7 +59,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         readNextChunk();
     }
 
-    protected ChannelBuffer readNext()
+    private ChannelBuffer readNext()
     {
         try
         {
@@ -70,11 +70,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
             }
             return result;
         }
-        catch ( IOException e )
-        {
-            throw new ComException( e );
-        }
-        catch ( InterruptedException e )
+        catch ( IOException | InterruptedException e )
         {
             throw new ComException( e );
         }
