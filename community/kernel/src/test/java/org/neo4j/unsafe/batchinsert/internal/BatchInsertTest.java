@@ -22,6 +22,7 @@ package org.neo4j.unsafe.batchinsert.internal;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -195,7 +196,9 @@ public class BatchInsertTest
     private static final FileSystemAbstraction fs = REAL_FS;
 
     @Rule
-    public TestDirectory storeDir = TestDirectory.testDirectory();
+    public TestDirectory storeDir = TestDirectory.testDirectory( getClass() );
+    @ClassRule
+    public static TestDirectory globalStoreDir = TestDirectory.testDirectory( BatchInsertTest.class );
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
@@ -207,8 +210,7 @@ public class BatchInsertTest
         // Global inserter can be used in tests which simply want to verify "local" behaviour,
         // e.g. create a node with some properties and read them back.
         globalInserter = BatchInserters.inserter(
-                TestDirectory.testDataDirectoryOf( fs, BatchInsertTest.class, true ),
-                fs, stringMap() );
+                globalStoreDir.directory( "global" ), fs, stringMap() );
     }
 
     @After

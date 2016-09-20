@@ -247,11 +247,7 @@ public class TestDirectory implements TestRule
         }
     }
 
-    /**
-     * This method can be used outside the context of a Rule as a utility. It will return something like:
-     * {@code component/target/test-data/org.neo4j.location.of.my.test.Clazz/}
-     */
-    public static File testDataDirectoryOf( FileSystemAbstraction fs, Class<?> owningTest, boolean clean )
+    private static File testDataDirectoryOf( FileSystemAbstraction fs, Class<?> owningTest, boolean clean )
             throws IOException
     {
         File testData = new File( locateTarget( owningTest ), "test-data" );

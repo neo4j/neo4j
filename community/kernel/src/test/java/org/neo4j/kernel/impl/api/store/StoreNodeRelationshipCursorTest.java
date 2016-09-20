@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -64,10 +65,12 @@ import static org.neo4j.storageengine.api.Direction.OUTGOING;
 @RunWith( Parameterized.class )
 public class StoreNodeRelationshipCursorTest
 {
-
     private static final long FIRST_OWNING_NODE = 1;
     private static final long SECOND_OWNING_NODE = 2;
     private static final int TYPE = 0;
+
+    @ClassRule
+    public static TestDirectory directory = TestDirectory.testDirectory( StoreNodeRelationshipCursorTest.class );
 
     private static PageCache pageCache;
     private static NeoStores neoStores;
@@ -91,13 +94,13 @@ public class StoreNodeRelationshipCursorTest
     }
 
     @BeforeClass
-    public static void setupStores() throws IOException
+    public static void setupStores()
     {
-        File directory = TestDirectory.testDataDirectoryOf( REAL_FS, StoreNodeRelationshipCursor.class, true );
+        File storeDir = directory.absolutePath();
         pageCache = new ConfiguringPageCacheFactory( REAL_FS,
                 Config.defaults().augment( stringMap( pagecache_memory.name(), "8m" ) ), NULL, NullLog.getInstance() )
                 .getOrCreatePageCache();
-        StoreFactory storeFactory = new StoreFactory( directory, pageCache, REAL_FS, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, REAL_FS, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
