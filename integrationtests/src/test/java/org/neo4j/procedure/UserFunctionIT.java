@@ -685,6 +685,7 @@ public class UserFunctionIT
         //Given/When
         Result res = db.execute( "CALL dbms.functions()" );
 
+
         String expected =
         "+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+" + lineSeparator() +
         "| name                                                | signature                                                                                                                                                    | description             |" + lineSeparator() +
@@ -712,12 +713,24 @@ public class UserFunctionIT
         "| 'org.neo4j.procedure.simpleArgument'                | 'org.neo4j.procedure.simpleArgument(someValue :: INTEGER?) :: (INTEGER?)'                                                                                    | ''                      |" + lineSeparator() +
         "| 'org.neo4j.procedure.squareDouble'                  | 'org.neo4j.procedure.squareDouble(someValue :: FLOAT?) :: (FLOAT?)'                                                                                          | ''                      |" + lineSeparator() +
         "| 'org.neo4j.procedure.squareLong'                    | 'org.neo4j.procedure.squareLong(someValue :: INTEGER?) :: (INTEGER?)'                                                                                        | ''                      |" + lineSeparator() +
+        "| 'org.neo4j.procedure.sum'                           | 'org.neo4j.procedure.sum(numbers :: LIST? OF NUMBER?) :: (NUMBER?)'                                                                                          | ''                      |" + lineSeparator() +
         "| 'org.neo4j.procedure.throwsExceptionInStream'       | 'org.neo4j.procedure.throwsExceptionInStream() :: (INTEGER?)'                                                                                                | ''                      |" + lineSeparator() +
         "| 'org.neo4j.procedure.unsupportedFunction'           | 'org.neo4j.procedure.unsupportedFunction() :: (STRING?)'                                                                                                     | ''                      |" + lineSeparator() +
         "+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+" + lineSeparator() +
-        "25 rows" + lineSeparator();
+        "26 rows" + lineSeparator();
 
         assertThat(res.resultAsString(), equalTo(expected.replaceAll( "'", "\"" )));
+    }
+
+    @Test
+    public void shouldCallFunctionWithSameNameAsBuiltIn() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "RETURN org.neo4j.procedure.sum([1337, 2.718281828, 3.1415]) AS result");
+
+        // Then
+        assertThat( res.next().get("result"), equalTo( 1337 +  2.718281828 + 3.1415 ) );
+        assertFalse( res.hasNext() );
     }
 
     @Before
@@ -895,6 +908,12 @@ public class UserFunctionIT
         {
             db.execute( "CALL org.neo4j.procedure.writingProcedure()" );
             return 1337L;
+        }
+
+        @UserFunction
+        public Number sum(@Name("numbers") List<Number> numbers)
+        {
+         return numbers.stream().mapToDouble( Number::doubleValue ).sum();
         }
 
         @Procedure( mode = WRITE )
