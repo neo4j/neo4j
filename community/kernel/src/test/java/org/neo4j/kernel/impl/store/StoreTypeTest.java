@@ -37,6 +37,14 @@ public class StoreTypeTest
     }
 
     @Test
+    public void storeTypeOfMetaDataStoreFile() throws Exception
+    {
+        //noinspection OptionalGetWithoutIsPresent
+        String fileName = MetaDataStore.DEFAULT_NAME;
+        assertEquals( StoreType.META_DATA, StoreType.typeOf( fileName ).get() );
+    }
+
+    @Test
     public void storeTypeofSomeInvalidFile()
     {
         assertThat( StoreType.typeOf( "test.txt" ), is( Optional.empty() ) );

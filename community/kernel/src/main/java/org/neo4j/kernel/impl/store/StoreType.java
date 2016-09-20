@@ -222,7 +222,7 @@ public enum StoreType
     /**
      * Determine type of a store base on a store file name.
      *
-     * @param fileName - name of the store to map
+     * @param fileName - exact file name of the store to map
      * @return an {@link Optional} that wraps the matching store type of the specified file,
      * or {@link Optional#empty()} if the given file name does not match any store file name.
      */
@@ -231,8 +231,7 @@ public enum StoreType
         StoreType[] values = StoreType.values();
         for ( StoreType value : values )
         {
-            if ( value.getStoreName().equals( fileName ) ||
-                 fileName.equals( MetaDataStore.DEFAULT_NAME + value.getStoreName() ) )
+            if ( fileName.equals( MetaDataStore.DEFAULT_NAME + value.getStoreName() ) )
             {
                 return Optional.of( value );
             }
