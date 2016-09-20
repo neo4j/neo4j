@@ -322,7 +322,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             createNamedLabeledNode( car, "Volvo" );
             createNamedLabeledNode( car, "Ford" );
 
-            for ( int i = 0; i < 25; i++ )
+            for ( int i = 0; i < 250; i++ )
             {
                 embeddedDatabase.createNode();
             }
@@ -380,8 +380,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
         {
+            DynamicIndexStoreViewWrapper.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = true;
             StoreScan<FAILURE> failureStoreScan =
                     super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
+            DynamicIndexStoreViewWrapper.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = false;
             return new LabelScanViewNodeStoreWrapper( this, nodeStore, locks, propertyStore, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelScanViewNodeStoreScan) failureStoreScan, this, updates);

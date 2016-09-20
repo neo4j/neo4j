@@ -99,7 +99,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
             PrimitiveLongSet nodes = labelNodes.get( labelId );
             if ( nodes != null )
             {
-                long[] labels = new long[labelId];
+                long[] labels = new long[]{labelId};
                 PrimitiveLongIterator nodeIterator = nodes.iterator();
                 NodeRecord nodeRecord = new NodeRecord( -1 );
                 try ( IndexUpdater updater = indexPopulator.newPopulatingUpdater( storeView ) )
@@ -120,8 +120,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
                             {
                                 Object propertyValue = property.value();
                                 updater.process(
-                                        NodePropertyUpdate.change( nodeId, propertyKeyId, StringUtils.EMPTY,
-                                                labels, propertyValue, labels ) );
+                                        NodePropertyUpdate.add( nodeId, propertyKeyId, propertyValue, labels ) );
                             }
                         }
                     }
