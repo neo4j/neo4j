@@ -28,7 +28,6 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
@@ -315,10 +314,13 @@ public class ImportTool
      */
     public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
     {
+        PrintStream out = System.out;
+        PrintStream err = System.err;
         Args args = Args.parse( incomingArguments );
+
         if ( ArrayUtil.isEmpty( incomingArguments ) || asksForUsage( args ) )
         {
-            printUsage( System.out );
+            printUsage( out );
             return;
         }
 
@@ -344,8 +346,8 @@ public class ImportTool
 
             File badFile = new File( storeDir, BAD_FILE_NAME );
             badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
-            nodesFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.NODE_DATA.key() );
-            relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
+            nodesFiles = extractInputFiles( args, Options.NODE_DATA.key(), err );
+            relationshipsFiles = extractInputFiles( args, Options.RELATIONSHIP_DATA.key(), err );
             validateInputFiles( nodesFiles, relationshipsFiles );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
             processors = args.getNumber( Options.PROCESSORS.key(), null );
@@ -380,11 +382,11 @@ public class ImportTool
         }
         catch ( IllegalArgumentException e )
         {
-            throw andPrintError( "Input error", e, false );
+            throw andPrintError( "Input error", e, false, err );
         }
         catch ( IOException e )
         {
-            throw andPrintError( "File error", e, false );
+            throw andPrintError( "File error", e, false, err );
         }
         finally
         {
@@ -404,7 +406,7 @@ public class ImportTool
                 logService,
                 ExecutionMonitors.defaultVisible(),
                 dbConfig );
-        printOverview( storeDir, nodesFiles, relationshipsFiles, configuration );
+        printOverview( storeDir, nodesFiles, relationshipsFiles, configuration, out );
         success = false;
         try
         {
@@ -413,7 +415,7 @@ public class ImportTool
         }
         catch ( Exception e )
         {
-            throw andPrintError( "Import error", e, enableStacktrace );
+            throw andPrintError( "Import error", e, enableStacktrace, err );
         }
         finally
         {
@@ -425,7 +427,7 @@ public class ImportTool
                 File badFile = new File( storeDir, BAD_FILE_NAME );
                 if ( badFile.exists() )
                 {
-                    System.out.println(
+                    out.println(
                             "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
                 }
             }
@@ -441,7 +443,7 @@ public class ImportTool
                 }
                 catch ( IOException e )
                 {
-                    System.err.println( "Unable to delete store files after an aborted import " + e );
+                    err.println( "Unable to delete store files after an aborted import " + e );
                     if ( enableStacktrace )
                     {
                         e.printStackTrace();
@@ -451,6 +453,31 @@ public class ImportTool
         }
     }
 
+    private static Collection<Option<File[]>> extractInputFiles( Args args, String key, PrintStream err )
+    {
+        return args
+                .interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
+                        Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), filesExist(
+                                err ),
+                        Validators.<File>atLeast( "--" + key, 1 ) );
+    }
+
+    private static Validator<File[]> filesExist( PrintStream err )
+    {
+        return files -> {
+            for ( File file : files )
+            {
+                if ( file.getName().startsWith( ":" ) )
+                {
+                    err.println( "It looks like you're trying to specify default label or relationship type (" +
+                                      file.getName() + "). Please put such directly on the key, f.ex. " +
+                                      Options.NODE_DATA.argument() + ":MyLabel" );
+                }
+                Validators.REGEX_FILE_EXISTS.validate( file );
+            }
+        };
+    }
+
     private static Config loadDbConfig( File file ) throws IOException
     {
         return file != null && file.exists() ? new Config( MapUtil.load( file ) ) : Config.defaults();
@@ -458,49 +485,49 @@ public class ImportTool
 
     private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
             Collection<Option<File[]>> relationshipsFiles,
-            org.neo4j.unsafe.impl.batchimport.Configuration configuration )
+            org.neo4j.unsafe.impl.batchimport.Configuration configuration, PrintStream out )
     {
-        System.out.println( "Neo4j version: " + Version.getKernel().getReleaseVersion() );
-        System.out.println( "Importing the contents of these files into " + storeDir + ":" );
-        printInputFiles( "Nodes", nodesFiles );
-        printInputFiles( "Relationships", relationshipsFiles );
-        System.out.println();
-        System.out.println( "Available resources:" );
-        printIndented( "Free machine memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ) );
-        printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ) );
-        printIndented( "Processors: " + configuration.maxNumberOfProcessors() );
-        System.out.println();
+        out.println( "Neo4j version: " + Version.getKernel().getReleaseVersion() );
+        out.println( "Importing the contents of these files into " + storeDir + ":" );
+        printInputFiles( "Nodes", nodesFiles, out );
+        printInputFiles( "Relationships", relationshipsFiles, out );
+        out.println();
+        out.println( "Available resources:" );
+        printIndented( "Free machine memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ), out );
+        printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ), out );
+        printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
+        out.println();
     }
 
-    private static void printInputFiles( String name, Collection<Option<File[]>> files )
+    private static void printInputFiles( String name, Collection<Option<File[]>> files, PrintStream out )
     {
         if ( files.isEmpty() )
         {
             return;
         }
 
-        System.out.println( name + ":" );
+        out.println( name + ":" );
         int i = 0;
         for ( Option<File[]> group : files )
         {
             if ( i++ > 0 )
             {
-                System.out.println();
+                out.println();
             }
             if ( group.metadata() != null )
             {
-                printIndented( ":" + group.metadata() );
+                printIndented( ":" + group.metadata(), out );
             }
             for ( File file : group.value() )
             {
-                printIndented( file );
+                printIndented( file, out );
             }
         }
     }
 
-    private static void printIndented( Object value )
+    private static void printIndented( Object value, PrintStream out )
     {
-        System.out.println( "  " + value );
+        out.println( "  " + value );
     }
 
     private static void validateInputFiles( Collection<Option<File[]>> nodesFiles,
@@ -562,22 +589,26 @@ public class ImportTool
     /**
      * Method name looks strange, but look at how it's used and you'll see why it's named like that.
      * @param stackTrace whether or not to also print the stack trace of the error.
+     * @param err
      */
-    private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace )
+    private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace,
+            PrintStream err )
     {
         // List of common errors that can be explained to the user
         if ( DuplicateInputIdException.class.equals( e.getClass() ) )
         {
             printErrorMessage( "Duplicate input ids that would otherwise clash can be put into separate id space, " +
                                "read more about how to use id spaces in the manual:" +
-                               manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.ID_SPACES ), e, stackTrace );
+                               manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.ID_SPACES ), e, stackTrace,
+                    err );
         }
         else if ( MissingRelationshipDataException.class.equals( e.getClass() ) )
         {
             printErrorMessage( "Relationship missing mandatory field '" +
                                ((MissingRelationshipDataException) e).getFieldType() + "', read more about " +
                                "relationship format in the manual: " +
-                               manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.RELATIONSHIP ), e, stackTrace );
+                               manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.RELATIONSHIP ), e, stackTrace,
+                    err );
         }
         // This type of exception is wrapped since our input code throws InputException consistently,
         // and so IllegalMultilineFieldException comes from the csv component, which has no access to InputException
@@ -587,18 +618,18 @@ public class ImportTool
             printErrorMessage( "Detected field which spanned multiple lines for an import where " +
                                Options.MULTILINE_FIELDS.argument() + "=false. If you know that your input data " +
                                "include fields containing new-line characters then import with this option set to " +
-                               "true.", e, stackTrace );
+                               "true.", e, stackTrace, err );
         }
         else if ( Exceptions.contains( e, InputException.class ) )
         {
-            printErrorMessage( "Error in input data", e, stackTrace );
+            printErrorMessage( "Error in input data", e, stackTrace, err );
         }
         // Fallback to printing generic error and stack trace
         else
         {
-            printErrorMessage( typeOfError + ": " + e.getMessage(), e, true );
+            printErrorMessage( typeOfError + ": " + e.getMessage(), e, true, err );
         }
-        System.err.println();
+        err.println();
 
         // Mute the stack trace that the default exception handler would have liked to print.
         // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
@@ -608,13 +639,13 @@ public class ImportTool
         return launderedException( e ); // throw in order to have process exit with !0
     }
 
-    private static void printErrorMessage( String string, Exception e, boolean stackTrace )
+    private static void printErrorMessage( String string, Exception e, boolean stackTrace, PrintStream err )
     {
-        System.err.println( string );
-        System.err.println( "Caused by:" + e.getMessage() );
+        err.println( string );
+        err.println( "Caused by:" + e.getMessage() );
         if ( stackTrace )
         {
-            e.printStackTrace( System.err );
+            e.printStackTrace( err );
         }
     }
 
@@ -770,29 +801,6 @@ public class ImportTool
     private static final Function<String,IdType> TO_ID_TYPE = from -> IdType.valueOf( from.toUpperCase() );
 
     private static final Function<String,Character> CHARACTER_CONVERTER = new CharacterConverter();
-
-    static final Validator<File[]> FILES_EXISTS = files -> {
-        for ( File file : files )
-        {
-            if ( file.getName().startsWith( ":" ) )
-            {
-                warn( "It looks like you're trying to specify default label or relationship type (" +
-                      file.getName() + "). Please put such directly on the key, f.ex. " +
-                      Options.NODE_DATA.argument() + ":MyLabel" );
-            }
-            Validators.REGEX_FILE_EXISTS.validate( file );
-        }
-    };
-
-    private static final BiFunction<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
-            ( args, key ) -> args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
-                    Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), FILES_EXISTS,
-                    Validators.<File>atLeast( "--" + key, 1 ) );
-
-    static void warn( String warning )
-    {
-        System.err.println( warning );
-    }
 
     private enum ManualPage
     {
