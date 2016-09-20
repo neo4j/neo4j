@@ -26,7 +26,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.pool.Pool;
@@ -59,7 +58,6 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.test.Race.until;
 
 public class KernelTransactionTerminationTest
 {
@@ -132,15 +130,16 @@ public class KernelTransactionTerminationTest
         int limit = 20_000;
 
         Race race = new Race();
-        BooleanSupplier end = () -> ((t1Count.get() >= limit && t2Count.get() >= limit) || currentTimeMillis() >= endTime);
-        race.addContestant( until( end, () -> {
+        race.withEndCondition(
+                () -> ((t1Count.get() >= limit && t2Count.get() >= limit) || currentTimeMillis() >= endTime) );
+        race.addContestant( () -> {
             thread1Action.accept( tx );
             t1Count.incrementAndGet();
-        } ) );
-        race.addContestant( until( end, () -> {
+        } );
+        race.addContestant( () -> {
             thread2Action.accept( tx );
             t2Count.incrementAndGet();
-        } ) );
+        } );
         race.go();
     }
 

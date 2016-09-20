@@ -23,8 +23,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BooleanSupplier;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -39,8 +37,6 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.test.Race.until;
 
 public class NeoStoresIT
 {
@@ -97,8 +93,8 @@ public class NeoStoresIT
         AtomicLong writes = new AtomicLong();
         AtomicLong reads = new AtomicLong();
         long endTime = currentTimeMillis() + SECONDS.toMillis( 2 );
-        BooleanSupplier end = () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime;
-        race.addContestant( until( end, () ->
+        race.withEndCondition( () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime );
+        race.addContestant( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -108,8 +104,8 @@ public class NeoStoresIT
                 tx.success();
             }
             writes.incrementAndGet();
-        } ) );
-        race.addContestant( until( end, () ->
+        } );
+        race.addContestant( () ->
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
@@ -126,7 +122,7 @@ public class NeoStoresIT
                 // but handled in shouldWriteOutThePropertyRecordBeforeReferencingItFromANodeRecord)
             }
             reads.incrementAndGet();
-        } ) );
+        } );
         race.go();
     }
 
@@ -139,8 +135,8 @@ public class NeoStoresIT
         AtomicLong writes = new AtomicLong();
         AtomicLong reads = new AtomicLong();
         long endTime = currentTimeMillis() + SECONDS.toMillis( 2 );
-        BooleanSupplier end = () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime;
-        race.addContestant( until( end, () ->
+        race.withEndCondition( () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime );
+        race.addContestant( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -150,8 +146,8 @@ public class NeoStoresIT
                 tx.success();
             }
             writes.incrementAndGet();
-        } ) );
-        race.addContestant( until( end, () ->
+        } );
+        race.addContestant( () ->
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
@@ -171,7 +167,7 @@ public class NeoStoresIT
                 }
             }
             reads.incrementAndGet();
-        } ) );
+        } );
         race.go();
     }
 
@@ -197,8 +193,8 @@ public class NeoStoresIT
         AtomicLong writes = new AtomicLong();
         AtomicLong reads = new AtomicLong();
         long endTime = currentTimeMillis() + SECONDS.toMillis( 2 );
-        BooleanSupplier end = () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime;
-        race.addContestant( until( end, () ->
+        race.withEndCondition( () -> (writes.get() > 100 && reads.get() > 10_000) || currentTimeMillis() > endTime );
+        race.addContestant( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -212,8 +208,8 @@ public class NeoStoresIT
                 tx.success();
             }
             writes.incrementAndGet();
-        } ) );
-        race.addContestant( until( end, () ->
+        } );
+        race.addContestant( () ->
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
@@ -233,7 +229,7 @@ public class NeoStoresIT
                 }
             }
             reads.incrementAndGet();
-        } ) );
+        } );
         race.go();
     }
 }

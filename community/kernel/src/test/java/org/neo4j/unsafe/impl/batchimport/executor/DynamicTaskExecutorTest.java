@@ -313,7 +313,7 @@ public class DynamicTaskExecutorTest
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
-        Race race = new Race( true );
+        Race race = new Race().withRandomStartDelays();
         race.addContestant( () -> executor.shutdown( SF_AWAIT_ALL_COMPLETED ) );
         race.addContestant( () -> executor.processors( 1 ) );
 

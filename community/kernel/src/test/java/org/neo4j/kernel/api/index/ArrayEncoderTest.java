@@ -104,7 +104,7 @@ public class ArrayEncoderTest
                 "Since my imagination for coming up with test data is usually poor, I figured I'd do something useful.",
                 "Hopefully this isn't just nonsensical drivel, and maybe, just maybe someone might actually read it."};
 
-        Race race = new Race( false );
+        Race race = new Race();
         for ( String input : INPUT )
         {
             final String[] inputArray = new String[] {input};

@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -65,7 +64,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
-import static org.neo4j.test.Race.until;
 
 public class MetaDataStoreTest
 {
@@ -405,22 +403,19 @@ public class MetaDataStoreTest
             long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
 
             Race race = new Race();
-            BooleanSupplier end = () ->
-            {
-                boolean upperBoundReached = writeCount.get() >= upperLimit &&
-                        fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit;
-                boolean lowerBoundReached = writeCount.get() >= lowerLimit &&
-                        fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit;
-                return !upperBoundReached || (currentTimeMillis() >= endTime && lowerBoundReached);
-            };
+            race.withEndCondition( () -> writeCount.get() >= upperLimit &&
+                    fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit );
+            race.withEndCondition( () -> writeCount.get() >= lowerLimit &&
+                    fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit &&
+                    currentTimeMillis() >= endTime );
             // writers
-            race.addContestants( 3, until( end, () -> {
+            race.addContestants( 3, () -> {
                 long count = writeCount.incrementAndGet();
                 store.setUpgradeTransaction( count, count, count );
-            } ) );
+            } );
 
             // file readers
-            race.addContestants( 3, until( end, throwing( () -> {
+            race.addContestants( 3, throwing( () -> {
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
@@ -434,13 +429,13 @@ public class MetaDataStoreTest
                     assertIdEqualsChecksum( id, checksum, "file" );
                     fileReadCount.incrementAndGet();
                 }
-            } ) ) );
+            } ) );
 
-            race.addContestants( 3, until( end, () -> {
+            race.addContestants( 3, () -> {
                 TransactionId transaction = store.getUpgradeTransaction();
                 assertIdEqualsChecksum( transaction.transactionId(), transaction.checksum(), "API" );
                 apiReadCount.incrementAndGet();
-            } ) );
+            } );
             race.go();
         }
     }
@@ -488,22 +483,19 @@ public class MetaDataStoreTest
             int lowerLimit = 100;
             long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
 
-            BooleanSupplier end = () ->
-            {
-                boolean upperBoundReached = writeCount.get() >= upperLimit &&
-                        fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit;
-                boolean lowerBoundReached = writeCount.get() >= lowerLimit &&
-                        fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit;
-                return !upperBoundReached || (currentTimeMillis() >= endTime && lowerBoundReached);
-            };
             Race race = new Race();
-            race.addContestants( 3, until( end, () ->
+            race.withEndCondition( () -> writeCount.get() >= upperLimit &&
+                    fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit );
+            race.withEndCondition( () -> writeCount.get() >= lowerLimit &&
+                    fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit &&
+                    currentTimeMillis() >= endTime );
+            race.addContestants( 3, () ->
             {
                 long count = writeCount.incrementAndGet();
                 store.transactionCommitted( count, count, count );
-            } ) );
+            } );
 
-            race.addContestants( 3, until( end, throwing( () -> {
+            race.addContestants( 3, throwing( () -> {
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
@@ -517,14 +509,14 @@ public class MetaDataStoreTest
                     assertIdEqualsChecksum( id, checksum, "file" );
                     fileReadCount.incrementAndGet();
                 }
-            } ) ) );
+            } ) );
 
-            race.addContestants( 3, until( end, () ->
+            race.addContestants( 3, () ->
             {
                 TransactionId transaction = store.getLastCommittedTransaction();
                 assertIdEqualsChecksum( transaction.transactionId(), transaction.checksum(), "API" );
                 apiReadCount.incrementAndGet();
-            } ) );
+            } );
 
             race.go();
         }
@@ -545,21 +537,18 @@ public class MetaDataStoreTest
             int lowerLimit = 100;
             long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
 
-            BooleanSupplier end = () ->
-            {
-                boolean upperBoundReached = writeCount.get() >= upperLimit &&
-                        fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit;
-                boolean lowerBoundReached = writeCount.get() >= lowerLimit &&
-                        fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit;
-                return !upperBoundReached || (currentTimeMillis() >= endTime && lowerBoundReached);
-            };
             Race race = new Race();
-            race.addContestants( 3, until( end, () -> {
+            race.withEndCondition( () -> writeCount.get() >= upperLimit &&
+                    fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit );
+            race.withEndCondition( () -> writeCount.get() >= lowerLimit &&
+                    fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit &&
+                    currentTimeMillis() >= endTime );
+            race.addContestants( 3, () -> {
                 long count = writeCount.incrementAndGet();
                 store.transactionCommitted( count, count, count );
-            } ) );
+            } );
 
-            race.addContestants( 3, until( end, throwing( () -> {
+            race.addContestants( 3, throwing( () -> {
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
@@ -575,13 +564,13 @@ public class MetaDataStoreTest
                     assertLogVersionEqualsByteOffset( logVersion, byteOffset, "file" );
                     fileReadCount.incrementAndGet();
                 }
-            } ) ) );
+            } ) );
 
-            race.addContestants( 3, until( end, () -> {
+            race.addContestants( 3, () -> {
                 long[] transaction = store.getLastClosedTransaction();
                 assertLogVersionEqualsByteOffset( transaction[0], transaction[1], "API" );
                 apiReadCount.incrementAndGet();
-            } ) );
+            } );
             race.go();
         }
     }
