@@ -242,9 +242,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
-        life.add( new EdgeStartupProcess( storeFetcher,
-                localDatabase,
-                txPulling, new ConnectToRandomCoreMember( discoveryService ),
+        life.add( new EdgeStartupProcess( platformModule.fileSystem, storeFetcher, localDatabase, txPulling,
+                new ConnectToRandomCoreMember( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, copiedStoreRecovery ) );
 
         dependencies.satisfyDependency( createSessionTracker() );

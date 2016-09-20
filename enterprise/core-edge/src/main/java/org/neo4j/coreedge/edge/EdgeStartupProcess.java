@@ -34,6 +34,7 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionException;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -42,6 +43,7 @@ import static java.lang.String.format;
 
 class EdgeStartupProcess implements Lifecycle
 {
+    private final FileSystemAbstraction fs;
     private final StoreFetcher storeFetcher;
     private final LocalDatabase localDatabase;
     private final Lifecycle txPulling;
@@ -50,14 +52,11 @@ class EdgeStartupProcess implements Lifecycle
     private final RetryStrategy.Timeout timeout;
     private final CopiedStoreRecovery copiedStoreRecovery;
 
-    EdgeStartupProcess(
-            StoreFetcher storeFetcher,
-            LocalDatabase localDatabase,
-            Lifecycle txPulling,
-            CoreMemberSelectionStrategy connectionStrategy,
-            RetryStrategy retryStrategy,
+    EdgeStartupProcess( FileSystemAbstraction fs, StoreFetcher storeFetcher, LocalDatabase localDatabase,
+            Lifecycle txPulling, CoreMemberSelectionStrategy connectionStrategy, RetryStrategy retryStrategy,
             LogProvider logProvider, CopiedStoreRecovery copiedStoreRecovery )
     {
+        this.fs = fs;
         this.storeFetcher = storeFetcher;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
@@ -146,21 +145,21 @@ class EdgeStartupProcess implements Lifecycle
         StoreId remoteStoreId = storeFetcher.getStoreIdOf( remoteCore );
         if ( !localStoreId.equals( remoteStoreId ) )
         {
-            throw new IllegalStateException(
-                    format( "This edge machine cannot join the cluster. " +
+            throw new IllegalStateException( format( "This edge machine cannot join the cluster. " +
                             "The local database is not empty and has a mismatching storeId: expected %s actual %s.",
-                            remoteStoreId, localStoreId ) );
+                    remoteStoreId, localStoreId ) );
         }
     }
 
     private void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher )
             throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
     {
-        TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( localDatabase.storeDir() );
-        storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
-        copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
-        localDatabase.replaceWith( tempStore.storeDir() );
-        // TODO: Delete tempDir.
+        try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, localDatabase.storeDir() ) )
+        {
+            storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
+            copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
+            localDatabase.replaceWith( tempStore.storeDir() );
+        }
         log.info( "Replaced store with one downloaded from %s", source );
     }
 

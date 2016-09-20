@@ -21,32 +21,39 @@ package org.neo4j.coreedge.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Objects;
 
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
-public class TemporaryStoreDirectory
+public class TemporaryStoreDirectory implements AutoCloseable
 {
     private static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
 
+    private final FileSystemAbstraction fs;
     private final File tempStoreDir;
 
-    public TemporaryStoreDirectory( File parent ) throws IOException
+    public TemporaryStoreDirectory( FileSystemAbstraction fs, File parent ) throws IOException
     {
+        this.fs = fs;
         this.tempStoreDir = new File( parent, TEMP_COPY_DIRECTORY_NAME );
         cleanDirectory();
     }
 
     private void cleanDirectory() throws IOException
     {
-        if ( !tempStoreDir.mkdir() )
+        if ( !fs.mkdir( tempStoreDir ) )
         {
-            FileUtils.deleteRecursively( tempStoreDir );
+            fs.deleteRecursively( tempStoreDir );
         }
     }
 
     public File storeDir()
     {
         return tempStoreDir;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        cleanDirectory();
     }
 }

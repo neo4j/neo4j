@@ -35,6 +35,7 @@ import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.AlwaysChooseFirstMember;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
@@ -52,6 +53,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class EdgeStartupProcessTest
 {
     private CopiedStoreRecovery copiedStoreRecovery = mock( CopiedStoreRecovery.class );
+    private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private StoreFetcher storeFetcher = mock( StoreFetcher.class );
     private LocalDatabase localDatabase = mock( LocalDatabase.class );
     private TopologyService hazelcastTopology = mock( TopologyService.class );
@@ -79,10 +81,9 @@ public class EdgeStartupProcessTest
         when( localDatabase.isEmpty() ).thenReturn( true );
         when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( otherStoreId );
 
-        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
-                txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
-                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
-                copiedStoreRecovery );
+        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( fs, storeFetcher, localDatabase, txPulling,
+                new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
+                NullLogProvider.getInstance(), copiedStoreRecovery );
 
         // when
         edgeStartupProcess.start();
@@ -100,9 +101,9 @@ public class EdgeStartupProcessTest
         when( localDatabase.isEmpty() ).thenReturn( false );
         when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( otherStoreId );
 
-        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
-                txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
-                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(), copiedStoreRecovery );
+        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( fs, storeFetcher, localDatabase, txPulling,
+                new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
+                NullLogProvider.getInstance(), copiedStoreRecovery );
 
         // when
         try
@@ -129,10 +130,9 @@ public class EdgeStartupProcessTest
         when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( localStoreId );
         when( localDatabase.isEmpty() ).thenReturn( false );
 
-        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
-                txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
-                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
-                copiedStoreRecovery );
+        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( fs, storeFetcher, localDatabase, txPulling,
+                new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
+                NullLogProvider.getInstance(), copiedStoreRecovery );
 
         // when
         edgeStartupProcess.start();
@@ -149,9 +149,9 @@ public class EdgeStartupProcessTest
         when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( localStoreId );
         when( localDatabase.isEmpty() ).thenReturn( false );
 
-        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
-                txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
-                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(), copiedStoreRecovery );
+        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( fs, storeFetcher, localDatabase, txPulling,
+                new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
+                NullLogProvider.getInstance(), copiedStoreRecovery );
         edgeStartupProcess.start();
 
         // when
