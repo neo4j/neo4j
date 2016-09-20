@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -47,12 +46,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -72,6 +71,7 @@ import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
 
 public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
@@ -294,6 +294,39 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 write.closeAndAssertSuccess();
             }
         }
+    }
+
+    @Test
+    public void shouldListAllQueriesWithAuthDisabled() throws Throwable
+    {
+        neo.tearDown();
+        neo = setUpNeoServer( stringMap( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
+
+        DoubleLatch latch = new DoubleLatch( 2, true );
+        OffsetDateTime startTime = OffsetDateTime.now();
+
+        ThreadedTransaction<S> read = new ThreadedTransaction<>( neo, latch );
+
+        String q = read.execute( threading, neo.login( "user1", "" ), "UNWIND [1,2,3] AS x RETURN x" );
+        latch.startAndWaitForAllToStart();
+
+        String query = "CALL dbms.listQueries()";
+        try
+        {
+            assertSuccess( neo.login( "admin", "" ), query, r ->
+            {
+                Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
+
+                Matcher<Map<String,Object>> thisQuery = listedQueryOfInteractionLevel( startTime, "", query ); // admin
+                Matcher<Map<String,Object>> matcher1 = listedQuery( startTime, "", q ); // user1
+                assertThat( maps, matchesOneToOneInAnyOrder( matcher1, thisQuery ) );
+            } );
+        }
+        finally
+        {
+            latch.finishAndWaitForAllToFinish();
+        }
+        read.closeAndAssertSuccess();
     }
 
     //---------- terminate query -----------

@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.security.enterprise.auth.EnterpriseAuthManager;
+import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.server.security.enterprise.auth.EnterpriseAuthManagerFactory;
 import org.neo4j.server.security.enterprise.auth.RoleRepository;
 
@@ -86,7 +86,7 @@ public class RolesCommand implements AdminCommand
     private final Path configDir;
     private OutsideWorld outsideWorld;
     private JobScheduler jobScheduler;
-    private EnterpriseAuthManager authManager;
+    private EnterpriseAuthAndUserManager authManager;
 
     public RolesCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
@@ -194,14 +194,14 @@ public class RolesCommand implements AdminCommand
 
     private void createRole( String roleName ) throws Throwable
     {
-        EnterpriseAuthManager authManager = getAuthManager();
+        EnterpriseAuthAndUserManager authManager = getAuthManager();
         authManager.getUserManager().newRole( roleName );
         outsideWorld.stdOutLine( "Created new role '" + roleName + "'" );
     }
 
     private void deleteRole( String roleName ) throws Throwable
     {
-        EnterpriseAuthManager authManager = getAuthManager();
+        EnterpriseAuthAndUserManager authManager = getAuthManager();
         authManager.getUserManager().getRole( roleName ); // Will throw error on missing role
         if ( authManager.getUserManager().deleteRole( roleName ) )
         {
@@ -215,7 +215,7 @@ public class RolesCommand implements AdminCommand
 
     private void assignRole( String roleName, String username ) throws Throwable
     {
-        EnterpriseAuthManager authManager = getAuthManager();
+        EnterpriseAuthAndUserManager authManager = getAuthManager();
         authManager.getUserManager().getRole( roleName ); // Will throw error on missing role
         authManager.getUserManager().getUser( username ); // Will throw error on missing user
         for ( String name : authManager.getUserManager().getUsernamesForRole( roleName ) )
@@ -231,7 +231,7 @@ public class RolesCommand implements AdminCommand
 
     private void removeRole( String roleName, String username ) throws Throwable
     {
-        EnterpriseAuthManager authManager = getAuthManager();
+        EnterpriseAuthAndUserManager authManager = getAuthManager();
         authManager.getUserManager().getRole( roleName ); // Will throw error on missing role
         authManager.getUserManager().getUser( username ); // Will throw error on missing user
         for ( String name : authManager.getUserManager().getUsernamesForRole( roleName ) )
@@ -248,7 +248,7 @@ public class RolesCommand implements AdminCommand
 
     private void rolesFor( String username ) throws Throwable
     {
-        EnterpriseAuthManager authManager = getAuthManager();
+        EnterpriseAuthAndUserManager authManager = getAuthManager();
         authManager.getUserManager().getUser( username ); // Will throw error on missing user
         for ( String roleName : authManager.getUserManager().getRoleNamesForUser( username ) )
         {
@@ -258,7 +258,7 @@ public class RolesCommand implements AdminCommand
 
     private void usersFor( String roleName ) throws Throwable
     {
-        EnterpriseAuthManager authManager = getAuthManager();
+        EnterpriseAuthAndUserManager authManager = getAuthManager();
         authManager.getUserManager().getRole( roleName ); // Will throw error on missing role
         for ( String username : authManager.getUserManager().getUsernamesForRole( roleName ) )
         {
@@ -291,7 +291,7 @@ public class RolesCommand implements AdminCommand
         return repo;
     }
 
-    private EnterpriseAuthManager getAuthManager() throws Throwable
+    private EnterpriseAuthAndUserManager getAuthManager() throws Throwable
     {
         if ( this.authManager == null )
         {

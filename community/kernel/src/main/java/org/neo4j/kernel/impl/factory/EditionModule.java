@@ -137,7 +137,7 @@ public abstract class EditionModule
         boolean authEnabled = config.get( GraphDatabaseSettings.auth_enabled );
         if ( !authEnabled )
         {
-            return AuthManager.NO_AUTH;
+            return getAuthDisabledAuthManager();
         }
 
         String configuredKey = config.get( GraphDatabaseSettings.auth_manager );
@@ -174,6 +174,11 @@ public abstract class EditionModule
         }
 
         return authManager;
+    }
+
+    protected AuthManager getAuthDisabledAuthManager()
+    {
+        return AuthManager.NO_AUTH;
     }
 
     private AuthManager tryMakeInOrder( Config config, LogService logging, FileSystemAbstraction fileSystem,

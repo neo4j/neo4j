@@ -276,14 +276,6 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
     private Authentication authentication( Config config, AuthManager authManager, LogService logService )
     {
-
-        if ( config.get( GraphDatabaseSettings.auth_enabled ) )
-        {
-            return new BasicAuthentication( authManager, logService.getInternalLogProvider() );
-        }
-        else
-        {
-            return Authentication.NONE;
-        }
+        return new BasicAuthentication( authManager, logService.getInternalLogProvider() );
     }
 }

@@ -60,7 +60,9 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -335,4 +337,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
         return new StandardBoltConnectionTracker();
     }
 
+    @Override
+    protected AuthManager getAuthDisabledAuthManager()
+    {
+        return EnterpriseAuthManager.NO_AUTH;
+    }
 }

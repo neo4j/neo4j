@@ -35,7 +35,7 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     static final String READ_WRITE = "data:read,write";
     static final String READ = "data:read";
 
-    private final EnterpriseAuthManager authManager;
+    private final EnterpriseAuthAndUserManager authManager;
     private final ShiroSubject shiroSubject;
 
     public static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
@@ -43,7 +43,7 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
         return EnterpriseAuthSubject.castOrFail( StandardEnterpriseAuthSubject.class, authSubject );
     }
 
-    public StandardEnterpriseAuthSubject( EnterpriseAuthManager authManager, ShiroSubject shiroSubject )
+    public StandardEnterpriseAuthSubject( EnterpriseAuthAndUserManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;

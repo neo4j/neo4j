@@ -63,8 +63,10 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataMigrator;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -870,5 +872,11 @@ public class HighlyAvailableEditionModule
     protected BoltConnectionTracker createSessionTracker()
     {
         return new StandardBoltConnectionTracker();
+    }
+
+    @Override
+    protected AuthManager getAuthDisabledAuthManager()
+    {
+        return EnterpriseAuthManager.NO_AUTH;
     }
 }

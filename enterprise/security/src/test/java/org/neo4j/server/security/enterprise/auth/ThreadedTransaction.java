@@ -80,40 +80,39 @@ public class ThreadedTransaction<S>
                     @Override
                     public Throwable apply( S subject )
                     {
-                        try
+                        try ( InternalTransaction tx = neo.beginLocalTransactionAsUser( subject, txType ) )
                         {
-                            try ( InternalTransaction tx = neo.beginLocalTransactionAsUser( subject, txType ) )
+                            Result result = null;
+                            try
                             {
-                                Result result = null;
-                                try
+                                if ( startEarly )
                                 {
-                                    if ( startEarly )
-                                    {
-                                        latch.start();
-                                    }
-                                    for ( String query : queries )
-                                    {
-                                        if ( result != null )
-                                        {
-                                            result.close();
-                                        }
-                                        result = neo.getLocalGraph().execute( query );
-                                    }
-                                    if ( !startEarly )
-                                    {
-                                        latch.startAndWaitForAllToStart();
-                                    }
+                                    latch.start();
                                 }
-                                catch (Throwable t)
+                                for ( String query : queries )
                                 {
-                                    latch.finish();
-                                    return t;
+                                    if ( result != null )
+                                    {
+                                        result.close();
+                                    }
+                                    result = neo.getLocalGraph().execute( query );
+                                }
+                                if ( !startEarly )
+                                {
+                                    latch.startAndWaitForAllToStart();
+                                }
+                            }
+                            finally
+                            {
+                                if ( !startEarly )
+                                {
+                                    latch.start();
                                 }
                                 latch.finishAndWaitForAllToFinish();
-                                result.close();
-                                tx.success();
-                                return null;
                             }
+                            result.close();
+                            tx.success();
+                            return null;
                         }
                         catch (Throwable t)
                         {

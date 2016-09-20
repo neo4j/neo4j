@@ -47,7 +47,8 @@ import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.security.enterprise.auth.EnterpriseAuthManager;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
+import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.server.security.enterprise.auth.EnterpriseUserManager;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.server.HTTP;
@@ -68,30 +69,36 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
 
     EnterpriseAuthManager authManager;
 
-   RESTInteraction( Map<String,String> config ) throws IOException
+    RESTInteraction( Map<String,String> config ) throws IOException
     {
         CommunityServerBuilder builder = EnterpriseServerBuilder.server();
+        builder = builder
+                .withProperty( boltConnector( "0" ).enabled.name(), "true" )
+                .withProperty( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() )
+                .withProperty( BoltKernelExtension.Settings.tls_key_file.name(),
+                        NeoInteractionLevel.tempPath( "key", ".key" ) )
+                .withProperty( BoltKernelExtension.Settings.tls_certificate_file.name(),
+                        NeoInteractionLevel.tempPath( "cert", ".cert" ) )
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( true ) )
+                .withProperty( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" );
+
         for ( Map.Entry<String,String> entry : config.entrySet() )
         {
             builder = builder.withProperty( entry.getKey(), entry.getValue() );
         }
-        this.server = builder.withProperty( boltConnector( "0" ).enabled.name(), "true" )
-                .withProperty( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() )
-                .withProperty( BoltKernelExtension.Settings.tls_key_file.name(),
-                                    NeoInteractionLevel.tempPath( "key", ".key" ) )
-                .withProperty( BoltKernelExtension.Settings.tls_certificate_file.name(),
-                                    NeoInteractionLevel.tempPath( "cert", ".cert" ) )
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( true ) )
-                .withProperty( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" )
-                .build();
+        this.server = builder.build();
         this.server.start();
         authManager = this.server.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
     }
 
     @Override
-    public EnterpriseUserManager getLocalUserManager()
+    public EnterpriseUserManager getLocalUserManager() throws Exception
     {
-        return authManager.getUserManager();
+        if ( authManager instanceof EnterpriseAuthAndUserManager )
+        {
+            return ((EnterpriseAuthAndUserManager) authManager).getUserManager();
+        }
+        throw new Exception("The used configuration does not have a user manager");
     }
 
     @Override

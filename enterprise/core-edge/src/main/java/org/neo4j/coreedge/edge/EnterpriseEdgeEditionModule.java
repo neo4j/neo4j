@@ -51,7 +51,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -275,5 +277,11 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     protected BoltConnectionTracker createSessionTracker()
     {
         return new StandardBoltConnectionTracker();
+    }
+
+    @Override
+    protected AuthManager getAuthDisabledAuthManager()
+    {
+        return EnterpriseAuthManager.NO_AUTH;
     }
 }

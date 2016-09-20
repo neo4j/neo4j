@@ -44,9 +44,4 @@ public interface Authentication
      * @throws AuthenticationException If authentication failed.
      */
     AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException;
-
-    /**
-     * Allows all tokens to authenticate.
-     */
-    Authentication NONE = authToken -> AuthenticationResult.AUTH_DISABLED;
 }

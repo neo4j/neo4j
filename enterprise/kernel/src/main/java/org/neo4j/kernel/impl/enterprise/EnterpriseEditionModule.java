@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.enterprise;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
@@ -105,5 +107,11 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     protected Log authManagerLog()
     {
         return securityLog == null ? NullLog.getInstance() : securityLog;
+    }
+
+    @Override
+    protected AuthManager getAuthDisabledAuthManager()
+    {
+        return EnterpriseAuthManager.NO_AUTH;
     }
 }
