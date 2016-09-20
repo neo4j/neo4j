@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
@@ -62,7 +63,10 @@ public class BackupProtocolTest
     {
         TheBackupInterface backup = mock( TheBackupInterface.class );
         RequestContext ctx = new RequestContext( 0, 1, 0, -1, 12 );
-        BackupRequestType.FULL_BACKUP.getTargetCaller().call( backup, ctx, EMPTY_BUFFER, null );
+        @SuppressWarnings( "unchecked" )
+        TargetCaller<TheBackupInterface, Void> targetCaller =
+                (TargetCaller<TheBackupInterface,Void>) BackupRequestType.FULL_BACKUP.getTargetCaller();
+        targetCaller.call( backup, ctx, EMPTY_BUFFER, null );
         verify( backup ).fullBackup( any( StoreWriter.class ), eq( false ) );
     }
 
@@ -90,7 +94,7 @@ public class BackupProtocolTest
             client.fullBackup( writer, forensics );
 
             // THEN
-            assertEquals( forensics, backup.receivedForensics.booleanValue() );
+            assertEquals( forensics, backup.receivedForensics );
         }
         finally
         {
