@@ -45,7 +45,7 @@ public class StoreCopyClient
     {
         try
         {
-            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest( expectedStoreId ), 30, SECONDS,
+            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest( expectedStoreId ),
                     new CatchUpResponseAdaptor<Long>()
                     {
                         private long expectedBytes = 0;
@@ -89,7 +89,7 @@ public class StoreCopyClient
     {
         try
         {
-            return catchUpClient.makeBlockingRequest( from, new GetStoreIdRequest(), 30, SECONDS,
+            return catchUpClient.makeBlockingRequest( from, new GetStoreIdRequest(),
                     new CatchUpResponseAdaptor<StoreId>()
                     {
                         @Override

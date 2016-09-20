@@ -58,12 +58,11 @@ public class TxPollingClientTest
     private final BatchingTxApplier txApplier = mock( BatchingTxApplier.class );
     private final ControlledRenewableTimeoutService timeoutService = new ControlledRenewableTimeoutService();
 
-    private final long txPullTimeoutMillis = 100;
+    private final long txPullIntervalMillis = 100;
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
     private final TxPollingClient txPuller = new TxPollingClient( NullLogProvider.getInstance(), () -> storeId,
-            catchUpClient, serverSelection,
-            timeoutService, txPullTimeoutMillis, txApplier, new Monitors() );
+            catchUpClient, serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors() );
 
     @Before
     public void before() throws Throwable
@@ -85,7 +84,7 @@ public class TxPollingClientTest
 
         // then
         verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
-                anyLong(), any( TimeUnit.class ), any( CatchUpResponseCallback.class ) );
+                any( CatchUpResponseCallback.class ) );
     }
 
     @Test
@@ -99,7 +98,7 @@ public class TxPollingClientTest
 
         // then
         verify( catchUpClient, never() ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
-                anyLong(), any( TimeUnit.class ), any( CatchUpResponseCallback.class ) );
+                any( CatchUpResponseCallback.class ) );
     }
 
     @Test
@@ -111,7 +110,7 @@ public class TxPollingClientTest
         ArgumentCaptor<CatchUpResponseCallback> captor = ArgumentCaptor.forClass( CatchUpResponseCallback.class );
 
         verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
-                anyLong(), any( TimeUnit.class ), captor.capture() );
+                captor.capture() );
 
         captor.getValue().onTxPullResponse( null, new TxPullResponse( storeId,
                 mock( CommittedTransactionRepresentation.class ) ) );

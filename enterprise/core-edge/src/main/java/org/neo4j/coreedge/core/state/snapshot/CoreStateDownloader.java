@@ -88,7 +88,7 @@ public class CoreStateDownloader
              * in the copied store. */
 
             CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( source, new CoreSnapshotRequest(),
-                    1, MINUTES, new CatchUpResponseAdaptor<CoreSnapshot>()
+                    new CatchUpResponseAdaptor<CoreSnapshot>()
                     {
                         @Override
                         public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )

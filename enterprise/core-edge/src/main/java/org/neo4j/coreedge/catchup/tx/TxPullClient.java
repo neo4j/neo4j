@@ -48,7 +48,7 @@ public class TxPullClient
             throws CatchUpClientException, NoKnownAddressesException
     {
         pullRequestMonitor.txPullRequest( startTxId );
-        return catchUpClient.makeBlockingRequest( from, new TxPullRequest( startTxId, storeId ), 30, SECONDS,
+        return catchUpClient.makeBlockingRequest( from, new TxPullRequest( startTxId, storeId ),
                 new CatchUpResponseAdaptor<CatchupResult>()
                 {
                     @Override

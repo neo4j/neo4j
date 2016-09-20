@@ -106,7 +106,7 @@ public class TxPollingClient extends LifecycleAdapter
             long lastAppliedTxId = applier.lastAppliedTxId();
             pullRequestMonitor.txPullRequest( lastAppliedTxId );
             TxPullRequest txPullRequest = new TxPullRequest( lastAppliedTxId, localDatabase.get() );
-            catchUpClient.makeBlockingRequest( transactionServer, txPullRequest, 30, TimeUnit.SECONDS,
+            catchUpClient.makeBlockingRequest( transactionServer, txPullRequest,
                     new CatchUpResponseAdaptor<CatchupResult>()
                     {
                         @Override

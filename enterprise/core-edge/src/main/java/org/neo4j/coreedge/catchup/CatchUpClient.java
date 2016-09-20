@@ -46,6 +46,8 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 public class CatchUpClient extends LifecycleAdapter
 {
+    private static final int DEFAULT_INACTIVITY_TIMEOUT = 5; // seconds
+
     private final LogProvider logProvider;
     private final TopologyService discoveryService;
     private final Log log;
@@ -64,14 +66,20 @@ public class CatchUpClient extends LifecycleAdapter
         this.monitors = monitors;
     }
 
-    public <T> T makeBlockingRequest( MemberId memberId, CatchUpRequest request,
+    public <T> T makeBlockingRequest( MemberId target, CatchUpRequest request,
+            CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException, NoKnownAddressesException
+    {
+        return makeBlockingRequest( target, request, DEFAULT_INACTIVITY_TIMEOUT, TimeUnit.SECONDS, responseHandler );
+    }
+
+    public <T> T makeBlockingRequest( MemberId target, CatchUpRequest request,
                                       long inactivityTimeout, TimeUnit timeUnit,
                                       CatchUpResponseCallback<T> responseHandler )
             throws CatchUpClientException, NoKnownAddressesException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
         AdvertisedSocketAddress catchUpAddress =
-                discoveryService.coreServers().find( memberId ).getCatchupServer();
+                discoveryService.coreServers().find( target ).getCatchupServer();
         CatchUpChannel channel = pool.acquire( catchUpAddress );
 
         future.whenComplete( ( result, e ) -> {
@@ -88,7 +96,7 @@ public class CatchUpClient extends LifecycleAdapter
         channel.setResponseHandler( responseHandler, future );
         channel.send( request );
 
-        String operation = String.format( "Timed out executing operation %s on %s", request, memberId );
+        String operation = String.format( "Timed out executing operation %s on %s", request, target );
 
         return TimeoutLoop.waitForCompletion( future, operation,
                 channel::millisSinceLastResponse, inactivityTimeout, timeUnit );
