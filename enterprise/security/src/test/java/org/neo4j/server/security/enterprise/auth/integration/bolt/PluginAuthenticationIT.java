@@ -24,7 +24,9 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthenticationPlugin;
@@ -32,6 +34,11 @@ import org.neo4j.server.security.enterprise.auth.plugin.TestCustomCacheableAuthe
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
+import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
 public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 {
@@ -160,5 +167,20 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCombinedAuthPlugin" ) );
         assertReadSucceeds();
         assertWriteFails( "neo4j" );
+    }
+
+    @Test
+    public void shouldFailIfAuthorizationExpiredWithUserLdapContext() throws Throwable
+    {
+        // Then
+        assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
+
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(),
+                msgFailure( Status.Security.AuthorizationExpired,
+                        "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
     }
 }
