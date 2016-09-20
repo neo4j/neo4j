@@ -29,6 +29,7 @@ Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons Lang
+  Caffeine cache
   ColorBrewer
   Commons BeanUtils
   Commons Digester
