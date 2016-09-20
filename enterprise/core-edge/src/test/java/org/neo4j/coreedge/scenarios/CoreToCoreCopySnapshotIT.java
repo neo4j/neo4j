@@ -19,33 +19,31 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Node;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.time.Clocks;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_frequency;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_rotation_size;
-import static org.neo4j.coreedge.discovery.Cluster.dataMatchesEventually;
+import static org.neo4j.coreedge.discovery.Cluster.dataOnMemberEventuallyLooksLike;
 import static org.neo4j.coreedge.scenarios.SampleData.createData;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -156,7 +154,7 @@ public class CoreToCoreCopySnapshotIT
         firstServer.start();
 
         // then
-        dataMatchesEventually( firstServer, cluster.coreMembers() );
+        dataOnMemberEventuallyLooksLike( firstServer, secondServer );
     }
 
     private class Timeout

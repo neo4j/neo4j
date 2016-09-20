@@ -46,10 +46,11 @@ import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
 import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -448,7 +449,6 @@ public class Cluster
                                     Map<String, IntFunction<String>> instanceExtraParams,
                                     String recordFormat )
     {
-
         for ( int i = 0; i < noOfEdgeMembers; i++ )
         {
             edgeMembers.put( i, new EdgeClusterMember( parentDir, i, discoveryServiceFactory, coreMemberAddresses,
@@ -461,10 +461,47 @@ public class Cluster
         edgeMembers.values().forEach( EdgeClusterMember::shutdown );
     }
 
+    /**
+     * Waits for {@link #DEFAULT_TIMEOUT_MS} for the <code>targetDBs</code> to have the same content as the
+     * <code>member</code>. Changes in the <code>member</code> database contents after this method is called do not get
+     * picked up and are not part of the comparison.
+     * @param member The database to check against
+     * @param targetDBs The databases expected to match the contents of <code>member</code>
+     */
     public static void dataMatchesEventually( CoreClusterMember member, Collection<CoreClusterMember> targetDBs )
             throws TimeoutException, InterruptedException
     {
         dataMatchesEventually( DbRepresentation.of( member.database() ), targetDBs );
+    }
+
+    /**
+     * Waits for {@link #DEFAULT_TIMEOUT_MS} for the <code>memberThatChanges</code> to match the contents of
+     * <code>memberToLookLike</code>. After calling this method, only changes in <code>memberThatChanges</code> get
+     * picked up.
+     */
+    public static void dataOnMemberEventuallyLooksLike( CoreClusterMember memberThatChanges,
+                                                        CoreClusterMember memberToLookLike )
+            throws TimeoutException, InterruptedException
+    {
+        DbRepresentation representationToLookLike = DbRepresentation.of( memberToLookLike.database() );
+        Predicates.await( () -> {
+                try
+                {
+                    DbRepresentation representationThatChanges = DbRepresentation.of( memberThatChanges.database() );
+                    return representationToLookLike.equals( representationThatChanges );
+                }
+                catch( DatabaseShutdownException e )
+                {
+                    /*
+                     * This can happen if the database is still in the process of starting. Yes, the naming
+                     * of the exception is unfortunate, since it is thrown when the database lifecycle is not
+                     * in RUNNING state and therefore signals general unavailability (e.g still starting) and not
+                     * necessarily a database that is shutting down.
+                     */
+                }
+                return false;
+            },
+            DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
     public static void dataMatchesEventually( DbRepresentation sourceRepresentation, Collection<CoreClusterMember> targetDBs )
