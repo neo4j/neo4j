@@ -247,7 +247,7 @@ public class LdapRealm extends JndiLdapRealm
                         // Since we do not have the subject's credentials we cannot perform a new LDAP search
                         // for authorization info. Instead we need to fail with a special status,
                         // so that the client can react by re-authenticating.
-                        throw new AuthExpirationException( "The LDAP authorization info has expired." );
+                        throw new AuthExpirationException( "LDAP authorization info expired." );
                     }
                     return authorizationInfo;
                 }
