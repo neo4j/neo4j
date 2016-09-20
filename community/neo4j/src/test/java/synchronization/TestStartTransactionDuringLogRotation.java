@@ -28,19 +28,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 public class TestStartTransactionDuringLogRotation
 {
@@ -53,6 +54,8 @@ public class TestStartTransactionDuringLogRotation
             return super.newBuilder( factory ).setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" );
         }
     };
+    @Rule
+    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2-" + getClass().getName() );
 
     private ExecutorService executor;
     private CountDownLatch startLogRotationLatch;
@@ -60,8 +63,8 @@ public class TestStartTransactionDuringLogRotation
     private AtomicBoolean writerStopped;
     private Monitors monitors;
     private LogRotation.Monitor rotationListener;
-    private Future<?> writerTaskFuture;
     private Label label;
+    private Future<Void> rotationFuture;
 
     @Before
     public void setUp() throws InterruptedException
@@ -97,24 +100,7 @@ public class TestStartTransactionDuringLogRotation
         monitors.addMonitorListener( rotationListener );
         label = Label.label( "Label" );
 
-        Runnable writerTask = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                while ( !writerStopped.get() )
-                {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        Node node = db.createNode( label );
-                        node.setProperty( "a", 1 );
-                        tx.success();
-                    }
-                }
-            }
-        };
-
-        writerTaskFuture = executor.submit( writerTask );
+        rotationFuture = t2.execute( forceLogRotation( db ) );
 
         // Waiting for the writer task to start a log rotation
         startLogRotationLatch.await();
@@ -124,11 +110,26 @@ public class TestStartTransactionDuringLogRotation
         // The test passes when transaction.close completes within the test timeout, that is, it didn't deadlock.
     }
 
+    private WorkerCommand<Void,Void> forceLogRotation( GraphDatabaseAPI db )
+    {
+        return state ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode( label ).setProperty( "a", 1 );
+                tx.success();
+            }
+
+            db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+            return null;
+        };
+    }
+
     @After
     public void tearDown() throws Exception
     {
+        rotationFuture.get();
         writerStopped.set( true );
-        writerTaskFuture.get( 10, TimeUnit.SECONDS );
         executor.shutdown();
     }
 

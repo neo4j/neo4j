@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.store.format;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,20 +60,22 @@ public abstract class RecordFormatTest
     private static final int PAGE_SIZE = (int) kibiBytes( 1 );
 
     // Whoever is hit first
-    private static final long TEST_ITERATIONS = 1_000_000;
+    private static final long TEST_ITERATIONS = 100_000;
     private static final long TEST_TIME = 1000;
     private static final int DATA_SIZE = 100;
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
-    @ClassRule
-    public static final RandomRule random = new RandomRule();
-
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-
+    private static final RandomRule random = new RandomRule();
+    private static final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule ).around( suppressOutput );
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public final TestName name = new TestName();
+
+    @ClassRule
+    public static final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule ).around( random );
+    private static PageCache pageCache;
 
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 
@@ -85,6 +89,12 @@ public abstract class RecordFormatTest
         this.formats = formats;
         this.entityBits = entityBits;
         this.propertyBits = propertyBits;
+    }
+
+    @BeforeClass
+    public static void setupPageCache()
+    {
+        pageCache = pageCacheRule.getPageCache( fsRule.get() );
     }
 
     @Before
@@ -148,8 +158,7 @@ public abstract class RecordFormatTest
             Supplier<RecordKey<R>> keySupplier ) throws IOException
     {
         // GIVEN
-        PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        try ( PagedFile storeFile = pageCache.map( new File( "store" ), PAGE_SIZE, CREATE ) )
+        try ( PagedFile storeFile = pageCache.map( new File( "store-" + name.getMethodName() ), PAGE_SIZE, CREATE ) )
         {
             RecordFormat<R> format = formatSupplier.get();
             RecordKey<R> key = keySupplier.get();

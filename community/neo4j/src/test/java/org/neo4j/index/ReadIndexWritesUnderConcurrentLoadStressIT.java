@@ -19,52 +19,49 @@
  */
 package org.neo4j.index;
 
-import java.io.File;
 import java.text.DecimalFormat;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.test.Race;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.lang.String.format;
 
-import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 
 public class ReadIndexWritesUnderConcurrentLoadStressIT
 {
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
     public static final int TX_COUNT = 16_000;
-    public static final int THREAD_COUNT = 8;
+    public static final int THREAD_COUNT = 30;
     public static final DecimalFormat COUNT_FORMAT = new DecimalFormat( "###,###,###,###,##0" );
     public static final DecimalFormat THROUGHPUT_FORMAT = new DecimalFormat( "###,###,###,###,##0.00" );
     public static final Label LABEL = Label.label( "Label" );
     public static final String PROPERTY_KEY = "key";
 
+    @Rule
+    public final DatabaseRule db = new EmbeddedDatabaseRule( getClass() )
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "2000M" );
+            builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "500M" );
+        };
+    };
+
     @Test
     public void shouldReadNodeWrittenInPreviousTransaction() throws Throwable
     {
-        File dbDir = temporaryFolder.newFolder();
-        GraphDatabaseService db = new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( dbDir )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "2000M" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "500M" )
-                .newGraphDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
@@ -72,133 +69,38 @@ public class ReadIndexWritesUnderConcurrentLoadStressIT
         }
 
         int threadTxCount = TX_COUNT / THREAD_COUNT;
-        int startOfRange;
         int endOfRange = -1;
-        CountDownLatch startSignal = new CountDownLatch( 1 );
-        CountDownLatch finishSignal = new CountDownLatch( THREAD_COUNT );
-        AtomicBoolean failed = new AtomicBoolean( false );
         AtomicLong txs = new AtomicLong( 0 );
-        for ( int i = 0; i < THREAD_COUNT; i++ )
+        Race race = new Race();
+        for ( int t = 0; t < THREAD_COUNT; t++ )
         {
-            startOfRange = 1 + endOfRange;
+            int startOfRange = 1 + endOfRange;
             endOfRange = startOfRange + threadTxCount - 1;
-            System.out.println( format( "Thread=%s, Txs=%s, %s -> %s",
-                    COUNT_FORMAT.format( i ),
-                    COUNT_FORMAT.format( threadTxCount ),
-                    COUNT_FORMAT.format( startOfRange ),
-                    COUNT_FORMAT.format( endOfRange ) ) );
-            new LostWritesThread(
-                    startOfRange,
-                    endOfRange,
-                    failed,
-                    LABEL,
-                    PROPERTY_KEY,
-                    db,
-                    startSignal,
-                    finishSignal,
-                    txs
-            ).start();
-        }
-
-        startSignal.countDown();
-        long startTime = System.currentTimeMillis();
-        long finishTime;
-        long prevTxs = 0;
-        while ( !finishSignal.await( 2, TimeUnit.SECONDS ) )
-        {
-            long currTxs = txs.get();
-            finishTime = System.currentTimeMillis();
-            printProgress( currTxs, prevTxs, startTime, finishTime );
-            assertThat( failed.get(), is( false ) );
-            prevTxs = currTxs;
-            startTime = System.currentTimeMillis();
-        }
-        printProgress( txs.get(), prevTxs, startTime, System.currentTimeMillis() );
-        assertThat( failed.get(), is( false ) );
-        db.shutdown();
-    }
-
-    private void printProgress( long currTxs, long prevTxs, long startTime, long finishTime )
-    {
-        System.out.println( format( "Processed %s tx @ %s tx/s",
-                COUNT_FORMAT.format( currTxs ),
-                THROUGHPUT_FORMAT.format( (double) (currTxs - prevTxs) / (finishTime - startTime) * 1_000 ) ) );
-    }
-
-    static class LostWritesThread extends Thread
-    {
-        private final int startOfRange;
-        private final int endOfRange;
-        private final AtomicBoolean failed;
-        private final Label label;
-        private final String propertyKey;
-        private final GraphDatabaseService db;
-        private final CountDownLatch startSignal;
-        private final CountDownLatch finishSignal;
-        private final AtomicLong txs;
-
-        public LostWritesThread(
-                int startOfRange,
-                int endOfRange,
-                AtomicBoolean failed,
-                Label label,
-                String propertyKey,
-                GraphDatabaseService db,
-                CountDownLatch startSignal,
-                CountDownLatch finishSignal,
-                AtomicLong txs )
-        {
-            this.startOfRange = startOfRange;
-            this.endOfRange = endOfRange;
-            this.failed = failed;
-            this.label = label;
-            this.propertyKey = propertyKey;
-            this.db = db;
-            this.startSignal = startSignal;
-            this.finishSignal = finishSignal;
-            this.txs = txs;
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                startSignal.await();
-            }
-            catch ( InterruptedException ex )
-            {
-                System.out.println( "Thread was interrupted" );
-                return;
-            }
-
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node = db.createNode( label );
-                node.setProperty( propertyKey, startOfRange );
-                tx.success();
-                txs.incrementAndGet();
-            }
-
-            for ( int i = startOfRange + 1; i <= endOfRange; i++ )
+            int finalEndOfRange = endOfRange;
+            race.addContestant( () ->
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    Node node = db.createNode( label );
-                    node.setProperty( propertyKey, i );
-                    Node previousNode = db.findNode( label, propertyKey, i - 1 );
-                    assertThat( format( "Error at tx %s", i ), previousNode, not( nullValue() ) );
+                    Node node = db.createNode( LABEL );
+                    node.setProperty( PROPERTY_KEY, startOfRange );
                     tx.success();
                     txs.incrementAndGet();
                 }
-                catch ( Throwable e )
+
+                for ( int i = startOfRange + 1; i <= finalEndOfRange; i++ )
                 {
-                    failed.set( true );
-                    e.printStackTrace();
-                    break;
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        Node node = db.createNode( LABEL );
+                        node.setProperty( PROPERTY_KEY, i );
+                        Node previousNode = db.findNode( LABEL, PROPERTY_KEY, i - 1 );
+                        assertThat( format( "Error at tx %s", i ), previousNode, not( nullValue() ) );
+                        tx.success();
+                        txs.incrementAndGet();
+                    }
                 }
-            }
-            finishSignal.countDown();
+            } );
         }
+        race.go();
     }
 }

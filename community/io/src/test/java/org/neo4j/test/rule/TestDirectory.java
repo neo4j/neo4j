@@ -161,15 +161,14 @@ public class TestDirectory implements TestRule
         return directory( "graph-db" );
     }
 
-    public File makeGraphDbDir()
+    public File makeGraphDbDir() throws IOException
     {
         return cleanDirectory( "graph-db" );
     }
 
     public void cleanup() throws IOException
     {
-        fileSystem.deleteRecursively( testClassBaseFolder );
-        fileSystem.mkdirs( testClassBaseFolder );
+        clean( fileSystem, testClassBaseFolder );
     }
 
     @Override
@@ -179,14 +178,18 @@ public class TestDirectory implements TestRule
         return format( "%s[%s]", getClass().getSimpleName(), testDirectoryName );
     }
 
-    public File cleanDirectory( String name )
+    public File cleanDirectory( String name ) throws IOException
     {
-        File dir = new File( ensureBase(), name );
-        if ( fileSystem.fileExists( dir ) )
+        return clean( fileSystem, new File( ensureBase(), name ) );
+    }
+
+    private static File clean( FileSystemAbstraction fs, File dir ) throws IOException
+    {
+        if ( fs.fileExists( dir ) )
         {
-            deleteSilently( dir );
+            fs.deleteRecursively( dir );
         }
-        fileSystem.mkdir( dir );
+        fs.mkdirs( dir );
         return dir;
     }
 
@@ -211,19 +214,7 @@ public class TestDirectory implements TestRule
         testDirectory = null;
     }
 
-    private void deleteSilently( File dir )
-    {
-        try
-        {
-            fileSystem.deleteRecursively( dir );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    private File directoryForDescription( Description description )
+    private File directoryForDescription( Description description ) throws IOException
     {
         if ( owningTest == null )
         {
@@ -246,8 +237,26 @@ public class TestDirectory implements TestRule
         {
             throw new IllegalStateException(" Test owning class is not defined" );
         }
+        try
+        {
+            testClassBaseFolder = testDataDirectoryOf( fileSystem, owningTest, false );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private static File testDataDirectoryOf( FileSystemAbstraction fs, Class<?> owningTest, boolean clean )
+            throws IOException
+    {
         File testData = new File( locateTarget( owningTest ), "test-data" );
-        testClassBaseFolder = new File( testData, owningTest.getName() ).getAbsoluteFile();
+        File result = new File( testData, owningTest.getName() ).getAbsoluteFile();
+        if ( clean )
+        {
+            clean( fs, result );
+        }
+        return result;
     }
 
     private void register( String test, String dir )

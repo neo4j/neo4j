@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -55,13 +53,13 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.test.MockedNeoStores;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.lang.Math.toIntExact;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.apache.commons.lang3.RandomUtils.nextBytes;
@@ -270,43 +268,30 @@ public class StorePropertyCursorTest
         public static PageCacheRule pageCacheRule = new PageCacheRule();
 
         private static PageCache pageCache;
+        private static NeoStores neoStores;
+        protected static PropertyStore propertyStore;
 
         @BeforeClass
-        public static void setUpPageCache()
+        public static void setUp() throws IOException
         {
             pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        }
-
-        @AfterClass
-        public static void tearDownPageCache() throws IOException
-        {
-            pageCache.close();
-        }
-
-        protected PropertyStore propertyStore;
-        private NeoStores neoStores;
-
-        @Before
-        public void setup() throws IOException
-        {
             EphemeralFileSystemAbstraction fs = fsRule.get();
-            LogProvider log = NullLogProvider.getInstance();
-
-            File storeDir = new File( "store" );
+            File storeDir = new File( "store" ).getAbsoluteFile();
             if ( fs.isDirectory( storeDir ) )
             {
                 fs.deleteRecursively( storeDir );
             }
             fs.mkdirs( storeDir );
-            StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, log );
-            neoStores = storeFactory.openAllNeoStores( true );
+            neoStores = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() )
+                    .openAllNeoStores( true );
             propertyStore = neoStores.getPropertyStore();
         }
 
-        @After
-        public void tearDown()
+        @AfterClass
+        public static void tearDown() throws IOException
         {
             neoStores.close();
+            pageCache.close();
         }
 
         @Test
@@ -336,11 +321,10 @@ public class StorePropertyCursorTest
         public void shouldReturnAProperty() throws Throwable
         {
             // given
-            int recordId = 42;
             int keyId = 11;
             Object expectedValue = actualValue( this.expectedValue );
 
-            createSinglePropertyValue( propertyStore, recordId, keyId, expectedValue );
+            long recordId = createSinglePropertyValue( propertyStore, keyId, expectedValue ).getId();
 
             StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore );
 
@@ -397,13 +381,13 @@ public class StorePropertyCursorTest
         public void shouldReturnAPropertyBySkippingOne() throws Throwable
         {
             // given
-            int recordId = 42;
             int keyId1 = 11;
             int keyId2 = 22;
             Object expectedValue1 = actualValue( this.expectedValue1 );
             Object expectedValue2 = actualValue( this.expectedValue2 );
 
-            createTwoPropertyValues( propertyStore, recordId, keyId1, expectedValue1, keyId2, expectedValue2 );
+            long recordId = createTwoPropertyValues(
+                    propertyStore, keyId1, expectedValue1, keyId2, expectedValue2 ).getId();
 
             StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore );
 
@@ -429,13 +413,13 @@ public class StorePropertyCursorTest
         public void shouldReturnTwoProperties() throws Throwable
         {
             // given
-            int recordId = 42;
             int keyId1 = 11;
             int keyId2 = 22;
             Object expectedValue1 = actualValue( this.expectedValue1 );
             Object expectedValue2 = actualValue( this.expectedValue2 );
 
-            createTwoPropertyValues( propertyStore, recordId, keyId1, expectedValue1, keyId2, expectedValue2 );
+            long recordId = createTwoPropertyValues(
+                    propertyStore, keyId1, expectedValue1, keyId2, expectedValue2 ).getId();
 
             StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore );
 
@@ -479,11 +463,10 @@ public class StorePropertyCursorTest
         public void shouldReuseCorrectlyCursor() throws Throwable
         {
             // given
-            int recordId = 42;
             int keyId = 11;
             Object expectedValue = actualValue( this.expectedValue );
 
-            createSinglePropertyValue( propertyStore, recordId, keyId, expectedValue );
+            long recordId = createSinglePropertyValue( propertyStore, keyId, expectedValue ).getId();
 
             StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore );
 
@@ -514,11 +497,10 @@ public class StorePropertyCursorTest
         @Test
         public void readPropertyChainWithMultipleEntries()
         {
-            int firstPropertyId = 1;
             int propertyKeyId = 42;
             Object[] propertyValues = {"1", "2", 3, 4, 5L, 6L, '7', '8', "9 and 10"};
 
-            createPropertyChain( propertyStore, firstPropertyId, propertyKeyId, propertyValues );
+            long firstPropertyId = firstIdOf( createPropertyChain( propertyStore, propertyKeyId, propertyValues ) );
 
             try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
             {
@@ -532,10 +514,9 @@ public class StorePropertyCursorTest
         @Test
         public void callNextAfterReadingPropertyChain()
         {
-            int firstPropertyId = 1;
             int propertyKeyId = 42;
 
-            createPropertyChain( propertyStore, firstPropertyId, propertyKeyId, "1", "2" );
+            long firstPropertyId = firstIdOf( createPropertyChain( propertyStore, propertyKeyId, "1", "2" ) );
 
             try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
             {
@@ -556,12 +537,12 @@ public class StorePropertyCursorTest
         @Test
         public void skipUnusedRecordsInChain()
         {
-            int firstPropertyId = 1;
             int propertyKeyId = 42;
             Object[] propertyValues = {"1", "2", 3, 4, 5L, 6L, '7', '8', "9 and 10"};
 
-            createPropertyChain( propertyStore, firstPropertyId, propertyKeyId, propertyValues );
-            markPropertyRecordsNoInUse( propertyStore, generateRecordIds( firstPropertyId + 1, 2, 4 ) );
+            List<PropertyRecord> propertyChain = createPropertyChain( propertyStore, propertyKeyId, propertyValues );
+            long firstPropertyId = firstIdOf( propertyChain );
+            markPropertyRecordsNoInUse( propertyStore, idsOf( propertyChain, 1, 2, 4 ) );
 
             try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
             {
@@ -575,12 +556,12 @@ public class StorePropertyCursorTest
         @Test
         public void skipUnusedConsecutiveRecordsInChain()
         {
-            int firstPropertyId = 1;
             int propertyKeyId = 42;
             Object[] propertyValues = {"1", "2", 3, 4, 5L, 6L, '7', '8', "9 and 10"};
 
-            createPropertyChain( propertyStore, firstPropertyId, propertyKeyId, propertyValues );
-            markPropertyRecordsNoInUse( propertyStore, generateRecordIds( firstPropertyId + 2, 1, 3 ) );
+            List<PropertyRecord> propertyChain = createPropertyChain( propertyStore, propertyKeyId, propertyValues );
+            long firstPropertyId = firstIdOf( propertyChain );
+            markPropertyRecordsNoInUse( propertyStore, idsOf( propertyChain, 2, 1, 3 ) );
 
             try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
             {
@@ -594,12 +575,12 @@ public class StorePropertyCursorTest
         @Test
         public void skipAllRecordsWhenWholeChainNotInUse()
         {
-            int firstPropertyId = 1;
             int propertyKeyId = 42;
             Object[] propertyValues = {"1", "2", 3, 4, 5L, 6L, '7', '8', "9 and 10"};
 
-            createPropertyChain( propertyStore, firstPropertyId, propertyKeyId, propertyValues );
-            int[] recordIds = generateRecordIds( firstPropertyId, 1, propertyValues.length );
+            List<PropertyRecord> propertyChain = createPropertyChain( propertyStore, propertyKeyId, propertyValues );
+            long firstPropertyId = firstIdOf( propertyChain );
+            int[] recordIds = idsOf( propertyChain, 0, 1, propertyValues.length );
             markPropertyRecordsNoInUse( propertyStore, recordIds );
 
             try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
@@ -614,12 +595,12 @@ public class StorePropertyCursorTest
         @Test
         public void readPropertyChainWithLongStringDynamicRecordsNotInUse()
         {
-            int chainStartId = 1;
             int keyId = 42;
             Object[] values = {randomAscii( 255 ), randomAscii( 255 ), randomAscii( 255 )};
-            List<PropertyRecord> propertyChain = createPropertyChain( propertyStore, chainStartId, keyId, values );
+            List<PropertyRecord> propertyChain = createPropertyChain( propertyStore, keyId, values );
+            long chainStartId = firstIdOf( propertyChain );
 
-            markDynamicRecordNotInUse( 2, keyId, propertyChain.get( 1 ), propertyStore );
+            markDynamicRecordsNotInUse( keyId, propertyChain.get( 1 ), propertyStore, 2 );
 
             try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
             {
@@ -633,70 +614,59 @@ public class StorePropertyCursorTest
         @Test
         public void readPropertyValueWhenFirstLongStringDynamicRecordIsNotInUse()
         {
-            int recordId = 1;
             int keyId = 1;
             String value = randomAscii( 255 );
-            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
-            markDynamicRecordNotInUse( 0, keyId, record, propertyStore );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, keyId, value );
+            markDynamicRecordsNotInUse( keyId, record, propertyStore, 0 );
 
-            verifyPropertyValue( value, recordId );
+            verifyPropertyValue( value, record.getId() );
         }
 
         @Test
         public void readPropertyValueWhenSomeLongStringDynamicRecordsAreNotInUse()
         {
-            int recordId = 1;
             int keyId = 1;
             String value = randomAscii( 1000 );
-            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, keyId, value );
 
-            markDynamicRecordNotInUse( 1, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 3, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 5, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 7, keyId, record, propertyStore );
+            markDynamicRecordsNotInUse( keyId, record, propertyStore, 1, 3, 5, 7 );
 
-            verifyPropertyValue( value, recordId );
+            verifyPropertyValue( value, record.getId() );
         }
 
         @Test
         public void readPropertyValueWhenAllLongStringDynamicRecordsAreNotInUse()
         {
-            int recordId = 1;
             int keyId = 1;
             String value = randomAscii( 255 );
-            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, keyId, value );
 
-            markDynamicRecordNotInUse( 0, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 1, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 2, keyId, record, propertyStore );
+            markDynamicRecordsNotInUse( keyId, record, propertyStore, 0, 1, 2 );
 
-            verifyPropertyValue( value, recordId );
+            verifyPropertyValue( value, record.getId() );
         }
 
         @Test
         public void readPropertyValueWhenAllLongArrayDynamicRecordsAreNotInUse()
         {
-            int recordId = 1;
             int keyId = 1;
             byte[] value = nextBytes( 320 );
-            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, keyId, value );
 
-            markDynamicRecordNotInUse( 0, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 1, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 2, keyId, record, propertyStore );
+            markDynamicRecordsNotInUse( keyId, record, propertyStore, 0, 1, 2 );
 
-            verifyPropertyValue( value, recordId );
+            verifyPropertyValue( value, record.getId() );
         }
 
         @Test
         public void readPropertyChainWithLongArrayDynamicRecordsNotInUse()
         {
-            int chainStartId = 1;
             int keyId = 42;
             Object[] values = {nextBytes( 1024 ), nextBytes( 1024 ), nextBytes( 1024 )};
-            List<PropertyRecord> propertyChain = createPropertyChain( propertyStore, chainStartId, keyId, values );
+            List<PropertyRecord> propertyChain = createPropertyChain( propertyStore, keyId, values );
+            long chainStartId = firstIdOf( propertyChain );
 
-            markDynamicRecordNotInUse( 2, keyId, propertyChain.get( 1 ), propertyStore );
+            markDynamicRecordsNotInUse( keyId, propertyChain.get( 1 ), propertyStore, 2 );
 
             try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
             {
@@ -714,32 +684,27 @@ public class StorePropertyCursorTest
         @Test
         public void readPropertyValueWhenFirstLongArrayDynamicRecordIsNotInUse()
         {
-            int recordId = 1;
             int keyId = 1;
             byte[] value = nextBytes( 1024 );
-            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
-            markDynamicRecordNotInUse( 0, keyId, record, propertyStore );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, keyId, value );
+            markDynamicRecordsNotInUse( keyId, record, propertyStore, 0 );
 
-            verifyPropertyValue( value, recordId );
+            verifyPropertyValue( value, record.getId() );
         }
 
         @Test
         public void readPropertyValueWhenSomeLongArrayDynamicRecordsAreNotInUse()
         {
-            int recordId = 1;
             int keyId = 1;
             byte[] value = nextBytes( 1024 );
-            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, keyId, value );
 
-            markDynamicRecordNotInUse( 1, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 3, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 5, keyId, record, propertyStore );
-            markDynamicRecordNotInUse( 7, keyId, record, propertyStore );
+            markDynamicRecordsNotInUse( keyId, record, propertyStore, 1, 3, 5, 7 );
 
-            verifyPropertyValue( value, recordId );
+            verifyPropertyValue( value, record.getId() );
         }
 
-        private void verifyPropertyValue( String expectedValue, int recordId )
+        private void verifyPropertyValue( String expectedValue, long recordId )
         {
             try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
             {
@@ -750,7 +715,7 @@ public class StorePropertyCursorTest
             }
         }
 
-        private void verifyPropertyValue( byte[] expectedValue, int recordId )
+        private void verifyPropertyValue( byte[] expectedValue, long recordId )
         {
             try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
             {
@@ -775,6 +740,11 @@ public class StorePropertyCursorTest
             assertEquals( expectedValue, item.value() );
             assertEquals( expectedValue, item.value() );
         }
+    }
+
+    public static long firstIdOf( List<PropertyRecord> propertyChain )
+    {
+        return propertyChain.get( 0 ).getId();
     }
 
     private static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore )
@@ -804,15 +774,14 @@ public class StorePropertyCursorTest
         return new StorePropertyCursor( cursors, cache );
     }
 
-    private static List<PropertyRecord> createPropertyChain( PropertyStore store, int firstRecordId, int keyId,
+    private static List<PropertyRecord> createPropertyChain( PropertyStore store, int keyId,
             Object... values )
     {
         List<PropertyRecord> records = new ArrayList<>();
 
-        int nextRecordId = firstRecordId;
         for ( Object value : values )
         {
-            PropertyRecord record = createSinglePropertyValue( store, nextRecordId, keyId, value );
+            PropertyRecord record = createSinglePropertyValue( store, keyId, value );
             if ( !records.isEmpty() )
             {
                 PropertyRecord previousRecord = records.get( records.size() - 1 );
@@ -824,7 +793,6 @@ public class StorePropertyCursorTest
                 store.updateRecord( previousRecord );
             }
             records.add( record );
-            nextRecordId++;
         }
 
         return records;
@@ -840,17 +808,17 @@ public class StorePropertyCursorTest
         }
     }
 
-    private static int[] generateRecordIds( int startId, int step, int count )
+    public static int[] idsOf( List<PropertyRecord> propertyChain, int startIndex, int step, int count )
     {
-        int[] ints = new int[count];
+        int[] result = new int[count];
         for ( int i = 0; i < count; i++ )
         {
-            ints[i] = startId + i * step;
+            result[i] = toIntExact( propertyChain.get( startIndex + i * step ).getId() );
         }
-        return ints;
+        return result;
     }
 
-    private static PropertyRecord createSinglePropertyValue( PropertyStore store, int recordId, int keyId,
+    private static PropertyRecord createSinglePropertyValue( PropertyStore store, int keyId,
             Object value )
     {
         DynamicRecordAllocator stringAllocator = store.getStringStore();
@@ -859,7 +827,7 @@ public class StorePropertyCursorTest
         PropertyBlock block = new PropertyBlock();
         PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator );
 
-        PropertyRecord record = new PropertyRecord( recordId );
+        PropertyRecord record = new PropertyRecord( store.nextId() );
         record.addPropertyBlock( block );
         record.setInUse( true );
         updateRecord( store, record );
@@ -867,8 +835,8 @@ public class StorePropertyCursorTest
         return record;
     }
 
-    private static void createTwoPropertyValues( PropertyStore store, int recordId,
-            int keyId1, Object value1, int keyId2, Object value2 ) throws IOException
+    private static PropertyRecord createTwoPropertyValues( PropertyStore store,
+            int keyId1, Object value1, int keyId2, Object value2 )
     {
         DynamicRecordAllocator stringAllocator = store.getStringStore();
         DynamicRecordAllocator arrayAllocator = store.getArrayStore();
@@ -878,7 +846,7 @@ public class StorePropertyCursorTest
         PropertyBlock block2 = new PropertyBlock();
         PropertyStore.encodeValue( block2, keyId2, value2, stringAllocator, arrayAllocator );
 
-        PropertyRecord record = new PropertyRecord( recordId );
+        PropertyRecord record = new PropertyRecord( store.nextId() );
         record.addPropertyBlock( block1 );
         if ( block1.getSize() + block2.getSize() <= PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE )
         {
@@ -886,7 +854,7 @@ public class StorePropertyCursorTest
         }
         else
         {
-            PropertyRecord nextRecord = new PropertyRecord( recordId + 1 );
+            PropertyRecord nextRecord = new PropertyRecord( store.nextId() );
             record.setNextProp( nextRecord.getId() );
             nextRecord.addPropertyBlock( block2 );
             nextRecord.setPrevProp( record.getId() );
@@ -896,16 +864,20 @@ public class StorePropertyCursorTest
 
         record.setInUse( true );
         updateRecord( store, record );
+        return record;
     }
 
-    private static void markDynamicRecordNotInUse( int dynamicRecordIndex, int keyId, PropertyRecord record,
-            PropertyStore store )
+    private static void markDynamicRecordsNotInUse( int keyId, PropertyRecord record,
+            PropertyStore store, int... dynamicRecordIndexes )
     {
         PropertyBlock propertyBlock = record.getPropertyBlock( keyId );
         store.ensureHeavy( propertyBlock );
         List<DynamicRecord> valueRecords = propertyBlock.getValueRecords();
-        DynamicRecord dynamicRecord = valueRecords.get( dynamicRecordIndex );
-        dynamicRecord.setInUse( false );
+        for ( int index : dynamicRecordIndexes )
+        {
+            DynamicRecord dynamicRecord = valueRecords.get( index );
+            dynamicRecord.setInUse( false );
+        }
         updateRecord( store, record );
     }
 

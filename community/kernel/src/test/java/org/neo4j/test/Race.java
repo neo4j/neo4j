@@ -25,6 +25,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
+
+import org.neo4j.helpers.Exceptions;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -37,19 +40,91 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class Race
 {
+    public interface ThrowingRunnable
+    {
+        void run() throws Throwable;
+    }
+
     private final List<Contestant> contestants = new ArrayList<>();
     private volatile CountDownLatch readySet;
     private final CountDownLatch go = new CountDownLatch( 1 );
-    private final boolean addSomeMinorRandomStartDelays;
+    private volatile boolean addSomeMinorRandomStartDelays;
+    private volatile BooleanSupplier endCondition;
+    private volatile boolean failure;
 
-    public Race()
+    public Race withRandomStartDelays()
     {
-        this( false );
+        this.addSomeMinorRandomStartDelays = true;
+        return this;
     }
 
-    public Race( boolean addSomeMinorRandomStartDelays )
+    /**
+     * Adds an end condition to this race. The race will end whenever an end condition is met
+     * or when there's one contestant failing (throwing any sort of exception).
+     *
+     * @param endConditions one or more end conditions, such that when returning {@code true}
+     * signals that the race should end.
+     * @return this {@link Race} instance.
+     */
+    public Race withEndCondition( BooleanSupplier... endConditions )
     {
-        this.addSomeMinorRandomStartDelays = addSomeMinorRandomStartDelays;
+        for ( BooleanSupplier endCondition : endConditions )
+        {
+            this.endCondition = mergeEndCondition( endCondition );
+        }
+        return this;
+    }
+
+    /**
+     * Convenience for adding an end condition which is based on time. This will have contestants
+     * end after the given duration (time + unit).
+     *
+     * @param time time value.
+     * @param unit unit of time in {@link TimeUnit}.
+     * @return this {@link Race} instance.
+     */
+    public Race withMaxDuration( long time, TimeUnit unit )
+    {
+        long endTime = currentTimeMillis() + unit.toMillis( time );
+        this.endCondition = mergeEndCondition( () -> currentTimeMillis() >= endTime );
+        return this;
+    }
+
+    private BooleanSupplier mergeEndCondition( BooleanSupplier additionalEndCondition )
+    {
+        BooleanSupplier existingEndCondition = endCondition;
+        return existingEndCondition == null ? additionalEndCondition :
+            () -> existingEndCondition.getAsBoolean() || additionalEndCondition.getAsBoolean();
+    }
+
+    /**
+     * Convenience for wrapping contestants, especially for lambdas, which throws any sort of
+     * checked exception.
+     *
+     * @param runnable actual contestant.
+     * @return contestant wrapped in a try-catch (and re-throw as unchecked exception).
+     */
+    public static Runnable throwing( ThrowingRunnable runnable )
+    {
+        return () ->
+        {
+            try
+            {
+                runnable.run();
+            }
+            catch ( Throwable e )
+            {
+                throw Exceptions.launderedException( e );
+            }
+        };
+    }
+
+    public void addContestants( int count, Runnable contestant )
+    {
+        for ( int i = 0; i < count; i++ )
+        {
+            addContestant( contestant );
+        }
     }
 
     public void addContestant( Runnable contestant )
@@ -77,6 +152,11 @@ public class Race
      */
     public void go( long maxWaitTime, TimeUnit unit ) throws Throwable
     {
+        if ( endCondition == null )
+        {
+            endCondition = () -> true;
+        }
+
         readySet = new CountDownLatch( contestants.size() );
         for ( Contestant contestant : contestants )
         {
@@ -141,6 +221,7 @@ public class Race
         Contestant( Runnable code, int nr )
         {
             super( code, "Contestant#" + nr );
+            this.setUncaughtExceptionHandler( (thread,error) -> {} );
         }
 
         @Override
@@ -165,11 +246,19 @@ public class Race
 
             try
             {
-                super.run();
+                while ( !failure )
+                {
+                    super.run();
+                    if ( endCondition.getAsBoolean() )
+                    {
+                        break;
+                    }
+                }
             }
             catch ( Throwable e )
             {
                 error = e;
+                failure = true; // <-- global flag
                 throw e;
             }
         }

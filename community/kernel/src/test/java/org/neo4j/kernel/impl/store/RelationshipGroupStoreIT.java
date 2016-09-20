@@ -21,57 +21,55 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.TestDirectory;
-
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class RelationshipGroupStoreIT
 {
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final CleanupRule cleanupRule = new CleanupRule();
+    private static final int RELATIONSHIP_COUNT = 20;
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( directory ).around( cleanupRule );
+    public final DatabaseRule db = new ImpermanentDatabaseRule()
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            builder.setConfig( GraphDatabaseSettings.dense_node_threshold, "1" );
+        }
+    };
 
     @Test
     public void shouldCreateAllTheseRelationshipTypes() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.dense_node_threshold, "1" )
-                .newGraphDatabase();
-        cleanupRule.add( db );
+        shiftHighId( db );
 
-        shiftHighId( (GraphDatabaseAPI) db );
-
+        Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            for ( int i = 0; i < 5_000; i++ )
+            node = db.createNode();
+            for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
             {
-                node.createRelationshipTo( db.createNode(), type( i + 1 ) );
+                node.createRelationshipTo( db.createNode(), type( i ) );
             }
             tx.success();
         }
 
-        int nodeWithHighRelationshipTypeID = 4001;
         try ( Transaction ignored = db.beginTx() )
         {
-            Node node = db.getNodeById( 0 );
-            assertEquals( "Should be possible to get relationships of type with id in unsigned short range.",
-                    1, count( node.getRelationships( type( nodeWithHighRelationshipTypeID ) ) ) );
+            for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
+            {
+                assertEquals( "Should be possible to get relationships of type with id in unsigned short range.",
+                        1, count( node.getRelationships( type( i ) ) ) );
+            }
         }
     }
 
@@ -79,12 +77,11 @@ public class RelationshipGroupStoreIT
     {
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         NeoStores neoStores = storageEngine.testAccessNeoStores();
-        neoStores.getRelationshipTypeTokenStore().setHighId( 30000 );
+        neoStores.getRelationshipTypeTokenStore().setHighId( Short.MAX_VALUE - RELATIONSHIP_COUNT / 2 );
     }
 
     private RelationshipType type( int i )
     {
         return RelationshipType.withName( "TYPE_" + i );
     }
-
 }

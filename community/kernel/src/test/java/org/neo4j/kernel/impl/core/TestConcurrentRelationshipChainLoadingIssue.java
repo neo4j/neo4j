@@ -21,24 +21,15 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.Race;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.Runtime.getRuntime;
-import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
@@ -76,9 +67,10 @@ public class TestConcurrentRelationshipChainLoadingIssue
 
         long end = currentTimeMillis() + SECONDS.toMillis( 5 );
         int iterations = 0;
-        while ( currentTimeMillis() < end )
+        while ( currentTimeMillis() < end && iterations < 100 )
         {
-            tryOnce( db, node, iterations++ );
+            tryOnce( db, node );
+            iterations++;
         }
 
         db.shutdown();
@@ -98,64 +90,16 @@ public class TestConcurrentRelationshipChainLoadingIssue
         }
     }
 
-    private void awaitStartSignalAndRandomTimeLonger( final CountDownLatch startSignal )
+    private void tryOnce( final GraphDatabaseAPI db, final Node node ) throws Throwable
     {
-        try
-        {
-            startSignal.await();
-            idleLoop( (int) (System.currentTimeMillis() % 100000) );
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    private void tryOnce( final GraphDatabaseAPI db, final Node node, int iterations ) throws Throwable
-    {
-        ExecutorService executor = newCachedThreadPool();
-        final CountDownLatch startSignal = new CountDownLatch( 1 );
-        int threads = getRuntime().availableProcessors();
-        final List<Throwable> errors = Collections.synchronizedList( new ArrayList<>() );
-        for ( int i = 0; i < threads; i++ )
-        {
-            executor.submit( () -> {
-                awaitStartSignalAndRandomTimeLonger( startSignal );
-                try ( Transaction ignored = db.beginTx() )
-                {
-                    assertEquals( relCount, count( node.getRelationships() ) );
-                }
-                catch ( Throwable e )
-                {
-                    errors.add( e );
-                }
-            } );
-        }
-        startSignal.countDown();
-        executor.shutdown();
-        executor.awaitTermination( 10, SECONDS );
-
-        if ( !errors.isEmpty() )
-        {
-            Exception exception = new Exception(
-                    format("Exception(s) after %s iterations with %s threads", iterations, threads));
-            for ( Throwable error : errors )
+        Race race = new Race().withRandomStartDelays();
+        race.addContestants( Runtime.getRuntime().availableProcessors(), () -> {
+            try ( Transaction ignored = db.beginTx() )
             {
-                exception.addSuppressed( error );
+                assertEquals( relCount, count( node.getRelationships() ) );
             }
-            throw exception;
-        }
-    }
-
-    private static int idleLoop( int l )
-    {
-        // Use atomic integer to disable the JVM from rewriting this loop to simple addition.
-        AtomicInteger i = new AtomicInteger( 0 );
-        for ( int j = 0; j < l; j++ )
-        {
-            i.incrementAndGet();
-        }
-        return i.get();
+        } );
+        race.go();
     }
 
     private Node createNodeWithRelationships( GraphDatabaseAPI db )

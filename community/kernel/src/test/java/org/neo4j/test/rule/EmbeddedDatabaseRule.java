@@ -89,7 +89,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             }
 
             @Override
-            public void create()
+            public void create() throws IOException
             {
                 dbDir = testDirectory.makeGraphDbDir();
             }

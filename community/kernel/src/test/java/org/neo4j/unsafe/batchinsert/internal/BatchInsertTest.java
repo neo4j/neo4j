@@ -17,8 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.batchinsert;
+package org.neo4j.unsafe.batchinsert.internal;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,7 +43,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,7 +59,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -84,7 +86,6 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -93,12 +94,14 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Collections.singletonList;
@@ -127,8 +130,10 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.REAL_FS;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
@@ -140,7 +145,7 @@ public class BatchInsertTest
     @Parameterized.Parameters
     public static Collection<Integer> data()
     {
-        return Arrays.asList( 3, 20, parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
+        return Arrays.asList( 5, parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
     }
 
     public BatchInsertTest( int denseNodeThreshold )
@@ -188,12 +193,37 @@ public class BatchInsertTest
         properties.put( "key18", new char[] {1,2,3,4,5,6,7,8,9} );
     }
 
-    private final FileSystemAbstraction fs = new org.neo4j.io.fs.DefaultFileSystemAbstraction();
+    private static final FileSystemAbstraction fs = REAL_FS;
 
     @Rule
-    public TestDirectory storeDir = TestDirectory.testDirectory();
+    public TestDirectory storeDir = TestDirectory.testDirectory( getClass() );
+    @ClassRule
+    public static TestDirectory globalStoreDir = TestDirectory.testDirectory( BatchInsertTest.class );
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private static BatchInserter globalInserter;
+
+    @BeforeClass
+    public static void startGlobalInserter() throws IOException
+    {
+        // Global inserter can be used in tests which simply want to verify "local" behaviour,
+        // e.g. create a node with some properties and read them back.
+        globalInserter = BatchInserters.inserter(
+                globalStoreDir.directory( "global" ), fs, stringMap() );
+    }
+
+    @After
+    public void flushGlobalInserter()
+    {
+        forceFlush( globalInserter );
+    }
+
+    @AfterClass
+    public static void shutDownGlobalInserter()
+    {
+        globalInserter.shutdown();
+    }
 
     private Map<String, String> configuration()
     {
@@ -219,80 +249,6 @@ public class BatchInsertTest
         return BatchInserters.inserter( storeDir.absolutePath(), fs, configuration(), extensions );
     }
 
-    @Test
-    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1() throws Exception
-    {
-        // Given
-        BatchInserter batchInserter = newBatchInserter();
-
-        String[] array1 = { "1" };
-        String[] array2 = { "a" };
-
-        long id1 = batchInserter.createNode(map("array", array1));
-        long id2 = batchInserter.createNode( map() );
-
-        // When
-        batchInserter.getNodeProperties( id1 ).get( "array" );
-        batchInserter.setNodeProperty( id1, "array", array1 );
-        batchInserter.setNodeProperty( id2, "array", array2 );
-
-        batchInserter.getNodeProperties( id1 ).get( "array" );
-        batchInserter.setNodeProperty( id1, "array", array1 );
-        batchInserter.setNodeProperty( id2, "array", array2 );
-
-        // Then
-        assertThat( (String[]) batchInserter.getNodeProperties( id1 ).get( "array" ), equalTo( array1 ) );
-
-        batchInserter.shutdown();
-
-    }
-
-    @Test
-    public void testSimple() throws Exception
-    {
-        BatchInserter graphDb = newBatchInserter();
-        long node1 = graphDb.createNode( null );
-        long node2 = graphDb.createNode( null );
-        long rel1 = graphDb.createRelationship( node1, node2, RelTypes.BATCH_TEST,
-                null );
-        BatchRelationship rel = graphDb.getRelationshipById( rel1 );
-        assertEquals( rel.getStartNode(), node1 );
-        assertEquals( rel.getEndNode(), node2 );
-        assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
-        graphDb.shutdown();
-    }
-
-    @Test
-    public void testSetAndAddNodeProperties() throws Exception
-    {
-        BatchInserter inserter = newBatchInserter();
-
-        long tehNode = inserter.createNode( MapUtil.map( "one", "one" ,"two","two","three","three") );
-        inserter.setNodeProperty( tehNode, "four", "four" );
-        inserter.setNodeProperty( tehNode, "five", "five" );
-        Map<String, Object> props = inserter.getNodeProperties( tehNode );
-        assertEquals( 5, props.size() );
-        assertEquals( "one", props.get( "one" ) );
-        assertEquals( "five", props.get( "five" ) );
-
-        inserter.shutdown();
-    }
-
-    @Test
-    public void setSingleProperty() throws Exception
-    {
-        BatchInserter inserter = newBatchInserter();
-        long node = inserter.createNode( null );
-
-        String value = "Something";
-        String key = "name";
-        inserter.setNodeProperty( node, key, value );
-
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
-        assertThat( getNodeInTx( node, db ), inTx( db, hasProperty( key ).withValue( value ) ) );
-        db.shutdown();
-    }
-
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
     {
         inserter.shutdown();
@@ -312,13 +268,72 @@ public class BatchInsertTest
         return db;
     }
 
-    private NeoStores switchToNeoStores( BatchInserter inserter )
+    @Test
+    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1() throws Exception
     {
-        inserter.shutdown();
-        File dir = new File( inserter.getStoreDir() );
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( dir, pageCache, fs, NullLogProvider.getInstance() );
-        return storeFactory.openAllNeoStores();
+        // Given
+        BatchInserter batchInserter = globalInserter;
+
+        String[] array1 = { "1" };
+        String[] array2 = { "a" };
+
+        long id1 = batchInserter.createNode(map("array", array1));
+        long id2 = batchInserter.createNode( map() );
+
+        // When
+        batchInserter.getNodeProperties( id1 ).get( "array" );
+        batchInserter.setNodeProperty( id1, "array", array1 );
+        batchInserter.setNodeProperty( id2, "array", array2 );
+
+        batchInserter.getNodeProperties( id1 ).get( "array" );
+        batchInserter.setNodeProperty( id1, "array", array1 );
+        batchInserter.setNodeProperty( id2, "array", array2 );
+
+        // Then
+        assertThat( (String[]) batchInserter.getNodeProperties( id1 ).get( "array" ), equalTo( array1 ) );
+    }
+
+    @Test
+    public void testSimple() throws Exception
+    {
+        BatchInserter graphDb = globalInserter;
+        long node1 = graphDb.createNode( null );
+        long node2 = graphDb.createNode( null );
+        long rel1 = graphDb.createRelationship( node1, node2, RelTypes.BATCH_TEST,
+                null );
+        BatchRelationship rel = graphDb.getRelationshipById( rel1 );
+        assertEquals( rel.getStartNode(), node1 );
+        assertEquals( rel.getEndNode(), node2 );
+        assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
+    }
+
+    @Test
+    public void testSetAndAddNodeProperties() throws Exception
+    {
+        BatchInserter inserter = globalInserter;
+
+        long tehNode = inserter.createNode( MapUtil.map( "one", "one" ,"two","two","three","three") );
+        inserter.setNodeProperty( tehNode, "four", "four" );
+        inserter.setNodeProperty( tehNode, "five", "five" );
+        Map<String, Object> props = inserter.getNodeProperties( tehNode );
+        assertEquals( 5, props.size() );
+        assertEquals( "one", props.get( "one" ) );
+        assertEquals( "five", props.get( "five" ) );
+    }
+
+    @Test
+    public void setSingleProperty() throws Exception
+    {
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( null );
+
+        String value = "Something";
+        String key = "name";
+        inserter.setNodeProperty( node, key, value );
+
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        assertThat( getNodeInTx( node, db ), inTx( db, hasProperty( key ).withValue( value ) ) );
+        db.shutdown();
     }
 
     @Test
@@ -410,7 +425,7 @@ public class BatchInsertTest
     @Test
     public void testNodeHasProperty() throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         long theNode = inserter.createNode( properties );
         long anotherNode = inserter.createNode( Collections.<String,Object>emptyMap() );
@@ -423,8 +438,6 @@ public class BatchInsertTest
             assertTrue( inserter.relationshipHasProperty( relationship, key ) );
             assertFalse( inserter.relationshipHasProperty( relationship, key + "-" ) );
         }
-
-        inserter.shutdown();
     }
 
     @Test
@@ -490,7 +503,7 @@ public class BatchInsertTest
         // Only triggered if assertions are enabled
 
         // GIVEN
-        BatchInserter batchInserter = newBatchInserter();
+        BatchInserter batchInserter = globalInserter;
         String key = "tags";
         long nodeId = batchInserter.createNode( MapUtil.map( key, new String[] { "one", "two", "three" } ) );
 
@@ -499,7 +512,6 @@ public class BatchInsertTest
 
         // THEN
         assertFalse( batchInserter.getNodeProperties( nodeId ).containsKey( key ) );
-        batchInserter.shutdown();
     }
 
     @Test
@@ -508,7 +520,7 @@ public class BatchInsertTest
         // Only triggered if assertions are enabled
 
         // GIVEN
-        BatchInserter batchInserter = newBatchInserter();
+        BatchInserter batchInserter = globalInserter;
         String key = "tags";
         long nodeId = batchInserter.createNode( MapUtil.map( key, new String[] { "one", "two", "three" } ) );
 
@@ -518,13 +530,12 @@ public class BatchInsertTest
 
         // THEN
         assertTrue( Arrays.equals( secondValue, (String[]) batchInserter.getNodeProperties( nodeId ).get( key ) ) );
-        batchInserter.shutdown();
     }
 
     @Test
     public void testMore() throws Exception
     {
-        BatchInserter graphDb = newBatchInserter();
+        BatchInserter graphDb = globalInserter;
         long startNode = graphDb.createNode( properties );
         long[] endNodes = new long[25];
         Set<Long> rels = new HashSet<>();
@@ -540,7 +551,6 @@ public class BatchInsertTest
             assertEquals( rel.getStartNode(), startNode );
         }
         graphDb.setNodeProperties( startNode, properties );
-        graphDb.shutdown();
     }
 
     @Test
@@ -588,131 +598,6 @@ public class BatchInsertTest
         }
     }
 
-    private Node getNodeInTx( long nodeId, GraphDatabaseService db )
-    {
-        try ( Transaction ignored = db.beginTx() )
-        {
-            return db.getNodeById( nodeId );
-        }
-    }
-
-    private void setProperties( Node node )
-    {
-        for ( String key : properties.keySet() )
-        {
-            node.setProperty( key, properties.get( key ) );
-        }
-    }
-
-    private void setProperties( Relationship rel )
-    {
-        for ( String key : properties.keySet() )
-        {
-            rel.setProperty( key, properties.get( key ) );
-        }
-    }
-
-    private void assertProperties( Node node )
-    {
-        for ( String key : properties.keySet() )
-        {
-            if ( properties.get( key ).getClass().isArray() )
-            {
-                Class<?> component = properties.get( key ).getClass().getComponentType();
-                if ( !component.isPrimitive() ) // then it is String, cast to
-                                                // Object[] is safe
-                {
-                    assertTrue( Arrays.equals(
-                            (Object[]) properties.get( key ),
-                            (Object[]) node.getProperty( key ) ) );
-                }
-                else
-                {
-                    if ( component == Integer.TYPE )
-                    {
-                        if ( component.isPrimitive() )
-                        {
-                            assertTrue( Arrays.equals(
-                                    (int[]) properties.get( key ),
-                                    (int[]) node.getProperty( key ) ) );
-                        }
-                    }
-                    else if ( component == Boolean.TYPE )
-                    {
-                        if ( component.isPrimitive() )
-                        {
-                            assertTrue( Arrays.equals(
-                                    (boolean[]) properties.get( key ),
-                                    (boolean[]) node.getProperty( key ) ) );
-                        }
-                    }
-                    else if ( component == Byte.TYPE )
-                    {
-                        if ( component.isPrimitive() )
-                        {
-                            assertTrue( Arrays.equals(
-                                    (byte[]) properties.get( key ),
-                                    (byte[]) node.getProperty( key ) ) );
-                        }
-                    }
-                    else if ( component == Character.TYPE )
-                    {
-                        if ( component.isPrimitive() )
-                        {
-                            assertTrue( Arrays.equals(
-                                    (char[]) properties.get( key ),
-                                    (char[]) node.getProperty( key ) ) );
-                        }
-                    }
-                    else if ( component == Long.TYPE )
-                    {
-                        if ( component.isPrimitive() )
-                        {
-                            assertTrue( Arrays.equals(
-                                    (long[]) properties.get( key ),
-                                    (long[]) node.getProperty( key ) ) );
-                        }
-                    }
-                    else if ( component == Float.TYPE )
-                    {
-                        if ( component.isPrimitive() )
-                        {
-                            assertTrue( Arrays.equals(
-                                    (float[]) properties.get( key ),
-                                    (float[]) node.getProperty( key ) ) );
-                        }
-                    }
-                    else if ( component == Double.TYPE )
-                    {
-                        if ( component.isPrimitive() )
-                        {
-                            assertTrue( Arrays.equals(
-                                    (double[]) properties.get( key ),
-                                    (double[]) node.getProperty( key ) ) );
-                        }
-                    }
-                    else if ( component == Short.TYPE )
-                    {
-                        if ( component.isPrimitive() )
-                        {
-                            assertTrue( Arrays.equals(
-                                    (short[]) properties.get( key ),
-                                    (short[]) node.getProperty( key ) ) );
-                        }
-                    }
-                }
-            }
-            else
-            {
-                assertEquals( properties.get( key ), node.getProperty( key ) );
-            }
-        }
-        for ( String stored : node.getPropertyKeys() )
-        {
-            assertTrue( properties.containsKey( stored ) );
-        }
-    }
-
     @Test
     public void createBatchNodeAndRelationshipsDeleteAllInEmbedded() throws Exception
     {
@@ -756,7 +641,7 @@ public class BatchInsertTest
     @Test
     public void createEntitiesWithEmptyPropertiesMap() throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         // Assert for node
         long nodeId = inserter.createNode( map() );
@@ -767,25 +652,22 @@ public class BatchInsertTest
         long anotherNodeId = inserter.createNode( null );
         long relId = inserter.createRelationship( nodeId, anotherNodeId, RelTypes.BATCH_TEST, map() );
         inserter.getRelationshipProperties( relId );
-        inserter.shutdown();
     }
 
     @Test
     public void createEntitiesWithDynamicPropertiesMap() throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         setAndGet( inserter, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" );
         setAndGet( inserter, intArray( 20 ) );
-
-        inserter.shutdown();
     }
 
     @Test
     public void shouldAddInitialLabelsToCreatedNode() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         // WHEN
         long node = inserter.createNode( map(), Labels.FIRST, Labels.SECOND );
@@ -794,14 +676,13 @@ public class BatchInsertTest
         assertTrue( inserter.nodeHasLabel( node, Labels.FIRST ) );
         assertTrue( inserter.nodeHasLabel( node, Labels.SECOND ) );
         assertFalse( inserter.nodeHasLabel( node, Labels.THIRD ) );
-        inserter.shutdown();
     }
 
     @Test
     public void shouldGetNodeLabels() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
         long node = inserter.createNode( map(), Labels.FIRST, Labels.THIRD );
 
         // WHEN
@@ -809,30 +690,29 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( asSet( Labels.FIRST.name(), Labels.THIRD.name() ), Iterables.asSet( labelNames ) );
-        inserter.shutdown();
     }
 
     @Test
     public void shouldAddManyInitialLabelsAsDynamicRecords() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
         Pair<Label[], Set<String>> labels = manyLabels( 200 );
         long node = inserter.createNode( map(), labels.first() );
+        forceFlush( inserter );
 
         // WHEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
 
         // THEN
         assertEquals( labels.other(), Iterables.asSet( labelNames ) );
-        inserter.shutdown();
     }
 
     @Test
     public void shouldReplaceExistingInlinedLabelsWithDynamic() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
         long node = inserter.createNode( map(), Labels.FIRST );
 
         // WHEN
@@ -842,14 +722,13 @@ public class BatchInsertTest
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
         assertEquals( labels.other(), Iterables.asSet( labelNames ) );
-        inserter.shutdown();
     }
 
     @Test
     public void shouldReplaceExistingDynamicLabelsWithInlined() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
         long node = inserter.createNode( map(), manyLabels( 150 ).first() );
 
         // WHEN
@@ -858,7 +737,6 @@ public class BatchInsertTest
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
         assertEquals( asSet( Labels.FIRST.name() ), Iterables.asSet( labelNames ) );
-        inserter.shutdown();
     }
 
     @Test
@@ -950,92 +828,84 @@ public class BatchInsertTest
     public void shouldNotAllowCreationOfDuplicateIndex() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
+        String labelName = "Hacker1-" + denseNodeThreshold;
 
         // WHEN
-        inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
+        inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
 
         try
         {
-            inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
+            inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
             fail( "Should have thrown exception." );
         }
         catch ( ConstraintViolationException e )
         {
-            // Good
+            // THEN Good
         }
-
-        // THEN
-        inserter.shutdown();
     }
 
     @Test
     public void shouldNotAllowCreationOfDuplicateConstraint() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
+        String labelName = "Hacker2-" + denseNodeThreshold;
 
         // WHEN
-        inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
+        inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
 
         try
         {
-            inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
+            inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
             fail( "Should have thrown exception." );
         }
         catch ( ConstraintViolationException e )
         {
-            // Good
+            // THEN Good
         }
-
-        // THEN
-        inserter.shutdown();
     }
 
     @Test
     public void shouldNotAllowCreationOfDeferredSchemaConstraintAfterIndexOnSameKeys() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
+        String labelName = "Hacker3-" + denseNodeThreshold;
 
         // WHEN
-        inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
+        inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
 
         try
         {
-            inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
+            inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
             fail( "Should have thrown exception." );
         }
         catch ( ConstraintViolationException e )
         {
-            // Good
+            // THEN Good
         }
-
-        // THEN
-        inserter.shutdown();
     }
 
     @Test
     public void shouldNotAllowCreationOfDeferredSchemaIndexAfterConstraintOnSameKeys() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
+        String labelName = "Hacker4-" + denseNodeThreshold;
 
         // WHEN
-        inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
+        inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
 
         try
         {
-            inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
+            inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
             fail( "Should have thrown exception." );
         }
         catch ( ConstraintViolationException e )
         {
-            // Good
+            // THEN Good
         }
-
-        // THEN
-        inserter.shutdown();
     }
 
     @Test
@@ -1144,24 +1014,6 @@ public class BatchInsertTest
         verifyNoMoreInteractions( populator );
     }
 
-    private long dbWithIndexAndSingleIndexedNode() throws Exception
-    {
-        IndexPopulator populator = mock( IndexPopulator.class );
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
-
-        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
-                any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
-
-        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
-                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
-
-        inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
-        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
-        inserter.shutdown();
-        return nodeId;
-    }
-
     @Test
     public void shouldPopulateLabelScanStoreOnShutdown() throws Exception
     {
@@ -1209,26 +1061,24 @@ public class BatchInsertTest
     public void propertiesCanBeReSetUsingBatchInserter() throws Exception
     {
         // GIVEN
-        BatchInserter batchInserter = newBatchInserter();
+        BatchInserter batchInserter = globalInserter;
         Map<String, Object> props = new HashMap<>();
         props.put( "name", "One" );
         props.put( "count", 1 );
         props.put( "tags", new String[] { "one", "two" } );
         props.put( "something", "something" );
-        batchInserter.createNode( 1, props );
-        batchInserter.setNodeProperty( 1, "name", "NewOne" );
-        batchInserter.removeNodeProperty( 1, "count" );
-        batchInserter.removeNodeProperty( 1, "something" );
+        long nodeId = batchInserter.createNode( props );
+        batchInserter.setNodeProperty( nodeId, "name", "NewOne" );
+        batchInserter.removeNodeProperty( nodeId, "count" );
+        batchInserter.removeNodeProperty( nodeId, "something" );
 
         // WHEN setting new properties
-        batchInserter.setNodeProperty( 1, "name", "YetAnotherOne" );
-        batchInserter.setNodeProperty( 1, "additional", "something" );
+        batchInserter.setNodeProperty( nodeId, "name", "YetAnotherOne" );
+        batchInserter.setNodeProperty( nodeId, "additional", "something" );
 
         // THEN there should be no problems doing so
-        assertEquals( "YetAnotherOne", batchInserter.getNodeProperties( 1 ).get( "name" ) );
-        assertEquals( "something", batchInserter.getNodeProperties( 1 ).get( "additional" ) );
-
-        batchInserter.shutdown();
+        assertEquals( "YetAnotherOne", batchInserter.getNodeProperties( nodeId ).get( "name" ) );
+        assertEquals( "something", batchInserter.getNodeProperties( nodeId ).get( "additional" ) );
     }
 
     /**
@@ -1243,7 +1093,7 @@ public class BatchInsertTest
     @Test
     public void testCleanupEmptyPropertyRecords() throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         Map<String, Object> properties = new HashMap<>();
         properties.put("id", 1099511659993L);
@@ -1272,14 +1122,13 @@ public class BatchInsertTest
 
         assertThat( (String[]) inserter.getNodeProperties( personNodeId ).get( "email" ),
                 arrayContaining( "Edward1099511659993@gmail.com", "backup@gmail.com" ) );
-        inserter.shutdown();
     }
 
     @Test
     public void propertiesCanBeReSetUsingBatchInserter2() throws Exception
     {
         // GIVEN
-        BatchInserter batchInserter = newBatchInserter();
+        BatchInserter batchInserter = globalInserter;
         long id = batchInserter.createNode( new HashMap<String, Object>() );
 
         // WHEN
@@ -1288,15 +1137,13 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( "small test", batchInserter.getNodeProperties( id ).get( "test" ) );
-
-        batchInserter.shutdown();
     }
 
     @Test
     public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord() throws Exception
     {
         // GIVEN
-        BatchInserter batchInserter = newBatchInserter();
+        BatchInserter batchInserter = globalInserter;
         Map<String, Object> props = new HashMap<>();
         props.put( "name", "One" );
         props.put( "count", 1 );
@@ -1309,46 +1156,34 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( "something", batchInserter.getNodeProperties( id ).get( "count" ) );
-        batchInserter.shutdown();
     }
 
     @Test
     public void mustSplitUpRelationshipChainsWhenCreatingDenseNodes() throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
-        inserter.createNode( 1, null );
-        inserter.createNode( 2, null );
+        long node1 = inserter.createNode( null );
+        long node2 = inserter.createNode( null );
 
         for ( int i = 0; i < 1000; i++ )
         {
             for ( MyRelTypes relType : MyRelTypes.values() )
             {
-                inserter.createRelationship( 1, 2, relType, null );
+                inserter.createRelationship( node1, node2, relType, null );
             }
         }
 
-        GraphDatabaseAPI db = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
-        try
-        {
-            DependencyResolver dependencyResolver = db.getDependencyResolver();
-            NeoStores neoStores = dependencyResolver
-                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-            NodeStore nodeStore = neoStores.getNodeStore();
-            NodeRecord record = getRecord( nodeStore, 1 );
-            assertTrue( "Node " + record + " should have been dense", record.isDense() );
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        NeoStores neoStores = getFlushedNeoStores( inserter );
+        NodeRecord record = getRecord( neoStores.getNodeStore(), node1 );
+        assertTrue( "Node " + record + " should have been dense", record.isDense() );
     }
 
     @Test
     public void shouldGetRelationships() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
         long node = inserter.createNode( null );
         createRelationships( inserter, node, RelTypes.REL_TYPE1, 3, 2, 1 );
         createRelationships( inserter, node, RelTypes.REL_TYPE2, 4, 5, 6 );
@@ -1358,39 +1193,31 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( 21, gottenRelationships.size() );
-        inserter.shutdown();
     }
 
     @Test
     public void shouldNotCreateSameLabelTwiceOnSameNode() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         // WHEN
         long nodeId = inserter.createNode( map( "itemId", 1000L ), label( "Item" ),
                 label( "Item" ) );
 
         // THEN
-        NeoStores neoStores = switchToNeoStores( inserter );
-        try
-        {
-            NodeRecord node = getRecord( neoStores.getNodeStore(), nodeId );
-            NodeLabels labels = NodeLabelsField.parseLabelsField( node );
-            long[] labelIds = labels.get( neoStores.getNodeStore() );
-            assertEquals( 1, labelIds.length );
-        }
-        finally
-        {
-            neoStores.close();
-        }
+        NodeStore nodeStore = getFlushedNeoStores( inserter ).getNodeStore();
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
+        NodeLabels labels = NodeLabelsField.parseLabelsField( node );
+        long[] labelIds = labels.get( nodeStore );
+        assertEquals( 1, labelIds.length );
     }
 
     @Test
     public void shouldSortLabelIdsWhenGetOrCreate() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         // WHEN
         long nodeId = inserter.createNode( map( "Item", 123456789123L ), label( "AA" ),
@@ -1399,16 +1226,14 @@ public class BatchInsertTest
                 label( "DD" ), label( "EE" ), label( "FF" ) );
 
         // THEN
-        try ( NeoStores neoStores = switchToNeoStores( inserter ) )
-        {
-            NodeRecord node = getRecord( neoStores.getNodeStore(), nodeId );
-            NodeLabels labels = NodeLabelsField.parseLabelsField( node );
+        NodeStore nodeStore = getFlushedNeoStores( inserter ).getNodeStore();
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL );
+        NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
-            long[] labelIds = labels.get( neoStores.getNodeStore() );
-            long[] sortedLabelIds = labelIds.clone();
-            Arrays.sort( sortedLabelIds );
-            assertArrayEquals( sortedLabelIds, labelIds );
-        }
+        long[] labelIds = labels.get( nodeStore );
+        long[] sortedLabelIds = labelIds.clone();
+        Arrays.sort( sortedLabelIds );
+        assertArrayEquals( sortedLabelIds, labelIds );
     }
 
     @Test
@@ -1465,10 +1290,10 @@ public class BatchInsertTest
     public void shouldNotAllowCreationOfUniquenessConstraintAndIndexOnSameLabelAndProperty() throws Exception
     {
         // Given
-        Label label = label( "Person" );
+        Label label = label( "Person1-" + denseNodeThreshold );
         String property = "name";
 
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         // When
         inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
@@ -1482,17 +1307,16 @@ public class BatchInsertTest
             // Then
             assertEquals( "Index for given {label;property} already exists", e.getMessage() );
         }
-        inserter.shutdown();
     }
 
     @Test
     public void shouldNotAllowDuplicatedUniquenessConstraints() throws Exception
     {
         // Given
-        Label label = label( "Person" );
+        Label label = label( "Person2-" + denseNodeThreshold );
         String property = "name";
 
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         // When
         inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
@@ -1508,17 +1332,16 @@ public class BatchInsertTest
                     "It is not allowed to create uniqueness constraints and indexes on the same {label;property}",
                     e.getMessage() );
         }
-        inserter.shutdown();
     }
 
     @Test
     public void shouldNotAllowDuplicatedIndexes() throws Exception
     {
         // Given
-        Label label = label( "Person" );
+        Label label = label( "Person3-" + denseNodeThreshold );
         String property = "name";
 
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
 
         // When
         inserter.createDeferredSchemaIndex( label ).on( property ).create();
@@ -1532,7 +1355,6 @@ public class BatchInsertTest
             // Then
             assertEquals( "Index for given {label;property} already exists", e.getMessage() );
         }
-        inserter.shutdown();
     }
 
     @Test
@@ -1568,7 +1390,7 @@ public class BatchInsertTest
     public void shouldChangePropertiesInCurrentBatch() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = globalInserter;
         Map<String,Object> properties = map( "key1", "value1" );
         long node = inserter.createNode( properties );
 
@@ -1578,7 +1400,6 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( properties, inserter.getNodeProperties( node ) );
-        inserter.shutdown();
     }
 
     private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,
@@ -1596,6 +1417,24 @@ public class BatchInsertTest
         {
             inserter.createRelationship( node, node, relType, null );
         }
+    }
+
+    private long dbWithIndexAndSingleIndexedNode() throws Exception
+    {
+        IndexPopulator populator = mock( IndexPopulator.class );
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+
+        when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
+                any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
+
+        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
+                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+
+        inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
+        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
+        inserter.shutdown();
+        return nodeId;
     }
 
     private static class UpdateTrackingLabelScanStore implements LabelScanStore
@@ -1720,6 +1559,25 @@ public class BatchInsertTest
             array[i] = startValue+i;
         }
         return array;
+    }
+
+    private Node getNodeInTx( long nodeId, GraphDatabaseService db )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            return db.getNodeById( nodeId );
+        }
+    }
+
+    private void forceFlush( BatchInserter inserter )
+    {
+        ((BatchInserterImpl)inserter).forceFlushChanges();
+    }
+
+    private NeoStores getFlushedNeoStores( BatchInserter inserter )
+    {
+        forceFlush( inserter );
+        return ((BatchInserterImpl) inserter).getNeoStores();
     }
 
     private enum Labels implements Label

@@ -750,8 +750,7 @@ public class BatchInserterImpl implements BatchInserter
     private void setNodeLabels( NodeRecord nodeRecord, Label... labels )
     {
         NodeLabels nodeLabels = parseLabelsField( nodeRecord );
-        nodeStore.updateDynamicLabelRecords( nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore,
-                nodeStore.getDynamicLabelStore() ) );
+        nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore, nodeStore.getDynamicLabelStore() );
         labelsTouched = true;
     }
 
@@ -970,21 +969,23 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new RuntimeException( e );
         }
-
-        cursors.close();
-        neoStores.close();
-
-        try
+        finally
         {
-            storeLocker.release();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Could not release store lock", e );
-        }
+            cursors.close();
+            neoStores.close();
 
-        msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
-        life.shutdown();
+            try
+            {
+                storeLocker.release();
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Could not release store lock", e );
+            }
+
+            msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
+            life.shutdown();
+        }
     }
 
     @Override
@@ -1100,6 +1101,17 @@ public class BatchInserterImpl implements BatchInserter
                 out.println( key + "=" + value );
             }
         }
+    }
+
+    // test-access
+    NeoStores getNeoStores()
+    {
+        return neoStores;
+    }
+
+    void forceFlushChanges()
+    {
+        flushStrategy.forceFlush();
     }
 
     private class BatchSchemaActions implements InternalSchemaActions

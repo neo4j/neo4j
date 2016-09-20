@@ -29,13 +29,17 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
 import static org.neo4j.helpers.Exceptions.stringify;
+import static org.neo4j.helpers.Format.duration;
 
 public class DebugUtil
 {
@@ -363,5 +367,79 @@ public class DebugUtil
             }
         }
         return false;
+    }
+
+    /**
+     * Super simple utility for determining where most time is spent when you don't know where to even start.
+     * It could be used to home in on right place in a test or in a sequence of operations or similar.
+     */
+    public abstract static class Timer
+    {
+        private final TimeUnit unit;
+        private long startTime;
+
+        protected Timer( TimeUnit unit )
+        {
+            this.unit = unit;
+            this.startTime = currentTime();
+        }
+
+        protected abstract long currentTime();
+
+        public void reset()
+        {
+            startTime = currentTime();
+        }
+
+        public void at( String point )
+        {
+            long duration = currentTime() - startTime;
+            System.out.println( duration( unit.toMillis( duration ) ) + " @ " + point );
+            startTime = currentTime();
+        }
+
+        public static Timer millis()
+        {
+            return new Millis();
+        }
+
+        private static class Millis extends Timer
+        {
+            Millis()
+            {
+                super( TimeUnit.MILLISECONDS );
+            }
+
+            @Override
+            protected long currentTime()
+            {
+                return currentTimeMillis();
+            }
+        }
+
+        public static Timer nanos()
+        {
+            return new Nanos();
+        }
+
+        private static class Nanos extends Timer
+        {
+            Nanos()
+            {
+                super( TimeUnit.NANOSECONDS );
+            }
+
+            @Override
+            protected long currentTime()
+            {
+                return nanoTime();
+            }
+        }
+    }
+
+    public static long time( long startTime, String message )
+    {
+        System.out.println( duration( (currentTimeMillis() - startTime) ) + ": " + message );
+        return currentTimeMillis();
     }
 }

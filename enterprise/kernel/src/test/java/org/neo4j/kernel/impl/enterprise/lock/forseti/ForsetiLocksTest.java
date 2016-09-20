@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.test.OtherThreadExecutor.WaitDetails;
 
 public class ForsetiLocksTest extends LockingCompatibilityTestSuite
 {
@@ -29,5 +30,11 @@ public class ForsetiLocksTest extends LockingCompatibilityTestSuite
     protected Locks createLockManager()
     {
         return new ForsetiLockManager( ResourceTypes.values() );
+    }
+
+    @Override
+    protected boolean isAwaitingLockAcquisition( WaitDetails details )
+    {
+        return details.isAt( ForsetiClient.class, "applyWaitStrategy" );
     }
 }

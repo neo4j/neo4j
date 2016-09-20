@@ -40,7 +40,6 @@ import static org.mockito.Mockito.mock;
 
 public class RWLockTest
 {
-
     private static ExecutorService executor;
 
     @BeforeClass
@@ -324,6 +323,10 @@ public class RWLockTest
         // Deadlock should occur
         Assert.assertTrue( "Deadlock was detected as expected.",
                 deadLockDetector.await( 1000, TimeUnit.MILLISECONDS ) );
+
+        lockNode3.releaseWriteLock( client3Transaction );
+        lockNode2.releaseWriteLock( client2Transaction );
+        lockNode1.releaseWriteLock( client1Transaction );
     }
 
     @Test( timeout = 1000 )
@@ -432,5 +435,4 @@ public class RWLockTest
             Thread.sleep( 20 );
         }
     }
-
 }

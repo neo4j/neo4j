@@ -22,13 +22,10 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.pool.Pool;
@@ -47,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -59,12 +57,14 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 
+import static java.lang.System.currentTimeMillis;
+
 public class KernelTransactionTerminationTest
 {
     private static final int TEST_RUN_TIME_MS = 5_000;
 
     @Test( timeout = TEST_RUN_TIME_MS * 2 )
-    public void transactionCantBeTerminatedAfterItIsClosed() throws Exception
+    public void transactionCantBeTerminatedAfterItIsClosed() throws Throwable
     {
         runTwoThreads(
                 tx -> tx.markForTermination( Status.Transaction.TransactionMarkedAsFailed ),
@@ -78,7 +78,7 @@ public class KernelTransactionTerminationTest
     }
 
     @Test( timeout = TEST_RUN_TIME_MS * 2 )
-    public void closeTransaction() throws Exception
+    public void closeTransaction() throws Throwable
     {
         BlockingQueue<Boolean> committerToTerminator = new LinkedBlockingQueue<>( 1 );
         BlockingQueue<TerminatorAction> terminatorToCommitter = new LinkedBlockingQueue<>( 1 );
@@ -121,49 +121,26 @@ public class KernelTransactionTerminationTest
     }
 
     private void runTwoThreads( Consumer<TestKernelTransaction> thread1Action,
-            Consumer<TestKernelTransaction> thread2Action ) throws Exception
+            Consumer<TestKernelTransaction> thread2Action ) throws Throwable
     {
         TestKernelTransaction tx = TestKernelTransaction.create().initialize();
+        AtomicLong t1Count = new AtomicLong();
+        AtomicLong t2Count = new AtomicLong();
+        long endTime = currentTimeMillis() + TEST_RUN_TIME_MS;
+        int limit = 20_000;
 
-        CountDownLatch start = new CountDownLatch( 1 );
-        AtomicBoolean stop = new AtomicBoolean();
-
-        Future<?> action1 = Executors.newSingleThreadExecutor().submit( () ->
-        {
-            await( start );
-            while ( !stop.get() )
-            {
-                thread1Action.accept( tx );
-            }
+        Race race = new Race();
+        race.withEndCondition(
+                () -> ((t1Count.get() >= limit && t2Count.get() >= limit) || currentTimeMillis() >= endTime) );
+        race.addContestant( () -> {
+            thread1Action.accept( tx );
+            t1Count.incrementAndGet();
         } );
-
-        Future<?> action2 = Executors.newSingleThreadExecutor().submit( () ->
-        {
-            await( start );
-            while ( !stop.get() )
-            {
-                thread2Action.accept( tx );
-            }
+        race.addContestant( () -> {
+            thread2Action.accept( tx );
+            t2Count.incrementAndGet();
         } );
-
-        start.countDown();
-        sleep();
-        stop.set( true );
-
-        assertNull( action1.get( 1, TimeUnit.MINUTES ) );
-        assertNull( action2.get( 1, TimeUnit.MINUTES ) );
-    }
-
-    private static void await( CountDownLatch latch )
-    {
-        try
-        {
-            assertTrue( latch.await( 10, TimeUnit.SECONDS ) );
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
+        race.go();
     }
 
     private static void close( KernelTransaction tx )
@@ -195,11 +172,6 @@ public class KernelTransactionTerminationTest
         {
             throw new RuntimeException( e );
         }
-    }
-
-    private static void sleep() throws InterruptedException
-    {
-        Thread.sleep( TEST_RUN_TIME_MS );
     }
 
     private enum TerminatorAction

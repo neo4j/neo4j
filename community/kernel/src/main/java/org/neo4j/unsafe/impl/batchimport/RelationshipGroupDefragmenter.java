@@ -43,13 +43,38 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
  */
 public class RelationshipGroupDefragmenter
 {
+    public interface Monitor
+    {
+        /**
+         * When defragmenting the relationship group store it may happen in chunks, selected by node range.
+         * Every time a chunk is selected this method is called.
+         *
+         * @param fromNodeId low node id in the range to process (inclusive).
+         * @param toNodeId high node id in the range to process (exclusive).
+         */
+        default void defragmentingNodeRange( long fromNodeId, long toNodeId )
+        {   // empty
+        }
+
+        Monitor EMPTY = new Monitor()
+        {   // empty
+        };
+    }
+
     private final Configuration config;
     private final ExecutionMonitor executionMonitor;
+    private final Monitor monitor;
 
     public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor )
     {
+        this( config, executionMonitor, Monitor.EMPTY );
+    }
+
+    public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor, Monitor monitor )
+    {
         this.config = config;
         this.executionMonitor = executionMonitor;
+        this.monitor = monitor;
     }
 
     public void run( long memoryWeCanHoldForCertain, BatchingNeoStores neoStore, long highNodeId )
@@ -75,6 +100,7 @@ public class RelationshipGroupDefragmenter
                     // See how many nodes' groups we can fit into the cache this iteration of the loop.
                     // Groups that doesn't fit in this round will be included in consecutive rounds.
                     toNodeId = groupCache.prepare( fromNodeId );
+                    monitor.defragmentingNodeRange( fromNodeId, toNodeId );
                     // Cache those groups
                     executeStage( new ScanAndCacheGroupsStage( groupConfig, fromStore, groupCache ) );
                     // And write them in sequential order in the store

@@ -20,6 +20,7 @@
 package org.neo4j.test.rule;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -58,14 +59,14 @@ public class NeoStoresRule extends ExternalResource
         this.stores = stores;
     }
 
-    public NeoStores open( String... config )
+    public NeoStores open( String... config ) throws IOException
     {
         Config configuration = new Config( stringMap( config ) );
         RecordFormats formats = RecordFormatSelector.selectForConfig( configuration, NullLogProvider.getInstance() );
         return open( formats, config );
     }
 
-    public NeoStores open( RecordFormats format, String... config )
+    public NeoStores open( RecordFormats format, String... config ) throws IOException
     {
         efs = new EphemeralFileSystemAbstraction();
         Config conf = new Config( stringMap( config ) );
@@ -74,6 +75,7 @@ public class NeoStoresRule extends ExternalResource
     }
 
     public NeoStores open( FileSystemAbstraction fs, PageCache pageCache, RecordFormats format, String... config )
+            throws IOException
     {
         assert neoStores == null : "Already opened";
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fs );

@@ -30,16 +30,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -49,6 +49,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
@@ -58,7 +60,6 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     private static final long RESOURCE_ID = 42;
     private static final long OTHER_RESOURCE_ID = 4242;
 
-    private ExecutorService executor;
     private Locks.Client client;
 
     public StopCompatibility( LockingCompatibilityTestSuite suite )
@@ -69,7 +70,6 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Before
     public void setUp() throws Exception
     {
-        executor = Executors.newSingleThreadExecutor();
         client = locks.newClient();
     }
 
@@ -77,8 +77,6 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     public void tearDown() throws Exception
     {
         client.close();
-        executor.shutdownNow();
-        executor.awaitTermination( 1, TimeUnit.MINUTES );
     }
 
     @Test
@@ -386,10 +384,10 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = executor.submit( new Callable<Void>()
+        Future<Void> future = threadA.execute( new WorkerCommand<Void,Void>()
         {
             @Override
-            public Void call() throws Exception
+            public Void doWork( Void state ) throws Exception
             {
                 Locks.Client client = newLockClient( lockAcquisition );
                 if ( shared )
@@ -403,7 +401,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
                 return null;
             }
         } );
-        lockAcquisition.setFuture( future );
+        lockAcquisition.setFuture( future, threadA.get() );
 
         return lockAcquisition;
     }
@@ -413,10 +411,10 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = executor.submit( new Callable<Void>()
+        Future<Void> future = threadA.execute( new WorkerCommand<Void,Void>()
         {
             @Override
-            public Void call() throws Exception
+            public Void doWork( Void state ) throws Exception
             {
                 try ( Locks.Client client = newLockClient( lockAcquisition ) )
                 {
@@ -456,7 +454,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
                 return null;
             }
         } );
-        lockAcquisition.setFuture( future );
+        lockAcquisition.setFuture( future, threadA.get() );
 
         return lockAcquisition;
     }
@@ -466,10 +464,10 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = executor.submit( new Callable<Void>()
+        Future<Void> future = threadA.execute( new WorkerCommand<Void,Void>()
         {
             @Override
-            public Void call() throws Exception
+            public Void doWork( Void state ) throws Exception
             {
                 try ( Locks.Client client = newLockClient( lockAcquisition ) )
                 {
@@ -483,7 +481,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
                 return null;
             }
         } );
-        lockAcquisition.setFuture( future );
+        lockAcquisition.setFuture( future, threadA.get() );
 
         return lockAcquisition;
     }
@@ -493,10 +491,10 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = executor.submit( new Callable<Void>()
+        Future<Void> future = threadA.execute( new WorkerCommand<Void,Void>()
         {
             @Override
-            public Void call() throws Exception
+            public Void doWork( Void state ) throws Exception
             {
                 try ( Locks.Client client = newLockClient( lockAcquisition ) )
                 {
@@ -523,7 +521,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
                 return null;
             }
         } );
-        lockAcquisition.setFuture( future );
+        lockAcquisition.setFuture( future, threadA.get() );
 
         return lockAcquisition;
     }
@@ -556,16 +554,9 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
     private void assertThreadIsWaitingForLock( LockAcquisition lockAcquisition ) throws Exception
     {
-        for ( int i = 0; i < 30; i++ )
+        for ( int i = 0; i < 30 && !suite.isAwaitingLockAcquisition( lockAcquisition.executor.waitUntilWaiting() ); i++ )
         {
-            try
-            {
-                lockAcquisition.result();
-                fail( "Timeout expected" );
-            }
-            catch ( TimeoutException ignore )
-            {
-            }
+            LockSupport.parkNanos( MILLISECONDS.toNanos( 100 ) );
         }
         assertFalse( "locking thread completed", lockAcquisition.completed() );
     }
@@ -623,6 +614,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         volatile Future<?> future;
         volatile Locks.Client client;
+        volatile OtherThreadExecutor<Void> executor;
 
         Future<?> getFuture()
         {
@@ -630,9 +622,10 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             return future;
         }
 
-        void setFuture( Future<?> future )
+        void setFuture( Future<?> future, OtherThreadExecutor<Void> executor )
         {
             this.future = future;
+            this.executor = executor;
         }
 
         Locks.Client getClient()
