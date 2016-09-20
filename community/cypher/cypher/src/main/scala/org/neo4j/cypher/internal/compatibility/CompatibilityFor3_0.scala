@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, Intern
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_0, NormalMode => NormalModev3_0, ProfileMode => ProfileModev3_0, _}
+import org.neo4j.cypher.internal.compiler.v3_1.{CRS, Coordinate, Geometry, Point}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.{v3_0, v3_1}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
@@ -41,10 +43,9 @@ import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0._
 import org.neo4j.cypher.internal.spi.{TransactionalContextWrapperv3_0, TransactionalContextWrapperv3_1}
-import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
-import org.neo4j.graphdb.{InputPosition, Node, Path, QueryExecutionType, Relationship}
+import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -59,29 +60,77 @@ object helpersv3_0 {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
     monitor.endFailure(tc.executingQuery(), t)
   }
+}
 
-  def asPublicType(value: Any): Any = value match {
-    case p: Point => wrapPoint(p)
-
+object typeConversionsFor3_0 extends RuntimeTypeConverter {
+  override def asPublicType = {
+    case point: Point => asPublicPoint(point)
+    case geometry: Geometry => asPublicGeometry(geometry)
     case other => other
   }
 
-  private def wrapPoint(point: Point) = new graphdb.spatial.Point {
+  override def asPrivateType = {
+    case map: Map[String, Any] => asPrivateMap(map)
+    case seq: Seq[Any] => seq.map(asPrivateType)
+    case arr: Array[Any] => arr.map(asPrivateType)
+    case point: spatial.Point => asPrivatePoint(point)
+    case geometry: spatial.Geometry => asPrivateGeometry(geometry)
+    case value => value
+  }
+
+  private def asPublicPoint(point: Point) = new spatial.Point {
     override def getGeometryType = "Point"
 
-    override def getCRS: graphdb.spatial.CRS = new graphdb.spatial.CRS {
+    override def getCRS: spatial.CRS = asPublicCRS(point.crs)
 
-      override def getType: String = point.crs.name
+    override def getCoordinates: java.util.List[spatial.Coordinate] = Collections
+      .singletonList(new spatial.Coordinate(point.coordinate.values: _*))
+  }
 
-      override def getHref: String = point.crs.url
+  private def asPublicGeometry(geometry: Geometry) = new spatial.Geometry {
+    override def getGeometryType: String = geometry.geometryType
 
-      override def getCode: Int = point.crs.code
+    override def getCRS: spatial.CRS = asPublicCRS(geometry.crs)
+
+    override def getCoordinates = geometry.coordinates.map { c =>
+      new spatial.Coordinate(c.values: _*)
+    }.toList.asJava
+  }
+
+  private def asPublicCRS(crs: CRS) = new spatial.CRS {
+    override def getType: String = crs.name
+
+    override def getHref: String = crs.url
+
+    override def getCode: Int = crs.code
+  }
+
+  def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] = {
+    incoming.foldLeft(Map.empty[String, Any]) { (acc, v) =>
+      acc + (v._1 -> asPrivateType(v._2))
     }
+  }
 
-    override def getCoordinates: java.util.List[graphdb.spatial.Coordinate] = Collections
-      .singletonList(new graphdb.spatial.Coordinate(point.coordinates:_*))
+  private def asPrivatePoint(point: spatial.Point) = new Point {
+    override def x: Double = point.getCoordinate.getCoordinate.get(0)
+
+    override def y: Double = point.getCoordinate.getCoordinate.get(1)
+
+    override def crs: CRS = CRS.fromURL(point.getCRS.getHref)
+  }
+
+  private def asPrivateCoordinate(coordinate: spatial.Coordinate) =
+    Coordinate(coordinate.getCoordinate.asScala.map(_.doubleValue()):_*)
+
+  private def asPrivateGeometry(geometry: spatial.Geometry) = new Geometry {
+    override def coordinates: Array[Coordinate] = geometry.getCoordinates.asScala.toArray.map(asPrivateCoordinate)
+
+    override def crs: CRS = CRS.fromURL(geometry.getCRS.getHref)
+
+    override def geometryType: String = geometry.getGeometryType
   }
 }
+
 
 object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
   def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
@@ -223,7 +272,9 @@ trait CompatibilityFor3_0 {
         case CypherExecutionMode.normal => NormalModev3_0
       }
       exceptionHandlerFor3_0.runSafely {
-        val innerResult = inner.run(queryContext(TransactionalContextWrapperv3_0(transactionalContext.tc)), innerExecutionMode, params)
+        val innerParams = typeConversionsFor3_1.asPrivateMap(params)
+
+        val innerResult = inner.run(queryContext(TransactionalContextWrapperv3_0(transactionalContext.tc)), innerExecutionMode, innerParams)
         new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
           ExecutionResultWrapperFor3_0(innerResult, inner.plannerUsed, inner.runtimeUsed),
@@ -248,7 +299,7 @@ object ExecutionResultWrapperFor3_0 {
   }
 }
 
-case class ExecutionResultWrapperFor3_0(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName)
+case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName)
                                        (implicit innerMonitor: QueryExecutionMonitor)
   extends ExecutionResult {
 
@@ -261,7 +312,7 @@ case class ExecutionResultWrapperFor3_0(val inner: InternalExecutionResult, val 
 
   def queryStatistics() = exceptionHandlerFor3_0.runSafely {
     val i = inner.queryStatistics()
-    QueryStatistics(nodesCreated = i.nodesCreated,
+    org.neo4j.cypher.internal.QueryStatistics(nodesCreated = i.nodesCreated,
       relationshipsCreated = i.relationshipsCreated,
       propertiesSet = i.propertiesSet,
       nodesDeleted = i.nodesDeleted,
@@ -470,7 +521,7 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
     val logger = new StringInfoLogger3_0(log)
     val monitors = new WrappedMonitors3_0(kernelMonitors)
     CypherCompilerFactory.costBasedCompiler(graph, config, clock, monitors, logger,
-                                            rewriterSequencer, plannerName, runtimeName, updateStrategy, helpersv3_0.asPublicType)
+                                            rewriterSequencer, plannerName, runtimeName, updateStrategy, typeConversionsFor3_0)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
@@ -483,7 +534,7 @@ case class CompatibilityFor3_0Rule(graph: GraphDatabaseQueryService,
                                    kernelAPI: KernelAPI) extends CompatibilityFor3_0 {
   protected val compiler = {
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, helpersv3_0.asPublicType)
+    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, typeConversionsFor3_0)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
