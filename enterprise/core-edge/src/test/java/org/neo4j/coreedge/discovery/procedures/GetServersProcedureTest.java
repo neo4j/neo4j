@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.discovery.procedures;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -42,20 +40,21 @@ import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.logging.NullLogProvider;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class GetServersProcedureTest
 {
@@ -65,15 +64,54 @@ public class GetServersProcedureTest
     public void shouldHaveCorrectSignature() throws Exception
     {
         // given
-        final GetServersProcedure proc = new GetServersProcedure( null, null, NullLogProvider.getInstance() );
+        final GetServersProcedure proc = new GetServersProcedure( null, null, getInstance() );
 
         // when
         ProcedureSignature signature = proc.signature();
 
         // then
-        assertThat( signature.outputSignature(), containsInAnyOrder( new FieldSignature( "address", NTString ),
-                        new FieldSignature( "role", NTString ),
-                        new FieldSignature( "expiry", NTInteger ) ) );
+        assertThat( signature.outputSignature(), containsInAnyOrder( new FieldSignature( "ttl", Neo4jTypes.NTInteger ),
+                new FieldSignature( "servers", NTMap ) ) );
+    }
+
+    @Test
+    public void shouldProvideReaderAndRouterForSingleCoreSetup() throws Exception
+    {
+        // given
+        final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
+
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
+
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        coreMembers.put( member( 0 ), coreAddresses( 0 ) );
+
+        final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
+        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
+        when( coreTopologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, emptySet() ) );
+
+        final GetServersProcedure proc = new GetServersProcedure( coreTopologyService, leaderLocator, getInstance() );
+
+        // when
+        List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
+
+        // then
+
+        Object[] rows = results.get( 0 );
+
+        long ttl = (long) rows[0];
+        assertEquals( Long.MAX_VALUE, ttl );
+
+        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
+
+        Map<String,Object[]> readServers = servers.get( 0 );
+        assertThat(readServers.get("role"), equalTo( "READ" ));
+        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString() ));
+
+        Map<String,Object[]> routingServers = servers.get( 1 );
+        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
+        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString() ));
     }
 
     @Test
@@ -94,21 +132,37 @@ public class GetServersProcedureTest
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, emptySet() ) );
 
-        final GetServersProcedure proc =
-                new GetServersProcedure( coreTopologyService, leaderLocator, NullLogProvider.getInstance() );
+        final GetServersProcedure proc = new GetServersProcedure( coreTopologyService, leaderLocator, getInstance() );
 
         // when
-        final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
+        final List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
 
         // then
-        assertThat( members, containsInAnyOrder(
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "WRITE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "READ", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 1 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 1 ).getRaftServer().toString(), "READ", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 2 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 2 ).getRaftServer().toString(), "READ", Long.MAX_VALUE} ) );
+        Object[] rows = results.get( 0 );
+
+        long ttl = (long) rows[0];
+        assertEquals( Long.MAX_VALUE, ttl );
+
+        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
+
+        Map<String,Object[]> writeServers = servers.get( 0 );
+        assertThat(writeServers.get("role"), equalTo( "WRITE" ));
+        assertThat( asList( writeServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString() ));
+
+        Map<String,Object[]> readServers = servers.get( 1 );
+        assertThat(readServers.get("role"), equalTo( "READ" ));
+        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString(),
+                coreAddresses(1).getRaftServer().toString(),
+                coreAddresses(2).getRaftServer().toString() ));
+
+        Map<String,Object[]> routingServers = servers.get( 2 );
+        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
+        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString(),
+                coreAddresses(1).getRaftServer().toString(),
+                coreAddresses(2).getRaftServer().toString() ));
     }
 
     @Test
@@ -127,21 +181,37 @@ public class GetServersProcedureTest
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, emptySet() ) );
 
-        final GetServersProcedure proc =
-                new GetServersProcedure( coreTopologyService, leaderLocator, NullLogProvider.getInstance() );
+        final GetServersProcedure proc = new GetServersProcedure( coreTopologyService, leaderLocator, getInstance() );
 
         // when
-        final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
+        final List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
 
         // then
-        assertThat( members, Matchers.containsInAnyOrder(
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "WRITE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "READ", Long.MAX_VALUE} ) );
+        Object[] rows = results.get( 0 );
+
+        long ttl = (long) rows[0];
+        assertEquals( Long.MAX_VALUE, ttl );
+
+        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
+
+        Map<String,Object[]> writeServers = servers.get( 0 );
+        assertThat(writeServers.get("role"), equalTo( "WRITE" ));
+        assertThat( asList( writeServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString() ));
+
+        Map<String,Object[]> readServers = servers.get( 1 );
+        assertThat(readServers.get("role"), equalTo( "READ" ));
+        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString()));
+
+        Map<String,Object[]> routingServers = servers.get( 2 );
+        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
+        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString()));
     }
 
     @Test
-    public void shouldRecommendTheCoreLeaderForWriteAndEdgeForRead() throws Exception
+    public void shouldReturnTheCoreLeaderForWriteAndEdgesAndCoresForReads() throws Exception
     {
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
@@ -156,18 +226,34 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        GetServersProcedure procedure =
-                new GetServersProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
+        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator, getInstance() );
 
         // when
-        final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
+        final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        MatcherAssert.assertThat( members, containsInAnyOrder(
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "WRITE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "READ", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 1 ).getRaftServer().toString(), "READ", Long.MAX_VALUE} ) );
+        Object[] rows = results.get( 0 );
+
+        long ttl = (long) rows[0];
+        assertEquals( Long.MAX_VALUE, ttl );
+
+        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
+
+        Map<String,Object[]> writeServers = servers.get( 0 );
+        assertThat(writeServers.get("role"), equalTo( "WRITE" ));
+        assertThat( asList( writeServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString() ));
+
+        Map<String,Object[]> readServers = servers.get( 1 );
+        assertThat(readServers.get("role"), equalTo( "READ" ));
+        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString(),
+                edgeAddresses(1).getBoltAddress().toString()));
+
+        Map<String,Object[]> routingServers = servers.get( 2 );
+        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
+        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString()));
     }
 
     @Test
@@ -186,17 +272,33 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        GetServersProcedure procedure =
-                new GetServersProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
+        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator, getInstance() );
 
         // when
-        final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
+        final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        assertThat( members, containsInAnyOrder(
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "WRITE", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "READ", Long.MAX_VALUE},
-                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "ROUTE", Long.MAX_VALUE} ) );
+        Object[] rows = results.get( 0 );
+
+        long ttl = (long) rows[0];
+        assertEquals( Long.MAX_VALUE, ttl );
+
+        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
+
+        Map<String,Object[]> writeServers = servers.get( 0 );
+        assertThat(writeServers.get("role"), equalTo( "WRITE" ));
+        assertThat( asList( writeServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString() ));
+
+        Map<String,Object[]> readServers = servers.get( 1 );
+        assertThat(readServers.get("role"), equalTo( "READ" ));
+        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString()));
+
+        Map<String,Object[]> routingServers = servers.get( 2 );
+        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
+        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString()));
     }
 
     @Test
@@ -214,15 +316,28 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenThrow( new NoLeaderFoundException() );
 
-        GetServersProcedure procedure =
-                new GetServersProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
+        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator, getInstance() );
 
         // when
-        final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
+        final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        assertEquals( 1, members.stream().filter( row1 -> row1[1].equals( "READ" ) ).collect( toList() ).size() );
-        assertEquals( 0, members.stream().filter( row1 -> row1[1].equals( "WRITE" ) ).collect( toList() ).size() );
+        Object[] rows = results.get( 0 );
+
+        long ttl = (long) rows[0];
+        assertEquals( Long.MAX_VALUE, ttl );
+
+        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
+
+        Map<String,Object[]> readServers = servers.get( 0 );
+        assertThat(readServers.get("role"), equalTo( "READ" ));
+        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString()));
+
+        Map<String,Object[]> routingServers = servers.get( 1 );
+        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
+        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString()));
     }
 
     @Test
@@ -240,15 +355,28 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 1 ) );
 
-        GetServersProcedure procedure =
-                new GetServersProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
+        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator, getInstance() );
 
         // when
-        final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
+        final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        assertEquals( 1, members.stream().filter( row1 -> row1[1].equals( "READ" ) ).collect( toList() ).size() );
-        assertEquals( 0, members.stream().filter( row1 -> row1[1].equals( "WRITE" ) ).collect( toList() ).size() );
+        Object[] rows = results.get( 0 );
+
+        long ttl = (long) rows[0];
+        assertEquals( Long.MAX_VALUE, ttl );
+
+        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
+
+        Map<String,Object[]> readServers = servers.get( 0 );
+        assertThat(readServers.get("role"), equalTo( "READ" ));
+        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString()));
+
+        Map<String,Object[]> routingServers = servers.get( 1 );
+        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
+        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
+                coreAddresses(0).getRaftServer().toString()));
     }
 
     static Set<EdgeAddresses> addresses( int... ids )

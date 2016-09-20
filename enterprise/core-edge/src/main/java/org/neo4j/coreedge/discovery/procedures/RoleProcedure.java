@@ -37,7 +37,9 @@ abstract class RoleProcedure extends CallableProcedure.BasicProcedure
     RoleProcedure()
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
-                .out( OUTPUT_NAME, Neo4jTypes.NTString ).build() );
+                .out( OUTPUT_NAME, Neo4jTypes.NTString )
+                .description( "The role of a specific instance in the cluster." )
+                .build() );
     }
 
     @Override
