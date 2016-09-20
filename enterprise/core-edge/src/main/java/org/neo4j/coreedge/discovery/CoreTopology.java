@@ -68,7 +68,7 @@ public class CoreTopology
         CoreAddresses coreAddresses = coreMembers.get( memberId );
         if ( coreAddresses == null )
         {
-            throw new NoKnownAddressesException();
+            throw new NoKnownAddressesException( "Unable to find address mapping for member: " + memberId );
         }
         return coreAddresses;
     }

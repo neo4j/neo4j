@@ -19,6 +19,9 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -29,16 +32,13 @@ import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BinaryOperator;
 
-import org.junit.Rule;
-import org.junit.Test;
-
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.consensus.log.segmented.FileNames;
+import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
-import org.neo4j.coreedge.core.consensus.log.segmented.FileNames;
-import org.neo4j.coreedge.core.consensus.roles.Role;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -67,7 +67,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -77,7 +76,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.function.Predicates.awaitEx;
@@ -203,7 +201,7 @@ public class EdgeServerReplicationIT
         {
             // Lifecycle should throw exception, server should not start.
             assertThat( required.getCause(), instanceOf( LifecycleException.class ) );
-            assertThat( required.getCause().getCause(), instanceOf( IllegalStateException.class ) );
+            assertThat( required.getCause().getCause(), instanceOf( Exception.class ) );
             assertThat( required.getCause().getCause().getMessage(),
                     containsString( "This edge machine cannot join the cluster. " +
                             "The local database is not empty and has a mismatching storeId:" ) );

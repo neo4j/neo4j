@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.discovery;
+package org.neo4j.coreedge.catchup.storecopy;
 
-public class NoKnownAddressesException extends Exception
+public class StreamingTransactionsFailedException extends Exception
 {
-    public NoKnownAddressesException( String message )
+    StreamingTransactionsFailedException( String message )
     {
         super( message );
     }
