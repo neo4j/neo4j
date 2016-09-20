@@ -19,13 +19,13 @@
  */
 package org.neo4j.harness.junit;
 
-import java.io.File;
-import java.net.URI;
-import java.util.function.Function;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import java.io.File;
+import java.net.URI;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
@@ -144,6 +144,13 @@ public class Neo4jRule implements TestRule, TestServerBuilder
     public Neo4jRule withProcedure( Class<?> procedureClass )
     {
         builder = builder.withProcedure( procedureClass );
+        return this;
+    }
+
+    @Override
+    public Neo4jRule withFunction( Class<?> functionClass )
+    {
+        builder = builder.withFunction( functionClass );
         return this;
     }
 

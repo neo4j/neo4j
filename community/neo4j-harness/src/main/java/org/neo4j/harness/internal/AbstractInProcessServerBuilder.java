@@ -196,7 +196,14 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     @Override
     public TestServerBuilder withProcedure( Class<?> procedureClass )
     {
-        procedures.add( procedureClass );
+        procedures.addProcedure( procedureClass );
+        return this;
+    }
+
+    @Override
+    public TestServerBuilder withFunction( Class<?> functionClass )
+    {
+        procedures.addFunction( functionClass );
         return this;
     }
 
@@ -248,7 +255,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     /**
      * A kernel extension used to ensure we load user-registered procedures
      * after other kernel extensions have initialized, since kernel extensions
-     * can add custom injectables that procedures need.
+     * can addProcedure custom injectables that procedures need.
      */
     private static class Neo4jHarnessExtensions extends KernelExtensionFactory<Neo4jHarnessExtensions.Dependencies>
     {
