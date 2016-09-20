@@ -65,7 +65,7 @@ public class JavaFunctionsTest
         @Context
         public SomeService service;
 
-        @UserFunction("my.hello")
+        @UserFunction( "my.hello" )
         public String hello()
         {
             return service.hello();
@@ -77,7 +77,7 @@ public class JavaFunctionsTest
         @Context
         public MyCoreAPI myCoreAPI;
 
-        @UserFunction( value = "my.willFail")
+        @UserFunction( value = "my.willFail" )
         public long willFail() throws ProcedureException
         {
             return myCoreAPI.makeNode( "Test" );
@@ -94,11 +94,14 @@ public class JavaFunctionsTest
     public void shouldLaunchWithDeclaredFunctions() throws Exception
     {
         // When
-        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withFunction( MyFunctions.class ).newServer())
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder().withFunction( MyFunctions.class )
+                .newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
-                    quotedJson( "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.myFunc() AS someNumber' } ] }" ) );
+                    quotedJson(
+                            "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.myFunc() AS someNumber' } ] " +
+                            "}" ) );
 
             JsonNode result = response.get( "results" ).get( 0 );
             assertEquals( "someNumber", result.get( "columns" ).get( 0 ).asText() );
@@ -111,14 +114,19 @@ public class JavaFunctionsTest
     public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withFunction( MyFunctions.class ).newServer())
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder().withFunction( MyFunctions.class )
+                .newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
-                    quotedJson( "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.funcThatThrows()' } ] }" ) );
+                    quotedJson(
+                            "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.funcThatThrows()' } ] }" ) );
 
             String error = response.get( "errors" ).get( 0 ).get( "message" ).asText();
-            assertEquals( "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang.RuntimeException: This is an exception", error );
+            assertEquals(
+                    "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang" +
+                    ".RuntimeException: This is an exception",
+                    error );
         }
     }
 
@@ -126,7 +134,8 @@ public class JavaFunctionsTest
     public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
     {
         // When
-        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withFunction( MyFunctionsUsingMyService.class ).newServer())
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+                .withFunction( MyFunctionsUsingMyService.class ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),

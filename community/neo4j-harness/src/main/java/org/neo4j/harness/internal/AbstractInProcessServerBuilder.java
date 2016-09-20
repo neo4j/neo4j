@@ -255,7 +255,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     /**
      * A kernel extension used to ensure we load user-registered procedures
      * after other kernel extensions have initialized, since kernel extensions
-     * can addProcedure custom injectables that procedures need.
+     * can add custom injectables that procedures need.
      */
     private static class Neo4jHarnessExtensions extends KernelExtensionFactory<Neo4jHarnessExtensions.Dependencies>
     {
