@@ -39,15 +39,15 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
  * Store view that will try to use label scan store {@link LabelScanStore} for cases when estimated number of nodes
  * is bellow certain threshold otherwise will fallback to whole store scan
  */
-public class AdaptableIndexStoreView extends NeoStoreIndexStoreView
+public class DynamicIndexStoreView extends NeoStoreIndexStoreView
 {
     private static final int VISIT_ALL_NODES_THRESHOLD_PERCENTAGE =
-            FeatureToggles.getInteger( AdaptableIndexStoreView.class, "all.nodes.visit.percentage.threshold", 50 );
+            FeatureToggles.getInteger( DynamicIndexStoreView.class, "all.nodes.visit.percentage.threshold", 50 );
 
     private final LabelScanStore labelScanStore;
     private final CountsTracker counts;
 
-    public AdaptableIndexStoreView( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores )
+    public DynamicIndexStoreView( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores )
     {
         super( locks, neoStores );
         this.counts = neoStores.getCounts();
@@ -59,12 +59,17 @@ public class AdaptableIndexStoreView extends NeoStoreIndexStoreView
             IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
             Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
     {
-        if ( ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore() || isNumberOfLabeledNodesExceedThreshold( labelIds ) )
+        if (  useAllNodeStoreScan( labelIds ) )
         {
             return super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
         }
         return new LabelScanViewNodeStoreScan<>( this, nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
+    }
+
+    private boolean useAllNodeStoreScan( int[] labelIds )
+    {
+        return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore() || isNumberOfLabeledNodesExceedThreshold( labelIds );
     }
 
     private boolean isEmptyLabelScanStore()

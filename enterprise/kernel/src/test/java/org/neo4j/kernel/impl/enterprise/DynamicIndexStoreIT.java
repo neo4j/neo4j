@@ -42,7 +42,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
-public class AdaptableIndexStoreIT
+public class DynamicIndexStoreIT
 {
 
     private SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -56,48 +56,53 @@ public class AdaptableIndexStoreIT
     {
         GraphDatabaseService database =
                 new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
-        int counter = 1;
-        for ( int j = 0; j < 10000; j++ )
+        try
         {
+            int counter = 1;
+            for ( int j = 0; j < 10000; j++ )
+            {
+                try ( Transaction transaction = database.beginTx() )
+                {
+                    for ( int i = 0; i < 5; i++ )
+                    {
+                        Node node = database.createNode( Label.label( "label" + counter ) );
+                        node.setProperty( "property", ThreadLocalRandom.current().nextInt() );
+                    }
+                    transaction.success();
+                }
+                counter++;
+            }
+
+            List<Populator> populators = new ArrayList<>();
+            for ( int i = 0; i < 10; i++ )
+            {
+                Populator populator = new Populator( database, counter );
+                populators.add( populator );
+                populator.start();
+            }
+
+
             try ( Transaction transaction = database.beginTx() )
             {
-                for ( int i = 0; i < 5; i++ )
-                {
-                    Node node = database.createNode( Label.label( "label" + counter ) );
-                    node.setProperty( "property" , ThreadLocalRandom.current().nextInt() );
-                }
+                database.schema().indexFor( Label.label( "label10" ) ).on( "property" ).create();
                 transaction.success();
             }
-            counter++;
-        }
 
-        List<Populator> populators = new ArrayList<>();
-        for ( int i = 0; i < 10; i++ )
+            try ( Transaction transaction = database.beginTx() )
+            {
+                database.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
+                transaction.success();
+            }
+
+            populators.forEach( Populator::terminate );
+        }
+        finally
         {
-            Populator populator = new Populator( database, counter );
-            populators.add( populator );
-            populator.start();
+            database.shutdown();
+            ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
+            consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), Config.empty(),
+                    ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.out ), false );
         }
-
-
-        try ( Transaction transaction = database.beginTx() )
-        {
-            database.schema().indexFor( Label.label( "label10" ) ).on( "property" ).create();
-            transaction.success();
-        }
-
-        try ( Transaction transaction = database.beginTx() )
-        {
-            database.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
-            transaction.success();
-        }
-
-        populators.forEach( Populator::terminate );
-        database.shutdown();
-
-        ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
-        consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), Config.empty(),
-                ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.out ), false );
     }
 
     private class Populator extends Thread

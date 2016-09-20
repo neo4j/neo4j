@@ -65,7 +65,7 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.storeview.AdaptableIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -216,8 +216,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             Statement statement = transactionStatementContextBridge.get();
 
-            AdaptableIndexStoreView storeView =
-                    new AdaptableIndexStoreViewWrapper( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores,
+            DynamicIndexStoreView storeView =
+                    new DynamicIndexStoreViewWrapper( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores,
                             updates );
 
             SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( getSchemaIndexProvider() );
@@ -363,11 +363,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return embeddedDatabase.getDependencyResolver().resolveDependency( JobScheduler.class );
     }
 
-    private class AdaptableIndexStoreViewWrapper extends AdaptableIndexStoreView
+    private class DynamicIndexStoreViewWrapper extends DynamicIndexStoreView
     {
         private List<NodePropertyUpdate> updates;
 
-        AdaptableIndexStoreViewWrapper( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores,
+        DynamicIndexStoreViewWrapper( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores,
                 List<NodePropertyUpdate> updates )
         {
             super( labelScanStore, locks, neoStores );
@@ -392,7 +392,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private class LabelScanViewNodeStoreWrapper extends LabelScanViewNodeStoreScan
     {
         private LabelScanViewNodeStoreScan delegate;
-        private AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
+        private DynamicIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
         private List<NodePropertyUpdate> updates;
 
         public LabelScanViewNodeStoreWrapper( NeoStoreIndexStoreView storeView, NodeStore nodeStore, LockService locks,
@@ -400,7 +400,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 LabelScanStore labelScanStore, Visitor labelUpdateVisitor,
                 Visitor propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
                 LabelScanViewNodeStoreScan delegate,
-                AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
+                DynamicIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
                 List<NodePropertyUpdate> updates )
         {
             super( storeView, nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
@@ -428,7 +428,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private class DelegatingPrimitiveLongResourceIterator implements PrimitiveLongResourceIterator
     {
 
-        private AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
+        private DynamicIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
         private List<NodePropertyUpdate> updates;
         private LabelScanViewNodeStoreWrapper storeScan;
         private PrimitiveLongResourceIterator delegate;
@@ -436,7 +436,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         DelegatingPrimitiveLongResourceIterator(
                 LabelScanViewNodeStoreWrapper storeScan,
                 PrimitiveLongResourceIterator delegate,
-                AdaptableIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
+                DynamicIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
                 List<NodePropertyUpdate> updates )
         {
             this.storeScan = storeScan;

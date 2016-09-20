@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.cardinality
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, Selections}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -152,6 +152,6 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     implicit val selections = mock[Selections]
 
     val expr = HasLabels(null, Seq(LabelName("Foo")(pos)))(pos)
-//    calculator(expr) should equal(Selectivity(1.0 / 10.0))
+    calculator(expr) should equal(Selectivity(1.0 / 10.0))
   }
 }

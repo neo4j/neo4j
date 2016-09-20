@@ -150,5 +150,4 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
             throw new RuntimeException( e );
         }
     }
-
 }

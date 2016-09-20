@@ -271,7 +271,7 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void configureSampling( boolean fullIndexSampling )
+        public void configureSampling( boolean onlineSampling )
         {
             // nothing
         }

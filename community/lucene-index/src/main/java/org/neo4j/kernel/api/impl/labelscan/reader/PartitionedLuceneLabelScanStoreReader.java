@@ -44,7 +44,7 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
     private final List<LabelScanReader> storeReaders;
 
     public PartitionedLuceneLabelScanStoreReader( List<PartitionSearcher> searchers,
-            LabelScanStorageStrategy storageStrategy)
+            LabelScanStorageStrategy storageStrategy )
     {
         this( searchers.stream()
                 .map( searcher -> new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy ) )

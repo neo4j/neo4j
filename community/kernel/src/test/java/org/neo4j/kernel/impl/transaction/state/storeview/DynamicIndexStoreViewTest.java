@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -42,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -50,7 +53,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
-public class AdaptableIndexStoreViewTest
+public class DynamicIndexStoreViewTest
 {
 
     private LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -61,6 +64,18 @@ public class AdaptableIndexStoreViewTest
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
+
+    @BeforeClass
+    public static void init()
+    {
+        FeatureToggles.set( DynamicIndexStoreView.class, "use.label.index", true );
+    }
+
+    @AfterClass
+    public static void cleanup()
+    {
+        FeatureToggles.set( DynamicIndexStoreView.class, "use.label.index", false );
+    }
 
     @Before
     public void setUp()
@@ -83,8 +98,8 @@ public class AdaptableIndexStoreViewTest
         mockLabelNodeCount( countStore, 2 );
         mockLabelNodeCount( countStore, 3 );
 
-        AdaptableIndexStoreView storeView =
-                new AdaptableIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
+        DynamicIndexStoreView storeView =
+                new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
 
         StoreScan<Exception> storeScan = storeView
                 .visitNodes( new int[]{1, 2, 3}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
@@ -110,8 +125,8 @@ public class AdaptableIndexStoreViewTest
         mockLabelNodeCount( countStore, 2 );
         mockLabelNodeCount( countStore, 6 );
 
-        AdaptableIndexStoreView storeView =
-                new AdaptableIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
+        DynamicIndexStoreView storeView =
+                new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
 
         StoreScan<Exception> storeScan = storeView
                 .visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );

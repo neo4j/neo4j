@@ -270,7 +270,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void configureSampling( boolean fullIndexSampling )
+    public void configureSampling( boolean onlineSampling )
     {
         throw new UnsupportedOperationException( "Multiple index populator can't be configured." );
     }

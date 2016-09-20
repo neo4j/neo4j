@@ -478,9 +478,9 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void configureSampling( boolean fullIndexSampling )
+        public void configureSampling( boolean onlineSampling )
         {
-            delegate.configureSampling( fullIndexSampling );
+            delegate.configureSampling( onlineSampling );
         }
 
         @Override

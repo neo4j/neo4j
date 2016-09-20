@@ -49,10 +49,10 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void configureSampling( boolean fullIndexSampling )
+    public void configureSampling( boolean onlineSampling )
     {
-        this.updateSampling = fullIndexSampling;
-        this.sampler = fullIndexSampling ? createDefaultSampler()
+        this.updateSampling = onlineSampling;
+        this.sampler = onlineSampling ? createDefaultSampler()
                                          : new DirectNonUniqueIndexSampler( luceneIndex );
     }
 
