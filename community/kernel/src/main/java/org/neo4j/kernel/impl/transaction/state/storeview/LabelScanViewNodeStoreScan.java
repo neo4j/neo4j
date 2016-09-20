@@ -150,7 +150,6 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
             labels = update.getLabelsAfter();
             break;
         case CHANGED:
-            //TODO: should it be like that????
             labels = Arrays.stream( update.getLabelsBefore() )
                     .filter( item -> Arrays.binarySearch( update.getLabelsAfter(), item ) >= 0 )
                     .toArray();
@@ -165,7 +164,6 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
         long nodeId = update.getNodeId();
         for ( long label : labels )
         {
-            // TODO: put if absent ?
             PrimitiveLongObjectMap<PrimitiveLongSet> labelsNodes = propertyLabelNodes.get( property );
             if ( labelsNodes == null)
             {
