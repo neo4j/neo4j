@@ -117,7 +117,7 @@ public class DynamicIndexStoreViewTest
         when( nodeLabelRanges.maxCount() ).thenReturn( 1L );
 
         PrimitiveLongIterator labeledNodesIterator = PrimitiveLongCollections.iterator( 1, 2, 3, 4, 5, 6, 7, 8 );
-        when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 20L );
+        when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 200L );
         when( nodeStore.getHighId() ).thenReturn( 20L );
         when( labelScanReader.nodesWithAnyOfLabels( 2, 6)).thenReturn( labeledNodesIterator );
 
