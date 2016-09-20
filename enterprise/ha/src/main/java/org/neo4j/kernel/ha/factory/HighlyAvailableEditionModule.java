@@ -160,7 +160,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -185,8 +184,6 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.Tra
 public class HighlyAvailableEditionModule
         extends EditionModule
 {
-    public static final String CUSTOM_IO_EXCEPTION_MESSAGE = "HA mode not allowed with custom IO integrations";
-
     private HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
     private SecurityLog securityLog;
@@ -226,9 +223,6 @@ public class HighlyAvailableEditionModule
         this.accessCapability = config.get( GraphDatabaseSettings.read_only )? new ReadOnly() : new CanWrite();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-
-        //Temporary check for custom IO
-        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
 
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
