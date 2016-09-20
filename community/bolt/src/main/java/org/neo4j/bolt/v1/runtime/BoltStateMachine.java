@@ -344,12 +344,12 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         catch ( AuthenticationException e )
                         {
                             fail( machine, new Neo4jError( e.status(), e.getMessage() ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
+                            throw new BoltConnectionAuthFatality( e.getMessage() );
                         }
-                        catch ( Throwable e )
+                        catch ( Throwable t )
                         {
-                            fail( machine, new Neo4jError( Status.General.UnknownError, e.getMessage() ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
+                            fail( machine, new Neo4jError( Status.General.UnknownError, t.getMessage() ) );
+                            throw new BoltConnectionFatality( t.getMessage() );
                         }
                     }
                 },
@@ -551,14 +551,14 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         {
             String msg = "INIT cannot be handled by a session in the " + name() + " state.";
             fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
-            throw new BoltConnectionFatality( msg );
+            throw new BoltProtocolBreachFatality( msg );
         }
 
         public State ackFailure( BoltStateMachine machine ) throws BoltConnectionFatality
         {
             String msg = "ACK_FAILURE cannot be handled by a session in the " + name() + " state.";
             fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
-            throw new BoltConnectionFatality( msg );
+            throw new BoltProtocolBreachFatality( msg );
         }
 
         public State interrupt( BoltStateMachine machine ) throws BoltConnectionFatality
@@ -567,14 +567,14 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             // a RESET message.
             String msg = "RESET cannot be handled by a session in the " + name() + " state.";
             fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
-            throw new BoltConnectionFatality( msg );
+            throw new BoltProtocolBreachFatality( msg );
         }
 
         public State reset( BoltStateMachine machine ) throws BoltConnectionFatality
         {
             String msg = "RESET cannot be handled by a session in the " + name() + " state.";
             fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
-            throw new BoltConnectionFatality( msg );
+            throw new BoltProtocolBreachFatality( msg );
         }
 
         public State run( BoltStateMachine machine, String statement, Map<String, Object> params ) throws
@@ -582,21 +582,21 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         {
             String msg = "RUN cannot be handled by a session in the " + name() + " state.";
             fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
-            throw new BoltConnectionFatality( msg );
+            throw new BoltProtocolBreachFatality( msg );
         }
 
         public State discardAll( BoltStateMachine machine ) throws BoltConnectionFatality
         {
             String msg = "DISCARD_ALL cannot be handled by a session in the " + name() + " state.";
             fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
-            throw new BoltConnectionFatality( msg );
+            throw new BoltProtocolBreachFatality( msg );
         }
 
         public State pullAll( BoltStateMachine machine ) throws BoltConnectionFatality
         {
             String msg = "PULL_ALL cannot be handled by a session in the " + name() + " state.";
             fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
-            throw new BoltConnectionFatality( msg );
+            throw new BoltProtocolBreachFatality( msg );
         }
 
         State resetMachine( BoltStateMachine machine ) throws BoltConnectionFatality
