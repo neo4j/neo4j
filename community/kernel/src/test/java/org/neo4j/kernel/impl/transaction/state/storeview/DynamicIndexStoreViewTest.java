@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -68,13 +67,13 @@ public class DynamicIndexStoreViewTest
     @BeforeClass
     public static void init()
     {
-        FeatureToggles.set( DynamicIndexStoreView.class, "use.label.index", true );
+        DynamicIndexStoreView.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = true;
     }
 
     @AfterClass
     public static void cleanup()
     {
-        FeatureToggles.set( DynamicIndexStoreView.class, "use.label.index", false );
+        DynamicIndexStoreView.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = false;
     }
 
     @Before

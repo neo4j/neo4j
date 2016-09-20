@@ -43,6 +43,8 @@ public class DynamicIndexStoreView extends NeoStoreIndexStoreView
 {
     private static final int VISIT_ALL_NODES_THRESHOLD_PERCENTAGE =
             FeatureToggles.getInteger( DynamicIndexStoreView.class, "all.nodes.visit.percentage.threshold", 50 );
+    static boolean USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = FeatureToggles.flag(
+            DynamicIndexStoreView.class, "use.label.index", false );
 
     private final LabelScanStore labelScanStore;
     private final CountsTracker counts;
@@ -59,7 +61,7 @@ public class DynamicIndexStoreView extends NeoStoreIndexStoreView
             IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
             Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
     {
-        if (  useAllNodeStoreScan( labelIds ) )
+        if ( !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds ) )
         {
             return super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
         }
