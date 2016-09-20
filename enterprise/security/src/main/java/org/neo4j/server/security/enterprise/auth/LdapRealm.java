@@ -243,9 +243,10 @@ public class LdapRealm extends JndiLdapRealm
                     AuthorizationInfo authorizationInfo = authorizationCache.get( username );
                     if ( authorizationInfo == null )
                     {
-                        // TODO: Do a new LDAP search? But we need to cache the credentials for that...
-                        // Or we need the resulting failure message to the client to contain some status
-                        // so that the client can react by resending the auth token.
+                        // The cached authorization info has expired.
+                        // Since we do not have the subject's credentials we cannot perform a new LDAP search
+                        // for authorization info. Instead we need to fail with a special status,
+                        // so that the client can react by re-authenticating.
                         throw new AuthExpirationException( "The LDAP authorization info has expired." );
                     }
                     return authorizationInfo;
