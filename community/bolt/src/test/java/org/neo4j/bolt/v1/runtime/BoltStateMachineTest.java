@@ -22,16 +22,23 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
 
+import java.util.Collections;
+
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.security.AuthExpirationException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltMatchers.canReset;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.hasNoTransaction;
@@ -45,10 +52,13 @@ import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.CONNECTED;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.FAILED;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.READY;
+import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.STREAMING;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.EMPTY_PARAMS;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.USER_AGENT;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransaction;
+import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransactionSPI;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BoltStateMachineTest
 {
@@ -401,4 +411,39 @@ public class BoltStateMachineTest
         }
     }
 
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldTerminateOnAuthExpiryDuringREADYRun() throws Throwable
+    {
+        // Given
+        TransactionStateMachine.SPI transactionSPI = mock( TransactionStateMachine.SPI.class );
+        when( transactionSPI.beginTransaction( any() ) ).thenThrow( new AuthExpirationException( "Auth expired!" ) );
+
+        BoltStateMachine machine = newMachineWithTransactionSPI( transactionSPI );
+        machine.state = READY;
+
+        // When & Then
+        assertException( () -> machine.run( "THIS WILL BE IGNORED", Collections.emptyMap(), nullResponseHandler() ),
+                BoltConnectionAuthFatality.class, "Auth expired!" );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldTerminateOnAuthExpiryDuringSTREAMING() throws Throwable
+    {
+        // Given
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        doThrow( new AuthExpirationException( "Auth expired!" ) ).when( responseHandler ).onRecords( any(), anyBoolean() );
+        BoltStateMachine machine = newMachine( STREAMING );
+        // We assume the only implementation of statement processor is TransactionStateMachine
+        ((TransactionStateMachine) machine.statementProcessor()).ctx.currentResult = BoltResult.EMPTY;
+
+        // When & Then
+        assertException( () -> machine.pullAll( responseHandler ),
+                BoltConnectionAuthFatality.class, "Auth expired!" );
+
+        // When & Then
+        assertException( () -> machine.discardAll( responseHandler ),
+                BoltConnectionAuthFatality.class, "Auth expired!" );
+    }
 }

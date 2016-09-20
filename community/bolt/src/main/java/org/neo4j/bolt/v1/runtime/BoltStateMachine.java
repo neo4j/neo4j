@@ -378,7 +378,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         catch ( AuthExpirationException e )
                         {
                             fail( machine, Neo4jError.from( e ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
+                            throw new BoltConnectionAuthFatality( e.getMessage() );
                         }
                         catch ( Throwable e )
                         {
@@ -432,7 +432,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         catch ( AuthExpirationException e )
                         {
                             fail( machine, Neo4jError.from( e ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
+                            throw new BoltConnectionAuthFatality( e.getMessage() );
                         }
                         catch ( Throwable e )
                         {
@@ -454,7 +454,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         catch ( AuthExpirationException e )
                         {
                             fail( machine, Neo4jError.from( e ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
+                            throw new BoltConnectionAuthFatality( e.getMessage() );
                         }
                         catch ( Throwable e )
                         {

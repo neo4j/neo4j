@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.bolt.testing.NullResponseHandler;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,6 +62,17 @@ public class MachineRoom
         init( machine );
         runBegin( machine );
         machine.state = state;
+        return machine;
+    }
+
+    public static BoltStateMachine newMachineWithTransactionSPI( TransactionStateMachine.SPI transactionSPI ) throws
+            AuthenticationException, BoltConnectionFatality
+    {
+        BoltStateMachine.SPI spi = mock( BoltStateMachine.SPI.class, RETURNS_MOCKS );
+        when( spi.transactionSpi() ).thenReturn( transactionSPI );
+
+        BoltStateMachine machine = new BoltStateMachine( spi, null, Clock.systemUTC() );
+        init( machine );
         return machine;
     }
 

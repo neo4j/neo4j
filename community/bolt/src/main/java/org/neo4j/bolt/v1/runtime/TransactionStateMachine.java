@@ -172,7 +172,7 @@ public class TransactionStateMachine implements StatementProcessor
                             throw new QueryExecutionKernelException(
                                     new InvalidSemanticsException( "No current transaction to rollback." ) );
                         }
-                        else if( spi.isPeriodicCommit( statement ) )
+                        else if ( spi.isPeriodicCommit( statement ) )
                         {
                             Result result = executeQuery( ctx, spi, statement, params );
 
