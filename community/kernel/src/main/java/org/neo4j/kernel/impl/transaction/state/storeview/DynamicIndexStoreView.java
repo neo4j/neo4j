@@ -42,7 +42,7 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 public class DynamicIndexStoreView extends NeoStoreIndexStoreView
 {
     private static final int VISIT_ALL_NODES_THRESHOLD_PERCENTAGE =
-            FeatureToggles.getInteger( DynamicIndexStoreView.class, "all.nodes.visit.percentage.threshold", 50 );
+            FeatureToggles.getInteger( DynamicIndexStoreView.class, "all.nodes.visit.percentage.threshold", 10 );
     static boolean USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = FeatureToggles.flag(
             DynamicIndexStoreView.class, "use.label.index", false );
 
