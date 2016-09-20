@@ -40,13 +40,13 @@ public class MasterClient310 extends MasterClient214
 
     public MasterClient310( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
                             LogProvider logProvider, StoreId storeId,
-                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize,
+                            long readTimeoutMillis, long lockReadTimeout, int maxConcurrentChannels, int chunkSize,
                             ResponseUnpacker unpacker,
                             ByteCounterMonitor byteCounterMonitor,
                             RequestMonitor requestMonitor,
                             LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
-        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId, readTimeoutSeconds,
+        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId, readTimeoutMillis,
                 lockReadTimeout, maxConcurrentChannels, chunkSize, unpacker, byteCounterMonitor, requestMonitor,
                 entryReader );
     }

@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.neo4j.com.IllegalProtocolVersionException;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.function.Suppliers;
-import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.ha.MasterClient310;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -55,7 +55,7 @@ public class MasterClientResolverTest
             life.start();
             MasterClient masterClient1 =
                     resolver.instantiate( "cluster://localhost", 44, null, new Monitors(), StoreId.DEFAULT, life );
-            assertThat( masterClient1, instanceOf( MasterClient214.class ) );
+            assertThat( masterClient1, instanceOf( MasterClient310.class ) );
         }
         finally
         {
@@ -63,8 +63,8 @@ public class MasterClientResolverTest
         }
 
         IllegalProtocolVersionException illegalProtocolVersionException = new IllegalProtocolVersionException(
-                MasterClient210.PROTOCOL_VERSION.getApplicationProtocol(),
                 MasterClient214.PROTOCOL_VERSION.getApplicationProtocol(),
+                MasterClient310.PROTOCOL_VERSION.getApplicationProtocol(),
                 "Protocol is too modern" );
 
         // When
@@ -78,7 +78,7 @@ public class MasterClientResolverTest
             MasterClient masterClient2 =
                     resolver.instantiate( "cluster://localhost", 55, null, new Monitors(), StoreId.DEFAULT, life );
 
-            assertThat( masterClient2, instanceOf( MasterClient210.class ) );
+            assertThat( masterClient2, instanceOf( MasterClient214.class ) );
         }
         finally
         {
