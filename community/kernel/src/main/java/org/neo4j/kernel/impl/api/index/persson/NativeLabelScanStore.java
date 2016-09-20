@@ -127,6 +127,9 @@ public class NativeLabelScanStore implements LabelScanStore
 
         return new LabelScanWriter()
         {
+            private final long[] key = new long[2];
+            private final long[] value = new long[2];
+
             @Override
             public void write( NodeLabelUpdate update ) throws IOException
             {
@@ -136,7 +139,9 @@ public class NativeLabelScanStore implements LabelScanStore
                 final long nodeId = update.getNodeId();
                 for ( long labelId : toAdd )
                 {
-                    inserter.insert( new long[]{labelId, 0L}, new long[]{nodeId, 0L} ); //TODO reuse
+                    key[0] = labelId;
+                    value[0] = nodeId;
+                    inserter.insert( key, value );
                 }
             }
 

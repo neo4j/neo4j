@@ -37,6 +37,10 @@ public class IndexInsert
     private final IdProvider idProvider;
     private final TreeNode bTreeNode;
     private final byte[] tmp;
+    private final byte[] tmp2;
+    private final byte[] tmp3;
+    private final SplitResult internalSplitResult = new SplitResult();
+    private final SplitResult leafSplitResult = new SplitResult();
 
     public IndexInsert( IdProvider idProvider, TreeNode bTreeNode )
     {
@@ -44,6 +48,10 @@ public class IndexInsert
         this.bTreeNode = bTreeNode;
         this.tmp = new byte[max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() ) *
                             max( bTreeNode.keySize(), bTreeNode.valueSize() )];
+        this.tmp2 = new byte[tmp.length + bTreeNode.keySize()];
+        this.tmp3 = new byte[tmp.length + bTreeNode.valueSize()];
+        this.internalSplitResult.primKey = new long[2];
+        this.leafSplitResult.primKey = new long[2];
     }
 
     /**
@@ -155,11 +163,10 @@ public class IndexInsert
         int pos = search( cursor, primKey );
 
         // Arrays to temporarily store keys and children in sorted order.
-        byte[] allKeysIncludingNewPrimKey = readRecordsWithInsertRecordInPosition( cursor, primKey, pos, keyCount+1,
-                bTreeNode.keySize(), bTreeNode.keyOffset( 0 ) );
-        byte[] allChildrenIncludingNewRightChild = readRecordsWithInsertRecordInPosition( cursor,
-                new long[]{newRightChild}, pos+1, keyCount+2, bTreeNode.childSize(), bTreeNode.childOffset( 0 ) );
-
+        int allKeysIncludingNewPrimKeyLength = readRecordsWithInsertRecordInPosition( cursor, primKey, pos, keyCount+1,
+                bTreeNode.keySize(), bTreeNode.keyOffset( 0 ), tmp2 );
+        int allChildrenIncludingNewRightChildLength = readRecordsWithInsertRecordInPosition( cursor,
+                new long[]{newRightChild}, pos+1, keyCount+2, bTreeNode.childSize(), bTreeNode.childOffset( 0 ), tmp3 );
 
         int keyCountAfterInsert = keyCount + 1;
         int middle = keyCountAfterInsert / 2; // Floor division
@@ -170,11 +177,11 @@ public class IndexInsert
             // Write keys to left
             arrayOffset = pos * bTreeNode.keySize();
             cursor.setOffset( bTreeNode.keyOffset( pos ) );
-            cursor.putBytes( allKeysIncludingNewPrimKey, arrayOffset, (middle - pos) * bTreeNode.keySize() );
+            cursor.putBytes( tmp2, arrayOffset, (middle - pos) * bTreeNode.keySize() );
 
             cursor.setOffset( bTreeNode.childOffset( pos + 1 ) );
             arrayOffset = (pos + 1) * bTreeNode.childSize();
-            cursor.putBytes( allChildrenIncludingNewRightChild, arrayOffset, (middle - pos) * bTreeNode.valueSize() );
+            cursor.putBytes( tmp3, arrayOffset, (middle - pos) * bTreeNode.valueSize() );
         }
 
         bTreeNode.setKeyCount( cursor, middle );
@@ -194,13 +201,13 @@ public class IndexInsert
         // Keys
         arrayOffset = (middle + 1) * bTreeNode.keySize(); // NOTE: (middle + 1) don't include middle
         cursor.setOffset( bTreeNode.keyOffset( 0 ) );
-        cursor.putBytes( allKeysIncludingNewPrimKey, arrayOffset, allKeysIncludingNewPrimKey.length - arrayOffset );
+        cursor.putBytes( tmp2, arrayOffset, allKeysIncludingNewPrimKeyLength - arrayOffset );
 
         // Children
         arrayOffset = (middle + 1) * bTreeNode.childSize();
         cursor.setOffset( bTreeNode.childOffset( 0 ) );
-        cursor.putBytes( allChildrenIncludingNewRightChild, arrayOffset,
-                allChildrenIncludingNewRightChild.length - arrayOffset );
+        cursor.putBytes( tmp3, arrayOffset,
+                allChildrenIncludingNewRightChildLength - arrayOffset );
 
         // Key count
         // NOTE: Not keyCountAfterInsert because middle key is not kept at this level
@@ -208,14 +215,12 @@ public class IndexInsert
 
         // Extract middle key (prim key)
         arrayOffset = middle * bTreeNode.keySize();
-        ByteBuffer buffer = ByteBuffer.wrap( allKeysIncludingNewPrimKey, arrayOffset, bTreeNode.keySize() );
-        long[] newPrimKey = new long[2];
-        newPrimKey[0] = buffer.getLong();
-        newPrimKey[1] = buffer.getLong();
+        ByteBuffer buffer = ByteBuffer.wrap( tmp2, arrayOffset, bTreeNode.keySize() );
 
         // Populate split result
-        SplitResult split = new SplitResult();
-        split.primKey = newPrimKey;
+        SplitResult split = internalSplitResult;
+        split.primKey[0] = buffer.getLong();
+        split.primKey[1] = buffer.getLong();
         split.left = fullNode;
         split.right = newRight;
 
@@ -333,10 +338,10 @@ public class IndexInsert
         int pos = search( cursor, newKey );
 
         // arrays to temporarily store all keys and values
-        byte[] allKeysIncludingNewKey = readRecordsWithInsertRecordInPosition( cursor, newKey, pos,
-                bTreeNode.leafMaxKeyCount() + 1, bTreeNode.keySize(), bTreeNode.keyOffset( 0 ) );
-        byte[] allValuesIncludingNewValue = readRecordsWithInsertRecordInPosition( cursor, newValue, pos,
-                bTreeNode.leafMaxKeyCount() + 1, bTreeNode.valueSize(), bTreeNode.valueOffset( 0 ) );
+        int allKeysIncludingNewKeyLength = readRecordsWithInsertRecordInPosition( cursor, newKey, pos,
+                bTreeNode.leafMaxKeyCount() + 1, bTreeNode.keySize(), bTreeNode.keyOffset( 0 ), tmp2 );
+        int allValuesIncludingNewValueLength = readRecordsWithInsertRecordInPosition( cursor, newValue, pos,
+                bTreeNode.leafMaxKeyCount() + 1, bTreeNode.valueSize(), bTreeNode.valueOffset( 0 ), tmp3 );
 
         int keyCountAfterInsert = keyCount + 1;
         int middle = keyCountAfterInsert / 2; // Floor division
@@ -350,11 +355,11 @@ public class IndexInsert
         {
             int arrayOffset = pos * bTreeNode.keySize();
             cursor.setOffset( bTreeNode.keyOffset( pos ) );
-            cursor.putBytes( allKeysIncludingNewKey, arrayOffset, (middle - pos) * bTreeNode.keySize() );
+            cursor.putBytes( tmp2, arrayOffset, (middle - pos) * bTreeNode.keySize() );
 
             cursor.setOffset( bTreeNode.valueOffset( pos ) );
             arrayOffset = pos * bTreeNode.valueSize();
-            cursor.putBytes( allValuesIncludingNewValue, arrayOffset, (middle - pos) * bTreeNode.valueSize() );
+            cursor.putBytes( tmp3, arrayOffset, (middle - pos) * bTreeNode.valueSize() );
         }
 
         // Key count
@@ -374,20 +379,20 @@ public class IndexInsert
         // Keys
         int arrayOffset = middle * bTreeNode.keySize();
         cursor.setOffset( bTreeNode.keyOffset( 0 ) );
-        cursor.putBytes( allKeysIncludingNewKey, arrayOffset, allKeysIncludingNewKey.length - arrayOffset );
+        cursor.putBytes( tmp2, arrayOffset, allKeysIncludingNewKeyLength - arrayOffset );
 
         // Values
         arrayOffset = middle * bTreeNode.valueSize();
         cursor.setOffset( bTreeNode.valueOffset( 0 ) );
-        cursor.putBytes( allValuesIncludingNewValue, arrayOffset, allValuesIncludingNewValue.length - arrayOffset );
+        cursor.putBytes( tmp3, arrayOffset, allValuesIncludingNewValueLength - arrayOffset );
 
         // Key count
         bTreeNode.setKeyCount( cursor, keyCountAfterInsert - middle );
 
-        SplitResult split = new SplitResult();
+        SplitResult split = leafSplitResult;
         split.left = left;
         split.right = newRight;
-        split.primKey = bTreeNode.keyAt( cursor, new long[2], 0 );
+        bTreeNode.keyAt( cursor, split.primKey, 0 );
 
         // Move cursor back to left
         cursor.next( left );
@@ -412,22 +417,23 @@ public class IndexInsert
      * @param totalNumberOfRecords  the total number of records to be contained in returned byte[], including newRecord
      * @param recordSize            the size in number of bytes of one record
      * @param baseRecordOffset      the offset from where cursor should start read records
-     * @return                      a byte[] with records in same order as read by cursor with newRecord in position
-     *                              insertPosition, that is data[ insertPosition * recordSize ]
+     * @param into                  byte array to copy bytes into
+     * @return                      number of bytes copied into the {@code into} byte[],
+     *                              that is insertPosition * recordSize
      */
-    private byte[] readRecordsWithInsertRecordInPosition( PageCursor cursor, long[] newRecord, int insertPosition,
-            int totalNumberOfRecords, int recordSize, int baseRecordOffset )
+    private int readRecordsWithInsertRecordInPosition( PageCursor cursor, long[] newRecord, int insertPosition,
+            int totalNumberOfRecords, int recordSize, int baseRecordOffset, byte[] into )
     {
-        byte[] allRecordsIncludingNewRecord = new byte[(totalNumberOfRecords) * recordSize];
+        int length = (totalNumberOfRecords) * recordSize;
 
         // First read all records
 
         // Read all records on previous to insertPosition
         cursor.setOffset( baseRecordOffset );
-        cursor.getBytes( allRecordsIncludingNewRecord, 0, insertPosition * recordSize );
+        cursor.getBytes( into, 0, insertPosition * recordSize );
 
         // Read newRecord
-        ByteBuffer buffer = ByteBuffer.wrap( allRecordsIncludingNewRecord, insertPosition * recordSize, recordSize );
+        ByteBuffer buffer = ByteBuffer.wrap( into, insertPosition * recordSize, recordSize );
         for ( int i = 0; i < newRecord.length; i++ )
         {
             buffer.putLong( newRecord[i] );
@@ -435,9 +441,9 @@ public class IndexInsert
 
         // Read all records following insertPosition
         cursor.setOffset( baseRecordOffset + insertPosition * recordSize );
-        cursor.getBytes( allRecordsIncludingNewRecord, (insertPosition + 1) * recordSize,
+        cursor.getBytes( into, (insertPosition + 1) * recordSize,
                 ((totalNumberOfRecords - 1) - insertPosition) * recordSize );
-        return allRecordsIncludingNewRecord;
+        return length;
     }
 
     /**
@@ -455,7 +461,6 @@ public class IndexInsert
      * //TODO: Implement binary search
      *
      * @param cursor    {@link PageCursor} pinned to page with node (internal or leaf does not matter)
-     * @param bTreeNode {@link BTreeNode} to use for node interpretation
      * @param key       long[] of length 2 where key[0] is id and key[1] is property value
      * @return          first position i for which Node.KEY_COMPARATOR.compare( key, Node.keyAt( i ) <= 0;
      */
