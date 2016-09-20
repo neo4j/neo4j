@@ -57,6 +57,7 @@ import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.StartTlsRequest;
 import javax.naming.ldap.StartTlsResponse;
 
+import org.neo4j.graphdb.security.AuthExpirationException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -245,6 +246,7 @@ public class LdapRealm extends JndiLdapRealm
                         // TODO: Do a new LDAP search? But we need to cache the credentials for that...
                         // Or we need the resulting failure message to the client to contain some status
                         // so that the client can react by resending the auth token.
+                        throw new AuthExpirationException( "The LDAP authorization info has expired." );
                     }
                     return authorizationInfo;
                 }
