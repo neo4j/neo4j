@@ -40,7 +40,7 @@ import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.Dependencie
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.ha.MasterClient310;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
@@ -111,10 +111,10 @@ public class MasterClientTest
         newMasterServer( masterImplSPI );
 
         StoreId storeId = StoreIdTestFactory.newStoreIdForCurrentVersion( 5, 6, 7, 8 );
-        MasterClient214 masterClient214 = newMasterClient214( storeId );
+        MasterClient masterClient = newMasterClient310( storeId );
 
         // When
-        masterClient214.handshake( 1, storeId );
+        masterClient.handshake( 1, storeId );
     }
 
     @Test
@@ -135,7 +135,7 @@ public class MasterClientTest
         ResponseUnpacker unpacker = life.add(
                 new TransactionCommittingResponseUnpacker( deps, DEFAULT_BATCH_SIZE, 0 ) );
 
-        MasterClient masterClient = newMasterClient214( StoreId.DEFAULT, unpacker );
+        MasterClient masterClient = newMasterClient310( StoreId.DEFAULT, unpacker );
 
         // When
         masterClient.newLockSession( new RequestContext( 1, 2, 3, 4, 5 ) );
@@ -160,7 +160,7 @@ public class MasterClientTest
 
         newMasterServer( masterImplSPI );
 
-        MasterClient214 client = newMasterClient214( storeId, responseUnpacker );
+        MasterClient client = newMasterClient310( storeId, responseUnpacker );
 
         HandshakeResult handshakeResult;
         try ( Response<HandshakeResult> handshakeResponse = client.handshake( 1, storeId ) )
@@ -205,20 +205,17 @@ public class MasterClientTest
                 ConversationManager.class ), logEntryReader ) );
     }
 
-    private MasterClient214 newMasterClient214( StoreId storeId ) throws Throwable
+    private MasterClient newMasterClient310( StoreId storeId ) throws Throwable
     {
-        return life.add( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
-                storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, NO_OP_RESPONSE_UNPACKER,
-                monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ), logEntryReader ) );
+        return newMasterClient310( storeId, NO_OP_RESPONSE_UNPACKER );
     }
 
-    private MasterClient214 newMasterClient214( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
+    private MasterClient newMasterClient310( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
     {
-        return life.add( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
+        return life.add( new MasterClient310( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
-                monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ), logEntryReader ) );
+                monitors.newMonitor( ByteCounterMonitor.class, MasterClient310.class ),
+                monitors.newMonitor( RequestMonitor.class, MasterClient310.class ), logEntryReader ) );
     }
 
     private static Response<Void> voidResponseWithTransactionLogs()

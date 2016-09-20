@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -37,7 +37,6 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.ha.HaRequestTypes.Type;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -88,21 +88,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                             LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
-                MasterServer.FRAME_LENGTH, PROTOCOL_VERSION, readTimeoutMillis, maxConcurrentChannels, chunkSize,
-                responseUnpacker, byteCounterMonitor, requestMonitor, entryReader );
-        this.lockReadTimeoutMillis = lockReadTimeoutMillis;
-        this.requestTypes = new HaRequestType210( entryReader );
-    }
-
-    MasterClient210( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
-                     LogProvider logProvider, StoreId storeId, long readTimeoutMillis,
-                     long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
-                     ProtocolVersion protocolVersion, ResponseUnpacker responseUnpacker,
-                     ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
-                     LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
-    {
-        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
-                MasterServer.FRAME_LENGTH, protocolVersion, readTimeoutMillis, maxConcurrentChannels, chunkSize,
+                MasterServer.FRAME_LENGTH, readTimeoutMillis, maxConcurrentChannels, chunkSize,
                 responseUnpacker, byteCounterMonitor, requestMonitor, entryReader );
         this.lockReadTimeoutMillis = lockReadTimeoutMillis;
         this.requestTypes = new HaRequestType210( entryReader );
@@ -309,7 +295,12 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     {
         context = stripFromTransactions( context );
         return sendRequest( requestTypes.type( Type.COPY_STORE ), context, EMPTY_SERIALIZER,
-                new Protocol.FileStreamsDeserializer( writer ) );
+                createFileStreamDeserializer( writer ) );
+    }
+
+    protected Deserializer<Void> createFileStreamDeserializer( StoreWriter writer )
+    {
+        return new Protocol.FileStreamsDeserializer210( writer );
     }
 
     private RequestContext stripFromTransactions( RequestContext context )

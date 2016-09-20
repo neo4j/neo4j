@@ -35,7 +35,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.ha.MasterClient310;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.lang.String.format;
-
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
 
@@ -106,7 +105,7 @@ public interface MasterClient extends Master
         }
     };
 
-    public static final ProtocolVersion CURRENT = MasterClient214.PROTOCOL_VERSION;
+    public static final ProtocolVersion CURRENT = MasterClient310.PROTOCOL_VERSION;
 
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, final String name );

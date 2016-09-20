@@ -276,11 +276,36 @@ public abstract class Protocol
         targetBuffer.writeLong( context.getChecksum() );
     }
 
-    public static class FileStreamsDeserializer implements Deserializer<Void>
+    public static class FileStreamsDeserializer210 implements Deserializer<Void>
     {
         private final StoreWriter writer;
 
-        public FileStreamsDeserializer( StoreWriter writer )
+        public FileStreamsDeserializer210( StoreWriter writer )
+        {
+            this.writer = writer;
+        }
+
+        // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
+        @Override
+        public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+        {
+            int pathLength;
+            while ( 0 != (pathLength = buffer.readUnsignedShort()) )
+            {
+                String path = readString( buffer, pathLength );
+                boolean hasData = buffer.readByte() == 1;
+                writer.write( path, hasData ? new BlockLogReader( buffer ) : null, temporaryBuffer, hasData, 1 );
+            }
+            writer.close();
+            return null;
+        }
+    }
+
+    public static class FileStreamsDeserializer310 implements Deserializer<Void>
+    {
+        private final StoreWriter writer;
+
+        public FileStreamsDeserializer310( StoreWriter writer )
         {
             this.writer = writer;
         }

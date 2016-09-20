@@ -97,7 +97,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final LogEntryReader<ReadableClosablePositionAwareChannel> entryReader;
 
     public Client( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
-            LogProvider logProvider, StoreId storeId, int frameLength, ProtocolVersion protocolVersion,
+            LogProvider logProvider, StoreId storeId, int frameLength,
             long readTimeout, int maxConcurrentChannels, int chunkSize,
             ResponseUnpacker responseUnpacker,
             ByteCounterMonitor byteCounterMonitor,
@@ -138,6 +138,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             origin = new InetSocketAddress( originHostNameOrIp, 0);
         }
 
+        ProtocolVersion protocolVersion = getProtocolVersion();
         this.protocol = createProtocol( chunkSize, protocolVersion.getApplicationProtocol() );
         this.responseUnpacker = responseUnpacker;
 
@@ -184,8 +185,10 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
     {
-        return new Protocol214( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+        return new Protocol310( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
+
+    public abstract ProtocolVersion getProtocolVersion();
 
     @Override
     public void start()

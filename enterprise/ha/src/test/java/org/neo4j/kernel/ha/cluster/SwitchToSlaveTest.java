@@ -48,7 +48,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.ha.MasterClient310;
 import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.ha.UpdatePuller;
@@ -301,7 +301,7 @@ public class SwitchToSlaveTest
         Response<HandshakeResult> response = mock( Response.class );
         when( response.response() ).thenReturn( new HandshakeResult( 42, 2 ) );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenReturn( response );
-        when( masterClient.getProtocolVersion() ).thenReturn( MasterClient214.PROTOCOL_VERSION );
+        when( masterClient.getProtocolVersion() ).thenReturn( MasterClient310.PROTOCOL_VERSION );
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
         // note that the checksum (the second member of the array) is the same as the one in the handshake mock above

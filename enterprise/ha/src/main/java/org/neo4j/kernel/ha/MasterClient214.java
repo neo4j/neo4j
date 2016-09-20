@@ -43,7 +43,7 @@ public class MasterClient214 extends MasterClient210
                             LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId, readTimeoutSeconds,
-                lockReadTimeout, maxConcurrentChannels, chunkSize, PROTOCOL_VERSION, unpacker, byteCounterMonitor,
+                lockReadTimeout, maxConcurrentChannels, chunkSize, unpacker, byteCounterMonitor,
                 requestMonitor, entryReader );
     }
 
