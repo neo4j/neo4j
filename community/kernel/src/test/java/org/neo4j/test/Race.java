@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.helpers.Exceptions;
@@ -265,11 +266,8 @@ public class Race
 
         private void randomlyDelaySlightly()
         {
-            int target = ThreadLocalRandom.current().nextInt( 1_000_000_000 );
-            for ( int i = 0; i < target; i++ )
-            {
-                i = i;
-            }
+            int millis = ThreadLocalRandom.current().nextInt( 100 );
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 + millis ) );
         }
     }
 }

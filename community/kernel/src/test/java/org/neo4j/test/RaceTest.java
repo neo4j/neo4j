@@ -24,16 +24,14 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
+import static java.lang.Thread.sleep;
+import static java.util.concurrent.ThreadLocalRandom.current;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import static java.lang.Thread.sleep;
-import static java.util.concurrent.ThreadLocalRandom.current;
-
 import static org.neo4j.test.Race.throwing;
 
 /**
@@ -91,8 +89,8 @@ public class RaceTest
         race.go();
 
         // THEN
-        verify( endCondition1, times( 4 ) ).getAsBoolean();
-        verify( endCondition2, times( 4 ) ).getAsBoolean();
+        verify( endCondition1, atLeast( 4 ) ).getAsBoolean();
+        verify( endCondition2, atLeast( 4 ) ).getAsBoolean();
     }
 
     @Test
