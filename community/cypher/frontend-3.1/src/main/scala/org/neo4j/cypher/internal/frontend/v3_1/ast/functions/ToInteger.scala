@@ -35,21 +35,16 @@ case object ToInteger extends Function {
       invocation.specifyType(CTInteger)
 
   private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
-    val e = invocation.args.head
+    val argument = invocation.args.head
+    val specifiedType = s.expressionType(argument).specified
+    val correctType = Seq(CTFloat, CTInteger, CTString, CTNumber, CTAny).foldLeft(false) {
+      case (acc, t) => acc || specifiedType.contains(t)
+    }
 
-    s.expressionType(e).specified match {
-      case CTFloat.invariant |
-           CTInteger.invariant |
-           CTString.invariant |
-           CTNumber.invariant |
-           CTAny.invariant => SemanticCheckResult.success(s)
-
-      case
-        CTAny.covariant => SemanticCheckResult.success(s)
-
-      case x =>
-        val message = s"Type mismatch: expected Number or String but was ${x.mkString(", ")}"
-        SemanticCheckResult.error(s, SemanticError(message, invocation.args.head.position))
+    if (correctType) SemanticCheckResult.success(s)
+    else {
+      val message = s"Type mismatch: expected Number or String but was ${specifiedType.mkString(", ")}"
+      SemanticCheckResult.error(s, SemanticError(message, argument.position))
     }
   }
 }

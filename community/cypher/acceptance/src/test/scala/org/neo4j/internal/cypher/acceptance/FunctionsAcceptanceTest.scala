@@ -84,6 +84,16 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("int_numbers" -> List(2, 2, 1))))
   }
 
+  test("toInt on a complex-typed expression") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      // this subtraction expression will get the strange type 'Float, Integer'
+      "RETURN toInt(1 - {p0}) AS result",
+      "p0" -> 1
+    )
+
+    result.toList should equal(List(Map("result" -> 0)))
+  }
+
   test("toInt should fail statically on type boolean") {
     val query = "RETURN toInt(true)"
 
