@@ -90,7 +90,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             }
             catch ( NoKnownAddressesException e )
             {
-                log.debug( "Address found for " );
+                log.debug( "No Address found for " + memberId );
             }
             Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
             endpoints.add( new ReadWriteEndPoint( boltServerAddress, role, memberId.getUuid() ) );
