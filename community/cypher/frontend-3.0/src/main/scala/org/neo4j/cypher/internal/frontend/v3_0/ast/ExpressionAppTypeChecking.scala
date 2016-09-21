@@ -26,9 +26,14 @@ trait ExpressionAppTypeChecking {
 
   val signatures: Seq[ExpressionSignature]
 
-  protected lazy val signatureLengths = signatures.map(_.argumentTypes.length)
+  protected val typeChecker = ExpressionAppTypeChecker(signatures)
+}
 
-  protected def checkTypes(invocation: Expression): SemanticCheck = s => {
+case class ExpressionAppTypeChecker(signatures: Seq[ExpressionSignature]) {
+
+  val signatureLengths = signatures.map(_.argumentTypes.length)
+
+  def checkTypes(invocation: Expression): SemanticCheck = s => {
     val initSignatures = signatures.filter(_.argumentTypes.length == invocation.arguments.length)
 
     val (remainingSignatures: Seq[ExpressionSignature], result) = invocation.arguments.foldLeft((initSignatures, SemanticCheckResult.success(s))) {

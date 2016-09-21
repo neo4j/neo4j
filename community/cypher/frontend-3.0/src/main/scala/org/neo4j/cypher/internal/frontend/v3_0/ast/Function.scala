@@ -140,8 +140,9 @@ trait SimpleTypedFunction extends ExpressionAppTypeChecking {
   self: Function =>
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkMinArgs(invocation, signatureLengths.min) chain checkMaxArgs(invocation, signatureLengths.max) chain
-    checkTypes(invocation)
+    checkMinArgs(invocation, typeChecker.signatureLengths.min) chain
+    checkMaxArgs(invocation, typeChecker.signatureLengths.max) chain
+    typeChecker.checkTypes(invocation)
 }
 
 abstract class AggregatingFunction extends Function {

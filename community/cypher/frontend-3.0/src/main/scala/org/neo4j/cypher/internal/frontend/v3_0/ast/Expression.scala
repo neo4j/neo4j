@@ -161,7 +161,7 @@ trait FunctionTyping extends ExpressionAppTypeChecking {
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext): SemanticCheck =
     arguments.semanticCheck(ctx) chain
-    checkTypes(self)
+    typeChecker.checkTypes(self)
 }
 
 trait PrefixFunctionTyping extends FunctionTyping { self: Expression =>
