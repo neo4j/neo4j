@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 case object ToLower extends Function with SimpleTypedFunction {
   def name = "ToLower"
 
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTString), outputType = CTString)
   )
 }

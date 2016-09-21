@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 case object Right extends Function with SimpleTypedFunction {
   def name = "right"
 
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTString, CTInteger), outputType = CTString)
   )
 }

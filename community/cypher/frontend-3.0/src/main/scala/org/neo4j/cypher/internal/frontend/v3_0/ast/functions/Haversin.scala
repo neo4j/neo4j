@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 case object Haversin extends Function with SimpleTypedFunction {
   def name = "haversin"
 
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 }

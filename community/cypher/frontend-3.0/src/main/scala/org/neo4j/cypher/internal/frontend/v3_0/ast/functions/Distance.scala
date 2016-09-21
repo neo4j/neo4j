@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 case object Distance extends Function with SimpleTypedFunction {
   def name = "distance"
 
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTGeometry, CTGeometry), outputType = CTFloat),
     ExpressionSignature(argumentTypes = Vector(CTPoint, CTGeometry), outputType = CTFloat),
     ExpressionSignature(argumentTypes = Vector(CTGeometry, CTPoint), outputType = CTFloat),

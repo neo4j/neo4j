@@ -121,7 +121,8 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
 
 case class UnaryAdd(rhs: Expression)(val position: InputPosition)
   extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
-  val signatures = Vector(
+
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
     ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
@@ -131,7 +132,8 @@ case class UnaryAdd(rhs: Expression)(val position: InputPosition)
 
 case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPosition)
   extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
@@ -151,7 +153,8 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
 
 case class UnarySubtract(rhs: Expression)(val position: InputPosition)
   extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
-  val signatures = Vector(
+
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
     ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
@@ -161,11 +164,12 @@ case class UnarySubtract(rhs: Expression)(val position: InputPosition)
 
 case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPosition)
   extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+
   // 1 * 1 => 1
   // 1 * 1.1 => 1.1
   // 1.1 * 1 => 1.1
   // 1.1 * 1.1 => 1.21
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
@@ -185,11 +189,12 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
 
 case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
   extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+
   // 1 / 1 => 1
   // 1 / 1.1 => 0.909
   // 1.1 / 1 => 1.1
   // 1.1 / 1.1 => 1.0
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
@@ -200,11 +205,12 @@ case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
 
 case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
   extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+
   // 1 % 1 => 0
   // 1 % 1.1 => 1.0
   // 1.1 % 1 => 0.1
   // 1.1 % 1.1 => 0.0
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
@@ -215,11 +221,12 @@ case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
 
 case class Pow(lhs: Expression, rhs: Expression)(val position: InputPosition)
   extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+
   // 1 ^ 1 => 1.1
   // 1 ^ 1.1 => 1.0
   // 1.1 ^ 1 => 1.1
   // 1.1 ^ 1.1 => 1.1105
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 

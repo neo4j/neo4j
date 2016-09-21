@@ -29,7 +29,7 @@ case object Length extends Function with SimpleTypedFunction {
   def name = "length"
 
   //NOTE using CTString and CTCollection here is deprecated
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(Vector(CTString), CTInteger),
     ExpressionSignature(Vector(CTList(CTAny)), CTInteger),
     ExpressionSignature(Vector(CTPath), CTInteger)

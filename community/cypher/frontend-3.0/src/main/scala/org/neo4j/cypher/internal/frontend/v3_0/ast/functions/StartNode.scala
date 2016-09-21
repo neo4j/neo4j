@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 case object StartNode extends Function with SimpleTypedFunction {
   def name = "startNode"
 
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTRelationship), outputType = CTNode)
   )
 }

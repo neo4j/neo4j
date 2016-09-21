@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 case object Count extends AggregatingFunction with SimpleTypedFunction {
   def name = "count"
 
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTAny), outputType = CTInteger)
   )
 }

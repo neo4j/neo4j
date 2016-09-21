@@ -24,9 +24,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.{SemanticCheckResult, ast, _}
 
 trait ExpressionCallTypeChecking {
 
-  val signatures: Seq[ExpressionSignature]
+  def signatures: Seq[ExpressionSignature] = Seq.empty
 
-  protected val typeChecker = ExpressionCallTypeChecker(signatures)
+  protected final def signatureLengths = typeChecker.signatureLengths
+  protected final lazy val typeChecker: ExpressionCallTypeChecker = ExpressionCallTypeChecker(signatures)
 }
 
 case class ExpressionCallTypeChecker(signatures: Seq[ExpressionSignature]) {

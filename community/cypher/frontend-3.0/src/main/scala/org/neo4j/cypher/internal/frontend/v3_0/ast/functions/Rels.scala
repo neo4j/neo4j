@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{ExpressionSignature, Functio
 case object Rels extends Function with SimpleTypedFunction {
   def name = "rels"
 
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTPath), outputType = CTList(CTRelationship))
   )
 }

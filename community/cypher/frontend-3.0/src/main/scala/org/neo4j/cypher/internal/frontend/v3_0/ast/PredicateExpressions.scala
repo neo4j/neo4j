@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticState, _}
 
 case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 }
@@ -41,7 +41,7 @@ case class Ands(exprs: Set[Expression])(val position: InputPosition) extends Exp
 }
 
 case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 }
@@ -53,19 +53,19 @@ case class Ors(exprs: Set[Expression])(val position: InputPosition) extends Expr
 }
 
 case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 }
 
 case class Not(rhs: Expression)(val position: InputPosition) extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(Vector(CTBoolean), outputType = CTBoolean)
   )
 }
 
 case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
@@ -75,7 +75,7 @@ case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition)
 }
 
 case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
@@ -90,7 +90,7 @@ case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: Inpu
 }
 
 case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
@@ -129,25 +129,25 @@ object PartialPredicate {
 }
 
 case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
 
 case class EndsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
 
 case class Contains(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
 
 case class IsNull(lhs: Expression)(val position: InputPosition) extends Expression with RightUnaryOperatorExpression with PostfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
   )
 
@@ -155,7 +155,7 @@ case class IsNull(lhs: Expression)(val position: InputPosition) extends Expressi
 }
 
 case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expression with RightUnaryOperatorExpression with PostfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
   )
 
@@ -163,7 +163,7 @@ case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expre
 }
 
 sealed trait InequalityExpression extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
     ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)

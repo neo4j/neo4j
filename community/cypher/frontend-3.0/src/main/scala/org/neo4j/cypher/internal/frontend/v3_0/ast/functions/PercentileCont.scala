@@ -26,9 +26,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 case object PercentileCont extends AggregatingFunction with SimpleTypedFunction {
   def name = "percentileCont"
 
-  val signatures = Vector(
+  override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
+
   override def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) =
     super.semanticCheck(ctx, invocation) ifOkChain checkPercentileRange(invocation.args(1))
 }
