@@ -392,6 +392,14 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     {
                         return resetMachine( machine );
                     }
+
+                    @Override
+                    public State ackFailure( BoltStateMachine machine ) throws BoltConnectionFatality
+                    {
+                        machine.ctx.markIgnored();
+                        return READY;
+                    }
+
                 },
 
         /**
@@ -411,6 +419,13 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     public State reset( BoltStateMachine machine ) throws BoltConnectionFatality
                     {
                         return resetMachine( machine );
+                    }
+
+                    @Override
+                    public State ackFailure( BoltStateMachine machine ) throws BoltConnectionFatality
+                    {
+                        machine.ctx.markIgnored();
+                        return STREAMING;
                     }
 
                     @Override
