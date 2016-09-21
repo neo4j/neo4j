@@ -104,7 +104,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAc
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory, inputQuery.notificationLogger)
     new ExecutionPlan {
-      private val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, fp)
+      private val fingerprint = new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, fp)
 
      override def run(queryContext: QueryContext, ignored: KernelStatement, planType: ExecutionMode,
                       params: Map[String, Any]) = func(queryContext, planType, params)
