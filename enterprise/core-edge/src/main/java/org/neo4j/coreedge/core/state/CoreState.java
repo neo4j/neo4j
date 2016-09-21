@@ -85,6 +85,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
             }
             catch ( Throwable e )
             {
+                log.error( "Error handling message", e );
                 raftMachine.stopTimers();
                 localDatabase.panic( e );
             }
