@@ -61,14 +61,13 @@ public class GraphDatabaseFacadeTest
         ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
 
         when( spi.queryService() ).thenReturn( queryService );
-        when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( spi.resolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) )
                 .thenReturn( contextBridge );
         when( contextBridge.get() ).thenReturn( statement );
         defaultConfig = Config.defaults();
 
         graphDatabaseFacade.init( spi, defaultConfig );
-        graphDatabaseFacade.initTransactionalContextFactoryFromSPI();
     }
 
     @Test

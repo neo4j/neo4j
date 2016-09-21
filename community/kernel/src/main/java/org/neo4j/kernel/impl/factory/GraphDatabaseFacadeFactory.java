@@ -160,7 +160,6 @@ public class GraphDatabaseFacadeFactory
                 {
                     engine = QueryEngineProvider.initialize(
                             platform.dependencies, platform.graphDatabaseFacade, dependencies.executionEngines() );
-                    graphDatabaseFacade.initTransactionalContextFactoryFromSPI();
                 }
 
                 queryEngine.set( engine );

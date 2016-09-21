@@ -216,16 +216,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                         .getOrCreateRelationshipIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, null ) ),
                 spi.autoIndexing().relationships() );
         this.indexManager = new IndexManagerImpl( spi::currentStatement, idxProvider, nodeAutoIndexer, relAutoIndexer );
-    }
-
-    /**
-     * This needs to be called after data source creation, when the execution engine dependency is satisfied by the
-     * cypher module
-     *
-     * @see GraphDatabaseFacadeFactory#initFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)
-     */
-    public void initTransactionalContextFactoryFromSPI()
-    {
         this.contextFactory = new Neo4jTransactionalContextFactory( spi, locker );
     }
 
@@ -387,9 +377,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
         InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
 
-        TransactionalContext context =
-                contextFactory.newContext( QueryEngineProvider.describe(), transaction, query, parameters );
-        return spi.executeQuery( query, parameters, context );
+        return execute( transaction, query, parameters );
     }
 
     @Override
@@ -401,7 +389,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return execute( transaction, query, parameters );
     }
 
-    // This version of execute is only needed for internal testing of LOAD CSV PERIODIC COMMIT. Can be refactored?
     public Result execute( InternalTransaction transaction, String query, Map<String,Object> parameters )
             throws QueryExecutionException
     {
