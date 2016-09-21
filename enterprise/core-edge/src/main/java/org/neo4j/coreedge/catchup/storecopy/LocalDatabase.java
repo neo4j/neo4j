@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class LocalDatabase implements Supplier<StoreId>, Lifecycle
+public class LocalDatabase implements Lifecycle
 {
     private final File storeDir;
 
@@ -164,12 +164,6 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
             }
         }
         return false;
-    }
-
-    @Override
-    public StoreId get()
-    {
-        return storeId();
     }
 
     public File storeDir()

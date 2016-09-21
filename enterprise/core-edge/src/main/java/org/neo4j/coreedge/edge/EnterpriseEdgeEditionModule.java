@@ -231,10 +231,11 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
-        TxPollingClient txPuller = new TxPollingClient( logProvider, fileSystem,
-                localDatabase, storeFetcher, catchUpClient, new ConnectToRandomCoreMember( discoveryService ),
-                txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier,
-                platformModule.monitors, copiedStoreRecovery );
+        TxPollingClient txPuller =
+                new TxPollingClient( logProvider, fileSystem, localDatabase, storeFetcher, catchUpClient,
+                        new ConnectToRandomCoreMember( discoveryService ), txPullerTimeoutService,
+                        config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier, platformModule.monitors,
+                        copiedStoreRecovery );
 
         dependencies.satisfyDependencies( txPuller );
 

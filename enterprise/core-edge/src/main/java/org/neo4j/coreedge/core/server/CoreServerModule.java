@@ -187,10 +187,10 @@ public class CoreServerModule
 
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
-        CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase,
+        CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
-                new DataSourceSupplier( platformModule ), () -> localDatabase.isAvailable(), coreState, config,
+                new DataSourceSupplier( platformModule ), localDatabase::isAvailable, coreState, config,
                 platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ) );
 
         servicesToStopOnStoreCopy.register( catchupServer );
