@@ -22,21 +22,13 @@ package org.neo4j.cypher.internal.frontend.v3_0.ast
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec}
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticCheckResult, ast, _}
 
-case class ExpressionSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
-
-trait SimpleTypedFunction {
-
-  self: Function =>
+trait ExpressionAppTypeChecking {
 
   val signatures: Seq[ExpressionSignature]
 
-  private lazy val signatureLengths = signatures.map(_.argumentTypes.length)
+  protected lazy val signatureLengths = signatures.map(_.argumentTypes.length)
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkMinArgs(invocation, signatureLengths.min) chain checkMaxArgs(invocation, signatureLengths.max) chain
-    checkTypes(invocation)
-
-  private def checkTypes(invocation: ast.FunctionInvocation): SemanticCheck = s => {
+  protected def checkTypes(invocation: Expression): SemanticCheck = s => {
     val initSignatures = signatures.filter(_.argumentTypes.length == invocation.arguments.length)
 
     val (remainingSignatures: Seq[ExpressionSignature], result) = invocation.arguments.foldLeft((initSignatures, SemanticCheckResult.success(s))) {

@@ -149,12 +149,19 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
 }
 
 trait SimpleTyping {
-
   self: Expression =>
 
   protected def possibleTypes: TypeSpec
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck = specifyType(possibleTypes)
+}
+
+trait FunctionTyping extends ExpressionAppTypeChecking {
+  self: Expression =>
+
+  override def semanticCheck(ctx: ast.Expression.SemanticContext): SemanticCheck =
+    arguments.semanticCheck(ctx) chain
+    checkTypes(self)
 }
 
 trait PrefixFunctionTyping extends FunctionTyping { self: Expression =>

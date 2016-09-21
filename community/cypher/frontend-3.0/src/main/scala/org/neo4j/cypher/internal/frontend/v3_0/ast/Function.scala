@@ -136,6 +136,14 @@ abstract class Function extends SemanticChecking {
     FunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
 }
 
+trait SimpleTypedFunction extends ExpressionAppTypeChecking {
+  self: Function =>
+
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+    checkMinArgs(invocation, signatureLengths.min) chain checkMaxArgs(invocation, signatureLengths.max) chain
+    checkTypes(invocation)
+}
+
 abstract class AggregatingFunction extends Function {
   override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     when(ctx == ast.Expression.SemanticContext.Simple) {
