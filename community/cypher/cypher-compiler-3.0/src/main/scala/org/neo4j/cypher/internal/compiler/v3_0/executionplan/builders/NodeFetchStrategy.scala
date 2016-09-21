@@ -110,7 +110,7 @@ object NodeByIdStrategy extends NodeStrategy {
       case predicate @ Equals(IdFunction(Variable(id)), expression) if id == variable && computable(expression) => SolvedPredicate(expression, predicate)
       case predicate @ Equals(expression, IdFunction(Variable(id))) if id == variable && computable(expression) => SolvedPredicate(expression, predicate)
 
-      case predicate @ AnyInCollection(collectionExpression, _, Equals(IdFunction(Variable(id)), _)) if id == variable && computable(collectionExpression) => SolvedPredicate(collectionExpression, predicate)
+      case predicate @ AnyInList(collectionExpression, _, Equals(IdFunction(Variable(id)), _)) if id == variable && computable(collectionExpression) => SolvedPredicate(collectionExpression, predicate)
       case predicate @ CachedIn(IdFunction(Variable(id)), collectionExpression) if id == variable && computable(collectionExpression) => SolvedPredicate(collectionExpression, predicate)
     }
   }
@@ -167,7 +167,7 @@ object IndexSeekStrategy extends NodeStrategy {
       case predicate @ Equals(expression, Property(Variable(id), propertyKey))
         if id == variable && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
-      case predicate @ AnyInCollection(expression, _, Equals(Property(Variable(id), propertyKey),Variable(_)))
+      case predicate @ AnyInList(expression, _, Equals(Property(Variable(id), propertyKey), Variable(_)))
         if id == variable && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
       case predicate @ CachedIn(Property(Variable(id), propertyKey), expression)

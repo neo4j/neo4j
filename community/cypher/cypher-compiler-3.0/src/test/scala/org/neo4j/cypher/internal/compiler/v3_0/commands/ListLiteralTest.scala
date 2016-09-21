@@ -86,16 +86,16 @@ class ListLiteralTest extends CypherFunSuite {
 
   implicit class Check(values: Seq[_]) {
 
-    def any(expected: Any) = check(expected, AnyInCollection.apply)
+    def any(expected: Any) = check(expected, AnyInList.apply)
 
-    def all(expected: Any) = check(expected, AllInCollection.apply)
+    def all(expected: Any) = check(expected, AllInList.apply)
 
-    def single(expected: Any) = check(expected, SingleInCollection.apply)
+    def single(expected: Any) = check(expected, SingleInList.apply)
 
-    def none(expected: Any) = check(expected, NoneInCollection.apply)
+    def none(expected: Any) = check(expected, NoneInList.apply)
 
     private def check(expected: Any,
-                      collectionFunction: (Expression, String, Predicate) => InCollection) {
+                      collectionFunction: (Expression, String, Predicate) => InList) {
       val function = collectionFunction(Literal(values), "x", CoercedPredicate(Variable("x")))
       val result = function(ExecutionContext.empty)(QueryStateHelper.empty)
       result should equal(expected)

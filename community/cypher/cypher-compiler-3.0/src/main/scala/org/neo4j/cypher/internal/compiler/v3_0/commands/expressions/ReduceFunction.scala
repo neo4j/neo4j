@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc:String, init:Expression )
-  extends NullInNullOutExpression(collection) with CollectionSupport {
+  extends NullInNullOutExpression(collection) with ListSupport {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = {
     val initMap = m.newWith(acc -> init(m))
     val computedMap = makeTraversable(value).foldLeft(initMap) { (accMap, k) => {

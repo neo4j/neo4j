@@ -72,7 +72,7 @@ class PredicateRewriterTest extends BuilderTest {
   val predicateForPropertiedR = Equals(Property(Variable("r"), prop), literal)
 
   def predicateForPropertiedRelIterator(collection: String, innerSymbol: String) =
-    AllInCollection(Variable(collection), innerSymbol, Equals(Property(Variable(innerSymbol), prop), literal))
+    AllInList(Variable(collection), innerSymbol, Equals(Property(Variable(innerSymbol), prop), literal))
 
   test("should_rewrite_patterns_with_labels") {
 

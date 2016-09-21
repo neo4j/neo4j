@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ListSupport
 
 import collection.JavaConverters._
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
 import org.neo4j.kernel.impl.api.OperationsFacade
 
-class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CollectionSupport {
+class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with ListSupport {
 
   test("should_add_constraint_with_no_existing_data") {
     //GIVEN

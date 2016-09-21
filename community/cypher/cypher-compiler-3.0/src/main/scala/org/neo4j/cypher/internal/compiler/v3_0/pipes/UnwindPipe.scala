@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 
 import scala.annotation.tailrec
 
 case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
                      (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with CollectionSupport with RonjaPipe {
+  extends PipeWithSource(source, monitor) with ListSupport with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)

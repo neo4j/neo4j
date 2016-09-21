@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_0.mutation
 import org.neo4j.cypher.internal.compiler.v3_0._
 import commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class ForeachAction(collection: Expression, id: String, actions: Seq[UpdateAction])
   extends UpdateAction
-  with CollectionSupport {
+  with ListSupport {
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val seq = makeTraversable(collection(context)(state))

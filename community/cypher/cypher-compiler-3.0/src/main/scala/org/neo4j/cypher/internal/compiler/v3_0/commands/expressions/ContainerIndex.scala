@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport, IsCollection, IsMap}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, ListSupport, IsList, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
-with CollectionSupport {
+with ListSupport {
   def arguments = Seq(expression, index)
 
   def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
@@ -36,7 +36,7 @@ with CollectionSupport {
         val idx = CastSupport.castOrFail[String](index(ctx))
         m(state.query).getOrElse(idx, null)
 
-      case IsCollection(collection) =>
+      case IsList(collection) =>
         val number = CastSupport.castOrFail[Number](index(ctx))
 
         val longValue = number match {

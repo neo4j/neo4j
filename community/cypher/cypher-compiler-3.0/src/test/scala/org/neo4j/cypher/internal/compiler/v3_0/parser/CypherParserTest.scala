@@ -1049,8 +1049,8 @@ class CypherParserTest extends CypherFunSuite {
         start(NodeById("a", 1)).
         matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq(), SemanticDirection.OUTGOING, Map.empty)).
         namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq(), SemanticDirection.OUTGOING))).
-        where(AllInCollection(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
-        returns(ReturnItem(Variable("b"), "b"))
+        where(AllInList(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
+      returns(ReturnItem(Variable("b"), "b"))
     )
   }
 
@@ -1059,11 +1059,11 @@ class CypherParserTest extends CypherFunSuite {
       """start a = node(1) match p=((a)-[r]->(b)) where any(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
-        where(SingleInCollection(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
-        matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq(), SemanticDirection.OUTGOING, Map.empty)).
+        where(SingleInList(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
+      matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq(), SemanticDirection.OUTGOING, Map.empty)).
         namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq(), SemanticDirection.OUTGOING))).
-        where(AnyInCollection(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
-        returns(ReturnItem(Variable("b"), "b"))
+        where(AnyInList(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
+      returns(ReturnItem(Variable("b"), "b"))
     )
   }
 
@@ -1074,8 +1074,8 @@ class CypherParserTest extends CypherFunSuite {
         start(NodeById("a", 1)).
         matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq(), SemanticDirection.OUTGOING, Map.empty)).
         namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq(), SemanticDirection.OUTGOING))).
-        where(NoneInCollection(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
-        returns(ReturnItem(Variable("b"), "b"))
+        where(NoneInList(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
+      returns(ReturnItem(Variable("b"), "b"))
     )
   }
 
@@ -1086,8 +1086,8 @@ class CypherParserTest extends CypherFunSuite {
         start(NodeById("a", 1)).
         matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq(), SemanticDirection.OUTGOING, Map.empty)).
         namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq(), SemanticDirection.OUTGOING))).
-        where(SingleInCollection(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
-        returns(ReturnItem(Variable("b"), "b"))
+        where(SingleInList(NodesFunction(Variable("p")), "x", Equals(Property(Variable("x"), PropertyKey("name")), Literal("Andres")))).
+      returns(ReturnItem(Variable("b"), "b"))
     )
   }
 
@@ -2895,8 +2895,8 @@ class CypherParserTest extends CypherFunSuite {
       "MATCH (a)-[rels*]->(b) WHERE ALL(r in rels WHERE r.prop = 42) RETURN rels",
       Query.
         matches(VarLengthRelatedTo("  UNNAMED9", SingleNode("a"), SingleNode("b"), None, None, Seq.empty, SemanticDirection.OUTGOING, Some("rels"), Map.empty)).
-        where(AllInCollection(Variable("rels"), "r", Equals(Property(Variable("r"), PropertyKey("prop")), Literal(42)))).
-        returns(ReturnItem(Variable("rels"), "rels"))
+        where(AllInList(Variable("rels"), "r", Equals(Property(Variable("r"), PropertyKey("prop")), Literal(42)))).
+      returns(ReturnItem(Variable("rels"), "rels"))
     )
   }
 

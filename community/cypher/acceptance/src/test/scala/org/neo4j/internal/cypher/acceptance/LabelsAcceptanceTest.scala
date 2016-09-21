@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ListSupport
 import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine
@@ -28,7 +28,7 @@ import org.scalatest.Assertions
 import org.scalautils.LegacyTripleEquals
 
 class LabelsAcceptanceTest extends ExecutionEngineFunSuite
-  with QueryStatisticsTestSupport with Assertions with CollectionSupport with LegacyTripleEquals {
+  with QueryStatisticsTestSupport with Assertions with ListSupport with LegacyTripleEquals {
 
   test("Adding_single_literal_label") {
     assertThat("create (n {}) set n:FOO", List("FOO"))

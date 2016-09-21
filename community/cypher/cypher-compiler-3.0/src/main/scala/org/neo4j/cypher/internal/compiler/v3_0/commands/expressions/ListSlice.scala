@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class ListSlice(list: Expression, from: Option[Expression], to: Option[Expression])
-  extends NullInNullOutExpression(list) with CollectionSupport {
+  extends NullInNullOutExpression(list) with ListSupport {
   def arguments: Seq[Expression] = from.toSeq ++ to.toSeq :+ list
 
   private val function: (Iterable[Any], ExecutionContext, QueryState) => Any =

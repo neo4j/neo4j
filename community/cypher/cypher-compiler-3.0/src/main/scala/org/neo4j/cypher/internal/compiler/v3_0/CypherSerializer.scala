@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{IsCollection, IsMap}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{IsList, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
@@ -46,7 +46,7 @@ trait CypherSerializer {
     case x: Node            => x.toString + serializeProperties(x, qtx)
     case x: Relationship    => ":" + x.getType.name() + "[" + x.getId + "]" + serializeProperties(x, qtx)
     case IsMap(m)           => makeString(m, qtx)
-    case IsCollection(coll) => coll.map(elem => serialize(elem, qtx)).mkString("[", ",", "]")
+    case IsList(coll) => coll.map(elem => serialize(elem, qtx)).mkString("[", ",", "]")
     case x: String          => "\"" + x + "\""
     case v: KeyToken        => v.name
     case Some(x)            => x.toString
