@@ -34,6 +34,7 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.VersionDecoder;
@@ -83,6 +84,7 @@ public class CatchupServer extends LifecycleAdapter
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier;
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
+    private final BooleanSupplier dataSourceAvailabilitySupplier;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
     private final CoreState coreState;
@@ -95,13 +97,14 @@ public class CatchupServer extends LifecycleAdapter
     public CatchupServer( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> storeIdSupplier,
             Supplier<TransactionIdStore> transactionIdStoreSupplier,
             Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
-            Supplier<NeoStoreDataSource> dataSourceSupplier, Supplier<CheckPointer> checkPointerSupplier,
-            CoreState coreState, Config config, Monitors monitors )
+            Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
+            CoreState coreState, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier )
     {
         this.coreState = coreState;
         this.listenAddress = config.get( setting );
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.storeIdSupplier = storeIdSupplier;
+        this.dataSourceAvailabilitySupplier = dataSourceAvailabilitySupplier;
         this.logicalTransactionStoreSupplier = logicalTransactionStoreSupplier;
         this.logProvider = logProvider;
         this.monitors = monitors;
@@ -148,10 +151,10 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( decoders( protocol ) );
 
-                        pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier,
-                                transactionIdStoreSupplier, logicalTransactionStoreSupplier,
-                                monitors, logProvider ) );
-                        pipeline.addLast( new ChunkedWriteHandler() );
+                        pipeline.addLast(
+                                new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
+                                        transactionIdStoreSupplier, logicalTransactionStoreSupplier, monitors,
+                                        logProvider ) ); pipeline.addLast( new ChunkedWriteHandler() );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier ) );
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );

@@ -82,6 +82,11 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         started = false;
     }
 
+    public boolean isAvailable()
+    {
+        return started;
+    }
+
     @Override
     public void shutdown() throws Throwable
     {

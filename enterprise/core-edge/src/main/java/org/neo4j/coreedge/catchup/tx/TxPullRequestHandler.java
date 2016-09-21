@@ -22,6 +22,7 @@ package org.neo4j.coreedge.catchup.tx;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupResult;
@@ -30,6 +31,7 @@ import org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.cursor.IOCursor;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
@@ -39,6 +41,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupResult.E_STORE_ID_MISMATCH;
+import static org.neo4j.coreedge.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.coreedge.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -47,19 +50,19 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
 {
     private final CatchupServerProtocol protocol;
     private final Supplier<StoreId> storeIdSupplier;
+    private final BooleanSupplier databaseAvailable;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final TxPullRequestsMonitor monitor;
     private final Log log;
 
-    public TxPullRequestHandler( CatchupServerProtocol protocol,
-                                 Supplier<StoreId> storeIdSupplier,
-                                 Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                                 Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
-                                 Monitors monitors, LogProvider logProvider )
+    public TxPullRequestHandler( CatchupServerProtocol protocol, Supplier<StoreId> storeIdSupplier,
+            BooleanSupplier databaseAvailable, Supplier<TransactionIdStore> transactionIdStoreSupplier,
+            Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier, Monitors monitors, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.storeIdSupplier = storeIdSupplier;
+        this.databaseAvailable = databaseAvailable;
         this.transactionIdStore = transactionIdStoreSupplier.get();
         this.logicalTransactionStore = logicalTransactionStoreSupplier.get();
         this.monitor = monitors.newMonitor( TxPullRequestsMonitor.class );
@@ -80,6 +83,12 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
             log.info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
                             "from this machine with %s",
                     lastTxId, msg.expectedStoreId(), localStoreId );
+        }
+        else if ( !databaseAvailable.getAsBoolean() )
+        {
+            // database is not available for pulling transactions...
+            status = E_STORE_UNAVAILABLE;
+            log.info( "Failed to serve TxPullRequest for tx %d because the local database is unavailable.", lastTxId );
         }
         else if ( transactionIdStore.getLastCommittedTransactionId() >= firstTxId )
         {

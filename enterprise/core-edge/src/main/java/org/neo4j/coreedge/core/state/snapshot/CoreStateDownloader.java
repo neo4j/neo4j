@@ -116,7 +116,7 @@ public class CoreStateDownloader
                     new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
                         copyWholeStoreFrom( source, localStoreId, storeFetcher );
                 }
-                else if( catchupResult != SUCCESS )
+                else if ( catchupResult != SUCCESS )
                 {
                     throw new StoreCopyFailedException( "Failed to download store: " + catchupResult );
                 }

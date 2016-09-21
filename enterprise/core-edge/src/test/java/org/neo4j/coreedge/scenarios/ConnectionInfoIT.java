@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServer;
@@ -73,14 +74,14 @@ public class ConnectionInfoIT
         // when
         AssertableLogProvider logProvider = new AssertableLogProvider();
         AssertableLogProvider userLogProvider = new AssertableLogProvider();
-        Supplier mockSupplier = mock( Supplier.class );
         CoreState coreState = mock( CoreState.class );
         Config config = Config.defaults()
                 .with( singletonMap( transaction_listen_address.name(), ":" + testSocket.getLocalPort() ) );
 
         CatchupServer catchupServer =
-                new CatchupServer( logProvider, userLogProvider, mockSupplier, mockSupplier, mockSupplier, mockSupplier,
-                        mockSupplier, coreState, config, new Monitors() );
+                new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(),
+                        mockSupplier(), mock( BooleanSupplier.class ), coreState, config, new Monitors(),
+                        mockSupplier() );
 
         //then
         try
@@ -93,6 +94,12 @@ public class ConnectionInfoIT
         }
         logProvider.assertContainsMessageContaining( "Address is already bound for setting" );
         userLogProvider.assertContainsMessageContaining( "Address is already bound for setting" );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <T> Supplier<T> mockSupplier()
+    {
+        return mock( Supplier.class );
     }
 
     @Test

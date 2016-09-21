@@ -190,8 +190,8 @@ public class CoreServerModule
         CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
-                new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
-                coreState, config, platformModule.monitors );
+                new DataSourceSupplier( platformModule ), () -> localDatabase.isAvailable(), coreState, config,
+                platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ) );
 
         servicesToStopOnStoreCopy.register( catchupServer );
 
