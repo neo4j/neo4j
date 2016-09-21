@@ -41,6 +41,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.LeaderCanWrite;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
@@ -50,6 +51,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -359,8 +361,15 @@ public class Cluster
     {
         // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer
         // manner...
-        return (e instanceof IdGenerationException) || isLockExpired( e ) || isLockOnFollower( e );
+        return (e instanceof IdGenerationException) || isLockExpired( e ) || isLockOnFollower( e ) ||
+                isWriteNotOnLeader( e );
 
+    }
+
+    private boolean isWriteNotOnLeader( Throwable e )
+    {
+        return e instanceof WriteOperationsNotAllowedException &&
+                e.getMessage().startsWith( String.format( LeaderCanWrite.NOT_LEADER_ERROR_MSG, "" ) );
     }
 
     private boolean isLockOnFollower( Throwable e )
