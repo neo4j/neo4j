@@ -136,7 +136,7 @@ abstract class Function extends SemanticChecking {
     FunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
 }
 
-trait SimpleTypedFunction extends ExpressionAppTypeChecking {
+trait SimpleTypedFunction extends ExpressionCallTypeChecking {
   self: Function =>
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =

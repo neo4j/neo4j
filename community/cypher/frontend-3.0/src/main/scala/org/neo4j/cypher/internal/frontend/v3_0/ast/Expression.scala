@@ -91,7 +91,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   def dependencies: Set[Variable] =
     this.treeFold(TreeAcc[Set[Variable]](Set.empty)) {
       case scope: ScopeExpression => {
-        case acc =>
+        acc =>
           val newAcc = acc.push(scope.variables)
           (newAcc, Some((x) => x.pop))
       }
@@ -107,14 +107,14 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   def inputs: Seq[(Expression, Set[Variable])] =
     this.treeFold(TreeAcc[Seq[(Expression, Set[Variable])]](Seq.empty)) {
       case scope: ScopeExpression=> {
-        case acc =>
-          val newAcc = acc.push(scope.variables).map { case pairs => pairs :+ (scope -> acc.toSet) }
+        acc =>
+          val newAcc = acc.push(scope.variables).map(pairs => pairs :+ (scope -> acc.toSet))
           (newAcc, Some((x) => x.pop))
       }
 
       case expr: Expression => {
-        case acc =>
-          val newAcc = acc.map { case pairs => pairs :+ (expr -> acc.toSet) }
+        acc =>
+          val newAcc = acc.map(pairs => pairs :+ (expr -> acc.toSet))
           (newAcc, Some(identity))
       }
     }.data
@@ -156,7 +156,7 @@ trait SimpleTyping {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = specifyType(possibleTypes)
 }
 
-trait FunctionTyping extends ExpressionAppTypeChecking {
+trait FunctionTyping extends ExpressionCallTypeChecking {
   self: Expression =>
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext): SemanticCheck =
