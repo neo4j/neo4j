@@ -109,7 +109,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseQueryService,
 
 object InterpretedExecutionPlanBuilder {
   def interpretedToExecutionPlan(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuerySemantics,
-                                 createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference,
+                                 createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
                                  config: CypherCompilerConfiguration,
                                  typeConverter: RuntimeTypeConverter) = {
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo

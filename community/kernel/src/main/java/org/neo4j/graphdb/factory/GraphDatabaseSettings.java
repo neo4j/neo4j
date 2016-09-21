@@ -171,7 +171,7 @@ public abstract class GraphDatabaseSettings
                   "the plan is considered stale and will be replanned. " +
                   "A value of 0 means always replan, and 1 means never replan." )
     public static Setting<Double> query_statistics_divergence_threshold = setting(
-            "cypher.statistics_divergence_threshold", DOUBLE, "0.5", min( 0.0 ), max(
+            "cypher.statistics_divergence_threshold", DOUBLE, "0.75", min( 0.0 ), max(
                     1.0 ) );
 
     @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
@@ -195,7 +195,7 @@ public abstract class GraphDatabaseSettings
             "unsupported.cypher.idp_solver_duration_threshold", LONG, "1000", min( 10L ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
-    public static Setting<Long> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "1s" );
+    public static Setting<Long> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )

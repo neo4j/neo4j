@@ -317,7 +317,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer, typeConverter = IdentityTypeConverter),
       planner, planBuilderMonitor)
     val execPlanBuilder =
-      new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
+      new ExecutionPlanBuilder(graph, clock, pipeBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
     val cacheFlushMonitor =
@@ -335,7 +335,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val rewriter = new ASTRewriter(rewriterSequencer)
     val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer, typeConverter = IdentityTypeConverter)
     val execPlanBuilder =
-      new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
+      new ExecutionPlanBuilder(graph, clock, pipeBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
     val cacheFlushMonitor =
