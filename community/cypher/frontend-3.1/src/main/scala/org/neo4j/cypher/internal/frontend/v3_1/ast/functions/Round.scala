@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{ExpressionSignature, Function, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 case object Round extends Function with SimpleTypedFunction {
   def name = "round"
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+  override val signatures = Vector(
+    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 }

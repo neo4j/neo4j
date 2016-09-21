@@ -17,15 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
+package org.neo4j.cypher.internal.frontend.v3_1.ast
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{ExpressionSignature, Function, SimpleTypedFunction}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
-case object Atan extends Function with SimpleTypedFunction {
-  def name = "atan"
-
-  override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
-  )
-}
+case class ExpressionSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, FunctionInvocation, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{ExpressionSignature, Function, FunctionInvocation, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, SemanticState}
@@ -29,10 +29,10 @@ case object Length extends Function with SimpleTypedFunction {
   def name = "length"
 
   //NOTE using CTString and CTCollection here is deprecated
-  val signatures = Vector(
-    Signature(Vector(CTString), CTInteger),
-    Signature(Vector(CTList(CTAny)), CTInteger),
-    Signature(Vector(CTPath), CTInteger)
+  override val signatures = Vector(
+    ExpressionSignature(Vector(CTString), CTInteger),
+    ExpressionSignature(Vector(CTList(CTAny)), CTInteger),
+    ExpressionSignature(Vector(CTPath), CTInteger)
   )
 
   override def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) =

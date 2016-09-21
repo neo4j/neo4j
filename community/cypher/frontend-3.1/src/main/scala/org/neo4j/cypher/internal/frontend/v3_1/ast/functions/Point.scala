@@ -54,6 +54,6 @@ case object Point extends Function with SimpleTypedFunction {
   private def withKey(key: String)(kv: (PropertyKeyName, Expression)) = kv._1.name == key
 
   override val signatures = Vector(
-    Signature(argumentTypes = Vector(CTMap), outputType = CTPoint)
+    ExpressionSignature(argumentTypes = Vector(CTMap), outputType = CTPoint)
   )
 }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{ExpressionSignature, Function, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 case object ToUpper extends Function with SimpleTypedFunction {
   def name = "toUpper"
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTString), outputType = CTString)
+  override val signatures = Vector(
+    ExpressionSignature(argumentTypes = Vector(CTString), outputType = CTString)
   )
 }

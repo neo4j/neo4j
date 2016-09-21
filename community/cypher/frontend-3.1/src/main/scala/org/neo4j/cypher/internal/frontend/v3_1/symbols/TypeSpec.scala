@@ -19,12 +19,17 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.symbols
 
+import scala.language.postfixOps
+
 object TypeSpec {
   def exact(types: CypherType*): TypeSpec = exact(types)
   def exact[T <: CypherType](traversable: TraversableOnce[T]): TypeSpec = TypeSpec(traversable.map(t => TypeRange(t, t)))
   val all: TypeSpec = TypeSpec(TypeRange(CTAny, None))
   val none: TypeSpec = new TypeSpec(Vector.empty)
   def union(typeSpecs: TypeSpec*): TypeSpec = TypeSpec(typeSpecs.flatMap(_.ranges))
+
+  def formatArguments(types: Seq[TypeSpec]) =
+    s"(${types.map(_.toShortString).mkString(", ")})"
 
   private val simpleTypes = Vector(
     CTAny,
