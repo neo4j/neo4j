@@ -158,6 +158,7 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 
     public void replaceWith( File sourceDir ) throws IOException
     {
+        storeFiles.delete( storeDir );
         storeFiles.moveTo( sourceDir, storeDir );
     }
 }
