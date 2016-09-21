@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{AggregatingFunction, Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{AggregatingFunction, ExpressionSignature, Function, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-
 
 case object Sum extends AggregatingFunction with SimpleTypedFunction {
   def name = "sum"
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+  override val signatures = Vector(
+    ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
+    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 }

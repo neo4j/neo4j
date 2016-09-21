@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ExpressionSignature, Function, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case object Replace extends Function with SimpleTypedFunction {
   def name = "replace"
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTString, CTString, CTString), outputType = CTString)
+  override val signatures = Vector(
+    ExpressionSignature(argumentTypes = Vector(CTString, CTString, CTString), outputType = CTString)
   )
 }

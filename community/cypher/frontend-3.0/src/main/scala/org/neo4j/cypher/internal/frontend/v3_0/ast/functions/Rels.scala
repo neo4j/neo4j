@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{SimpleTypedFunction, Function}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ExpressionSignature, Function, SimpleTypedFunction}
 
 case object Rels extends Function with SimpleTypedFunction {
   def name = "rels"
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTPath), outputType = CTList(CTRelationship))
+  override val signatures = Vector(
+    ExpressionSignature(argumentTypes = Vector(CTPath), outputType = CTList(CTRelationship))
   )
 }

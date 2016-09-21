@@ -17,15 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
+package org.neo4j.cypher.internal.frontend.v3_0.ast
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{ExpressionSignature, Function, SimpleTypedFunction}
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
-case object Relationships extends Function with SimpleTypedFunction {
-  def name = "relationships"
-
-  override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTPath), outputType = CTList(CTRelationship))
-  )
-}
+case class ExpressionSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
