@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{Operations, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Collection, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 
 class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
@@ -70,7 +70,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val relName = "a"
     // whens
     val result =
-      UndirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(Collection(Literal(42), Literal(21))), to, from)().
+      UndirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)().
       createResults(queryState)
 
     // then

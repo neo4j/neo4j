@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.mutation
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Add, Literal, Collection, Property, Variable}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Add, Literal, ListLiteral, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -29,7 +29,7 @@ class ForeachActionTest extends CypherFunSuite {
   val to = RelationshipEndpoint(Variable("c"), Map("id" -> Property(Variable("i"), UnresolvedProperty("prop"))), Seq(UnresolvedLabel("apa")))
     val from = RelationshipEndpoint("r")
 
-    val objectUnderTest = ForeachAction(Collection(Literal("foo")), "i", Seq(CreateRelationship("  UNNAMED1", from, to, "REL", Map.empty)))
+    val objectUnderTest = ForeachAction(ListLiteral(Literal("foo")), "i", Seq(CreateRelationship("  UNNAMED1", from, to, "REL", Map.empty)))
 
     objectUnderTest.symbolTableDependencies should be(empty)
   }
@@ -38,12 +38,12 @@ class ForeachActionTest extends CypherFunSuite {
     // FOREACH( i in ["foo"] | CREATE (r)-[:REL]->(c {id: i.prop}) FOREACH j in ["foo"] |CREATE (r)-[:REL]->(c {id: i.prop}) )
     val to1 = RelationshipEndpoint(Variable("  UNNAMED23"), Map("id" -> Add(Property(Variable("c"), UnresolvedProperty("prop")), Variable("j"))), Seq(UnresolvedLabel("apa")))
     val from1 = RelationshipEndpoint("c")
-    val innerForeach = ForeachAction(Collection(Literal("foo")), "j", Seq(CreateRelationship("  UNNAMED1", from1, to1, "REL", Map.empty)))
+    val innerForeach = ForeachAction(ListLiteral(Literal("foo")), "j", Seq(CreateRelationship("  UNNAMED1", from1, to1, "REL", Map.empty)))
 
 
     val to2 = RelationshipEndpoint(Variable("c"), Map("id" -> Property(Variable("i"), UnresolvedProperty("prop"))), Seq(UnresolvedLabel("apa")))
     val from2 = RelationshipEndpoint("r")
-    val objectUnderTest = ForeachAction(Collection(Literal("foo")), "i", Seq(CreateRelationship("  UNNAMED2", from2, to2, "REL", Map.empty), innerForeach))
+    val objectUnderTest = ForeachAction(ListLiteral(Literal("foo")), "i", Seq(CreateRelationship("  UNNAMED2", from2, to2, "REL", Map.empty), innerForeach))
 
     objectUnderTest.symbolTableDependencies should be(empty)
   }

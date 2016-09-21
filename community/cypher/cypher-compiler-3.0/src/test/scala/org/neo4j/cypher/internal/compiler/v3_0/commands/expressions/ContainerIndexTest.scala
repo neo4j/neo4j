@@ -52,7 +52,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("handles empty collections") {
-    implicit val collection = Collection()
+    implicit val collection = ListLiteral()
 
     idx(0) should equal(expectedNull)
     idx(-1) should equal(expectedNull)

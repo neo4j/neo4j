@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 This class rewrites equality predicates into IN comparisons which can then be turned into
 either index lookup or node-by-id operations
  */
-case object rewriteEqualityToInCollection extends Rewriter {
+case object rewriteEqualityToInPredicate extends Rewriter {
 
   override def apply(that: AnyRef) = instance(that)
 

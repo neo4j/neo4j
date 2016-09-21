@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 
-class CollectionTest extends CypherFunSuite {
+class ListLiteralTest extends CypherFunSuite {
 
   test("any") {
     Seq() any false
