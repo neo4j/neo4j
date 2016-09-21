@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -175,5 +176,10 @@ public class LocalDatabase implements Lifecycle
     {
         storeFiles.delete( storeDir );
         storeFiles.moveTo( sourceDir, storeDir );
+    }
+
+    public NeoStoreDataSource dataSource()
+    {
+        return dataSourceManager.getDataSource();
     }
 }

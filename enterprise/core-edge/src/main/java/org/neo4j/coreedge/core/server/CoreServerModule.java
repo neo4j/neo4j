@@ -28,7 +28,6 @@ import org.neo4j.coreedge.ReplicationModule;
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
-import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyClient;
@@ -190,7 +189,7 @@ public class CoreServerModule
         CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
-                new DataSourceSupplier( platformModule ), localDatabase::isAvailable, coreState, config,
+                localDatabase::dataSource, localDatabase::isAvailable, coreState, config,
                 platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ) );
 
         servicesToStopOnStoreCopy.register( catchupServer );
