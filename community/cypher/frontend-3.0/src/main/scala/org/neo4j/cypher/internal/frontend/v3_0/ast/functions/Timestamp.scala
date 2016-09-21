@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ExpressionSignature, Function, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case object Timestamp extends Function with SimpleTypedFunction {
   val name = "timestamp"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(), outputType = CTInteger)
+    ExpressionSignature(argumentTypes = Vector(), outputType = CTInteger)
   )
 }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{AggregatingFunction, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{AggregatingFunction, ExpressionSignature, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case object Count extends AggregatingFunction with SimpleTypedFunction {
   def name = "count"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTAny), outputType = CTInteger)
+    ExpressionSignature(argumentTypes = Vector(CTAny), outputType = CTInteger)
   )
 }

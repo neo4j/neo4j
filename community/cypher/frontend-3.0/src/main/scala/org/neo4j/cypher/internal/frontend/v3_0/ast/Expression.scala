@@ -148,49 +148,13 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   }
 }
 
-trait SimpleTyping { self: Expression =>
+trait SimpleTyping {
+
+  self: Expression =>
+
   protected def possibleTypes: TypeSpec
+
   def semanticCheck(ctx: SemanticContext): SemanticCheck = specifyType(possibleTypes)
-}
-
-trait FunctionTyping { self: Expression =>
-
-  case class Signature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
-
-  def signatures: Seq[Signature]
-
-  def semanticCheck(ctx: ast.Expression.SemanticContext): SemanticCheck =
-    arguments.semanticCheck(ctx) chain
-    checkTypes
-
-  def checkTypes: SemanticCheck = s => {
-    val initSignatures = signatures.filter(_.argumentTypes.length == arguments.length)
-
-    val (remainingSignatures: Seq[Signature], result) = arguments.foldLeft((initSignatures, success(s))) {
-      case (accumulator@(Seq(), _), _) =>
-        accumulator
-      case ((possibilities, r1), arg)  =>
-        val argTypes = possibilities.foldLeft(TypeSpec.none) { _ | _.argumentTypes.head.covariant }
-        val r2 = arg.expectType(argTypes)(r1.state)
-
-        val actualTypes = arg.types(r2.state)
-        val remainingPossibilities = possibilities.filter {
-          sig => actualTypes containsAny sig.argumentTypes.head.covariant
-        } map {
-          sig => sig.copy(argumentTypes = sig.argumentTypes.tail)
-        }
-        (remainingPossibilities, SemanticCheckResult(r2.state, r1.errors ++ r2.errors))
-    }
-
-    val outputType = remainingSignatures match {
-      case Seq() => TypeSpec.all
-      case _     => remainingSignatures.foldLeft(TypeSpec.none) { _ | _.outputType.invariant }
-    }
-    specifyType(outputType)(result.state) match {
-      case Left(err)    => SemanticCheckResult(result.state, result.errors :+ err)
-      case Right(state) => SemanticCheckResult(state, result.errors)
-    }
-  }
 }
 
 trait PrefixFunctionTyping extends FunctionTyping { self: Expression =>

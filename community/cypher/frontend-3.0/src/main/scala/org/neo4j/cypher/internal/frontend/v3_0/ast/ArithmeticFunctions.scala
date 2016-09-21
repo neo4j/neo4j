@@ -122,8 +122,8 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
 case class UnaryAdd(rhs: Expression)(val position: InputPosition)
   extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
+    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "+"
@@ -132,9 +132,9 @@ case class UnaryAdd(rhs: Expression)(val position: InputPosition)
 case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPosition)
   extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
+    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
@@ -152,8 +152,8 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
 case class UnarySubtract(rhs: Expression)(val position: InputPosition)
   extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
+    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "-"
@@ -166,9 +166,9 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
   // 1.1 * 1 => 1.1
   // 1.1 * 1.1 => 1.21
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
+    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
@@ -190,9 +190,9 @@ case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
   // 1.1 / 1 => 1.1
   // 1.1 / 1.1 => 1.0
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
+    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "/"
@@ -205,9 +205,9 @@ case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
   // 1.1 % 1 => 0.1
   // 1.1 % 1.1 => 0.0
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
+    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "%"
@@ -220,7 +220,7 @@ case class Pow(lhs: Expression, rhs: Expression)(val position: InputPosition)
   // 1.1 ^ 1 => 1.1
   // 1.1 ^ 1.1 => 1.1105
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "^"
