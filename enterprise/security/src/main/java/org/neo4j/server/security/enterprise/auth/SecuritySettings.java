@@ -65,8 +65,8 @@ public class SecuritySettings
             setting( "dbms.security.realms.plugin.authorization_enabled", BOOLEAN, "false" );
 
     @Description( "URL of LDAP server (with protocol, hostname and port) to use for authentication and authorization. " +
-                  "If no protocol is specified the default will be 'ldap://'. To use LDAPS, " +
-                  "set the protocol and port, e.g. 'ldaps://ldap.example.com:636'" )
+                  "If no protocol is specified the default will be `ldap://`. To use LDAPS, " +
+                  "set the protocol and port, e.g. `ldaps://ldap.example.com:636`" )
     public static final Setting<String> ldap_server =
             setting( "dbms.security.realms.ldap.host", STRING, "0.0.0.0:389" );
 
