@@ -37,7 +37,7 @@ public class TemporaryStoreDirectory
         cleanDirectory();
     }
 
-    private void cleanDirectory() throws IOException
+    public void cleanDirectory() throws IOException
     {
         if ( !tempStoreDir.mkdir() )
         {
