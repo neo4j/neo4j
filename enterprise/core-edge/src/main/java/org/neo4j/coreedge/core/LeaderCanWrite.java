@@ -25,9 +25,14 @@ import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 
-class LeaderCanWrite implements AccessCapability
+import static java.lang.String.format;
+
+public class LeaderCanWrite implements AccessCapability
 {
     private RaftMachine raftMachine;
+    public static final String NOT_LEADER_ERROR_MSG =
+            "No write operations are allowed on this database. Writes are only permitted on " +
+                    "the leader and the role of this server is: %s";
 
     LeaderCanWrite( RaftMachine raftMachine )
     {
@@ -40,9 +45,7 @@ class LeaderCanWrite implements AccessCapability
         Role currentRole = raftMachine.currentRole();
         if ( !currentRole.equals( Role.LEADER ) )
         {
-            throw new WriteOperationsNotAllowedException(
-                    String.format( "No write operations are allowed on this database. Writes are only permitted on " +
-                            "the leader and the role of this server is: %s", currentRole ),
+            throw new WriteOperationsNotAllowedException( format( NOT_LEADER_ERROR_MSG, currentRole ),
                     Status.Cluster.NotALeader );
         }
     }
