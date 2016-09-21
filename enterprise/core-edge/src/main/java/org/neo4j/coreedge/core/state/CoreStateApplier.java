@@ -61,6 +61,7 @@ public class CoreStateApplier
     private void spawnExecutor()
     {
         status.cancelled = false;
+        log.info( "Spawning new applier" );
         applier = newSingleThreadExecutor( threadFactory );
     }
 
@@ -75,6 +76,7 @@ public class CoreStateApplier
     {
         if ( isPanic )
         {
+            log.warn( "Task submitted while panicked" );
             return false;
         }
 
@@ -83,8 +85,23 @@ public class CoreStateApplier
             log.warn( "Task submitted while cancelled" );
         }
 
-        applier.submit( abortableTask.apply( status ) );
+        applier.submit( wrapWithCatchAll( abortableTask.apply( status ) ) );
         return true;
+    }
+
+    private Runnable wrapWithCatchAll( Runnable task )
+    {
+        return () ->
+        {
+            try
+            {
+                task.run();
+            }
+            catch ( Throwable e )
+            {
+                log.error( "Task had an exception", e );
+            }
+        };
     }
 
     /**
@@ -96,7 +113,12 @@ public class CoreStateApplier
     {
         if ( cancelTasks )
         {
+            log.info( "Syncing with cancel" );
             status.cancelled = true;
+        }
+        else
+        {
+            log.info( "Syncing" );
         }
 
         applier.shutdown();
@@ -124,6 +146,7 @@ public class CoreStateApplier
 
     public void panic()
     {
+        log.error( "Applier panicked" );
         applier.shutdown();
         isPanic = true;
     }
