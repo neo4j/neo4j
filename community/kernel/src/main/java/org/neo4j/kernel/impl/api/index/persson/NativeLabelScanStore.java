@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index.persson;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -41,6 +42,8 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+
+import static java.lang.Long.min;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -74,14 +77,15 @@ public class NativeLabelScanStore implements LabelScanStore
             @Override
             public PrimitiveLongIterator nodesWithLabel( int labelId )
             {
-                RangePredicate predicate = equalTo( labelId, 0L );
+                RangePredicate fromPredicate = equalTo( labelId, 0L );
+                RangePredicate toPredicate = equalTo( labelId, Long.MAX_VALUE );
 //                Seeker seeker = new RangeSeeker( predicate, predicate );
 //                final ArrayList<SCResult> resultList = new ArrayList<>();
                 Cursor<BTreeHit> cursor;
                 try
                 {
 //                    index.seek( seeker, resultList );
-                    cursor = index.seek( predicate, predicate );
+                    cursor = index.seek( fromPredicate, toPredicate );
                 }
                 catch ( IOException e )
                 {
@@ -112,6 +116,15 @@ public class NativeLabelScanStore implements LabelScanStore
         };
     }
 
+    private static final Comparator<NodeLabelUpdate> UPDATE_SORTER = new Comparator<NodeLabelUpdate>()
+    {
+        @Override
+        public int compare( NodeLabelUpdate o1, NodeLabelUpdate o2 )
+        {
+            return Long.compare( o1.getNodeId(), o2.getNodeId() );
+        }
+    };
+
     @Override
     public LabelScanWriter newWriter()
     {
@@ -127,27 +140,70 @@ public class NativeLabelScanStore implements LabelScanStore
 
         return new LabelScanWriter()
         {
+            // TODO: BIG ASSUMPTIONS ABOUT ADD-ONLY AND SORTED LABEL ID ARRAYS
+
             private final long[] key = new long[2];
             private final long[] value = new long[2];
+            private final NodeLabelUpdate[] pendingUpdates = new NodeLabelUpdate[1000];
+            private int pendingUpdatesCursor;
+            private int pendingUpdatesCount; // there may be many per NodeLabelUpdate
+            private long lowestLabelId = Long.MAX_VALUE;
 
             @Override
             public void write( NodeLabelUpdate update ) throws IOException
             {
-                final long[] labelsAfter = update.getLabelsAfter();
-                final long[] labelsBefore = update.getLabelsBefore();
-                final long[] toAdd = ArrayUtils.removeElements( labelsAfter, labelsBefore );
-                final long nodeId = update.getNodeId();
-                for ( long labelId : toAdd )
+                if ( pendingUpdatesCursor == pendingUpdates.length )
                 {
-                    key[0] = labelId;
-                    value[0] = nodeId;
-                    inserter.insert( key, value );
+                    flushPendingChanges();
                 }
+
+                pendingUpdates[pendingUpdatesCursor++] = update;
+                pendingUpdatesCount += update.getLabelsAfter().length;
+                for ( long labelId : update.getLabelsAfter() )
+                {
+                    lowestLabelId = min( lowestLabelId, labelId );
+                }
+            }
+
+            private void flushPendingChanges() throws IOException
+            {
+                Arrays.sort( pendingUpdates, 0, pendingUpdatesCursor, UPDATE_SORTER );
+
+                long currentLabelId = lowestLabelId;
+                while ( pendingUpdatesCount > 0 )
+                {
+                    long nextLabelId = Long.MAX_VALUE;
+                    for ( int i = 0; i < pendingUpdatesCursor; i++ )
+                    {
+                        NodeLabelUpdate update = pendingUpdates[i];
+                        final long[] labelsAfter = update.getLabelsAfter();
+                        final long nodeId = update.getNodeId();
+                        for ( long labelId : labelsAfter )
+                        {
+                            if ( labelId > currentLabelId && labelId < nextLabelId )
+                            {
+                                nextLabelId = labelId;
+                            }
+
+                            if ( labelId == currentLabelId )
+                            {
+                                key[0] = labelId;
+                                key[1] = nodeId;
+                                value[0] = nodeId;
+                                inserter.insert( key, value );
+                                pendingUpdatesCount--;
+                            }
+                        }
+                    }
+                    currentLabelId = nextLabelId;
+                }
+                pendingUpdatesCursor = 0;
             }
 
             @Override
             public void close() throws IOException
             {
+                flushPendingChanges();
                 inserter.close();
             }
         };
