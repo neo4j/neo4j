@@ -25,8 +25,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
-import java.util.List;
-
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.index.BTreeHit;
@@ -34,8 +32,6 @@ import org.neo4j.index.IdProvider;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCIndexDescription;
 import org.neo4j.index.SCInserter;
-import org.neo4j.index.SCResult;
-import org.neo4j.index.Seeker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -195,17 +191,6 @@ public class Index implements SCIndex, IdProvider
     {
         metaCursor.putLong( 4, rootId );
         metaCursor.putLong( 12, lastId );
-    }
-
-    @Override
-    public void seek( Seeker seeker, List<SCResult> resultList ) throws IOException
-    {
-        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
-        {
-            cursor.next();
-
-            seeker.seek( cursor, bTreeNode, resultList );
-        }
     }
 
     @Override
