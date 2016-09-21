@@ -26,7 +26,7 @@ case object simplifyEquality extends Rewriter {
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case in@In(exp, Collection(values@Seq(idValueExpr))) if values.size == 1 =>
+    case in@In(exp, ListLiteral(values@Seq(idValueExpr))) if values.size == 1 =>
       Equals(exp, idValueExpr)(in.position)
   })
 }

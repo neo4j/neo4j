@@ -121,7 +121,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), In(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Variable("n")(pos)))(pos),
-        Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
+        ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
       )_
       ))))
 
@@ -137,7 +137,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), In(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Variable("n")(pos)))(pos),
-        Collection(Seq(lit42, lit43))_
+        ListLiteral(Seq(lit42, lit43))_
       )_
       ))))
 
@@ -154,7 +154,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_),
       Predicate(Set(IdName("n")), In(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Variable("n")(pos)))(pos),
-        Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
+        ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
       )_
       ))))
 
@@ -469,7 +469,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ) _) _)
     val exp2: Expression = In(
       Property(Variable("a")_, PropertyKeyName("prop")_)_,
-      Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
+      ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
     val selections = Selections(Set(orPredicate))
@@ -492,7 +492,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ) _) _)
     val exp2: Expression = In(
       Property(Variable("a")_, PropertyKeyName("prop")_)_,
-      Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
+      ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
     ) _
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
     val selections = Selections(Set(orPredicate))
@@ -515,11 +515,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ) _) _)
     val exp2: Expression = In(
       Property(Variable("a")_, PropertyKeyName("prop")_)_,
-      Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
+      ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val exp3: Expression = In(
       Property(Variable("a")_, PropertyKeyName("prop2")_)_,
-      Collection(Seq(SignedDecimalIntegerLiteral("21")_))_
+      ListLiteral(Seq(SignedDecimalIntegerLiteral("21")_))_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp3, exp2))_)
 
@@ -637,7 +637,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tailQg.queryGraph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("property")),
-        In(FunctionInvocation(FunctionName("id") _, Variable("b") _) _, Collection(Seq(Variable("property")(pos))) _) _
+        In(FunctionInvocation(FunctionName("id") _, Variable("b") _) _, ListLiteral(Seq(Variable("property")(pos))) _) _
       )
     ))
 
@@ -662,7 +662,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     secondQuery.queryGraph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("property")),
-        In(FunctionInvocation(FunctionName("id") _, Variable("b") _) _, Collection(Seq(Variable("property")(pos))) _) _
+        In(FunctionInvocation(FunctionName("id") _, Variable("b") _) _, ListLiteral(Seq(Variable("property")(pos))) _) _
       )))
 
     secondQuery.horizon should equal(
@@ -688,7 +688,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tailQg.queryGraph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("property")),
-        In(FunctionInvocation(FunctionName("id") _, Variable("b") _) _, Collection(Seq(Variable("property") _)) _) _
+        In(FunctionInvocation(FunctionName("id") _, Variable("b") _) _, ListLiteral(Seq(Variable("property") _)) _) _
       )
     ))
 
@@ -837,7 +837,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result = query.toString
 
     val expectation =
-      """RegularPlannerQuery(QueryGraph(Set(PatternRelationship(IdName(r1),(IdName(  origin@7),IdName(c)),BOTH,List(RelTypeName(KNOWS), RelTypeName(WORKS_AT)),SimplePatternLength), PatternRelationship(IdName(r2),(IdName(c),IdName(  candidate@60)),BOTH,List(RelTypeName(KNOWS), RelTypeName(WORKS_AT)),SimplePatternLength)),Set(IdName(  origin@7), IdName(c), IdName(  candidate@60)),Set(),Selections(Set(Predicate(Set(IdName(r1), IdName(r2)),Not(Equals(Variable(r1),Variable(r2)))), Predicate(Set(IdName(  origin@7), IdName(  candidate@60)),Not(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(  origin@7)),List(),None),RelationshipPattern(Some(Variable(  UNNAMED143)),false,List(RelTypeName(KNOWS)),None,None,BOTH),NodePattern(Some(Variable(  candidate@60)),List(),None)))))), Predicate(Set(IdName(r1), IdName(r2)),Equals(FunctionInvocation(FunctionName(type),false,Vector(Variable(r1))),FunctionInvocation(FunctionName(type),false,Vector(Variable(r2))))), Predicate(Set(IdName(  origin@7)),In(Property(Variable(  origin@7),PropertyKeyName(name)),Collection(List(StringLiteral(Clark Kent))))))),Vector(),Set(),Set(),List()),AggregatingQueryProjection(Map(  FRESHID178 -> Property(Variable(  origin@7),PropertyKeyName(name)),   FRESHID204 -> Property(Variable(  candidate@60),PropertyKeyName(name))),Map(  FRESHID223 -> FunctionInvocation(FunctionName(SUM),false,Vector(FunctionInvocation(FunctionName(ROUND),false,Vector(Add(Property(Variable(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(FunctionName(COALESCE),false,Vector(Property(Variable(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0))),SignedDecimalIntegerLiteral(2)))))))),QueryShuffle(List(),None,None)),Some(RegularPlannerQuery(QueryGraph(Set(),Set(),Set(IdName(  FRESHID178), IdName(  FRESHID204), IdName(  FRESHID223)),Selections(Set()),Vector(),Set(),Set(),List()),RegularQueryProjection(Map(  FRESHID178 -> Variable(  FRESHID178),   FRESHID204 -> Variable(  FRESHID204),   FRESHID223 -> Variable(  FRESHID223)),QueryShuffle(List(DescSortItem(Variable(  FRESHID223))),None,Some(SignedDecimalIntegerLiteral(10)))),Some(RegularPlannerQuery(QueryGraph(Set(),Set(),Set(IdName(  FRESHID178), IdName(  FRESHID204), IdName(  FRESHID223)),Selections(Set()),Vector(),Set(),Set(),List()),RegularQueryProjection(Map(origin -> Variable(  FRESHID178), candidate -> Variable(  FRESHID204), boost -> Variable(  FRESHID223)),QueryShuffle(List(),None,None)),None)))))""".stripMargin
+      """RegularPlannerQuery(QueryGraph(Set(PatternRelationship(IdName(r1),(IdName(  origin@7),IdName(c)),BOTH,List(RelTypeName(KNOWS), RelTypeName(WORKS_AT)),SimplePatternLength), PatternRelationship(IdName(r2),(IdName(c),IdName(  candidate@60)),BOTH,List(RelTypeName(KNOWS), RelTypeName(WORKS_AT)),SimplePatternLength)),Set(IdName(  origin@7), IdName(c), IdName(  candidate@60)),Set(),Selections(Set(Predicate(Set(IdName(r1), IdName(r2)),Not(Equals(Variable(r1),Variable(r2)))), Predicate(Set(IdName(  origin@7), IdName(  candidate@60)),Not(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(  origin@7)),List(),None),RelationshipPattern(Some(Variable(  UNNAMED143)),false,List(RelTypeName(KNOWS)),None,None,BOTH),NodePattern(Some(Variable(  candidate@60)),List(),None)))))), Predicate(Set(IdName(r1), IdName(r2)),Equals(FunctionInvocation(FunctionName(type),false,Vector(Variable(r1))),FunctionInvocation(FunctionName(type),false,Vector(Variable(r2))))), Predicate(Set(IdName(  origin@7)),In(Property(Variable(  origin@7),PropertyKeyName(name)),ListLiteral(List(StringLiteral(Clark Kent))))))),Vector(),Set(),Set(),List()),AggregatingQueryProjection(Map(  FRESHID178 -> Property(Variable(  origin@7),PropertyKeyName(name)),   FRESHID204 -> Property(Variable(  candidate@60),PropertyKeyName(name))),Map(  FRESHID223 -> FunctionInvocation(FunctionName(SUM),false,Vector(FunctionInvocation(FunctionName(ROUND),false,Vector(Add(Property(Variable(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(FunctionName(COALESCE),false,Vector(Property(Variable(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0))),SignedDecimalIntegerLiteral(2)))))))),QueryShuffle(List(),None,None)),Some(RegularPlannerQuery(QueryGraph(Set(),Set(),Set(IdName(  FRESHID178), IdName(  FRESHID204), IdName(  FRESHID223)),Selections(Set()),Vector(),Set(),Set(),List()),RegularQueryProjection(Map(  FRESHID178 -> Variable(  FRESHID178),   FRESHID204 -> Variable(  FRESHID204),   FRESHID223 -> Variable(  FRESHID223)),QueryShuffle(List(DescSortItem(Variable(  FRESHID223))),None,Some(SignedDecimalIntegerLiteral(10)))),Some(RegularPlannerQuery(QueryGraph(Set(),Set(),Set(IdName(  FRESHID178), IdName(  FRESHID204), IdName(  FRESHID223)),Selections(Set()),Vector(),Set(),Set(),List()),RegularQueryProjection(Map(origin -> Variable(  FRESHID178), candidate -> Variable(  FRESHID204), boost -> Variable(  FRESHID223)),QueryShuffle(List(),None,None)),None)))))""".stripMargin
 
 
     result should equal(expectation)
@@ -868,7 +868,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.horizon should equal(UnwindProjection(
       IdName("x"),
-      Collection(Seq(one, two, three))(pos)
+      ListLiteral(Seq(one, two, three))(pos)
     ))
 
     val tail = query.tail.get
@@ -900,7 +900,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val three = SignedDecimalIntegerLiteral("3")(pos)
 
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("xes" -> Collection(Seq(one, two, three))(pos), "y" -> two)
+      projections = Map("xes" -> ListLiteral(Seq(one, two, three))(pos), "y" -> two)
     ))
 
     val tail = query.tail.get
@@ -919,7 +919,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   val one = SignedDecimalIntegerLiteral("1")(pos)
   val two = SignedDecimalIntegerLiteral("2")(pos)
   val three = SignedDecimalIntegerLiteral("3")(pos)
-  val collection = Collection(Seq(one, two, three))(pos)
+  val collection = ListLiteral(Seq(one, two, three))(pos)
 
   test("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n") {
     val query = buildPlannerQuery("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n")
@@ -932,7 +932,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     tail.queryGraph.patternNodes should equal(Set(IdName("n")))
     val set: Set[Predicate] = Set(
-      Predicate(Set(IdName("n"), IdName("x")), In(nProp, Collection(Seq(varFor("x"))) _) _))
+      Predicate(Set(IdName("n"), IdName("x")), In(nProp, ListLiteral(Seq(varFor("x"))) _) _))
 
     tail.queryGraph.selections.predicates should equal(set)
     tail.horizon should equal(RegularQueryProjection(Map("n" -> varFor("n"))))

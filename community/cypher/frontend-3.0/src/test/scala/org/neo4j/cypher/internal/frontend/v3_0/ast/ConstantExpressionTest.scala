@@ -26,7 +26,7 @@ class ConstantExpressionTest extends CypherFunSuite {
   test("tests") {
     assertIsConstant(SignedDecimalIntegerLiteral("42")(null))
     assertIsConstant(Parameter("42", CTAny)(null))
-    assertIsConstant(Collection(Seq(SignedDecimalIntegerLiteral("42")(null)))(null))
+    assertIsConstant(ListLiteral(Seq(SignedDecimalIntegerLiteral("42")(null)))(null))
   }
 
   private def assertIsConstant(e: Expression) = {

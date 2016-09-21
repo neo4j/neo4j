@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticError, SemanticState}
 
-class CollectionSliceTest extends CypherFunSuite {
+class ListSliceTest extends CypherFunSuite {
   val dummyList = DummyExpression(
     CTList(CTNode) | CTNode | CTList(CTString))
 
   test("shouldReturnCollectionTypesOfExpression") {
-    val slice = CollectionSlice(dummyList,
+    val slice = ListSlice(dummyList,
                                 Some(SignedDecimalIntegerLiteral("1")(DummyPosition(5))),
                                 Some(SignedDecimalIntegerLiteral("2")(DummyPosition(7)))
     )(DummyPosition(4))
@@ -39,7 +39,7 @@ class CollectionSliceTest extends CypherFunSuite {
   }
 
   test("shouldRaiseErrorWhenNeitherFromOrTwoSpecified") {
-    val slice = CollectionSlice(dummyList, None, None)(DummyPosition(4))
+    val slice = ListSlice(dummyList, None, None)(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("The start or end (or both) is required for a collection slice", slice.position)))
@@ -47,7 +47,7 @@ class CollectionSliceTest extends CypherFunSuite {
 
   test("shouldRaiseErrorIfStartingFromFraction") {
     val to = DecimalDoubleLiteral("1.3")(DummyPosition(5))
-    val slice = CollectionSlice(dummyList, None, Some(to))(DummyPosition(4))
+    val slice = ListSlice(dummyList, None, Some(to))(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", to.position)))

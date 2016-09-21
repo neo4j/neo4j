@@ -34,7 +34,7 @@ case object rewriteEqualityToInCollection extends Rewriter {
     // id(a) = value => id(a) IN [value]
     case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function.contains(functions.Id) =>
-      In(func, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
+      In(func, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
 
     // Equality between two property lookups should not be rewritten
     case predicate@Equals(_:Property, _:Property) =>
@@ -42,6 +42,6 @@ case object rewriteEqualityToInCollection extends Rewriter {
 
     // a.prop = value => a.prop IN [value]
     case predicate@Equals(prop@Property(id: Variable, propKeyName), idValueExpr) =>
-      In(prop, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
+      In(prop, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   })
 }

@@ -126,8 +126,8 @@ object CostBasedExecutablePlanBuilder {
     val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
 
     val newStatement = statementRewriter.rewriteStatement(namespacedStatement)(
-      collapseInCollections,
-      nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */,
+      collapseMultipleInPredicates,
+      nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */ ,
       projectNamedPaths,
       enableCondition(containsNamedPathOnlyForShortestPath),
       projectFreshSortExpressions
