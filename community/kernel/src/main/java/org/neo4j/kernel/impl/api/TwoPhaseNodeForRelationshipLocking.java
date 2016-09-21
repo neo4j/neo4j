@@ -34,7 +34,7 @@ import org.neo4j.storageengine.api.NodeItem;
 class TwoPhaseNodeForRelationshipLocking
 {
     private final PrimitiveLongSet nodeIds = Primitive.longSet();
-    private final EntityReadOperations reads;
+    private final EntityReadOperations entityReadOperations;
     private final ThrowingConsumer<Long,KernelException> relIdAction;
 
     private boolean retry = true;
@@ -74,14 +74,15 @@ class TwoPhaseNodeForRelationshipLocking
             };
 
 
-    TwoPhaseNodeForRelationshipLocking( EntityReadOperations reads, ThrowingConsumer<Long,KernelException> relIdAction )
+    TwoPhaseNodeForRelationshipLocking( EntityReadOperations entityReadOperations, ThrowingConsumer<Long,KernelException> relIdAction )
     {
-        this.reads = reads;
+        this.entityReadOperations = entityReadOperations;
         this.relIdAction = relIdAction;
     }
 
     void lockAllNodesAndConsumeRelationships( long nodeId, final KernelStatement state ) throws KernelException
     {
+        nodeIds.add( nodeId );
         while ( retry )
         {
             retry = false;
@@ -89,30 +90,28 @@ class TwoPhaseNodeForRelationshipLocking
             firstRelId = -1;
 
             // lock all the nodes involved by following the node id ordering
-            try ( Cursor<NodeItem> cursor = reads.nodeCursorById( state, nodeId ) )
+            try ( Cursor<NodeItem> cursor = entityReadOperations.nodeCursorById( state, nodeId ) )
             {
                 RelationshipIterator relationships = cursor.get().getRelationships( Direction.BOTH );
                 while ( relationships.hasNext() )
                 {
-                    reads.relationshipVisit( state, relationships.next(), collectNodeIdVisitor );
+                    entityReadOperations.relationshipVisit( state, relationships.next(), collectNodeIdVisitor );
                 }
             }
 
+            PrimitiveLongIterator nodeIdIterator = nodeIds.iterator();
+            while ( nodeIdIterator.hasNext() )
             {
-                PrimitiveLongIterator iterator = nodeIds.iterator();
-                while ( iterator.hasNext() )
-                {
-                    state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, iterator.next() );
-                }
+                state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, nodeIdIterator.next() );
             }
 
             // perform the action on each relationship, we will retry if the the relationship iterator contains new relationships
-            try ( Cursor<NodeItem> cursor = reads.nodeCursorById( state, nodeId ) )
+            try ( Cursor<NodeItem> cursor = entityReadOperations.nodeCursorById( state, nodeId ) )
             {
                 RelationshipIterator relationships = cursor.get().getRelationships( Direction.BOTH );
                 while ( relationships.hasNext() )
                 {
-                    reads.relationshipVisit( state, relationships.next(), relationshipConsumingVisitor );
+                    entityReadOperations.relationshipVisit( state, relationships.next(), relationshipConsumingVisitor );
                     if ( retry )
                     {
                         PrimitiveLongIterator iterator = nodeIds.iterator();

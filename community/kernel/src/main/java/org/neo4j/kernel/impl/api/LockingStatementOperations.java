@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -271,17 +272,16 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public int nodeDetachDelete( final KernelStatement state, final long nodeId )
-            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException, KernelException
+    public int nodeDetachDelete( final KernelStatement state, final long nodeId ) throws KernelException
     {
-        final AtomicInteger count = new AtomicInteger();
+        final MutableInt count = new MutableInt();
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( entityReadDelegate,
                 relId -> {
                     state.assertOpen();
                     try
                     {
                         entityWriteDelegate.relationshipDelete( state, relId );
-                        count.incrementAndGet();
+                        count.increment();
                     }
                     catch ( EntityNotFoundException e )
                     {
@@ -292,7 +292,7 @@ public class LockingStatementOperations implements
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
         state.assertOpen();
         entityWriteDelegate.nodeDetachDelete( state, nodeId );
-        return count.get();
+        return count.intValue();
     }
 
     @Override
