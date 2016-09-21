@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
@@ -41,6 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -67,8 +68,6 @@ public class ClusterPartitionIT
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
-                .withSharedConfig( stringMap(
-                        ClusterSettings.heartbeat_interval.name(), "1" ) )
                 .build();
 
         try
@@ -112,8 +111,6 @@ public class ClusterPartitionIT
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
-                .withSharedConfig( stringMap(
-                        ClusterSettings.heartbeat_interval.name(), "1" ) )
                 .build();
 
         try
@@ -159,8 +156,6 @@ public class ClusterPartitionIT
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
-                        ClusterSettings.heartbeat_interval.name(), "1",
-//                        ClusterSettings.heartbeat_timeout.name(), "3",
                         HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
                 .build();
 
@@ -240,8 +235,6 @@ public class ClusterPartitionIT
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
-                        ClusterSettings.heartbeat_interval.name(), "1",
-//                        ClusterSettings.heartbeat_timeout.name(), "3",
                         HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
                 .build();
 
