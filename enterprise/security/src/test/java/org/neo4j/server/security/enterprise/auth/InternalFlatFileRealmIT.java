@@ -183,12 +183,12 @@ public class InternalFlatFileRealmIT
         }
     }
 
-    class TestJobScheduler extends Neo4jJobScheduler
+    static class TestJobScheduler extends Neo4jJobScheduler
     {
         Runnable scheduledRunnable;
 
         @Override
-        public JobHandle scheduleRecurring( Group group, Runnable r, long initialDelay, long delay, TimeUnit timeUnit )
+        public JobHandle schedule( Group group, Runnable r, long initialDelay, TimeUnit timeUnit )
         {
             this.scheduledRunnable = r;
             return null;

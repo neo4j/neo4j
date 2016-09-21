@@ -81,7 +81,7 @@ public class FileUserRepository extends AbstractUserRepository
                 throw new IllegalStateException( "Failed to read authentication file: " + authFile );
             }
 
-            return new ListSnapshot<>( readTime, readUsers );
+            return new ListSnapshot<>( readTime, readUsers, true );
         }
         return null;
     }
@@ -101,7 +101,7 @@ public class FileUserRepository extends AbstractUserRepository
         }
         synchronized ( this )
         {
-            return new ListSnapshot<>( lastLoaded.get(), users.stream().collect( Collectors.toList() ) );
+            return new ListSnapshot<>( lastLoaded.get(), users.stream().collect( Collectors.toList() ), false );
         }
     }
 }

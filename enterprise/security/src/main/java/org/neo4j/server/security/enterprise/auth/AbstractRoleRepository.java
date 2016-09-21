@@ -37,6 +37,9 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
+import static org.neo4j.helpers.collection.MapUtil.trimToFlattenedList;
+import static org.neo4j.helpers.collection.MapUtil.trimToList;
+
 public abstract class AbstractRoleRepository extends LifecycleAdapter implements RoleRepository
 {
     // TODO: We could improve concurrency by using a ReadWriteLock
@@ -101,21 +104,24 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     @Override
     public void setRoles( ListSnapshot<RoleRecord> rolesSnapshot ) throws InvalidArgumentsException, IOException
     {
-        for ( RoleRecord role : rolesSnapshot.values )
+        for ( RoleRecord role : rolesSnapshot.values() )
         {
             assertValidRoleName( role.name() );
         }
 
-        synchronized (this)
+        synchronized ( this )
         {
-            clear();
-            this.roles.addAll( rolesSnapshot.values );
-            this.lastLoaded.set( rolesSnapshot.timestamp );
+            roles.clear();
+
+            this.roles.addAll( rolesSnapshot.values() );
+            this.lastLoaded.set( rolesSnapshot.timestamp() );
+
+            trimToList( rolesByName, roles, RoleRecord::name );
+            trimToFlattenedList( rolesByUsername, roles, r -> r.users().stream() );
 
             for ( RoleRecord role : roles )
             {
                 rolesByName.put( role.name(), role );
-
                 populateUserMap( role );
             }
         }
@@ -251,7 +257,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     /**
      * Override this in the implementing class to load roles
      *
-     * @returns a timestamped snapshot of roles, or null if the backing file did not exist
+     * @return a timestamped snapshot of roles, or null if the backing file did not exist
      * @throws IOException
      */
     protected abstract ListSnapshot<RoleRecord> readPersistedRoles() throws IOException;

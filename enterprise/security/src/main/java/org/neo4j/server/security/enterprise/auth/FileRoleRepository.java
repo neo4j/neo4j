@@ -77,7 +77,7 @@ public class FileRoleRepository extends AbstractRoleRepository
                 throw new IllegalStateException( "Failed to read role file '" + roleFile + "'." );
             }
 
-            return new ListSnapshot<>( readTime, readRoles );
+            return new ListSnapshot<>( readTime, readRoles, true );
         }
         return null;
     }
@@ -97,7 +97,7 @@ public class FileRoleRepository extends AbstractRoleRepository
         }
         synchronized ( this )
         {
-            return new ListSnapshot<>( lastLoaded.get(), roles.stream().collect( Collectors.toList() ) );
+            return new ListSnapshot<>( lastLoaded.get(), roles.stream().collect( Collectors.toList() ), false );
         }
     }
 }

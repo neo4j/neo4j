@@ -23,12 +23,29 @@ import java.util.List;
 
 public class ListSnapshot<T>
 {
-    public final long timestamp;
-    public final List<T> values;
+    private final long timestamp;
+    private final List<T> values;
+    private final boolean updated;
 
-    public ListSnapshot( long timestamp, List<T> values )
+    public ListSnapshot( long timestamp, List<T> values, boolean updated )
     {
         this.timestamp = timestamp;
         this.values = values;
+        this.updated = updated;
+    }
+
+    public long timestamp()
+    {
+        return timestamp;
+    }
+
+    public List<T> values()
+    {
+        return values;
+    }
+
+    public boolean updated()
+    {
+        return updated;
     }
 }

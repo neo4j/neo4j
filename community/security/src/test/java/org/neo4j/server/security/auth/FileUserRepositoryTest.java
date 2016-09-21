@@ -33,6 +33,9 @@ import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegateFileSystemAbstraction;
@@ -43,12 +46,15 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.string.UTF8;
+import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.neo4j.test.assertion.Assert.assertException;
@@ -72,6 +78,9 @@ public class FileUserRepositoryTest
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    @Rule
+    public ThreadingRule threading = new ThreadingRule();
 
     public FileUserRepositoryTest( Configuration fsConfig, String fsType )
     {
@@ -159,7 +168,7 @@ public class FileUserRepositoryTest
                 @Override
                 public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws IOException
                 {
-                    if ( authFile.getName().equals( newLocation.getName().toString() ) )
+                    if ( authFile.getName().equals( newLocation.getName() ) )
                     {
                         throw exception;
                     }
@@ -264,6 +273,49 @@ public class FileUserRepositoryTest
                     )
             );
             throw e;
+        }
+    }
+
+    @Test
+    public void shouldProvideUserByUsernameEvenIfMidSetUsers() throws Throwable
+    {
+        // Given
+        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
+        users.create( new User.Builder( "oskar", Credential.forPassword( "hidden" ) ).build() );
+        DoubleLatch latch = new DoubleLatch( 2 );
+
+        // When
+        Future<Object> setUsers = threading.execute( o ->
+            {
+                users.setUsers( new HangingListSnapshot( latch, 10L, Collections.emptyList() ) );
+                return null;
+            }, null );
+
+        latch.startAndWaitForAllToStart();
+
+        // Then
+        assertNotNull( users.getUserByName( "oskar" ) );
+
+        latch.finish();
+        setUsers.get();
+    }
+
+    class HangingListSnapshot extends ListSnapshot<User>
+    {
+        private final DoubleLatch latch;
+
+        public HangingListSnapshot( DoubleLatch latch, long timestamp, List<User> values )
+        {
+            super( timestamp, values, true );
+            this.latch = latch;
+        }
+
+        @Override
+        public long timestamp()
+        {
+            latch.start();
+            latch.finishAndWaitForAllToFinish();
+            return super.timestamp();
         }
     }
 }

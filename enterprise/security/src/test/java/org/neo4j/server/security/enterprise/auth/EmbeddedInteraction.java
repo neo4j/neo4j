@@ -77,8 +77,6 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
 
         db = (GraphDatabaseFacade) builder.newGraphDatabase();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
-        authManager.init();
-        authManager.start();
     }
 
     @Override
@@ -150,8 +148,6 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     @Override
     public void tearDown() throws Throwable
     {
-        authManager.stop();
-        authManager.shutdown();
         db.shutdown();
     }
 

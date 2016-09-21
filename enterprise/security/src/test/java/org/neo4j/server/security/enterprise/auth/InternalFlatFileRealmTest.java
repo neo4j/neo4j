@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Clock;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
@@ -40,14 +41,21 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
 
@@ -108,6 +116,43 @@ public class InternalFlatFileRealmTest
 
         // Then
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
+    }
+
+    @Test
+    public void shouldOnlyReloadUsersOrRolesIfNeeded() throws Throwable
+    {
+        assertSetUsersAndRolesNTimes( false, false, 0, 0 );
+        assertSetUsersAndRolesNTimes( false, true, 0, 1 );
+        assertSetUsersAndRolesNTimes( true, false, 1, 0 );
+        assertSetUsersAndRolesNTimes( true, true, 1, 1 );
+    }
+
+    private void assertSetUsersAndRolesNTimes( boolean usersChanged, boolean rolesChanged,
+            int nSetUsers, int nSetRoles ) throws Throwable
+    {
+        final UserRepository userRepository = mock( UserRepository.class );
+        final RoleRepository roleRepository = mock( RoleRepository.class );
+        final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
+        AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
+        InternalFlatFileRealmIT.TestJobScheduler jobScheduler = new InternalFlatFileRealmIT.TestJobScheduler();
+        InternalFlatFileRealm realm = new InternalFlatFileRealm( userRepository, roleRepository,
+                passwordPolicy,
+                authenticationStrategy,
+                true, true, jobScheduler );
+
+        when( userRepository.getPersistedSnapshot() ).thenReturn(
+                new ListSnapshot<>( 10L, Collections.emptyList(), usersChanged ) );
+        when( roleRepository.getPersistedSnapshot() ).thenReturn(
+                new ListSnapshot<>( 10L, Collections.emptyList(), rolesChanged ) );
+        when( roleRepository.getRoleByName( anyString() ) ).thenReturn( new RoleRecord( "" ) );
+
+        realm.init();
+        realm.start();
+
+        jobScheduler.scheduledRunnable.run();
+
+        verify( userRepository, times( nSetUsers ) ).setUsers( any() );
+        verify( roleRepository, times( nSetRoles ) ).setRoles( any() );
     }
 
     private class TestRealm extends InternalFlatFileRealm

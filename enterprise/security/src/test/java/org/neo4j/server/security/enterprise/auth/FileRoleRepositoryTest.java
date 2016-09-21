@@ -33,6 +33,9 @@ import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegateFileSystemAbstraction;
@@ -42,13 +45,17 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileRepositorySerializer;
+import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.string.UTF8;
+import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -75,6 +82,9 @@ public class FileRoleRepositoryTest
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    @Rule
+    public ThreadingRule threading = new ThreadingRule();
 
     public FileRoleRepositoryTest( Configuration fsConfig, String fsType )
     {
@@ -165,7 +175,7 @@ public class FileRoleRepositoryTest
                     public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws
                             IOException
                     {
-                        if ( roleFile.getName().equals( newLocation.getName().toString() ) )
+                        if ( roleFile.getName().equals( newLocation.getName() ) )
                         {
                             throw exception;
                         }
@@ -286,5 +296,48 @@ public class FileRoleRepositoryTest
 
         role = roleRepository.getRoleByName( "reader" );
         assertTrue( "no users should be assigned to 'reader'", role.users().isEmpty() );
+    }
+
+    @Test
+    public void shouldProvideRolesByUsernameEvenIfMidSetRoles() throws Throwable
+    {
+        // Given
+        roleRepository = new FileRoleRepository( fs, roleFile, logProvider );
+        roleRepository.create( new RoleRecord( "admin", "oskar" ) );
+        DoubleLatch latch = new DoubleLatch( 2 );
+
+        // When
+        Future<Object> setUsers = threading.execute( o ->
+        {
+            roleRepository.setRoles( new HangingListSnapshot( latch, 10L, Collections.emptyList() ) );
+            return null;
+        }, null );
+
+        latch.startAndWaitForAllToStart();
+
+        // Then
+        assertThat( roleRepository.getRoleNamesByUsername( "oskar" ), containsInAnyOrder( "admin" ) );
+
+        latch.finish();
+        setUsers.get();
+    }
+
+    class HangingListSnapshot extends ListSnapshot<RoleRecord>
+    {
+        private final DoubleLatch latch;
+
+        public HangingListSnapshot( DoubleLatch latch, long timestamp, List<RoleRecord> values )
+        {
+            super( timestamp, values, true );
+            this.latch = latch;
+        }
+
+        @Override
+        public long timestamp()
+        {
+            latch.start();
+            latch.finishAndWaitForAllToFinish();
+            return super.timestamp();
+        }
     }
 }
