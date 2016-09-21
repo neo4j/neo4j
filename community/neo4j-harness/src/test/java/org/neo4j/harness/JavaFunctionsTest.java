@@ -23,13 +23,9 @@ import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.stream.Stream;
-
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Mode;
-import org.neo4j.procedure.Name;
-import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserFunction;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
@@ -39,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class JavaProceduresTest
+public class JavaFunctionsTest
 {
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -47,89 +43,65 @@ public class JavaProceduresTest
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    public static class MyProcedures
+    public static class MyFunctions
     {
-        public static class OutputRecord
+
+        @UserFunction
+        public long myFunc()
         {
-            public long someNumber = 1337;
+            return 1337L;
         }
 
-        @Procedure
-        public Stream<OutputRecord> myProc()
-        {
-            return Stream.of( new OutputRecord() );
-        }
-
-        @Procedure
-        public Stream<OutputRecord> procThatThrows()
+        @UserFunction
+        public long funcThatThrows()
         {
             throw new RuntimeException( "This is an exception" );
         }
     }
 
-    public static class MyProceduresUsingMyService
+    public static class MyFunctionsUsingMyService
     {
-        public static class OutputRecord
-        {
-            public String result;
-        }
 
         @Context
         public SomeService service;
 
-        @Procedure("hello")
-        public Stream<OutputRecord> hello()
+        @UserFunction( "my.hello" )
+        public String hello()
         {
-            OutputRecord t = new OutputRecord();
-            t.result = service.hello();
-            return Stream.of( t );
+            return service.hello();
         }
     }
 
-    public static class MyProceduresUsingMyCoreAPI
+    public static class MyFunctionsUsingMyCoreAPI
     {
-        public static class LongResult
-        {
-            public Long value;
-        }
-
         @Context
         public MyCoreAPI myCoreAPI;
 
-        @Procedure( value = "makeNode", mode = Mode.WRITE )
-        public Stream<LongResult> makeNode( @Name( "label" ) String label ) throws ProcedureException
+        @UserFunction( value = "my.willFail" )
+        public long willFail() throws ProcedureException
         {
-            LongResult t = new LongResult();
-            t.value = myCoreAPI.makeNode( label );
-            return Stream.of( t );
+            return myCoreAPI.makeNode( "Test" );
         }
 
-        @Procedure( value = "willFail", mode = Mode.READ )
-        public Stream<LongResult> willFail() throws ProcedureException
+        @UserFunction( "my.countNodes" )
+        public long countNodes()
         {
-            LongResult t = new LongResult();
-            t.value = myCoreAPI.makeNode( "Test" );
-            return Stream.of( t );
-        }
-
-        @Procedure( "countNodes" )
-        public Stream<LongResult> countNodes()
-        {
-            LongResult t = new LongResult();
-            t.value = myCoreAPI.countNodes();
-            return Stream.of( t );
+            return myCoreAPI.countNodes();
         }
     }
 
     @Test
-    public void shouldLaunchWithDeclaredProcedures() throws Exception
+    public void shouldLaunchWithDeclaredFunctions() throws Exception
     {
         // When
-        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withProcedure( MyProcedures.class ).newServer())
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder().withFunction( MyFunctions.class )
+                .newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
-                    quotedJson( "{ 'statements': [ { 'statement': 'CALL org.neo4j.harness.myProc' } ] }" ) );
+                    quotedJson(
+                            "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.myFunc() AS someNumber' } ] " +
+                            "}" ) );
 
             JsonNode result = response.get( "results" ).get( 0 );
             assertEquals( "someNumber", result.get( "columns" ).get( 0 ).asText() );
@@ -142,14 +114,19 @@ public class JavaProceduresTest
     public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withProcedure( MyProcedures.class ).newServer())
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder().withFunction( MyFunctions.class )
+                .newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
-                    quotedJson( "{ 'statements': [ { 'statement': 'CALL org.neo4j.harness.procThatThrows' } ] }" ) );
+                    quotedJson(
+                            "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.funcThatThrows()' } ] }" ) );
 
             String error = response.get( "errors" ).get( 0 ).get( "message" ).asText();
-            assertEquals( "Failed to invoke procedure `org.neo4j.harness.procThatThrows`: Caused by: java.lang.RuntimeException: This is an exception", error );
+            assertEquals(
+                    "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang" +
+                    ".RuntimeException: This is an exception",
+                    error );
         }
     }
 
@@ -157,11 +134,12 @@ public class JavaProceduresTest
     public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
     {
         // When
-        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withProcedure( MyProceduresUsingMyService.class ).newServer())
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+                .withFunction( MyFunctionsUsingMyService.class ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
-                    quotedJson( "{ 'statements': [ { 'statement': 'CALL hello' } ] }" ) );
+                    quotedJson( "{ 'statements': [ { 'statement': 'RETURN my.hello() AS result' } ] }" ) );
 
             assertEquals( "[]", response.get( "errors" ).toString() );
             JsonNode result = response.get( "results" ).get( 0 );
@@ -175,14 +153,14 @@ public class JavaProceduresTest
     {
         // When
         try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
-                .withProcedure( MyProceduresUsingMyCoreAPI.class ).newServer() )
+                .withFunction( MyFunctionsUsingMyCoreAPI.class ).newServer() )
         {
+            HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+                    quotedJson( "{ 'statements': [ { 'statement': 'CREATE (), (), ()' } ] }" ) );
+
             // Then
-            assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 0L );
-            assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 1L );
-            assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 2L );
-            assertQueryGetsValue( server, "CALL countNodes", 3L );
-            assertQueryGetsError( server, "CALL willFail", "Write operations are not allowed" );
+            assertQueryGetsValue( server, "RETURN my.countNodes() AS value", 3L );
+            assertQueryGetsError( server, "RETURN my.willFail() AS value", "Write operations are not allowed" );
         }
     }
 

@@ -28,10 +28,16 @@ import org.neo4j.kernel.impl.proc.Procedures;
 public class HarnessRegisteredProcs
 {
     private final List<Class<?>> procs = new LinkedList<>();
+    private final List<Class<?>> functions = new LinkedList<>();
 
-    public void add( Class<?> procedureClass )
+    public void addProcedure( Class<?> procedureClass )
     {
         this.procs.add( procedureClass );
+    }
+
+    public void addFunction( Class<?> functionClass )
+    {
+        this.functions.add( functionClass );
     }
 
     @SuppressWarnings( "deprecation" )
@@ -40,6 +46,11 @@ public class HarnessRegisteredProcs
         for ( Class<?> cls : procs )
         {
             procedures.registerProcedure( cls );
+        }
+
+        for ( Class<?> cls : functions )
+        {
+            procedures.registerFunction( cls );
         }
     }
 }

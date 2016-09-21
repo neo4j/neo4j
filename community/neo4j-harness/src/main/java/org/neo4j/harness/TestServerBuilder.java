@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserFunction;
 
 /**
  * Utility for constructing and starting Neo4j for test purposes.
@@ -101,7 +102,7 @@ public interface TestServerBuilder
 
     /**
      * Pre-populate the server with a database copied from the specified directory
-     * @param sourceDirectory
+     * @param sourceDirectory the directory to copy from
      * @return this builder instance
      */
     TestServerBuilder copyFrom( File sourceDirectory );
@@ -115,4 +116,14 @@ public interface TestServerBuilder
      * @return this builder instance
      */
     TestServerBuilder withProcedure( Class<?> procedureClass );
+
+    /**
+     * Configure the server to load the specified function definition class. The class should contain one or more
+     * methods annotated with {@link UserFunction}, these will become available to call through
+     * cypher.
+     *
+     * @param functionClass a class containing one or more function definitions
+     * @return this builder instance
+     */
+    TestServerBuilder withFunction( Class<?> functionClass );
 }

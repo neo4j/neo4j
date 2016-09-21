@@ -196,7 +196,14 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     @Override
     public TestServerBuilder withProcedure( Class<?> procedureClass )
     {
-        procedures.add( procedureClass );
+        procedures.addProcedure( procedureClass );
+        return this;
+    }
+
+    @Override
+    public TestServerBuilder withFunction( Class<?> functionClass )
+    {
+        procedures.addFunction( functionClass );
         return this;
     }
 

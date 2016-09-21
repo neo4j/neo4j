@@ -679,8 +679,12 @@ public class UserFunctionIT
         assertFalse( res.hasNext() );
     }
 
+    /**
+     * NOTE: this test tests user-defined functions added in this file {@link ClassWithFunctions}. These are not
+     * built-in functions in any shape or form.
+     */
     @Test
-    public void shouldListAllFunctions() throws Throwable
+    public void shouldListAllUserDefinedFunctions() throws Throwable
     {
         //Given/When
         Result res = db.execute( "CALL dbms.functions()" );
@@ -714,10 +718,22 @@ public class UserFunctionIT
         "| 'org.neo4j.procedure.squareLong'                    | 'org.neo4j.procedure.squareLong(someValue :: INTEGER?) :: (INTEGER?)'                                                                                        | ''                      |" + lineSeparator() +
         "| 'org.neo4j.procedure.throwsExceptionInStream'       | 'org.neo4j.procedure.throwsExceptionInStream() :: (INTEGER?)'                                                                                                | ''                      |" + lineSeparator() +
         "| 'org.neo4j.procedure.unsupportedFunction'           | 'org.neo4j.procedure.unsupportedFunction() :: (STRING?)'                                                                                                     | ''                      |" + lineSeparator() +
+        "| 'this.is.test.only.sum'                             | 'this.is.test.only.sum(numbers :: LIST? OF NUMBER?) :: (NUMBER?)'                                                                                            | ''                      |" + lineSeparator() +
         "+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+" + lineSeparator() +
-        "25 rows" + lineSeparator();
+        "26 rows" + lineSeparator();
 
         assertThat(res.resultAsString(), equalTo(expected.replaceAll( "'", "\"" )));
+    }
+
+    @Test
+    public void shouldCallFunctionWithSameNameAsBuiltIn() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "RETURN this.is.test.only.sum([1337, 2.718281828, 3.1415]) AS result" );
+
+        // Then
+        assertThat( res.next().get( "result" ), equalTo( 1337 + 2.718281828 + 3.1415 ) );
+        assertFalse( res.hasNext() );
     }
 
     @Before
@@ -895,6 +911,12 @@ public class UserFunctionIT
         {
             db.execute( "CALL org.neo4j.procedure.writingProcedure()" );
             return 1337L;
+        }
+
+        @UserFunction("this.is.test.only.sum")
+        public Number sum(@Name("numbers") List<Number> numbers)
+        {
+         return numbers.stream().mapToDouble( Number::doubleValue ).sum();
         }
 
         @Procedure( mode = WRITE )
