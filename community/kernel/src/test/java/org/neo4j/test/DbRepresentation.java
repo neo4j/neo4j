@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -54,17 +55,29 @@ public class DbRepresentation
 
     public static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
     {
-        try ( Transaction ignore = db.beginTx() )
+        int retryCount = 5;
+        while( true )
         {
-            DbRepresentation result = new DbRepresentation();
-            for ( Node node : db.getAllNodes() )
+            try ( Transaction ignore = db.beginTx() )
             {
-                NodeRep nodeRep = new NodeRep( db, node, includeIndexes );
-                result.nodes.put( node.getId(), nodeRep );
-                result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
-                result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+                DbRepresentation result = new DbRepresentation();
+                for ( Node node : db.getAllNodes() )
+                {
+                    NodeRep nodeRep = new NodeRep( db, node, includeIndexes );
+                    result.nodes.put( node.getId(), nodeRep );
+                    result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
+                    result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+
+                }
+                return result;
             }
-            return result;
+            catch( TransactionFailureException e )
+            {
+                if ( retryCount-- < 0 )
+                {
+                    throw e;
+                }
+            }
         }
     }
 
@@ -113,7 +126,7 @@ public class DbRepresentation
             NodeRep otherNode = other.nodes.get( node.id );
             if ( otherNode == null )
             {
-                diff.add( "I have node " + node.id + " which other don't" );
+                diff.add( "I have node " + node.id + " which other doesn't" );
                 continue;
             }
             node.compareWith( otherNode, diff );
