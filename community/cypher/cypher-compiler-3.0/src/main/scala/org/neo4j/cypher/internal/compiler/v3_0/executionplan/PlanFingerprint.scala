@@ -25,20 +25,21 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, GraphStatis
 
 case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 
-case class PlanFingerprintReference(clock: Clock, ttl: Long, statsDivergenceThreshold : Double,
-                                    var fingerprint: Option[PlanFingerprint])
-{
+class PlanFingerprintReference(clock: Clock, minimalTimeToLive: Long, statsDivergenceThreshold : Double,
+                               private var fingerprint: Option[PlanFingerprint]) {
+
   def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
     fingerprint.fold(false) { f =>
       lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
-      check(f.creationTimeMillis + ttl <= currentTimeMillis, {}) &&
-      check(currentTxId != f.txId, { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }) &&
+      f.creationTimeMillis + minimalTimeToLive <= currentTimeMillis &&
+      check(currentTxId != f.txId,
+        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }) &&
       check(f.snapshot.diverges(f.snapshot.recompute(statistics), statsDivergenceThreshold),
-            { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis, txId = currentTxId)) })
+        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis, txId = currentTxId)) })
     }
   }
 
-  private def check(test: => Boolean, ifFalse: => Unit ) = if (test) { true } else { ifFalse ; false }
+  private def check(test: => Boolean, ifFalse: () => Unit ) = if (test) { true } else { ifFalse() ; false }
 }

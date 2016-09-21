@@ -40,7 +40,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
     clock.forward(2, SECONDS)
 
-    val stale = PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(42), stats)
+    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(42), stats)
 
     stale shouldBe true
   }
@@ -56,7 +56,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
     clock.forward(2, SECONDS)
 
-    val stale = PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(42), stats)
+    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(42), stats)
 
     stale shouldBe false
   }
@@ -72,7 +72,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
     clock.forward(2, SECONDS)
 
-    val stale = PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(17), stats)
+    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(17), stats)
 
     stale shouldBe false
   }
@@ -88,7 +88,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
     clock.forward(500, MILLISECONDS)
 
-    val stale = PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(42), stats)
+    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(42), stats)
 
     stale shouldBe false
   }
@@ -102,7 +102,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     when(stats.nodesWithLabelCardinality(label(21))).thenReturn(5.0)
     val fingerprint = PlanFingerprint(clock.millis(), 17, snapshot)
 
-    val reference = PlanFingerprintReference(clock, ttl, threshold, fingerprint)
+    val reference = new PlanFingerprintReference(clock, ttl, threshold, fingerprint)
 
     clock.forward(2, SECONDS)
     reference.isStale(->(17), stats) shouldBe false
@@ -120,7 +120,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     when(stats.nodesWithLabelCardinality(label(21))).thenReturn(5.0)
     val fingerprint = PlanFingerprint(clock.millis(), 17, snapshot)
 
-    val reference = PlanFingerprintReference(clock, ttl, threshold, fingerprint)
+    val reference = new PlanFingerprintReference(clock, ttl, threshold, fingerprint)
 
     clock.forward(2, SECONDS)
     reference.isStale(->(23), stats) shouldBe false

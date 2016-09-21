@@ -123,7 +123,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     new BidirectionalTraversalMatcher(steps, start, end)
 
   val statistics: GraphStatistics =
-    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), MutableGraphStatisticsSnapshot())
+    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), new MutableGraphStatisticsSnapshot())
 
   val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
