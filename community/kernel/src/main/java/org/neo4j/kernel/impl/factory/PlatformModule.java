@@ -165,8 +165,8 @@ public class PlatformModule
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers ) );
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        diagnosticsManager = life.add( dependencies.satisfyDependency( new DiagnosticsManager( logging.getInternalLog(
-                DiagnosticsManager.class ) ) ) );
+        diagnosticsManager = life.add( dependencies
+                .satisfyDependency( new DiagnosticsManager( logging.getInternalLog( DiagnosticsManager.class ) ) ) );
 
         // TODO please fix the bad dependencies instead of doing this.
         // this was the place of the XaDataSourceManager. NeoStoreXaDataSource is create further down than
@@ -181,9 +181,7 @@ public class PlatformModule
 
         kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
                 new SimpleKernelContext( fileSystem, storeDir, databaseInfo, dependencies ),
-                externalDependencies.kernelExtensions(),
-                dependencies,
-                UnsatisfiedDependencyStrategies.fail() ) );
+                externalDependencies.kernelExtensions(), dependencies, UnsatisfiedDependencyStrategies.fail() ) );
 
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 

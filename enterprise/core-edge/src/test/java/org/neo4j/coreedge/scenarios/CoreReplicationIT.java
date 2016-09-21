@@ -37,7 +37,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.coreedge.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -45,9 +44,8 @@ import static org.neo4j.helpers.collection.Iterables.count;
 public class CoreReplicationIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreMembers( 3 )
-            .withNumberOfEdgeMembers( 0 );
+    public final ClusterRule clusterRule =
+            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfEdgeMembers( 0 );
 
     private Cluster cluster;
 
@@ -66,7 +64,7 @@ public class CoreReplicationIT
         CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
 
         // when
-        try(Transaction tx = follower.beginTx())
+        try ( Transaction tx = follower.beginTx() )
         {
             follower.createNode();
             tx.success();
@@ -76,10 +74,6 @@ public class CoreReplicationIT
         {
             // expected
             assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
-        }
-        catch(Exception exception)
-        {
-            fail("Got an unexpected exception: " + exception);
         }
     }
 
@@ -92,7 +86,7 @@ public class CoreReplicationIT
         CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
 
         // when
-        try(Transaction tx = follower.beginTx())
+        try ( Transaction tx = follower.beginTx() )
         {
             follower.schema().constraintFor( Label.label( "Foo" ) ).assertPropertyIsUnique( "name" ).create();
             tx.success();
@@ -103,10 +97,6 @@ public class CoreReplicationIT
             // expected
             assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
         }
-        catch(Exception exception)
-        {
-            fail("Got an unexpected exception: " + exception);
-        }
     }
 
     @Test
@@ -116,7 +106,7 @@ public class CoreReplicationIT
         CoreClusterMember leader = cluster.awaitLeader();
 
         CoreGraphDatabase leaderDb = leader.database();
-        try( Transaction tx = leaderDb.beginTx())
+        try ( Transaction tx = leaderDb.beginTx() )
         {
             leaderDb.createNode( Label.label( "Person" ) );
             tx.success();
@@ -127,7 +117,7 @@ public class CoreReplicationIT
         CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
 
         // when
-        try(Transaction tx = follower.beginTx())
+        try ( Transaction tx = follower.beginTx() )
         {
             follower.findNodes( Label.label( "Person" ) ).next().setProperty( "name", "Mark" );
             tx.success();
@@ -138,22 +128,20 @@ public class CoreReplicationIT
             // expected
             assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
         }
-        catch(Exception exception)
-        {
-            fail("Got an unexpected exception: " + exception);
-        }
     }
 
     @Test
     public void shouldReplicateTransactionsToCoreMembers() throws Exception
     {
         // when
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
         } );
-        CoreClusterMember last = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember last = cluster.coreTx( ( db, tx ) ->
+        {
             db.schema().indexFor( label( "boo" ) ).on( "foobar" ).create();
             tx.success();
         } );
@@ -169,7 +157,8 @@ public class CoreReplicationIT
         // given
         cluster.addCoreMemberWithId( 3 ).start();
 
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -177,7 +166,8 @@ public class CoreReplicationIT
 
         // when
         cluster.addCoreMemberWithId( 4 ).start();
-        CoreClusterMember last = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember last = cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -192,7 +182,8 @@ public class CoreReplicationIT
     public void shouldReplicateTransactionAfterLeaderWasRemovedFromCluster() throws Exception
     {
         // given
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -200,7 +191,8 @@ public class CoreReplicationIT
 
         // when
         cluster.removeCoreMember( cluster.awaitLeader() );
-        CoreClusterMember last = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember last = cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -218,7 +210,8 @@ public class CoreReplicationIT
         CoreClusterMember last = null;
         for ( int i = 0; i < 15; i++ )
         {
-            last = cluster.coreTx( ( db, tx ) -> {
+            last = cluster.coreTx( ( db, tx ) ->
+            {
                 Node node = db.createNode();
                 node.setProperty( "foobar", "baz_bat" );
                 tx.success();
@@ -237,7 +230,8 @@ public class CoreReplicationIT
     public void shouldReplicateTransactionsToReplacementCoreMembers() throws Exception
     {
         // when
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -247,7 +241,8 @@ public class CoreReplicationIT
         CoreClusterMember replacement = cluster.addCoreMemberWithId( 0 );
         replacement.start();
 
-        CoreClusterMember leader = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
+        {
             db.schema().indexFor( label( "boo" ) ).on( "foobar" ).create();
             tx.success();
         } );
