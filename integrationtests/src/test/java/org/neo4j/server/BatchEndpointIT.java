@@ -38,9 +38,10 @@ public class BatchEndpointIT
 {
     @Rule
     public final Neo4jRule neo4j = new Neo4jRule()
-            .withConfig( ServerSettings.http_logging_enabled, "true" )
-            .withConfig( ServerSettings.certificates_directory.name(),
+            .withConfig( ServerSettings.certificates_directory,
                     getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
+            .withConfig( GraphDatabaseSettings.logs_directory,
+                    getRelativePath( getSharedTestTemporaryFolder(), GraphDatabaseSettings.logs_directory ) )
             .withConfig( ServerSettings.http_logging_enabled, "true" )
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" );
 
