@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -68,7 +69,7 @@ public class LogHeaderReaderTest
         } );
 
         // when
-        final LogHeader result = readLogHeader( buffer, channel, true );
+        final LogHeader result = readLogHeader( buffer, channel, true, null );
 
         // then
         assertEquals( new LogHeader( CURRENT_LOG_VERSION, expectedLogVersion, expectedTxId ), result );
@@ -86,13 +87,12 @@ public class LogHeaderReaderTest
         try
         {
             // when
-            readLogHeader( buffer, channel, true );
+            readLogHeader( buffer, channel, true, null );
             fail( "should have thrown" );
         }
-        catch ( IOException ex )
+        catch ( IncompleteLogHeaderException ex )
         {
-            // then
-            assertEquals( "Unable to read log version and last committed tx", ex.getMessage() );
+            // then good
         }
     }
 
@@ -132,10 +132,10 @@ public class LogHeaderReaderTest
             readLogHeader( fs, file );
             fail( "should have thrown" );
         }
-        catch ( IOException ex )
+        catch ( IncompleteLogHeaderException ex )
         {
             // then
-            assertEquals( "Unable to read log version and last committed tx", ex.getMessage() );
+            assertTrue( ex.getMessage(), ex.getMessage().contains( file.getName() ) );
         }
     }
 

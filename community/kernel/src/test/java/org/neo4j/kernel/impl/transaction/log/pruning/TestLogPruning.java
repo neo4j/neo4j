@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -52,7 +51,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 public class TestLogPruning
 {
@@ -275,8 +273,8 @@ public class TestLogPruning
                     }
                 };
                 StoreChannel storeChannel = fs.open( files.getLogFileForVersion( version ), "r" );
-                LogVersionedStoreChannel versionedStoreChannel = PhysicalLogFile.openForVersion( files, fs, version );
-                        new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, CURRENT_LOG_VERSION );
+                LogVersionedStoreChannel versionedStoreChannel =
+                        PhysicalLogFile.openForVersion( files, fs, version, false );
                 try ( ReadableLogChannel channel =
                               new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
                 {

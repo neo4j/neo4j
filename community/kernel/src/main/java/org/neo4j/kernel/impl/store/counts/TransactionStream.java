@@ -229,7 +229,7 @@ class TransactionStream
             this.file = file;
             try ( StoreChannel channel = fs.open( file, "r" ) )
             {
-                header = readLogHeader( buffer, channel, false );
+                header = readLogHeader( buffer, channel, false, file );
 
                 try ( IOCursor<LogEntry> cursor = logEntryCursor( logEntryReader, channel, header ) )
                 {
@@ -297,7 +297,7 @@ class TransactionStream
         StoreChannel channel = fs.open( file.file, "r" );
         try
         {
-            LogHeader header = readLogHeader( buffer, channel, false );
+            LogHeader header = readLogHeader( buffer, channel, false, file.file );
             if ( !header.equals( file.header ) )
             {
                 throw new IOException( "Files have changed on disk." );

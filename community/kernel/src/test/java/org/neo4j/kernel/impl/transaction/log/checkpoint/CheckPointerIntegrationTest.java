@@ -213,7 +213,8 @@ public class CheckPointerIntegrationTest
             List<CheckPoint> checkPoints = new ArrayList<>();
             for (; version >= INITIAL_LOG_VERSION; version-- )
             {
-                LogVersionedStoreChannel channel = PhysicalLogFile.tryOpenForVersion( logFiles, fileSystem, version );
+                LogVersionedStoreChannel channel =
+                        PhysicalLogFile.tryOpenForVersion( logFiles, fileSystem, version, false );
                 if ( channel == null )
                 {
                     break;

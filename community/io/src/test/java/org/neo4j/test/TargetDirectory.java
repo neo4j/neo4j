@@ -160,7 +160,8 @@ public class TargetDirectory
                     if ( e.getCause() != null &&
                             e.getCause() instanceof FileUtils.MaybeWindowsMemoryMappedFileReleaseProblem )
                     {
-                        System.err.println( "Failed to delete test directory, maybe due to Windows memory-mapped file problem" );
+                        System.err.println( "Failed to delete test directory, " +
+                                "maybe due to Windows memory-mapped file problem: " + e.getCause().getMessage() );
                     }
                     else
                     {
