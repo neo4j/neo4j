@@ -31,8 +31,6 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -47,6 +45,7 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -64,17 +63,16 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -86,6 +84,7 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -971,8 +970,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public int nodeDetachDelete( long nodeId ) throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-            AutoIndexingKernelException, KernelException
+    public int nodeDetachDelete( long nodeId ) throws KernelException
     {
         statement.assertOpen();
         return dataWrite().nodeDetachDelete( statement, nodeId );
