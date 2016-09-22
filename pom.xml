@@ -81,37 +81,6 @@
           <version>1.4.0</version>
         </plugin>
         <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>findbugs-maven-plugin</artifactId>
-          <version>3.0.3</version>
-          <configuration>
-            <!--
-                Enables analysis which takes more memory but finds more bugs.
-                If you run out of memory, changes the value of the effort element
-                to 'Low'.
-            -->
-            <effort>Max</effort>
-            <!-- (values are low, medium, and max) -->
-            <threshold>Medium</threshold>
-            <!-- Fail the build or only generate report -->
-            <failOnError>false</failOnError>
-            <!-- Produces XML report -->
-            <xmlOutput>true</xmlOutput>
-            <includeTests>true</includeTests>
-            <!-- Configures the directory in which the XML report is created -->
-            <findbugsXmlOutputDirectory>${project.build.directory}/findbugs</findbugsXmlOutputDirectory>
-          </configuration>
-          <executions>
-            <!-- Run with as part of the build -->
-              <execution>
-                <phase>verify</phase>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-              </execution>
-          </executions>
-        </plugin>
-        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
           <version>2.1</version>
@@ -276,21 +245,6 @@
         <module>packaging</module>
         <module>packaging/installer-linux</module>
       </modules>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>findbugs-maven-plugin</artifactId>
-            <dependencies>
-              <dependency>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>annotations</artifactId>
-                <version>${findbugs.version}</version>
-              </dependency>
-            </dependencies>
-          </plugin>
-        </plugins>
-      </build>
       <properties>
         <attach-docs-phase>verify</attach-docs-phase>
       </properties>
