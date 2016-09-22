@@ -49,7 +49,6 @@ import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
@@ -559,13 +558,8 @@ public class SwitchToSlave
 
     private MasterClient newMasterClient( URI masterUri, URI me, StoreId storeId, LifeSupport life )
     {
-        MasterClient masterClient = masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
+        return masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
                 me.getHost(), monitors, storeId, life );
-        if ( masterClient.getProtocolVersion().compareTo( MasterClient214.PROTOCOL_VERSION ) < 0 )
-        {
-            idGeneratorFactory.enableCompatibilityMode();
-        }
-        return masterClient;
     }
 
     private void startServicesAgain() throws Throwable
