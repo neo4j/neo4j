@@ -4,7 +4,7 @@
 The Neo4j PowerShell module allows administrators to:
 
 * install, start and stop Neo4j Windows® Services
-* and start tools, such as `Neo4j Shell` and `Neo4j Import`.
+* and start tools, such as `Neo4j Import`.
 
 The PowerShell module is installed as part of the http://neo4j.com/download/[ZIP file] distributions of Neo4j.
 
