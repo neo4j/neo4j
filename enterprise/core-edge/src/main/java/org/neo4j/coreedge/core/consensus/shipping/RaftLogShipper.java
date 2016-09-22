@@ -39,6 +39,7 @@ import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static java.lang.String.format;
 import static org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
+import static org.neo4j.coreedge.core.consensus.shipping.RaftLogShipper.Mode.CATCHUP;
 import static org.neo4j.coreedge.core.consensus.shipping.RaftLogShipper.Mode.PIPELINE;
 import static org.neo4j.coreedge.core.consensus.shipping.RaftLogShipper.Timeouts.RESEND;
 
@@ -77,7 +78,8 @@ public class RaftLogShipper
         /**
          * In the mismatch mode we are unsure about the follower state, thus
          * we tread with caution, going backwards trying to find the point where
-         * our logs match.
+         * our logs match. We send empty append entries to minimize the cost of
+         * this mode.
          */
         MISMATCH,
         /**
@@ -194,7 +196,14 @@ public class RaftLogShipper
     public synchronized void onMatch( long newMatchIndex, LeaderContext leaderContext )
     {
         boolean progress = newMatchIndex > matchIndex;
-        matchIndex = max( newMatchIndex, matchIndex );
+        if ( newMatchIndex > matchIndex )
+        {
+            matchIndex = newMatchIndex;
+        }
+        else
+        {
+            log.warn( "Match index not progressing. This should be transient." );
+        }
 
         switch ( mode )
         {
@@ -247,8 +256,8 @@ public class RaftLogShipper
             {
                 if ( prevLogIndex - matchIndex <= maxAllowedShippingLag )
                 {
-                    sendNewEntries( prevLogIndex, prevLogTerm, newLogEntries, leaderContext ); // all sending
-                    // functions update lastSentIndex
+                    // all sending functions update lastSentIndex
+                    sendNewEntries( prevLogIndex, prevLogTerm, newLogEntries, leaderContext );
                 }
                 else
                 {
@@ -302,13 +311,23 @@ public class RaftLogShipper
         }
     }
 
-    private void onTimeout()
+    void onTimeout()
     {
         if ( mode == PIPELINE )
         {
-            /* The follower seems unresponsive and we do not want to spam it with new entries */
+            /* The follower seems unresponsive and we do not want to spam it with new entries.
+             * The catchup will pick-up when the last sent pipelined entry matches. */
             log.info( "%s: timed out, moving to CATCHUP mode", statusAsString() );
             mode = Mode.CATCHUP;
+            scheduleTimeout( retryTimeMillis );
+        }
+        else if ( mode == CATCHUP )
+        {
+            /* The follower seems unresponsive so we move back to mismatch mode to
+             * slowly poke it and figure out what is going on. Catchup will resume
+             * on the next match. */
+            log.info( "%s: timed out, moving to MISMATCH mode", statusAsString() );
+            mode = Mode.MISMATCH;
         }
 
         if ( lastLeaderContext != null )
