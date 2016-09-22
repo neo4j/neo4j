@@ -324,7 +324,6 @@ public class ImportTool
             return;
         }
 
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir;
         Collection<Option<File[]>> nodesFiles, relationshipsFiles;
         boolean enableStacktrace;
@@ -335,7 +334,9 @@ public class ImportTool
         boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
         Config dbConfig;
         OutputStream badOutput = null;
+        IdType idType = null;
         int pageSize = UNSPECIFIED;
+        Collector badCollector;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
 
         boolean success = false;
@@ -345,13 +346,13 @@ public class ImportTool
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
 
             File badFile = new File( storeDir, BAD_FILE_NAME );
-            badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
+            badOutput = new BufferedOutputStream( new DefaultFileSystemAbstraction().openAsOutputStream( badFile, false ) );
             nodesFiles = extractInputFiles( args, Options.NODE_DATA.key(), err );
             relationshipsFiles = extractInputFiles( args, Options.RELATIONSHIP_DATA.key(), err );
             validateInputFiles( nodesFiles, relationshipsFiles );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
             processors = args.getNumber( Options.PROCESSORS.key(), null );
-            IdType idType = args.interpretOption( Options.ID_TYPE.key(),
+            idType = args.interpretOption( Options.ID_TYPE.key(),
                     withDefault( (IdType)Options.ID_TYPE.defaultValue() ), TO_ID_TYPE );
             badTolerance = args.getNumber( Options.BAD_TOLERANCE.key(),
                     (Number) Options.BAD_TOLERANCE.defaultValue() ).intValue();
@@ -363,7 +364,7 @@ public class ImportTool
             ignoreExtraColumns = args.getBoolean( Options.IGNORE_EXTRA_COLUMNS.key(),
                     (Boolean)Options.IGNORE_EXTRA_COLUMNS.defaultValue(), true );
 
-            Collector badCollector = badCollector( badOutput, badTolerance, collect( skipBadRelationships,
+            badCollector = badCollector( badOutput, badTolerance, collect( skipBadRelationships,
                     skipDuplicateNodes, ignoreExtraColumns ) );
 
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
@@ -378,6 +379,10 @@ public class ImportTool
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
                     configuration.maxNumberOfProcessors() );
+
+            doImport( out, err, storeDir, nodesFiles, relationshipsFiles,
+                    enableStacktrace, input, dbConfig, badOutput, configuration );
+
             success = true;
         }
         catch ( IllegalArgumentException e )
@@ -395,7 +400,14 @@ public class ImportTool
                 badOutput.close();
             }
         }
+    }
 
+    public static void doImport( PrintStream out, PrintStream err, File storeDir, Collection<Option<File[]>> nodesFiles,
+            Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input, Config dbConfig,
+            OutputStream badOutput, org.neo4j.unsafe.impl.batchimport.Configuration configuration ) throws IOException
+    {
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        boolean success;
         LifeSupport life = new LifeSupport();
 
         LogService logService = life.add( StoreLogService.inLogsDirectory( fs, storeDir ) );
@@ -453,7 +465,7 @@ public class ImportTool
         }
     }
 
-    private static Collection<Option<File[]>> extractInputFiles( Args args, String key, PrintStream err )
+    public static Collection<Option<File[]>> extractInputFiles( Args args, String key, PrintStream err )
     {
         return args
                 .interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
@@ -530,7 +542,7 @@ public class ImportTool
         out.println( "  " + value );
     }
 
-    private static void validateInputFiles( Collection<Option<File[]>> nodesFiles,
+    public static void validateInputFiles( Collection<Option<File[]>> nodesFiles,
             Collection<Option<File[]>> relationshipsFiles )
     {
         if ( nodesFiles.isEmpty() )
@@ -543,7 +555,7 @@ public class ImportTool
         }
     }
 
-    private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
+    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
             final boolean defaultSettingsSuitableForTests, final Config dbConfig, int pageSize )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
@@ -649,7 +661,7 @@ public class ImportTool
         }
     }
 
-    private static Iterable<DataFactory<InputRelationship>>
+    public static Iterable<DataFactory<InputRelationship>>
             relationshipData( final Charset encoding, Collection<Option<File[]>> relationshipsFiles )
     {
         return new IterableWrapper<DataFactory<InputRelationship>,Option<File[]>>( relationshipsFiles )
@@ -662,7 +674,7 @@ public class ImportTool
         };
     }
 
-    private static Iterable<DataFactory<InputNode>> nodeData( final Charset encoding,
+    public static Iterable<DataFactory<InputNode>> nodeData( final Charset encoding,
             Collection<Option<File[]>> nodesFiles )
     {
         return new IterableWrapper<DataFactory<InputNode>,Option<File[]>>( nodesFiles )
@@ -728,7 +740,7 @@ public class ImportTool
         return key.equals( "?" ) || key.equals( "help" );
     }
 
-    private static Configuration csvConfiguration( Args args, final boolean defaultSettingsSuitableForTests )
+    public static Configuration csvConfiguration( Args args, final boolean defaultSettingsSuitableForTests )
     {
         final Configuration defaultConfiguration = COMMAS;
         final Character specificDelimiter = args.interpretOption( Options.DELIMITER.key(),

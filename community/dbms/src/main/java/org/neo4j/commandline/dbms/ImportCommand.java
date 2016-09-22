@@ -43,8 +43,6 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 public class ImportCommand implements AdminCommand
 {
-    private String database;
-
     public static class Provider extends AdminCommand.Provider
     {
         public Provider()
@@ -74,18 +72,21 @@ public class ImportCommand implements AdminCommand
         @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
-            return new ImportCommand( homeDir, configDir );
+            return new ImportCommand( homeDir, configDir, outsideWorld );
         }
     }
 
     private final Path homeDir;
     private final Path configDir;
+    private final OutsideWorld outsideWorld;
     private final String[] allowedModes = {"database", "csv"};
+    private String database;
 
-    ImportCommand( Path homeDir, Path configDir )
+    ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
+        this.outsideWorld = outsideWorld;
     }
 
     @Override
@@ -117,10 +118,10 @@ public class ImportCommand implements AdminCommand
             switch ( mode )
             {
             case "database":
-                importer = new DatabaseImporter( args, config );
+                importer = new DatabaseImporter( parsedArgs, config, outsideWorld );
                 break;
             case "csv":
-                importer = new CsvImporter( args, config );
+                importer = new CsvImporter( parsedArgs, config, outsideWorld );
                 break;
             default:
                 throw new CommandFailed( "Invalid mode specified." ); // This won't happen because mode is mandatory.
