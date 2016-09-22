@@ -276,11 +276,17 @@ case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clau
   override def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) chain
       expression.expectType(CTList(CTAny).covariant) chain
-      updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
+      updates.filterNot(okInsideForeach).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
       withScopedState {
         val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
         variable.declare(possibleInnerTypes) chain updates.semanticCheck
       }
+
+  private def okInsideForeach(clause: Clause): Boolean = clause match {
+    case _: UpdateClause => true
+    case _: CallClause => true
+    case _ => false
+  }
 }
 
 case class Unwind(expression: Expression, variable: Variable)(val position: InputPosition) extends Clause {
@@ -296,7 +302,7 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
 
 abstract class CallClause extends Clause {
   override def name = "CALL"
-  def returnColumns: List[String]
+  override def returnColumns: List[String]
   def containsNoUpdates: Boolean
 }
 
