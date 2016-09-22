@@ -45,6 +45,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
@@ -78,6 +82,21 @@ public class AbstractKeyValueStoreTest
             return "txId";
         }
     };
+
+    @Test
+    @Resources.Life( STARTED )
+    public void retryLookupOnConcurrentStoreStateChange() throws IOException
+    {
+        Store testStore = resourceManager.managed( createTestStore( TimeUnit.DAYS.toMillis( 2 ) ) );
+        ProgressiveState progressiveState = mock( ProgressiveState.class );
+        CountingErroneousReader countingErroneousReader = new CountingErroneousReader( testStore, progressiveState );
+        testStore.put( "test", "value" );
+
+        testStore.lookup( "test", countingErroneousReader );
+
+        assertEquals( 1, countingErroneousReader.getInvocationCounter() );
+        verify( progressiveState ).lookup( eq( "test" ), any( ValueSink.class ) );
+    }
 
     @Test
     public void shouldStartAndStopStore() throws Exception
@@ -143,7 +162,7 @@ public class AbstractKeyValueStoreTest
         try ( Lifespan life = new Lifespan() )
         {
             Store store = life.add( createTestStore() );
-            assertEquals( 10l, store.headers().get( TX_ID ).longValue() );
+            assertEquals( 10L, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -213,7 +232,7 @@ public class AbstractKeyValueStoreTest
         {
             life.add( store );
 
-            assertEquals( 64l, store.headers().get( TX_ID ).longValue() );
+            assertEquals( 64L, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -316,7 +335,7 @@ public class AbstractKeyValueStoreTest
 
         assertEquals( 2, rotation.rotate() );
 
-        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5l, new Predicate<Thread>()
+        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5L, new Predicate<Thread>()
         {
             @Override
             public boolean test( Thread thread )
@@ -342,7 +361,7 @@ public class AbstractKeyValueStoreTest
 
         // when
         updateStore( store, 1 );
-        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, new Predicate<Thread>()
+        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3L, new Predicate<Thread>()
         {
             @Override
             public boolean test( Thread thread )
@@ -381,7 +400,7 @@ public class AbstractKeyValueStoreTest
         // then
         assertEquals( 3, rotation.get().longValue() );
         assertEquals( 3, store.headers().get( TX_ID ).longValue() );
-        store.rotation.apply( 4l );
+        store.rotation.apply( 4L );
     }
 
     @Test( timeout = 2000 )
@@ -396,7 +415,7 @@ public class AbstractKeyValueStoreTest
         expectedException.expect( RotationTimeoutException.class );
 
         // WHEN
-        store.prepareRotation( 10l ).rotate();
+        store.prepareRotation( 10L ).rotate();
     }
 
     private Store createTestStore()
@@ -414,7 +433,7 @@ public class AbstractKeyValueStoreTest
             {
                 if ( field == TX_ID )
                 {
-                    return (Value) (Object) 1l;
+                    return (Value) (Object) 1L;
                 }
                 else
                 {
@@ -482,6 +501,50 @@ public class AbstractKeyValueStoreTest
         void write( WritableBuffer key, WritableBuffer value );
     }
 
+    private static class CountingErroneousReader extends AbstractKeyValueStore.Reader<String>
+    {
+        private final Store testStore;
+        private final ProgressiveState<String> newStoreState;
+        private int invocationCounter;
+
+        CountingErroneousReader( Store testStore, ProgressiveState<String> newStoreState )
+        {
+            this.testStore = testStore;
+            this.newStoreState = newStoreState;
+            invocationCounter = 0;
+        }
+
+        @Override
+        protected String parseValue( ReadableBuffer value )
+        {
+            invocationCounter++;
+            if ( invocationCounter == 1 )
+            {
+                closeCurrentState();
+                testStore.state = newStoreState;
+                throw new IllegalStateException( "Exception during state rotation." );
+            }
+            return value.toString();
+        }
+
+        private void closeCurrentState()
+        {
+            try
+            {
+                testStore.state.close();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        int getInvocationCounter()
+        {
+            return invocationCounter;
+        }
+    }
+
     @Rotation( Rotation.Strategy.INCREMENTING )
     class Store extends AbstractKeyValueStore<String>
     {
@@ -545,12 +608,6 @@ public class AbstractKeyValueStoreTest
         protected int compareHeaders( Headers lhs, Headers rhs )
         {
             return 0;
-        }
-
-        @SuppressWarnings( "unchecked" )
-        private <Value> void putField( Headers.Builder builder, HeaderField<Value> field, Object change )
-        {
-            builder.put( field, (Value) change );
         }
 
         @Override
