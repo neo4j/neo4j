@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.discovery.CoreAddresses;
@@ -42,6 +43,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -49,6 +51,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
@@ -59,12 +62,18 @@ import static org.neo4j.logging.NullLogProvider.getInstance;
 public class GetServersProcedureTest
 {
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+    private Config config = mock( Config.class );
+
+    public GetServersProcedureTest()
+    {
+        when( config.get( anyObject() ) ).thenReturn( 5L );
+    }
 
     @Test
     public void shouldHaveCorrectSignature() throws Exception
     {
         // given
-        final GetServersProcedure proc = new GetServersProcedure( null, null, getInstance() );
+        final GetServersProcedure proc = new GetServersProcedure( null, null, config, getInstance() );
 
         // when
         ProcedureSignature signature = proc.signature();
@@ -89,7 +98,8 @@ public class GetServersProcedureTest
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, emptySet() ) );
 
-        final GetServersProcedure proc = new GetServersProcedure( coreTopologyService, leaderLocator, getInstance() );
+        final GetServersProcedure proc =
+                new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
         List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
@@ -99,19 +109,19 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( Long.MAX_VALUE, ttl );
+        assertEquals( (long) config.get( CoreEdgeClusterSettings.cluster_routing_ttl ), ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
         Map<String,Object[]> readServers = servers.get( 0 );
-        assertThat(readServers.get("role"), equalTo( "READ" ));
-        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString() ));
+        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
+        assertThat( asList( readServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> routingServers = servers.get( 1 );
-        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
-        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString() ));
+        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
+        assertThat( asList( routingServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
     }
 
     @Test
@@ -132,7 +142,8 @@ public class GetServersProcedureTest
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, emptySet() ) );
 
-        final GetServersProcedure proc = new GetServersProcedure( coreTopologyService, leaderLocator, getInstance() );
+        final GetServersProcedure proc =
+                new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
         final List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
@@ -141,28 +152,28 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( Long.MAX_VALUE, ttl );
+        assertEquals( (long) config.get( CoreEdgeClusterSettings.cluster_routing_ttl ), ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
         Map<String,Object[]> writeServers = servers.get( 0 );
-        assertThat(writeServers.get("role"), equalTo( "WRITE" ));
-        assertThat( asList( writeServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString() ));
+        assertThat( writeServers.get( "role" ), equalTo( "WRITE" ) );
+        assertThat( asList( writeServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> readServers = servers.get( 1 );
-        assertThat(readServers.get("role"), equalTo( "READ" ));
-        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString(),
-                coreAddresses(1).getRaftServer().toString(),
-                coreAddresses(2).getRaftServer().toString() ));
+        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
+        assertThat( asList( readServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString(),
+                        coreAddresses( 1 ).getRaftServer().toString(),
+                        coreAddresses( 2 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> routingServers = servers.get( 2 );
-        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
-        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString(),
-                coreAddresses(1).getRaftServer().toString(),
-                coreAddresses(2).getRaftServer().toString() ));
+        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
+        assertThat( asList( routingServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString(),
+                        coreAddresses( 1 ).getRaftServer().toString(),
+                        coreAddresses( 2 ).getRaftServer().toString() ) );
     }
 
     @Test
@@ -181,7 +192,8 @@ public class GetServersProcedureTest
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, emptySet() ) );
 
-        final GetServersProcedure proc = new GetServersProcedure( coreTopologyService, leaderLocator, getInstance() );
+        final GetServersProcedure proc =
+                new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
         final List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
@@ -190,24 +202,24 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( Long.MAX_VALUE, ttl );
+        assertEquals( (long) config.get( CoreEdgeClusterSettings.cluster_routing_ttl ), ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
         Map<String,Object[]> writeServers = servers.get( 0 );
-        assertThat(writeServers.get("role"), equalTo( "WRITE" ));
-        assertThat( asList( writeServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString() ));
+        assertThat( writeServers.get( "role" ), equalTo( "WRITE" ) );
+        assertThat( asList( writeServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> readServers = servers.get( 1 );
-        assertThat(readServers.get("role"), equalTo( "READ" ));
-        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString()));
+        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
+        assertThat( asList( readServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> routingServers = servers.get( 2 );
-        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
-        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString()));
+        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
+        assertThat( asList( routingServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
     }
 
     @Test
@@ -226,7 +238,8 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator, getInstance() );
+        GetServersProcedure procedure =
+                new GetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
         final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
@@ -235,25 +248,25 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( Long.MAX_VALUE, ttl );
+        assertEquals( (long) config.get( CoreEdgeClusterSettings.cluster_routing_ttl ), ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
         Map<String,Object[]> writeServers = servers.get( 0 );
-        assertThat(writeServers.get("role"), equalTo( "WRITE" ));
-        assertThat( asList( writeServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString() ));
+        assertThat( writeServers.get( "role" ), equalTo( "WRITE" ) );
+        assertThat( asList( writeServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> readServers = servers.get( 1 );
-        assertThat(readServers.get("role"), equalTo( "READ" ));
-        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString(),
-                edgeAddresses(1).getBoltAddress().toString()));
+        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
+        assertThat( asList( readServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString(),
+                        edgeAddresses( 1 ).getBoltAddress().toString() ) );
 
         Map<String,Object[]> routingServers = servers.get( 2 );
-        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
-        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString()));
+        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
+        assertThat( asList( routingServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
     }
 
     @Test
@@ -272,7 +285,8 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator, getInstance() );
+        GetServersProcedure procedure =
+                new GetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
         final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
@@ -281,24 +295,24 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( Long.MAX_VALUE, ttl );
+        assertEquals( (long) config.get( CoreEdgeClusterSettings.cluster_routing_ttl ), ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
         Map<String,Object[]> writeServers = servers.get( 0 );
-        assertThat(writeServers.get("role"), equalTo( "WRITE" ));
-        assertThat( asList( writeServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString() ));
+        assertThat( writeServers.get( "role" ), equalTo( "WRITE" ) );
+        assertThat( asList( writeServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> readServers = servers.get( 1 );
-        assertThat(readServers.get("role"), equalTo( "READ" ));
-        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString()));
+        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
+        assertThat( asList( readServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> routingServers = servers.get( 2 );
-        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
-        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString()));
+        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
+        assertThat( asList( routingServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
     }
 
     @Test
@@ -316,7 +330,8 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenThrow( new NoLeaderFoundException() );
 
-        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator, getInstance() );
+        GetServersProcedure procedure =
+                new GetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
         final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
@@ -325,19 +340,19 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( Long.MAX_VALUE, ttl );
+        assertEquals( (long) config.get( CoreEdgeClusterSettings.cluster_routing_ttl ), ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
         Map<String,Object[]> readServers = servers.get( 0 );
-        assertThat(readServers.get("role"), equalTo( "READ" ));
-        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString()));
+        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
+        assertThat( asList( readServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> routingServers = servers.get( 1 );
-        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
-        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString()));
+        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
+        assertThat( asList( routingServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
     }
 
     @Test
@@ -355,7 +370,8 @@ public class GetServersProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 1 ) );
 
-        GetServersProcedure procedure = new GetServersProcedure( topologyService, leaderLocator, getInstance() );
+        GetServersProcedure procedure =
+                new GetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
         final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
@@ -364,19 +380,19 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( Long.MAX_VALUE, ttl );
+        assertEquals( (long) config.get( CoreEdgeClusterSettings.cluster_routing_ttl ), ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
         Map<String,Object[]> readServers = servers.get( 0 );
-        assertThat(readServers.get("role"), equalTo( "READ" ));
-        assertThat( asList( readServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString()));
+        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
+        assertThat( asList( readServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> routingServers = servers.get( 1 );
-        assertThat(routingServers.get("role"), equalTo( "ROUTE" ));
-        assertThat( asList( routingServers.get( "addresses" ) ), containsInAnyOrder(
-                coreAddresses(0).getRaftServer().toString()));
+        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
+        assertThat( asList( routingServers.get( "addresses" ) ),
+                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
     }
 
     static Set<EdgeAddresses> addresses( int... ids )

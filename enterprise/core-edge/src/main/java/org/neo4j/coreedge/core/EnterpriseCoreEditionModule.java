@@ -103,6 +103,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
     private SecurityLog securityLog;
+    private final Config config;
 
     public enum RaftLogImplementation
     {
@@ -117,7 +118,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
         procedures.register(
-                new GetServersProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
+                new GetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
         procedures.register(
                 new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
@@ -133,7 +134,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
             final DiscoveryServiceFactory discoveryServiceFactory )
     {
         final Dependencies dependencies = platformModule.dependencies;
-        final Config config = platformModule.config;
+        config = platformModule.config;
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final File storeDir = platformModule.storeDir;
@@ -179,7 +180,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         ReplicationModule replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
                 loggingOutbound, clusterStateDirectory, fileSystem, logProvider );
 
-        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory, config,
+        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory,
+                config,
                 replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
 
         this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;

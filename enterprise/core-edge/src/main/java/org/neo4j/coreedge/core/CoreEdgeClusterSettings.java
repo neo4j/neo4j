@@ -196,6 +196,10 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> edge_refresh_rate =
             setting( "core_edge.edge_refresh_rate", DURATION, "5s", min(5_000L) );
 
+    @Description( "How long drivers should cache the data from the dbms.cluster.routing.getServers() procedure."  )
+    public static final Setting<Long> cluster_routing_ttl =
+            setting( "core_edge.cluster_routing_ttl", DURATION, "5m", min(1_000L) );
+
     @Description( "NODE ID Allocation Space Size" )
     public static final Setting<Integer> node_id_allocation_size =
             setting( "core_edge.node_id_allocation_size", INTEGER, "1024" );

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.discovery.CoreAddresses;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -63,9 +65,10 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
     public static final String NAME = "getServers";
     private final CoreTopologyService discoveryService;
     private final LeaderLocator leaderLocator;
+    private final Config config;
     private final Log log;
 
-    public GetServersProcedure( CoreTopologyService discoveryService, LeaderLocator leaderLocator,
+    public GetServersProcedure( CoreTopologyService discoveryService, LeaderLocator leaderLocator, Config config,
             LogProvider logProvider )
     {
         super( procedureSignature( new QualifiedName( new String[]{"dbms", "cluster", "routing"}, NAME ) )
@@ -76,6 +79,7 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
 
         this.discoveryService = discoveryService;
         this.leaderLocator = leaderLocator;
+        this.config = config;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -83,12 +87,10 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
         Set<ReadWriteRouteEndPoint> writeEndpoints = emptySet();
-        Set<ReadWriteRouteEndPoint> readEndpoints = emptySet();
-        Set<ReadWriteRouteEndPoint> routeEndpoints = emptySet();
+        Set<ReadWriteRouteEndPoint> readEndpoints = readEndpoints();
+        Set<ReadWriteRouteEndPoint> routeEndpoints = routeEndpoints();
         try
         {
-            readEndpoints = readEndpoints();
-            routeEndpoints = routeEndpoints();
             AdvertisedSocketAddress leaderAddress =
                     discoveryService.coreServers().find( leaderLocator.getLeader() ).getBoltServer();
             writeEndpoints = writeEndpoints( leaderAddress );
@@ -164,7 +166,7 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
             servers.add( map );
         }
 
-        Object[] row = new Object[] { Long.MAX_VALUE, servers };
+        Object[] row = new Object[] { config.get( CoreEdgeClusterSettings.cluster_routing_ttl ), servers };
         return RawIterator.<Object[], ProcedureException>of(row);
     }
 
