@@ -19,11 +19,6 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -31,11 +26,15 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -55,45 +54,13 @@ public abstract class Protocol
     public static final int MEGA = 1024 * 1024;
     public static final int DEFAULT_FRAME_LENGTH = 16 * MEGA;
     public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = ( responseObject, result ) -> result.writeInt( responseObject );
-    public static final ObjectSerializer<Long> LONG_SERIALIZER = new ObjectSerializer<Long>()
-    {
-        @Override
-        @SuppressWarnings( "boxing" )
-        public void write( Long responseObject, ChannelBuffer result ) throws IOException
-        {
-            result.writeLong( responseObject );
-        }
-    };
-    public static final ObjectSerializer<Void> VOID_SERIALIZER = new ObjectSerializer<Void>()
-    {
-        @Override
-        public void write( Void responseObject, ChannelBuffer result ) throws IOException
-        {
-        }
-    };
-    public static final Deserializer<Integer> INTEGER_DESERIALIZER = new Deserializer<Integer>()
-    {
-        @Override
-        public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-        {
-            return buffer.readInt();
-        }
-    };
-    public static final Deserializer<Void> VOID_DESERIALIZER = new Deserializer<Void>()
-    {
-        @Override
-        public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-        {
-            return null;
-        }
-    };
-    public static final Serializer EMPTY_SERIALIZER = new Serializer()
-    {
-        @Override
-        public void write( ChannelBuffer buffer ) throws IOException
-        {
-        }
-    };
+    public static final ObjectSerializer<Long> LONG_SERIALIZER =
+            ( responseObject, result ) -> result.writeLong( responseObject );
+    public static final ObjectSerializer<Void> VOID_SERIALIZER = ( responseObject, result ) -> {};
+    public static final Deserializer<Integer> INTEGER_DESERIALIZER = ( buffer, temporaryBuffer ) -> buffer.readInt();
+    public static final Deserializer<Void> VOID_DESERIALIZER = ( buffer, temporaryBuffer ) -> null;
+    public static final Serializer EMPTY_SERIALIZER = buffer -> {};
+
     public static class TransactionRepresentationDeserializer implements Deserializer<TransactionRepresentation>
     {
         private final LogEntryReader<ReadableClosablePositionAwareChannel> reader;
@@ -244,19 +211,15 @@ public abstract class Protocol
         }
 
         // It's a transaction stream in this response
-        TransactionStream transactions = new TransactionStream()
+        TransactionStream transactions = visitor ->
         {
-            @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
-            {
-                NetworkReadableClosableChannel channel = new NetworkReadableClosableChannel( dechunkingBuffer );
+            NetworkReadableClosableChannel channel = new NetworkReadableClosableChannel( dechunkingBuffer );
 
-                try ( PhysicalTransactionCursor<ReadableClosablePositionAwareChannel> cursor =
-                              new PhysicalTransactionCursor<>( channel, entryReader ) )
+            try ( PhysicalTransactionCursor<ReadableClosablePositionAwareChannel> cursor =
+                          new PhysicalTransactionCursor<>( channel, entryReader ) )
+            {
+                while ( cursor.next() && !visitor.visit( cursor.get() ) )
                 {
-                    while ( cursor.next() && !visitor.visit( cursor.get() ) )
-                    {
-                    }
                 }
             }
         };
@@ -275,11 +238,11 @@ public abstract class Protocol
         targetBuffer.writeLong( context.getChecksum() );
     }
 
-    public static class FileStreamsDeserializer implements Deserializer<Void>
+    public static class FileStreamsDeserializer210 implements Deserializer<Void>
     {
         private final StoreWriter writer;
 
-        public FileStreamsDeserializer( StoreWriter writer )
+        public FileStreamsDeserializer210( StoreWriter writer )
         {
             this.writer = writer;
         }
@@ -293,7 +256,34 @@ public abstract class Protocol
             {
                 String path = readString( buffer, pathLength );
                 boolean hasData = buffer.readByte() == 1;
-                writer.write( path, hasData ? new BlockLogReader( buffer ) : null, temporaryBuffer, hasData );
+                writer.write( path, hasData ? new BlockLogReader( buffer ) : null, temporaryBuffer, hasData, 1 );
+            }
+            writer.close();
+            return null;
+        }
+    }
+
+    public static class FileStreamsDeserializer310 implements Deserializer<Void>
+    {
+        private final StoreWriter writer;
+
+        public FileStreamsDeserializer310( StoreWriter writer )
+        {
+            this.writer = writer;
+        }
+
+        // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
+        @Override
+        public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+        {
+            int pathLength;
+            while ( 0 != (pathLength = buffer.readUnsignedShort()) )
+            {
+                String path = readString( buffer, pathLength );
+                boolean hasData = buffer.readByte() == 1;
+                int recordSize = hasData ? buffer.readInt() : RecordFormat.NO_RECORD_SIZE;
+                writer.write( path, hasData ? new BlockLogReader( buffer ) : null, temporaryBuffer, hasData,
+                        recordSize );
             }
             writer.close();
             return null;

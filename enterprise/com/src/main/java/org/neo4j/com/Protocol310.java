@@ -19,30 +19,10 @@
  */
 package org.neo4j.com;
 
-import java.nio.ByteBuffer;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-
-import org.neo4j.kernel.impl.store.StoreId;
-
-public class Protocol201 extends Protocol
+public class Protocol310 extends Protocol214
 {
-    public Protocol201( int chunkSize, byte applicationProtocolVersion, byte internalProtocolVersion )
+    public Protocol310( int chunkSize, byte applicationProtocolVersion, byte internalProtocolVersion )
     {
         super( chunkSize, applicationProtocolVersion, internalProtocolVersion );
-    }
-
-    @Override
-    protected StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
-    {
-        byteBuffer.clear();
-        byteBuffer.limit( 8 + 8 + 8 ); // creation time, random id, store version
-        source.readBytes( byteBuffer );
-        byteBuffer.flip();
-        // read order matters - see Server.writeStoreId() for version 2.1.3
-        long creationTime = byteBuffer.getLong();
-        long randomId = byteBuffer.getLong();
-        long storeVersion = byteBuffer.getLong();
-        return new StoreId( creationTime, randomId, storeVersion, -1, -1 );
     }
 }

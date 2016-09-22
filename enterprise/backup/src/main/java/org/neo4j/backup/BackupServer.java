@@ -46,7 +46,14 @@ class BackupServer extends Server<TheBackupInterface,Object>
 
     private static final BackupRequestType[] contexts = BackupRequestType.values();
 
-    static final byte PROTOCOL_VERSION = 1;
+    /**
+     * Protocol Version : Product Version
+     *                1 : * to 3.0.x
+     *                2 : 3.1.x
+     */
+    public static final ProtocolVersion BACKUP_PROTOCOL_VERSION =
+            new ProtocolVersion( (byte) 2, INTERNAL_PROTOCOL_VERSION );
+
     static final int DEFAULT_PORT = 6362;
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
@@ -54,8 +61,7 @@ class BackupServer extends Server<TheBackupInterface,Object>
                          LogProvider logProvider, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( requestTarget, newBackupConfig( FRAME_LENGTH, server ), logProvider, FRAME_LENGTH,
-                new ProtocolVersion( PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),
-                ALWAYS_MATCH, Clocks.systemClock(), byteCounterMonitor, requestMonitor );
+                BACKUP_PROTOCOL_VERSION, ALWAYS_MATCH, Clocks.systemClock(), byteCounterMonitor, requestMonitor );
     }
 
     @Override

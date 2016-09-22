@@ -35,7 +35,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.CannotMoveMappedFileException;
+import org.neo4j.io.pagecache.impl.CannotRenameMappedFileException;
 
 /**
  * A {@linkplain PageCache page cache} that wraps another page cache and an {@linkplain Adversary adversary} to provide
@@ -120,7 +120,7 @@ public class AdversarialPageCache implements PageCache
     public void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions )
             throws IOException
     {
-        adversary.injectFailure( CannotMoveMappedFileException.class, FileAlreadyExistsException.class,
+        adversary.injectFailure( CannotRenameMappedFileException.class, FileAlreadyExistsException.class,
                 IOException.class, SecurityException.class );
         delegate.renameFile( sourceFile, targetFile, copyOptions );
     }

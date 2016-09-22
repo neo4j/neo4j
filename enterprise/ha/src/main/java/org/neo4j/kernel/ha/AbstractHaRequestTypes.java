@@ -28,14 +28,12 @@ abstract class AbstractHaRequestTypes implements HaRequestTypes
 {
     private final HaRequestType[] types = new HaRequestType[HaRequestTypes.Type.values().length];
 
-    @SuppressWarnings( "rawtypes" )
-    protected void register( Type type, TargetCaller targetCaller, ObjectSerializer objectSerializer )
+    protected <A,B,C> void register( Type type, TargetCaller<A,B> targetCaller, ObjectSerializer<C> objectSerializer )
     {
         register( type, targetCaller, objectSerializer, true );
     }
 
-    @SuppressWarnings( "rawtypes" )
-    protected void register( Type type, TargetCaller targetCaller, ObjectSerializer objectSerializer, boolean unpack )
+    protected <A,B,C> void register( Type type, TargetCaller<A,B> targetCaller, ObjectSerializer<C> objectSerializer, boolean unpack )
     {
         assert types[type.ordinal()] == null;
         types[type.ordinal()] = new HaRequestType( targetCaller, objectSerializer, (byte)type.ordinal(), unpack );

@@ -581,14 +581,19 @@ public class TestCommunication
 
         public MadeUpClient client()
         {
-            return new MadeUpClient( port, storeId, internalProtocolVersion, applicationProtocolVersion, chunkSize,
-                    ResponseUnpacker.NO_OP_RESPONSE_UNPACKER );
+            return clientWith( ResponseUnpacker.NO_OP_RESPONSE_UNPACKER );
         }
 
         public MadeUpClient clientWith( ResponseUnpacker responseUnpacker )
         {
-            return new MadeUpClient( port, storeId, internalProtocolVersion, applicationProtocolVersion, chunkSize,
-                    responseUnpacker );
+            return new MadeUpClient( port, storeId, chunkSize, responseUnpacker )
+            {
+                @Override
+                public ProtocolVersion getProtocolVersion()
+                {
+                    return new ProtocolVersion( applicationProtocolVersion, internalProtocolVersion );
+                }
+            };
         }
 
         public ServerInterface serverInOtherJvm()

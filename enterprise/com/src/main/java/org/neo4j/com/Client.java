@@ -23,7 +23,6 @@ import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -97,7 +96,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final LogEntryReader<ReadableClosablePositionAwareChannel> entryReader;
 
     public Client( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
-            LogProvider logProvider, StoreId storeId, int frameLength, ProtocolVersion protocolVersion,
+            LogProvider logProvider, StoreId storeId, int frameLength,
             long readTimeout, int maxConcurrentChannels, int chunkSize,
             ResponseUnpacker responseUnpacker,
             ByteCounterMonitor byteCounterMonitor,
@@ -138,6 +137,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             origin = new InetSocketAddress( originHostNameOrIp, 0);
         }
 
+        ProtocolVersion protocolVersion = getProtocolVersion();
         this.protocol = createProtocol( chunkSize, protocolVersion.getApplicationProtocol() );
         this.responseUnpacker = responseUnpacker;
 
@@ -161,31 +161,28 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private ComExceptionHandler getNoOpComExceptionHandler()
     {
-        return new ComExceptionHandler()
+        return exception ->
         {
-            @Override
-            public void handle( ComException exception )
+            if ( ComException.TRACE_HA_CONNECTIVITY )
             {
-                if ( ComException.TRACE_HA_CONNECTIVITY )
-                {
-                    String noOpComExceptionHandler = "NoOpComExceptionHandler";
-                    //noinspection ThrowableResultOfMethodCallIgnored
-                    traceComException( exception, noOpComExceptionHandler );
-                }
+                String noOpComExceptionHandler = "NoOpComExceptionHandler";
+                //noinspection ThrowableResultOfMethodCallIgnored
+                traceComException( exception, noOpComExceptionHandler );
             }
         };
     }
 
     private ComException traceComException( ComException exception, String tracePoint )
     {
-        Log log = this.msgLog;
-        return exception.traceComException( log, tracePoint );
+        return exception.traceComException( msgLog, tracePoint );
     }
 
     protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
     {
-        return new Protocol214( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+        return new Protocol310( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
+
+    public abstract ProtocolVersion getProtocolVersion();
 
     @Override
     public void start()
@@ -254,15 +251,11 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
          * release it eventually. Also, logically, closing the channel is not dependent on the
          * TransactionStream.
          */
-        resourcePoolReleaser = new ResourceReleaser()
+        resourcePoolReleaser = () ->
         {
-            @Override
-            public void release()
+            if ( channelPool != null)
             {
-                if ( channelPool != null)
-                {
-                    channelPool.release();
-                }
+                channelPool.release();
             }
         };
     }
@@ -417,7 +410,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         pipeline.addLast( MONITORING_CHANNEL_HANDLER_NAME, new MonitorChannelHandler( byteCounterMonitor ) );
         addLengthFieldPipes( pipeline, frameLength );
         BlockingReadHandler<ChannelBuffer> reader =
-                new BlockingReadHandler<>( new ArrayBlockingQueue<ChannelEvent>( 100, false ) );
+                new BlockingReadHandler<>( new ArrayBlockingQueue<>( 100, false ) );
         pipeline.addLast( BLOCKING_CHANNEL_HANDLER_NAME, reader );
         return pipeline;
     }

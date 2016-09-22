@@ -37,6 +37,11 @@ public final class ProtocolVersion implements Comparable<ProtocolVersion>
         return applicationProtocol;
     }
 
+    public byte getInternalProtocol()
+    {
+        return internalProtocol;
+    }
+
     @Override
     public boolean equals( Object obj )
     {

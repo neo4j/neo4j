@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.CannotMoveMappedFileException;
+import org.neo4j.io.pagecache.impl.CannotRenameMappedFileException;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
@@ -414,7 +414,7 @@ public class MuninnPageCache implements PageCache
     {
         if ( tryGetMappingOrNull( file ) != null )
         {
-            throw new CannotMoveMappedFileException( file );
+            throw new CannotRenameMappedFileException( file );
         }
     }
 

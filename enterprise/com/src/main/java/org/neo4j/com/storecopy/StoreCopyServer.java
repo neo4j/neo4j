@@ -22,6 +22,8 @@ package org.neo4j.com.storecopy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.util.Optional;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -29,7 +31,8 @@ import org.neo4j.com.ServerFailureException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -114,15 +117,17 @@ public class StoreCopyServer
     private final FileSystemAbstraction fileSystem;
     private final File storeDirectory;
     private final Monitor monitor;
+    private final PageCache pageCache;
 
     public StoreCopyServer( NeoStoreDataSource dataSource, CheckPointer checkPointer, FileSystemAbstraction fileSystem,
-            File storeDirectory, Monitor monitor )
+            File storeDirectory, Monitor monitor, PageCache pageCache )
     {
         this.dataSource = dataSource;
         this.checkPointer = checkPointer;
         this.fileSystem = fileSystem;
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
         this.monitor = monitor;
+        this.pageCache = pageCache;
     }
 
     public Monitor monitor()
@@ -154,13 +159,34 @@ public class StoreCopyServer
             {
                 while ( files.hasNext() )
                 {
-                    File file = files.next().file();
-                    try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
+                    StoreFileMetadata meta = files.next();
+                    File file = meta.file();
+                    int recordSize = meta.recordSize();
+
+                    // Read from paged file if mapping exists. Otherwise read through file system.
+                    // A file is mapped if it is a store, and we have a running database, which will be the case for
+                    // both online backup, and when we are the master of an HA cluster.
+                    final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
+                    if ( optionalPagedFile.isPresent() )
                     {
-                        monitor.startStreamingStoreFile( file );
-                        writer.write( relativePath( storeDirectory, file ), fileChannel,
-                                temporaryBuffer, file.length() > 0 );
-                        monitor.finishStreamingStoreFile( file );
+                        PagedFile pagedFile = optionalPagedFile.get();
+                        long fileSize = pagedFile.fileSize();
+                        try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
+                        {
+                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize );
+                        }
+                        finally
+                        {
+                            pagedFile.close();
+                        }
+                    }
+                    else
+                    {
+                        try ( ReadableByteChannel fileChannel = fileSystem.open( file, "r" ) )
+                        {
+                            long fileSize = fileSystem.getFileSize( file );
+                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize );
+                        }
                     }
                 }
             }
@@ -175,5 +201,14 @@ public class StoreCopyServer
         {
             throw new ServerFailureException( e );
         }
+    }
+
+    private void doWrite( StoreWriter writer, ByteBuffer temporaryBuffer, File file, int recordSize,
+            ReadableByteChannel fileChannel, long fileSize ) throws IOException
+    {
+        monitor.startStreamingStoreFile( file );
+        writer.write( relativePath( storeDirectory, file ), fileChannel,
+                temporaryBuffer, fileSize > 0, recordSize );
+        monitor.finishStreamingStoreFile( file );
     }
 }

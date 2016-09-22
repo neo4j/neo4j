@@ -32,7 +32,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
-import static org.neo4j.kernel.ha.MasterClient214.PROTOCOL_VERSION;
+import static org.neo4j.kernel.ha.com.slave.MasterClient.CURRENT;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -49,7 +49,7 @@ public class MasterServer extends Server<Master, Void>
                          RequestMonitor requestMonitor, ConversationManager conversationManager,
                          LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
-        super( requestTarget, config, logProvider, FRAME_LENGTH, PROTOCOL_VERSION, txVerifier,
+        super( requestTarget, config, logProvider, FRAME_LENGTH, CURRENT, txVerifier,
                 Clocks.systemClock(), byteCounterMonitor, requestMonitor );
         this.conversationManager = conversationManager;
         this.requestTypes = new HaRequestType210( entryReader );

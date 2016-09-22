@@ -41,7 +41,6 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
-import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 
 public class SlaveClient extends Client<Slave> implements Slave
@@ -55,9 +54,7 @@ public class SlaveClient extends Client<Slave> implements Slave
                         LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
-                Protocol.DEFAULT_FRAME_LENGTH,
-                new ProtocolVersion( SlaveServer.APPLICATION_PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),
-                HaSettings.read_timeout.apply( from -> null ), maxConcurrentChannels,
+                Protocol.DEFAULT_FRAME_LENGTH, HaSettings.read_timeout.apply( from -> null ), maxConcurrentChannels,
                 chunkSize, NO_OP_RESPONSE_UNPACKER, byteCounterMonitor, requestMonitor, entryReader );
         this.machineId = machineId;
     }
@@ -71,7 +68,13 @@ public class SlaveClient extends Client<Slave> implements Slave
         }, Protocol.VOID_DESERIALIZER );
     }
 
-    public static enum SlaveRequestType implements RequestType<Slave>
+    @Override
+    public ProtocolVersion getProtocolVersion()
+    {
+        return SlaveServer.SLAVE_PROTOCOL_VERSION;
+    }
+
+    public enum SlaveRequestType implements RequestType<Slave>
     {
         PULL_UPDATES( (TargetCaller<Slave,Void>) ( master, context, input, target ) -> {
             readString( input ); // And discard

@@ -20,7 +20,6 @@
 package org.neo4j.backup;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.ArrayList;
@@ -137,31 +136,14 @@ class BackupService
         }
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
-        try ( PageCache pageCache = createPageCache( fileSystem ) )
+        try ( PageCache pageCache = createPageCache( fileSystem, tuningConfiguration ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration,
                     loadKernelExtensions(), logProvider, new DefaultFileSystemAbstraction(), pageCache,
                     monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ), forensics );
-            storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
-            {
-                private BackupClient client;
-
-                @Override
-                public Response<?> copyStore( StoreWriter writer )
-                {
-                    client = new BackupClient( sourceHostNameOrIp, sourcePort, null, NullLogProvider.getInstance(),
-                            StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, monitors.newMonitor(
-                            ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ), entryReader );
-                    client.start();
-                    return client.fullBackup( writer, forensics );
-                }
-
-                @Override
-                public void done()
-                {
-                    client.stop();
-                }
-            }, CancellationRequest.NEVER_CANCELLED );
+            FullBackupStoreCopyRequester storeCopyRequester =
+                    new FullBackupStoreCopyRequester( sourceHostNameOrIp, sourcePort, timeout, forensics );
+            storeCopier.copyStore( storeCopyRequester, CancellationRequest.NEVER_CANCELLED );
 
             bumpDebugDotLogFileVersion( targetDirectory, timestamp );
             boolean consistent = false;
@@ -362,19 +344,8 @@ class BackupService
 
     private static boolean bumpDebugDotLogFileVersion( File dbDirectory, long toTimestamp )
     {
-        File[] candidates = dbDirectory.listFiles( new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File dir, String name )
-            {
-                /*
-                 *  Contains ensures that previously timestamped files are
-                 *  picked up as well
-                 */
-                return name.equals( StoreLogService.INTERNAL_LOG_NAME );
-            }
-        } );
-        if ( candidates.length != 1 )
+        File[] candidates = dbDirectory.listFiles( ( dir, name ) -> name.equals( StoreLogService.INTERNAL_LOG_NAME ) );
+        if ( candidates == null || candidates.length != 1 )
         {
             return false;
         }
@@ -430,6 +401,40 @@ class BackupService
         public long getLastSeenTransactionId()
         {
             return lastSeenTransactionId;
+        }
+    }
+
+    private class FullBackupStoreCopyRequester implements StoreCopyClient.StoreCopyRequester
+    {
+        private final String sourceHostNameOrIp;
+        private final int sourcePort;
+        private final long timeout;
+        private final boolean forensics;
+        private BackupClient client;
+
+        private FullBackupStoreCopyRequester( String sourceHostNameOrIp, int sourcePort, long timeout,
+                                             boolean forensics )
+        {
+            this.sourceHostNameOrIp = sourceHostNameOrIp;
+            this.sourcePort = sourcePort;
+            this.timeout = timeout;
+            this.forensics = forensics;
+        }
+
+        @Override
+        public Response<?> copyStore( StoreWriter writer )
+        {
+            client = new BackupClient( sourceHostNameOrIp, sourcePort, null, NullLogProvider.getInstance(),
+                    StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, monitors.newMonitor(
+                    ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ), entryReader );
+            client.start();
+            return client.fullBackup( writer, forensics );
+        }
+
+        @Override
+        public void done()
+        {
+            client.stop();
         }
     }
 }

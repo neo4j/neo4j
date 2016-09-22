@@ -172,6 +172,17 @@ final class MuninnPagedFile implements PagedFile, Flushable
         return filePageSize;
     }
 
+    @Override
+    public long fileSize()
+    {
+        final long lastPageId = getLastPageId();
+        if ( lastPageId < 0 )
+        {
+            return 0L;
+        }
+        return (lastPageId + 1) * pageSize();
+    }
+
     File file()
     {
         return swapper.file();
