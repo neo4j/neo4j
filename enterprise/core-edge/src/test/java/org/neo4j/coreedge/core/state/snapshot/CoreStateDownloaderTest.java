@@ -34,6 +34,7 @@ import org.neo4j.coreedge.core.server.StartStopLife;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.fail;
@@ -47,6 +48,7 @@ import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 
 public class CoreStateDownloaderTest
 {
+    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
     private final StartStopLife startStopLife = mock( StartStopLife.class );
     private final StoreFetcher storeFetcher = mock( StoreFetcher.class );
@@ -62,7 +64,8 @@ public class CoreStateDownloaderTest
     private final File tempDir = new File( "graph.db/temp-copy" );
 
     private final CoreStateDownloader downloader =
-            new CoreStateDownloader( localDatabase, startStopLife, storeFetcher, catchUpClient, logProvider, recovery );
+            new CoreStateDownloader( fs, localDatabase, startStopLife, storeFetcher, catchUpClient, logProvider,
+                    recovery );
 
     @Before
     public void commonMocking()

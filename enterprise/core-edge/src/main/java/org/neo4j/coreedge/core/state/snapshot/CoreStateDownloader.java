@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.core.state.snapshot;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.catchup.CatchUpClient;
@@ -29,21 +28,21 @@ import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
-import org.neo4j.coreedge.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.coreedge.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.coreedge.core.state.CoreState;
+import org.neo4j.coreedge.edge.CopyStoreSafely;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.coreedge.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 
 public class CoreStateDownloader
 {
+    private final FileSystemAbstraction fs;
     private final LocalDatabase localDatabase;
     private final Lifecycle startStopOnStoreCopy;
     private final StoreFetcher storeFetcher;
@@ -51,10 +50,11 @@ public class CoreStateDownloader
     private final Log log;
     private final CopiedStoreRecovery copiedStoreRecovery;
 
-    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
+    public CoreStateDownloader( FileSystemAbstraction fs, LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
             StoreFetcher storeFetcher, CatchUpClient catchUpClient, LogProvider logProvider,
             CopiedStoreRecovery copiedStoreRecovery )
     {
+        this.fs = fs;
         this.localDatabase = localDatabase;
         this.startStopOnStoreCopy = startStopOnStoreCopy;
         this.storeFetcher = storeFetcher;
@@ -103,7 +103,8 @@ public class CoreStateDownloader
 
             if ( isEmptyStore )
             {
-                copyWholeStoreFrom( source, remoteStoreId, storeFetcher );
+                new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
+                        copyWholeStoreFrom( source, remoteStoreId, storeFetcher );
             }
             else
             {
@@ -111,8 +112,9 @@ public class CoreStateDownloader
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {
-                    // TODO: Delete store before copying to avoid double-storage issue.
-                    copyWholeStoreFrom( source, localStoreId, storeFetcher );
+                    localDatabase.delete();
+                    new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
+                        copyWholeStoreFrom( source, localStoreId, storeFetcher );
                 }
                 else if( catchupResult != SUCCESS )
                 {
@@ -137,16 +139,5 @@ public class CoreStateDownloader
             localDatabase.panic( e );
             throw new StoreCopyFailedException( e );
         }
-    }
-
-    private void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher )
-            throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
-    {
-        TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( localDatabase.storeDir() );
-        storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
-        copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
-        localDatabase.replaceWith( tempStore.storeDir() );
-        // TODO: Delete tempDir.
-        log.info( "Replaced store with one downloaded from %s", source );
     }
 }

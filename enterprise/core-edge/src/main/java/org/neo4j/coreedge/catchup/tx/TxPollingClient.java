@@ -20,18 +20,21 @@
 package org.neo4j.coreedge.catchup.tx;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchUpResponseAdaptor;
 import org.neo4j.coreedge.catchup.CatchupResult;
+import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
+import org.neo4j.coreedge.edge.CopyStoreSafely;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -48,38 +51,42 @@ import static org.neo4j.coreedge.catchup.tx.TxPollingClient.Timeouts.TX_PULLER_T
  */
 public class TxPollingClient extends LifecycleAdapter
 {
-    private final Supplier<StoreId> localDatabase;
-    private PullRequestMonitor pullRequestMonitor;
 
     enum Timeouts implements TimeoutName
     {
         TX_PULLER_TIMEOUT
     }
 
+    private final FileSystemAbstraction fs;
+    private final LocalDatabase localDatabase;
     private final Log log;
-
+    private final StoreFetcher storeFetcher;
+    private final CopiedStoreRecovery copiedStoreRecovery;
     private final CatchUpClient catchUpClient;
     private final CoreMemberSelectionStrategy connectionStrategy;
     private final RenewableTimeoutService timeoutService;
-
     private final long txPullIntervalMillis;
+    private final BatchingTxApplier applier;
+    private final PullRequestMonitor pullRequestMonitor;
+
     private RenewableTimeout timeout;
 
-    private BatchingTxApplier applier;
-
-    public TxPollingClient( LogProvider logProvider, Supplier<StoreId> localDatabase,
-            CatchUpClient catchUpClient, CoreMemberSelectionStrategy connectionStrategy,
-            RenewableTimeoutService timeoutService, long txPullIntervalMillis,
-            BatchingTxApplier applier, Monitors monitors )
+    public TxPollingClient( LogProvider logProvider, FileSystemAbstraction fs, LocalDatabase localDatabase,
+            StoreFetcher storeFetcher, CatchUpClient catchUpClient, CoreMemberSelectionStrategy connectionStrategy,
+            RenewableTimeoutService timeoutService, long txPullIntervalMillis, BatchingTxApplier applier,
+            Monitors monitors, CopiedStoreRecovery copiedStoreRecovery )
     {
+        this.fs = fs;
         this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
+        this.storeFetcher = storeFetcher;
         this.catchUpClient = catchUpClient;
         this.connectionStrategy = connectionStrategy;
         this.timeoutService = timeoutService;
         this.txPullIntervalMillis = txPullIntervalMillis;
         this.applier = applier;
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
+        this.copiedStoreRecovery = copiedStoreRecovery;
     }
 
     @Override
@@ -99,14 +106,14 @@ public class TxPollingClient extends LifecycleAdapter
             return;
         }
 
-        MemberId transactionServer;
         try
         {
-            transactionServer = connectionStrategy.coreMember();
+            MemberId core = connectionStrategy.coreMember();
             long lastAppliedTxId = applier.lastAppliedTxId();
             pullRequestMonitor.txPullRequest( lastAppliedTxId );
-            TxPullRequest txPullRequest = new TxPullRequest( lastAppliedTxId, localDatabase.get() );
-            catchUpClient.makeBlockingRequest( transactionServer, txPullRequest,
+            StoreId localStoreId = localDatabase.storeId();
+            TxPullRequest txPullRequest = new TxPullRequest( lastAppliedTxId, localStoreId );
+            CatchupResult catchupResult = catchUpClient.makeBlockingRequest( core, txPullRequest,
                     new CatchUpResponseAdaptor<CatchupResult>()
                     {
                         @Override
@@ -117,13 +124,26 @@ public class TxPollingClient extends LifecycleAdapter
                         }
 
                         @Override
-                        public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal, TxStreamFinishedResponse response )
+                        public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal,
+                                TxStreamFinishedResponse response )
                         {
                             signal.complete( response.status() );
                         }
                     } );
+
+            if ( catchupResult == CatchupResult.E_TRANSACTION_PRUNED )
+            {
+                pause();
+                log.info( "Tx pull unable to get transactions starting from " + lastAppliedTxId );
+                localDatabase.stop();
+                new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery , log ).
+                        copyWholeStoreFrom( core, localStoreId, storeFetcher );
+                localDatabase.start();
+                applier.refreshLastAppliedTx();
+                resume();
+            }
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             log.warn( "Tx pull attempt failed, will retry at the next regularly scheduled polling attempt.", e );
         }

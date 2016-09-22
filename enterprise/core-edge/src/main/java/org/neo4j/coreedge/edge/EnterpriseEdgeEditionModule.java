@@ -222,18 +222,6 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 pageCache,
                 databaseHealthSupplier );
 
-        TxPollingClient txPuller = new TxPollingClient( logProvider,
-                localDatabase, catchUpClient, new ConnectToRandomCoreMember( discoveryService ),
-                txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier,
-                platformModule.monitors );
-
-        dependencies.satisfyDependencies( txPuller );
-
-        txPulling.add( batchingTxApplier );
-        txPulling.add( txApplyJob );
-        txPulling.add( txPuller );
-        txPulling.add( txPullerTimeoutService );
-
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
                 new DefaultFileSystemAbstraction(), platformModule.pageCache,
                 new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
@@ -242,9 +230,20 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
-        life.add( new EdgeStartupProcess( storeFetcher,
-                localDatabase,
-                txPulling, new ConnectToRandomCoreMember( discoveryService ),
+        TxPollingClient txPuller = new TxPollingClient( logProvider, fileSystem,
+                localDatabase, storeFetcher, catchUpClient, new ConnectToRandomCoreMember( discoveryService ),
+                txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier,
+                platformModule.monitors, copiedStoreRecovery );
+
+        dependencies.satisfyDependencies( txPuller );
+
+        txPulling.add( batchingTxApplier );
+        txPulling.add( txApplyJob );
+        txPulling.add( txPuller );
+        txPulling.add( txPullerTimeoutService );
+
+        life.add( new EdgeStartupProcess( platformModule.fileSystem, storeFetcher, localDatabase, txPulling,
+                new ConnectToRandomCoreMember( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, copiedStoreRecovery ) );
 
         dependencies.satisfyDependency( createSessionTracker() );

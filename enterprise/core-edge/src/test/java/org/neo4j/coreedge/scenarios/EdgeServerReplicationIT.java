@@ -37,6 +37,7 @@ import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.core.consensus.log.segmented.FileNames;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
@@ -47,6 +48,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -56,7 +58,9 @@ import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -69,6 +73,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
@@ -88,9 +93,7 @@ public class EdgeServerReplicationIT
 {
     @Rule
     public final ClusterRule clusterRule =
-            new ClusterRule( getClass() )
-                    .withNumberOfCoreMembers( 3 )
-                    .withNumberOfEdgeMembers( 1 )
+            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfEdgeMembers( 1 )
                     .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
 
     @Test
@@ -141,18 +144,13 @@ public class EdgeServerReplicationIT
         int nodesBeforeEdgeServerStarts = 1;
 
         // when
-        executeOnLeaderWithRetry( db -> {
-            for ( int i = 0; i < nodesBeforeEdgeServerStarts; i++ )
-            {
-                Node node = db.createNode();
-                node.setProperty( "foobar", "baz_bat" );
-            }
-        }, cluster );
+        executeOnLeaderWithRetry( db -> createData( db, nodesBeforeEdgeServerStarts ), cluster );
 
         cluster.addEdgeMemberWithId( 0 ).start();
 
         // when
-        executeOnLeaderWithRetry( db -> {
+        executeOnLeaderWithRetry( db ->
+        {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
         }, cluster );
@@ -178,7 +176,8 @@ public class EdgeServerReplicationIT
     }
 
     @Test
-    public void shouldShutdownRatherThanPullUpdatesFromCoreMemberWithDifferentStoreIdIfLocalStoreIsNonEmpty() throws Exception
+    public void shouldShutdownRatherThanPullUpdatesFromCoreMemberWithDifferentStoreIdIfLocalStoreIsNonEmpty()
+            throws Exception
     {
         Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).startCluster();
 
@@ -231,8 +230,10 @@ public class EdgeServerReplicationIT
 
         awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeMembers() ), 1, TimeUnit.MINUTES );
 
-        List<File> coreStoreDirs = cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toList() );
-        List<File> edgeStoreDirs = cluster.edgeMembers().stream().map( EdgeClusterMember::storeDir ).collect( toList() );
+        List<File> coreStoreDirs =
+                cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toList() );
+        List<File> edgeStoreDirs =
+                cluster.edgeMembers().stream().map( EdgeClusterMember::storeDir ).collect( toList() );
 
         cluster.shutdown();
 
@@ -259,10 +260,63 @@ public class EdgeServerReplicationIT
         }
     }
 
-    private boolean edgesUpToDateAsTheLeader( CoreClusterMember leader, Collection<EdgeClusterMember> edgeClusterMembers )
+    @Test
+    public void shouldBeAbleToDownloadToANewStoreAfterPruning() throws Exception
     {
-        long leaderTxId = lastClosedTransactionId( leader.database() );
-        return edgeClusterMembers.stream().map( EdgeClusterMember::database ).map( this::lastClosedTransactionId )
+        // given
+        Map<String,String> params = stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "keep_none",
+                GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M",
+                GraphDatabaseSettings.check_point_interval_time.name(), "100ms" );
+
+        Cluster cluster = clusterRule.withSharedCoreParams( params ).startCluster();
+
+        cluster.coreTx( ( db, tx ) ->
+        {
+            createData( db, 10 );
+            tx.success();
+        } );
+
+        awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeMembers() ), 1, TimeUnit.MINUTES );
+
+        EdgeClusterMember edgeClusterMember = cluster.getEdgeMemberById( 0 );
+        long highestEdgeLogVersion = physicalLogFiles( edgeClusterMember ).getHighestLogVersion();
+
+        // when
+        edgeClusterMember.shutdown();
+
+        CoreClusterMember core;
+        do
+        {
+            core = cluster.coreTx( ( db, tx ) ->
+            {
+                createData( db, 1_000 );
+                tx.success();
+            } );
+
+        }
+        while ( physicalLogFiles( core ).getLowestLogVersion() <= highestEdgeLogVersion );
+
+        edgeClusterMember.start();
+
+        // then
+        awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeMembers() ), 1, TimeUnit.MINUTES );
+
+        assertEventually( "The edge member has the same data as the core members",
+                () -> DbRepresentation.of( edgeClusterMember.database() ),
+                equalTo( DbRepresentation.of( cluster.awaitLeader().database() ) ), 10, TimeUnit.SECONDS );
+    }
+
+    private PhysicalLogFiles physicalLogFiles( ClusterMember clusterMember )
+    {
+        return clusterMember.database().getDependencyResolver().resolveDependency( PhysicalLogFiles.class );
+    }
+
+    private boolean edgesUpToDateAsTheLeader( CoreClusterMember leader,
+            Collection<EdgeClusterMember> edgeClusterMembers )
+    {
+        long leaderTxId = lastClosedTransactionId( true, leader.database() );
+        return edgeClusterMembers.stream().map( EdgeClusterMember::database )
+                .map( db -> lastClosedTransactionId( false, db ) )
                 .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
     }
 
@@ -281,9 +335,26 @@ public class EdgeServerReplicationIT
         }
     }
 
-    private long lastClosedTransactionId( GraphDatabaseFacade db )
+    private long lastClosedTransactionId( boolean fail, GraphDatabaseFacade db )
     {
-        return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+        try
+        {
+            long lastClosedTransactionId = db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                    .getLastClosedTransactionId();
+            return lastClosedTransactionId;
+        }
+        catch ( IllegalStateException  | UnsatisfiedDependencyException /* db is shutdown or not available */ ex )
+        {
+            if ( !fail )
+            {
+                // the db is down we'll try again...
+                return -1;
+            }
+            else
+            {
+                throw ex;
+            }
+        }
     }
 
     @Test
@@ -317,7 +388,8 @@ public class EdgeServerReplicationIT
         Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).withSharedCoreParams( params )
                 .withRecordFormat( HighLimit.NAME ).startCluster();
 
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( Label.label( "L" ) );
             for ( int i = 0; i < 10; i++ )
             {
@@ -331,7 +403,8 @@ public class EdgeServerReplicationIT
         CoreClusterMember coreGraphDatabase = null;
         for ( int j = 0; j < 2; j++ )
         {
-            coreGraphDatabase = cluster.coreTx( ( db, tx ) -> {
+            coreGraphDatabase = cluster.coreTx( ( db, tx ) ->
+            {
                 Node node = db.createNode( Label.label( "L" ) );
                 for ( int i = 0; i < 10; i++ )
                 {
@@ -342,8 +415,8 @@ public class EdgeServerReplicationIT
         }
 
         File storeDir = coreGraphDatabase.storeDir();
-        assertEventually( "pruning happened", () -> versionBy( storeDir, Math::min ), greaterThan( baseVersion ),
-                5, SECONDS );
+        assertEventually( "pruning happened", () -> versionBy( storeDir, Math::min ), greaterThan( baseVersion ), 5,
+                SECONDS );
 
         // when
         cluster.addEdgeMemberWithIdAndRecordFormat( 42, HighLimit.NAME ).start();
@@ -366,7 +439,8 @@ public class EdgeServerReplicationIT
 
     private void executeOnLeaderWithRetry( Workload workload, Cluster cluster ) throws Exception
     {
-        assertEventually( "Executed on leader", () -> {
+        assertEventually( "Executed on leader", () ->
+        {
             try
             {
                 CoreGraphDatabase coreDB = cluster.awaitLeader( 5000 ).database();
@@ -393,10 +467,23 @@ public class EdgeServerReplicationIT
 
     private void createData( GraphDatabaseService db )
     {
-        for ( int i = 0; i < 10; i++ )
+        createData( db, 10 );
+    }
+
+    private void createData( GraphDatabaseService db, int amount )
+    {
+        for ( int i = 0; i < amount; i++ )
         {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
+            node.setProperty( "foobar1", "baz_bat" );
+            node.setProperty( "foobar2", "baz_bat" );
+            node.setProperty( "foobar3", "baz_bat" );
+            node.setProperty( "foobar4", "baz_bat" );
+            node.setProperty( "foobar5", "baz_bat" );
+            node.setProperty( "foobar6", "baz_bat" );
+            node.setProperty( "foobar7", "baz_bat" );
+            node.setProperty( "foobar8", "baz_bat" );
         }
     }
 }

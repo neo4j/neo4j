@@ -125,10 +125,11 @@ public class CoreServerModule
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+
         StartStopLife servicesToStopOnStoreCopy = new StartStopLife();
         CoreStateDownloader downloader =
-                new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, storeFetcher, catchUpClient,
-                        logProvider, copiedStoreRecovery );
+                new CoreStateDownloader( platformModule.fileSystem, localDatabase, servicesToStopOnStoreCopy,
+                        storeFetcher, catchUpClient, logProvider, copiedStoreRecovery );
 
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
