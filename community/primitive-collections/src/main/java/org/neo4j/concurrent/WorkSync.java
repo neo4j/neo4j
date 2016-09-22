@@ -124,7 +124,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
         // or we get the lock.
         if ( tryCount < 10 )
         {
-            // todo Thread.onSpinWait() ?
+            // todo Java9: Thread.onSpinWait() ?
             Thread.yield();
         }
         else
@@ -167,6 +167,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
                 // We may see 'null' via race, as work units are put on the
                 // stack before their 'next' pointers are updated. We just spin
                 // until we observe their volatile write to 'next'.
+                // todo Java9: Thread.onSpinWait() ?
                 Thread.yield();
                 tmp = batch.next;
             }
