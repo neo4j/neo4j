@@ -36,6 +36,17 @@ import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
 public class MasterClient310 extends MasterClient214
 {
+
+    /* Version 1 first version
+     * Version 2 since 2012-01-24
+     * Version 3 since 2012-02-16
+     * Version 4 since 2012-07-05
+     * Version 5 since ?
+     * Version 6 since 2014-01-07
+     * Version 7 since 2014-03-18
+     * Version 8 since 2014-08-27
+     * Version 9 since 3.1.0, 2016-09-20
+     */
     public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 9, INTERNAL_PROTOCOL_VERSION );
 
     public MasterClient310( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
