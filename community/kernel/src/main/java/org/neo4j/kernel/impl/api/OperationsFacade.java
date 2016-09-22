@@ -1006,8 +1006,7 @@ public class OperationsFacade
     }
 
     @Override
-    public int nodeDetachDelete( long nodeId ) throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-            AutoIndexingKernelException, KernelException
+    public int nodeDetachDelete( long nodeId ) throws KernelException
     {
         statement.assertOpen();
         return dataWrite().nodeDetachDelete( statement, nodeId );

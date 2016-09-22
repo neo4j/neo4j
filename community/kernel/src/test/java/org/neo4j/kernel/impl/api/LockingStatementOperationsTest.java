@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -43,22 +44,32 @@ import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.state.StubCursors;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.factory.CanWrite;
+import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.api.store.StoreSingleNodeCursor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
@@ -476,6 +487,56 @@ public class LockingStatementOperationsTest
         // then
         order.verify( locks, never() ).acquireExclusive( ResourceTypes.RELATIONSHIP, 123 );
         order.verify( entityWriteOps ).relationshipSetProperty( state, 123, property );
+    }
+
+    @Test
+    public void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException
+    {
+        long nodeId = 1L;
+
+        NodeItem nodeItem = mock( NodeItem.class );
+        when( nodeItem.getRelationships( Direction.BOTH ) ).thenReturn( RelationshipIterator.EMPTY );
+        StoreSingleNodeCursor nodeCursor = mock( StoreSingleNodeCursor.class );
+        when( nodeCursor.get() ).thenReturn( nodeItem );
+        when( entityReadOps.nodeCursorById( state, nodeId ) ).thenReturn( nodeCursor );
+
+        lockingOps.nodeDetachDelete( state, nodeId );
+
+        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( entityWriteOps ).nodeDetachDelete( state, nodeId );
+    }
+
+    @Test
+    public void detachDeleteNodeExclusivelyLockNodes() throws KernelException
+    {
+        long startNodeId = 1L;
+        long endNodeId = 2L;
+
+        RelationshipItem relationshipItem = StubCursors.asRelationship( 1L, 0, startNodeId, endNodeId, null );
+        CursorRelationshipIterator relationshipIterator =
+                new CursorRelationshipIterator( Cursors.cursor( relationshipItem ) );
+
+        NodeItem nodeItem = mock( NodeItem.class );
+        when( nodeItem.getRelationships( Direction.BOTH ) ).thenReturn( relationshipIterator );
+        StoreSingleNodeCursor nodeCursor = mock( StoreSingleNodeCursor.class );
+        when( nodeCursor.get() ).thenReturn( nodeItem );
+        when( entityReadOps.nodeCursorById( state, startNodeId ) ).thenReturn( nodeCursor );
+        doAnswer( invocation ->
+        {
+            RelationshipVisitor visitor = invocation.getArgumentAt( 2, RelationshipVisitor.class );
+            visitor.visit( relationshipItem.id(), relationshipItem.type(), relationshipItem.startNode(),
+                    relationshipItem.endNode() );
+            return null;
+        } ).when( entityReadOps ).relationshipVisit( eq(state), anyLong(), any() );
+
+        lockingOps.nodeDetachDelete( state, startNodeId );
+
+        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, startNodeId );
+        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, endNodeId );
+        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, startNodeId );
+        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, endNodeId );
+        order.verify( entityWriteOps ).nodeDetachDelete( state, startNodeId );
     }
 
     private static class SimpleTxStateHolder implements TxStateHolder
