@@ -328,4 +328,30 @@ public class RaftLogShipperTest
         assertThat( outbound.sentTo( follower ),
                 hasMessage( new RaftMessages.LogCompactionInfo( leader, 0, 2 ) ) );
     }
+
+    @Test
+    public void shouldPickUpAfterMissedBatch() throws Exception
+    {
+        //given
+        raftLog.append( entry0 );
+        raftLog.append( entry1 );
+        raftLog.append( entry2 );
+        raftLog.append( entry3 );
+
+        startLogShipper();
+        logShipper.onMatch( 0, new LeaderContext( 0, 0 ) );
+        // we are now in PIPELINE mode, because we matched and the entire last batch was sent out
+
+        logShipper.onTimeout();
+        // and now we should be in CATCHUP mode, awaiting a late response
+
+        // the response to the batch never came, so on timeout we enter MISMATCH mode and send a single entry based on the latest we knowingly sent (entry3)
+        logShipper.onTimeout();
+        outbound.clear();
+
+        // fake a match
+        logShipper.onMatch( 0, new LeaderContext( 0, 0 ) );
+
+        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( asList( entry1, entry2, entry3 ) ) );
+    }
 }
