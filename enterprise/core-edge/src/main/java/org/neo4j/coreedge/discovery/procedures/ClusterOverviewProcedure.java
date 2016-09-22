@@ -59,7 +59,9 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
                 .out( "id", Neo4jTypes.NTString ).out( "address", Neo4jTypes.NTString )
-                .out( "role", Neo4jTypes.NTString ).build() );
+                .out( "role", Neo4jTypes.NTString )
+                .description( "Overview of all currently accessible cluster members and their roles." )
+                .build() );
         this.discoveryService = discoveryService;
         this.leaderLocator = leaderLocator;
         this.log = logProvider.getLog( getClass() );

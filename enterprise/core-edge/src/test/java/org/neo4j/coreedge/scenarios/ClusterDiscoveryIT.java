@@ -19,7 +19,11 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,9 +67,16 @@ public class ClusterDiscoveryIT
         {
             currentMembers = getMembers( cluster.getCoreMemberById( i ).database() );
 
-            assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "WRITE" ) ).count());
-            assertEquals(4, currentMembers.stream().filter( x -> x[1].equals( "READ" ) ).count());
-            assertEquals(3, currentMembers.stream().filter( x -> x[1].equals( "ROUTE" ) ).count());
+            List<Map<String,Object>> members = (List<Map<String, Object>>) currentMembers.get( 0 )[1];
+
+            assertEquals( 1, members.stream().filter( x -> x.get( "role" ).equals( "WRITE" ) )
+                    .flatMap( x -> Arrays.stream( (Object[]) x.get( "addresses" ) ) ).count() );
+
+            assertEquals( 4, members.stream().filter( x -> x.get( "role" ).equals( "READ" ) )
+                    .flatMap( x -> Arrays.stream( (Object[]) x.get( "addresses" ) ) ).count() );
+
+            assertEquals( 3, members.stream().filter( x -> x.get( "role" ).equals( "ROUTE" ) )
+                    .flatMap( x -> Arrays.stream( (Object[]) x.get( "addresses" ) ) ).count() );
         }
     }
 
