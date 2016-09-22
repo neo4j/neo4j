@@ -29,12 +29,6 @@ class UsersCommandTestBase extends CommandTestBase
 {
     protected static String password_change_required = "password_change_required";
 
-    @Override
-    protected String command()
-    {
-        return "users";
-    }
-
     void assertUserRequiresPasswordChange( String username ) throws Throwable
     {
         User user = getUser( username );

@@ -110,21 +110,26 @@ abstract class CommandTestBase
         return args;
     }
 
-    protected abstract String command();
-
-    protected String[] makeArgs( String subCommand, String... args )
+    protected String[] makeArgs( String command, String subCommand, String... args )
     {
-        String[] allArgs = new String[args.length + 2];
-        System.arraycopy( args, 0, allArgs, 2, args.length );
-        allArgs[0] = command();
-        allArgs[1] = subCommand;
+        String[] allArgs;
+        if ( subCommand.isEmpty() ) {
+            allArgs = new String[1];
+        }
+        else
+        {
+            allArgs = new String[args.length + 2];
+            System.arraycopy( args, 0, allArgs, 2, args.length );
+            allArgs[1] = subCommand;
+        }
+        allArgs[0] = command;
         return allArgs;
     }
 
-    void assertFailedSubCommand( String command, String[] args, String... errors )
+    void assertFailedSubCommand( String command, String subCommand, String[] args, String... errors )
     {
         resetOutsideWorldMock();
-        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ) );
+        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, subCommand, args ) );
 
         // Then we get the expected error
         for ( String error : errors )
@@ -135,10 +140,10 @@ abstract class CommandTestBase
         verify( out ).exit( 1 );
     }
 
-    void assertSuccessfulSubCommand( String command, String[] args, String... messages )
+    void assertSuccessfulSubCommand( String command, String subCommand, String[] args, String... messages )
     {
         resetOutsideWorldMock();
-        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ));
+        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, subCommand, args ));
 
         // Then we get the expected output messages
         for ( String message : messages )

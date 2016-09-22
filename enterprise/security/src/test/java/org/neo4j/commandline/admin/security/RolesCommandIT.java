@@ -19,17 +19,14 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.nio.file.Path;
-import java.util.stream.Stream;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import org.neo4j.commandline.admin.AdminTool;
-import org.neo4j.commandline.admin.CommandLocator;
-import org.neo4j.commandline.admin.OutsideWorld;
+import java.nio.file.Path;
+import java.util.stream.Stream;
+
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -37,15 +34,12 @@ import org.neo4j.server.security.enterprise.auth.EnterpriseAuthManagerFactory;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Stream.concat;
-
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import static org.neo4j.commandline.admin.security.RolesCommand.loadNeo4jConfig;
-import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
 public class RolesCommandIT extends RolesCommandTestBase
 {
@@ -70,7 +64,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     public void shouldGetUsageErrorsWithNoSubCommand() throws Throwable
     {
         // When running 'users' with no subcommand, expect usage errors
-        assertFailedRolesCommand( null,
+        assertFailedRolesCommand( "", new String[0],
                 "Missing arguments: expected at least one sub-command as argument",
                 "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
                 "Runs several possible sub-commands for managing the native roles repository" );
@@ -105,7 +99,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given default roles
 
         // When running 'list' with filter, expect subset of roles
-        assertSuccessfulSubCommand( "list", args("ad"), "admin", "reader" );
+        assertSuccessfulRolesCommand( "list", args("ad"), "admin", "reader" );
     }
 
     //
@@ -116,7 +110,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     public void shouldGetUsageErrorsWithCreateCommandAndNoArgs() throws Throwable
     {
         // When running 'create' with arguments, expect usage errors
-        assertFailedRolesCommand( "create",
+        assertFailedRolesCommand( "create", new String[0],
                 "Missing arguments: 'roles create' expects roleName argument",
                 "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
                 "Runs several possible sub-commands for managing the native roles" );
@@ -128,7 +122,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given no previously existing role
 
         // When running 'create' with correct parameters, expect success
-        assertSuccessfulSubCommand( "create", args("another"), "Created new role 'another'" );
+        assertSuccessfulRolesCommand( "create", args("another"), "Created new role 'another'" );
 
         // And the user requires password change
         assertSuccessWithDefaultRoles( "list", args(), "another" );
@@ -140,7 +134,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given default state
 
         // When running 'create' with correct parameters, expect error
-        assertFailedSubCommand( "create", args("architect"), "The specified role 'architect' already exists" );
+        assertFailedRolesCommand( "create", args("architect"), "The specified role 'architect' already exists" );
     }
 
     @Test
@@ -150,7 +144,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         createTestRole( "another_role" );
 
         // When running 'create' with correct parameters, expect correct output
-        assertFailedSubCommand( "create", args("another_role"), "The specified role 'another_role' already exists" );
+        assertFailedRolesCommand( "create", args("another_role"), "The specified role 'another_role' already exists" );
     }
 
     //
@@ -160,7 +154,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     @Test
     public void shouldGetUsageErrorsWithDeleteCommandAndNoArgs() throws Throwable
     {
-        assertFailedRolesCommand( "delete",
+        assertFailedRolesCommand( "delete", new String[0],
                 "Missing arguments: 'roles delete' expects roleName argument",
                 "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
                 "Runs several possible sub-commands for managing the native roles" );
@@ -172,7 +166,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given default state
 
         // When running 'delete' with correct parameters, expect error
-        assertFailedSubCommand( "delete", args( "another" ), "Role 'another' does not exist" );
+        assertFailedRolesCommand( "delete", args( "another" ), "Role 'another' does not exist" );
     }
 
     @Test
@@ -181,7 +175,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         createTestRole( "test_role" );
 
         // When running 'delete' with correct parameters, expect success
-        assertSuccessfulSubCommand( "delete", args( "test_role" ), "Deleted role 'test_role'" );
+        assertSuccessfulRolesCommand( "delete", args( "test_role" ), "Deleted role 'test_role'" );
     }
 
     @Test
@@ -189,7 +183,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     {
         // given default test
 
-        assertFailedSubCommand( "delete", args( "admin" ), "'admin' is a predefined role and can not be deleted" );
+        assertFailedRolesCommand( "delete", args( "admin" ), "'admin' is a predefined role and can not be deleted" );
     }
 
     //
@@ -199,7 +193,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     @Test
     public void shouldGetUsageErrorsWithAssignCommandAndNoArgs() throws Throwable
     {
-        assertFailedRolesCommand( "assign",
+        assertFailedRolesCommand( "assign", new String[0],
                 "Missing arguments: 'roles assign' expects roleName and username arguments",
                 "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
                 "Runs several possible sub-commands for managing the native roles" );
@@ -208,7 +202,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     @Test
     public void shouldGetUsageErrorsWithAssignCommandAndNoUsername() throws Throwable
     {
-        assertFailedSubCommand( "assign", args("reader"),
+        assertFailedRolesCommand( "assign", args("reader"),
                 "Missing arguments: 'roles assign' expects roleName and username arguments",
                 "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
                 "Runs several possible sub-commands for managing the native roles" );
@@ -220,7 +214,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given default state
 
         // When running 'assign' with correct parameters, expect error
-        assertFailedSubCommand( "assign", args( "another", "neo4j" ), "Role 'another' does not exist" );
+        assertFailedRolesCommand( "assign", args( "another", "neo4j" ), "Role 'another' does not exist" );
     }
 
     @Test
@@ -229,7 +223,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given default state
 
         // When running 'assign' with correct parameters, expect error
-        assertFailedSubCommand( "assign", args( "reader", "another" ), "User 'another' does not exist" );
+        assertFailedRolesCommand( "assign", args( "reader", "another" ), "User 'another' does not exist" );
     }
 
     @Test
@@ -239,7 +233,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         createTestUser( "another", "abc" );
 
         // When running 'assign' with correct parameters, expect success
-        assertSuccessfulSubCommand( "assign", args( "test_role", "another" ), "Assigned role 'test_role' to user 'another'" );
+        assertSuccessfulRolesCommand( "assign", args( "test_role", "another" ), "Assigned role 'test_role' to user 'another'" );
     }
 
     //
@@ -249,7 +243,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     @Test
     public void shouldGetUsageErrorsWithRemoveCommandAndNoArgs() throws Throwable
     {
-        assertFailedRolesCommand( "remove",
+        assertFailedRolesCommand( "remove", new String[0],
                 "Missing arguments: 'roles remove' expects roleName and username arguments",
                 "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
                 "Runs several possible sub-commands for managing the native roles" );
@@ -258,7 +252,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     @Test
     public void shouldGetUsageErrorsWithRemoveCommandAndNoUsername() throws Throwable
     {
-        assertFailedSubCommand( "remove", args("reader"),
+        assertFailedRolesCommand( "remove", args("reader"),
                 "Missing arguments: 'roles remove' expects roleName and username arguments",
                 "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
                 "Runs several possible sub-commands for managing the native roles" );
@@ -270,7 +264,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given default state
 
         // When running 'remove' with correct parameters, expect error
-        assertFailedSubCommand( "remove", args( "another", "neo4j" ), "Role 'another' does not exist" );
+        assertFailedRolesCommand( "remove", args( "another", "neo4j" ), "Role 'another' does not exist" );
     }
 
     @Test
@@ -279,7 +273,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given default state
 
         // When running 'remove' with correct parameters, expect error
-        assertFailedSubCommand( "remove", args( "reader", "another" ), "User 'another' does not exist" );
+        assertFailedRolesCommand( "remove", args( "reader", "another" ), "User 'another' does not exist" );
     }
 
     @Test
@@ -289,15 +283,15 @@ public class RolesCommandIT extends RolesCommandTestBase
         createTestUser( "another", "abc" );
 
         // When running 'remove' on non-assigned role, expect error
-        assertFailedSubCommand( "remove", args( "test_role", "another" ), "Role 'test_role' was not assigned to user 'another'" );
+        assertFailedRolesCommand( "remove", args( "test_role", "another" ), "Role 'test_role' was not assigned to user 'another'" );
         // When running 'assign' with correct parameters, expect success
-        assertSuccessfulSubCommand( "assign", args( "test_role", "another" ), "Assigned role 'test_role' to user 'another'" );
+        assertSuccessfulRolesCommand( "assign", args( "test_role", "another" ), "Assigned role 'test_role' to user 'another'" );
         // When running 'assign' on already assigned role, expect error
-        assertFailedSubCommand( "assign", args( "test_role", "another" ), "Role 'test_role' was already assigned to user 'another'" );
+        assertFailedRolesCommand( "assign", args( "test_role", "another" ), "Role 'test_role' was already assigned to user 'another'" );
         // When running 'remove' with correct parameters, expect success
-        assertSuccessfulSubCommand( "remove", args( "test_role", "another" ), "Removed role 'test_role' from user 'another'" );
+        assertSuccessfulRolesCommand( "remove", args( "test_role", "another" ), "Removed role 'test_role' from user 'another'" );
         // When running 'assign' on already assigned role, expect error
-        assertFailedSubCommand( "remove", args( "test_role", "another" ), "Role 'test_role' was not assigned to user 'another'" );
+        assertFailedRolesCommand( "remove", args( "test_role", "another" ), "Role 'test_role' was not assigned to user 'another'" );
     }
 
     //
@@ -307,7 +301,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     @Test
     public void shouldGetUsageErrorsWithForCommandAndNoArgs() throws Throwable
     {
-        assertFailedRolesCommand( "for",
+        assertFailedRolesCommand( "for", new String[0],
                 "Missing arguments: 'roles for' expects username argument",
                 "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
                 "Runs several possible sub-commands for managing the native roles" );
@@ -316,7 +310,7 @@ public class RolesCommandIT extends RolesCommandTestBase
     @Test
     public void shouldGetUsageErrorsWithUsersCommandAndNoArgs() throws Throwable
     {
-        assertFailedRolesCommand( "users",
+        assertFailedRolesCommand( "users", new String[0],
                 "Missing arguments: 'roles users' expects roleName argument",
                 "neo4j-admin roles <subcommand> [<roleName>] [<username>]",
                 "Runs several possible sub-commands for managing the native roles" );
@@ -328,7 +322,7 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given default state
 
         // When running 'for' with correct parameters, expect error
-        assertFailedSubCommand( "for", args( "another" ), "User 'another' does not exist" );
+        assertFailedRolesCommand( "for", args( "another" ), "User 'another' does not exist" );
     }
 
     @Test
@@ -337,17 +331,17 @@ public class RolesCommandIT extends RolesCommandTestBase
         // Given default state
 
         // When running 'users' with correct parameters, expect error
-        assertFailedSubCommand( "users", args( "another" ), "Role 'another' does not exist" );
+        assertFailedRolesCommand( "users", args( "another" ), "Role 'another' does not exist" );
     }
 
     @Test
     public void shouldListDefaultRolesAssignments() throws Throwable
     {
-        assertSuccessfulSubCommand( "for", args( "neo4j" ), "admin" );
-        assertSuccessfulSubCommand( "users", args( "admin" ), "neo4j" );
-        assertSuccessfulSubCommand( "users", args( "reader" ) );
-        assertSuccessfulSubCommand( "users", args( "publisher" ) );
-        assertSuccessfulSubCommand( "users", args( "architect" ) );
+        assertSuccessfulRolesCommand( "for", args( "neo4j" ), "admin" );
+        assertSuccessfulRolesCommand( "users", args( "admin" ), "neo4j" );
+        assertSuccessfulRolesCommand( "users", args( "reader" ) );
+        assertSuccessfulRolesCommand( "users", args( "publisher" ) );
+        assertSuccessfulRolesCommand( "users", args( "architect" ) );
     }
 
     @Test
@@ -357,51 +351,30 @@ public class RolesCommandIT extends RolesCommandTestBase
         createTestUser( "another", "abc" );
 
         // When running 'assign' with correct parameters, expect success
-        assertSuccessfulSubCommand( "assign", args( "test_role", "another" ), "Assigned role 'test_role' to user 'another'" );
+        assertSuccessfulRolesCommand( "assign", args( "test_role", "another" ), "Assigned role 'test_role' to user 'another'" );
         // When running 'for' on already assigned user
-        assertSuccessfulSubCommand( "for", args( "another" ), "test_role" );
+        assertSuccessfulRolesCommand( "for", args( "another" ), "test_role" );
         // When running 'for' on already assigned user
-        assertSuccessfulSubCommand( "users", args( "test_role" ), "another" );
+        assertSuccessfulRolesCommand( "users", args( "test_role" ), "another" );
     }
 
     //
     // Utilities for testing AdminTool
     //
 
-    private void assertFailedRolesCommand( String command, String... errors )
-    {
-        // When running users command without a command or with incorrect command
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        if ( command == null )
-        {
-            tool.execute( homeDir, configDir, "roles" );
-        }
-        else
-        {
-            tool.execute( homeDir, configDir, "roles", command );
-        }
-
-        // Then we get the expected error
-        for ( String error : errors )
-        {
-            verify( out ).stdErrLine( contains( error ) );
-        }
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
-        verify( out ).exit( 1 );
-    }
-
     private void assertSuccessWithDefaultRoles( String command, String[] args, String... messages )
     {
-        assertSuccessfulSubCommand( command, args, concat( stream( messages ),
+        assertSuccessfulRolesCommand( command, args, concat( stream( messages ),
                 Stream.of( ADMIN, ARCHITECT, PUBLISHER, READER ) ).toArray( String[]::new ) );
     }
 
-    @Override
-    protected String command()
+    private void assertSuccessfulRolesCommand( String subCommand, String[] args, String... messages )
     {
-        return "roles";
+        assertSuccessfulSubCommand( "roles", subCommand, args, messages );
+    }
+
+    private void assertFailedRolesCommand( String subCommand, String[] args, String... messages )
+    {
+        assertFailedSubCommand( "roles", subCommand, args, messages );
     }
 }

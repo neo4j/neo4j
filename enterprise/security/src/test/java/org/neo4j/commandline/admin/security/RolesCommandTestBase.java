@@ -41,10 +41,4 @@ class RolesCommandTestBase extends CommandTestBase
         roles.create( role );
         return role;
     }
-
-    @Override
-    protected String command()
-    {
-        return "roles";
-    }
 }
