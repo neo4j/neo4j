@@ -35,8 +35,8 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
-
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -66,7 +66,7 @@ public class ReaderLogVersionBridgeTest
         when( channel.getLogFormatVersion() ).thenReturn( CURRENT_LOG_VERSION );
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
         when( fs.fileExists( file ) ).thenReturn( true );
-        when( fs.open( file, "rw" ) ).thenReturn( newStoreChannel );
+        when( fs.open( file, "r" ) ).thenReturn( newStoreChannel );
         when( newStoreChannel.read( Matchers.<ByteBuffer>any() ) ).then( new Answer<Integer>()
         {
             @Override
@@ -97,7 +97,28 @@ public class ReaderLogVersionBridgeTest
 
         when( channel.getVersion() ).thenReturn( version );
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
-        when( fs.open( file, "rw" ) ).thenThrow( new FileNotFoundException() );
+        when( fs.open( file, "r" ) ).thenThrow( new FileNotFoundException() );
+
+        // when
+        final LogVersionedStoreChannel result = bridge.next( channel );
+
+        // then
+        assertEquals( channel, result );
+        verify( channel, never() ).close();
+    }
+
+    @Test
+    public void shouldReturnOldChannelWhenNextChannelHasntGottenCompleteHeaderYet() throws Exception
+    {
+        // given
+        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( fs, logFiles );
+        final StoreChannel nextVersionWithIncompleteHeader = mock( StoreChannel.class );
+        when( nextVersionWithIncompleteHeader.read( any( ByteBuffer.class ) ) ).thenReturn( LOG_HEADER_SIZE / 2 );
+
+        when( channel.getVersion() ).thenReturn( version );
+        when( fs.fileExists( file ) ).thenReturn( true );
+        when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
+        when( fs.open( file, "r" ) ).thenReturn( nextVersionWithIncompleteHeader );
 
         // when
         final LogVersionedStoreChannel result = bridge.next( channel );

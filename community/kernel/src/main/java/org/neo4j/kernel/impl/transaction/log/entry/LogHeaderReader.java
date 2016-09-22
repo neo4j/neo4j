@@ -36,16 +36,32 @@ public class LogHeaderReader
         return readLogHeader( fileSystem, file, true );
     }
 
-    public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, File file, boolean strict) throws IOException
+    public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, File file, boolean strict ) throws IOException
     {
         try ( StoreChannel channel = fileSystem.open( file, "r" ) )
         {
-            return readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), channel, strict );
+            return readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), channel, strict, file );
         }
     }
 
-    public static LogHeader readLogHeader( ByteBuffer buffer, ReadableByteChannel channel, boolean strict )
-            throws IOException
+    /**
+     * Reads the header of a log. Data will be read from {@code channel} using supplied {@code buffer}
+     * as to allow more controlled allocation.
+     *
+     * @param buffer {@link ByteBuffer} to read into. Passed in to allow control over allocation.
+     * @param channel {@link ReadableByteChannel} to read from, typically a channel over a file containing the data.
+     * @param strict if {@code true} then will fail with {@link IncompleteLogHeaderException} on incomplete
+     * header, i.e. if there's not enough data in the channel to even read the header. If {@code false} then
+     * the return value will instead be {@code null}.
+     * @param fileForAdditionalErrorInformationOrNull when in {@code strict} mode the exception can be
+     * amended with information about which file the channel represents, if any. Purely for better forensics
+     * ability.
+     * @return {@link LogHeader} containing the log header data from the {@code channel}.
+     * @throws IOException if unable to read from {@code channel}
+     * @throws IncompleteLogHeaderException if {@code strict} and not enough data could be read
+     */
+    public static LogHeader readLogHeader( ByteBuffer buffer, ReadableByteChannel channel, boolean strict,
+            File fileForAdditionalErrorInformationOrNull ) throws IOException
     {
         buffer.clear();
         buffer.limit( LOG_HEADER_SIZE );
@@ -55,7 +71,11 @@ public class LogHeaderReader
         {
             if ( strict )
             {
-                throw new IOException( "Unable to read log version and last committed tx" );
+                if ( fileForAdditionalErrorInformationOrNull != null )
+                {
+                    throw new IncompleteLogHeaderException( fileForAdditionalErrorInformationOrNull, read );
+                }
+                throw new IncompleteLogHeaderException( read );
             }
             return null;
         }

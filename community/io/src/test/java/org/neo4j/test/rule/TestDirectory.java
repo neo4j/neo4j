@@ -203,8 +203,8 @@ public class TestDirectory implements TestRule
             }
             catch ( MaybeWindowsMemoryMappedFileReleaseProblem fme )
             {
-                System.err
-                        .println( "Failed to delete test directory, maybe due to Windows memory-mapped file problem" );
+                System.err.println( "Failed to delete test directory, " +
+                                    "maybe due to Windows memory-mapped file problem: " + fme.getMessage() );
             }
             catch ( IOException e )
             {

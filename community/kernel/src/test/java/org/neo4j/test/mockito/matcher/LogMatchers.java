@@ -59,10 +59,11 @@ public class LogMatchers
 {
     public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
     {
-        StoreChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
+        File logFile = new File( logPath );
+        StoreChannel fileChannel = fileSystem.open( logFile, "r" );
 
         // Always a header
-        LogHeader header = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, true );
+        LogHeader header = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, true, logFile );
 
         // Read all log entries
         PhysicalLogVersionedStoreChannel versionedStoreChannel =

@@ -24,13 +24,16 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
+import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.rule.TestDirectory;
@@ -38,7 +41,15 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
@@ -195,6 +206,63 @@ public class PhysicalLogFileTest
         }, mark.newPosition() );
         assertTrue( called.get() );
         life.shutdown();
+    }
+
+    @Test
+    public void shouldCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception
+    {
+        // GIVEN a file which returns 1/2 log header size worth of bytes
+        File directory = new File( "/dir" );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
+        int logVersion = 0;
+        File logFile = logFiles.getLogFileForVersion( logVersion );
+        StoreChannel channel = mock( StoreChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( LogHeader.LOG_HEADER_SIZE / 2 );
+        when( fs.fileExists( logFile ) ).thenReturn( true );
+        when( fs.open( eq( logFile ), anyString() ) ).thenReturn( channel );
+
+        // WHEN
+        try
+        {
+            PhysicalLogFile.openForVersion( logFiles, fs, logVersion, false );
+            fail( "Should have failed" );
+        }
+        catch ( IncompleteLogHeaderException e )
+        {
+            // THEN good
+            verify( channel ).close();
+        }
+    }
+
+    @Test
+    public void shouldSuppressFailueToCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception
+    {
+        // GIVEN a file which returns 1/2 log header size worth of bytes
+        File directory = new File( "/dir" );
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
+        int logVersion = 0;
+        File logFile = logFiles.getLogFileForVersion( logVersion );
+        StoreChannel channel = mock( StoreChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( LogHeader.LOG_HEADER_SIZE / 2 );
+        when( fs.fileExists( logFile ) ).thenReturn( true );
+        when( fs.open( eq( logFile ), anyString() ) ).thenReturn( channel );
+        doThrow( IOException.class ).when( channel ).close();
+
+        // WHEN
+        try
+        {
+            PhysicalLogFile.openForVersion( logFiles, fs, logVersion, false );
+            fail( "Should have failed" );
+        }
+        catch ( IncompleteLogHeaderException e )
+        {
+            // THEN good
+            verify( channel ).close();
+            assertEquals( 1, e.getSuppressed().length );
+            assertTrue( e.getSuppressed()[0] instanceof IOException );
+        }
     }
 
     private byte[] readBytes( ReadableClosableChannel reader, int length ) throws IOException

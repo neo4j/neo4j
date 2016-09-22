@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 
 public class DeadSimpleLogVersionRepository implements LogVersionRepository
 {
-    private long logVersion;
+    private volatile long logVersion;
 
     public DeadSimpleLogVersionRepository( long initialLogVersion )
     {

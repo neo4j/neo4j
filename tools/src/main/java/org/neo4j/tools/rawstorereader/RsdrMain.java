@@ -279,7 +279,7 @@ public class RsdrMain
     {
         File file = new File( neoStores.getStoreDir(), fname );
         StoreChannel fileChannel = files.open( file, "r" );
-        LogHeader logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, false );
+        LogHeader logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, false, file );
         console.printf( "Logical log version: %s with prev committed tx[%s]%n",
                 logHeader.logVersion, logHeader.lastCommittedTxId );
 

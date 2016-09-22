@@ -63,7 +63,7 @@ class LegacyLogEntryReader
     {
         final StoreChannel rawChannel = fs.open( logFile, "r" );
 
-        final LogHeader header = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), rawChannel, false );
+        final LogHeader header = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), rawChannel, false, logFile );
         LogEntryReader<ReadableLogChannel> reader = readerFactory.apply( header );
 
         // this ensures that the last committed txId field in the header is initialized properly

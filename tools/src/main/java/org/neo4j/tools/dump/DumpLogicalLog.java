@@ -110,7 +110,7 @@ public class DumpLogicalLog
         LogHeader logHeader;
         try
         {
-            logHeader = readLogHeader( buffer, fileChannel, false );
+            logHeader = readLogHeader( buffer, fileChannel, false, firstFile );
         }
         catch ( IOException ex )
         {

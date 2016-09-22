@@ -66,7 +66,7 @@ public class StoreMigratorCheckPointer
         }
 
         try ( LogVersionedStoreChannel storeChannel =
-                      PhysicalLogFile.openForVersion( logFiles, fileSystem, logVersion ) )
+                      PhysicalLogFile.openForVersion( logFiles, fileSystem, logVersion, true ) )
         {
             long offset = storeChannel.size();
             storeChannel.position( offset );
