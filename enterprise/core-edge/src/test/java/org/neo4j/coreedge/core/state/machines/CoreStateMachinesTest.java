@@ -26,22 +26,21 @@ import java.util.function.Consumer;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.state.CommandDispatcher;
-import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.core.state.Result;
-import org.neo4j.coreedge.core.consensus.log.MonitoredRaftLog;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationStateMachine;
+import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenRequest;
+import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenStateMachine;
 import org.neo4j.coreedge.core.state.machines.token.TokenType;
+import org.neo4j.coreedge.core.state.machines.tx.RecoverTransactionLogState;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.coreedge.core.state.machines.tx.RecoverTransactionLogState;
-import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenRequest;
-import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.storageengine.api.Token;
 
+import static java.lang.Math.max;
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -125,16 +124,17 @@ public class CoreStateMachinesTest
         StateMachine<?>[] otherSMs = new StateMachine[]{idAllocationSM, lockTokenSM};
 
         int totalDistinctSMs = otherSMs.length + 1; // distinct meaning backed by different storage
-
         // here we try to order all the distinct state machines in different orders to prove that,
         // regardless of which one is latest, we still recover the latest applied index
         for ( long base = 0; base < totalDistinctSMs; base++ )
         {
+            long expected = -1;
             long index = 0;
             long lastAppliedIndex;
             for ( StateMachine<?> sm : otherSMs )
             {
                 lastAppliedIndex = (base + index) % totalDistinctSMs;
+                expected = max( expected, lastAppliedIndex ); // this means that result is ignoring the txSMs
                 when( sm.lastAppliedIndex() ).thenReturn( lastAppliedIndex );
                 index++;
             }
@@ -146,7 +146,7 @@ public class CoreStateMachinesTest
             }
 
             // then
-            assertEquals( otherSMs.length, coreStateMachines.getLastAppliedIndex() );
+            assertEquals( expected, coreStateMachines.getLastAppliedIndex() );
         }
     }
 
@@ -164,9 +164,7 @@ public class CoreStateMachinesTest
             mock( ReplicatedLockTokenStateMachine.class );
     @SuppressWarnings( "unchecked" )
     private final ReplicatedIdAllocationStateMachine idAllocationSM = mock( ReplicatedIdAllocationStateMachine.class );
-    private final CoreState coreState = mock( CoreState.class );
     private final RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-    private final MonitoredRaftLog txLogState = mock( MonitoredRaftLog.class);
 
     private final CoreStateMachines coreStateMachines = new CoreStateMachines( txSM, labelTokenSM,
             relationshipTypeTokenSM, propertyKeyTokenSM, lockTokenSM, idAllocationSM,

@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.core.state.machines;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
@@ -36,8 +37,10 @@ import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionStateMachi
 import org.neo4j.coreedge.core.state.machines.tx.RecoverTransactionLogState;
 import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenStateMachine;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Math.max;
@@ -88,15 +91,9 @@ public class CoreStateMachines
 
     public long getLastAppliedIndex()
     {
-        long lastAppliedTxIndex = replicatedTxStateMachine.lastAppliedIndex();
-        assert lastAppliedTxIndex == labelTokenStateMachine.lastAppliedIndex();
-        assert lastAppliedTxIndex == relationshipTypeTokenStateMachine.lastAppliedIndex();
-        assert lastAppliedTxIndex == propertyKeyTokenStateMachine.lastAppliedIndex();
-
         long lastAppliedLockTokenIndex = replicatedLockTokenStateMachine.lastAppliedIndex();
         long lastAppliedIdAllocationIndex = idAllocationStateMachine.lastAppliedIndex();
-
-        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedTxIndex );
+        return max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex );
     }
 
     public void flush() throws IOException
