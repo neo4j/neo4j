@@ -33,6 +33,7 @@ import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -100,7 +101,7 @@ public class RestartIT
                     node.setProperty( "foobar", "baz_bat" );
                     tx.success();
                 }
-                catch ( AcquireLockTimeoutException e )
+                catch ( AcquireLockTimeoutException | WriteOperationsNotAllowedException e )
                 {
                     // expected sometimes
                 }
