@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
@@ -266,7 +267,7 @@ public class LockingStatementOperations implements
     @Override
     public int nodeDetachDelete( final KernelStatement state, final long nodeId ) throws EntityNotFoundException
     {
-        final AtomicInteger count = new AtomicInteger(  );
+        final MutableInt count = new MutableInt(  );
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( entityReadDelegate,
                 new Consumer<Long>()
                 {
@@ -277,7 +278,7 @@ public class LockingStatementOperations implements
                         try
                         {
                             entityWriteDelegate.relationshipDelete( state, relId );
-                            count.incrementAndGet();
+                            count.increment();
                         }
                         catch ( EntityNotFoundException e )
                         {
@@ -289,7 +290,7 @@ public class LockingStatementOperations implements
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
         state.assertOpen();
         entityWriteDelegate.nodeDetachDelete( state, nodeId );
-        return count.get();
+        return count.intValue();
     }
 
     @Override

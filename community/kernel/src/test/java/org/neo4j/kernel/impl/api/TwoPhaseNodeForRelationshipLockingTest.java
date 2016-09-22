@@ -47,6 +47,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.set;
 
@@ -117,6 +119,19 @@ public class TwoPhaseNodeForRelationshipLockingTest
         inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
         inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 43L );
         assertEquals( set( 21L, 22L, 23L ), collector.set );
+    }
+
+    @Test
+    public void lockNodeWithoutRelationships() throws Exception
+    {
+        Collector collector = new Collector();
+        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( ops, collector );
+        returnRelationships( nodeId, false );
+
+        locking.lockAllNodesAndConsumeRelationships( nodeId, state );
+
+        verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
+        verifyNoMoreInteractions( locks );
     }
 
     private void returnNodesForRelationship( final long relId, final long startNodeId, final long endNodeId )
