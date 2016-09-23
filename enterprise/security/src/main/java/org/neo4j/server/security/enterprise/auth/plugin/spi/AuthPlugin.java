@@ -67,36 +67,16 @@ public interface AuthPlugin extends RealmLifecycle
      */
     AuthInfo authenticateAndAuthorize( AuthToken authToken ) throws AuthenticationException;
 
-    abstract class Adapter implements AuthPlugin
+    abstract class Adapter extends RealmLifecycle.Adapter implements AuthPlugin
     {
         @Override
         public String name()
         {
             return getClass().getName();
         }
-
-        @Override
-        public void initialize( RealmOperations realmOperations ) throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-        }
     }
 
-    abstract class CachingEnabledAdapter implements AuthPlugin
+    abstract class CachingEnabledAdapter extends RealmLifecycle.Adapter implements AuthPlugin
     {
         @Override
         public String name()
@@ -108,21 +88,6 @@ public interface AuthPlugin extends RealmLifecycle
         public void initialize( RealmOperations realmOperations ) throws Throwable
         {
             realmOperations.setAuthenticationCachingEnabled( true );
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
         }
     }
 }

@@ -24,11 +24,10 @@ import java.util.Collections;
 
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 
-public class TestAuthPlugin implements AuthPlugin
+public class TestAuthPlugin extends AuthPlugin.Adapter
 {
     @Override
     public String name()
@@ -47,25 +46,5 @@ public class TestAuthPlugin implements AuthPlugin
             return AuthInfo.of( "neo4j", Collections.singleton( PredefinedRoles.READER ) );
         }
         return null;
-    }
-
-    @Override
-    public void initialize( RealmOperations ignore ) throws Throwable
-    {
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
     }
 }

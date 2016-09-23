@@ -83,9 +83,8 @@ public interface AuthorizationPlugin extends RealmLifecycle
      */
     AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals );
 
-    class Adapter implements AuthorizationPlugin
+    class Adapter extends RealmLifecycle.Adapter implements AuthorizationPlugin
     {
-
         @Override
         public String name()
         {
@@ -96,26 +95,6 @@ public interface AuthorizationPlugin extends RealmLifecycle
         public AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals )
         {
             return null;
-        }
-
-        @Override
-        public void initialize( RealmOperations realmOperations ) throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
         }
     }
 }

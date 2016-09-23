@@ -28,7 +28,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CustomCacheableAuthenticationInfo;
 
-public class TestCustomCacheableAuthenticationPlugin implements AuthenticationPlugin
+public class TestCustomCacheableAuthenticationPlugin extends AuthenticationPlugin.CachingEnabledAdapter
 {
     @Override
     public String name()
@@ -53,27 +53,6 @@ public class TestCustomCacheableAuthenticationPlugin implements AuthenticationPl
                     } );
         }
         return null;
-    }
-
-    @Override
-    public void initialize( RealmOperations realmOperations ) throws Throwable
-    {
-        realmOperations.setAuthenticationCachingEnabled( true );
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
     }
 
     // For testing purposes
