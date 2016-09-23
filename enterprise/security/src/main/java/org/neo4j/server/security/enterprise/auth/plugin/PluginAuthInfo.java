@@ -19,34 +19,41 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import org.apache.shiro.authc.SimpleAccount;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.authz.Permission;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.util.ByteSource;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.server.security.enterprise.auth.SecureHasher;
+import org.neo4j.server.security.enterprise.auth.ShiroAuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthInfo;
 
-public class PluginAuthInfo extends SimpleAccount
+public class PluginAuthInfo extends ShiroAuthenticationInfo implements AuthorizationInfo
 {
-    public PluginAuthInfo( Object principal, Object credentials, String realmName, Set<String> roles )
+    Set<String> roles;
+
+    public PluginAuthInfo( Object principal, String realmName, Set<String> roles )
     {
-        super( principal, credentials, realmName, roles, null );
+        super( principal, null, realmName, AuthenticationResult.SUCCESS );
+        this.roles = roles;
     }
 
     public PluginAuthInfo( Object principal, Object hashedCredentials, ByteSource credentialsSalt,
             String realmName, Set<String> roles )
     {
-        super( principal, hashedCredentials, credentialsSalt, realmName );
-        setRoles( roles );
+        super( principal, hashedCredentials, credentialsSalt, realmName, AuthenticationResult.SUCCESS );
+        this.roles = roles;
     }
 
     public static PluginAuthInfo create( AuthInfo authInfo, String realmName )
     {
-        return new PluginAuthInfo( authInfo.getPrincipal(), null, realmName,
+        return new PluginAuthInfo( authInfo.getPrincipal(), realmName,
                 authInfo.getRoles().stream().collect( Collectors.toSet() ) );
     }
 
@@ -68,8 +75,26 @@ public class PluginAuthInfo extends SimpleAccount
         }
         else
         {
-            return new PluginAuthInfo( authInfo.getPrincipal(), null, realmName,
+            return new PluginAuthInfo( authInfo.getPrincipal(), realmName,
                     authInfo.getRoles().stream().collect( Collectors.toSet() ) );
         }
+    }
+
+    @Override
+    public Collection<String> getRoles()
+    {
+        return roles;
+    }
+
+    @Override
+    public Collection<String> getStringPermissions()
+    {
+        return null;
+    }
+
+    @Override
+    public Collection<Permission> getObjectPermissions()
+    {
+        return null;
     }
 }
