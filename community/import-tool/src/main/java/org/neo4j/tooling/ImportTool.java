@@ -314,6 +314,8 @@ public class ImportTool
      */
     public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
     {
+        System.err.println("WARNING: neo4j-import is deprecated and support for it will be removed in a future\n" +
+                "version of Neo4j; please use neo4j-admin import instead.\n");
         PrintStream out = System.out;
         PrintStream err = System.err;
         Args args = Args.parse( incomingArguments );
