@@ -149,6 +149,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
                 platformModule.dataSourceManager,
                 platformModule.pageCache,
+                fileSystem,
                 databaseHealthSupplier );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory );

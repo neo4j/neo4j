@@ -220,6 +220,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
                 platformModule.dataSourceManager,
                 pageCache,
+                fileSystem,
                 databaseHealthSupplier );
 
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),

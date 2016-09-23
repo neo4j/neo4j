@@ -24,15 +24,14 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 {
@@ -41,6 +40,7 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
     private final PageCache pageCache;
+    private final FileSystemAbstraction fileSystemAbstraction;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
 
     private volatile StoreId storeId;
@@ -49,13 +49,14 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 
     public LocalDatabase( File storeDir, StoreFiles storeFiles,
             DataSourceManager dataSourceManager,
-            PageCache pageCache,
+            PageCache pageCache, FileSystemAbstraction fileSystemAbstraction,
             Supplier<DatabaseHealth> databaseHealthSupplier )
     {
         this.storeDir = storeDir;
         this.storeFiles = storeFiles;
         this.dataSourceManager = dataSourceManager;
         this.pageCache = pageCache;
+        this.fileSystemAbstraction = fileSystemAbstraction;
         this.databaseHealthSupplier = databaseHealthSupplier;
     }
 
@@ -140,9 +141,24 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 
     public boolean isEmpty() throws IOException
     {
-        // TODO: Below doesn't work for an imported store. Need to check high-ids as well.
-        ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
-        return readOnlyTransactionIdStore.getLastCommittedTransactionId() <= BASE_TX_ID;
+        return !hasStoreFiles();
+    }
+
+    private boolean hasStoreFiles()
+    {
+        for ( StoreType storeType : StoreType.values() )
+        {
+            StoreFile storeFile = storeType.getStoreFile();
+            if(storeFile != null)
+            {
+                boolean exists = fileSystemAbstraction.fileExists( new File( storeDir, storeFile.storeFileName() ) );
+                if ( exists )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
