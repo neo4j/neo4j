@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static java.lang.Long.min;
+import static java.lang.System.arraycopy;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -79,12 +80,9 @@ public class NativeLabelScanStore implements LabelScanStore
             {
                 RangePredicate fromPredicate = equalTo( labelId, 0L );
                 RangePredicate toPredicate = equalTo( labelId, Long.MAX_VALUE );
-//                Seeker seeker = new RangeSeeker( predicate, predicate );
-//                final ArrayList<SCResult> resultList = new ArrayList<>();
                 Cursor<BTreeHit> cursor;
                 try
                 {
-//                    index.seek( seeker, resultList );
                     cursor = index.seek( fromPredicate, toPredicate );
                 }
                 catch ( IOException e )
@@ -138,12 +136,16 @@ public class NativeLabelScanStore implements LabelScanStore
             throw new RuntimeException( e );
         }
 
+        // TODO: There are lots of logic in here to be clever about allocations and
+        // to sort and batch updates to favor the underlying index implementation.
+        // It would be grand if we could extract this to package-access pieces of code
+        // which could be tested individually.
         return new LabelScanWriter()
         {
-            // TODO: BIG ASSUMPTIONS ABOUT ADD-ONLY AND SORTED LABEL ID ARRAYS
-
             private final long[] key = new long[2];
             private final long[] value = new long[2];
+            private long[] tmpBefore = new long[10];
+            private long[] tmpAfter = new long[10];
             private final NodeLabelUpdate[] pendingUpdates = new NodeLabelUpdate[1000];
             private int pendingUpdatesCursor;
             private int pendingUpdatesCount; // there may be many per NodeLabelUpdate
@@ -158,10 +160,74 @@ public class NativeLabelScanStore implements LabelScanStore
                 }
 
                 pendingUpdates[pendingUpdatesCursor++] = update;
-                pendingUpdatesCount += update.getLabelsAfter().length;
-                for ( long labelId : update.getLabelsAfter() )
+                convertToAdditionsAndRemovals( update );
+                if ( update.getLabelsBefore().length > 0 )
                 {
-                    lowestLabelId = min( lowestLabelId, labelId );
+                    lowestLabelId = min( lowestLabelId, update.getLabelsBefore()[0] );
+                }
+                if ( update.getLabelsAfter().length > 0 )
+                {
+                    lowestLabelId = min( lowestLabelId, update.getLabelsAfter()[0] );
+                }
+            }
+
+            /**
+             * Converts physical before/after state to logical add/remove state. This conversion
+             * reuses the existing long[] arrays in {@link NodeLabelUpdate}, merely shuffles numbers
+             * around and possible terminates them with -1 because the logical change set can be
+             * equally big or smaller than the physical change set.
+             *
+             * The change to logical add/remove state favors the batch loop when flushing later.
+             * The logic is a bit complicated and should be tested in isolation.
+             */
+            private void convertToAdditionsAndRemovals( NodeLabelUpdate update )
+            {
+                int beforeLength = update.getLabelsBefore().length;
+                int afterLength = update.getLabelsAfter().length;
+                if ( tmpBefore.length < update.getLabelsBefore().length )
+                {
+                    tmpBefore = new long[update.getLabelsBefore().length];
+                }
+                if ( tmpAfter.length < update.getLabelsAfter().length )
+                {
+                    tmpAfter = new long[update.getLabelsAfter().length];
+                }
+                arraycopy( update.getLabelsBefore(), 0, tmpBefore, 0, beforeLength );
+                arraycopy( update.getLabelsAfter(), 0, tmpAfter, 0, afterLength );
+
+                int bc = 0, ac = 0;
+                for ( int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; )
+                {
+                    long beforeId = bi < beforeLength ? tmpBefore[bi] : -1;
+                    long afterId = ai < afterLength ? tmpAfter[ai] : -1;
+                    if ( beforeId == afterId )
+                    {   // no change
+                        bi++;
+                        ai++;
+                    }
+                    else if ( beforeId < afterId || bi == -1 )
+                    {   // only found in afterId == addition
+                        update.getLabelsAfter()[ac++] = afterId;
+                        pendingUpdatesCount++;
+                        ai++;
+                    }
+                    else if ( afterId < beforeId || ai == -1 )
+                    {   // only found in beforeId == removal
+                        update.getLabelsBefore()[bc++] = beforeId;
+                        pendingUpdatesCount++;
+                        bi++;
+                    }
+                }
+
+                terminateWithMinusOneIfNeeded( update.getLabelsBefore(), bc );
+                terminateWithMinusOneIfNeeded( update.getLabelsAfter(), ac );
+            }
+
+            private void terminateWithMinusOneIfNeeded( long[] labelIds, int bc )
+            {
+                if ( bc < labelIds.length )
+                {
+                    labelIds[bc] = -1;
                 }
             }
 
@@ -176,10 +242,15 @@ public class NativeLabelScanStore implements LabelScanStore
                     for ( int i = 0; i < pendingUpdatesCursor; i++ )
                     {
                         NodeLabelUpdate update = pendingUpdates[i];
-                        final long[] labelsAfter = update.getLabelsAfter();
                         final long nodeId = update.getNodeId();
-                        for ( long labelId : labelsAfter )
+                        // Additions
+                        for ( long labelId : update.getLabelsAfter() )
                         {
+                            if ( labelId == -1 )
+                            {
+                                break;
+                            }
+
                             if ( labelId > currentLabelId && labelId < nextLabelId )
                             {
                                 nextLabelId = labelId;
@@ -192,6 +263,30 @@ public class NativeLabelScanStore implements LabelScanStore
                                 value[0] = nodeId;
                                 inserter.insert( key, value );
                                 pendingUpdatesCount--;
+                                break;
+                            }
+                        }
+                        // Removals
+                        for ( long labelId : update.getLabelsBefore() )
+                        {
+                            if ( labelId == -1 )
+                            {
+                                break;
+                            }
+
+                            if ( labelId > currentLabelId && labelId < nextLabelId )
+                            {
+                                nextLabelId = labelId;
+                            }
+
+                            if ( labelId == currentLabelId )
+                            {
+                                key[0] = labelId;
+                                key[1] = nodeId;
+                                value[0] = nodeId;
+                                inserter.remove( key );
+                                pendingUpdatesCount--;
+                                break;
                             }
                         }
                     }
