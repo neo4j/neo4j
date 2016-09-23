@@ -24,7 +24,6 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
-import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
@@ -63,6 +62,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
     private HazelcastInstance hazelcastInstance;
     private EdgeTopology latestEdgeTopology;
+    private CoreTopology latestCoreTopology;
 
     HazelcastCoreTopologyService( Config config, MemberId myself, LogProvider logProvider, LogProvider userLogProvider )
     {
@@ -92,9 +92,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
         membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
-        mapRegistrationId = hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME ).addEntryListener( new OurEntryListener(), true );
-        listenerService.notifyListeners( coreServers());
+        mapRegistrationId = hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
+                .addEntryListener( new OurEntryListener(), true );
+        refreshCoreTopology();
         refreshEdgeTopology();
+        listenerService.notifyListeners( coreServers() );
     }
 
     @Override
@@ -123,8 +125,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
         tcpIpConfig.setEnabled( true );
 
-        List<AdvertisedSocketAddress> initialMembers =
-                config.get( CoreEdgeClusterSettings.initial_discovery_members );
+        List<AdvertisedSocketAddress> initialMembers = config.get( CoreEdgeClusterSettings.initial_discovery_members );
         for ( AdvertisedSocketAddress address : initialMembers )
         {
             tcpIpConfig.addMember( address.toString() );
@@ -182,7 +183,14 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     @Override
     public CoreTopology coreServers()
     {
-        return HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log );
+        return latestCoreTopology;
+    }
+
+    private void refreshCoreTopology()
+    {
+        latestCoreTopology = HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log );
+        log.info( "Current core topology is %s", coreServers() );
+        listenerService.notifyListeners( coreServers() );
     }
 
     private void refreshEdgeTopology()
@@ -205,16 +213,14 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         public void memberAdded( MembershipEvent membershipEvent )
         {
             log.info( "Core member added %s", membershipEvent );
-            log.info( "Current core topology is %s", coreServers() );
-            listenerService.notifyListeners( coreServers());
+            refreshCoreTopology();
         }
 
         @Override
         public void memberRemoved( MembershipEvent membershipEvent )
         {
             log.info( "Core member removed %s", membershipEvent );
-            log.info( "Current core topology is %s", coreServers() );
-            listenerService.notifyListeners( coreServers());
+            refreshCoreTopology();
         }
 
         @Override
