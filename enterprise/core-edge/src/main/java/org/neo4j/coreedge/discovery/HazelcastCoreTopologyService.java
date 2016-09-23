@@ -94,9 +94,9 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
         mapRegistrationId = hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
                 .addEntryListener( new OurEntryListener(), true );
-        listenerService.notifyListeners( coreServers() );
         refreshCoreTopology();
         refreshEdgeTopology();
+        listenerService.notifyListeners( coreServers() );
     }
 
     @Override
@@ -189,6 +189,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private void refreshCoreTopology()
     {
         latestCoreTopology = HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log );
+        log.info( "Current core topology is %s", coreServers() );
+        listenerService.notifyListeners( coreServers() );
     }
 
     private void refreshEdgeTopology()
@@ -211,8 +213,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         public void memberAdded( MembershipEvent membershipEvent )
         {
             log.info( "Core member added %s", membershipEvent );
-            log.info( "Current core topology is %s", coreServers() );
-            listenerService.notifyListeners( coreServers() );
             refreshCoreTopology();
         }
 
@@ -220,8 +220,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         public void memberRemoved( MembershipEvent membershipEvent )
         {
             log.info( "Core member removed %s", membershipEvent );
-            log.info( "Current core topology is %s", coreServers() );
-            listenerService.notifyListeners( coreServers() );
             refreshCoreTopology();
         }
 
