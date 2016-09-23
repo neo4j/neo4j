@@ -21,6 +21,7 @@ package org.neo4j.index.btree;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Comparator;
 
 import org.neo4j.index.IdProvider;
@@ -480,7 +481,7 @@ public class IndexInsert
 
         // Compare key with lower and higher and sort out special cases
         Comparator<long[]> comparator = bTreeNode.keyComparator();
-        if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) ) > 0 )
+        if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) ) >= 0 )
         {
             pos = keyCount;
         }
@@ -497,7 +498,7 @@ public class IndexInsert
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) <= 0 )
+                if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) < 0 )
                 {
                     higher = pos;
                 }
@@ -514,5 +515,45 @@ public class IndexInsert
             pos = lower;
         }
         return pos;
+    }
+
+    public long[] remove( PageCursor cursor, long[] key ) throws IOException
+    {
+        if ( bTreeNode.isLeaf( cursor ) )
+        {
+            return removeFromLeaf( cursor, key );
+        }
+
+        int pos = search( cursor, key );
+        cursor.next( bTreeNode.childAt( cursor, pos ) );
+        return remove( cursor, key );
+    }
+
+    private long[] removeFromLeaf( PageCursor cursor, long[] key )
+    {
+        int keyCount = bTreeNode.keyCount( cursor );
+
+        // No overflow, insert key and value
+        int pos = search( cursor, key ) - 1;
+
+        // Remove and move keys
+        long[] tmpArray = new long[2];
+        bTreeNode.keyAt( cursor, tmpArray, pos );
+        if ( !Arrays.equals( key, tmpArray ) )
+        {
+            return null;
+        }
+        int tmpLength = bTreeNode.keysFromTo( cursor, pos + 1, keyCount, tmp );
+        bTreeNode.setKeysAt( cursor, tmp, pos, tmpLength );
+
+        // Remove and move values
+        bTreeNode.valueAt( cursor, tmpArray, pos );
+        tmpLength = bTreeNode.valuesFromTo( cursor, pos + 1, keyCount, tmp );
+        bTreeNode.setValuesAt( cursor, tmp, pos, tmpLength );
+
+        // Decrease key count
+        bTreeNode.setKeyCount( cursor, keyCount - 1 );
+
+        return tmpArray;
     }
 }

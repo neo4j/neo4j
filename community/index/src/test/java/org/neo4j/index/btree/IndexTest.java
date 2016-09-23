@@ -27,6 +27,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
@@ -42,6 +43,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -94,7 +97,7 @@ public class IndexTest
     }
 
     @Test
-    public void shouldSeekToFind() throws Exception
+    public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
         try ( Index index = new Index( pageCache, indexFile, description, pageSize ) )
@@ -102,7 +105,7 @@ public class IndexTest
             Comparator<long[]> keyComparator = index.getTreeNode().keyComparator();
             Map<long[],long[]> data = new TreeMap<>( keyComparator );
             Random random = ThreadLocalRandom.current();
-            int count = 1_000;
+            int count = 100;
             for ( int i = 0; i < count; i++ )
             {
                 data.put( randomTreeThing( random ), randomTreeThing( random ) );
@@ -117,42 +120,82 @@ public class IndexTest
                 }
             }
 
-            // THEN
-            for ( int i = 0; i < count*10; i++ )
+            for ( int round = 0; round < 10; round++ )
             {
-                long[] first = randomTreeThing( random );
-                long[] second = randomTreeThing( random );
-                long[] from, to;
-                if ( first[0] < second[0] )
+                // THEN
+                for ( int i = 0; i < count*10; i++ )
                 {
-                    from = first;
-                    to = second;
+                    long[] first = randomTreeThing( random );
+                    long[] second = randomTreeThing( random );
+                    long[] from, to;
+                    if ( first[0] < second[0] )
+                    {
+                        from = first;
+                        to = second;
+                    }
+                    else
+                    {
+                        from = second;
+                        to = first;
+                    }
+                    RangePredicate fromPredicate = greaterOrEqual( from[0], from[1] );
+                    RangePredicate toPredicate = lower( to[0], to[1] );
+                    Map<long[],long[]> expectedHits = expectedHits( data, fromPredicate, toPredicate, keyComparator );
+                    try ( Cursor<BTreeHit> result = index.seek( fromPredicate, toPredicate ) )
+                    {
+                        while ( result.next() )
+                        {
+                            long[] key = result.get().key();
+                            if ( expectedHits.remove( key ) == null )
+                            {
+                                fail( "Unexpected hit " + Arrays.toString( key ) + " when searching for " +
+                                        fromPredicate + " - " + toPredicate );
+                            }
+                            assertTrue( fromPredicate.inRange( key ) >= 0 );
+                            assertTrue( toPredicate.inRange( key ) <= 0 ); // apparently "lower" range predicate
+                                                                           // returns 0 for equal ids, even if prop is lower
+                        }
+                        if ( !expectedHits.isEmpty() )
+                        {
+                            fail( "There were results which were expected to be returned, but weren't:" + expectedHits );
+                        }
+                    }
+                }
+
+                randomlyModifyIndex( index, data, random );
+            }
+        }
+    }
+
+    private void randomlyModifyIndex( Index index, Map<long[],long[]> data, Random random ) throws IOException
+    {
+        int changeCount = random.nextInt( 10 ) + 10;
+        try ( SCInserter modifier = index.inserter() )
+        {
+            for ( int i = 0; i < changeCount; i++ )
+            {
+                if ( random.nextBoolean() && data.size() > 0 )
+                {   // remove
+                    long[] key = randomKey( data, random );
+                    long[] value = data.remove( key );
+                    long[] removedValue = modifier.remove( key );
+                    assertArrayEquals( "For " + Arrays.toString( key ), value, removedValue );
                 }
                 else
-                {
-                    from = second;
-                    to = first;
-                }
-                RangePredicate fromPredicate = greaterOrEqual( from[0], from[1] );
-                RangePredicate toPredicate = lower( to[0], to[1] );
-                Map<long[],long[]> expectedHits = expectedHits( data, fromPredicate, toPredicate, keyComparator );
-                try ( Cursor<BTreeHit> result = index.seek( fromPredicate, toPredicate ) )
-                {
-                    while ( result.next() )
-                    {
-                        long[] key = result.get().key();
-                        assertTrue( expectedHits.remove( key ) != null );
-                        assertTrue( fromPredicate.inRange( key ) >= 0 );
-                        assertTrue( toPredicate.inRange( key ) <= 0 ); // apparently "lower" range predicate
-                                                                       // returns 0 for equal ids, even if prop is lower
-                    }
-                    if ( !expectedHits.isEmpty() )
-                    {
-                        fail( "There were results which were expected to be returned, but weren't:" + expectedHits );
-                    }
+                {   // insert
+                    long[] key = randomTreeThing( random );
+                    long[] value = randomTreeThing( random );
+                    modifier.insert( key, value );
+                    data.put( key, value );
                 }
             }
         }
+    }
+
+    private long[] randomKey( Map<long[],long[]> data, Random random )
+    {
+        long[][] keys = data.keySet().toArray( new long[data.size()][] );
+        return keys[random.nextInt( keys.length )];
     }
 
     private Map<long[],long[]> expectedHits( Map<long[],long[]> data, RangePredicate fromPredicate,

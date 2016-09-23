@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.btree;
 
+import java.util.Arrays;
+
 import org.neo4j.index.BTreeHit;
 
 public class MutableBTreeHit implements BTreeHit
@@ -42,5 +44,11 @@ public class MutableBTreeHit implements BTreeHit
     public long[] value()
     {
         return value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "[key:" + Arrays.toString( key ) + ", value:" + Arrays.toString( value ) + "]";
     }
 }

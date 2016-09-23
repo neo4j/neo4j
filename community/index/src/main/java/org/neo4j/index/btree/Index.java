@@ -24,7 +24,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.index.BTreeHit;
@@ -380,14 +379,27 @@ public class Index implements SCIndex, IdProvider
     // Utility method
     protected static void printKeys( PageCursor cursor, TreeNode bTreeNode )
     {
+        boolean isLeaf = bTreeNode.isLeaf( cursor );
         int keyCount = bTreeNode.keyCount( cursor );
-        System.out.print( "|" );
+        System.out.print( "|{" + cursor.getCurrentPageId() + "}" );
         long[] key = new long[2];
+        long[] value = new long[2];
         for ( int i = 0; i < keyCount; i++ )
         {
-            System.out.print( Arrays.toString( bTreeNode.keyAt( cursor, key, i ) ) + " " );
+            bTreeNode.keyAt( cursor, key, i );
+            System.out.print( "[" + key[0] + "," + key[1] + "=" );
+            if ( isLeaf )
+            {
+                bTreeNode.valueAt( cursor, value, i );
+                System.out.print( value[0] + "," + value[1] );
+            }
+            else
+            {
+                System.out.print( bTreeNode.childAt( cursor, i + 1 ) );
+            }
+            System.out.print( "]" );
         }
-        System.out.print( "|" );
+        System.out.println( "|" );
     }
 
     class TheInserter implements SCInserter
@@ -422,6 +434,14 @@ public class Index implements SCIndex, IdProvider
                 bTreeNode.setChildAt( cursor, split.right, 1 );
                 updateIdsInMetaPage();
             }
+        }
+
+        @Override
+        public long[] remove( long[] key ) throws IOException
+        {
+            cursor.next( rootId );
+
+            return inserter.remove( cursor, key );
         }
 
         @Override

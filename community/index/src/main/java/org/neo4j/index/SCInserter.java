@@ -25,4 +25,6 @@ import java.io.IOException;
 public interface SCInserter extends Closeable
 {
     void insert( long[] key, long[] value ) throws IOException;
+
+    long[] remove( long[] key ) throws IOException;
 }
