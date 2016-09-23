@@ -30,7 +30,7 @@ public final class ManagementData extends DependencyResolver.Adapter
     private final ManagementSupport support;
     final ManagementBeanProvider provider;
 
-    ManagementData( ManagementBeanProvider provider, KernelData kernel, ManagementSupport support )
+    public ManagementData( ManagementBeanProvider provider, KernelData kernel, ManagementSupport support )
     {
         this.provider = provider;
         this.kernel = kernel;

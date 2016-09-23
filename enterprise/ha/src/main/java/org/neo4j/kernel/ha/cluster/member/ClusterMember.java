@@ -42,7 +42,7 @@ public class ClusterMember
         this( instanceId, Collections.<String,URI>emptyMap(), StoreId.DEFAULT, true );
     }
 
-    ClusterMember( InstanceId instanceId, Map<String,URI> roles, StoreId storeId, boolean alive )
+    public ClusterMember( InstanceId instanceId, Map<String,URI> roles, StoreId storeId, boolean alive )
     {
         this.instanceId = instanceId;
         this.roles = roles;
