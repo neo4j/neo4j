@@ -43,27 +43,27 @@ public interface AuthInfo extends Serializable
      *
      * @return a principal that uniquely identifies the authenticated subject within this realm.
      */
-    Object getPrincipal();
+    Object principal();
 
     /**
      * Should return the roles assigned to this principal.
      *
      * @return the roles assigned to this principal
      */
-    Collection<String> getRoles();
+    Collection<String> roles();
 
     static AuthInfo of( Object principal, Collection<String> roles )
     {
         return new AuthInfo()
         {
             @Override
-            public Object getPrincipal()
+            public Object principal()
             {
                 return principal;
             }
 
             @Override
-            public Collection<String> getRoles()
+            public Collection<String> roles()
             {
                 return roles;
             }

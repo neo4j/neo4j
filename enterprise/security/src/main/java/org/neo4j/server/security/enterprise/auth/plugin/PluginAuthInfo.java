@@ -53,28 +53,28 @@ public class PluginAuthInfo extends ShiroAuthenticationInfo implements Authoriza
 
     private PluginAuthInfo( AuthInfo authInfo, SimpleHash hashedCredentials, String realmName )
     {
-        this( authInfo.getPrincipal(), hashedCredentials.getBytes(), hashedCredentials.getSalt(), realmName,
-                authInfo.getRoles().stream().collect( Collectors.toSet() ) );
+        this( authInfo.principal(), hashedCredentials.getBytes(), hashedCredentials.getSalt(), realmName,
+                authInfo.roles().stream().collect( Collectors.toSet() ) );
     }
 
     public static PluginAuthInfo create( AuthInfo authInfo, String realmName )
     {
-        return new PluginAuthInfo( authInfo.getPrincipal(), realmName,
-                authInfo.getRoles().stream().collect( Collectors.toSet() ) );
+        return new PluginAuthInfo( authInfo.principal(), realmName,
+                authInfo.roles().stream().collect( Collectors.toSet() ) );
     }
 
     public static PluginAuthInfo createCacheable( AuthInfo authInfo, String realmName, SecureHasher secureHasher )
     {
         if ( authInfo instanceof CacheableAuthInfo )
         {
-            byte[] credentials = ((CacheableAuthInfo) authInfo).getCredentials();
+            byte[] credentials = ((CacheableAuthInfo) authInfo).credentials();
             SimpleHash hashedCredentials = secureHasher.hash( credentials );
             return new PluginAuthInfo( authInfo, hashedCredentials, realmName );
         }
         else
         {
-            return new PluginAuthInfo( authInfo.getPrincipal(), realmName,
-                    authInfo.getRoles().stream().collect( Collectors.toSet() ) );
+            return new PluginAuthInfo( authInfo.principal(), realmName,
+                    authInfo.roles().stream().collect( Collectors.toSet() ) );
         }
     }
 

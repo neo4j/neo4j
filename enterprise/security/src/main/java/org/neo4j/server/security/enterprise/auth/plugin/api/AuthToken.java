@@ -38,7 +38,7 @@ public interface AuthToken
      *
      * @return the identity to authenticate.
      */
-    String getPrincipal();
+    String principal();
 
     /**
      * Returns the credentials that verifies the identity.
@@ -50,7 +50,7 @@ public interface AuthToken
      *
      * @return the credentials that verifies the identity.
      */
-    char[] getCredentials();
+    char[] credentials();
 
     /**
      * Returns an optional custom parameter map if provided by the client.
@@ -60,5 +60,5 @@ public interface AuthToken
      *
      * @return a custom parameter map if provided by the client, otherwise <tt>null</tt>
      */
-    Map<String,Object> getParameters();
+    Map<String,Object> parameters();
 }

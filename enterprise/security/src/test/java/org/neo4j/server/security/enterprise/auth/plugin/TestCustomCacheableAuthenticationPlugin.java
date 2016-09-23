@@ -41,14 +41,14 @@ public class TestCustomCacheableAuthenticationPlugin extends AuthenticationPlugi
     {
         getAuthenticationInfoCallCount.incrementAndGet();
 
-        String principal = authToken.getPrincipal();
-        char[] credentials = authToken.getCredentials();
+        String principal = authToken.principal();
+        char[] credentials = authToken.credentials();
 
         if ( principal.equals( "neo4j" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
         {
             return CustomCacheableAuthenticationInfo.of( "neo4j",
                     ( token ) -> {
-                        char[] tokenCredentials = token.getCredentials();
+                        char[] tokenCredentials = token.credentials();
                         return Arrays.equals( tokenCredentials, "neo4j".toCharArray() );
                     } );
         }

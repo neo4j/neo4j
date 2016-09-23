@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth.plugin;
 
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.naming.Context;
@@ -57,8 +56,8 @@ public class LdapGroupHasUsersAuthPlugin extends AuthPlugin.Adapter
     {
         try
         {
-            String username = authToken.getPrincipal();
-            char[] password = authToken.getCredentials();
+            String username = authToken.principal();
+            char[] password = authToken.credentials();
 
             LdapContext ctx = authenticate( username, password );
             Set<String> roles = authorize( ctx, username );

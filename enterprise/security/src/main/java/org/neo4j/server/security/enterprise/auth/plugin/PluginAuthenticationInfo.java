@@ -55,13 +55,13 @@ public class PluginAuthenticationInfo extends ShiroAuthenticationInfo implements
 
     private static PluginAuthenticationInfo create( AuthenticationInfo authenticationInfo, String realmName )
     {
-        return new PluginAuthenticationInfo( authenticationInfo.getPrincipal(), realmName, null );
+        return new PluginAuthenticationInfo( authenticationInfo.principal(), realmName, null );
     }
 
     private static PluginAuthenticationInfo create( AuthenticationInfo authenticationInfo, SimpleHash hashedCredentials,
             String realmName )
     {
-        return new PluginAuthenticationInfo( authenticationInfo.getPrincipal(),
+        return new PluginAuthenticationInfo( authenticationInfo.principal(),
                 hashedCredentials.getBytes(), hashedCredentials.getSalt(), realmName );
     }
 
@@ -71,11 +71,11 @@ public class PluginAuthenticationInfo extends ShiroAuthenticationInfo implements
         if ( authenticationInfo instanceof CustomCacheableAuthenticationInfo )
         {
             CustomCacheableAuthenticationInfo info = (CustomCacheableAuthenticationInfo) authenticationInfo;
-            return new PluginAuthenticationInfo( authenticationInfo, realmName, info.getCredentialsMatcher() );
+            return new PluginAuthenticationInfo( authenticationInfo, realmName, info.credentialsMatcher() );
         }
         else if ( authenticationInfo instanceof CacheableAuthenticationInfo )
         {
-            byte[] credentials = ((CacheableAuthenticationInfo) authenticationInfo).getCredentials();
+            byte[] credentials = ((CacheableAuthenticationInfo) authenticationInfo).credentials();
             SimpleHash hashedCredentials = secureHasher.hash( credentials );
             return PluginAuthenticationInfo.create( authenticationInfo, hashedCredentials, realmName );
         }

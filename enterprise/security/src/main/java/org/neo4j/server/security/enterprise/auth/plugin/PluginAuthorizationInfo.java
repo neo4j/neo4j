@@ -35,6 +35,6 @@ public class PluginAuthorizationInfo extends SimpleAuthorizationInfo
 
     public static PluginAuthorizationInfo create( AuthorizationInfo authorizationInfo )
     {
-        return new PluginAuthorizationInfo( new LinkedHashSet<>( authorizationInfo.getRoles() ) );
+        return new PluginAuthorizationInfo( new LinkedHashSet<>( authorizationInfo.roles() ) );
     }
 }

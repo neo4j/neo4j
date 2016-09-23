@@ -37,7 +37,7 @@ public interface AuthenticationInfo extends Serializable
      *
      * @return a principal that uniquely identifies the authenticated subject within this realm.
      */
-    Object getPrincipal();
+    Object principal();
 
     static AuthenticationInfo of( Object principal )
     {

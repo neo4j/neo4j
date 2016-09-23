@@ -42,19 +42,19 @@ public class PluginApiAuthToken implements AuthToken
     }
 
     @Override
-    public String getPrincipal()
+    public String principal()
     {
         return principal;
     }
 
     @Override
-    public char[] getCredentials()
+    public char[] credentials()
     {
         return credentials;
     }
 
     @Override
-    public Map<String,Object> getParameters()
+    public Map<String,Object> parameters()
     {
         return parameters;
     }

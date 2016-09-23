@@ -38,8 +38,8 @@ public class TestAuthPlugin extends AuthPlugin.Adapter
     @Override
     public AuthInfo authenticateAndAuthorize( AuthToken authToken )
     {
-        String principal = authToken.getPrincipal();
-        char[] credentials = authToken.getCredentials();
+        String principal = authToken.principal();
+        char[] credentials = authToken.credentials();
 
         if ( principal.equals( "neo4j" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
         {

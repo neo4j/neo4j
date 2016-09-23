@@ -36,8 +36,8 @@ public class TestAuthenticationPlugin extends AuthenticationPlugin.Adapter
     @Override
     public AuthenticationInfo authenticate( AuthToken authToken )
     {
-        String principal = authToken.getPrincipal();
-        char[] credentials = authToken.getCredentials();
+        String principal = authToken.principal();
+        char[] credentials = authToken.credentials();
 
         if ( principal.equals( "neo4j" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
         {

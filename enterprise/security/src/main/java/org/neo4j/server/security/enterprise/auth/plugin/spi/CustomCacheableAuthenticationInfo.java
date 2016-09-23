@@ -31,7 +31,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
  * <p>This is an alternative to <tt>CacheableAuthenticationInfo</tt> to use if you want to manage your own way of
  * hashing and matching credentials. On authentication, when a cached authentication info from a previous successful
  * authentication attempt is found for the principal within the auth token map, then <tt>doCredentialsMatch</tt>
- * of the <tt>CredentialsMatcher</tt> returned by <tt>getCredentialsMatcher</tt> will be called to determine
+ * of the <tt>CredentialsMatcher</tt> returned by <tt>credentialsMatcher</tt> will be called to determine
  * if the credentials match.
  *
  * <p>NOTE: Caching only occurs if it is explicitly enabled by the plugin.
@@ -66,20 +66,20 @@ public interface CustomCacheableAuthenticationInfo extends AuthenticationInfo
      * @return the credentials matcher that will be used to verify the credentials of an auth token against the
      *         cached credentials in this object
      */
-    CredentialsMatcher getCredentialsMatcher();
+    CredentialsMatcher credentialsMatcher();
 
     static CustomCacheableAuthenticationInfo of( Object principal, CredentialsMatcher credentialsMatcher )
     {
         return new CustomCacheableAuthenticationInfo()
         {
             @Override
-            public Object getPrincipal()
+            public Object principal()
             {
                 return principal;
             }
 
             @Override
-            public CredentialsMatcher getCredentialsMatcher()
+            public CredentialsMatcher credentialsMatcher()
             {
                 return credentialsMatcher;
             }

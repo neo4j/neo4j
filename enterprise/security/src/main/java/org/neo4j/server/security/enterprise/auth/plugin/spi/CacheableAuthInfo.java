@@ -58,10 +58,10 @@ public interface CacheableAuthInfo extends AuthInfo
      *
      * @return a principal that uniquely identifies the authenticated subject within this realm
      *
-     * @see AuthToken#getPrincipal()
+     * @see AuthToken#principal()
      */
     @Override
-    Object getPrincipal();
+    Object principal();
 
     /**
      * Should return credentials that can be cached, so that successive authentication attempts could be performed
@@ -73,29 +73,29 @@ public interface CacheableAuthInfo extends AuthInfo
      *
      * @return credentials that can be cached
      *
-     * @see AuthToken#getCredentials()
+     * @see AuthToken#credentials()
      * @see AuthPlugin#authenticateAndAuthorize(AuthToken)
      */
-    byte[] getCredentials();
+    byte[] credentials();
 
     static CacheableAuthInfo of( Object principal, byte[] credentials, Collection<String> roles )
     {
         return new CacheableAuthInfo()
         {
             @Override
-            public Object getPrincipal()
+            public Object principal()
             {
                 return principal;
             }
 
             @Override
-            public byte[] getCredentials()
+            public byte[] credentials()
             {
                 return credentials;
             }
 
             @Override
-            public Collection<String> getRoles()
+            public Collection<String> roles()
             {
                 return roles;
             }
