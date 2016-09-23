@@ -57,9 +57,29 @@ public class DeleteCommandTest extends UsersCommandTestBase
     }
 
     @Test
+    public void shouldNotDeleteDefaultUser() throws Throwable
+    {
+        // Given - default user
+        createTestUser( "neo4j", "abc" );
+
+        // When
+        try
+        {
+            UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
+            usersCommand.execute( new String[]{"delete", "neo4j"} );
+        }
+        catch ( CommandFailed e )
+        {
+            // Expect failure message
+            assertThat( e.getMessage(), containsString( "Deleting the only remaining user 'neo4j' is not allowed" ) );
+        }
+    }
+
+    @Test
     public void shouldDeleteExistingUser() throws Throwable
     {
         // Given - existing user
+        createTestUser( "neo4j", "abc" );
         createTestUser( "another", "abc" );
 
         // When - creating new user

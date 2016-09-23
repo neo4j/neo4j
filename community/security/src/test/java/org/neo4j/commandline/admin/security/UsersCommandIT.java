@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -35,6 +36,18 @@ public class UsersCommandIT extends UsersCommandTestBase
 {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDir );
+
+    @Before
+    public void setup()
+    {
+        super.setup();
+        // the following line ensures that the test setup code (like creating test users) works on the same initial
+        // environment that the actual tested commands will encounter. In particular some auth state is created
+        // on demand in both the UserCommand and in the real server. We want that state created before the tests
+        // are run.
+        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( "list") );
+        resetOutsideWorldMock();
+    }
 
     @Test
     public void shouldGetUsageErrorsWithNoSubCommand() throws Throwable
@@ -259,18 +272,41 @@ public class UsersCommandIT extends UsersCommandTestBase
     }
 
     @Test
-    public void shouldDeleteDefaultUser() throws Throwable
+    public void shouldNotDeleteDefaultUserIfNoOtherUserExists() throws Throwable
     {
         // Given default state (only default user)
+
+        // When running 'delete' with correct parameters, expect error
+        assertFailedSubCommand( "delete", args("neo4j"), "Deleting the only remaining user 'neo4j' is not allowed" );
+    }
+
+    @Test
+    public void shouldDeleteDefaultUserIfAnotherUserExists() throws Throwable
+    {
+        // Given a user that requires password change
+        createTestUser( "another", "neo4j" );
 
         // When running 'delete' with correct parameters, expect success
         assertSuccessfulSubCommand( "delete", args("neo4j"), "Deleted user 'neo4j'" );
     }
 
     @Test
-    public void shouldDeleteExistingUser() throws Throwable
+    public void shouldNotDeleteExistingUserIfNoOtherUserExists() throws Throwable
     {
         // Given a user that requires password change
+        createTestUser( "another", "neo4j" );
+
+        // When running 'delete' with correct parameters, expect success
+        assertSuccessfulSubCommand( "delete", args("neo4j"), "Deleted user 'neo4j'" );
+
+        // When running 'delete' with correct parameters, expect error
+        assertFailedSubCommand( "delete", args("another"), "Deleting the only remaining user 'another' is not allowed" );
+    }
+
+    @Test
+    public void shouldDeleteExistingUser() throws Throwable
+    {
+        // Given the default user and another new user
         createTestUser( "another", "neo4j" );
 
         // When running 'create' with correct parameters, expect correct output

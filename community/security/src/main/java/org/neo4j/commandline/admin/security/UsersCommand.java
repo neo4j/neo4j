@@ -183,6 +183,10 @@ public class UsersCommand implements AdminCommand
     {
         BasicAuthManager authManager = getAuthManager();
         authManager.getUser( username );    // Will throw error on missing user
+        if ( authManager.getAllUsernames().size() == 1 )
+        {
+            throw new IllegalArgumentException( "Deleting the only remaining user '" + username + "' is not allowed" );
+        }
         if ( authManager.deleteUser( username ) )
         {
             outsideWorld.stdOutLine( "Deleted user '" + username + "'" );
