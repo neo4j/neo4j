@@ -25,6 +25,24 @@ import scala.collection.JavaConverters._
 
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("IN should work with list slices") {
+    val query = """WITH [1, 2, 3] AS list
+                  |RETURN 3 IN list[0..1] AS r
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("r" -> false)))
+  }
+
+  test("IN should work with literal list slices") {
+    val query = "RETURN 3 IN [1, 2, 3][0..1] AS r"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("r" -> false)))
+  }
+
   test("accepts property access on type Any") {
     val query = "WITH [{prop: 1}, 1] AS list RETURN (list[0]).prop AS p"
 

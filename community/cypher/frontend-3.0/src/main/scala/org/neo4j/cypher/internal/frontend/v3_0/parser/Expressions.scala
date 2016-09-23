@@ -128,7 +128,6 @@ trait Expressions extends Parser
   private def Expression3: Rule1[ast.Expression] = rule("an expression") {
     Expression2 ~ zeroOrMore(WS ~ (
         "[" ~~ Expression ~~ "]" ~~>> (ast.ContainerIndex(_: ast.Expression, _))
-      | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (ast.ListSlice(_: ast.Expression, _, _))
       | group(operator("=~") ~~ Expression2) ~~>> (ast.RegexMatch(_: ast.Expression, _))
       | group(keyword("IN") ~~ Expression2) ~~>> (ast.In(_: ast.Expression, _))
       | group(keyword("STARTS WITH") ~~ Expression2) ~~>> (ast.StartsWith(_: ast.Expression, _))
@@ -143,6 +142,7 @@ trait Expressions extends Parser
     Expression1 ~ zeroOrMore(WS ~ (
         PropertyLookup
       | NodeLabels ~~>> (ast.HasLabels(_: ast.Expression, _))
+      | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (ast.ListSlice(_: ast.Expression, _, _))
     ))
   }
 
