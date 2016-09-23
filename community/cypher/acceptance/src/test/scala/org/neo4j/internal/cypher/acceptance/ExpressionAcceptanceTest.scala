@@ -25,6 +25,24 @@ import scala.collection.JavaConverters._
 
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("IN should work with nested list subscripting") {
+    val query = """WITH [[1, 2, 3]] AS list
+                  |RETURN 3 IN list[0] AS r
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("r" -> true)))
+  }
+
+  test("IN should work with nested literal list subscripting") {
+    val query = "RETURN 3 IN [[1, 2, 3]][0] AS r"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("r" -> true)))
+  }
+
   test("IN should work with list slices") {
     val query = """WITH [1, 2, 3] AS list
                   |RETURN 3 IN list[0..1] AS r
