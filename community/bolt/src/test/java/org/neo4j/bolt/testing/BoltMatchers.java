@@ -225,7 +225,7 @@ public class BoltMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "can reset" );
+                description.appendText( "in state " + state.name() );
             }
         };
     }

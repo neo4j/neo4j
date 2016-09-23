@@ -45,6 +45,7 @@ import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.CONNECTED;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.FAILED;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.READY;
+import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.STREAMING;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.EMPTY_PARAMS;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.USER_AGENT;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
@@ -200,6 +201,36 @@ public class BoltStateMachineTest
 
         // Then the transaction should still be open
         assertThat( machine, hasTransaction() );
+    }
+
+    @Test
+    public void shouldIgnoreAckFailureWhenInReadyState() throws Throwable
+    {
+        // Given a ready machine
+        final BoltStateMachine machine = newMachine( READY );
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.ackFailure( recorder );
+
+        // Then
+        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( machine, inState( READY ) );
+    }
+
+    @Test
+    public void shouldIgnoreAckFailureWhenInStreamingState() throws Throwable
+    {
+        // Given a streaming machine
+        final BoltStateMachine machine = newMachine( STREAMING );
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.ackFailure( recorder );
+
+        // Then
+        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( machine, inState( STREAMING ) );
     }
 
     @Test
