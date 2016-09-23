@@ -53,7 +53,6 @@ import org.neo4j.coreedge.messaging.RaftOutbound;
 import org.neo4j.coreedge.messaging.SenderService;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -146,7 +145,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new StoreFiles( new DefaultFileSystemAbstraction() ),
+                new StoreFiles( fileSystem ),
                 platformModule.dataSourceManager,
                 platformModule.pageCache,
                 fileSystem,
