@@ -22,9 +22,80 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.cypher._
-import org.neo4j.kernel.api.proc.Neo4jTypes
 
 class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
+
+  test("should work inside FOREACH") {
+    registerProcedureWithSideEffects()
+
+    val query = """WITH [1, 2, 3] AS list
+                  |FOREACH (i IN list |
+                  |  CALL test.createSmallPattern()
+                  |)
+                """.stripMargin
+
+    val result = execute(query)
+    result.toList shouldBe empty
+
+    val controlQuery = execute("MATCH (:A)-->(:B) RETURN 1 AS row")
+    controlQuery.toList should equal(List(Map("row" -> 1),
+                                          Map("row" -> 1),
+                                          Map("row" -> 1)))
+  }
+
+  test("should work inside FOREACH with other clauses") {
+    registerProcedureWithSideEffects()
+
+    val query = """WITH [1, 2, 3] AS list
+                  |FOREACH (i IN list |
+                  |  CALL test.createSmallPattern()
+                  |  CREATE (:Label)
+                  |)
+                """.stripMargin
+
+    val result = execute(query)
+    result.toList shouldBe empty
+
+    val controlQuery = execute("MATCH (:A)-->(:B) MATCH (:Label) RETURN count(*) AS c")
+    controlQuery.toList should equal(List(Map("c" -> 9)))
+  }
+
+  test("should work inside FOREACH with many calls") {
+    registerProcedureWithSideEffects()
+
+    val query = """WITH [1, 2, 3] AS list
+                  |FOREACH (i IN list |
+                  |  CALL test.createSmallPattern()
+                  |  CALL test.createSmallPattern()
+                  |)
+                """.stripMargin
+
+    val result = execute(query)
+    result.toList shouldBe empty
+
+    val controlQuery = execute("MATCH (:A)-->(:B) RETURN count(*) AS c")
+    controlQuery.toList should equal(List(Map("c" -> 6)))
+  }
+
+  test("should work inside FOREACH with many calls and other clauses") {
+    registerProcedureWithSideEffects()
+
+    val query = """WITH [1, 2, 3] AS list
+                  |FOREACH (i IN list |
+                  |  CALL test.createSmallPattern()
+                  |  CREATE (:Label1)
+                  |  CALL test.createSmallPattern()
+                  |  CREATE (:Label2)
+                  |  CALL test.createSmallPattern()
+                  |)
+                """.stripMargin
+
+    val result = execute(query)
+    result.toList shouldBe empty
+
+    val controlQuery = execute("MATCH (:A)-->(:B) MATCH (:Label1) MATCH (:Label2) RETURN count(*) AS c")
+    controlQuery.toList should equal(List(Map("c" -> 9 * 3 * 3)))
+  }
 
   test("should fail if calling procedure via rule planner") {
     an [InternalException] shouldBe thrownBy(execute(
