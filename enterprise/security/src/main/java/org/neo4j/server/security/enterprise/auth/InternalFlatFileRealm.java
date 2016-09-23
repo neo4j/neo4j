@@ -161,25 +161,28 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
         try
         {
             final boolean valid;
+            final boolean needsUpdate;
             synchronized ( this )
             {
                 ListSnapshot<User> users = userRepository.getPersistedSnapshot();
                 ListSnapshot<RoleRecord> roles = roleRepository.getPersistedSnapshot();
-                boolean needsUpdate = users.updated() || roles.updated();
-                valid = !needsUpdate || RoleRepository.validate( users.values(), roles.values() );
+
+                needsUpdate = users.fromPersisted() || roles.fromPersisted();
+                valid = needsUpdate && RoleRepository.validate( users.values(), roles.values() );
+
                 if ( valid )
                 {
-                    if ( users.updated() )
+                    if ( users.fromPersisted() )
                     {
                         userRepository.setUsers( users );
                     }
-                    if ( roles.updated() )
+                    if ( roles.fromPersisted() )
                     {
                         roleRepository.setRoles( roles );
                     }
                 }
             }
-            if ( !valid )
+            if ( needsUpdate && !valid )
             {
                 failures.add( "Role-auth file combination not valid." );
                 Thread.sleep( 10 );
@@ -555,8 +558,6 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     @Override
     public void suspendUser( String username ) throws IOException, InvalidArgumentsException
     {
-        // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
-        // If user is modified between getUserByName and update, we get ConcurrentModificationException and try again
         User user = getUser( username );
         if ( !user.hasFlag( IS_SUSPENDED ) )
         {
@@ -581,8 +582,6 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     public void activateUser( String username, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
-        // If user is modified between getUserByName and update, we get ConcurrentModificationException and try again
         User user = getUser( username );
         if ( user.hasFlag( IS_SUSPENDED ) )
         {
