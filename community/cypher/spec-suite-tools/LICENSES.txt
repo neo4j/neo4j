@@ -7,10 +7,10 @@ Apache Software License, Version 2.0
   Batik AWT utilities
   Batik Java2D SVG generator
   Batik utility library
+  Caffeine cache
   casbah-commons
   casbah-core
   casbah-query
-  ConcurrentLinkedHashMap
   Cucumber-JVM Repackaged Dependencies
   Joda convert
   Joda-Time

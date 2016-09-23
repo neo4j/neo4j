@@ -197,10 +197,6 @@
           <groupId>net.sf.opencsv</groupId>
           <artifactId>opencsv</artifactId>
         </exclusion>
-        <exclusion>
-          <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-          <artifactId>concurrentlinkedhashmap-lru</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
 

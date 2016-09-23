@@ -24,7 +24,7 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v3_1.{LRUCache => LRUCachev3_1, _}
+import org.neo4j.cypher.internal.compiler.v3_1.{LFUCache => LRUCachev3_1, _}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting

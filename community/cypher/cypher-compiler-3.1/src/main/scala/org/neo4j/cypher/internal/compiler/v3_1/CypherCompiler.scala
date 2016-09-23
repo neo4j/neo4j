@@ -87,7 +87,7 @@ object CypherCompilerFactory {
     val rewriter = new ASTRewriter(rewriterSequencer)
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-    val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
+    val queryPlanner = DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
     val compiledPlanBuilder = CompiledPlanBuilder(clock, structure)
     val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors, typeConverter)
@@ -107,7 +107,7 @@ object CypherCompilerFactory {
       updateStrategy = updateStrategy,
       publicTypeConverter = typeConverter.asPublicType
     )
-    val procedurePlanProducer = new DelegatingProcedureExecutablePlanBuilder(costPlanProducer, typeConverter.asPublicType)
+    val procedurePlanProducer = DelegatingProcedureExecutablePlanBuilder(costPlanProducer, typeConverter.asPublicType)
     val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
       typeConverter = typeConverter)
 
@@ -116,12 +116,12 @@ object CypherCompilerFactory {
                                                    procedurePlanProducer, planBuilderMonitor, config.useErrorsOverWarnings)
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph,clock, planBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _) )
-    val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](config.queryCacheSize)
+    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
+    CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
 
   def ruleBasedCompiler(graph: GraphDatabaseQueryService,
@@ -131,16 +131,16 @@ object CypherCompilerFactory {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
-    val pipeBuilder = new DelegatingProcedureExecutablePlanBuilder(
+    val pipeBuilder = DelegatingProcedureExecutablePlanBuilder(
       new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
         typeConverter = typeConverter), typeConverter.asPublicType)
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph, clock, pipeBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
-    val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](config.queryCacheSize)
+    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
+    CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
@@ -155,7 +155,7 @@ case class CypherCompiler(parser: CypherParser,
                           executionPlanBuilder: ExecutionPlanBuilder,
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
-                          planCacheFactory: () => LRUCache[Statement, ExecutionPlan],
+                          planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
                           monitors: Monitors) {
 

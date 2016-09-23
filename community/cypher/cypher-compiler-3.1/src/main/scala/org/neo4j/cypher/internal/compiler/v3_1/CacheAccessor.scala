@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
-trait CacheAccessor[K, T] {
-  def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T): T
-  def remove(cache: LRUCache[K, T])(key: K, userKey: String)
+trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
+  def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T
+  def remove(cache: LFUCache[K, T])(key: K, userKey: String)
 }
 
-class QueryCache[K, T](cacheAccessor: CacheAccessor[K, T], cache: LRUCache[K, T]) {
+class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], cache: LFUCache[K, T]) {
   def getOrElseUpdate(key: K, userKey: String, isStale: T => Boolean, produce: => T): (T, Boolean) = {
     if (cache.size == 0)
       (produce, false)
@@ -48,9 +48,9 @@ class QueryCache[K, T](cacheAccessor: CacheAccessor[K, T], cache: LRUCache[K, T]
   }
 }
 
-class MonitoringCacheAccessor[K, T](monitor: CypherCacheHitMonitor[K]) extends CacheAccessor[K, T] {
+class MonitoringCacheAccessor[K <: AnyRef, T <: AnyRef](monitor: CypherCacheHitMonitor[K]) extends CacheAccessor[K, T] {
 
-  override def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T) = {
+  override def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T) = {
     var updated = false
     val value = cache(key, {
       updated = true
@@ -65,7 +65,7 @@ class MonitoringCacheAccessor[K, T](monitor: CypherCacheHitMonitor[K]) extends C
     value
   }
 
-  def remove(cache: LRUCache[K, T])(key: K, userKey: String): Unit = {
+  def remove(cache: LFUCache[K, T])(key: K, userKey: String): Unit = {
     cache.remove(key)
     monitor.cacheDiscard(key, userKey)
   }
