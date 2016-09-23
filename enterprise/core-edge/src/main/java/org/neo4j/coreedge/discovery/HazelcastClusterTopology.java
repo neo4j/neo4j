@@ -25,20 +25,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.IMap;
+import com.hazelcast.core.Member;
+
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
-
-import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IAtomicReference;
-import com.hazelcast.core.IMap;
-import com.hazelcast.core.Member;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
@@ -54,7 +53,7 @@ class HazelcastClusterTopology
     static final String TRANSACTION_SERVER = "transaction_server";
     static final String DISCOVERY_SERVER = "discovery_server";
     static final String RAFT_SERVER = "raft_server";
-    static final String BOLT_SERVER = "bolt_server";
+    static final String CLIENT_CONNECTOR_ADDRESSES = "client_connector_addresses";
 
     static EdgeTopology getEdgeTopology( HazelcastInstance hazelcastInstance, Log log )
     {
@@ -117,8 +116,7 @@ class HazelcastClusterTopology
 
         return edgeServerMap
                 .entrySet().stream()
-                .map( entry -> new EdgeAddresses(
-                        socketAddress( entry.getValue() /*boltAddress*/, AdvertisedSocketAddress::new ) ) )
+                .map( entry -> new EdgeAddresses( ClientConnectorAddresses.fromString( entry.getValue() ) ) )
                 .collect( toSet() );
     }
 
@@ -164,8 +162,8 @@ class HazelcastClusterTopology
         AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
         memberAttributeConfig.setStringAttribute( RAFT_SERVER, raftAddress.toString() );
 
-        AdvertisedSocketAddress boltAddress = EnterpriseEdgeEditionModule.extractBoltAddress( config );
-        memberAttributeConfig.setStringAttribute( BOLT_SERVER, boltAddress.toString() );
+        ClientConnectorAddresses clientConnectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
+        memberAttributeConfig.setStringAttribute( CLIENT_CONNECTOR_ADDRESSES, clientConnectorAddresses.toString() );
         return memberAttributeConfig;
     }
 
@@ -176,7 +174,7 @@ class HazelcastClusterTopology
         return Pair.of( memberId, new CoreAddresses(
                 socketAddress( member.getStringAttribute( RAFT_SERVER ), AdvertisedSocketAddress::new ),
                 socketAddress( member.getStringAttribute( TRANSACTION_SERVER ), AdvertisedSocketAddress::new ),
-                socketAddress( member.getStringAttribute( BOLT_SERVER ), AdvertisedSocketAddress::new ) )
-        );
+                ClientConnectorAddresses.fromString( member.getStringAttribute( CLIENT_CONNECTOR_ADDRESSES ) )
+        ) );
     }
 }

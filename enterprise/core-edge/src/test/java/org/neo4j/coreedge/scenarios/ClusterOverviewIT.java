@@ -19,14 +19,18 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
+import org.hamcrest.Description;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,6 +38,7 @@ import org.junit.runners.Parameterized;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
@@ -48,10 +53,16 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 
+import static org.neo4j.coreedge.discovery.procedures.Role.FOLLOWER;
+import static org.neo4j.coreedge.discovery.procedures.Role.LEADER;
+import static org.neo4j.coreedge.discovery.procedures.Role.READ_REPLICA;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -101,8 +112,8 @@ public class ClusterOverviewIT
         Cluster cluster = clusterRule.startCluster();
 
         Matcher<List<MemberInfo>> expected = allOf(
-                containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),
-                containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ), doesNotContainRole( Role.READ_REPLICA ) );
+                containsMemberAddresses( cluster.coreMembers() ),
+                containsRole( LEADER, 1 ), containsRole( FOLLOWER, 2 ), doesNotContainRole( READ_REPLICA ) );
 
         for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
         {
@@ -122,9 +133,8 @@ public class ClusterOverviewIT
         Cluster cluster = clusterRule.startCluster();
 
         Matcher<List<MemberInfo>> expected = allOf(
-                containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),
-                containsAddress( "127.0.0.1:9000" ), containsAddress( "127.0.0.1:9001" ), containsAddress( "127.0.0.1:9002" ),
-                containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ), containsRole( Role.READ_REPLICA, 3 ) );
+                containsAllMemberAddresses( cluster.coreMembers(), cluster.edgeMembers() ),
+                containsRole( LEADER, 1 ), containsRole( FOLLOWER, 2 ), containsRole( READ_REPLICA, 3 ) );
 
         for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
         {
@@ -146,9 +156,8 @@ public class ClusterOverviewIT
         cluster.startCoreMembers();
 
         Matcher<List<MemberInfo>> expected = allOf(
-                containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),
-                containsAddress( "127.0.0.1:9000" ), containsAddress( "127.0.0.1:9001" ), containsAddress( "127.0.0.1:9002" ),
-                containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ), containsRole( Role.READ_REPLICA, 3 ) );
+                containsAllMemberAddresses( cluster.coreMembers(), cluster.edgeMembers() ),
+                containsRole( LEADER, 1 ), containsRole( FOLLOWER, 2 ), containsRole( READ_REPLICA, 3 ) );
 
         for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
         {
@@ -171,9 +180,8 @@ public class ClusterOverviewIT
         cluster.addCoreMemberWithId( 4 ).start();
 
         Matcher<List<MemberInfo>> expected = allOf(
-                containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),
-                containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 4 ),
-                containsAddress( "127.0.0.1:8003" ), containsAddress( "127.0.0.1:8004" ) ); // new core members
+                containsMemberAddresses( cluster.coreMembers() ),
+                containsRole( LEADER, 1 ), containsRole( FOLLOWER, 4 ) );
 
         for ( int coreServerId = 0; coreServerId < 5; coreServerId++ )
         {
@@ -196,10 +204,8 @@ public class ClusterOverviewIT
         cluster.addEdgeMemberWithId( 4 ).start();
 
         Matcher<List<MemberInfo>> expected = allOf(
-                containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),
-                containsAddress( "127.0.0.1:9000" ), containsAddress( "127.0.0.1:9001" ), containsAddress( "127.0.0.1:9002" ),
-                containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ), containsRole( Role.READ_REPLICA, 5 ),
-                containsAddress( "127.0.0.1:9003" ), containsAddress( "127.0.0.1:9004" ) ); // new edge members
+                containsAllMemberAddresses( cluster.coreMembers(), cluster.edgeMembers() ),
+                containsRole( LEADER, 1 ), containsRole( FOLLOWER, 2 ), containsRole( READ_REPLICA, 5 ) );
 
         for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
         {
@@ -219,7 +225,7 @@ public class ClusterOverviewIT
 
         for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
         {
-            assertEventualOverview( cluster, containsRole( Role.READ_REPLICA, 3 ), coreServerId );
+            assertEventualOverview( cluster, containsRole( READ_REPLICA, 3 ), coreServerId );
         }
 
         // when
@@ -229,7 +235,7 @@ public class ClusterOverviewIT
         for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
         {
             // then
-            assertEventualOverview( cluster, containsRole( Role.READ_REPLICA, 1 ), coreServerId );
+            assertEventualOverview( cluster, containsRole( READ_REPLICA, 1 ), coreServerId );
         }
     }
 
@@ -244,7 +250,7 @@ public class ClusterOverviewIT
 
         for ( int coreServerId = 0; coreServerId < 5; coreServerId++ )
         {
-            assertEventualOverview( cluster, allOf( containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 4 ) ),
+            assertEventualOverview( cluster, allOf( containsRole( LEADER, 1 ), containsRole( FOLLOWER, 4 ) ),
                     coreServerId );
         }
 
@@ -255,7 +261,7 @@ public class ClusterOverviewIT
         for ( int coreServerId = 2; coreServerId < 5; coreServerId++ )
         {
             // then
-            assertEventualOverview( cluster, allOf( containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ) ),
+            assertEventualOverview( cluster, allOf( containsRole( LEADER, 1 ), containsRole( FOLLOWER, 2 ) ),
                     coreServerId );
         }
     }
@@ -267,16 +273,44 @@ public class ClusterOverviewIT
                 () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 60, SECONDS );
     }
 
-    private Matcher<List<MemberInfo>> containsAddress( String expectedAddress )
+    private Matcher<Iterable<? extends MemberInfo>> containsAllMemberAddresses(
+            Collection<? extends ClusterMember>... members )
     {
-        return new FeatureMatcher<List<MemberInfo>,Long>( equalTo( 1L ), expectedAddress, "count" )
+        ArrayList<ClusterMember> clusterMembers = new ArrayList<>();
+        for ( Collection<? extends ClusterMember> member : members )
         {
-            @Override
-            protected Long featureValueOf( List<MemberInfo> overview )
-            {
-                return overview.stream().filter( info -> info.address.equals( expectedAddress ) ).count();
-            }
-        };
+            clusterMembers.addAll( member );
+        }
+        return containsMemberAddresses( clusterMembers );
+    }
+
+    private Matcher<Iterable<? extends MemberInfo>> containsMemberAddresses( Collection<? extends ClusterMember> members )
+    {
+        return containsInAnyOrder( members.stream().map( coreClusterMember ->
+                new TypeSafeMatcher<MemberInfo>()
+                {
+                    @Override
+                    protected boolean matchesSafely( MemberInfo item )
+                    {
+                        Set<String> addresses = asSet(item.addresses);
+                        for ( URI uri : coreClusterMember.clientConnectorAddresses().uriList() )
+                        {
+                            if (!addresses.contains( uri.toString() ))
+                            {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public void describeTo( Description description )
+                    {
+                        description.appendText( "MemberInfo with addresses: " )
+                                .appendValue( coreClusterMember.clientConnectorAddresses().getBoltAddress() );
+                    }
+                }
+        ).collect( toList() ) );
     }
 
     private Matcher<List<MemberInfo>> containsRole( Role expectedRole, long expectedCount )
@@ -311,20 +345,23 @@ public class ClusterOverviewIT
             while ( itr.hasNext() )
             {
                 Object[] row = itr.next();
-                infos.add( new MemberInfo( (String) row[1], Role.valueOf( (String) row[2] ) ) );
+                Object[] addresses = (Object[]) row[1];
+                infos.add( new MemberInfo( Arrays.copyOf( addresses, addresses.length, String[].class ),
+                        Role.valueOf( (String) row[2] ) ) );
             }
         }
+
         return infos;
     }
 
     private static class MemberInfo
     {
-        private final String address;
+        private final String[] addresses;
         private final Role role;
 
-        MemberInfo( String address, Role role )
+        MemberInfo( String[] addresses, Role role )
         {
-            this.address = address;
+            this.addresses = addresses;
             this.role = role;
         }
 
@@ -332,27 +369,28 @@ public class ClusterOverviewIT
         public boolean equals( Object o )
         {
             if ( this == o )
-            { return true; }
+            {
+                return true;
+            }
             if ( o == null || getClass() != o.getClass() )
-            { return false; }
+            {
+                return false;
+            }
             MemberInfo that = (MemberInfo) o;
-            return Objects.equals( address, that.address ) &&
-                   Objects.equals( role, that.role );
+            return Arrays.equals( addresses, that.addresses ) &&
+                    role == that.role;
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash( address, role );
+            return Objects.hash( addresses, role );
         }
 
         @Override
         public String toString()
         {
-            return "MemberInfo{" +
-                   "address='" + address + '\'' +
-                   ", role=" + role +
-                   '}';
+            return String.format( "MemberInfo{addresses='%s', role=%s}", addresses, role );
         }
     }
 }

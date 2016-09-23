@@ -48,7 +48,7 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 public class ClusterOverviewProcedureTest
 {
     @Test
-    public void shouldProvideOverivewOfCoreAndEdgeServers() throws Exception
+    public void shouldProvideOverviewOfCoreAndEdgeServers() throws Exception
     {
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
@@ -78,11 +78,11 @@ public class ClusterOverviewProcedureTest
 
         // then
         assertThat( members, IsIterableContainingInOrder.contains(
-                new Object[]{theLeader.getUuid().toString(), "localhost:3000", "LEADER"},
-                new Object[]{follower1.getUuid().toString(), "localhost:3001", "FOLLOWER"},
-                new Object[]{follower2.getUuid().toString(), "localhost:3002", "FOLLOWER"},
-                new Object[]{"00000000-0000-0000-0000-000000000000", "localhost:3004", "READ_REPLICA"},
-                new Object[]{"00000000-0000-0000-0000-000000000000", "localhost:3005", "READ_REPLICA"}
+                new Object[]{theLeader.getUuid().toString(), new String[] {"bolt://localhost:3000"}, "LEADER"},
+                new Object[]{follower1.getUuid().toString(), new String[] {"bolt://localhost:3001"}, "FOLLOWER"},
+                new Object[]{follower2.getUuid().toString(), new String[] {"bolt://localhost:3002"}, "FOLLOWER"},
+                new Object[]{"00000000-0000-0000-0000-000000000000", new String[] {"bolt://localhost:3004"}, "READ_REPLICA"},
+                new Object[]{"00000000-0000-0000-0000-000000000000", new String[] {"bolt://localhost:3005"}, "READ_REPLICA"}
         ) );
     }
 }

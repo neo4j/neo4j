@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.discovery.procedures;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,12 +29,12 @@ import java.util.UUID;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
+import org.neo4j.coreedge.discovery.ClientConnectorAddresses;
 import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -58,7 +59,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             LeaderLocator leaderLocator, LogProvider logProvider )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
-                .out( "id", Neo4jTypes.NTString ).out( "address", Neo4jTypes.NTString )
+                .out( "id", Neo4jTypes.NTString ).out( "address", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                 .out( "role", Neo4jTypes.NTString )
                 .description( "Overview of all currently accessible cluster members and their roles." )
                 .build() );
@@ -85,26 +86,26 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 
         for ( MemberId memberId : coreMembers )
         {
-            AdvertisedSocketAddress boltServerAddress = null;
+            ClientConnectorAddresses clientConnectorAddresses = null;
             try
             {
-                boltServerAddress = coreTopology.find( memberId ).getBoltServer();
+                clientConnectorAddresses = coreTopology.find( memberId ).getClientConnectorAddresses();
             }
             catch ( NoKnownAddressesException e )
             {
                 log.debug( "No Address found for " + memberId );
             }
             Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
-            endpoints.add( new ReadWriteEndPoint( boltServerAddress, role, memberId.getUuid() ) );
+            endpoints.add( new ReadWriteEndPoint( clientConnectorAddresses, role, memberId.getUuid() ) );
         }
         for ( EdgeAddresses edgeAddresses : discoveryService.edgeServers().members() )
         {
-            endpoints.add( new ReadWriteEndPoint( edgeAddresses.getBoltAddress(), Role.READ_REPLICA ) );
+            endpoints.add( new ReadWriteEndPoint( edgeAddresses.getClientConnectorAddresses(), Role.READ_REPLICA ) );
         }
 
-        Collections.sort( endpoints, ( o1, o2 ) -> o1.address().toString().compareTo( o2.address().toString() ) );
+        Collections.sort( endpoints, ( o1, o2 ) -> o1.addresses().toString().compareTo( o2.addresses().toString() ) );
 
-        return map( ( l ) -> new Object[]{l.identifier().toString(), l.address().toString(), l.role().name()},
+        return map( ( l ) -> new Object[]{l.identifier().toString(), l.addresses().uriList().stream().map( URI::toString ).toArray(), l.role().name()},
                 asRawIterator( endpoints.iterator() ) );
     }
 
@@ -112,13 +113,13 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     {
         private static final UUID ZERO_ID = new UUID( 0, 0 );
 
-        private final AdvertisedSocketAddress address;
+        private final ClientConnectorAddresses clientConnectorAddresses;
         private final Role role;
         private final UUID identifier;
 
-        public AdvertisedSocketAddress address()
+        public ClientConnectorAddresses addresses()
         {
-            return address;
+            return clientConnectorAddresses;
         }
 
         public Role role()
@@ -131,14 +132,14 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             return identifier == null ? ZERO_ID : identifier;
         }
 
-        ReadWriteEndPoint( AdvertisedSocketAddress address, Role role )
+        ReadWriteEndPoint( ClientConnectorAddresses clientConnectorAddresses, Role role )
         {
-            this( address, role, null );
+            this( clientConnectorAddresses, role, null );
         }
 
-        ReadWriteEndPoint( AdvertisedSocketAddress address, Role role, UUID identifier )
+        ReadWriteEndPoint( ClientConnectorAddresses clientConnectorAddresses, Role role, UUID identifier )
         {
-            this.address = address;
+            this.clientConnectorAddresses = clientConnectorAddresses;
             this.role = role;
             this.identifier = identifier;
         }

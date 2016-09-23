@@ -192,8 +192,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         long edgeRefreshRate = config.get( CoreEdgeClusterSettings.edge_refresh_rate );
 
         TopologyService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config,
-                extractBoltAddress( config ), logProvider, refreshEdgeTimeoutService, edgeTimeToLiveTimeout,
-                edgeRefreshRate );
+                logProvider, refreshEdgeTimeoutService, edgeTimeToLiveTimeout, edgeRefreshRate );
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
         Clock clock = Clocks.systemClock();
@@ -249,13 +248,6 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, copiedStoreRecovery ) );
 
         dependencies.satisfyDependency( createSessionTracker() );
-    }
-
-    public static AdvertisedSocketAddress extractBoltAddress( Config config )
-    {
-        return boltConnectors( config ).stream().findFirst()
-                .map( boltConnector -> config.get( boltConnector.advertised_address ) ).orElseThrow( () ->
-                        new IllegalArgumentException( "A Bolt connector must be configured to run a cluster" ) );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,

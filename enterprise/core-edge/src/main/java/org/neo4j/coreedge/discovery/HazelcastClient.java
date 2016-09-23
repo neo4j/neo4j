@@ -28,7 +28,7 @@ import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.spi.exception.RetryableIOException;
 
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -41,7 +41,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
     static final RenewableTimeoutService.TimeoutName REFRESH_EDGE = () -> "Refresh Edge";
     private final Log log;
-    private final AdvertisedSocketAddress boltAddress;
+    private final ClientConnectorAddresses connectorAddresses;
     private final HazelcastConnector connector;
     private final RenewableTimeoutService renewableTimeoutService;
     private HazelcastInstance hazelcastInstance;
@@ -49,14 +49,14 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private final long edgeTimeToLiveTimeout;
     private final long edgeRefreshRate;
 
-    HazelcastClient( HazelcastConnector connector, LogProvider logProvider, AdvertisedSocketAddress boltAddress,
+    HazelcastClient( HazelcastConnector connector, LogProvider logProvider, Config config,
                      RenewableTimeoutService renewableTimeoutService, long edgeTimeToLiveTimeout, long edgeRefreshRate )
     {
         this.connector = connector;
         this.renewableTimeoutService = renewableTimeoutService;
         this.edgeRefreshRate = edgeRefreshRate;
         this.log = logProvider.getLog( getClass() );
-        this.boltAddress = boltAddress;
+        this.connectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
         this.edgeTimeToLiveTimeout = edgeTimeToLiveTimeout;
     }
 
@@ -88,12 +88,12 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private Object addEdgeServer( HazelcastInstance hazelcastInstance )
     {
         String uuid = hazelcastInstance.getLocalEndpoint().getUuid();
-        String address = boltAddress.toString();
+        String addresses = connectorAddresses.toString();
 
-        log.debug( "Adding edge server into cluster (%s -> %s)", uuid, address  );
+        log.debug( "Adding edge server into cluster (%s -> %s)", uuid, addresses  );
 
         return hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
-                .put( uuid, address, edgeTimeToLiveTimeout, MILLISECONDS );
+                .put( uuid, addresses, edgeTimeToLiveTimeout, MILLISECONDS );
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.neo4j.coreedge.discovery.procedures;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,8 @@ import java.util.stream.Collectors;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
+import org.neo4j.coreedge.discovery.ClientConnectorAddresses;
+import org.neo4j.coreedge.discovery.ClientConnectorAddresses.ConnectorUri;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
@@ -47,6 +50,8 @@ import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -54,6 +59,8 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.coreedge.discovery.ClientConnectorAddresses.Scheme.bolt;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
@@ -261,7 +268,7 @@ public class GetServersProcedureTest
         assertThat( readServers.get( "role" ), equalTo( "READ" ) );
         assertThat( asList( readServers.get( "addresses" ) ),
                 containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString(),
-                        edgeAddresses( 1 ).getBoltAddress().toString() ) );
+                        edgeAddresses( 1 ).getClientConnectorAddresses().getBoltAddress().toString() ) );
 
         Map<String,Object[]> routingServers = servers.get( 2 );
         assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
@@ -403,12 +410,14 @@ public class GetServersProcedureTest
     static CoreAddresses coreAddresses( int id )
     {
         AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
-        return new CoreAddresses( advertisedSocketAddress, advertisedSocketAddress, advertisedSocketAddress );
+        return new CoreAddresses( advertisedSocketAddress, advertisedSocketAddress,
+                new ClientConnectorAddresses( singletonList( new ConnectorUri( bolt, advertisedSocketAddress ) ) ) );
     }
 
     private static EdgeAddresses edgeAddresses( int id )
     {
         AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
-        return new EdgeAddresses( advertisedSocketAddress );
+        return new EdgeAddresses(
+                new ClientConnectorAddresses( singletonList( new ConnectorUri( bolt, advertisedSocketAddress ) ) ) );
     }
 }
