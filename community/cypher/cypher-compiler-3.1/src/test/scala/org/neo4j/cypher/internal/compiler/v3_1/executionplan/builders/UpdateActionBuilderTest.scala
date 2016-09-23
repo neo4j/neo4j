@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_1.commands._
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{CollectionSliceExpression, Variable, Literal}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{ListSlice, Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v3_1.mutation._
 
@@ -69,7 +69,7 @@ class UpdateActionBuilderTest extends BuilderTest {
   test("single_relationship_missing_nodes_with_expression") {
     val q = PartiallySolvedQuery().copy(updates = Seq(
       Unsolved(CreateRelationship("r",
-        RelationshipEndpoint(CollectionSliceExpression(Variable("p"), Some(Literal(0)), Some(Literal(1))), Map(), Seq.empty),
+        RelationshipEndpoint(ListSlice(Variable("p"), Some(Literal(0)), Some(Literal(1))), Map(), Seq.empty),
         RelationshipEndpoint(Variable("b"), Map(), Seq.empty), "LOVES", Map()))))
 
     assertRejects(q)

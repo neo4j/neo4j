@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.Query
 import org.neo4j.cypher.internal.compiler.v3_1.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
-class RewriteEqualityToInCollectionTest extends CypherFunSuite with AstRewritingTestSupport {
+class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("MATCH (a) WHERE id(a) = 42 (no dependencies on the RHS)") {
     shouldRewrite(
@@ -70,7 +70,7 @@ class RewriteEqualityToInCollectionTest extends CypherFunSuite with AstRewriting
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val result = rewriteEqualityToInList(original)
+    val result = rewriteEqualityToInPredicate(original)
 
     result should equal(expected)
   }

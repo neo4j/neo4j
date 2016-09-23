@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
+import org.mockito.Mockito
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{Operations, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
-import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Collection, Literal}
 
 class NodeByIdSeekPipeTest extends CypherFunSuite {
 
@@ -60,7 +60,7 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     )
 
     // whens
-    val result = NodeByIdSeekPipe("a", ManySeekArgs(Collection(Literal(42), Literal(21), Literal(11))))().createResults(queryState)
+    val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))().createResults(queryState)
 
     // then
     result.map(_("a")).toList should equal(List(node1, node2, node3))

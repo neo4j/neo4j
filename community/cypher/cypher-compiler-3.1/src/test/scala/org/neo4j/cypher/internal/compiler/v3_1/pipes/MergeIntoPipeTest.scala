@@ -303,8 +303,8 @@ class MergeIntoPipeTest extends CypherFunSuite {
     when(query.relationshipOps.getProperty(1, "foo".hashCode())).thenReturn(Array("foo", "bar"), Seq.empty: _*)
 
     val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
-    val result = createPipeAndRun(query, left, INCOMING, "A", Map("key" -> Collection(Literal(42), Literal(43)),
-      "foo" -> Collection(Literal("foo"), Literal("bar"))))
+    val result = createPipeAndRun(query, left, INCOMING, "A", Map("key" -> ListLiteral(Literal(42), Literal(43)),
+                                                                  "foo" -> ListLiteral(Literal("foo"), Literal("bar"))))
 
     // then
     val (single :: Nil) = result

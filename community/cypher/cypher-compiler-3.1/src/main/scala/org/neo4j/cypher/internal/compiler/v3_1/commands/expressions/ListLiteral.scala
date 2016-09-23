@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-object Collection {
+object ListLiteral {
   val empty = Literal(Seq())
 }
 
-case class Collection(arguments: Expression*) extends Expression {
+case class ListLiteral(arguments: Expression*) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = arguments.map(e => e(ctx))
 
-  def rewrite(f: (Expression) => Expression): Expression = f(Collection(arguments.map(f): _*))
+  def rewrite(f: (Expression) => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
 
   def calculateType(symbols: SymbolTable): CypherType =
     arguments.map(_.getType(symbols)) match {

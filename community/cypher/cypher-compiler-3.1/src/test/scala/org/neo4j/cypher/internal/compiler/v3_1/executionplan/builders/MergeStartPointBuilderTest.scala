@@ -66,7 +66,7 @@ class MergeStartPointBuilderTest extends BuilderTest {
   test("should_solved_merge_node_start_points_inside_foreach") {
     // Given FOREACH(x in [1,2,3] | MERGE (x:Label {prop:x}))
     val pipe = new FakePipe(Iterator.empty, variable -> CTNode)
-    val collection = Collection(Literal(1), Literal(2), Literal(3))
+    val collection = ListLiteral(Literal(1), Literal(2), Literal(3))
     val prop = Unresolved("prop", TokenType.PropertyKey)
     val query = newQuery(
       updates = Seq(ForeachAction(collection, "x", Seq(mergeNodeAction.copy(props = Map(prop -> Variable("x"))))))

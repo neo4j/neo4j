@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-case class CollectionSliceExpression(collection: Expression, from: Option[Expression], to: Option[Expression])
+case class ListSlice(collection: Expression, from: Option[Expression], to: Option[Expression])
   extends NullInNullOutExpression(collection) with CollectionSupport {
   def arguments: Seq[Expression] = from.toSeq ++ to.toSeq :+ collection
 
@@ -98,7 +98,7 @@ case class CollectionSliceExpression(collection: Expression, from: Option[Expres
   }
 
   def rewrite(f: (Expression) => Expression): Expression =
-    f(CollectionSliceExpression(collection.rewrite(f), from.map(_.rewrite(f)), to.map(_.rewrite(f))))
+    f(ListSlice(collection.rewrite(f), from.map(_.rewrite(f)), to.map(_.rewrite(f))))
 
   def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 }

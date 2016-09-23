@@ -38,7 +38,7 @@ abstract class CachedInTest extends CypherFunSuite {
 
   test("tests") {
     // given
-    val predicate = createPredicate(Variable("x"), Collection(Literal(1), Literal(2), Literal(3)))
+    val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(3)))
 
     implicit val state = QueryStateHelper.empty
 
@@ -59,7 +59,7 @@ abstract class CachedInTest extends CypherFunSuite {
 
   test("check with a collection containing null") {
     // given
-    val predicate = createPredicate(Variable("x"), Collection(Literal(1), Literal(2), Literal(null)))
+    val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(null)))
 
     implicit val state = QueryStateHelper.empty
 
@@ -101,9 +101,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
   test("check lists") {
     // given
-    val listInList = Collection(
-      Collection(Literal(1), Literal(2)),
-      Collection(Literal(3), Literal(4)))
+    val listInList = ListLiteral(
+      ListLiteral(Literal(1), Literal(2)),
+      ListLiteral(Literal(3), Literal(4)))
     val predicate = createPredicate(Variable("x"), listInList)
 
     implicit val state = QueryStateHelper.empty

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
+import org.mockito.Mockito
+import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{Operations, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Collection, Literal}
-import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 
 class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
@@ -70,7 +70,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val relName = "a"
     // whens
     val result =
-      UndirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(Collection(Literal(42), Literal(21))), to, from)().
+      UndirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)().
       createResults(queryState)
 
     // then

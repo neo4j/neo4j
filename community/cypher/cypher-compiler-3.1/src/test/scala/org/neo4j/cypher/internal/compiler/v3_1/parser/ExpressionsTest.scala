@@ -88,31 +88,31 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
   }
 
   test("array_indexing") {
-    val collection = legacy.Collection(legacy.Literal(1), legacy.Literal(2), legacy.Literal(3), legacy.Literal(4))
+    val collection = legacy.ListLiteral(legacy.Literal(1), legacy.Literal(2), legacy.Literal(3), legacy.Literal(4))
 
     parsing("[1,2,3,4][1..2]") shouldGive
-      legacy.CollectionSliceExpression(collection, Some(legacy.Literal(1)), Some(legacy.Literal(2)))
+      legacy.ListSlice(collection, Some(legacy.Literal(1)), Some(legacy.Literal(2)))
 
     parsing("[1,2,3,4][1..2][2..3]") shouldGive
-      legacy.CollectionSliceExpression(legacy.CollectionSliceExpression(collection, Some(legacy.Literal(1)), Some(legacy.Literal(2))), Some(legacy.Literal(2)), Some(legacy.Literal(3)))
+      legacy.ListSlice(legacy.ListSlice(collection, Some(legacy.Literal(1)), Some(legacy.Literal(2))), Some(legacy.Literal(2)), Some(legacy.Literal(3)))
 
     parsing("collection[1..2]") shouldGive
-      legacy.CollectionSliceExpression(legacy.Variable("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2)))
+      legacy.ListSlice(legacy.Variable("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2)))
 
     parsing("[1,2,3,4][2]") shouldGive
       legacy.ContainerIndex(collection, legacy.Literal(2))
 
     parsing("[[1,2]][0][6]") shouldGive
-      legacy.ContainerIndex(legacy.ContainerIndex(legacy.Collection(legacy.Collection(legacy.Literal(1), legacy.Literal(2))), legacy.Literal(0)), legacy.Literal(6))
+      legacy.ContainerIndex(legacy.ContainerIndex(legacy.ListLiteral(legacy.ListLiteral(legacy.Literal(1), legacy.Literal(2))), legacy.Literal(0)), legacy.Literal(6))
 
     parsing("collection[1..2][0]") shouldGive
-      legacy.ContainerIndex(legacy.CollectionSliceExpression(legacy.Variable("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2))), legacy.Literal(0))
+      legacy.ContainerIndex(legacy.ListSlice(legacy.Variable("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2))), legacy.Literal(0))
 
     parsing("collection[..-2]") shouldGive
-      legacy.CollectionSliceExpression(legacy.Variable("collection"), None, Some(legacy.Literal(-2)))
+      legacy.ListSlice(legacy.Variable("collection"), None, Some(legacy.Literal(-2)))
 
     parsing("collection[1..]") shouldGive
-      legacy.CollectionSliceExpression(legacy.Variable("collection"), Some(legacy.Literal(1)), None)
+      legacy.ListSlice(legacy.Variable("collection"), Some(legacy.Literal(1)), None)
   }
 
   test("literal_maps") {

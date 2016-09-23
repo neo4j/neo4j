@@ -23,16 +23,16 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
-class CollectionTest extends CypherFunSuite {
+class ListLiteralTest extends CypherFunSuite {
   test("empty_collection_should_have_any_type") {
-    Collection().getType(SymbolTable()) should equal(CTList(CTAny))
+    ListLiteral().getType(SymbolTable()) should equal(CTList(CTAny))
   }
 
   test("collection_with_one_item_should_be_typed_for_that_items_type") {
-    Collection(Literal(1)).getType(SymbolTable()) should equal(CTList(CTInteger))
+    ListLiteral(Literal(1)).getType(SymbolTable()) should equal(CTList(CTInteger))
   }
 
   test("collection_with_several_items_should_be_typed_for_their_common_supertype"){
-    Collection(Literal(1), Literal(true)).getType(SymbolTable()) should equal(CTList(CTAny))
+    ListLiteral(Literal(1), Literal(true)).getType(SymbolTable()) should equal(CTList(CTAny))
   }
 }

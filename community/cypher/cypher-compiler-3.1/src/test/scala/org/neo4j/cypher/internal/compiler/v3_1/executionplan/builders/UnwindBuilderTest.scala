@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Collection, Variable, Literal}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.{AllVariables, Query, ReturnItem, Unwind}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.UnwindPipe
 
@@ -27,7 +27,7 @@ class UnwindBuilderTest extends BuilderTest {
   val builder = new UnwindBuilder
 
   test("should_accept_queries_containing_unsolved_load_csv_items") {
-    val unwind = Unwind(Collection(Literal(1),Literal(2)),"y")
+    val unwind = Unwind(ListLiteral(Literal(1), Literal(2)), "y")
     val q = Query.
       start(unwind).
       returns(ReturnItem(Variable("y"),"y"))

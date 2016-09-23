@@ -199,7 +199,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val variable = "id"
     val label = "label"
     val property = "prop"
-    val collectionExpression: Expression = Collection(Literal(42),Literal(43))
+    val collectionExpression: Expression = ListLiteral(Literal(42), Literal(43))
     val predicate = AnyInCollection(collectionExpression,"_variable_",Equals(Property(Variable(variable), PropertyKey(property)),Variable("_variable_")))
 
     check(variable, label, property, predicate, ManyQueryExpression(collectionExpression))
@@ -210,7 +210,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val variable = "id"
     val label = "label"
     val property = "prop"
-    val collectionExpression: Expression = Collection(Literal(42),Literal(42))
+    val collectionExpression: Expression = ListLiteral(Literal(42), Literal(42))
     val predicate = AnyInCollection(collectionExpression,"_variable_",Equals(Property(Variable(variable), PropertyKey(property)),Variable("_variable_")))
 
     check(variable, label, property, predicate, ManyQueryExpression(collectionExpression))
@@ -232,7 +232,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val variable = "id"
     val label = "label"
     val property = "prop"
-    val collectionExpression: Expression = Collection()
+    val collectionExpression: Expression = ListLiteral()
     val predicate = AnyInCollection(collectionExpression,"_variable_",Equals(Property(Variable(variable), PropertyKey(property)),Variable("_variable_")))
 
     check(variable, label, property, predicate, ManyQueryExpression(collectionExpression))

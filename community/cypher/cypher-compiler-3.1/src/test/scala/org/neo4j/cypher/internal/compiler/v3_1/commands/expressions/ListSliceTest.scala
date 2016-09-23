@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
-class ListSliceExpressionTest extends CypherFunSuite {
+class ListSliceTest extends CypherFunSuite {
 
   test("tests") {
     implicit val collection = Literal(Seq(1, 2, 3, 4))
@@ -64,10 +64,10 @@ class ListSliceExpressionTest extends CypherFunSuite {
   private def slice(from: Int = NO_VALUE, to: Int = NO_VALUE)(implicit collection: Expression) = {
     val f = if (from == NO_VALUE) None else Some(Literal(from))
     val t = if (to == NO_VALUE) None else Some(Literal(to))
-    CollectionSliceExpression(collection, f, t)(ctx)(state)
+    ListSlice(collection, f, t)(ctx)(state)
   }
 
   private def sliceValue(in: Any) = {
-    CollectionSliceExpression(Literal(in), Some(Literal(0)), Some(Literal(1)))(ctx)(state)
+    ListSlice(Literal(in), Some(Literal(0)), Some(Literal(1)))(ctx)(state)
   }
 }
