@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import java.util.Map;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * A cacheable object that can be returned as the result of successful authentication by an
@@ -36,7 +36,7 @@ import java.util.Map;
  *
  * <p>NOTE: Caching only occurs if it is explicitly enabled by the plugin.
  *
- * @see AuthenticationPlugin#authenticate(Map)
+ * @see AuthenticationPlugin#authenticate(AuthToken)
  * @see org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations#setAuthenticationCachingEnabled(boolean)
  * @see CacheableAuthenticationInfo
  */
@@ -45,14 +45,14 @@ public interface CustomCacheableAuthenticationInfo extends AuthenticationInfo
     interface CredentialsMatcher
     {
         /**
-         * Returns true if the credentials of the given auth token matches the credentials of the cached
+         * Returns true if the credentials of the given <tt>AuthToken</tt> matches the credentials of the cached
          * <tt>CustomCacheableAuthenticationInfo</tt> that is the owner of this <tt>CredentialsMatcher</tt>.
          *
          * @param authToken
          * @return true if the credentials of the given auth token matches the credentials of this cached
          *         authentication info, otherwise false
          */
-        boolean doCredentialsMatch( Map<String,Object> authToken );
+        boolean doCredentialsMatch( AuthToken authToken );
     }
 
     /**

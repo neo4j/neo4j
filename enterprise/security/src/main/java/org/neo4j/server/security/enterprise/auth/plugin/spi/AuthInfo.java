@@ -21,7 +21,8 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Map;
+
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * An object that can be returned as the result of successful authentication by an <tt>AuthPlugin</tt>.
@@ -30,7 +31,7 @@ import java.util.Map;
  *
  * <p>NOTE: If authentication caching is enabled the result type <tt>CacheableAuthInfo</tt> should be used instead.
  *
- * @see AuthPlugin#authenticateAndAuthorize(Map)
+ * @see AuthPlugin#authenticateAndAuthorize(AuthToken)
  * @see CacheableAuthInfo
  */
 public interface AuthInfo extends Serializable

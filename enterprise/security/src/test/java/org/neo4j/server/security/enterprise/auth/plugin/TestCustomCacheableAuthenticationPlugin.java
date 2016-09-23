@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.util.Map;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
@@ -37,19 +37,19 @@ public class TestCustomCacheableAuthenticationPlugin implements AuthenticationPl
     }
 
     @Override
-    public AuthenticationInfo authenticate( Map<String,Object> authToken )
+    public AuthenticationInfo authenticate( AuthToken authToken )
     {
         getAuthenticationInfoCallCount.incrementAndGet();
 
-        String principal = (String) authToken.get( AuthToken.PRINCIPAL );
-        String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
+        String principal = authToken.getPrincipal();
+        char[] credentials = authToken.getCredentials();
 
-        if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
+        if ( principal.equals( "neo4j" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
         {
             return CustomCacheableAuthenticationInfo.of( "neo4j",
                     ( token ) -> {
-                        String tokenCredentials = (String) token.get( AuthToken.CREDENTIALS );
-                        return tokenCredentials.equals( "neo4j" );
+                        char[] tokenCredentials = token.getCredentials();
+                        return Arrays.equals( tokenCredentials, "neo4j".toCharArray() );
                     } );
         }
         return null;

@@ -36,6 +36,7 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthExpirationException;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
@@ -43,6 +44,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder;
 import org.neo4j.server.security.enterprise.auth.SecureHasher;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
@@ -170,9 +172,11 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         {
             try
             {
+                AuthToken pluginAuthToken =
+                        PluginApiAuthToken.createFromMap( ((ShiroAuthToken) token).getAuthTokenMap() );
                 if ( authPlugin != null )
                 {
-                    AuthInfo authInfo = authPlugin.authenticateAndAuthorize( ((ShiroAuthToken) token).getAuthTokenMap() );
+                    AuthInfo authInfo = authPlugin.authenticateAndAuthorize( pluginAuthToken );
                     if ( authInfo != null )
                     {
                         PluginAuthInfo pluginAuthInfo =
@@ -186,14 +190,15 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
                 else if ( authenticationPlugin != null )
                 {
                     org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo authenticationInfo =
-                            authenticationPlugin.authenticate( ((ShiroAuthToken) token).getAuthTokenMap() );
+                            authenticationPlugin.authenticate( pluginAuthToken );
                     if ( authenticationInfo != null )
                     {
                         return PluginAuthenticationInfo.createCacheable( authenticationInfo, getName(), secureHasher );
                     }
                 }
             }
-            catch ( org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException e )
+            catch ( org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException |
+                    InvalidAuthTokenException e )
             {
                 throw new AuthenticationException( e.getMessage(), e.getCause() );
             }
@@ -328,12 +333,21 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
             {
                 // Authentication info is originating from a CustomCacheableAuthenticationInfo
                 Map<String,Object> authToken = ((ShiroAuthToken) token).getAuthTokenMap();
-                return customCredentialsMatcher.doCredentialsMatch( authToken );
+                try
+                {
+                    AuthToken pluginApiAuthToken = PluginApiAuthToken.createFromMap( authToken );
+                    return customCredentialsMatcher.doCredentialsMatch( pluginApiAuthToken );
+                }
+                catch ( InvalidAuthTokenException e )
+                {
+                    throw new AuthenticationException( e.getMessage() );
+                }
             }
             else if ( info.getCredentials() != null )
             {
                 // Authentication info is originating from a CacheableAuthenticationInfo or a CacheableAuthInfo
-                return secureHasher.getHashedCredentialsMatcher().doCredentialsMatch( token, info );
+                return secureHasher.getHashedCredentialsMatcher()
+                        .doCredentialsMatch( PluginShiroAuthToken.of( token ), info );
             }
             else
             {

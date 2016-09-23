@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.util.Map;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthenticationInfo;
@@ -36,29 +36,16 @@ public class TestCacheableAuthenticationPlugin extends AuthenticationPlugin.Cach
     }
 
     @Override
-    public AuthenticationInfo authenticate( Map<String,Object> authToken )
+    public AuthenticationInfo authenticate( AuthToken authToken )
     {
         getAuthenticationInfoCallCount.incrementAndGet();
 
-        String principal = (String) authToken.get( AuthToken.PRINCIPAL );
-        String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
+        String principal = authToken.getPrincipal();
+        char[] credentials = authToken.getCredentials();
 
-        if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
+        if ( principal.equals( "neo4j" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
         {
-            return new CacheableAuthenticationInfo()
-            {
-                @Override
-                public Object getPrincipal()
-                {
-                    return "neo4j";
-                }
-
-                @Override
-                public byte[] getCredentials()
-                {
-                    return credentials.getBytes();
-                }
-            };
+            return CacheableAuthenticationInfo.of( "neo4j", "neo4j".getBytes() );
         }
         return null;
     }

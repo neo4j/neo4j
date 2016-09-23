@@ -48,6 +48,19 @@ public interface AuthToken
         return (String) value;
     }
 
+    static Map<String,Object> safeCastMap( String key, Map<String,Object> authToken )
+            throws InvalidAuthTokenException
+    {
+        Object value = authToken.get( key );
+        if ( value != null && !(value instanceof Map) )
+        {
+            throw new InvalidAuthTokenException(
+                    "The value associated with the key `" + key + "` must be a Map but was: " +
+                    value.getClass().getSimpleName() );
+        }
+        return (Map<String,Object>) value;
+    }
+
     static Map<String,Object> newBasicAuthToken( String username, String password )
     {
         return map( AuthToken.SCHEME_KEY, BASIC_SCHEME, AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS,

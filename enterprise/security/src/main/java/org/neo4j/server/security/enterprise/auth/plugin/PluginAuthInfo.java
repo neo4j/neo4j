@@ -38,17 +38,23 @@ public class PluginAuthInfo extends ShiroAuthenticationInfo implements Authoriza
 {
     Set<String> roles;
 
-    public PluginAuthInfo( Object principal, String realmName, Set<String> roles )
+    private PluginAuthInfo( Object principal, String realmName, Set<String> roles )
     {
         super( principal, null, realmName, AuthenticationResult.SUCCESS );
         this.roles = roles;
     }
 
-    public PluginAuthInfo( Object principal, Object hashedCredentials, ByteSource credentialsSalt,
+    private PluginAuthInfo( Object principal, Object hashedCredentials, ByteSource credentialsSalt,
             String realmName, Set<String> roles )
     {
         super( principal, hashedCredentials, credentialsSalt, realmName, AuthenticationResult.SUCCESS );
         this.roles = roles;
+    }
+
+    private PluginAuthInfo( AuthInfo authInfo, SimpleHash hashedCredentials, String realmName )
+    {
+        this( authInfo.getPrincipal(), hashedCredentials.getBytes(), hashedCredentials.getSalt(), realmName,
+                authInfo.getRoles().stream().collect( Collectors.toSet() ) );
     }
 
     public static PluginAuthInfo create( AuthInfo authInfo, String realmName )
@@ -57,21 +63,13 @@ public class PluginAuthInfo extends ShiroAuthenticationInfo implements Authoriza
                 authInfo.getRoles().stream().collect( Collectors.toSet() ) );
     }
 
-    private static PluginAuthInfo create( AuthInfo authInfo, SimpleHash hashedCredentials,
-            String realmName )
-    {
-        return new PluginAuthInfo( authInfo.getPrincipal(),
-                hashedCredentials.getBytes(), hashedCredentials.getSalt(), realmName,
-                authInfo.getRoles().stream().collect( Collectors.toSet()) );
-    }
-
     public static PluginAuthInfo createCacheable( AuthInfo authInfo, String realmName, SecureHasher secureHasher )
     {
         if ( authInfo instanceof CacheableAuthInfo )
         {
             byte[] credentials = ((CacheableAuthInfo) authInfo).getCredentials();
             SimpleHash hashedCredentials = secureHasher.hash( credentials );
-            return PluginAuthInfo.create( authInfo, hashedCredentials, realmName );
+            return new PluginAuthInfo( authInfo, hashedCredentials, realmName );
         }
         else
         {

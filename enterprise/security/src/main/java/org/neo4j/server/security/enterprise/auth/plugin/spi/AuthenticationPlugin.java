@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import java.util.Map;
-
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 
@@ -63,7 +62,7 @@ public interface AuthenticationPlugin extends RealmLifecycle
      * @see CustomCacheableAuthenticationInfo
      * @see RealmOperations#setAuthenticationCachingEnabled(boolean)
      */
-    AuthenticationInfo authenticate( Map<String,Object> authToken ) throws AuthenticationException;
+    AuthenticationInfo authenticate( AuthToken authToken ) throws AuthenticationException;
 
     abstract class Adapter implements AuthenticationPlugin
     {

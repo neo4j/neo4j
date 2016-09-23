@@ -20,12 +20,13 @@
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.io.Serializable;
-import java.util.Map;
+
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * An object that can be returned as the result of successful authentication by an <tt>AuthenticationPlugin</tt>.
  *
- * @see AuthenticationPlugin#authenticate(Map)
+ * @see AuthenticationPlugin#authenticate(AuthToken)
  */
 public interface AuthenticationInfo extends Serializable
 {

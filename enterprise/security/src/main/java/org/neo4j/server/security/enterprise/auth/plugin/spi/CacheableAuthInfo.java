@@ -20,7 +20,8 @@
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.util.Collection;
-import java.util.Map;
+
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * A cacheable object that can be returned as the result of successful authentication by an
@@ -40,7 +41,7 @@ import java.util.Map;
  * <p>NOTE: Caching of the authorization info (assigned roles) does not require the use of a <tt>CacheableAuthInfo</tt>
  * but will work fine with a regular <tt>AuthInfo</tt>.
  *
- * @see AuthPlugin#authenticateAndAuthorize(Map)
+ * @see AuthPlugin#authenticateAndAuthorize(AuthToken)
  * @see org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations#setAuthenticationCachingEnabled(boolean)
  * @see AuthInfo
  * @see AuthenticationPlugin
@@ -57,7 +58,7 @@ public interface CacheableAuthInfo extends AuthInfo
      *
      * @return a principal that uniquely identifies the authenticated subject within this realm
      *
-     * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken#PRINCIPAL
+     * @see AuthToken#getPrincipal()
      */
     @Override
     Object getPrincipal();
@@ -72,8 +73,8 @@ public interface CacheableAuthInfo extends AuthInfo
      *
      * @return credentials that can be cached
      *
-     * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken#CREDENTIALS
-     * @see AuthPlugin#authenticateAndAuthorize(Map)
+     * @see AuthToken#getCredentials()
+     * @see AuthPlugin#authenticateAndAuthorize(AuthToken)
      */
     byte[] getCredentials();
 

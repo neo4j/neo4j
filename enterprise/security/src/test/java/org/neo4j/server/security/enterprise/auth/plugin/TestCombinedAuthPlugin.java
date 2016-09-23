@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 
-import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
@@ -40,12 +40,12 @@ public class TestCombinedAuthPlugin implements AuthenticationPlugin, Authorizati
     }
 
     @Override
-    public AuthenticationInfo authenticate( Map<String,Object> authToken )
+    public AuthenticationInfo authenticate( AuthToken authToken )
     {
-        String principal = (String) authToken.get( AuthToken.PRINCIPAL );
-        String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
+        String principal = authToken.getPrincipal();
+        char[] credentials = authToken.getCredentials();
 
-        if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
+        if ( principal.equals( "neo4j" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
         {
             return AuthenticationInfo.of( "neo4j" );
         }
