@@ -36,20 +36,46 @@ public interface RangePredicate
     /**
      * Demands match on id, accept all property values
      * @param id    id to match
-     * @return      A new {@link index.btree.RangePredicate} representing a no limit range
+     * @return      A new {@link RangePredicate} representing a no limit range
      */
     public static RangePredicate noLimit( long id )
     {
-        return key -> key[0] == id ? 0 : key[0] < id ? -1 : 1;
+        return new RangePredicate()
+        {
+            @Override
+            public int inRange( long[] key )
+            {
+                return key[0] == id ? 0 : key[0] < id ? -1 : 1;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "noLimit[" + id + "]";
+            }
+        };
     }
 
     /**
      * No demands. Useful for scans.
-     * @return      A new {@link index.btree.RangePredicate} that have no demands
+     * @return      A new {@link RangePredicate} that have no demands
      */
     public static RangePredicate acceptAll()
     {
-        return key -> 0;
+        return new RangePredicate()
+        {
+            @Override
+            public int inRange( long[] key )
+            {
+                return 0;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "all";
+            }
+        };
     }
 
     /**
@@ -60,14 +86,22 @@ public interface RangePredicate
      */
     public static RangePredicate lower( long id, long prop )
     {
-        return key -> {
-            if ( key[0] == id )
+        return new RangePredicate()
+        {
+            @Override
+            public int inRange( long[] key )
             {
-                return key[1] < prop ? 0 : 1;
-            }
-            else
-            {
+                if ( key[0] == id )
+                {
+                    return key[1] < prop ? 0 : 1;
+                }
                 return key[0] < id ? -1 : 1;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "lower[" + id + "," + prop + "]";
             }
         };
     }
@@ -80,14 +114,22 @@ public interface RangePredicate
      */
     public static RangePredicate lowerOrEqual( long id, long prop )
     {
-        return key -> {
-            if ( key[0] == id )
+        return new RangePredicate()
+        {
+            @Override
+            public int inRange( long[] key )
             {
-                return key[1] <= prop ? 0 : 1;
-            }
-            else
-            {
+                if ( key[0] == id )
+                {
+                    return key[1] <= prop ? 0 : 1;
+                }
                 return key[0] < id ? -1 : 1;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "lowerOrEqual[" + id + "," + prop + "]";
             }
         };
     }
@@ -100,14 +142,22 @@ public interface RangePredicate
      */
     public static RangePredicate greater( long id, long prop )
     {
-        return key -> {
-            if ( key[0] == id )
+        return new RangePredicate()
+        {
+            @Override
+            public int inRange( long[] key )
             {
-                return key[1] > prop ? 0 : -1;
-            }
-            else
-            {
+                if ( key[0] == id )
+                {
+                    return key[1] > prop ? 0 : -1;
+                }
                 return key[0] < id ? -1 : 1;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "greater[" + id + "," + prop + "]";
             }
         };
     }
@@ -120,14 +170,22 @@ public interface RangePredicate
      */
     public static RangePredicate greaterOrEqual( long id, long prop )
     {
-        return key -> {
-            if ( key[0] == id )
+        return new RangePredicate()
+        {
+            @Override
+            public int inRange( long[] key )
             {
-                return key[1] >= prop ? 0 : -1;
-            }
-            else
-            {
+                if ( key[0] == id )
+                {
+                    return key[1] >= prop ? 0 : -1;
+                }
                 return key[0] < id ? -1 : 1;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "greaterOrEqual[" + id + "," + prop + "]";
             }
         };
     }
@@ -140,9 +198,20 @@ public interface RangePredicate
      */
     public static RangePredicate equalTo( long id, long prop )
     {
-        return key -> {
-            int sign = Long.compare( key[0], id );
-            return sign != 0 ? sign : Long.compare( key[1], prop );
+        return new RangePredicate()
+        {
+            @Override
+            public int inRange( long[] key )
+            {
+                int sign = Long.compare( key[0], id );
+                return sign != 0 ? sign : Long.compare( key[1], prop );
+            }
+
+            @Override
+            public String toString()
+            {
+                return "equalTo[" + id + "," + prop + "]";
+            }
         };
     }
 }
