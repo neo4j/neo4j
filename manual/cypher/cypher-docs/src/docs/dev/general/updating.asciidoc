@@ -1,10 +1,10 @@
 [[query-updating]]
-= Updating the graph
+= Querying and updating the graph
 
 Cypher can be used for both querying and updating your graph.
 
 [[query-updating-structure]]
-== The Structure of Updating Queries ==
+== The structure of update queries ==
 
 [abstract]
 * A Cypher query part can't both match and update the graph at the same time.

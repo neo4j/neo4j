@@ -1,41 +1,43 @@
 [[query-syntax]]
 = Syntax =
 
-The nitty-gritty details of Cypher syntax.
+//:leveloffset: 2
 
-:leveloffset: 2
+include::values.asciidoc[leveloffset=+1]
 
-include::values.asciidoc[]
+//:leveloffset: 2
 
-:leveloffset: 2
+include::expressions.asciidoc[leveloffset=+1]
 
-include::expressions.asciidoc[]
+//:leveloffset: 2
 
-:leveloffset: 2
+include::variables.asciidoc[leveloffset=+1]
 
-include::variables.asciidoc[]
+//:leveloffset: 2
 
-:leveloffset: 2
+include::parameters.asciidoc[leveloffset=+1]
 
-include::operators.asciidoc[]
+//:leveloffset: 2
 
-:leveloffset: 2
+include::operators.asciidoc[leveloffset=+1]
 
-include::comparison.asciidoc[]
+//:leveloffset: 2
 
-:leveloffset: 2
+include::comparison.asciidoc[leveloffset=+1]
 
-include::comments.asciidoc[]
+//:leveloffset: 2
 
-:leveloffset: 2
+include::comments.asciidoc[leveloffset=+1]
 
-include::../ql/introduction/pattern.asciidoc[]
+//:leveloffset: 2
 
-:leveloffset: 2
+include::../ql/introduction/pattern.asciidoc[leveloffset=+1]
 
-include::../ql/syntax/lists.asciidoc[]
+//:leveloffset: 2
 
-:leveloffset: 2
+include::../ql/syntax/lists.asciidoc[leveloffset=+1]
 
-include::working-with-null.asciidoc[]
+//:leveloffset: 2
+
+include::working-with-null.asciidoc[leveloffset=+1]
 

@@ -1,4 +1,4 @@
-[[cypher-query-lang]]
+[[cypher]]
 Cypher Query Language
 =====================
 
@@ -10,38 +10,40 @@ To take your first steps with Cypher, see <<cypher-getting-started>>.
 For the terminology used, see <<terminology>>.
 --
 
-:leveloffset: 1
+//:leveloffset: 1
 
-include::general/index.asciidoc[]
+include::general/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+//:leveloffset: 1
 
-include::syntax/index.asciidoc[]
+include::syntax/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+//:leveloffset: 1
 
-include::general.asciidoc[]
+//xxinclude::general.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+//:leveloffset: 1
 
-include::read.asciidoc[]
+//xxinclude::read.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+//:leveloffset: 1
 
-include::write.asciidoc[]
+//xxinclude::write.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+include::clause.asciidoc[leveloffset=+1]
 
-include::ql/functions/index.asciidoc[]
+//:leveloffset: 1
 
-:leveloffset: 1
+include::ql/functions/index.asciidoc[leveloffset=+1]
 
-include::schema.asciidoc[]
+//:leveloffset: 1
 
-:leveloffset: 1
+include::schema.asciidoc[leveloffset=+1]
 
-include::query-tuning.asciidoc[]
+//:leveloffset: 1
 
-:leveloffset: 1
+include::query-tuning.asciidoc[leveloffset=+1]
 
-include::execution-plans.asciidoc[]
+//:leveloffset: 1
+
+include::execution-plans.asciidoc[leveloffset=+1]

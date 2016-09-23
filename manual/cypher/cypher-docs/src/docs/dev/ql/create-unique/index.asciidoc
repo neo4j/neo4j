@@ -26,25 +26,25 @@ include::includes/cypher-createunique-graph.asciidoc[]
 
 == Create unique nodes ==
 
-:leveloffset: 3
+// :leveloffset: 3
 
-include::create-node-if-missing.asciidoc[]
+include::create-node-if-missing.asciidoc[leveloffset=+1]
 
-include::create-nodes-with-values.asciidoc[]
+include::create-nodes-with-values.asciidoc[leveloffset=+1]
 
-include::create-labeled-node-if-missing.asciidoc[]
+include::create-labeled-node-if-missing.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+// :leveloffset: 2
 
 == Create unique relationships ==
 
-:leveloffset: 3
+// :leveloffset: 3
 
-include::create-relationship-if-it-is-missing.asciidoc[]
+include::create-relationship-if-it-is-missing.asciidoc[leveloffset=+1]
 
-include::create-relationship-with-values.asciidoc[]
+include::create-relationship-with-values.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+// :leveloffset: 2
 
 include::describe-complex-pattern.asciidoc[]
 

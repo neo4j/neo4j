@@ -1,0 +1,140 @@
+[[query-clause]]
+= Clauses
+
+Hullo!!!!!!
+
+[discrete]
+= Reading Clauses
+
+The flow of data within a Cypher query is an unordered sequence of maps with key-value pairs -- a set of possible bindings between the variables in the query and values derived from the database.
+This set is refined and augmented by subsequent parts of the query.
+
+[discrete]
+= Writing Clauses =
+
+Write data to the database.
+
+[discrete]
+= General Clauses
+
+
+[options="header"]
+|===
+| Reading                     | Writing  | General
+| <<query-match,MATCH>>       | <<,>>  | <<,>>
+| <<query-optional-match,OPTIONAL MATCH>>       | <<,>>  | <<,>>
+| <<query-where,WHERE>>       | <<,>>  | <<,>>
+| <<query-start,START>>       | <<,>>  | <<,>>
+| <<query-match,MATCH>>       | <<,>>  | <<,>>
+| <<query-match,MATCH>>       | <<,>>  | <<,>>
+| <<query-match,MATCH>>       | <<,>>  | <<,>>
+| <<query-match,MATCH>>       | <<,>>  | <<,>>
+| <<query-match,MATCH>>       | <<,>>  | <<,>>
+| <<query-match,MATCH>>       | <<,>>  | <<,>>
+| <<query-match,MATCH>>       | <<,>>  | <<,>>
+| <<query-match,MATCH>>       | <<,>>  | <<,>>
+|===
+
+
+
+include::ql/aggregation/index.asciidoc[leveloffset=+1]
+include::ql/load-csv/index.asciidoc[leveloffset=+1]
+
+//Reading
+//:leveloffset: 2
+
+include::ql/query-match.adoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/optional-match/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/where/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/start/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/aggregation/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/load-csv/index.asciidoc[leveloffset=+1]
+
+//Writing
+//:leveloffset: 2
+
+include::ql/create/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/merge/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/set/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/delete/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/remove/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/foreach/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/create-unique/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::../parsed-graphgists/import/import-csv-with-cypher.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/periodic-commit/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 0
+
+//General
+//:leveloffset: 2
+
+include::ql/return/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/order-by/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/limit/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/skip/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/with/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/unwind/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/union/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 2
+
+include::ql/call/index.asciidoc[leveloffset=+1]
+
+//:leveloffset: 0

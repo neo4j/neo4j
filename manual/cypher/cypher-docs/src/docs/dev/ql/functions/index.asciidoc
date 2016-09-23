@@ -18,19 +18,19 @@ See also <<query-operators-comparison>>.
 .Graph
 include::includes/cypher-functions-graph.asciidoc[]
 
-:leveloffset: 2
+//:leveloffset: 2
 
-include::all.asciidoc[]
+include::all.asciidoc[leveloffset=+1]
 
-include::any.asciidoc[]
+include::any.asciidoc[leveloffset=+1]
 
-include::none.asciidoc[]
+include::none.asciidoc[leveloffset=+1]
 
-include::single.asciidoc[]
+include::single.asciidoc[leveloffset=+1]
 
-include::exists.asciidoc[]
+include::exists.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+//:leveloffset: 1
 
 [[query-functions-scalar]]
 == Scalar functions ==
@@ -46,39 +46,39 @@ However, for clarity it is recommended to only use `length()` on strings and pat
 .Graph
 include::includes/cypher-functions-graph.asciidoc[]
 
-:leveloffset: 2
+//:leveloffset: 2
 
-include::size.asciidoc[]
+include::size.asciidoc[leveloffset=+1]
 
-include::size-of-pattern-expression.asciidoc[]
+include::size-of-pattern-expression.asciidoc[leveloffset=+1]
 
-include::length.asciidoc[]
+include::length.asciidoc[leveloffset=+1]
 
-include::length-of-string.asciidoc[]
+include::length-of-string.asciidoc[leveloffset=+1]
 
-include::type.asciidoc[]
+include::type.asciidoc[leveloffset=+1]
 
-include::id.asciidoc[]
+include::id.asciidoc[leveloffset=+1]
 
-include::coalesce.asciidoc[]
+include::coalesce.asciidoc[leveloffset=+1]
 
-include::head.asciidoc[]
+include::head.asciidoc[leveloffset=+1]
 
-include::last.asciidoc[]
+include::last.asciidoc[leveloffset=+1]
 
-include::timestamp.asciidoc[]
+include::timestamp.asciidoc[leveloffset=+1]
 
-include::startnode.asciidoc[]
+include::startnode.asciidoc[leveloffset=+1]
 
-include::endnode.asciidoc[]
+include::endnode.asciidoc[leveloffset=+1]
 
-include::properties.asciidoc[]
+include::properties.asciidoc[leveloffset=+1]
 
-include::toint.asciidoc[]
+include::toint.asciidoc[leveloffset=+1]
 
-include::tofloat.asciidoc[]
+include::tofloat.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+//:leveloffset: 1
 
 [[query-functions-list]]
 == List functions ==
@@ -90,31 +90,31 @@ See also <<query-operators-list>>.
 .Graph
 include::includes/cypher-functions-graph.asciidoc[]
 
-:leveloffset: 2
+//:leveloffset: 2
 
-include::nodes.asciidoc[]
+include::nodes.asciidoc[leveloffset=+1]
 
-include::relationships.asciidoc[]
+include::relationships.asciidoc[leveloffset=+1]
 
-include::labels.asciidoc[]
+include::labels.asciidoc[leveloffset=+1]
 
-include::keys.asciidoc[]
+include::keys.asciidoc[leveloffset=+1]
 
-include::extract.asciidoc[]
+include::extract.asciidoc[leveloffset=+1]
 
-include::filter.asciidoc[]
+include::filter.asciidoc[leveloffset=+1]
 
-include::tail.asciidoc[]
+include::tail.asciidoc[leveloffset=+1]
 
-include::range.asciidoc[]
+include::range.asciidoc[leveloffset=+1]
 
-include::reduce.asciidoc[]
+include::reduce.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+//:leveloffset: 2
 
-include::query-functions-mathematical.adoc[]
+include::query-functions-mathematical.adoc[leveloffset=+1]
 
-:leveloffset: 1
+//:leveloffset: 1
 
 [[query-functions-string]]
 == String functions ==
@@ -127,28 +127,28 @@ See also <<query-operators-string>>.
 .Graph
 include::includes/cypher-functions-graph.asciidoc[]
 
-:leveloffset: 2
+//:leveloffset: 2
 
-include::replace.asciidoc[]
+include::replace.asciidoc[leveloffset=+1]
 
-include::substring.asciidoc[]
+include::substring.asciidoc[leveloffset=+1]
 
-include::left.asciidoc[]
+include::left.asciidoc[leveloffset=+1]
 
-include::right.asciidoc[]
+include::right.asciidoc[leveloffset=+1]
 
-include::ltrim.asciidoc[]
+include::ltrim.asciidoc[leveloffset=+1]
 
-include::rtrim.asciidoc[]
+include::rtrim.asciidoc[leveloffset=+1]
 
-include::trim.asciidoc[]
+include::trim.asciidoc[leveloffset=+1]
 
-include::lower.asciidoc[]
+include::lower.asciidoc[leveloffset=+1]
 
-include::upper.asciidoc[]
+include::upper.asciidoc[leveloffset=+1]
 
-include::split.asciidoc[]
+include::split.asciidoc[leveloffset=+1]
 
-include::reverse.asciidoc[]
+include::reverse.asciidoc[leveloffset=+1]
 
-include::tostring.asciidoc[]
+include::tostring.asciidoc[leveloffset=+1]
