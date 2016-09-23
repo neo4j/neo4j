@@ -91,14 +91,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("cant use toInt() on booleans") {
     executeAndEnsureError(
       "RETURN toInt(true)",
-      "Type mismatch: expected Number or String but was Boolean (line 1, column 14 (offset: 13))"
+      "Type mismatch: expected Float, Integer, Number or String but was Boolean (line 1, column 14 (offset: 13))"
     )
   }
 
   test("cant use toFloat() on booleans") {
     executeAndEnsureError(
       "RETURN toFloat(false)",
-      "Type mismatch: expected Number or String but was Boolean (line 1, column 16 (offset: 15))"
+      "Type mismatch: expected Float, Integer, Number or String but was Boolean (line 1, column 16 (offset: 15))"
     )
   }
 

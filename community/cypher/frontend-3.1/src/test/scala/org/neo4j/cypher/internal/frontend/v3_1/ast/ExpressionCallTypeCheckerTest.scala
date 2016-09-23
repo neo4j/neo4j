@@ -39,13 +39,13 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
   }
 
   test("two ExpressionSignatures") {
-    val ExpressionSignatures = Seq(ExpressionSignature(Vector(CTString), CTInteger),
-                                   ExpressionSignature(Vector(CTNumber), CTInteger))
-    typeCheckSuccess(ExpressionSignatures, Seq(CTAny.covariant), CTInteger)
-    typeCheckSuccess(ExpressionSignatures, Seq(CTNumber.covariant), CTInteger)
-    typeCheckSuccess(ExpressionSignatures, Seq(CTFloat), CTInteger)
-    typeCheckSuccess(ExpressionSignatures, Seq(CTInteger), CTInteger)
-    typeCheckSuccess(ExpressionSignatures, Seq(CTString), CTInteger)
+    val sig = Seq(ExpressionSignature(Vector(CTString), CTInteger),
+                  ExpressionSignature(Vector(CTNumber), CTInteger))
+    typeCheckSuccess(sig, Seq(CTAny.covariant), CTInteger)
+    typeCheckSuccess(sig, Seq(CTNumber.covariant), CTInteger)
+    typeCheckSuccess(sig, Seq(CTFloat), CTInteger)
+    typeCheckSuccess(sig, Seq(CTInteger), CTInteger)
+    typeCheckSuccess(sig, Seq(CTString), CTInteger)
   }
 
   test("fail on mismatch with ExpressionSignature") {
@@ -65,8 +65,8 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
 
   test("should pick the most specific ExpressionSignature of many applicable maps") {
     val identityExpressionSignature = Seq(ExpressionSignature(Vector(CTMap), CTMap),
-                                ExpressionSignature(Vector(CTRelationship), CTRelationship),
-                                ExpressionSignature(Vector(CTNode), CTNode))
+                                          ExpressionSignature(Vector(CTRelationship), CTRelationship),
+                                          ExpressionSignature(Vector(CTNode), CTNode))
     typeCheckSuccess(identityExpressionSignature, Seq(CTAny.covariant), CTMap | CTNode | CTRelationship)
     typeCheckSuccess(identityExpressionSignature, Seq(CTMap.invariant), CTMap)
     typeCheckSuccess(identityExpressionSignature, Seq(CTMap.covariant), CTMap | CTNode | CTRelationship)
@@ -76,7 +76,7 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
 
   test("should pick the most specific ExpressionSignature of many applicable numbers") {
     val identityExpressionSignature = Seq(ExpressionSignature(Vector(CTInteger), CTInteger),
-                                ExpressionSignature(Vector(CTFloat), CTFloat))
+                                          ExpressionSignature(Vector(CTFloat), CTFloat))
     typeCheckSuccess(identityExpressionSignature, Seq(CTAny.covariant), CTInteger | CTFloat)
     typeCheckSuccess(identityExpressionSignature, Seq(CTNumber.covariant), CTInteger | CTFloat)
     typeCheckSuccess(identityExpressionSignature, Seq(CTInteger), CTInteger)
@@ -85,7 +85,7 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
 
   test("should handle combined typespecs") {
     val ExpressionSignatures = Seq(ExpressionSignature(Vector(CTInteger, CTInteger), CTInteger),
-                         ExpressionSignature(Vector(CTNumber, CTNumber), CTFloat))
+                                   ExpressionSignature(Vector(CTNumber, CTNumber), CTFloat))
     typeCheckSuccess(ExpressionSignatures, Seq(CTInteger, CTInteger), CTFloat | CTInteger)
   }
 

@@ -54,6 +54,8 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
         Some(TypeRange(newLower, newUpper))
   }
 
+  def covariant = copy(upper = None)
+
   def constrain(aType: CypherType): Option[TypeRange] = this & TypeRange(aType, None)
 
   /**

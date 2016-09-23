@@ -24,13 +24,14 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, InputPosition, SemanticError, TypeGenerator}
 
 case class Collection(expressions: Seq[Expression])(val position: InputPosition) extends Expression {
+
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) chain specifyType(possibleTypes)
 
   def map(f: Expression => Expression) = copy(expressions = expressions.map(f))(position)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
     case Seq() => CTList(CTAny).covariant
-    case _     => expressions.leastUpperBoundsOfTypes(state).wrapInList
+    case _     => expressions.leastUpperBoundsOfTypes(state).wrapInCovariantList
   }
 }
 

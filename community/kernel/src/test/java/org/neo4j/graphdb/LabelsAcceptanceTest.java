@@ -736,8 +736,10 @@ public class LabelsAcceptanceTest
                         return new ImpermanentGraphDatabase( storeDir, config, GraphDatabaseDependencies.newDependencies(state.databaseDependencies() ))
                         {
                             @Override
-                            protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory
-                                    .Dependencies dependencies )
+                            protected void create(
+                                    File storeDir,
+                                    Map<String, String> params,
+                                    GraphDatabaseFacadeFactory.Dependencies dependencies )
                             {
                                 Function<PlatformModule,EditionModule> factory =
                                         ( platformModule ) -> new CommunityEditionModule( platformModule )

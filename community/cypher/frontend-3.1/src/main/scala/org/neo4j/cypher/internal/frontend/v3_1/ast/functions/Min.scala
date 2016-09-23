@@ -19,31 +19,15 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{AggregatingFunction, FunctionInvocation}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{AggregatingFunction, ExpressionSignature, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheck, SemanticCheckResult, SemanticError, SemanticState}
 
-case object Min extends AggregatingFunction {
-  def name = "min"
+case object Min extends AggregatingFunction with SimpleTypedFunction {
+  override def name = "min"
 
-  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation): SemanticCheck =
-    checkMinArgs(invocation, 1) ifOkChain
-      checkMaxArgs(invocation, 1) ifOkChain
-      checkTypeOfArgument(invocation) ifOkChain
-      invocation.specifyType(invocation.args.head.types)
-
-  private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
-    val argument = invocation.args.head
-    val specifiedType = s.expressionType(argument).specified
-    val correctType = Seq(CTFloat, CTInteger, CTString, CTNumber, CTAny).foldLeft(false) {
-      case (acc, t) => acc || specifiedType.contains(t)
-    }
-
-    if (correctType) SemanticCheckResult.success(s)
-    else {
-      val message = s"Type mismatch: expected Number or String but was ${specifiedType.mkString(", ")}"
-      SemanticCheckResult.error(s, SemanticError(message, argument.position))
-    }
-  }
+  override val signatures = Vector(
+    ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
+    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
+    ExpressionSignature(argumentTypes = Vector(CTString), outputType = CTString)
+  )
 }

@@ -108,6 +108,11 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
   })
 
   def wrapInList: TypeSpec = TypeSpec(ranges.map(_.reparent(CTList)))
+
+  def wrapInCovariantList: TypeSpec = TypeSpec(ranges.map { r =>
+    r.covariant.reparent(CTList)
+  })
+
   def unwrapLists: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: ListType => c.innerType }))
 
   def coercions: TypeSpec = {
