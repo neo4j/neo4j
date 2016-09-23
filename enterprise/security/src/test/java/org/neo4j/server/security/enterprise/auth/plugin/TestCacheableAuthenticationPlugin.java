@@ -63,6 +63,5 @@ public class TestCacheableAuthenticationPlugin extends AuthenticationPlugin.Cach
         return null;
     }
 
-    // For testing purposes
     public static AtomicInteger getAuthenticationInfoCallCount = new AtomicInteger( 0 );
 }

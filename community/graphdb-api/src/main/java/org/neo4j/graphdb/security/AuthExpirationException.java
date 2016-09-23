@@ -22,9 +22,7 @@ package org.neo4j.graphdb.security;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
- * Thrown when the database is asked to perform an action that is not authorized based on the AccessMode settings.
- *
- * For instance, if attempting to write with READ_ONLY rights.
+ * Thrown when needed authorization or authentication info has expired in the neo4j auth cache
  */
 public class AuthExpirationException extends RuntimeException implements Status.HasStatus
 {
