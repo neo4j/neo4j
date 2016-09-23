@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,12 +31,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.ha.TestRunConditions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
@@ -39,7 +38,7 @@ import org.neo4j.test.rule.LoggerRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 
@@ -103,8 +102,6 @@ public class FailoverWithAdditionalSlaveFailuresIT
     {
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) ).
                 withCluster( ClusterManager.clusterOfSize( clusterSize ) )
-                .withSharedConfig( stringMap(
-                        ClusterSettings.heartbeat_interval.name(), "1" ) )
                 .build();
 
         try
