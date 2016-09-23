@@ -659,7 +659,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project collection") {
-    val collection = Collection(Seq(Parameter("FOO", CTAny)(pos), Parameter("BAR", CTAny)(pos)))(pos)
+    val collection = ListLiteral(Seq(Parameter("FOO", CTAny)(pos), Parameter("BAR", CTAny)(pos)))(pos)
     val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> collection))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 

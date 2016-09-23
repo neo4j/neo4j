@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Collection, In, MapExpression, Property, PropertyKeyName, SignedDecimalIntegerLiteral, Variable}
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-
 
 class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -63,7 +62,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val propertyKeyName = PropertyKeyName("prop")(pos)
     val propertyValue = SignedDecimalIntegerLiteral("42")(pos)
     val selection = Selection(Seq(In(Property(Variable("a")(pos), propertyKeyName)(pos),
-      Collection(Seq(propertyValue))(pos))(pos)), allNodesScan)(solved)
+                                     ListLiteral(Seq(propertyValue))(pos))(pos)), allNodesScan)(solved)
     val optional = Optional(selection)(solved)
 
     val onCreate = MergeCreateNode(SingleRow()(solved), aId, Seq.empty,

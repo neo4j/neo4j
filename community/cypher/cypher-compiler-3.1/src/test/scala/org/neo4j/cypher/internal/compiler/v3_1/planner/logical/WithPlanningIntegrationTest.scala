@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{DoNotIncludeTies, AllNodesScan, Limit, Projection}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{AllNodesScan, DoNotIncludeTies, Limit, Projection}
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
@@ -60,7 +60,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
 
     result.toString should equal(
-      """Selection(MutableList(In(Property(Variable(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42)))))) {
+      """Selection(List(In(Property(Variable(r1),PropertyKeyName(prop)),ListLiteral(List(SignedDecimalIntegerLiteral(42)))))) {
         |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
         |    LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |      LHS -> AllNodesScan(IdName(a), Set()) {}

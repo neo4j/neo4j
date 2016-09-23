@@ -151,7 +151,7 @@ object LogicalPlanConverter {
             val expression = ExpressionConverter.createExpression(e)(context)
             indexSeekFun(opName, context.namer.newVarName(), expression, nodeVar, actions)
           //collection, create set and for each element of the set do an index lookup
-          case ManyQueryExpression(e: ast.Collection) =>
+          case ManyQueryExpression(e: ast.ListLiteral) =>
             val expression = ToSet(ExpressionConverter.createExpression(e)(context))
             val expressionVar = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType), nullable = false)
 
@@ -186,7 +186,7 @@ object LogicalPlanConverter {
         case SingleSeekableArg(e) => SeekNodeById(opName, nodeVar,
                                                   ExpressionConverter.createExpression(e)(context), actions)
         case ManySeekableArgs(e) => e match {
-          case coll: ast.Collection =>
+          case coll: ast.ListLiteral =>
             ZeroOneOrMany(coll.expressions) match {
               case One(value) => SeekNodeById(opName, nodeVar,
                                               ExpressionConverter.createExpression(value)(context), actions)

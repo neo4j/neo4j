@@ -112,7 +112,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
   test("Unwind, read write and read again") {
     val query = buildPlannerQuery("UNWIND [1] as i MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
-    query.horizon should equal(UnwindProjection(IdName("i"), Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)))
+    query.horizon should equal(UnwindProjection(IdName("i"), ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)))
     query.queryGraph shouldBe 'isEmpty
 
     val second = query.tail.get
@@ -132,7 +132,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val second = query.tail.get
     second.queryGraph.mutatingPatterns should equal(
       Seq(ForeachPattern(IdName("i"),
-          Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos),
+                         ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos),
           RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set(IdName("i")),
                                          Selections(Set.empty), Vector.empty, Set.empty, Set.empty,
                                          Seq(CreateNodePattern(IdName("a"), Seq.empty, None))),

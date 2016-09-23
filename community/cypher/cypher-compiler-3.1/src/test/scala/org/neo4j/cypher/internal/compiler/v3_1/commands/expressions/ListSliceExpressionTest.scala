@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
-class CollectionSliceExpressionTest extends CypherFunSuite {
+class ListSliceExpressionTest extends CypherFunSuite {
 
   test("tests") {
     implicit val collection = Literal(Seq(1, 2, 3, 4))

@@ -28,7 +28,7 @@ import scala.collection.immutable.Iterable
 This class merges multiple IN predicates into larger ones.
 These can later be turned into index lookups or node-by-id ops
  */
-case object collapseInCollections extends Rewriter {
+case object collapseMultipleInPredicates extends Rewriter {
 
   override def apply(that: AnyRef) = instance(that)
 
@@ -38,13 +38,13 @@ case object collapseInCollections extends Rewriter {
     case predicate@Ors(exprs) =>
       // Find all the expressions we want to rewrite
       val (const: List[Expression], nonRewritable: List[Expression]) = exprs.toList.partition {
-        case in@In(_, rhs: Collection) => true
+        case in@In(_, rhs: ListLiteral) => true
         case _ => false
       }
 
       // For each expression on the RHS of any IN, produce a InValue place holder
       val ins: List[InValue] = const.flatMap {
-        case In(lhs, rhs: Collection) =>
+        case In(lhs, rhs: ListLiteral) =>
           rhs.expressions.map(expr => InValue(lhs, expr))
       }
 
@@ -53,7 +53,7 @@ case object collapseInCollections extends Rewriter {
       val flattenConst: Iterable[In] = groupedINPredicates.map {
         case (lhs, values) =>
           val pos = lhs.position
-          In(lhs, Collection(values.map(_.expr).toSeq)(pos))(pos)
+          In(lhs, ListLiteral(values.map(_.expr).toSeq)(pos))(pos)
       }
 
       // Return the original non-rewritten predicates with our new ones

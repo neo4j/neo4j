@@ -270,9 +270,9 @@ object ExpressionConverters {
     case e: ast.PatternComprehension => commands.PathExpression(e.pattern.asLegacyPatterns, toCommandPredicate(e.predicate), toCommandExpression(e.projection), true)
     case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None).head)
     case e: ast.HasLabels => hasLabels(e)
-    case e: ast.Collection => commandexpressions.Collection(toCommandExpression(e.expressions): _*)
+    case e: ast.ListLiteral => commandexpressions.Collection(toCommandExpression(e.expressions): _*)
     case e: ast.MapExpression => commandexpressions.LiteralMap(mapItems(e.items))
-    case e: ast.CollectionSlice => commandexpressions.CollectionSliceExpression(toCommandExpression(e.list), toCommandExpression(e.from), toCommandExpression(e.to))
+    case e: ast.ListSlice => commandexpressions.CollectionSliceExpression(toCommandExpression(e.list), toCommandExpression(e.from), toCommandExpression(e.to))
     case e: ast.ContainerIndex => commandexpressions.ContainerIndex(toCommandExpression(e.expr), toCommandExpression(e.idx))
     case e: ast.FilterExpression => commandexpressions.FilterFunction(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
     case e: ast.ExtractExpression => commandexpressions.ExtractFunction(toCommandExpression(e.expression), e.variable.name, toCommandExpression(e.scope.extractExpression.get))
@@ -349,10 +349,10 @@ object ExpressionConverters {
     case value: Parameter =>
       predicates.ConstantCachedIn(toCommandExpression(e.lhs), toCommandExpression(value))
 
-    case value@Collection(expressions) if expressions.isEmpty =>
+    case value@ListLiteral(expressions) if expressions.isEmpty =>
       predicates.Not(predicates.True())
 
-    case value@Collection(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>
+    case value@ListLiteral(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>
       predicates.ConstantCachedIn(toCommandExpression(e.lhs), toCommandExpression(value))
 
     case _ =>

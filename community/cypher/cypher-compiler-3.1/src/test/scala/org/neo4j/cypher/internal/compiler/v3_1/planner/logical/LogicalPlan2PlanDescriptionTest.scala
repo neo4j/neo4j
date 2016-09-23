@@ -56,13 +56,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       , NodeByLabelScan(IdName("node"), AstLabelName("X")(DummyPosition(0)), Set.empty)(33) ->
         PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(LabelName("X"), EstimatedRows(33)), Set("node"))
 
-      , NodeByIdSeek(IdName("node"), ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)), Set.empty)(333) ->
+      , NodeByIdSeek(IdName("node"), ManySeekableArgs(ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)), Set.empty)(333) ->
         PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(EstimatedRows(333)), Set("node"))
 
-      , NodeIndexSeek(IdName("x"), LabelToken("Label", LabelId(0)), PropertyKeyToken("Prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(23) ->
+      , NodeIndexSeek(IdName("x"), LabelToken("Label", LabelId(0)), PropertyKeyToken("Prop", PropertyKeyId(0)), ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(23) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren, Seq(Index("Label", "Prop"), EstimatedRows(23)), Set("x"))
 
-      , NodeUniqueIndexSeek(IdName("x"), LabelToken("Lebal", LabelId(0)), PropertyKeyToken("Porp", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(95) ->
+      , NodeUniqueIndexSeek(IdName("x"), LabelToken("Lebal", LabelId(0)), PropertyKeyToken("Porp", PropertyKeyId(0)), ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(95) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren, Seq(Index("Lebal", "Porp"), EstimatedRows(95)), Set("x"))
 
       , Expand(lhsLP, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(95) ->

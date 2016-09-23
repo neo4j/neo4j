@@ -51,17 +51,17 @@ case class SingleSeekRhs(expr: Expression) extends SeekRhs {
     SingleQueryExpression(expr)
 
   def asCommandSeekArgs: SeekArgs =
-    ManySeekArgs(toCommandExpression(Collection(Seq(expr))(expr.position)))
+    ManySeekArgs(toCommandExpression(ListLiteral(Seq(expr))(expr.position)))
 }
 
 case class MultiSeekRhs(expr: Expression) extends SeekRhs {
   val sizeHint = expr match {
-    case coll: Collection => Some(coll.expressions.size)
+    case coll: ListLiteral => Some(coll.expressions.size)
     case _                => None
   }
 
   override def map(f: Expression => Expression) = expr match {
-    case coll: Collection => copy(expr = coll.map(f))
+    case coll: ListLiteral => copy(expr = coll.map(f))
     case _ => copy(expr = f(expr))
   }
 

@@ -125,7 +125,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                   "a",
                   LabelToken("Person", LabelId(0)),
                   PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-                  ManyQueryExpression(Collection(List(StringLiteral("prefix1") _, StringLiteral("prefix2") _)) _),
+                  ManyQueryExpression(ListLiteral(List(StringLiteral("prefix1") _, StringLiteral("prefix2") _)) _),
                   Set.empty)(solved)
       )(solved))
   }
@@ -341,7 +341,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) = 42 RETURN n").plan should equal (
       Selection(
         List(HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
+        NodeByIdSeek("n", ManySeekableArgs(ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -377,7 +377,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) IN [42, 64] RETURN n").plan should equal (
       Selection(
         List(HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_))_), Set.empty)(solved)
+        NodeByIdSeek("n", ManySeekableArgs(ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_))_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -456,7 +456,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.plan should equal(
       Selection(
-        List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
+        List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
         NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
@@ -480,7 +480,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.plan should equal(
       Selection(
-        List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
+        List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
@@ -494,7 +494,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.plan should equal(
       Selection(
-        List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
+        List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
@@ -513,7 +513,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.plan should equal(
       Aggregation(
         Apply(
-          Projection(SingleRow()(solved),Map("arr" -> Collection(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
+          Projection(SingleRow()(solved),Map("arr" -> ListLiteral(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
           NodeByIdSeek(IdName("n"), ManySeekableArgs(Variable("arr")_),Set(IdName("arr")))(solved)
         )(solved),
         Map(), Map("count(*)" -> CountStar()_)

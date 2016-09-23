@@ -32,7 +32,7 @@ class ToFloatTest extends FunctionTestBase("toFloat")  {
   }
 
   test("shouldFailTypeCheckForIncompatibleArguments") {
-    testInvalidApplication(CTList(CTAny))(
+    testInvalidApplication(CTList(CTAny).covariant)(
       "Type mismatch: expected Float, Integer, Number or String but was List<T>"
     )
 

@@ -34,7 +34,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   val lit42: Expression = SignedDecimalIntegerLiteral("42") _
   val lit6: Expression = SignedDecimalIntegerLiteral("6") _
 
-  val inCollectionValue = In(property, Collection(Seq(lit42))_)_
+  val inCollectionValue = In(property, ListLiteral(Seq(lit42))_)_
 
   private def hasLabel(l: String) = HasLabels(varFor("n"), Seq(LabelName(l) _)) _
 
@@ -84,7 +84,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
       val x = varFor("x")
-      qg = queryGraph(In(property, Collection(Seq(x)) _) _, hasLabels).addArgumentIds(Seq(IdName("x")))
+      qg = queryGraph(In(property, ListLiteral(Seq(x)) _) _, hasLabels).addArgumentIds(Seq(IdName("x")))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -102,7 +102,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("does not plan an index seek when the RHS expression does not have its dependencies in scope") {
     new given { // MATCH a, x WHERE a.prop IN [x]
        val x = varFor("x")
-      qg = queryGraph(In(property, Collection(Seq(x))_)_, hasLabels)
+      qg = queryGraph(In(property, ListLiteral(Seq(x))_)_, hasLabels)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>

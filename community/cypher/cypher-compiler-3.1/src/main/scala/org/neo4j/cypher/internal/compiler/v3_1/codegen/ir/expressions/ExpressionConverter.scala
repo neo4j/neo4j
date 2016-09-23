@@ -128,7 +128,7 @@ object ExpressionConverter {
 
       case lit: ast.Literal => Literal(lit.value)
 
-      case ast.Collection(exprs) =>
+      case ast.ListLiteral(exprs) =>
         expressions.Collection(exprs.map(e => callback(e)))
 
       case ast.Add(lhs, rhs) =>

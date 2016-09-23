@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_1.ast
+package org.neo4j.cypher.internal.frontend.v3_0.ast
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, InputPosition, SemanticError, TypeGenerator}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticCheckResult, InputPosition, SemanticError, TypeGenerator}
 
-case class Collection(expressions: Seq[Expression])(val position: InputPosition) extends Expression {
+case class ListLiteral(expressions: Seq[Expression])(val position: InputPosition) extends Expression {
 
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) chain specifyType(possibleTypes)
 
@@ -35,7 +35,7 @@ case class Collection(expressions: Seq[Expression])(val position: InputPosition)
   }
 }
 
-case class CollectionSlice(list: Expression, from: Option[Expression], to: Option[Expression])(val position: InputPosition)
+case class ListSlice(list: Expression, from: Option[Expression], to: Option[Expression])(val position: InputPosition)
   extends Expression {
 
   override def semanticCheck(ctx: SemanticContext) =

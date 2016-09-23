@@ -70,7 +70,7 @@ class RewriteEqualityToInCollectionTest extends CypherFunSuite with AstRewriting
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val result = rewriteEqualityToInCollection(original)
+    val result = rewriteEqualityToInList(original)
 
     result should equal(expected)
   }
