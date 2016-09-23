@@ -150,10 +150,10 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
       case Unsolved(r: RelatedTo) if r.left != r.right => r.relName
     }
 
-    val relIdPreds = plan.query.start.collect[(QueryToken[StartItem], AnyInCollection), Seq[(QueryToken[StartItem], AnyInCollection)]] {
+    val relIdPreds = plan.query.start.collect[(QueryToken[StartItem], AnyInList), Seq[(QueryToken[StartItem], AnyInList)]] {
       case qt@Unsolved(x: RelationshipById) if unsolvedRelNames.contains(x.variableName) =>
         val compKey: String = s"--relId-${x.variableName}--"
-        (qt, AnyInCollection(
+        (qt, AnyInList(
           x.expression, compKey,
           Equals(IdFunction(Variable(x.variableName)),
           Variable(compKey))))

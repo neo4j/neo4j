@@ -25,9 +25,9 @@ import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
 import scala.collection.{Map, Seq}
 
-object IsCollection extends CollectionSupport {
+object IsList extends ListSupport {
   def unapply(x: Any):Option[Iterable[Any]] = {
-    val collection = isCollection(x)
+    val collection = isList(x)
     if (collection) {
       Some(makeTraversable(x))
     } else {
@@ -36,7 +36,7 @@ object IsCollection extends CollectionSupport {
   }
 }
 
-trait CollectionSupport {
+trait ListSupport {
 
   def singleOr[T](in:Iterator[T], or: => Exception):Iterator[T] = new Iterator[T] {
     var used = false
@@ -55,13 +55,13 @@ trait CollectionSupport {
 
   class NoValidValuesExceptions extends Exception
 
-  def isCollection(x: Any) = castToIterable.isDefinedAt(x)
+  def isList(x: Any) = castToIterable.isDefinedAt(x)
 
-  def liftAsCollection[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] = try {
+  def liftAsList[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] = try {
     input match {
       case single if test.isDefinedAt(single) => Some(Seq(test(single)))
 
-      case IsCollection(coll) =>
+      case IsList(coll) =>
         val mappedCollection = coll map {
           case elem if test.isDefinedAt(elem) => test(elem)
           case _                              => throw new NoValidValuesExceptions
@@ -75,7 +75,7 @@ trait CollectionSupport {
     case _: NoValidValuesExceptions => None
   }
 
-  def asCollectionOf[T](test: PartialFunction[Any, T])(input: Iterable[Any]): Option[Iterable[T]] =
+  def asListOf[T](test: PartialFunction[Any, T])(input: Iterable[Any]): Option[Iterable[T]] =
     Some(input map { (elem: Any) => if (test.isDefinedAt(elem)) test(elem) else return None })
 
   def makeTraversable(z: Any): Iterable[Any] = if (castToIterable.isDefinedAt(z)) {

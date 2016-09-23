@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
-import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.graphdb.Path
 
 case class LengthFunction(inner: Expression)
   extends NullInNullOutExpression(inner)
-  with CollectionSupport {
+  with ListSupport {
   //NOTE all usage except for paths is deprecated
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Long = value match {
     case path: Path => path.length()

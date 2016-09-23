@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_1.commands.AnyInCollection
+import org.neo4j.cypher.internal.compiler.v3_1.commands.AnyInList
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{ListLiteral, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.{UnresolvedLabel, UnresolvedProperty}
@@ -76,7 +76,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
   test("should select schema index when expression property check with in") {
     //Given
     val noSymbols = new SymbolTable(Map("b"->CTNode))
-    val inPredicate = AnyInCollection(ListLiteral(Variable("b")), "_inner_", Equals(Property(Variable("a"), UnresolvedProperty(propertyName)), Variable("_inner_")))
+    val inPredicate = AnyInList(ListLiteral(Variable("b")), "_inner_", Equals(Property(Variable("a"), UnresolvedProperty(propertyName)), Variable("_inner_")))
     val labelPredicate = HasLabel(Variable("a"), UnresolvedLabel(labelName))
     val planCtx = mock[PlanContext]
     val indexDescriptor = new IndexDescriptor(0, 0)

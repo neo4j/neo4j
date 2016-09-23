@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
 
 final case class RewriterCondition(name: String, condition: Any => Seq[String])
-  extends (Any => Option[RewriterConditionFailure]) with CollectionSupport {
+  extends (Any => Option[RewriterConditionFailure]) with ListSupport {
 
   def apply(input: Any): Option[RewriterConditionFailure] =
     condition(input).asNonEmptyOption.map(RewriterConditionFailure(name, _))

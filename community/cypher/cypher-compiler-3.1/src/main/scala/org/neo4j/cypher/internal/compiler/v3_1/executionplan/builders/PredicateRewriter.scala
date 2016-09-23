@@ -92,7 +92,7 @@ class PredicateRewriter(namer: Namer = new RandomNamer) extends PlanBuilder {
           case (prop, value) => Equals(Property(Variable(innerSymbolName), UnresolvedProperty(prop)), value).asInstanceOf[Predicate]
         }
         val innerPredicate2 = True().andWith(innerPredicate1: _*)
-        val predicate = AllInCollection(Variable(iteratorName), innerSymbolName, innerPredicate2)
+        val predicate = AllInList(Variable(iteratorName), innerSymbolName, innerPredicate2)
 
         (rel, rel.copy(relIterator = Some(iteratorName), properties = Map.empty), predicate)
     }

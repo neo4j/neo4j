@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 
 import scala.collection.mutable.ArrayBuffer
@@ -32,7 +32,7 @@ This class is used for making the common <exp> IN <constant-expression> fast
 It uses a cache for the <constant-expression>, and turns it into a Set, for fast existence checking.
 The key for the cache is the expression and not the value, which saves in execution speed
  */
-case class ConstantCachedIn(value: Expression, list: Expression) extends Predicate with CollectionSupport {
+case class ConstantCachedIn(value: Expression, list: Expression) extends Predicate with ListSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ExecutionContext)(implicit state: QueryState) = {
@@ -64,7 +64,7 @@ This class is used for making the common <exp> IN <rhs-expression> fast
 
 It uses a cache for the <rhs-expression> value, and turns it into a Set, for fast existence checking
  */
-case class DynamicCachedIn(value: Expression, list: Expression) extends Predicate with CollectionSupport {
+case class DynamicCachedIn(value: Expression, list: Expression) extends Predicate with ListSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {

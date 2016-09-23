@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands
 
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.{IsCollection, IsMap}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.{IsList, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_1.{Geometry, Point}
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
@@ -45,8 +45,8 @@ object coerce {
         case t: ListType => value match {
           case p: Path if t.innerType == CTNode => throw cantCoerce(value, typ)
           case p: Path if t.innerType == CTRelationship => throw cantCoerce(value, typ)
-          case IsCollection(coll) if t.innerType == CTAny => coll
-          case IsCollection(coll) => coll.map(coerce(_, t.innerType))
+          case IsList(coll) if t.innerType == CTAny => coll
+          case IsList(coll) => coll.map(coerce(_, t.innerType))
           case _ => throw cantCoerce(value, typ)
         }
         case CTBoolean => value.asInstanceOf[Boolean]

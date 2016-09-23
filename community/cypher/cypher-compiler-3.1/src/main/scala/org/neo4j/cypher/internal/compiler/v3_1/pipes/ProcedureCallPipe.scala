@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{AllEffects, ProcedureCallMode}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.{CollectionSupport, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.{ListSupport, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.Signature
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureSignature, QualifiedName}
@@ -47,7 +47,7 @@ case class ProcedureCallPipe(source: Pipe,
                              resultIndices: Seq[(Int, String)])
                             (val estimatedCardinality: Option[Double] = None)
                             (implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with CollectionSupport with RonjaPipe {
+  extends PipeWithSource(source, monitor) with ListSupport with RonjaPipe {
 
   private val rowProcessor = rowProcessing match {
     case FlatMapAndAppendToRow => internalCreateResultsByAppending _

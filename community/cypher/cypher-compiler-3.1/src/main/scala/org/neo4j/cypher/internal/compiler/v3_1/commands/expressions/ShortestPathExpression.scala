@@ -166,13 +166,13 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
       predicates.foldLeft((relTypeAndDirExpander, Seq[KernelPredicate[PropertyContainer]]())) {
         case ((currentExpander, currentNodePredicates: Seq[KernelPredicate[PropertyContainer]]), predicate) =>
           predicate match {
-            case NoneInCollection(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
+            case NoneInList(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
               (addAllOrNoneRelationshipExpander(ctx, currentExpander, all = false, innerPredicate, symbolName), currentNodePredicates)
-            case AllInCollection(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
+            case AllInList(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
               (addAllOrNoneRelationshipExpander(ctx, currentExpander, all = true, innerPredicate, symbolName), currentNodePredicates)
-            case NoneInCollection(NodesFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
+            case NoneInList(NodesFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
               addAllOrNoneNodeExpander(ctx, currentExpander, all = false, innerPredicate, symbolName, currentNodePredicates)
-            case AllInCollection(NodesFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
+            case AllInList(NodesFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
               addAllOrNoneNodeExpander(ctx, currentExpander, all = true, innerPredicate, symbolName, currentNodePredicates)
             case _ => (currentExpander, currentNodePredicates)
           }

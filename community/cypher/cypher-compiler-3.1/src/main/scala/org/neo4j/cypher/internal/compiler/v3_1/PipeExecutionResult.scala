@@ -23,7 +23,7 @@ import java.io.PrintWriter
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, InternalQueryType}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.{CollectionSupport, RuntimeJavaValueConverter}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.{ListSupport, RuntimeJavaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext}
@@ -41,7 +41,7 @@ class PipeExecutionResult(val result: ResultIterator,
                           val executionMode: ExecutionMode,
                           val executionType: InternalQueryType)
   extends InternalExecutionResult
-  with CollectionSupport {
+  with ListSupport {
 
   self =>
 

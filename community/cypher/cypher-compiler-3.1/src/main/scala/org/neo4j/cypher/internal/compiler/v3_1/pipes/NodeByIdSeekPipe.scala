@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ReadsAllNodes, Effects}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.{CollectionSupport, IsCollection}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, ReadsAllNodes}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.{IsList, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTNode
@@ -47,7 +47,7 @@ case class SingleSeekArg(expr: Expression) extends SeekArgs {
 case class ManySeekArgs(coll: Expression) extends SeekArgs {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] = {
     coll(ctx)(state) match {
-      case IsCollection(values) => values
+      case IsList(values) => values
     }
   }
 }
@@ -55,7 +55,7 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
-  with CollectionSupport
+  with ListSupport
   with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {

@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 case class ExtractFunction(collection: Expression, id: String, expression: Expression)
   extends NullInNullOutExpression(collection)
-  with CollectionSupport
+  with ListSupport
   with Closure {
 
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = makeTraversable(value).map {

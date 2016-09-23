@@ -77,7 +77,7 @@ class IndexLookupBuilder extends PlanBuilder {
       case predicate@QueryToken(Equals(expression, Property(Variable(id), prop)))
         if id == hint.variable && prop.name == hint.property => (predicate, SingleQueryExpression(expression))
 
-      case predicate@QueryToken(AnyInCollection(expression, _, Equals(Property(Variable(id), prop),Variable(_))))
+      case predicate@QueryToken(AnyInList(expression, _, Equals(Property(Variable(id), prop), Variable(_))))
         if id == hint.variable && prop.name == hint.property => (predicate, ManyQueryExpression(expression))
 
       case predicate@QueryToken(CachedIn(Property(Variable(id), prop),  expression))

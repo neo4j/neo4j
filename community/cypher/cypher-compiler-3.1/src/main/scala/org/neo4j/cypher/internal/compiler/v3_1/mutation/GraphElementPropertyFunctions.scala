@@ -23,7 +23,7 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
@@ -31,7 +31,7 @@ import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
-trait GraphElementPropertyFunctions extends CollectionSupport {
+trait GraphElementPropertyFunctions extends ListSupport {
 
   implicit class RichMap(m: Map[String, Expression]) {
     def rewrite(f: (Expression) => Expression): Map[String, Expression] = m.map {

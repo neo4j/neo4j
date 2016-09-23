@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.{CastSupport, CollectionSupport}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.{CastSupport, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.graphdb.Path
@@ -35,7 +35,7 @@ import scala.collection.JavaConverters._
  */
 case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, predicates: Seq[Predicate] = Seq.empty)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with CollectionSupport with RonjaPipe {
+  extends PipeWithSource(source, pipeMonitor) with ListSupport with RonjaPipe {
   private def pathName = shortestPathCommand.pathName
   private val shortestPathExpression = ShortestPathExpression(shortestPathCommand, predicates)
 

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, _}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
@@ -34,7 +34,7 @@ import scala.collection.Map
 case class CreateNode(key: String, properties: Map[String, Expression], labels: Seq[KeyToken])
   extends UpdateAction
   with GraphElementPropertyFunctions
-  with CollectionSupport {
+  with ListSupport {
 
   def localEffects(symbols: SymbolTable) = if (labels.isEmpty)
     Effects(CreatesAnyNode)

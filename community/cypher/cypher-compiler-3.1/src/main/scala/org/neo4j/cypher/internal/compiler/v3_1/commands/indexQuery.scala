@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands
 
 import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.IsCollection
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.IsList
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
@@ -36,13 +36,14 @@ object indexQuery extends GraphElementPropertyFunctions {
             index: Any => GenTraversableOnce[Node],
             labelName: String,
             propertyName: String): Iterator[Node] = queryExpression match {
+
     case SingleQueryExpression(inner) =>
       val value = inner(m)(state)
       lookupNodes(value, index).toIterator
 
     case ManyQueryExpression(inner) =>
       inner(m)(state) match {
-        case IsCollection(coll) => coll.toSet.toSeq.flatMap {
+        case IsList(coll) => coll.toSet.toSeq.flatMap {
           value: Any => lookupNodes(value, index)
         }.iterator
         case null => Iterator.empty

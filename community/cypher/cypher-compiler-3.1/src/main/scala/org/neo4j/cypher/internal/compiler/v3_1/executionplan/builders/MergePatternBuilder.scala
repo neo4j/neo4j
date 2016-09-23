@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v3_1._
-import commands.{AllVariables, Pattern, Query}
-import commands.expressions.Variable
-import executionplan.{ExecutionPlanInProgress, Phase, PartiallySolvedQuery, PlanBuilder}
-import mutation._
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Variable
+import org.neo4j.cypher.internal.compiler.v3_1.commands.{AllVariables, Pattern, Query}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, Phase, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
+import org.neo4j.cypher.internal.compiler.v3_1.mutation._
+import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
-import pipes._
-import spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 /*
@@ -39,7 +38,7 @@ By doing it this way, we rely on already existing code to both match and create 
 
 This class prepares MergePatternAction objects to be run by creating the match pipe
 */
-case class MergePatternBuilder(matching: Phase) extends PlanBuilder with CollectionSupport {
+case class MergePatternBuilder(matching: Phase) extends PlanBuilder with ListSupport {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean =
     apply(plan, ctx) != apply(plan, ctx)
 

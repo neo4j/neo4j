@@ -47,7 +47,7 @@ object NamedExpectation {
 case class NamedExpectation(name: String, e: Expression, properties: Map[String, Expression],
                             labels: Seq[KeyToken])
   extends GraphElementPropertyFunctions
-  with CollectionSupport
+  with ListSupport
   with TypeSafe {
 
   case class DataExpectation(properties: Map[String, Expression], labels: Seq[KeyToken])
@@ -95,7 +95,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
           case (k, value) => state.query.getOptPropertyKeyId(k).exists(key => {
             val expectedValue = ops.getProperty(id(x), key)
             (expectedValue, value) match {
-              case (IsCollection(l), IsCollection(r)) => l == r
+              case (IsList(l), IsList(r)) => l == r
               case (l, r) => l == r
             }
           })
@@ -109,7 +109,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
         val elementValue = ops.getProperty(id(x), state.query.getPropertyKeyId(k))
 
         (expectationValue, elementValue) match {
-          case (IsCollection(l), IsCollection(r)) => l == r
+          case (IsList(l), IsList(r)) => l == r
           case (l, r)                             => l == r
         }
     }
