@@ -153,7 +153,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         Netty4LogBridge.setLogProvider( logService.getInternalLogProvider() );
 
-        Authentication authentication = authentication( dependencies.config(), dependencies.authManager(), logService );
+        Authentication authentication = authentication( dependencies.authManager() );
 
         BoltFactory boltConnectionManagerFactory = life.add(
                 new LifecycleManagedBoltFactory( api, dependencies.usageData(), logService, dependencies.txBridge(),
@@ -274,8 +274,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
     }
 
-    private Authentication authentication( Config config, AuthManager authManager, LogService logService )
+    private Authentication authentication( AuthManager authManager )
     {
-        return new BasicAuthentication( authManager, logService.getInternalLogProvider() );
+        return new BasicAuthentication( authManager );
     }
 }

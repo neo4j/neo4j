@@ -19,19 +19,47 @@
  */
 package org.neo4j.bolt.v1.runtime.concurrent;
 
+import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
+import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.AssertableLogProvider;
 
 import static org.mockito.Mockito.*;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class RunnableBoltWorkerTest
 {
+
+    private AssertableLogProvider internalLog;
+    private AssertableLogProvider userLog;
+    private LogService logService;
+    private BoltStateMachine machine;
+
+    @Before
+    public void setup()
+    {
+        internalLog = new AssertableLogProvider();
+        userLog = new AssertableLogProvider();
+        logService = mock( LogService.class );
+        when( logService.getUserLogProvider() ).thenReturn( userLog );
+        when( logService.getUserLog( RunnableBoltWorker.class ) )
+                .thenReturn( userLog.getLog( RunnableBoltWorker.class ) );
+        when( logService.getInternalLogProvider() ).thenReturn( internalLog );
+        when( logService.getInternalLog( RunnableBoltWorker.class ) )
+                .thenReturn( internalLog.getLog( RunnableBoltWorker.class ) );
+        machine = mock( BoltStateMachine.class );
+        when( machine.key() ).thenReturn( "test-session" );
+    }
+
     @Test
     public void shouldExecuteWorkWhenRun() throws Throwable
     {
         // Given
-        BoltStateMachine machine = mock( BoltStateMachine.class );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, NullLogService.getInstance() );
         worker.enqueue( s -> s.run( "Hello, world!", null, null ) );
         worker.enqueue( RunnableBoltWorker.SHUTDOWN );
@@ -49,7 +77,6 @@ public class RunnableBoltWorkerTest
     public void errorThrownDuringExecutionShouldCauseSessionClose() throws Throwable
     {
         // Given
-        BoltStateMachine machine = mock( BoltStateMachine.class );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, NullLogService.getInstance() );
         worker.enqueue( s -> {
             throw new RuntimeException( "It didn't work out." );
@@ -60,5 +87,42 @@ public class RunnableBoltWorkerTest
 
         // Then
         verify( machine ).close();
+    }
+
+    @Test
+    public void authExceptionShouldNotBeLoggedHere() throws Throwable
+    {
+        // Given
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+        worker.enqueue( s -> {
+            throw new BoltConnectionAuthFatality( "fatality" );
+        } );
+
+        // When
+        worker.run();
+
+        // Then
+        verify( machine ).close();
+        internalLog.assertNone( inLog( RunnableBoltWorker.class ).any() );
+        userLog.assertNone( inLog( RunnableBoltWorker.class ).any() );
+    }
+
+    @Test
+    public void protocolBreachesShouldBeLoggedWithoutStackTraces() throws Throwable
+    {
+        // Given
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+        worker.enqueue( s -> {
+            throw new BoltProtocolBreachFatality( "protocol breach fatality" );
+        } );
+
+        // When
+        worker.run();
+
+        // Then
+        verify( machine ).close();
+        internalLog.assertExactly( inLog( RunnableBoltWorker.class ).error( "Bolt protocol breach in session " +
+                "'test-session'" ) );
+        userLog.assertNone( inLog( RunnableBoltWorker.class ).any() );
     }
 }

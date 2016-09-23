@@ -19,7 +19,9 @@
  */
 package org.neo4j.bolt.v1.runtime.concurrent;
 
+import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Job;
@@ -94,12 +96,21 @@ class RunnableBoltWorker implements Runnable, BoltWorker
                 }
             }
         }
-        catch ( Throwable e )
+        catch ( BoltConnectionAuthFatality e )
         {
-            log.error( "Worker for session '" + machine.key() + "' crashed: " + e.getMessage(), e );
+            // this is logged in the SecurityLog
+        }
+        catch ( BoltProtocolBreachFatality e )
+        {
+            log.error( "Bolt protocol breach in session '" + machine.key() + "'" );
+        }
+        catch ( Throwable t )
+        {
             userLog.error( "Fatal, worker for session '" + machine.key() + "' crashed. Please" +
-                           " contact your support representative if you are unable to resolve this.", e );
-
+                           " contact your support representative if you are unable to resolve this.", t );
+        }
+        finally
+        {
             // Attempt to close the session, as an effort to release locks and other resources held by the session
             machine.close();
         }
@@ -118,7 +129,6 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     {
         if ( job == SHUTDOWN )
         {
-            machine.close();
             keepRunning = false;
         }
         else

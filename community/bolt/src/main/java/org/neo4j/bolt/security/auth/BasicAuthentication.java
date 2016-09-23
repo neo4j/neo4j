@@ -29,11 +29,8 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.api.security.AuthToken.NEW_CREDENTIALS;
-import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 
 /**
  * Performs basic authentication with user name and password.
@@ -41,12 +38,10 @@ import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 public class BasicAuthentication implements Authentication
 {
     private final AuthManager authManager;
-    private final Log log;
 
-    public BasicAuthentication( AuthManager authManager, LogProvider logProvider )
+    public BasicAuthentication( AuthManager authManager )
     {
         this.authManager = authManager;
-        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -76,7 +71,6 @@ public class BasicAuthentication implements Authentication
             case TOO_MANY_ATTEMPTS:
                 throw new AuthenticationException( Status.Security.AuthenticationRateLimit );
             default:
-                log.warn( "Failed authentication attempt for '%s'", AuthToken.safeCast( PRINCIPAL, authToken ) );
                 throw new AuthenticationException( Status.Security.Unauthorized );
             }
 

@@ -36,15 +36,12 @@ import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
-import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -70,13 +67,15 @@ class SessionRule implements TestRule
                 config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
                 DependencyResolver resolver = gdb.getDependencyResolver();
-                LogService logService = NullLogService.getInstance();
-
-                Authentication authentication = authentication( resolver.resolveDependency( Config.class ),
-                        resolver.resolveDependency( AuthManager.class ), logService );
-                boltFactory = new LifecycleManagedBoltFactory( gdb, new UsageData( null ), logService,
-                                resolver.resolveDependency( ThreadToStatementContextBridge.class ),
-                                authentication, BoltConnectionTracker.NOOP );
+                Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ) );
+                boltFactory = new LifecycleManagedBoltFactory(
+                                        gdb,
+                                        new UsageData( null ),
+                                        NullLogService.getInstance(),
+                                        resolver.resolveDependency( ThreadToStatementContextBridge.class ),
+                                        authentication,
+                                        BoltConnectionTracker.NOOP
+                                    );
                 boltFactory.start();
                 try
                 {
@@ -99,9 +98,9 @@ class SessionRule implements TestRule
         };
     }
 
-    private Authentication authentication( Config config, AuthManager authManager, LogService logService )
+    private Authentication authentication( AuthManager authManager )
     {
-        return new BasicAuthentication( authManager, logService.getInternalLogProvider() );
+        return new BasicAuthentication( authManager );
     }
 
     BoltStateMachine newMachine( String connectionDescriptor )
