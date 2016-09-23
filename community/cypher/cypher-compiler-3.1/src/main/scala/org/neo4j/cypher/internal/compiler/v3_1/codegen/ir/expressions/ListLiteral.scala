@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-case class List(expressions: Seq[CodeGenExpression]) extends CodeGenExpression {
+case class ListLiteral(expressions: Seq[CodeGenExpression]) extends CodeGenExpression {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     expressions.foreach { instruction =>
