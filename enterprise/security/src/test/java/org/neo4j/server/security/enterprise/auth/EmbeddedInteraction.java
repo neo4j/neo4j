@@ -65,6 +65,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
 
     private void init( GraphDatabaseBuilder builder, Map<String, String> config ) throws Throwable
     {
+        builder.setConfig( boltConnector( "0" ).type, "BOLT" );
         builder.setConfig( boltConnector( "0" ).enabled, "true" );
         builder.setConfig( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
         builder.setConfig( BoltKernelExtension.Settings.tls_key_file, NeoInteractionLevel.tempPath( "key", ".key" ) );

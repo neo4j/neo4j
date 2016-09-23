@@ -54,6 +54,7 @@ public class BoltQueryLoggingIT
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" )
             .withConfig( GraphDatabaseSettings.logs_directory, tmpDir )
             .withConfig( GraphDatabaseSettings.log_queries, "true")
+            .withConfig( GraphDatabaseSettings.boltConnector( "0" ).type, "BOLT" )
             .withConfig( GraphDatabaseSettings.boltConnector( "0" ).enabled, "true" )
             .withConfig( GraphDatabaseSettings.boltConnector( "0" ).address, "localhost:8776" )
             .withConfig( GraphDatabaseSettings.boltConnector( "0" ).encryption_level, "DISABLED" );

@@ -19,11 +19,6 @@
  */
 package org.neo4j.harness;
 
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -41,6 +36,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -52,6 +52,7 @@ import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -66,9 +67,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 
 public class InProcessBuilderTest
 {
@@ -110,12 +111,13 @@ public class InProcessBuilderTest
 
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
-                .withConfig( httpConnector( "0" ).type, "HTTP" )
-                .withConfig( httpConnector( "0" ).enabled, "true" )
-                .withConfig( httpConnector( "1" ).type, "HTTP" )
-                .withConfig( httpConnector( "1" ).enabled, "true" )
-                .withConfig( httpConnector( "1" ).encryption, "TLS" )
-                .withConfig( httpConnector( "1" ).address, "localhost:7473" )
+                .withConfig( ClientConnectorSettings.httpConnector( "0" ).type, "HTTP" )
+                .withConfig( ClientConnectorSettings.httpConnector( "0" ).enabled, "true" )
+                .withConfig( ClientConnectorSettings.httpConnector( "0" ).encryption, "NONE" )
+                .withConfig( ClientConnectorSettings.httpConnector( "1" ).type, "HTTP" )
+                .withConfig( ClientConnectorSettings.httpConnector( "1" ).enabled, "true" )
+                .withConfig( ClientConnectorSettings.httpConnector( "1" ).encryption, "TLS" )
+                .withConfig( ClientConnectorSettings.httpConnector( "1" ).address, "localhost:7473" )
                 .withConfig( ServerSettings.certificates_directory.name(), testDir.directory( "certificates" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 .newServer() )

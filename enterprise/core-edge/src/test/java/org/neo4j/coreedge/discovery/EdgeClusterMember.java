@@ -30,6 +30,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.logging.Level;
+import org.neo4j.server.configuration.ClientConnectorSettings;
+import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
@@ -49,6 +51,9 @@ public class EdgeClusterMember implements ClusterMember
             Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
         this.memberId = memberId;
+        int boltPort = 8900 + memberId;
+        int httpPort = 11000 + memberId;
+
         String initialHosts = coreMemberHazelcastAddresses.stream()
                 .map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
@@ -67,9 +72,12 @@ public class EdgeClusterMember implements ClusterMember
 
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + (9000 + memberId) );
-        boltAdvertisedAddress = "127.0.0.1:" + (9000 + memberId);
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + boltPort );
+        boltAdvertisedAddress = "127.0.0.1:" + boltPort;
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
+        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
+        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
+        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
 
         File neo4jHome = new File( parentDir, "server-edge-" + memberId );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );

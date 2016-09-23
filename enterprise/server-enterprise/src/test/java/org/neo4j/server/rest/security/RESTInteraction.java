@@ -73,6 +73,7 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
     {
         CommunityServerBuilder builder = EnterpriseServerBuilder.server();
         builder = builder
+                .withProperty( boltConnector( "0" ).type.name(), "BOLT" )
                 .withProperty( boltConnector( "0" ).enabled.name(), "true" )
                 .withProperty( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() )
                 .withProperty( BoltKernelExtension.Settings.tls_key_file.name(),

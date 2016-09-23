@@ -65,6 +65,7 @@ public class BoltMetricsIT
         File metricsFolder = tmpDir.newFolder( "metrics" );
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
+                .setConfig( boltConnector( "0" ).type, "BOLT" )
                 .setConfig( boltConnector( "0" ).enabled, "true" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "false" )
                 .setConfig( MetricsSettings.boltMessagesEnabled, "true" )

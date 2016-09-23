@@ -98,6 +98,8 @@ import org.neo4j.storageengine.api.StorageEngine;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -138,7 +140,10 @@ public class ClusterManager
 
     public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
-            GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+            GraphDatabaseSettings.pagecache_memory.name(), "8m",
+            boltConnector( "0" ).type.name(), "BOLT",
+            boltConnector( "0" ).enabled.name(), "false"
+    ) );
 
     public interface StoreDirInitializer
     {

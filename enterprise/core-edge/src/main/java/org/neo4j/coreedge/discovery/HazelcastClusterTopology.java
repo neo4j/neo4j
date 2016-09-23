@@ -30,7 +30,6 @@ import org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.SocketAddressFormat;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
@@ -44,6 +43,8 @@ import com.hazelcast.core.Member;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
+
+import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
 
 class HazelcastClusterTopology
 {
@@ -116,7 +117,8 @@ class HazelcastClusterTopology
 
         return edgeServerMap
                 .entrySet().stream()
-                .map( entry -> new EdgeAddresses( SocketAddressFormat.socketAddress( entry.getValue() /*boltAddress*/, AdvertisedSocketAddress::new ) ) )
+                .map( entry -> new EdgeAddresses(
+                        socketAddress( entry.getValue() /*boltAddress*/, AdvertisedSocketAddress::new ) ) )
                 .collect( toSet() );
     }
 
@@ -172,9 +174,9 @@ class HazelcastClusterTopology
         MemberId memberId = new MemberId( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
 
         return Pair.of( memberId, new CoreAddresses(
-                SocketAddressFormat.socketAddress( member.getStringAttribute( RAFT_SERVER ), AdvertisedSocketAddress::new ),
-                SocketAddressFormat.socketAddress( member.getStringAttribute( TRANSACTION_SERVER ), AdvertisedSocketAddress::new ),
-                SocketAddressFormat.socketAddress( member.getStringAttribute( BOLT_SERVER ), AdvertisedSocketAddress::new )
-        ) );
+                socketAddress( member.getStringAttribute( RAFT_SERVER ), AdvertisedSocketAddress::new ),
+                socketAddress( member.getStringAttribute( TRANSACTION_SERVER ), AdvertisedSocketAddress::new ),
+                socketAddress( member.getStringAttribute( BOLT_SERVER ), AdvertisedSocketAddress::new ) )
+        );
     }
 }

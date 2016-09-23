@@ -26,16 +26,21 @@ import java.util.HashMap;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class GraphDatabaseSettingsTest
@@ -97,12 +102,132 @@ public class GraphDatabaseSettingsTest
         config.augment( stringMap( GraphDatabaseSettings.boltConnector( scoping ).advertised_address.name(), ":" + port ) );
 
         // when
-        GraphDatabaseSettings.BoltConnector boltConnector = GraphDatabaseSettings.boltConnector( scoping );
+        BoltConnector boltConnector = GraphDatabaseSettings.boltConnector( scoping );
         Setting<AdvertisedSocketAddress> advertised_address = boltConnector.advertised_address;
         AdvertisedSocketAddress advertisedSocketAddress = config.get( advertised_address );
 
         // then
         assertEquals( hostname, advertisedSocketAddress.getHostname() );
         assertEquals( port, advertisedSocketAddress.getPort() );
+    }
+
+    @Test
+    public void shouldEnableBoltByDefault() throws Exception
+    {
+        // given
+        Config config = Config.defaults();
+
+        // when
+        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
+        ListenSocketAddress listenSocketAddress = config.get( boltConnector.listen_address );
+
+        // then
+        assertEquals( new ListenSocketAddress( "localhost", 7687 ), listenSocketAddress );
+    }
+
+    @Test
+    public void shouldBeAbleToDisableBoltConnectorWithJustOneParameter() throws Exception
+    {
+        // given
+        Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.bolt.enabled", "false" ) );
+
+        // then
+        assertThat( boltConnectors( config ), empty() );
+    }
+
+    @Test
+    public void shouldBeAbleToOverrideBoltListenAddressesWithJustOneParameter() throws Exception
+    {
+        // given
+        Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.bolt.listen_address", ":8000" ) );
+
+        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
+
+        // then
+        assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector.listen_address ) );
+    }
+
+    @Test
+    public void shouldDeriveBoltListenAddressFromDefaultListenAddress() throws Exception
+    {
+        // given
+        Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connectors.default_listen_address", "0.0.0.0" ) );
+
+        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
+
+        // then
+        assertEquals( new ListenSocketAddress( "0.0.0.0", 7687 ), config.get( boltConnector.listen_address ) );
+    }
+
+    @Test
+    public void shouldDeriveBoltListenAddressFromDefaultListenAddressAndSpecifiedPort() throws Exception
+    {
+        // given
+        Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connectors.default_listen_address", "0.0.0.0" ) );
+        config.augment( stringMap( "dbms.connector.bolt.listen_address", ":8000" ) );
+
+        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
+
+        // then
+        assertEquals( new ListenSocketAddress( "0.0.0.0", 8000 ), config.get( boltConnector.listen_address ) );
+    }
+
+    @Test
+    public void shouldStillSupportCustomNameForBoltConnector() throws Exception
+    {
+        Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.random_name_that_will_be_unsupported.type", "BOLT" ) );
+        config.augment( stringMap( "dbms.connector.random_name_that_will_be_unsupported.enabled", "true" ) );
+        config.augment( stringMap( "dbms.connector.random_name_that_will_be_unsupported.listen_address", ":8000" ) );
+
+        // when
+        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
+
+        // then
+        assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector.listen_address ) );
+    }
+
+    @Test
+    public void shouldSupportMultipleBoltConnectorsWithCustomNames() throws Exception
+    {
+        Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.bolt1.type", "BOLT" ) );
+        config.augment( stringMap( "dbms.connector.bolt1.enabled", "true" ) );
+        config.augment( stringMap( "dbms.connector.bolt1.listen_address", ":8000" ) );
+        config.augment( stringMap( "dbms.connector.bolt2.type", "BOLT" ) );
+        config.augment( stringMap( "dbms.connector.bolt2.enabled", "true" ) );
+        config.augment( stringMap( "dbms.connector.bolt2.listen_address", ":9000" ) );
+
+        // when
+        BoltConnector boltConnector1 = boltConnectors( config ).get( 0 );
+        BoltConnector boltConnector2 = boltConnectors( config ).get( 1 );
+
+        // then
+        assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector1.listen_address ) );
+        assertEquals( new ListenSocketAddress( "localhost", 9000 ), config.get( boltConnector2.listen_address ) );
+    }
+
+    @Test
+    public void shouldSupportMultipleBoltConnectorsWithDefaultAndCustomName() throws Exception
+    {
+        Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.bolt.type", "BOLT" ) );
+        config.augment( stringMap( "dbms.connector.bolt.enabled", "true" ) );
+        config.augment( stringMap( "dbms.connector.bolt.listen_address", ":8000" ) );
+        config.augment( stringMap( "dbms.connector.bolt2.type", "BOLT" ) );
+        config.augment( stringMap( "dbms.connector.bolt2.enabled", "true" ) );
+        config.augment( stringMap( "dbms.connector.bolt2.listen_address", ":9000" ) );
+
+        // when
+        BoltConnector boltConnector1 = boltConnectors( config ).get( 0 );
+        BoltConnector boltConnector2 = boltConnectors( config ).get( 1 );
+
+        // then
+        assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector1.listen_address ) );
+        assertEquals( new ListenSocketAddress( "localhost", 9000 ), config.get( boltConnector2.listen_address ) );
     }
 }

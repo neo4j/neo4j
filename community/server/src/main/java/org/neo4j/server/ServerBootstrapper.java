@@ -35,13 +35,13 @@ import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
-import static org.neo4j.server.configuration.ServerSettings.httpConnector;
+import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 
 public abstract class ServerBootstrapper implements Bootstrapper
 {
@@ -81,7 +81,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
             log = userLogProvider.getLog( getClass() );
             config.setLogger( log );
 
-            serverAddress = httpConnector( config, HttpConnector.Encryption.NONE )
+            serverAddress = ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.NONE )
                     .map( ( connector ) -> config.get( connector.address ).toString() )
                     .orElse( serverAddress );
 

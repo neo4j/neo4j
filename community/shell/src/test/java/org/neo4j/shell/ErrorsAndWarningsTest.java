@@ -19,14 +19,14 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -41,44 +41,35 @@ import static org.junit.Assert.assertThat;
 public class ErrorsAndWarningsTest
 {
     @Rule
-    public ImpermanentDatabaseRule db = null;
-
-    public void startDatabase( final Boolean presentError )
+    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule()
     {
-        db = new ImpermanentDatabaseRule()
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
         {
-            @Override
-            protected void configure( GraphDatabaseBuilder builder )
-            {
-                builder.setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE );
-                builder.setConfig( GraphDatabaseSettings.cypher_hints_error, presentError.toString() );
-            }
+            builder.setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE );
+            builder.setConfig( GraphDatabaseSettings.cypher_hints_error, "false" );
+        }
 
-            @Override
-            public GraphDatabaseAPI getGraphDatabaseAPI()
+        @Override
+        public GraphDatabaseAPI getGraphDatabaseAPI()
+        {
+            try
             {
-                try
-                {
-                    before();
-                }
-                catch ( Throwable throwable )
-                {
-                    throwable.printStackTrace();
-                }
-                return super.getGraphDatabaseAPI();
+                before();
             }
-        };
-
-        db.getGraphDatabaseAPI();
-    }
+            catch ( Throwable throwable )
+            {
+                throwable.printStackTrace();
+            }
+            return super.getGraphDatabaseAPI();
+        }
+    };
 
     @Test
     public void unsupportedQueryShouldBeSilent() throws IOException
     {
         // Given
         // an empty database
-
-        startDatabase( false );
 
         // When
         InputStream realStdin = System.in;
