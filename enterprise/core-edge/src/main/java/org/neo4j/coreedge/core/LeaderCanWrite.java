@@ -32,7 +32,7 @@ public class LeaderCanWrite implements AccessCapability
     private RaftMachine raftMachine;
     public static final String NOT_LEADER_ERROR_MSG =
             "No write operations are allowed directly on this database. Writes must pass through the leader " +
-                    "the leader and the role of this server is: %s";
+                    "the role of this server is: %s";
 
     LeaderCanWrite( RaftMachine raftMachine )
     {
