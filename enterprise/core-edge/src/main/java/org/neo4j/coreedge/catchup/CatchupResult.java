@@ -23,5 +23,6 @@ public enum CatchupResult
 {
     SUCCESS,
     E_STORE_ID_MISMATCH,
+    E_STORE_UNAVAILABLE,
     E_TRANSACTION_PRUNED
 }

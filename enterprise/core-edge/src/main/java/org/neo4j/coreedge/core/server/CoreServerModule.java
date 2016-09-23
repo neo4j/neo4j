@@ -28,7 +28,6 @@ import org.neo4j.coreedge.ReplicationModule;
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
-import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyClient;
@@ -187,11 +186,11 @@ public class CoreServerModule
 
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
-        CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase,
+        CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
-                new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
-                coreState, config, platformModule.monitors );
+                localDatabase::dataSource, localDatabase::isAvailable, coreState, config,
+                platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ) );
 
         servicesToStopOnStoreCopy.register( catchupServer );
 

@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -33,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class LocalDatabase implements Supplier<StoreId>, Lifecycle
+public class LocalDatabase implements Lifecycle
 {
     private final File storeDir;
 
@@ -80,6 +81,11 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         this.databaseHealth = null;
         dataSourceManager.stop();
         started = false;
+    }
+
+    public boolean isAvailable()
+    {
+        return started;
     }
 
     @Override
@@ -161,12 +167,6 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         return false;
     }
 
-    @Override
-    public StoreId get()
-    {
-        return storeId();
-    }
-
     public File storeDir()
     {
         return storeDir;
@@ -176,5 +176,10 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     {
         storeFiles.delete( storeDir );
         storeFiles.moveTo( sourceDir, storeDir );
+    }
+
+    public NeoStoreDataSource dataSource()
+    {
+        return dataSourceManager.getDataSource();
     }
 }

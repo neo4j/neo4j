@@ -217,24 +217,25 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 , logProvider );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new StoreFiles( new DefaultFileSystemAbstraction() ),
+                new StoreFiles( fileSystem ),
                 platformModule.dataSourceManager,
                 pageCache,
                 fileSystem,
                 databaseHealthSupplier );
 
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
-                new DefaultFileSystemAbstraction(), platformModule.pageCache,
+                fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory() );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
-        TxPollingClient txPuller = new TxPollingClient( logProvider, fileSystem,
-                localDatabase, storeFetcher, catchUpClient, new ConnectToRandomCoreMember( discoveryService ),
-                txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier,
-                platformModule.monitors, copiedStoreRecovery );
+        TxPollingClient txPuller =
+                new TxPollingClient( logProvider, fileSystem, localDatabase, storeFetcher, catchUpClient,
+                        new ConnectToRandomCoreMember( discoveryService ), txPullerTimeoutService,
+                        config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier, platformModule.monitors,
+                        copiedStoreRecovery );
 
         dependencies.satisfyDependencies( txPuller );
 
