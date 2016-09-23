@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Path, Relationship}
@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 
 case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val estimatedCardinality: Option[Double] = None)
                                  (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
+  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {

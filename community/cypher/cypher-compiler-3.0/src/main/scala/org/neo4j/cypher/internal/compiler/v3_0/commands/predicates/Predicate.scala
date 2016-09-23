@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ReadsNodesWithLabels, Effects}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{IsMap, CastSupport, CollectionSupport, IsCollection}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{IsMap, CastSupport, ListSupport, IsList}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
@@ -255,10 +255,10 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implici
   def symbolTableDependencies = lhsExpr.symbolTableDependencies ++ regexExpr.symbolTableDependencies
 }
 
-case class NonEmpty(collection: Expression) extends Predicate with CollectionSupport {
+case class NonEmpty(collection: Expression) extends Predicate with ListSupport {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     collection(m) match {
-      case IsCollection(x) => Some(x.nonEmpty)
+      case IsList(x) => Some(x.nonEmpty)
       case null            => None
       case x               => throw new CypherTypeException("Expected a collection, got `%s`".format(x))
     }
@@ -310,13 +310,13 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
   override def localEffects(symbols: SymbolTable) = Effects(ReadsNodesWithLabels(label.name))
 }
 
-case class CoercedPredicate(inner:Expression) extends Predicate with CollectionSupport {
+case class CoercedPredicate(inner:Expression) extends Predicate with ListSupport {
   def arguments = Seq(inner)
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = inner(m) match {
     case x: Boolean         => Some(x)
     case null               => None
-    case IsCollection(coll) => Some(coll.nonEmpty)
+    case IsList(coll) => Some(coll.nonEmpty)
     case x                  => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
   }
 

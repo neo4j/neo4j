@@ -19,25 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
-object Collection {
-  val empty = Literal(Seq())
-}
+class ListLiteralTest extends CypherFunSuite {
+  test("empty_collection_should_have_any_type") {
+                                                  ListLiteral().getType(SymbolTable()) should equal(CTList(CTAny))
+  }
 
-case class Collection(arguments: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = arguments.map(e => e(ctx))
+  test("collection_with_one_item_should_be_typed_for_that_items_type") {
+                                                                         ListLiteral(Literal(1)).getType(SymbolTable()) should equal(CTList(CTInteger))
+  }
 
-  def rewrite(f: (Expression) => Expression): Expression = f(Collection(arguments.map(f): _*))
-
-  def calculateType(symbols: SymbolTable): CypherType =
-    arguments.map(_.getType(symbols)) match {
-      case Seq() => CTList(CTAny)
-      case types => CTList(types.reduce(_ leastUpperBound _))
-    }
-
-  def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
+  test("collection_with_several_items_should_be_typed_for_their_common_supertype"){
+                                                                                    ListLiteral(Literal(1), Literal(true)).getType(SymbolTable()) should equal(CTList(CTAny))
+  }
 }

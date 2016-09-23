@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_0.mutation._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InternalException, SyntaxException}
@@ -31,7 +31,7 @@ import org.neo4j.graphdb.NotInTransactionException
 import scala.collection.mutable
 
 case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with CollectionSupport with NoLushEntityCreation {
+  extends PipeWithSource(source, pipeMonitor) with ListSupport with NoLushEntityCreation {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = input.flatMap {
     case ctx => executeMutationCommands(ctx, state)

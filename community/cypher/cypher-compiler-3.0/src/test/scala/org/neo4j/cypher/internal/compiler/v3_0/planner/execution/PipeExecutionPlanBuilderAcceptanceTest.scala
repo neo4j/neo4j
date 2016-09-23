@@ -81,7 +81,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
   }
 
   test("simple node by id seek query") {
-    val astLiteral: Expression = Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
+    val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
     val logicalPlan = NodeByIdSeek(IdName("n"), ManySeekableArgs(astLiteral), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
@@ -91,7 +91,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
   }
 
   test("simple node by id seek query with multiple values") {
-    val astCollection: Collection = Collection(
+    val astCollection: ListLiteral = ListLiteral(
       Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
     )_
     val logicalPlan = NodeByIdSeek(IdName("n"), ManySeekableArgs(astCollection), Set.empty)_
@@ -103,7 +103,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
   }
 
   test("simple relationship by id seek query") {
-    val astLiteral: Expression = Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
+    val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
     val fromNode = "from"
     val toNode = "to"
     val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), ManySeekableArgs(astLiteral), IdName(fromNode), IdName(toNode), Set.empty)_
@@ -116,7 +116,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
 
   test("simple relationship by id seek query with multiple values") {
     val astCollection: Expression =
-      Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_))_
+      ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_))_
 
     val fromNode = "from"
     val toNode = "to"
@@ -130,7 +130,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
 
   test("simple undirected relationship by id seek query with multiple values") {
     val astCollection: Expression =
-      Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_))_
+      ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_))_
 
     val fromNode = "from"
     val toNode = "to"

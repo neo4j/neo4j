@@ -121,7 +121,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED42", "  UNNAMED35"
         )(solved),
         Ors(Set(
-          In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _,
+          In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _,
           GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
         )) _
       )(solved)
@@ -136,7 +136,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED45", "  UNNAMED38"
         )(solved),
-        In(Property(Variable("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+        In(Property(Variable("a") _, PropertyKeyName("prop") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
       )(solved)
     )
   }
@@ -151,7 +151,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             "a", SemanticDirection.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED34"
           )(solved),
           "  FRESHID30",
-          In(Property(Variable("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+          In(Property(Variable("a") _, PropertyKeyName("prop") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
         )(solved),
         Expand(
           Argument(Set("a"))(solved)(),
@@ -205,9 +205,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should plan all predicates along with named varlength pattern") {
     planFor("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p").plan should beLike {
       case Projection(
-              VarExpand(_, _, _, _, _,_, _, _, _,
+      VarExpand(_, _, _, _, _,_, _, _, _,
                      Seq((Variable("n"),
-                     In(Property(Variable("n"), PropertyKeyName("prop") ),Collection(List(SignedDecimalIntegerLiteral("1337"))))))), _) => ()
+                     In(Property(Variable("n"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337"))))))), _) => ()
 
     }
   }
@@ -217,7 +217,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       case Projection(
       VarExpand(_, _, _, _, _,_, _, _, _,
                 Seq((Variable("n"),
-                Not(In(Property(Variable("n"), PropertyKeyName("prop") ),Collection(List(SignedDecimalIntegerLiteral("1337")))))))), _) => ()
+                Not(In(Property(Variable("n"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337")))))))), _) => ()
 
     }
   }

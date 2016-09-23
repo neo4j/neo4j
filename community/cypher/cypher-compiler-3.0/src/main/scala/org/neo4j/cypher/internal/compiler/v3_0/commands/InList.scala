@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_0.commands
 import org.neo4j.cypher.internal.compiler.v3_0._
 import expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ListSupport
 import pipes.QueryState
 import collection.Seq
 
-abstract class InCollection(collectionExpression: Expression, id: String, predicate: Predicate)
+abstract class InList(collectionExpression: Expression, id: String, predicate: Predicate)
   extends Predicate
-  with CollectionSupport
+  with ListSupport
   with Closure {
 
   type CollectionPredicate[U] = ((U) => Option[Boolean]) => Option[Boolean]
@@ -59,8 +59,8 @@ abstract class InCollection(collectionExpression: Expression, id: String, predic
   def symbolTableDependencies = symbolTableDependencies(collectionExpression, predicate, id)
 }
 
-case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate)
-  extends InCollection(collection, symbolName, inner) {
+case class AllInList(collection: Expression, symbolName: String, inner: Predicate)
+  extends InList(collection, symbolName, inner) {
 
   private def forAll[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(true)
@@ -80,14 +80,14 @@ case class AllInCollection(collection: Expression, symbolName: String, inner: Pr
   def name = "all"
 
   def rewrite(f: (Expression) => Expression) =
-    f(AllInCollection(
+    f(AllInList(
       collection = collection.rewrite(f),
       symbolName = symbolName,
       inner = inner.rewriteAsPredicate(f)))
 }
 
-case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate)
-  extends InCollection(collection, symbolName, inner) {
+case class AnyInList(collection: Expression, symbolName: String, inner: Predicate)
+  extends InList(collection, symbolName, inner) {
 
   private def exists[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(false)
@@ -108,14 +108,14 @@ case class AnyInCollection(collection: Expression, symbolName: String, inner: Pr
   def name = "any"
 
   def rewrite(f: (Expression) => Expression) =
-    f(AnyInCollection(
+    f(AnyInList(
       collection = collection.rewrite(f),
       symbolName = symbolName,
       inner = inner.rewriteAsPredicate(f)))
 }
 
-case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate)
-  extends InCollection(collection, symbolName, inner) {
+case class NoneInList(collection: Expression, symbolName: String, inner: Predicate)
+  extends InList(collection, symbolName, inner) {
 
   private def none[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(true)
@@ -136,14 +136,14 @@ case class NoneInCollection(collection: Expression, symbolName: String, inner: P
   def name = "none"
 
   def rewrite(f: (Expression) => Expression) =
-    f(NoneInCollection(
+    f(NoneInList(
       collection = collection.rewrite(f),
       symbolName = symbolName,
       inner = inner.rewriteAsPredicate(f)))
 }
 
-case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate)
-  extends InCollection(collection, symbolName, inner) {
+case class SingleInList(collection: Expression, symbolName: String, inner: Predicate)
+  extends InList(collection, symbolName, inner) {
 
   private def single[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
     var matched = false
@@ -165,7 +165,7 @@ case class SingleInCollection(collection: Expression, symbolName: String, inner:
   def name = "single"
 
   def rewrite(f: (Expression) => Expression) =
-    f(SingleInCollection(
+    f(SingleInList(
       collection = collection.rewrite(f),
       symbolName = symbolName,
       inner = inner.rewriteAsPredicate(f)))

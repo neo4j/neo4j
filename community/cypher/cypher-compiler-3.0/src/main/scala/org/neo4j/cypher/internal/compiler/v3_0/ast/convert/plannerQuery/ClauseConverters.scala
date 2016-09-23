@@ -242,7 +242,7 @@ object ClauseConverters {
   }
 
   private def toPropertySelection(identifier: Variable,  map:Map[PropertyKeyName, Expression]): Seq[Expression] = map.map {
-    case (k, e) => In(Property(identifier, k)(k.position), Collection(Seq(e))(e.position))(identifier.position)
+    case (k, e) => In(Property(identifier, k)(k.position), ListLiteral(Seq(e))(e.position))(identifier.position)
   }.toSeq
 
   private def toSetPattern(semanticTable: SemanticTable)(setItem: SetItem): SetMutatingPattern = setItem match {

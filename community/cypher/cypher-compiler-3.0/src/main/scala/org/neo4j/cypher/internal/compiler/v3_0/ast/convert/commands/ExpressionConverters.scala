@@ -210,7 +210,7 @@ object ExpressionConverters {
         else
           command
       case Tail =>
-        commandexpressions.CollectionSliceExpression(
+        commandexpressions.ListSlice(
           toCommandExpression(invocation.arguments.head),
           Some(commandexpressions.Literal(1)),
           None
@@ -267,17 +267,17 @@ object ExpressionConverters {
     case e: ast.PatternExpression => commands.PathExpression(e.pattern.asLegacyPatterns)
     case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None).head)
     case e: ast.HasLabels => hasLabels(e)
-    case e: ast.Collection => commandexpressions.Collection(toCommandExpression(e.expressions): _*)
+    case e: ast.ListLiteral => commandexpressions.ListLiteral(toCommandExpression(e.expressions): _*)
     case e: ast.MapExpression => mapExpression(e)
-    case e: ast.CollectionSlice => commandexpressions.CollectionSliceExpression(toCommandExpression(e.list), toCommandExpression(e.from), toCommandExpression(e.to))
+    case e: ast.ListSlice => commandexpressions.ListSlice(toCommandExpression(e.list), toCommandExpression(e.from), toCommandExpression(e.to))
     case e: ast.ContainerIndex => commandexpressions.ContainerIndex(toCommandExpression(e.expr), toCommandExpression(e.idx))
     case e: ast.FilterExpression => commandexpressions.FilterFunction(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
     case e: ast.ExtractExpression => commandexpressions.ExtractFunction(toCommandExpression(e.expression), e.variable.name, toCommandExpression(e.scope.extractExpression.get))
     case e: ast.ListComprehension => listComprehension(e)
-    case e: ast.AllIterablePredicate => commands.AllInCollection(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
-    case e: ast.AnyIterablePredicate => commands.AnyInCollection(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
-    case e: ast.NoneIterablePredicate => commands.NoneInCollection(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
-    case e: ast.SingleIterablePredicate => commands.SingleInCollection(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
+    case e: ast.AllIterablePredicate => commands.AllInList(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
+    case e: ast.AnyIterablePredicate => commands.AnyInList(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
+    case e: ast.NoneIterablePredicate => commands.NoneInList(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
+    case e: ast.SingleIterablePredicate => commands.SingleInList(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
     case e: ast.ReduceExpression => commandexpressions.ReduceFunction(toCommandExpression(e.list), e.variable.name, toCommandExpression(e.expression), e.accumulator.name, toCommandExpression(e.init))
     case e: ast.PathExpression => toCommandProjectedPath(e)
     case e: NestedPipeExpression => commandexpressions.NestedPipeExpression(e.pipe, toCommandProjectedPath(e.path))
@@ -336,10 +336,10 @@ object ExpressionConverters {
     case value: Parameter =>
       predicates.ConstantCachedIn(toCommandExpression(e.lhs), toCommandExpression(value))
 
-    case value@Collection(expressions) if expressions.isEmpty =>
+    case value@ListLiteral(expressions) if expressions.isEmpty =>
       predicates.Not(predicates.True())
 
-    case value@Collection(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>
+    case value@ListLiteral(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>
       predicates.ConstantCachedIn(toCommandExpression(e.lhs), toCommandExpression(value))
 
     case _ =>

@@ -61,7 +61,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("ManySeekableArgs has size hint for collections") {
-    ManySeekableArgs(Collection(Seq(expr1, expr2))_).sizeHint should equal(Some(2))
+    ManySeekableArgs(ListLiteral(Seq(expr1, expr2))_).sizeHint should equal(Some(2))
   }
 
   test("IdSeekable works") {
@@ -116,7 +116,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("PropertySeekable works with collection expressions") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    val rightExpr: Collection = Collection(Seq(expr1, expr2))_
+    val rightExpr: ListLiteral = ListLiteral(Seq(expr1, expr2))_
     val expr: Expression = In(leftExpr, rightExpr)_
     Mockito.when(expr1.dependencies).thenReturn(Set.empty[Variable])
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])

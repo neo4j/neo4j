@@ -25,7 +25,7 @@ import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
 import scala.collection.{Map, Seq}
 
-object IsCollection extends CollectionSupport {
+object IsList extends ListSupport {
   def unapply(x: Any):Option[Iterable[Any]] = {
     val collection = isCollection(x)
     if (collection) {
@@ -36,7 +36,7 @@ object IsCollection extends CollectionSupport {
   }
 }
 
-trait CollectionSupport {
+trait ListSupport {
 
   def singleOr[T](in:Iterator[T], or: => Exception):Iterator[T] = new Iterator[T] {
     var used = false
@@ -61,7 +61,7 @@ trait CollectionSupport {
     input match {
       case single if test.isDefinedAt(single) => Some(Seq(test(single)))
 
-      case IsCollection(coll) =>
+      case IsList(coll) =>
         val mappedCollection = coll map {
           case elem if test.isDefinedAt(elem) => test(elem)
           case _                              => throw new NoValidValuesExceptions

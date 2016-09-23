@@ -28,7 +28,8 @@ class ToStringTest extends FunctionTestBase("toString")  {
     testValidTypes(CTFloat)(CTString)
     testValidTypes(CTInteger)(CTString)
     testValidTypes(CTBoolean)(CTString)
-    testValidTypes(CTAny)(CTString)
+    testValidTypes(CTAny.covariant)(CTString)
+    testValidTypes(CTNumber.covariant)(CTString)
   }
 
   test("should fail type check for incompatible arguments") {

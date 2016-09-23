@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 
-class CollectionTest extends CypherFunSuite {
+class ListLiteralTest extends CypherFunSuite {
 
   test("any") {
     Seq() any false
@@ -86,16 +86,16 @@ class CollectionTest extends CypherFunSuite {
 
   implicit class Check(values: Seq[_]) {
 
-    def any(expected: Any) = check(expected, AnyInCollection.apply)
+    def any(expected: Any) = check(expected, AnyInList.apply)
 
-    def all(expected: Any) = check(expected, AllInCollection.apply)
+    def all(expected: Any) = check(expected, AllInList.apply)
 
-    def single(expected: Any) = check(expected, SingleInCollection.apply)
+    def single(expected: Any) = check(expected, SingleInList.apply)
 
-    def none(expected: Any) = check(expected, NoneInCollection.apply)
+    def none(expected: Any) = check(expected, NoneInList.apply)
 
     private def check(expected: Any,
-                      collectionFunction: (Expression, String, Predicate) => InCollection) {
+                      collectionFunction: (Expression, String, Predicate) => InList) {
       val function = collectionFunction(Literal(values), "x", CoercedPredicate(Variable("x")))
       val result = function(ExecutionContext.empty)(QueryStateHelper.empty)
       result should equal(expected)

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{LiteralTypeSupport, IsCollection, IsMap}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{LiteralTypeSupport, IsList, IsMap}
 
 case class Literal(v: Any) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = v

@@ -21,9 +21,9 @@ package org.neo4j.cypher
 
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ListSupport
 
-class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with  CollectionSupport {
+class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with  ListSupport {
 
   test("should enforce uniqueness constraint on create node with label and property") {
     // GIVEN

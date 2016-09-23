@@ -104,7 +104,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
 }
 
 object PatternExpressionSolver {
-  def solvePatternExpressions(availableSymbols: Set[IdName], context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): CollectionSubQueryExpressionSolver[PatternExpression] = {
+  def solvePatternExpressions(availableSymbols: Set[IdName], context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
       import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
@@ -131,22 +131,21 @@ object PatternExpressionSolver {
       ast.PathExpression(step)(pos)
     }
 
-    CollectionSubQueryExpressionSolver[PatternExpression](
+    ListSubQueryExpressionSolver[PatternExpression](
       namer = PatternExpressionPatternElementNamer.apply,
       extractQG = extractQG,
       createPlannerContext = createPlannerContext,
       projectionCreator = createPathExpression,
       lastDitch = patternExpressionRewriter(availableSymbols, context))
   }
-
 }
 
-case class CollectionSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[PatternElement, Variable]),
-                                                               extractQG: (LogicalPlan, T) => QueryGraph,
-                                                               createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
-                                                               projectionCreator: T => Expression,
-                                                               lastDitch: Rewriter,
-                                                               pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)(implicit m: ClassTag[T]) {
+case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[PatternElement, Variable]),
+                                                         extractQG: (LogicalPlan, T) => QueryGraph,
+                                                         createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
+                                                         projectionCreator: T => Expression,
+                                                         lastDitch: Rewriter,
+                                                         pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)(implicit m: ClassTag[T]) {
   def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String])
                            (implicit context: LogicalPlanningContext): (LogicalPlan, Expression) = {
 

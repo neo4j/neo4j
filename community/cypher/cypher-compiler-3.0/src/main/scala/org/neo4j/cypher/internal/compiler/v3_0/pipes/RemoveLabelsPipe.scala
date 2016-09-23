@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, SetLabel}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
 import org.neo4j.graphdb.Node
 case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
                         (val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
+  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {

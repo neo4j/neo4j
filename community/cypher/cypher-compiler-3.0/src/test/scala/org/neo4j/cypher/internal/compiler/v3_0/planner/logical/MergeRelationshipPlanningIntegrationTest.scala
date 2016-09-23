@@ -55,7 +55,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     val leaf = SingleRow()(solved)
     val projection = Projection(leaf, Map("arg" -> SignedDecimalIntegerLiteral("42")(pos)))(solved)
     val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set(argId))(solved)
-    val selection = Selection(Seq(In(Property(Variable("a")(pos), PropertyKeyName("p")(pos))(pos), Collection(Seq(Variable("arg")(pos)))(pos))(pos)), nodeByLabelScan)(solved)
+    val selection = Selection(Seq(In(Property(Variable("a")(pos), PropertyKeyName("p")(pos))(pos), ListLiteral(Seq(Variable("arg")(pos)))(pos))(pos)), nodeByLabelScan)(solved)
     val expand = Expand(selection, aId, SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)(solved)
 
     val optional = Optional(expand, Set(argId))(solved)

@@ -417,7 +417,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
     val propertyLookup: Property = Property(Variable(_var), PropertyKey("collection"))
     val equalityPredicate: Equals = Equals(IdFunction(Variable(otherVariable)), propertyLookup)
-    val collectionPredicate: AnyInCollection = AnyInCollection(propertyLookup, "-_-INNER-_-", equalityPredicate)
+    val collectionPredicate: AnyInList = AnyInList(propertyLookup, "-_-INNER-_-", equalityPredicate)
     val query = newQuery(
       where = Seq(collectionPredicate),
       patterns = Seq(SingleNode(otherVariable))

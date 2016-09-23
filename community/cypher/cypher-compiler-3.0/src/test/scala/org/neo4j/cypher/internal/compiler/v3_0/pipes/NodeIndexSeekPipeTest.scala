@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Collection, Expression, Variable, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{ListLiteral, Expression, Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -129,7 +129,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(Literal("hello"), Literal("world"))))()
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -146,7 +146,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(Literal("hello"), Literal("world"))), UniqueIndexSeek)()
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -163,7 +163,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(
-      Collection(
+      ListLiteral(
         Literal("hello"),
         Literal(null))))()
     val result = pipe.createResults(queryState)
@@ -182,7 +182,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(
-      Collection(
+      ListLiteral(
         Literal("hello"),
         Literal(null))), UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
@@ -200,7 +200,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection()))()
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral()))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -216,7 +216,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(
       Literal("hello"),
       Literal("hello")
     )))()
@@ -236,7 +236,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(
       Literal("hello"),
       Literal("world")
     )))()

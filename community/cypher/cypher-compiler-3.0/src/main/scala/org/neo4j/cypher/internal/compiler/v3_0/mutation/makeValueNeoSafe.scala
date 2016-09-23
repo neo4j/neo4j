@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.mutation
 
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, ListSupport}
 
-object makeValueNeoSafe extends (Any => Any) with CollectionSupport {
+object makeValueNeoSafe extends (Any => Any) with ListSupport {
 
   def apply(a: Any): Any = if (isCollection(a)) {
     transformTraversableToArray(makeTraversable(a))
