@@ -69,6 +69,9 @@ public abstract class EditionModule
 {
     public void registerProcedures( Procedures procedures ) throws KernelException
     {
+        // hack to force IBM JDK 8 to load all classes before reflective procedure compilation
+        Service.load( ProceduresProvider.class );
+
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
         registerProceduresFromProvider( "auth-procedures-provider", procedures );
 
