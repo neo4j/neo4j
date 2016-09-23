@@ -6,7 +6,25 @@
 The `CALL` clause is used to call a procedure deployed in the database.
 --
 
-The examples showing how to use arguments when invoking procedures all use the following procedure:
+Procedures are called using the `CALL` clause.
+
+Each procedure call needs to specify all required procedure arguments.
+This may be done either explicitly, by listing them in parenthesis after the procedure name (and separated by commas), or implicitly by using available query parameters as procedure call arguments.
+The latter form is only available when the whole query consists of a single `CALL` clause (i.e. in a standalone procedure call).
+
+Most procedures return a stream of records with a fixed set of result fields, similar to how running a Cypher query returns a stream of records, too.
+The `YIELD` sub clause is used to explicitly select which of these result fields are returned as newly bound variables from the procedure call to the user or for further processing by the remaining query.
+Each yielded result field may optionally be renamed using aliasing (i.e. `resultFieldName AS newName`).
+All new variables bound by a procedure call are added to the set of variables already bound in the current scope.
+It is an error if a procedure call tries to rebind an already bound variable (i.e. a procedure call cannot shadow a variable that is already bound in the current scope).
+In a standalone procedure call only, `YIELD` may be omitted.
+In this case, all result fields are yielded as newly bound variables from the procedure call to the user or for further processing by the remaining query.
+
+Calling a `VOID` procedures may only have a side effect and will not produce any result records and thus does neither allow nor require the use of `YIELD`.
+Calling a `VOID` procedure in the middle of a larger query will simply pass on each input record (i.e. it acts like `WITH *`).
+
+The following examples show how to pass arguments to and how to yield result fields from a procedure call.
+All examples use the following procedure:
 
 [snippet,java]
 ----
