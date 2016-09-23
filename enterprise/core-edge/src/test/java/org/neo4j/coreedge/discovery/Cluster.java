@@ -387,7 +387,7 @@ public class Cluster
                         LockSessionExpired;
     }
 
-    private static List<AdvertisedSocketAddress> buildAddresses( Set<Integer> coreServerIds )
+    public static List<AdvertisedSocketAddress> buildAddresses( Set<Integer> coreServerIds )
     {
         List<AdvertisedSocketAddress> addresses = new ArrayList<>();
         for ( Integer i : coreServerIds )
