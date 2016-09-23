@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner
+package org.neo4j.cypher.internal.ir.v3_1
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Equals, HasLabels, Variable, _}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, Predicate, Selections}
 
-class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
+class SelectionsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val aIsPerson: HasLabels = identHasLabel("a", "Person")
   val aIsProgrammer: HasLabels = identHasLabel("a", "Programmer")

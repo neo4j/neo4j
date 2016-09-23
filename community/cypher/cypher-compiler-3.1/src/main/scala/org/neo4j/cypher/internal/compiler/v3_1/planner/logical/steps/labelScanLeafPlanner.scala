@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LeafPlanner, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{UsingScanHint, Variable}
+import org.neo4j.cypher.internal.ir.v3_1.QueryGraph
 
 object labelScanLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {

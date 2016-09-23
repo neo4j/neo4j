@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, LabelName}
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
 case class CreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LabelName], properties: Option[Expression])
                            (val solved: PlannerQuery with CardinalityEstimation)

@@ -19,18 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{LazyType, LazyTypes}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningContext, SortDescription}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{DeleteExpression, _}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, SemanticDirection, ast, _}
-import org.neo4j.cypher.internal.ir.v3_1.{CSVFormat, IdName, PatternRelationship, ShortestPathPattern, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_1._
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.

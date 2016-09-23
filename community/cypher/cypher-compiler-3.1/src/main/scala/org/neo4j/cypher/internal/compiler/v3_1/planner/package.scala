@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
+import org.neo4j.cypher.internal.ir.v3_1.UnionQuery
+
 package object planner {
   type QueryAcceptor = UnionQuery => Boolean
 }

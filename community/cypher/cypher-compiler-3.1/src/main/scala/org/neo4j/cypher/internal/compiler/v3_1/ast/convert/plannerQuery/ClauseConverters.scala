@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, SemanticTable, SyntaxException}
 import org.neo4j.cypher.internal.ir.v3_1.Selections.asPredicates
-import org.neo4j.cypher.internal.ir.v3_1.{HasHeaders, IdName, NoHeaders, PatternRelationship, Selections, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_1._
 
 import scala.collection.mutable
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, PlannerQuery}
 
 case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)
                             (val solved: PlannerQuery with CardinalityEstimation)

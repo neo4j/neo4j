@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningConfiguration, QueryGraph, LogicalPlanningTestSupport2}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.dbstructure.QMULDbStructure
 

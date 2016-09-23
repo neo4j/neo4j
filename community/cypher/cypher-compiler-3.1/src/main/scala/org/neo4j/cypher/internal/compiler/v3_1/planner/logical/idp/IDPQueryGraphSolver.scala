@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.planShortestPaths
+import org.neo4j.cypher.internal.ir.v3_1.QueryGraph
+
 import scala.annotation.tailrec
 
 trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {

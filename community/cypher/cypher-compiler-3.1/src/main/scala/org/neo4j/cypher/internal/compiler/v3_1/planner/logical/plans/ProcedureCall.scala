@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery, ResolvedCall}
 
 case class ProcedureCall(left: LogicalPlan, call: ResolvedCall)
                         (val solved: PlannerQuery with CardinalityEstimation)

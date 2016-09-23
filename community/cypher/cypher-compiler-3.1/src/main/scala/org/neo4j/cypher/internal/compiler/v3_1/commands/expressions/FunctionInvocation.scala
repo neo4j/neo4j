@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_1.spi.UserFunctionSignature
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.ir.v3_1.UserFunctionSignature
 
 case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {

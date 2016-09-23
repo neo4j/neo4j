@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_1.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, PlannerQuery, ShortestPathPattern}
 
 case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern,
                              predicates: Seq[Expression] = Seq.empty, withFallBack: Boolean = false)

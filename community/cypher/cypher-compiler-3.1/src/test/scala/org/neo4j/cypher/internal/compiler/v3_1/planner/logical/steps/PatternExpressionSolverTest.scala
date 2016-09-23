@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningContext, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, QueryGraph}
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("Rewrites single pattern expression") {

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.execution
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.StatementConverters
@@ -32,14 +31,14 @@ import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantHandleQueryException, PeriodicCommit, logical}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantHandleQueryException, logical}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, Monitors, pipes, ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, PeriodicCommit, ResolvedCall, VarPatternLength}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.mutable

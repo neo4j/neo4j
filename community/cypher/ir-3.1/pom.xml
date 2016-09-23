@@ -129,6 +129,16 @@
       <artifactId>commons-lang3</artifactId>
     </dependency>
 
+    <!-- test dependencies -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-3.1</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+
   </dependencies>
 
   <profiles>

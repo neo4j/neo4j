@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship, Selections, ShortestPathPattern, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship, QueryGraph, Selections, ShortestPathPattern, SimplePatternLength}
 
 class QueryGraphConnectedComponentsTest
   extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanningTestSupport {

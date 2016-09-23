@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, RelTypeName, Variable}
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
 
 sealed trait ExpansionMode
 case object ExpandAll extends ExpansionMode

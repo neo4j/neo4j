@@ -20,15 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
-import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{ProcedureCall, Projection, SingleRow}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, ProcedureCallProjection, RegularPlannerQuery, RegularQueryProjection}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_1.Cardinality
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, CardinalityEstimation, ProcedureCallProjection, RegularPlannerQuery, RegularQueryProjection, ResolvedCall}
 
 class PlanEventHorizonTest extends CypherFunSuite {
 

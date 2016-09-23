@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{And, Predicate, True}
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.mutation.SetAction
 import org.neo4j.cypher.internal.frontend.v3_1.ast.SetClause
 import org.neo4j.cypher.internal.frontend.v3_1.notification.JoinHintUnsupportedNotification
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, ast}
+import org.neo4j.cypher.internal.ir.v3_1.ResolvedCall
 
 object StatementConverters {
 

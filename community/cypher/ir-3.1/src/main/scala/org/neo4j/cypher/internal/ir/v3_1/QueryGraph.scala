@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner
+package org.neo4j.cypher.internal.ir.v3_1
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship, Selections, ShortestPathPattern}
 
 import scala.collection.{GenTraversableOnce, mutable}
 

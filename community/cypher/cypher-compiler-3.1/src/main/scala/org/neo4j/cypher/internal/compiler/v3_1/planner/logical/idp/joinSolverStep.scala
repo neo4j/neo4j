@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.joinSolverStep._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship}
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship, QueryGraph}
 
 object joinSolverStep {
   val VERBOSE = false

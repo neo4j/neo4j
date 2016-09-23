@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Equals
+import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, PlannerQuery}
 
 /*
 Represents a common hash join on values and not node ids. The definition of a value join is an equality predicate

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.ast.PatternExpression
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_1.{Cost, IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_1.{Cost, IdName, PatternRelationship, QueryGraph, SimplePatternLength}
 
 class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
 case class ErrorPlan(inner: LogicalPlan, exception: Exception)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {

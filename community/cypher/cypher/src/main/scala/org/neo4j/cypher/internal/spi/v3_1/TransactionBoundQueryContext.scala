@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
+import org.neo4j.cypher.internal.ir.v3_1.QualifiedName
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapperv3_1}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService

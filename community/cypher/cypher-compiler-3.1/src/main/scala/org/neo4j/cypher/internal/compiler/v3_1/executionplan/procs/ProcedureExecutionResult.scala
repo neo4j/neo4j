@@ -24,9 +24,10 @@ import java.util
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QualifiedName, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, InternalQueryStatistics, ProfileMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.internal.ir.v3_1.QualifiedName
 
 /**
   * Execution result of a Procedure

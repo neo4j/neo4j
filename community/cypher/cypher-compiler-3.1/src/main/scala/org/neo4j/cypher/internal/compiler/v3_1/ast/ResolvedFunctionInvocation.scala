@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast
 
-import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.ir.v3_1.{QualifiedName, UserFunctionSignature}
 
 object ResolvedFunctionInvocation {
 

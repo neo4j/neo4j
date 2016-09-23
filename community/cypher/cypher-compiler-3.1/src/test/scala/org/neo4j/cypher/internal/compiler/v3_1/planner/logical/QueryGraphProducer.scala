@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Query, Statement}
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticTable, inSequence}
+import org.neo4j.cypher.internal.ir.v3_1.{PlannerQuery, QueryGraph}
 import org.scalatest.mock.MockitoSugar
 
 trait QueryGraphProducer extends MockitoSugar {

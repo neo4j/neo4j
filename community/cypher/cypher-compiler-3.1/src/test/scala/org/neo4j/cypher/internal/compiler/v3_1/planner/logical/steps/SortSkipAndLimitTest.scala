@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Ascending, Logic
 import org.neo4j.cypher.internal.frontend.v3_1.ast
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{AscSortItem, PatternExpression}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, IdName}
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, CardinalityEstimation, IdName, PlannerQuery, QueryGraph, QueryShuffle, RegularPlannerQuery, RegularQueryProjection}
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

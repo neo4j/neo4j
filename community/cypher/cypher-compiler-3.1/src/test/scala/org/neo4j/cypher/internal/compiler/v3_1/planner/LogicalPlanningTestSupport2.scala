@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.frontend.v3_1.{Foldable, PropertyKeyId, SemanticTable, _}
-import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, IdName}
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, CardinalityEstimation, IdName, PeriodicCommit, PlannerQuery, ProcedureSignature, QualifiedName, QueryGraph, UserFunctionSignature}
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint

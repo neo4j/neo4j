@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v3_1.planner.AggregatingQueryProjection
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
+import org.neo4j.cypher.internal.ir.v3_1.AggregatingQueryProjection
 
 object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): LogicalPlan = {
