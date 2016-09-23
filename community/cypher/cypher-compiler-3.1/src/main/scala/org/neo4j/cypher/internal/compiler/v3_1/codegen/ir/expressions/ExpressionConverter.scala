@@ -129,7 +129,7 @@ object ExpressionConverter {
       case lit: ast.Literal => Literal(lit.value)
 
       case ast.ListLiteral(exprs) =>
-        expressions.Collection(exprs.map(e => callback(e)))
+        expressions.List(exprs.map(e => callback(e)))
 
       case ast.Add(lhs, rhs) =>
         val leftOp = callback(lhs)

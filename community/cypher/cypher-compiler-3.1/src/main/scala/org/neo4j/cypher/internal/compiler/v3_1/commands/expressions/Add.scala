@@ -32,16 +32,16 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
     val bVal = b(ctx)
 
     (aVal, bVal) match {
-      case (null, _)                          => null
-      case (_, null)                          => null
-      case (x: Number, y: Number)             => plus(x,y)
-      case (x: String, y: String)             => x + y
+      case (null, _)              => null
+      case (_, null)              => null
+      case (x: Number, y: Number) => plus(x,y)
+      case (x: String, y: String) => x + y
       case (IsList(x), IsList(y)) => x ++ y
-      case (IsList(x), y)               => x ++ Seq(y)
-      case (x, IsList(y))               => Seq(x) ++ y
-      case (x: String, y: Number)             => x + y.toString
-      case (x: Number, y: String)             => x.toString + y
-      case _                                  => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
+      case (IsList(x), y)         => x ++ Seq(y)
+      case (x, IsList(y))         => Seq(x) ++ y
+      case (x: String, y: Number) => x + y.toString
+      case (x: Number, y: String) => x.toString + y
+      case _                      => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
     }
   }
 

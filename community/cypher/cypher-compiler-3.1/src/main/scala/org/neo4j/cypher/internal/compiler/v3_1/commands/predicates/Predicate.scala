@@ -313,10 +313,10 @@ case class CoercedPredicate(inner:Expression) extends Predicate with ListSupport
   def arguments = Seq(inner)
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = inner(m) match {
-    case x: Boolean         => Some(x)
-    case null               => None
+    case x: Boolean   => Some(x)
+    case null         => None
     case IsList(coll) => Some(coll.nonEmpty)
-    case x                  => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
+    case x            => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
   }
 
   def rewrite(f: (Expression) => Expression) = f(CoercedPredicate(inner.rewrite(f)))

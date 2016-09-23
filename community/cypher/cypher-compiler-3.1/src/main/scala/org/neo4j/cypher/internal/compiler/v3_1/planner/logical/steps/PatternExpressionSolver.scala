@@ -181,12 +181,14 @@ object PatternExpressionSolver {
   }
 }
 
-case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[PatternElement, Variable]),
-                                                         extractQG: (LogicalPlan, T) => QueryGraph,
-                                                         createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
-                                                         projectionCreator: T => Expression,
-                                                         lastDitch: Rewriter,
-                                                         pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)(implicit m: ClassTag[T]) {
+case class ListSubQueryExpressionSolver[T <: Expression](
+    namer: T => (T, Map[PatternElement, Variable]),
+    extractQG: (LogicalPlan, T) => QueryGraph,
+    createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
+    projectionCreator: T => Expression,
+    lastDitch: Rewriter,
+    pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)(implicit m: ClassTag[T]) {
+
   def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String])
                            (implicit context: LogicalPlanningContext): (LogicalPlan, Expression) = {
 

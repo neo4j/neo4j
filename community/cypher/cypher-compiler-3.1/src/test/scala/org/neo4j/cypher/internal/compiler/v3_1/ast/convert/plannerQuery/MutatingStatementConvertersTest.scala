@@ -132,7 +132,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val second = query.tail.get
     second.queryGraph.mutatingPatterns should equal(
       Seq(ForeachPattern(IdName("i"),
-                         ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos),
+          ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos),
           RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set(IdName("i")),
                                          Selections(Set.empty), Vector.empty, Set.empty, Set.empty,
                                          Seq(CreateNodePattern(IdName("a"), Seq.empty, None))),

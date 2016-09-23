@@ -30,20 +30,20 @@ class CodeGenExpressionTypesTest extends CypherFunSuite {
   val string = Literal("apa")
   val node = NodeProjection(Variable("a", CodeGenType(CTNode, ReferenceType)))
   val rel = RelationshipProjection(Variable("a", CodeGenType(CTRelationship, ReferenceType)))
-  val intCollection = Collection(Seq(int))
-  val doubleCollection = Collection(Seq(double))
-  val stringCollection = Collection(Seq(string))
-  val nodeCollection = Collection(Seq(node))
-  val relCollection = Collection(Seq(rel))
+  val intCollection = List(Seq(int))
+  val doubleCollection = List(Seq(double))
+  val stringCollection = List(Seq(string))
+  val nodeCollection = List(Seq(node))
+  val relCollection = List(Seq(rel))
 
   test("collection") {
     implicit val context: CodeGenContext = null
 
-    Collection(Seq(int)).codeGenType.ct should equal(CTList(CTInteger))
-    Collection(Seq(double)).codeGenType.ct should equal(CTList(CTFloat))
-    Collection(Seq(int, double)).codeGenType.ct should equal(CTList(CTNumber))
-    Collection(Seq(string, int)).codeGenType.ct should equal(CTList(CTAny))
-    Collection(Seq(node, rel)).codeGenType.ct should equal(CTList(CTMap))
+                       List(Seq(int)).codeGenType.ct should equal(CTList(CTInteger))
+                       List(Seq(double)).codeGenType.ct should equal(CTList(CTFloat))
+                       List(Seq(int, double)).codeGenType.ct should equal(CTList(CTNumber))
+                       List(Seq(string, int)).codeGenType.ct should equal(CTList(CTAny))
+                       List(Seq(node, rel)).codeGenType.ct should equal(CTList(CTMap))
   }
 
   test("add") {

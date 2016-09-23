@@ -151,7 +151,6 @@ trait MethodStructure[E] {
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
   def createRelExtractor(extractorName: String): Unit
 
-
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
   def forEach(varName: String, codeGenType: CodeGenType, iterable: E)(block: MethodStructure[E] => Unit): Unit
