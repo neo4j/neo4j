@@ -34,7 +34,8 @@ import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCIndexDescription;
 import org.neo4j.index.SCInserter;
 import org.neo4j.index.btree.Index;
-import org.neo4j.index.btree.RangePredicate;
+import org.neo4j.index.btree.LabelScanKey;
+import org.neo4j.index.btree.LabelScanLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -44,23 +45,22 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static java.lang.Long.min;
+import static java.lang.Math.toIntExact;
 import static java.lang.System.arraycopy;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
-import static org.neo4j.index.SCIndex.indexFileName;
-import static org.neo4j.index.btree.RangePredicate.equalTo;
 
 public class NativeLabelScanStore implements LabelScanStore
 {
-    private final SCIndex index;
+    private final SCIndex<LabelScanKey,Void> index;
     private final File indexFile;
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir ) throws IOException
     {
         String name = "labelscan.db";
-        indexFile = new File( storeDir, indexFileName( name ) );
-        this.index = new Index( pageCache, indexFile,
+        indexFile = new File( storeDir, name );
+        this.index = new Index<>( pageCache, indexFile, new LabelScanLayout(),
                 new SCIndexDescription( "", "", "", Direction.BOTH, "", null ), pageCache.pageSize() );
     }
 
@@ -78,12 +78,12 @@ public class NativeLabelScanStore implements LabelScanStore
             @Override
             public PrimitiveLongIterator nodesWithLabel( int labelId )
             {
-                RangePredicate fromPredicate = equalTo( labelId, 0L );
-                RangePredicate toPredicate = equalTo( labelId, Long.MAX_VALUE );
-                Cursor<BTreeHit> cursor;
+                LabelScanKey from = new LabelScanKey().set( labelId, 0 );
+                LabelScanKey to = new LabelScanKey().set( labelId, Long.MAX_VALUE );
+                Cursor<BTreeHit<LabelScanKey,Void>> cursor;
                 try
                 {
-                    cursor = index.seek( fromPredicate, toPredicate );
+                    cursor = index.seek( from, to );
                 }
                 catch ( IOException e )
                 {
@@ -100,7 +100,7 @@ public class NativeLabelScanStore implements LabelScanStore
                             cursor.close();
                             return false;
                         }
-                        final long nodeId = cursor.get().value()[0];
+                        final long nodeId = cursor.get().key().nodeId;
                         return next( nodeId );
                     }
                 };
@@ -126,7 +126,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public LabelScanWriter newWriter()
     {
-        final SCInserter inserter;
+        final SCInserter<LabelScanKey,Void> inserter;
         try
         {
             inserter = index.inserter();
@@ -142,8 +142,7 @@ public class NativeLabelScanStore implements LabelScanStore
         // which could be tested individually.
         return new LabelScanWriter()
         {
-            private final long[] key = new long[2];
-            private final long[] value = new long[2];
+            private final LabelScanKey key = new LabelScanKey();
             private long[] tmpBefore = new long[10];
             private long[] tmpAfter = new long[10];
             private final NodeLabelUpdate[] pendingUpdates = new NodeLabelUpdate[1000];
@@ -258,10 +257,7 @@ public class NativeLabelScanStore implements LabelScanStore
 
                             if ( labelId == currentLabelId )
                             {
-                                key[0] = labelId;
-                                key[1] = nodeId;
-                                value[0] = nodeId;
-                                inserter.insert( key, value );
+                                inserter.insert( key.set( toIntExact( labelId ), nodeId ), null );
                                 pendingUpdatesCount--;
                                 break;
                             }
@@ -281,10 +277,7 @@ public class NativeLabelScanStore implements LabelScanStore
 
                             if ( labelId == currentLabelId )
                             {
-                                key[0] = labelId;
-                                key[1] = nodeId;
-                                value[0] = nodeId;
-                                inserter.remove( key );
+                                inserter.remove( key.set( toIntExact( labelId ), nodeId ) );
                                 pendingUpdatesCount--;
                                 break;
                             }

@@ -22,9 +22,9 @@ package org.neo4j.index;
 import java.io.Closeable;
 import java.io.IOException;
 
-public interface SCInserter extends Closeable
+public interface SCInserter<KEY,VALUE> extends Closeable
 {
-    void insert( long[] key, long[] value ) throws IOException;
+    void insert( KEY key, VALUE value ) throws IOException;
 
-    long[] remove( long[] key ) throws IOException;
+    VALUE remove( KEY key ) throws IOException;
 }

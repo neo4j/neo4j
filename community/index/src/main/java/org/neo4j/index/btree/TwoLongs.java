@@ -19,34 +19,51 @@
  */
 package org.neo4j.index.btree;
 
-import org.neo4j.index.BTreeHit;
-
-public class MutableBTreeHit<KEY,VALUE> implements BTreeHit<KEY,VALUE>
+public class TwoLongs
 {
-    private final KEY key;
-    private final VALUE value;
+    public long first;
+    public long other;
 
-    public MutableBTreeHit( KEY key, VALUE value )
+    public TwoLongs()
     {
-        this.key = key;
-        this.value = value;
     }
 
-    @Override
-    public KEY key()
+    public TwoLongs( long first, long other )
     {
-        return key;
-    }
-
-    @Override
-    public VALUE value()
-    {
-        return value;
+        this.first = first;
+        this.other = other;
     }
 
     @Override
     public String toString()
     {
-        return "[key:" + key + ", value:" + value + "]";
+        return "[" + first + "," + other + "]";
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (int) (first ^ (first >>> 32));
+        result = prime * result + (int) (other ^ (other >>> 32));
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( this == obj )
+            return true;
+        if ( obj == null )
+            return false;
+        if ( getClass() != obj.getClass() )
+            return false;
+        TwoLongs other = (TwoLongs) obj;
+        if ( first != other.first )
+            return false;
+        if ( this.other != other.other )
+            return false;
+        return true;
     }
 }

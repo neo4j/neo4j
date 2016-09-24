@@ -27,7 +27,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
@@ -44,14 +43,11 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.index.btree.RangePredicate.greaterOrEqual;
-import static org.neo4j.index.btree.RangePredicate.lower;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 public class IndexTest
@@ -82,12 +78,13 @@ public class IndexTest
     public void shouldReadWrittenMetaData() throws Exception
     {
         // GIVEN
-        try ( Index index = new Index( pageCache, indexFile, description, pageSize ) )
+        TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout();
+        try ( Index<TwoLongs,TwoLongs> index = new Index<>( pageCache, indexFile, layout, description, pageSize ) )
         {   // Open/close is enough
         }
 
         // WHEN
-        try ( Index index = new Index( pageCache, indexFile ) )
+        try ( Index<TwoLongs,TwoLongs> index = new Index<>( pageCache, indexFile, layout ) )
         {
             SCIndexDescription readDescription = index.getDescription();
 
@@ -100,10 +97,11 @@ public class IndexTest
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        try ( Index index = new Index( pageCache, indexFile, description, pageSize ) )
+        try ( Index<TwoLongs,TwoLongs> index =
+                new Index<>( pageCache, indexFile, new PathIndexLayout(), description, pageSize ) )
         {
-            Comparator<long[]> keyComparator = index.getTreeNode().keyComparator();
-            Map<long[],long[]> data = new TreeMap<>( keyComparator );
+            Comparator<TwoLongs> keyComparator = index.getTreeNode().keyComparator();
+            Map<TwoLongs,TwoLongs> data = new TreeMap<>( keyComparator );
             Random random = ThreadLocalRandom.current();
             int count = 100;
             for ( int i = 0; i < count; i++ )
@@ -112,9 +110,9 @@ public class IndexTest
             }
 
             // WHEN
-            try ( SCInserter inserter = index.inserter() )
+            try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
             {
-                for ( Map.Entry<long[],long[]> entry : data.entrySet() )
+                for ( Map.Entry<TwoLongs,TwoLongs> entry : data.entrySet() )
                 {
                     inserter.insert( entry.getKey(), entry.getValue() );
                 }
@@ -125,10 +123,10 @@ public class IndexTest
                 // THEN
                 for ( int i = 0; i < count*10; i++ )
                 {
-                    long[] first = randomTreeThing( random );
-                    long[] second = randomTreeThing( random );
-                    long[] from, to;
-                    if ( first[0] < second[0] )
+                    TwoLongs first = randomTreeThing( random );
+                    TwoLongs second = randomTreeThing( random );
+                    TwoLongs from, to;
+                    if ( first.first < second.first )
                     {
                         from = first;
                         to = second;
@@ -138,22 +136,19 @@ public class IndexTest
                         from = second;
                         to = first;
                     }
-                    RangePredicate fromPredicate = greaterOrEqual( from[0], from[1] );
-                    RangePredicate toPredicate = lower( to[0], to[1] );
-                    Map<long[],long[]> expectedHits = expectedHits( data, fromPredicate, toPredicate, keyComparator );
-                    try ( Cursor<BTreeHit> result = index.seek( fromPredicate, toPredicate ) )
+                    Map<TwoLongs,TwoLongs> expectedHits = expectedHits( data, from, to, keyComparator );
+                    try ( Cursor<BTreeHit<TwoLongs,TwoLongs>> result = index.seek( from, to ) )
                     {
                         while ( result.next() )
                         {
-                            long[] key = result.get().key();
+                            TwoLongs key = result.get().key();
                             if ( expectedHits.remove( key ) == null )
                             {
-                                fail( "Unexpected hit " + Arrays.toString( key ) + " when searching for " +
-                                        fromPredicate + " - " + toPredicate );
+                                fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
                             }
-                            assertTrue( fromPredicate.inRange( key ) >= 0 );
-                            assertTrue( toPredicate.inRange( key ) <= 0 ); // apparently "lower" range predicate
-                                                                           // returns 0 for equal ids, even if prop is lower
+
+                            assertTrue( keyComparator.compare( key, from ) >= 0 );
+                            assertTrue( keyComparator.compare( key, to ) < 0 );
                         }
                         if ( !expectedHits.isEmpty() )
                         {
@@ -167,24 +162,25 @@ public class IndexTest
         }
     }
 
-    private void randomlyModifyIndex( Index index, Map<long[],long[]> data, Random random ) throws IOException
+    private void randomlyModifyIndex( Index<TwoLongs,TwoLongs> index, Map<TwoLongs,TwoLongs> data, Random random )
+            throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;
-        try ( SCInserter modifier = index.inserter() )
+        try ( SCInserter<TwoLongs,TwoLongs> modifier = index.inserter() )
         {
             for ( int i = 0; i < changeCount; i++ )
             {
                 if ( random.nextBoolean() && data.size() > 0 )
                 {   // remove
-                    long[] key = randomKey( data, random );
-                    long[] value = data.remove( key );
-                    long[] removedValue = modifier.remove( key );
-                    assertArrayEquals( "For " + Arrays.toString( key ), value, removedValue );
+                    TwoLongs key = randomKey( data, random );
+                    TwoLongs value = data.remove( key );
+                    TwoLongs removedValue = modifier.remove( key );
+                    assertEquals( "For " + key, value, removedValue );
                 }
                 else
                 {   // insert
-                    long[] key = randomTreeThing( random );
-                    long[] value = randomTreeThing( random );
+                    TwoLongs key = randomTreeThing( random );
+                    TwoLongs value = randomTreeThing( random );
                     modifier.insert( key, value );
                     data.put( key, value );
                 }
@@ -192,19 +188,20 @@ public class IndexTest
         }
     }
 
-    private long[] randomKey( Map<long[],long[]> data, Random random )
+    private TwoLongs randomKey( Map<TwoLongs,TwoLongs> data, Random random )
     {
-        long[][] keys = data.keySet().toArray( new long[data.size()][] );
+        TwoLongs[] keys = data.keySet().toArray( new TwoLongs[data.size()] );
         return keys[random.nextInt( keys.length )];
     }
 
-    private Map<long[],long[]> expectedHits( Map<long[],long[]> data, RangePredicate fromPredicate,
-            RangePredicate toPredicate, Comparator<long[]> comparator )
+    private Map<TwoLongs,TwoLongs> expectedHits( Map<TwoLongs,TwoLongs> data, TwoLongs from, TwoLongs to,
+            Comparator<TwoLongs> comparator )
     {
-        Map<long[],long[]> hits = new TreeMap<>( comparator );
-        for ( Map.Entry<long[],long[]> candidate : data.entrySet() )
+        Map<TwoLongs,TwoLongs> hits = new TreeMap<>( comparator );
+        for ( Map.Entry<TwoLongs,TwoLongs> candidate : data.entrySet() )
         {
-            if ( fromPredicate.inRange( candidate.getKey() ) >= 0 && toPredicate.inRange( candidate.getKey() ) <= 0 )
+            if ( comparator.compare( candidate.getKey(), from ) >= 0 &&
+                    comparator.compare( candidate.getKey(), to ) < 0 )
             {
                 hits.put( candidate.getKey(), candidate.getValue() );
             }
@@ -212,8 +209,8 @@ public class IndexTest
         return hits;
     }
 
-    private long[] randomTreeThing( Random random )
+    private TwoLongs randomTreeThing( Random random )
     {
-        return new long[] {random.nextInt( 1_000 ), random.nextInt( 1_000 )};
+        return new TwoLongs( random.nextInt( 1_000 ), random.nextInt( 1_000 ) );
     }
 }

@@ -23,8 +23,12 @@ import java.util.Comparator;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-public interface TreeNode
+public interface TreeNode<KEY,VALUE>
 {
+    KEY newKey();
+
+    VALUE newValue();
+
     void initializeLeaf( PageCursor cursor );
 
     void initializeInternal( PageCursor cursor );
@@ -49,17 +53,17 @@ public interface TreeNode
 
     void setLeftSibling( PageCursor cursor, long leftSiblingId );
 
-    long[] keyAt( PageCursor cursor, long[] into, int pos );
+    KEY keyAt( PageCursor cursor, KEY into, int pos );
 
-    void setKeyAt( PageCursor cursor, long[] key, int pos );
+    void setKeyAt( PageCursor cursor, KEY key, int pos );
 
     int keysFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into );
 
     void setKeysAt( PageCursor cursor, byte[] keys, int pos, int length );
 
-    long[] valueAt( PageCursor cursor, long[] value, int pos );
+    VALUE valueAt( PageCursor cursor, VALUE value, int pos );
 
-    void setValueAt( PageCursor cursor, long[] value, int pos );
+    void setValueAt( PageCursor cursor, VALUE value, int pos );
 
     int valuesFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into );
 
@@ -91,5 +95,5 @@ public interface TreeNode
 
     int childSize();
 
-    Comparator<long[]> keyComparator();
+    Comparator<KEY> keyComparator();
 }

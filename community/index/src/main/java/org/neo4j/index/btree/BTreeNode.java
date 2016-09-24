@@ -58,7 +58,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * HEADER_LENGTH + SIZE_KEY * MAX_KEY_COUNT_LEAF + i * SIZE_VALUE
  *
  */
-public class BTreeNode implements TreeNode
+public class BTreeNode<KEY,VALUE> implements TreeNode<KEY,VALUE>
 {
     private static final int BYTE_POS_TYPE = 0;
     private static final int BYTE_POS_KEYCOUNT = 1;
@@ -66,35 +66,42 @@ public class BTreeNode implements TreeNode
     private static final int BYTE_POS_LEFTSIBLING = 13;
     private static final int HEADER_LENGTH = 21;
 
-    private static final int SIZE_CHILD = 8;
-    private static final int SIZE_KEY = 2 * 8;
-    private static final int SIZE_VALUE = 2 * 8;
+    private static final int SIZE_CHILD = Long.BYTES;
 
     private static final byte LEAF_FLAG = 1;
     private static final byte INTERNAL_FLAG = 0;
-    private static final long NO_NODE_FLAG = -1l;
+    private static final long NO_NODE_FLAG = -1;
 
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;
+    private final TreeItemLayout<KEY,VALUE> layout;
 
-    private static final Comparator<long[]> KEY_COMPARATOR = ( left, right ) -> {
-        if ( left.length != 2 || right.length != 2 )
-        {
-            throw new IllegalArgumentException( "Keys must have length 2 to be compared" );
-        }
-        int compareId = Long.compare( left[0], right[0] );
-        return compareId != 0 ? compareId : Long.compare( left[1], right[1] );
-    };
+    private final int keySize;
+    private final int valueSize;
 
-    public BTreeNode( int pageSize )
+    public BTreeNode( int pageSize, TreeItemLayout<KEY,VALUE> layout )
     {
+        this.layout = layout;
+        keySize = layout.keySize();
+        valueSize = layout.valueSize();
         internalMaxKeyCount = Math.floorDiv( pageSize - (HEADER_LENGTH + SIZE_CHILD),
-                SIZE_KEY + SIZE_CHILD);
-        leafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH,
-                SIZE_KEY + SIZE_VALUE );
+                keySize + SIZE_CHILD);
+        leafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
     }
 
     // ROUTINES
+
+    @Override
+    public KEY newKey()
+    {
+        return layout.newKey();
+    }
+
+    @Override
+    public VALUE newValue()
+    {
+        return layout.newValue();
+    }
 
     @Override
     public void initializeLeaf( PageCursor cursor )
@@ -180,26 +187,24 @@ public class BTreeNode implements TreeNode
     // BODY METHODS
 
     @Override
-    public long[] keyAt( PageCursor cursor, long[] into, int pos )
+    public KEY keyAt( PageCursor cursor, KEY into, int pos )
     {
         cursor.setOffset( keyOffset( pos ) );
-        into[0] = cursor.getLong();
-        into[1] = cursor.getLong();
+        layout.readKey( cursor, into );
         return into;
     }
 
     @Override
-    public void setKeyAt( PageCursor cursor, long[] key, int pos )
+    public void setKeyAt( PageCursor cursor, KEY key, int pos )
     {
         cursor.setOffset( keyOffset( pos ) );
-        cursor.putLong( key[0] );
-        cursor.putLong( key[1] );
+        layout.writeKey( cursor, key );
     }
 
     @Override
     public int keysFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into )
     {
-        int length = (toExcluding - fromIncluding) * SIZE_KEY;
+        int length = (toExcluding - fromIncluding) * keySize;
         cursor.setOffset( keyOffset( fromIncluding ) );
         cursor.getBytes( into, 0, length );
         return length;
@@ -213,26 +218,24 @@ public class BTreeNode implements TreeNode
     }
 
     @Override
-    public long[] valueAt( PageCursor cursor, long[] value, int pos )
+    public VALUE valueAt( PageCursor cursor, VALUE value, int pos )
     {
         cursor.setOffset( valueOffset( pos ) );
-        value[0] = cursor.getLong();
-        value[1] = cursor.getLong();
+        layout.readValue( cursor, value );
         return value;
     }
 
     @Override
-    public void setValueAt( PageCursor cursor, long[] value, int pos )
+    public void setValueAt( PageCursor cursor, VALUE value, int pos )
     {
         cursor.setOffset( valueOffset( pos ) );
-        cursor.putLong( value[0] );
-        cursor.putLong( value[1] );
+        layout.writeValue( cursor, value );
     }
 
     @Override
     public int valuesFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into )
     {
-        int length = (toExcluding - fromIncluding) * SIZE_VALUE;
+        int length = (toExcluding - fromIncluding) * valueSize;
         cursor.setOffset( valueOffset( fromIncluding ) );
         cursor.getBytes( into, 0, length );
         return length;
@@ -290,19 +293,19 @@ public class BTreeNode implements TreeNode
     @Override
     public int keyOffset( int pos )
     {
-        return HEADER_LENGTH + pos * SIZE_KEY;
+        return HEADER_LENGTH + pos * keySize;
     }
 
     @Override
     public int valueOffset( int pos )
     {
-        return HEADER_LENGTH + leafMaxKeyCount * SIZE_KEY + pos * SIZE_VALUE;
+        return HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
     }
 
     @Override
     public int childOffset( int pos )
     {
-        return HEADER_LENGTH + internalMaxKeyCount * SIZE_KEY + pos * SIZE_CHILD;
+        return HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_CHILD;
     }
 
     @Override
@@ -314,13 +317,13 @@ public class BTreeNode implements TreeNode
     @Override
     public int keySize()
     {
-        return SIZE_KEY;
+        return keySize;
     }
 
     @Override
     public int valueSize()
     {
-        return SIZE_VALUE;
+        return valueSize;
     }
 
     @Override
@@ -330,8 +333,8 @@ public class BTreeNode implements TreeNode
     }
 
     @Override
-    public Comparator<long[]> keyComparator()
+    public Comparator<KEY> keyComparator()
     {
-        return KEY_COMPARATOR;
+        return layout;
     }
 }

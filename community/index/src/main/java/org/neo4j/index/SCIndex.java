@@ -22,27 +22,12 @@ package org.neo4j.index;
 import java.io.Closeable;
 import java.io.IOException;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.index.btree.RangePredicate;
 
-public interface SCIndex extends Closeable
+public interface SCIndex<KEY,VALUE> extends Closeable
 {
-    public static final String filePrefix = "shortcut.index.";
-    public static final String indexFileSuffix = ".bin";
-    public static final String metaFileSuffix = ".meta";
-
-    static String indexFileName( String name )
-    {
-        return filePrefix + name + indexFileSuffix;
-    }
-
-    static String metaFileName( String name )
-    {
-        return filePrefix + name + metaFileSuffix;
-    }
-
     SCIndexDescription getDescription();
 
-    Cursor<BTreeHit> seek( RangePredicate from, RangePredicate to ) throws IOException;
+    Cursor<BTreeHit<KEY,VALUE>> seek( KEY fromInclusive, KEY toExclusive ) throws IOException;
 
-    SCInserter inserter() throws IOException;
+    SCInserter<KEY,VALUE> inserter() throws IOException;
 }

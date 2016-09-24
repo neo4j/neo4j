@@ -19,9 +19,25 @@
  */
 package org.neo4j.index.btree;
 
-public class SplitResult<KEY>
+import java.util.Comparator;
+
+import org.neo4j.io.pagecache.PageCursor;
+
+public interface TreeItemLayout<KEY,VALUE> extends Comparator<KEY>
 {
-    public KEY primKey;
-    public long left;
-    public long right;
+    KEY newKey();
+
+    VALUE newValue();
+
+    int keySize();
+
+    int valueSize();
+
+    void writeKey( PageCursor cursor, KEY key );
+
+    void writeValue( PageCursor cursor, VALUE value );
+
+    void readKey( PageCursor cursor, KEY into );
+
+    void readValue( PageCursor cursor, VALUE into );
 }

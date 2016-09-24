@@ -35,7 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-public class Index implements SCIndex, IdProvider
+public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
 {
     private static final Charset UTF_8 = Charset.forName( "UTF-8" );
 
@@ -48,7 +48,8 @@ public class Index implements SCIndex, IdProvider
     private long rootId;
     private long lastId = META_PAGE_ID + 1; // first page (page 0) is for meta data (even actual page size)
 
-    private final TreeNode bTreeNode;
+    private final TreeItemLayout<KEY,VALUE> layout;
+    private final TreeNode<KEY,VALUE> bTreeNode;
     private final PageCursor metaCursor;
     private final ThreadLocal<TheInserter> inserters = new ThreadLocal<TheInserter>()
     {
@@ -65,8 +66,9 @@ public class Index implements SCIndex, IdProvider
      * @param indexFile     {@link File} containing the actual index
      * @throws IOException on page cache error
      */
-    public Index( PageCache pageCache, File indexFile ) throws IOException
+    public Index( PageCache pageCache, File indexFile, TreeItemLayout<KEY,VALUE> layout ) throws IOException
     {
+        this.layout = layout;
         PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
         SCMetaData meta = readMetaData( pagedFile );
 
@@ -79,7 +81,7 @@ public class Index implements SCIndex, IdProvider
         this.description = meta.description;
         this.rootId = meta.rootId;
         this.lastId = meta.lastId;
-        this.bTreeNode = new BTreeNode( meta.pageSize );
+        this.bTreeNode = new BTreeNode<>( meta.pageSize, layout );
         this.metaCursor = openMetaPageCursor();
     }
 
@@ -91,13 +93,15 @@ public class Index implements SCIndex, IdProvider
      * @param pageSize      page size to use for index
      * @throws IOException on page cache error
      */
-    public Index( PageCache pageCache, File indexFile, SCIndexDescription description, int pageSize )
+    public Index( PageCache pageCache, File indexFile, TreeItemLayout<KEY,VALUE> layout,
+            SCIndexDescription description, int pageSize )
             throws IOException
     {
+        this.layout = layout;
         this.pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
         this.description = description;
         this.rootId = this.lastId;
-        this.bTreeNode = new BTreeNode( pageSize );
+        this.bTreeNode = new BTreeNode<>( pageSize, layout );
 
         writeMetaData( pagedFile, new SCMetaData( description, pageSize, rootId, lastId ) );
 
@@ -193,10 +197,11 @@ public class Index implements SCIndex, IdProvider
     }
 
     @Override
-    public Cursor<BTreeHit> seek( RangePredicate fromPred, RangePredicate toPred ) throws IOException
+    public Cursor<BTreeHit<KEY,VALUE>> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
     {
         PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK );
-        long[] key = new long[2], value = new long[2];
+        KEY key = bTreeNode.newKey();
+        VALUE value = bTreeNode.newValue();
         cursor.next();
 
         // Find the left-most in-range leaf node, i.e. iterate through internal nodes to find it
@@ -207,7 +212,7 @@ public class Index implements SCIndex, IdProvider
             int keyCount = bTreeNode.keyCount( cursor );
             int pos = 0;
             bTreeNode.keyAt( cursor, key, pos );
-            while ( pos < keyCount && fromPred.inRange( key ) < 0 )
+            while ( pos < keyCount && layout.compare( key, fromInclusive ) < 0 )
             {
                 pos++;
                 bTreeNode.keyAt( cursor, key, pos );
@@ -217,9 +222,9 @@ public class Index implements SCIndex, IdProvider
         }
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
-        return new Cursor<BTreeHit>()
+        return new Cursor<BTreeHit<KEY,VALUE>>()
         {
-            private final MutableBTreeHit hit = new MutableBTreeHit( key, value );
+            private final MutableBTreeHit<KEY,VALUE> hit = new MutableBTreeHit<>( key, value );
 
             // data structures for the current b-tree node
             private int keyCount;
@@ -251,7 +256,7 @@ public class Index implements SCIndex, IdProvider
                 // TODO only do this for first leaf
                 pos = 0;
                 bTreeNode.keyAt( cursor, key, pos );
-                while ( pos < keyCount && fromPred.inRange( key ) < 0 )
+                while ( pos < keyCount && layout.compare( key, fromInclusive ) < 0 )
                 {
                     pos++;
                     bTreeNode.keyAt( cursor, key, pos );
@@ -260,7 +265,7 @@ public class Index implements SCIndex, IdProvider
             }
 
             @Override
-            public BTreeHit get()
+            public BTreeHit<KEY,VALUE> get()
             {
                 return hit;
             }
@@ -284,7 +289,7 @@ public class Index implements SCIndex, IdProvider
 
                     // Go to the next one, so that next call to next() gets it
                     bTreeNode.keyAt( cursor, key, pos );
-                    if ( toPred.inRange( key ) <= 0 )
+                    if ( layout.compare( key, toExclusive ) < 0 )
                     {
                         // A hit
                         bTreeNode.valueAt( cursor, value, pos );
@@ -356,13 +361,14 @@ public class Index implements SCIndex, IdProvider
     }
 
     @Override
-    public SCInserter inserter() throws IOException
+    public SCInserter<KEY,VALUE> inserter() throws IOException
     {
         return inserters.get().take( rootId );
     }
 
     // Utility method
-    protected static void printKeysOfSiblings( PageCursor cursor, TreeNode bTreeNode ) throws IOException
+    protected static <KEY,VALUE> void printKeysOfSiblings( PageCursor cursor,
+            TreeNode<KEY,VALUE> bTreeNode ) throws IOException
     {
         while ( true )
         {
@@ -377,21 +383,21 @@ public class Index implements SCIndex, IdProvider
     }
 
     // Utility method
-    protected static void printKeys( PageCursor cursor, TreeNode bTreeNode )
+    protected static <KEY,VALUE> void printKeys( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode )
     {
         boolean isLeaf = bTreeNode.isLeaf( cursor );
         int keyCount = bTreeNode.keyCount( cursor );
         System.out.print( "|{" + cursor.getCurrentPageId() + "}" );
-        long[] key = new long[2];
-        long[] value = new long[2];
+        KEY key = bTreeNode.newKey();
+        VALUE value = bTreeNode.newValue();
         for ( int i = 0; i < keyCount; i++ )
         {
             bTreeNode.keyAt( cursor, key, i );
-            System.out.print( "[" + key[0] + "," + key[1] + "=" );
+            System.out.print( key + "=" );
             if ( isLeaf )
             {
                 bTreeNode.valueAt( cursor, value, i );
-                System.out.print( value[0] + "," + value[1] );
+                System.out.print( value );
             }
             else
             {
@@ -402,10 +408,10 @@ public class Index implements SCIndex, IdProvider
         System.out.println( "|" );
     }
 
-    class TheInserter implements SCInserter
+    class TheInserter implements SCInserter<KEY,VALUE>
     {
         // Well, IndexInsert code lives somewhere so we need to instantiate that bastard here as well
-        private final IndexInsert inserter = new IndexInsert( Index.this, bTreeNode );
+        private final IndexInsert<KEY,VALUE> inserter = new IndexInsert<>( Index.this, bTreeNode, layout );
         private PageCursor cursor;
 
         TheInserter take( long rootId ) throws IOException
@@ -415,11 +421,11 @@ public class Index implements SCIndex, IdProvider
         }
 
         @Override
-        public void insert( long[] key, long[] value ) throws IOException
+        public void insert( KEY key, VALUE value ) throws IOException
         {
             cursor.next( rootId );
 
-            SplitResult split = inserter.insert( cursor, key, value );
+            SplitResult<KEY> split = inserter.insert( cursor, key, value );
 
             if ( split != null )
             {
@@ -437,7 +443,7 @@ public class Index implements SCIndex, IdProvider
         }
 
         @Override
-        public long[] remove( long[] key ) throws IOException
+        public VALUE remove( KEY key ) throws IOException
         {
             cursor.next( rootId );
 
@@ -451,7 +457,7 @@ public class Index implements SCIndex, IdProvider
         }
     }
 
-    public TreeNode getTreeNode()
+    public TreeNode<KEY,VALUE> getTreeNode()
     {
         return bTreeNode;
     }

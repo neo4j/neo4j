@@ -19,9 +19,9 @@
  */
 package org.neo4j.index;
 
-public interface BTreeHit
+public interface BTreeHit<KEY,VALUE>
 {
-    long[] key();
+    KEY key();
 
-    long[] value();
+    VALUE value();
 }
