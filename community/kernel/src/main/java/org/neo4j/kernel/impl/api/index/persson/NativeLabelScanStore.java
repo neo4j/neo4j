@@ -243,43 +243,61 @@ public class NativeLabelScanStore implements LabelScanStore
                         NodeLabelUpdate update = pendingUpdates[i];
                         final long nodeId = update.getNodeId();
                         // Additions
-                        for ( long labelId : update.getLabelsAfter() )
+                        long[] labelsAfter = update.getLabelsAfter();
+                        for ( int li = 0; li < labelsAfter.length; li++ )
                         {
+                            long labelId = labelsAfter[li];
                             if ( labelId == -1 )
                             {
                                 break;
                             }
 
-                            if ( labelId > currentLabelId && labelId < nextLabelId )
-                            {
-                                nextLabelId = labelId;
-                            }
-
+                            // Have this check here so that we can pick up the next labelId in our change set
                             if ( labelId == currentLabelId )
                             {
                                 inserter.insert( key.set( toIntExact( labelId ), nodeId ), null );
                                 pendingUpdatesCount--;
+
+                                // We can do a little shorter check for next labelId here straight away,
+                                // we just check the next if it's less than what we currently think is next labelId
+                                // and then break right after
+                                if ( li+1 < labelsAfter.length )
+                                {
+                                    nextLabelId = min( nextLabelId, labelsAfter[li+1] );
+                                }
                                 break;
+                            }
+                            else if ( labelId > currentLabelId )
+                            {
+                                nextLabelId = min( nextLabelId, labelId );
                             }
                         }
                         // Removals
-                        for ( long labelId : update.getLabelsBefore() )
+                        long[] labelsBefore = update.getLabelsBefore();
+                        for ( int li = 0; li < labelsBefore.length; li++ )
                         {
+                            long labelId = labelsBefore[li];
                             if ( labelId == -1 )
                             {
                                 break;
-                            }
-
-                            if ( labelId > currentLabelId && labelId < nextLabelId )
-                            {
-                                nextLabelId = labelId;
                             }
 
                             if ( labelId == currentLabelId )
                             {
                                 inserter.remove( key.set( toIntExact( labelId ), nodeId ) );
                                 pendingUpdatesCount--;
-                                break;
+
+                                // We can do a little shorter check for next labelId here straight away,
+                                // we just check the next if it's less than what we currently think is next labelId
+                                // and then break right after
+                                if ( li+1 < labelsAfter.length )
+                                {
+                                    nextLabelId = min( nextLabelId, labelsAfter[li+1] );
+                                }
+                            }
+                            else if ( labelId > currentLabelId && labelId < nextLabelId )
+                            {
+                                nextLabelId = min( nextLabelId, labelId );
                             }
                         }
                     }
