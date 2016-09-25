@@ -38,7 +38,6 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltMatchers.canReset;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.hasNoTransaction;
@@ -417,7 +416,7 @@ public class BoltStateMachineTest
     {
         // Given
         TransactionStateMachine.SPI transactionSPI = mock( TransactionStateMachine.SPI.class );
-        doThrow( new AuthExpirationException( "Auth expired!" ) ).when( transactionSPI.beginTransaction( any() ) );
+        doThrow( new AuthExpirationException( "Auth expired!" ) ).when( transactionSPI ).beginTransaction( any() );
 
         BoltStateMachine machine = newMachineWithTransactionSPI( transactionSPI );
         machine.state = READY;
