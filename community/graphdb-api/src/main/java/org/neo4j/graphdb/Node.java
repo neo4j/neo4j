@@ -55,16 +55,6 @@ package org.neo4j.graphdb;
 public interface Node extends PropertyContainer
 {
     /**
-     * Returns the unique id of this node. Ids are garbage collected over time
-     * so they are only guaranteed to be unique during a specific time span: if
-     * the node is deleted, it's likely that a new node at some point will get
-     * the old id. <b>Note</b>: this makes node ids brittle as public APIs.
-     *
-     * @return the id of this node
-     */
-    long getId();
-
-    /**
      * Deletes this node if it has no relationships attached to it. If
      * <code>delete()</code> is invoked on a node with relationships, an
      * unchecked exception will be raised when the transaction is committing.

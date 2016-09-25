@@ -70,17 +70,6 @@ package org.neo4j.graphdb;
 public interface Relationship extends PropertyContainer
 {
     /**
-     * Returns the unique id of this relationship. Ids are garbage collected
-     * over time so they are only guaranteed to be unique during a specific time
-     * span: if the relationship is deleted, it's likely that a new relationship
-     * at some point will get the old id. This makes relationship ids brittle as
-     * public APIs.
-     *
-     * @return the id of this node
-     */
-     long getId();
-
-    /**
      * Deletes this relationship. Invoking any methods on this relationship
      * after <code>delete()</code> has returned is invalid and will lead to
      * {@link NotFoundException} being thrown.
