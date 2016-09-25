@@ -29,6 +29,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.exception.FormatException;
 
+import static org.neo4j.server.security.auth.ListSnapshot.FROM_MEMORY;
+import static org.neo4j.server.security.auth.ListSnapshot.FROM_PERSISTED;
+
 /**
  * Stores user auth data. In memory, but backed by persistent storage so changes to this repository will survive
  * JVM restarts and crashes.
@@ -81,7 +84,7 @@ public class FileUserRepository extends AbstractUserRepository
                 throw new IllegalStateException( "Failed to read authentication file: " + authFile );
             }
 
-            return new ListSnapshot<>( readTime, readUsers );
+            return new ListSnapshot<>( readTime, readUsers, FROM_PERSISTED );
         }
         return null;
     }
@@ -101,7 +104,7 @@ public class FileUserRepository extends AbstractUserRepository
         }
         synchronized ( this )
         {
-            return new ListSnapshot<>( lastLoaded.get(), users.stream().collect( Collectors.toList() ) );
+            return new ListSnapshot<>( lastLoaded.get(), users.stream().collect( Collectors.toList() ), FROM_MEMORY );
         }
     }
 }

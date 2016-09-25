@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
+import static org.neo4j.helpers.collection.MapUtil.trimToList;
+
 public abstract class AbstractUserRepository extends LifecycleAdapter implements UserRepository
 {
     /** Quick lookup of users by name */
@@ -82,17 +84,19 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     @Override
     public void setUsers( ListSnapshot<User> usersSnapshot ) throws InvalidArgumentsException, IOException
     {
-        for ( User user : usersSnapshot.values )
+        for ( User user : usersSnapshot.values() )
         {
             assertValidUsername( user.name() );
         }
 
         synchronized (this)
         {
-            clear();
+            users.clear();
 
-            this.users.addAll( usersSnapshot.values );
-            this.lastLoaded.set( usersSnapshot.timestamp );
+            this.users.addAll( usersSnapshot.values() );
+            this.lastLoaded.set( usersSnapshot.timestamp() );
+
+            trimToList( usersByName, users, User::name );
 
             for ( User user : users )
             {
@@ -204,7 +208,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     /**
      * Override this in the implementing class to load users
      *
-     * @returns a timestamped snapshot of users, or null if the backing file did not exist
+     * @return a timestamped snapshot of users, or null if the backing file did not exist
      * @throws IOException
      */
     protected abstract ListSnapshot<User> readPersistedUsers() throws IOException;

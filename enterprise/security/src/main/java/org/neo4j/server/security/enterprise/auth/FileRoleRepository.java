@@ -30,6 +30,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.exception.FormatException;
 
+import static org.neo4j.server.security.auth.ListSnapshot.FROM_MEMORY;
+import static org.neo4j.server.security.auth.ListSnapshot.FROM_PERSISTED;
+
 /**
  * Stores role data. In memory, but backed by persistent storage so changes to this repository will survive
  * JVM restarts and crashes.
@@ -77,7 +80,7 @@ public class FileRoleRepository extends AbstractRoleRepository
                 throw new IllegalStateException( "Failed to read role file '" + roleFile + "'." );
             }
 
-            return new ListSnapshot<>( readTime, readRoles );
+            return new ListSnapshot<>( readTime, readRoles, FROM_PERSISTED );
         }
         return null;
     }
@@ -97,7 +100,7 @@ public class FileRoleRepository extends AbstractRoleRepository
         }
         synchronized ( this )
         {
-            return new ListSnapshot<>( lastLoaded.get(), roles.stream().collect( Collectors.toList() ) );
+            return new ListSnapshot<>( lastLoaded.get(), roles.stream().collect( Collectors.toList() ), FROM_MEMORY );
         }
     }
 }

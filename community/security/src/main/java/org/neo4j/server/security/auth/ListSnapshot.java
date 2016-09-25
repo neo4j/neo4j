@@ -23,12 +23,32 @@ import java.util.List;
 
 public class ListSnapshot<T>
 {
-    public final long timestamp;
-    public final List<T> values;
+    private final long timestamp;
+    private final List<T> values;
+    private final boolean fromPersisted;
 
-    public ListSnapshot( long timestamp, List<T> values )
+    public ListSnapshot( long timestamp, List<T> values, boolean fromPersisted )
     {
         this.timestamp = timestamp;
         this.values = values;
+        this.fromPersisted = fromPersisted;
     }
+
+    public long timestamp()
+    {
+        return timestamp;
+    }
+
+    public List<T> values()
+    {
+        return values;
+    }
+
+    public boolean fromPersisted()
+    {
+        return fromPersisted;
+    }
+
+    public static final boolean FROM_PERSISTED = true;
+    public static final boolean FROM_MEMORY = false;
 }
