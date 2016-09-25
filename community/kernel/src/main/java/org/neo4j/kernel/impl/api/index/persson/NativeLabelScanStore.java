@@ -30,12 +30,13 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.BTreeHit;
-import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCIndexDescription;
 import org.neo4j.index.SCInserter;
+import org.neo4j.index.ValueAmender;
+import org.neo4j.index.btree.CompactLabelScanLayout;
 import org.neo4j.index.btree.Index;
 import org.neo4j.index.btree.LabelScanKey;
-import org.neo4j.index.btree.LabelScanLayout;
+import org.neo4j.index.btree.LabelScanValue;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -53,15 +54,39 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 
 public class NativeLabelScanStore implements LabelScanStore
 {
-    private final SCIndex<LabelScanKey,Void> index;
+    private final Index<LabelScanKey,LabelScanValue> index;
     private final File indexFile;
+    private ValueAmender<LabelScanValue> addAmender;
+    private ValueAmender<LabelScanValue> removeAmender;
+    private int rangeSize;
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir ) throws IOException
     {
         String name = "labelscan.db";
         indexFile = new File( storeDir, name );
-        this.index = new Index<>( pageCache, indexFile, new LabelScanLayout(),
+        rangeSize = Integer.SIZE;
+        this.index = new Index<>( pageCache, indexFile, new CompactLabelScanLayout( rangeSize ),
                 new SCIndexDescription( "", "", "", Direction.BOTH, "", null ), pageCache.pageSize() );
+        this.addAmender = new ValueAmender<LabelScanValue>()
+        {
+            @Override
+            public LabelScanValue amend( LabelScanValue value, LabelScanValue withValue )
+            {
+                // every set bit means set
+                value.bits |= withValue.bits;
+                return value;
+            }
+        };
+        this.removeAmender = new ValueAmender<LabelScanValue>()
+        {
+            @Override
+            public LabelScanValue amend( LabelScanValue value, LabelScanValue withValue )
+            {
+                // every set bit means clear
+                value.bits &= ~withValue.bits;
+                return value;
+            }
+        };
     }
 
     @Override
@@ -69,10 +94,15 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         return new LabelScanReader()
         {
+            private Cursor<BTreeHit<LabelScanKey,LabelScanValue>> cursor;
+
             @Override
             public void close()
             {
-                // No
+                if ( cursor != null )
+                {
+                    cursor.close();
+                }
             }
 
             @Override
@@ -80,9 +110,12 @@ public class NativeLabelScanStore implements LabelScanStore
             {
                 LabelScanKey from = new LabelScanKey().set( labelId, 0 );
                 LabelScanKey to = new LabelScanKey().set( labelId, Long.MAX_VALUE );
-                Cursor<BTreeHit<LabelScanKey,Void>> cursor;
                 try
                 {
+                    if ( cursor != null )
+                    {
+                        cursor.close();
+                    }
                     cursor = index.seek( from, to );
                 }
                 catch ( IOException e )
@@ -92,16 +125,35 @@ public class NativeLabelScanStore implements LabelScanStore
 
                 return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
                 {
+                    private long baseNodeId;
+                    private long bits;
+
                     @Override
                     protected boolean fetchNext()
                     {
-                        if ( !cursor.next() )
+                        while ( true )
                         {
-                            cursor.close();
-                            return false;
+                            if ( bits != 0 )
+                            {
+                                return nextFromCurrent();
+                            }
+
+                            if ( !cursor.next() )
+                            {
+                                return false;
+                            }
+
+                            BTreeHit<LabelScanKey,LabelScanValue> hit = cursor.get();
+                            baseNodeId = hit.key().nodeId * rangeSize;
+                            bits = hit.value().bits;
                         }
-                        final long nodeId = cursor.get().key().nodeId;
-                        return next( nodeId );
+                    }
+
+                    private boolean nextFromCurrent()
+                    {
+                        int delta = Long.numberOfTrailingZeros( bits );
+                        bits &= bits-1;
+                        return next( baseNodeId + delta );
                     }
                 };
             }
@@ -126,7 +178,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public LabelScanWriter newWriter()
     {
-        final SCInserter<LabelScanKey,Void> inserter;
+        final SCInserter<LabelScanKey,LabelScanValue> inserter;
         try
         {
             inserter = index.inserter();
@@ -143,6 +195,7 @@ public class NativeLabelScanStore implements LabelScanStore
         return new LabelScanWriter()
         {
             private final LabelScanKey key = new LabelScanKey();
+            private final LabelScanValue value = new LabelScanValue();
             private long[] tmpBefore = new long[10];
             private long[] tmpAfter = new long[10];
             private final NodeLabelUpdate[] pendingUpdates = new NodeLabelUpdate[1000];
@@ -160,14 +213,6 @@ public class NativeLabelScanStore implements LabelScanStore
 
                 pendingUpdates[pendingUpdatesCursor++] = update;
                 convertToAdditionsAndRemovals( update );
-                if ( update.getLabelsBefore().length > 0 )
-                {
-                    lowestLabelId = min( lowestLabelId, update.getLabelsBefore()[0] );
-                }
-                if ( update.getLabelsAfter().length > 0 )
-                {
-                    lowestLabelId = min( lowestLabelId, update.getLabelsAfter()[0] );
-                }
             }
 
             /**
@@ -203,23 +248,56 @@ public class NativeLabelScanStore implements LabelScanStore
                     {   // no change
                         bi++;
                         ai++;
+                        continue;
                     }
-                    else if ( beforeId < afterId || bi == -1 )
-                    {   // only found in afterId == addition
-                        update.getLabelsAfter()[ac++] = afterId;
-                        pendingUpdatesCount++;
-                        ai++;
+
+                    if ( smaller( beforeId, afterId ) )
+                    {
+                        while ( smaller( beforeId, afterId ) && bi < beforeLength )
+                        {
+                            // looks like there's an id in before which isn't in after ==> REMOVE
+                            update.getLabelsBefore()[bc++] = beforeId;
+                            pendingUpdatesCount++;
+                            bi++;
+                            beforeId = bi < beforeLength ? tmpBefore[bi] : -1;
+                        }
                     }
-                    else if ( afterId < beforeId || ai == -1 )
-                    {   // only found in beforeId == removal
-                        update.getLabelsBefore()[bc++] = beforeId;
-                        pendingUpdatesCount++;
-                        bi++;
+                    else if ( smaller( afterId, beforeId ) )
+                    {
+                        while ( smaller( afterId, beforeId ) && ai < afterLength )
+                        {
+                            // looks like there's an id in after which isn't in before ==> ADD
+                            update.getLabelsAfter()[ac++] = afterId;
+                            pendingUpdatesCount++;
+                            ai++;
+                            afterId = ai < afterLength ? tmpAfter[ai] : -1;
+                        }
                     }
                 }
 
                 terminateWithMinusOneIfNeeded( update.getLabelsBefore(), bc );
                 terminateWithMinusOneIfNeeded( update.getLabelsAfter(), ac );
+                if ( bc > 0 )
+                {
+                    lowestLabelId = min( lowestLabelId, update.getLabelsBefore()[0] );
+                }
+                if ( ac > 0 )
+                {
+                    lowestLabelId = min( lowestLabelId, update.getLabelsAfter()[0] );
+                }
+            }
+
+            private boolean smaller( long id, long otherId )
+            {
+                if ( id == -1 )
+                {
+                    return false;
+                }
+                if ( otherId == -1 )
+                {
+                    return true;
+                }
+                return id < otherId;
             }
 
             private void terminateWithMinusOneIfNeeded( long[] labelIds, int bc )
@@ -255,13 +333,14 @@ public class NativeLabelScanStore implements LabelScanStore
                             // Have this check here so that we can pick up the next labelId in our change set
                             if ( labelId == currentLabelId )
                             {
-                                inserter.insert( key.set( toIntExact( labelId ), nodeId ), null );
+                                inserter.insert( key.set( toIntExact( labelId ), rangeOf( nodeId ) ),
+                                        nodeValue( nodeId ), addAmender );
                                 pendingUpdatesCount--;
 
                                 // We can do a little shorter check for next labelId here straight away,
                                 // we just check the next if it's less than what we currently think is next labelId
                                 // and then break right after
-                                if ( li+1 < labelsAfter.length )
+                                if ( li+1 < labelsAfter.length && labelsAfter[li+1] != -1 )
                                 {
                                     nextLabelId = min( nextLabelId, labelsAfter[li+1] );
                                 }
@@ -284,15 +363,18 @@ public class NativeLabelScanStore implements LabelScanStore
 
                             if ( labelId == currentLabelId )
                             {
-                                inserter.remove( key.set( toIntExact( labelId ), nodeId ) );
+                                // A removal is now actually an insert (with custom amender)
+                                inserter.insert( key.set( toIntExact( labelId ), rangeOf( nodeId ) ),
+                                        nodeValue( nodeId ), removeAmender );
+                                // TODO: special case -- if tree node now is empty, then consider removing
                                 pendingUpdatesCount--;
 
                                 // We can do a little shorter check for next labelId here straight away,
                                 // we just check the next if it's less than what we currently think is next labelId
                                 // and then break right after
-                                if ( li+1 < labelsAfter.length )
+                                if ( li+1 < labelsBefore.length && labelsBefore[li+1] != -1 )
                                 {
-                                    nextLabelId = min( nextLabelId, labelsAfter[li+1] );
+                                    nextLabelId = min( nextLabelId, labelsBefore[li+1] );
                                 }
                             }
                             else if ( labelId > currentLabelId && labelId < nextLabelId )
@@ -306,6 +388,13 @@ public class NativeLabelScanStore implements LabelScanStore
                 pendingUpdatesCursor = 0;
             }
 
+            private LabelScanValue nodeValue( long nodeId )
+            {
+                int rest = (int) nodeId % rangeSize;
+                value.bits = (1L << rest);
+                return value;
+            }
+
             @Override
             public void close() throws IOException
             {
@@ -313,6 +402,11 @@ public class NativeLabelScanStore implements LabelScanStore
                 inserter.close();
             }
         };
+    }
+
+    protected long rangeOf( long nodeId )
+    {
+        return nodeId / rangeSize;
     }
 
     @Override

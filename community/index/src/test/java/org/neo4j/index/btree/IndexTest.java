@@ -31,8 +31,6 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.neo4j.cursor.Cursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCIndexDescription;
@@ -47,7 +45,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.index.ValueAmenders.overwrite;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 public class IndexTest
@@ -64,7 +65,7 @@ public class IndexTest
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.setFileSystemAbstraction( new DefaultFileSystemAbstraction() );
-        pageCache = new MuninnPageCache( swapperFactory, 100, 1024, NULL );
+        pageCache = new MuninnPageCache( swapperFactory, 100, pageSize, NULL );
         indexFile = folder.newFile( "index" );
     }
 
@@ -102,8 +103,9 @@ public class IndexTest
         {
             Comparator<TwoLongs> keyComparator = index.getTreeNode().keyComparator();
             Map<TwoLongs,TwoLongs> data = new TreeMap<>( keyComparator );
-            Random random = ThreadLocalRandom.current();
-            int count = 100;
+            long seed = currentTimeMillis();
+            Random random = new Random( seed );
+            int count = 1000;
             for ( int i = 0; i < count; i++ )
             {
                 data.put( randomTreeThing( random ), randomTreeThing( random ) );
@@ -121,7 +123,7 @@ public class IndexTest
             for ( int round = 0; round < 10; round++ )
             {
                 // THEN
-                for ( int i = 0; i < count*10; i++ )
+                for ( int i = 0; i < count; i++ )
                 {
                     TwoLongs first = randomTreeThing( random );
                     TwoLongs second = randomTreeThing( random );
@@ -144,6 +146,7 @@ public class IndexTest
                             TwoLongs key = result.get().key();
                             if ( expectedHits.remove( key ) == null )
                             {
+                                index.printTree();
                                 fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
                             }
 
@@ -152,7 +155,8 @@ public class IndexTest
                         }
                         if ( !expectedHits.isEmpty() )
                         {
-                            fail( "There were results which were expected to be returned, but weren't:" + expectedHits );
+                            fail( "There were results which were expected to be returned, but weren't:" + expectedHits +
+                                    " when searching range " + from + " - " + to );
                         }
                     }
                 }
@@ -181,7 +185,7 @@ public class IndexTest
                 {   // insert
                     TwoLongs key = randomTreeThing( random );
                     TwoLongs value = randomTreeThing( random );
-                    modifier.insert( key, value );
+                    modifier.insert( key, value, overwrite() );
                     data.put( key, value );
                 }
             }

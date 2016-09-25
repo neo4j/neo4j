@@ -31,6 +31,7 @@ import org.neo4j.index.IdProvider;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCIndexDescription;
 import org.neo4j.index.SCInserter;
+import org.neo4j.index.ValueAmender;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -421,11 +422,11 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
         }
 
         @Override
-        public void insert( KEY key, VALUE value ) throws IOException
+        public void insert( KEY key, VALUE value, ValueAmender<VALUE> ammender ) throws IOException
         {
             cursor.next( rootId );
 
-            SplitResult<KEY> split = inserter.insert( cursor, key, value );
+            SplitResult<KEY> split = inserter.insert( cursor, key, value, ammender );
 
             if ( split != null )
             {

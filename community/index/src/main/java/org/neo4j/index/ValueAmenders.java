@@ -19,19 +19,37 @@
  */
 package org.neo4j.index;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import static org.neo4j.index.ValueAmenders.insertNew;
-
-public interface SCInserter<KEY,VALUE> extends Closeable
+public class ValueAmenders
 {
-    default void insert( KEY key, VALUE value ) throws IOException
+    @SuppressWarnings( "rawtypes" )
+    private static final ValueAmender OVERWRITE = new ValueAmender()
     {
-        insert( key, value, insertNew() );
+        @Override
+        public Object amend( Object value, Object withValue )
+        {
+            return withValue;
+        }
+    };
+
+    @SuppressWarnings( "rawtypes" )
+    private static final ValueAmender INSERT_NEW = new ValueAmender()
+    {
+        @Override
+        public Object amend( Object value, Object withValue )
+        {
+            return null;
+        }
+    };
+
+    @SuppressWarnings( "unchecked" )
+    public static <VALUE> ValueAmender<VALUE> overwrite()
+    {
+        return OVERWRITE;
     }
 
-    void insert( KEY key, VALUE value, ValueAmender<VALUE> ammender ) throws IOException;
-
-    VALUE remove( KEY key ) throws IOException;
+    @SuppressWarnings( "unchecked" )
+    public static <VALUE> ValueAmender<VALUE> insertNew()
+    {
+        return INSERT_NEW;
+    }
 }

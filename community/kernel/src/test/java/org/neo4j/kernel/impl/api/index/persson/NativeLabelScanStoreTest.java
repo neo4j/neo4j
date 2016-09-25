@@ -48,13 +48,13 @@ public class NativeLabelScanStoreTest
     private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( false );
     private final LifeRule life = new LifeRule( true );
-    private final RandomRule random = new RandomRule().withSeed( 1 );
+    private final RandomRule random = new RandomRule();
     @Rule
     public final RuleChain rules = outerRule( directory ).around( pageCacheRule ).around( life ).around( random );
     private NativeLabelScanStore store;
 
     private static final int NODE_COUNT = 10_000;
-    private static final int LABEL_COUNT = 10;
+    private static final int LABEL_COUNT = 12;
 
     @Before
     public void before() throws IOException
@@ -68,13 +68,13 @@ public class NativeLabelScanStoreTest
     {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
-        randomModifications( expected, 10_000 );
+        randomModifications( expected, NODE_COUNT );
 
         // WHEN/THEN
         for ( int i = 0; i < 100; i++ )
         {
             verifyReads( expected );
-            randomModifications( expected, 100 );
+            randomModifications( expected, NODE_COUNT / 10 );
         }
     }
 
@@ -86,14 +86,7 @@ public class NativeLabelScanStoreTest
             {
                 long[] actualNodes = asArray( reader.nodesWithLabel( i ) );
                 long[] expectedNodes = nodesWithLabel( expected, i );
-                try
-                {
-                    assertArrayEquals( expectedNodes, actualNodes );
-                }
-                catch ( AssertionError e )
-                {
-                    throw e;
-                }
+                assertArrayEquals( expectedNodes, actualNodes );
             }
         }
     }

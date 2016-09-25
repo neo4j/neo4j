@@ -19,19 +19,16 @@
  */
 package org.neo4j.index;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import static org.neo4j.index.ValueAmenders.insertNew;
-
-public interface SCInserter<KEY,VALUE> extends Closeable
+public interface ValueAmender<VALUE>
 {
-    default void insert( KEY key, VALUE value ) throws IOException
-    {
-        insert( key, value, insertNew() );
-    }
-
-    void insert( KEY key, VALUE value, ValueAmender<VALUE> ammender ) throws IOException;
-
-    VALUE remove( KEY key ) throws IOException;
+    /**
+     * Amends an existing value with a new value, returning combination of the two, or {@code null}
+     * if no amend was done effectively meaning that a new value should be inserted for that same key,
+     * now making that key non-unique if it was so previously.
+     *
+     * @param value existing value
+     * @param withValue new value
+     * @return {@code value}, now amended with {@code withValue}
+     */
+    VALUE amend( VALUE value, VALUE withValue );
 }

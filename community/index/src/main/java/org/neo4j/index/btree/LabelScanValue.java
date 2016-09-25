@@ -17,21 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index;
+package org.neo4j.index.btree;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import static org.neo4j.index.ValueAmenders.insertNew;
-
-public interface SCInserter<KEY,VALUE> extends Closeable
+public class LabelScanValue
 {
-    default void insert( KEY key, VALUE value ) throws IOException
+    public long bits;
+
+    public boolean get( int bit )
     {
-        insert( key, value, insertNew() );
+        assert bit >= 0 && bit < Long.SIZE;
+        return (bits & mask( bit )) != 0;
     }
 
-    void insert( KEY key, VALUE value, ValueAmender<VALUE> ammender ) throws IOException;
+    private long mask( int bit )
+    {
+        return 1L << bit;
+    }
 
-    VALUE remove( KEY key ) throws IOException;
+    public void set( int bit, boolean value )
+    {
+        assert bit >= 0 && bit < Long.SIZE;
+        if ( value )
+        {
+            bits |= mask( bit );
+        }
+        else
+        {
+            bits &= ~mask( bit );
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.valueOf( bits );
+    }
 }

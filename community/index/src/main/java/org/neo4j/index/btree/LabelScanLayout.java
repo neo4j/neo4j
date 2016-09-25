@@ -23,7 +23,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 public class LabelScanLayout implements TreeItemLayout<LabelScanKey,Void>
 {
-    private static final int KEY_SIZE = Integer.BYTES + Long.BYTES; // TODO could be 6B long instead
+    static final int KEY_SIZE = Integer.BYTES + Long.BYTES; // TODO could be 6B long instead
 
     @Override
     public int compare( LabelScanKey o1, LabelScanKey o2 )

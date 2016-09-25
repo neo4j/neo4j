@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.function.Consumer;
 
 import org.neo4j.index.IdProvider;
+import org.neo4j.index.ValueAmender;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
@@ -45,6 +46,8 @@ public class IndexInsert<KEY,VALUE>
     private final SplitResult<KEY> internalSplitResult = new SplitResult<>();
     private final SplitResult<KEY> leafSplitResult = new SplitResult<>();
     private final TreeItemLayout<KEY,VALUE> layout;
+    private final KEY readKey;
+    private final VALUE readValue;
 
     public IndexInsert( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, TreeItemLayout<KEY,VALUE> layout )
     {
@@ -52,11 +55,13 @@ public class IndexInsert<KEY,VALUE>
         this.bTreeNode = bTreeNode;
         this.layout = layout;
         this.tmp = new byte[max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() ) *
-                            max( bTreeNode.keySize(), bTreeNode.valueSize() )];
-        this.tmp2 = new byte[tmp.length + bTreeNode.keySize()];
-        this.tmp3 = new byte[tmp.length + bTreeNode.valueSize()];
-        this.internalSplitResult.primKey = bTreeNode.newKey();
-        this.leafSplitResult.primKey = bTreeNode.newKey();
+                            max( layout.keySize(), layout.valueSize() )];
+        this.tmp2 = new byte[tmp.length + layout.keySize()];
+        this.tmp3 = new byte[tmp.length + layout.valueSize()];
+        this.internalSplitResult.primKey = layout.newKey();
+        this.leafSplitResult.primKey = layout.newKey();
+        this.readKey = layout.newKey();
+        this.readValue = layout.newValue();
     }
 
     /**
@@ -67,11 +72,12 @@ public class IndexInsert<KEY,VALUE>
      * @return              {@link SplitResult} from insert to be used caller.
      * @throws IOException  on cursor failure
      */
-    public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value ) throws IOException
+    public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender )
+            throws IOException
     {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return insertInLeaf( cursor, key, value );
+            return insertInLeaf( cursor, key, value, amender );
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
@@ -81,7 +87,7 @@ public class IndexInsert<KEY,VALUE>
         long currentId = cursor.getCurrentPageId();
         cursor.next( bTreeNode.childAt( cursor, pos ) );
 
-        SplitResult<KEY> split = insert( cursor, key, value );
+        SplitResult<KEY> split = insert( cursor, key, value, amender );
 
         cursor.next( currentId );
 
@@ -243,10 +249,12 @@ public class IndexInsert<KEY,VALUE>
      *                      insertion.
      * @param key           key to be inserted
      * @param value         value to be associated with key
+     * @param amender
      * @return              {@link SplitResult} from insert to be used caller.
      * @throws IOException  on cursor failure
      */
-    private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value ) throws IOException
+    private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender )
+            throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
 
@@ -256,6 +264,18 @@ public class IndexInsert<KEY,VALUE>
             int pos = search( cursor, key );
 
             // Insert and move keys
+            if ( keyCount > 0 && bTreeNode.keyAt( cursor, readKey, pos ).equals( key ) )
+            {
+                // this key already exists, what shall we do? ask the amender
+                bTreeNode.valueAt( cursor, readValue, pos );
+                VALUE amendedValue = amender.amend( readValue, value );
+                if ( amendedValue != null )
+                {
+                    // simple, just write the amended value right in there
+                    bTreeNode.setValueAt( cursor, amendedValue, pos );
+                    return null; // No split has occurred
+                }
+            }
             int tmpLength = bTreeNode.keysFromTo( cursor, pos, keyCount, tmp );
             bTreeNode.setKeyAt( cursor, key, pos );
             bTreeNode.setKeysAt( cursor, tmp, pos + 1, tmpLength );
@@ -272,19 +292,21 @@ public class IndexInsert<KEY,VALUE>
         }
 
         // Overflow, split leaf
-        return splitLeaf( cursor, key, value, keyCount );
+        return splitLeaf( cursor, key, value, amender, keyCount );
     }
 
     /**
-     * Leaves cursor at same page as when called. No guaranties on offset.
+     * Leaves cursor at same page as when called. No guarantees on offset.
      * Cursor is expected to be pointing to full leaf.
      * @param cursor        cursor pointing into full (left) leaf that should be split in two.
      * @param newKey        key to be inserted
      * @param newValue      value to be inserted (in association with key)
+     * @param amender
      * @return              {@link SplitResult} with necessary information to inform parent
      * @throws IOException  if cursor.next( newRight ) fails
      */
-    private SplitResult<KEY> splitLeaf( PageCursor cursor, KEY newKey, VALUE newValue, int keyCount ) throws IOException
+    private SplitResult<KEY> splitLeaf( PageCursor cursor, KEY newKey, VALUE newValue, ValueAmender<VALUE> amender,
+            int keyCount ) throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.
@@ -480,7 +502,6 @@ public class IndexInsert<KEY,VALUE>
         int lower = 0;
         int higher = keyCount-1;
         int pos;
-        KEY readKey = layout.newKey();
 
         // Compare key with lower and higher and sort out special cases
         Comparator<KEY> comparator = bTreeNode.keyComparator();
