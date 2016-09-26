@@ -22,7 +22,6 @@ package org.neo4j.commandline.admin.security;
 import org.junit.Before;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.FileSystems;
 
 import org.neo4j.commandline.admin.AdminTool;
@@ -30,7 +29,6 @@ import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
@@ -40,6 +38,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,6 +52,7 @@ abstract class CommandTestBase
     File confDir;
     File homeDir;
     OutsideWorld out;
+    AdminTool tool;
 
     @Before
     public void setup()
@@ -60,7 +60,9 @@ abstract class CommandTestBase
         graphDir = testDir.graphDbDir();
         confDir = ensureDir( "conf" );
         homeDir = ensureDir( "home" );
+        out = mock( OutsideWorld.class );
         resetOutsideWorldMock();
+        tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
     }
 
     protected File ensureDir( String name )
@@ -75,7 +77,7 @@ abstract class CommandTestBase
 
     protected void resetOutsideWorldMock()
     {
-        out = mock( OutsideWorld.class );
+        reset(out);
         when( out.fileSystem() ).thenReturn( fileSystem );
     }
 
@@ -84,9 +86,10 @@ abstract class CommandTestBase
         return new File( new File( new File( testDir.graphDbDir(), "data" ), "dbms" ), "auth" );
     }
 
-    User createTestUser( String username, String password ) throws IOException, InvalidArgumentsException
+    User createTestUser( String username, String password ) throws Throwable
     {
         FileUserRepository users = new FileUserRepository( fileSystem, authFile(), NullLogProvider.getInstance() );
+        users.start();
         User user =
                 new User.Builder( username, Credential.forPassword( password ) ).withRequiredPasswordChange( true )
                         .build();
@@ -109,7 +112,7 @@ abstract class CommandTestBase
 
     protected abstract String command();
 
-    private String[] makeArgs( String subCommand, String... args )
+    protected String[] makeArgs( String subCommand, String... args )
     {
         String[] allArgs = new String[args.length + 2];
         System.arraycopy( args, 0, allArgs, 2, args.length );
@@ -120,9 +123,7 @@ abstract class CommandTestBase
 
     void assertFailedSubCommand( String command, String[] args, String... errors )
     {
-        // When running set password on a failing case (missing user, or other error)
         resetOutsideWorldMock();
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
         tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ) );
 
         // Then we get the expected error
@@ -136,9 +137,7 @@ abstract class CommandTestBase
 
     void assertSuccessfulSubCommand( String command, String[] args, String... messages )
     {
-        // When running set password on a successful case (user exists)
         resetOutsideWorldMock();
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
         tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( command, args ));
 
         // Then we get the expected output messages
