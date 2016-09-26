@@ -47,8 +47,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
-import static java.lang.System.arraycopy;
-
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 
@@ -196,8 +194,6 @@ public class NativeLabelScanStore implements LabelScanStore
         {
             private final LabelScanKey key = new LabelScanKey();
             private final LabelScanValue value = new LabelScanValue();
-            private long[] tmpBefore = new long[10];
-            private long[] tmpAfter = new long[10];
             private final NodeLabelUpdate[] pendingUpdates = new NodeLabelUpdate[1000];
             private int pendingUpdatesCursor;
             private int pendingUpdatesCount; // there may be many per NodeLabelUpdate
@@ -212,99 +208,14 @@ public class NativeLabelScanStore implements LabelScanStore
                 }
 
                 pendingUpdates[pendingUpdatesCursor++] = update;
-                convertToAdditionsAndRemovals( update );
-            }
-
-            /**
-             * Converts physical before/after state to logical add/remove state. This conversion
-             * reuses the existing long[] arrays in {@link NodeLabelUpdate}, merely shuffles numbers
-             * around and possible terminates them with -1 because the logical change set can be
-             * equally big or smaller than the physical change set.
-             *
-             * The change to logical add/remove state favors the batch loop when flushing later.
-             * The logic is a bit complicated and should be tested in isolation.
-             */
-            private void convertToAdditionsAndRemovals( NodeLabelUpdate update )
-            {
-                int beforeLength = update.getLabelsBefore().length;
-                int afterLength = update.getLabelsAfter().length;
-                if ( tmpBefore.length < update.getLabelsBefore().length )
-                {
-                    tmpBefore = new long[update.getLabelsBefore().length];
-                }
-                if ( tmpAfter.length < update.getLabelsAfter().length )
-                {
-                    tmpAfter = new long[update.getLabelsAfter().length];
-                }
-                arraycopy( update.getLabelsBefore(), 0, tmpBefore, 0, beforeLength );
-                arraycopy( update.getLabelsAfter(), 0, tmpAfter, 0, afterLength );
-
-                int bc = 0, ac = 0;
-                for ( int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; )
-                {
-                    long beforeId = bi < beforeLength ? tmpBefore[bi] : -1;
-                    long afterId = ai < afterLength ? tmpAfter[ai] : -1;
-                    if ( beforeId == afterId )
-                    {   // no change
-                        bi++;
-                        ai++;
-                        continue;
-                    }
-
-                    if ( smaller( beforeId, afterId ) )
-                    {
-                        while ( smaller( beforeId, afterId ) && bi < beforeLength )
-                        {
-                            // looks like there's an id in before which isn't in after ==> REMOVE
-                            update.getLabelsBefore()[bc++] = beforeId;
-                            pendingUpdatesCount++;
-                            bi++;
-                            beforeId = bi < beforeLength ? tmpBefore[bi] : -1;
-                        }
-                    }
-                    else if ( smaller( afterId, beforeId ) )
-                    {
-                        while ( smaller( afterId, beforeId ) && ai < afterLength )
-                        {
-                            // looks like there's an id in after which isn't in before ==> ADD
-                            update.getLabelsAfter()[ac++] = afterId;
-                            pendingUpdatesCount++;
-                            ai++;
-                            afterId = ai < afterLength ? tmpAfter[ai] : -1;
-                        }
-                    }
-                }
-
-                terminateWithMinusOneIfNeeded( update.getLabelsBefore(), bc );
-                terminateWithMinusOneIfNeeded( update.getLabelsAfter(), ac );
-                if ( bc > 0 )
+                pendingUpdatesCount += PhysicalToLogicalLabelChanges.convertToAdditionsAndRemovals( update );
+                if ( update.getLabelsBefore().length > 0 && update.getLabelsBefore()[0] != -1 )
                 {
                     lowestLabelId = min( lowestLabelId, update.getLabelsBefore()[0] );
                 }
-                if ( ac > 0 )
+                if ( update.getLabelsAfter().length > 0 &&update.getLabelsAfter()[0] != -1 )
                 {
                     lowestLabelId = min( lowestLabelId, update.getLabelsAfter()[0] );
-                }
-            }
-
-            private boolean smaller( long id, long otherId )
-            {
-                if ( id == -1 )
-                {
-                    return false;
-                }
-                if ( otherId == -1 )
-                {
-                    return true;
-                }
-                return id < otherId;
-            }
-
-            private void terminateWithMinusOneIfNeeded( long[] labelIds, int bc )
-            {
-                if ( bc < labelIds.length )
-                {
-                    labelIds[bc] = -1;
                 }
             }
 
