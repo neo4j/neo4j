@@ -25,18 +25,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-
-import static org.neo4j.kernel.api.security.AuthToken.BASIC_SCHEME;
-import static org.neo4j.kernel.api.security.AuthToken.NATIVE_REALM;
-import static org.neo4j.kernel.api.security.AuthToken.REALM_KEY;
-import static org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY;
 
 /**
  * Manages server authentication and authorization.
@@ -185,7 +180,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         {
             User updatedUser = existingUser.augment()
                     .withCredentials( Credential.forPassword( password ) )
-                    .withRequiredPasswordChange( false )
+                    .withRequiredPasswordChange( requirePasswordChange )
                     .build();
             userRepository.update( existingUser, updatedUser );
         } catch ( ConcurrentModificationException e )

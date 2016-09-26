@@ -296,101 +296,12 @@ public class RolesCommand implements AdminCommand
         if ( this.authManager == null )
         {
             Config config = loadNeo4jConfig( homeDir, configDir );
-            this.jobScheduler = new NoOpJobScheduler();
+            this.jobScheduler = new UsersCommand.NoOpJobScheduler();
             this.authManager = new EnterpriseAuthManagerFactory()
                     .newInstance( config, NullLogProvider.getInstance(),
                             NullLog.getInstance(), outsideWorld.fileSystem(), jobScheduler );
             this.authManager.start();    // required to setup default roles
         }
         return this.authManager;
-    }
-
-    public static class NoOpJobScheduler implements JobScheduler
-    {
-
-        @Override
-        public void init() throws Throwable
-        {
-
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-
-        }
-
-        @Override
-        public Executor executor( Group group )
-        {
-            return null;
-        }
-
-        @Override
-        public ThreadFactory threadFactory( Group group )
-        {
-            return null;
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable job )
-        {
-            return new NoOpJobHandle();
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
-        {
-            return new NoOpJobHandle();
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable runnable, long initialDelay,
-                TimeUnit timeUnit )
-        {
-            return new NoOpJobHandle();
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long period,
-                TimeUnit timeUnit )
-        {
-            return new NoOpJobHandle();
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay,
-                long period, TimeUnit timeUnit )
-        {
-            return new NoOpJobHandle();
-        }
-
-        public static class NoOpJobHandle implements JobHandle
-        {
-
-            @Override
-            public void cancel( boolean mayInterruptIfRunning )
-            {
-
-            }
-
-            @Override
-            public void waitTermination() throws InterruptedException, ExecutionException
-            {
-
-            }
-        }
     }
 }

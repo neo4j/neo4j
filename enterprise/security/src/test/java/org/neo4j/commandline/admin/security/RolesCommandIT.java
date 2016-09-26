@@ -20,22 +20,12 @@
 package org.neo4j.commandline.admin.security;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
-
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.security.enterprise.auth.EnterpriseAuthManagerFactory;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Stream.concat;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.commandline.admin.security.RolesCommand.loadNeo4jConfig;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
@@ -43,21 +33,16 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 
 public class RolesCommandIT extends RolesCommandTestBase
 {
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDir );
-
     @Before
     public void setUp() throws Throwable
     {
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-
-        JobScheduler jobScheduler = mock(JobScheduler.class);
-
-        // create default roles
-        new EnterpriseAuthManagerFactory().newInstance(
-                loadNeo4jConfig( homeDir, configDir ), NullLogProvider.getInstance(),
-                NullLog.getInstance(), fileSystem, jobScheduler ).start();
+        super.setup();
+        // the following line ensures that the test setup code (like creating test users) works on the same initial
+        // environment that the actual tested commands will encounter. In particular some auth state is created
+        // on demand in both the RolesCommand and in the real server. We want that state created before the tests
+        // are run.
+        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( "roles", "list" ) );
+        resetOutsideWorldMock();
     }
 
     @Test

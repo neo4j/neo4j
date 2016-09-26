@@ -22,18 +22,16 @@ package org.neo4j.commandline.admin.security;
 import org.junit.Before;
 
 import java.io.File;
-import java.nio.file.FileSystems;
 
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.io.fs.DelegateFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.User;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.contains;
@@ -45,8 +43,7 @@ import static org.mockito.Mockito.when;
 
 abstract class CommandTestBase
 {
-    protected TestDirectory testDir = TestDirectory.testDirectory();
-    protected FileSystemAbstraction fileSystem = new DelegateFileSystemAbstraction( FileSystems.getDefault() );
+    protected FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction( );
 
     File graphDir;
     File confDir;
@@ -57,22 +54,12 @@ abstract class CommandTestBase
     @Before
     public void setup()
     {
-        graphDir = testDir.graphDbDir();
-        confDir = ensureDir( "conf" );
-        homeDir = ensureDir( "home" );
+        graphDir = new File( "graph-db" );
+        confDir = new File( graphDir, "conf" );
+        homeDir = new File( graphDir, "home" );
         out = mock( OutsideWorld.class );
         resetOutsideWorldMock();
         tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-    }
-
-    protected File ensureDir( String name )
-    {
-        File dir = new File( graphDir, name );
-        if ( !dir.exists() )
-        {
-            dir.mkdirs();
-        }
-        return dir;
     }
 
     protected void resetOutsideWorldMock()
@@ -83,7 +70,7 @@ abstract class CommandTestBase
 
     private File authFile()
     {
-        return new File( new File( new File( testDir.graphDbDir(), "data" ), "dbms" ), "auth" );
+        return new File( new File( new File( graphDir, "data" ), "dbms" ), "auth" );
     }
 
     User createTestUser( String username, String password ) throws Throwable
