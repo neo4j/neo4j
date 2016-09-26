@@ -17,18 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_1.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_1.commands.QueryExpression
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
+import org.neo4j.cypher.internal.ir.v3_1.QueryExpression
 
-case class NodeUniqueIndexSeek(idName: IdName,
-                               label: LabelToken,
-                               propertyKey: PropertyKeyToken,
-                               valueExpr: QueryExpression[Expression],
-                               argumentIds: Set[IdName])
-                              (val solved: PlannerQuery with CardinalityEstimation) extends IndexLeafPlan {
-
-  def availableSymbols = argumentIds + idName
+abstract class IndexLeafPlan extends NodeLogicalLeafPlan {
+  def valueExpr: QueryExpression[Expression]
 }

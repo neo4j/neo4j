@@ -25,13 +25,13 @@ import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 import org.apache.commons.math3.stat.regression.{OLSMultipleLinearRegression, SimpleRegression}
-import org.neo4j.cypher.internal.compiler.v3_1.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Equals
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.TokenType.{Label => _, _}
 import org.neo4j.cypher.internal.compiler.v3_1.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, PropertyKeyId, SemanticDirection, ast}
+import org.neo4j.cypher.internal.ir.v3_1.SingleQueryExpression
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1.{TransactionBoundPlanContext, TransactionBoundQueryContext}

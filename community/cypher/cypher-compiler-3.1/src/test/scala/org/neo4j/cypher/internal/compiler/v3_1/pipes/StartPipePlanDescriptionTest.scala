@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.commands._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.SingleQueryExpression
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class StartPipePlanDescriptionTest extends CypherFunSuite {

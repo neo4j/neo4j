@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders.GetGraphElements
-import org.neo4j.cypher.internal.compiler.v3_1.mutation.{makeValueNeoSafe, GraphElementPropertyFunctions}
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.{NodeByLabelEntityProducer, EntityProducer, IndexSeekModeFactory, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_1.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.{EntityProducer, IndexSeekModeFactory, NodeByLabelEntityProducer, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.{EntityNotFoundException, IndexHintException, InternalException}
+import org.neo4j.cypher.internal.ir.v3_1.ScanQueryExpression
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {

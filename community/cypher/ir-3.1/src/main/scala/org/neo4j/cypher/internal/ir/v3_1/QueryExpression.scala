@@ -17,13 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_1
 
-import org.neo4j.cypher.internal.compiler.v3_1.commands.QueryExpression
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_1.logical.plans.NodeLogicalLeafPlan
+trait QueryExpression[+T] {
+  def expression: T
+  def map[R](f: T => R): QueryExpression[R]
+}
 
-// TODO: Should move to IR module. Need to figure out a way of decoupling from QueryExpression
-abstract class IndexLeafPlan extends NodeLogicalLeafPlan {
-  def valueExpr: QueryExpression[Expression]
+case class ScanQueryExpression[T](expression: T) extends QueryExpression[T] {
+  def map[R](f: T => R) = ScanQueryExpression(f(expression))
+}
+
+case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] {
+  def map[R](f: T => R) = SingleQueryExpression(f(expression))
+}
+
+case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] {
+  def map[R](f: T => R) = ManyQueryExpression(f(expression))
+}
+
+case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] {
+  override def map[R](f: T => R) = RangeQueryExpression(f(expression))
 }

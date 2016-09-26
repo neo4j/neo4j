@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
-import org.neo4j.cypher.internal.compiler.v3_1.commands.{QueryExpression, RangeQueryExpression, indexQuery}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.indexQuery
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, ReadsGivenNodeProperty, ReadsNodesWithLabels}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{Index, InequalityIndex, PrefixIndex}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{NoChildren, PlanDescriptionImpl}
@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.InternalException
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTNode
+import org.neo4j.cypher.internal.ir.v3_1.{QueryExpression, RangeQueryExpression}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 case class NodeIndexSeekPipe(ident: String,

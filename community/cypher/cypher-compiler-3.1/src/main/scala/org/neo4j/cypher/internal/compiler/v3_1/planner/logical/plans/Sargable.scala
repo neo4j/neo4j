@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters.toCommandExpression
 import org.neo4j.cypher.internal.compiler.v3_1.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
-import org.neo4j.cypher.internal.compiler.v3_1.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{Many, One, Zero, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
 import org.neo4j.cypher.internal.compiler.v3_1.{InequalitySeekRange, PrefixRange, SeekRange}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{ExclusiveBound, InclusiveBound}
+import org.neo4j.cypher.internal.ir.v3_1.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 
 object WithSeekableArgs {
   def unapply(v: Any) = v match {

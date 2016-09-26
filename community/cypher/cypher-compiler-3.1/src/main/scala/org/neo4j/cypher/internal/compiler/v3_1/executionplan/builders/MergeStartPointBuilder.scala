@@ -19,20 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{Equals, HasLabel}
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{PartiallySolvedQuery, PlanBuilder}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_1.commands._
-import org.neo4j.cypher.internal.compiler.v3_1.mutation._
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Variable, Property}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_1.mutation.UniqueMergeNodeProducers
-import org.neo4j.cypher.internal.compiler.v3_1.mutation.MergeNodeAction
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.compiler.v3_1.commands.SchemaIndex
-import org.neo4j.cypher.internal.compiler.v3_1.mutation.PlainMergeNodeProducer
-import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_1.commands.{SchemaIndex, _}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v3_1.mutation.{MergeNodeAction, PlainMergeNodeProducer, UniqueMergeNodeProducers, _}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.PipeMonitor
+import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.ir.v3_1.SingleQueryExpression
 
 /*
 This builder is concerned with finding stream that use MERGE, and finds a way to try to find matching nodes

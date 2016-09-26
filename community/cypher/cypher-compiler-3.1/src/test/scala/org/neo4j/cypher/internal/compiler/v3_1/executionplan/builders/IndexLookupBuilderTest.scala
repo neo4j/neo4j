@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{ExclusiveBound, InclusiveBound, IndexHintException, ast}
+import org.neo4j.cypher.internal.ir.v3_1.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 
 class IndexLookupBuilderTest extends BuilderTest {
 
