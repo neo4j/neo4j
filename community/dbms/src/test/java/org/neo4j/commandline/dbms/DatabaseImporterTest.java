@@ -29,10 +29,12 @@ import java.io.File;
 import java.util.HashMap;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.NullOutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -57,7 +59,7 @@ public class DatabaseImporterTest
 
         try
         {
-            new DatabaseImporter( arguments, Config.defaults() );
+            new DatabaseImporter( Args.parse( arguments ), Config.defaults(), new NullOutsideWorld() );
 
             fail( "Should have thrown an exception." );
         }
@@ -75,7 +77,7 @@ public class DatabaseImporterTest
 
         try
         {
-            new DatabaseImporter( arguments, Config.defaults() );
+            new DatabaseImporter( Args.parse( arguments ), Config.defaults(), new NullOutsideWorld() );
             fail( "Should have thrown an exception." );
         }
         catch ( IncorrectUsage e )
@@ -94,7 +96,8 @@ public class DatabaseImporterTest
 
         String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};
 
-        DatabaseImporter importer = new DatabaseImporter( arguments, getConfigWith( home, "bar" ) );
+        DatabaseImporter importer =
+                new DatabaseImporter( Args.parse( arguments ), getConfigWith( home, "bar" ), new NullOutsideWorld() );
         assertThat( destination, not( isExistingDatabase() ) );
         importer.doImport();
         assertThat( destination, isExistingDatabase() );
@@ -113,7 +116,8 @@ public class DatabaseImporterTest
         File destination = new File( new File( new File( home, "data" ), "databases" ), "bar" );
 
         String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};
-        DatabaseImporter importer = new DatabaseImporter( arguments, getConfigWith( home, "bar" ) );
+        DatabaseImporter importer =
+                new DatabaseImporter( Args.parse( arguments ), getConfigWith( home, "bar" ), new NullOutsideWorld() );
 
         File messagesLog = new File( destination, "messages.log" );
         importer.doImport();

@@ -31,11 +31,6 @@ build_classpath
 
 EXTRA_JVM_ARGUMENTS="-Dfile.encoding=UTF-8"
 
-cat >&2 <<EOF
-WARNING: neo4j-import is deprecated and support for it will be removed in a future
-         version of Neo4j; please use neo4j-admin import instead.
-EOF
-
 exec "$JAVA_CMD" ${JAVA_OPTS:-} \
   $EXTRA_JVM_ARGUMENTS \
   -classpath "$CLASSPATH" \

@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.NullOutsideWorld;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
@@ -38,7 +39,8 @@ public class ImportCommandTest
     public void requiresModeArgument() throws Exception
     {
         ImportCommand importCommand =
-                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath() );
+                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
+                        new NullOutsideWorld() );
 
         String[] arguments = {"--database=foo", "--from=bar"};
         try
@@ -56,7 +58,8 @@ public class ImportCommandTest
     public void requiresDatabaseArgument() throws Exception
     {
         ImportCommand importCommand =
-                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath() );
+                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
+                        new NullOutsideWorld() );
 
         String[] arguments = {"--mode=database", "--from=bar"};
         try
@@ -74,7 +77,8 @@ public class ImportCommandTest
     public void failIfInvalidModeSpecified() throws Exception
     {
         ImportCommand importCommand =
-                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath() );
+                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
+                        new NullOutsideWorld() );
 
         String[] arguments = {"--mode=foo", "--database=bar", "--from=baz"};
         try

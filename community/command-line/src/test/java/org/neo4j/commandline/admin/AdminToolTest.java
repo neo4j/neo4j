@@ -19,14 +19,12 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.io.PrintStream;
+import org.junit.Test;
+
 import java.nio.file.Path;
 import java.util.Optional;
 
-import org.junit.Test;
-
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -191,41 +189,6 @@ public class AdminToolTest
                 return command;
             }
         } );
-    }
-
-    private static class NullOutsideWorld implements OutsideWorld
-    {
-        @Override
-        public void stdOutLine( String text )
-        {
-        }
-
-        @Override
-        public void stdErrLine( String text )
-        {
-        }
-
-        @Override
-        public void exit( int status )
-        {
-        }
-
-        @Override
-        public void printStacktrace( Exception exception )
-        {
-        }
-
-        @Override
-        public FileSystemAbstraction fileSystem()
-        {
-            return null;
-        }
-
-        @Override
-        public PrintStream errorStream()
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
     }
 
     private static class NullCommandLocator implements CommandLocator

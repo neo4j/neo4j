@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
@@ -49,14 +50,13 @@ class DatabaseImporter implements Importer
     private final File from;
     private final Config config;
 
-    DatabaseImporter( String[] args, Config config ) throws IncorrectUsage
+    DatabaseImporter( Args args, Config config, OutsideWorld outsideWorld ) throws IncorrectUsage
     {
         this.config = config;
-        Args parsedArgs = Args.parse( args );
 
         try
         {
-            this.from = parsedArgs.interpretOption( "from", Converters.mandatory(), Converters.toFile(),
+            this.from = args.interpretOption( "from", Converters.mandatory(), Converters.toFile(),
                     Validators.CONTAINS_EXISTING_DATABASE );
         }
         catch ( IllegalArgumentException e )
