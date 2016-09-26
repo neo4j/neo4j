@@ -25,6 +25,7 @@ import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.util.ByteSource;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -87,12 +88,12 @@ public class PluginAuthInfo extends ShiroAuthenticationInfo implements Authoriza
     @Override
     public Collection<String> getStringPermissions()
     {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
     public Collection<Permission> getObjectPermissions()
     {
-        return null;
+        return Collections.emptyList();
     }
 }
