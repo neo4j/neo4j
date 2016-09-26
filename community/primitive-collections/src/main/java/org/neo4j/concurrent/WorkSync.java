@@ -82,33 +82,21 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
         // Try grabbing the lock to do all the work, until our work unit
         // has been completed.
-        boolean wasInterrupted = false;
         int tryCount = 0;
         do
         {
             tryCount++;
             Throwable failure = null;
-            try
+            if ( tryLock( tryCount, unit ) )
             {
-                if ( tryLock( tryCount, unit ) )
+                try
                 {
-                    try
-                    {
-                        failure = doSynchronizedWork();
-
-                    }
-                    finally
-                    {
-                        unlock();
-                    }
+                    failure = doSynchronizedWork();
                 }
-            }
-            catch ( InterruptedException e )
-            {
-                // We can't stop now, because our work has already been
-                // scheduled. So instead we're just going to reset the
-                // interruption status when we're done.
-                wasInterrupted = true;
+                finally
+                {
+                    unlock();
+                }
             }
             if ( failure != null )
             {
@@ -116,14 +104,9 @@ public class WorkSync<Material, W extends Work<Material,W>>
             }
         }
         while ( !unit.isDone() );
-
-        if ( wasInterrupted )
-        {
-            Thread.currentThread().interrupt();
-        }
     }
 
-    private boolean tryLock( int tryCount, WorkUnit<Material,W> unit ) throws InterruptedException
+    private boolean tryLock( int tryCount, WorkUnit<Material,W> unit )
     {
         if ( lock.compareAndSet( null, Thread.currentThread() ) )
         {
