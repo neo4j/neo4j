@@ -50,37 +50,9 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -119,6 +91,41 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-udc</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-lucene-index-docs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-lucene-index-docs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>test-sources</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-kernel-docs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-kernel-docs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>test-sources</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-cypher-docs</artifactId>
       <version>${neo4j.version}</version>
@@ -135,13 +142,6 @@
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-cypher-docs</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-udc</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
@@ -349,7 +349,7 @@
               <excludes>META-INF,META-INF/**,org/neo4j/kernel/impl/storemigration/legacystore/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.test-sources}</outputDirectory>
-              <includeArtifactIds>neo4j-cypher-docs,neo4j-examples,neo4j-harness-test,neo4j-server,neo4j-lucene-index,neo4j-backup,neo4j-kernel</includeArtifactIds>
+              <includeArtifactIds>neo4j-cypher-docs,neo4j-examples,neo4j-harness-test,neo4j-server,neo4j-lucene-index-docs,neo4j-backup,neo4j-kernel-docs</includeArtifactIds>
             </configuration>
           </execution>
           <execution>

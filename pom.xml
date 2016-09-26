@@ -43,6 +43,7 @@
     <module>stresstests</module>
     <module>tools</module>
     <module>packaging</module>
+    <module>doctools</module>
   </modules>
 
   <build>

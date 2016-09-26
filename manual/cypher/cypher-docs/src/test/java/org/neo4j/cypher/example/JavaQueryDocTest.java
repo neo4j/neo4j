@@ -22,7 +22,7 @@ package org.neo4j.cypher.example;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-import org.neo4j.test.JavaDocsGenerator;
+import org.neo4j.doc.tools.JavaDocsGenerator;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class JavaQueryDocTest
