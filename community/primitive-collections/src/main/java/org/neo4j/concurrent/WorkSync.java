@@ -104,16 +104,28 @@ public class WorkSync<Material, W extends Work<Material,W>>
     {
         if ( tryLock( tryCount, unit ) )
         {
+            WorkUnit<Material,W> batch = grabBatch();
             try
             {
-                return doSynchronizedWork();
+                return doSynchronizedWork( batch );
             }
             finally
             {
                 unlock();
+                unparkAnyWaiters();
+                markAsDone( batch );
             }
         }
         return null;
+    }
+
+    private void unparkAnyWaiters()
+    {
+        WorkUnit<Material,W> waiter = stack.get();
+        if ( waiter != stackEnd )
+        {
+            waiter.unpark();
+        }
     }
 
     private void checkFailure( Throwable failure ) throws ExecutionException
@@ -155,9 +167,13 @@ public class WorkSync<Material, W extends Work<Material,W>>
         }
     }
 
-    private Throwable doSynchronizedWork()
+    private WorkUnit<Material,W> grabBatch()
     {
-        WorkUnit<Material,W> batch = reverse( stack.getAndSet( stackEnd ) );
+        return reverse( stack.getAndSet( stackEnd ) );
+    }
+
+    private Throwable doSynchronizedWork( WorkUnit<Material,W> batch )
+    {
         W combinedWork = combine( batch );
         Throwable failure = null;
 
@@ -172,8 +188,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
                 failure = throwable;
             }
         }
-
-        markAsDone( batch );
         return failure;
     }
 
@@ -220,12 +234,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
     private void markAsDone( WorkUnit<Material,W> batch )
     {
-        // We will mark the first work unit as the successor - the thread in charge of unparking
-        // the other blocked threads - before we begin marking the units as done.
-        // This way, if the successor wakes up before we finish marking the units as done, it will
-        // know that it should wait and complete its task. In fact, it may trail our done-marking
-        // process and unpark threads in parallel.
-        batch.setAsSuccessor();
         while ( batch != stackEnd )
         {
             batch.complete();
@@ -243,7 +251,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
         final WorkUnit<Material,W> stackEnd;
         final Thread owner;
         volatile WorkUnit<Material,W> next;
-        volatile boolean successor;
 
         private WorkUnit( W work, Thread owner, WorkUnit<Material,W> stackEnd )
         {
@@ -259,45 +266,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
                 LockSupport.parkNanos( unit.toNanos( time ) );
                 compareAndSet( STATE_PARKED, STATE_QUEUED );
             }
-            if ( successor )
-            {
-                // It's our job to go through all the 'next' references, and unpark all the threads
-                // for the work units that are marked as done.
-                // If we encounter a unit that isn't marked as done, then we have raced with the
-                // done-marking, and we just spin until we observe the done flag. This is pretty
-                // unlikely, since unparking a thread is pretty expensive on most platforms.
-                // We also spin on null 'next' references, in the unlikely event that our thread
-                // yet observed the complete enqueueing of work units prior to ours.
-                wakeUpAsSuccessor();
-            }
-        }
-
-        private void wakeUpAsSuccessor()
-        {
-            WorkUnit<Material,W> t, n;
-            do
-            {
-                n = next;
-            }
-            while ( n == null );
-
-            do
-            {
-                boolean canUnparkNext;
-                do
-                {
-                    canUnparkNext = n.isDone();
-                }
-                while ( !canUnparkNext );
-                n.unpark();
-                do
-                {
-                    t = n.next;
-                }
-                while ( t == null );
-                n = t;
-            }
-            while ( n != stackEnd );
         }
 
         boolean isDone()
@@ -308,15 +276,10 @@ public class WorkSync<Material, W extends Work<Material,W>>
         void complete()
         {
             int previousState = getAndSet( STATE_DONE );
-            if ( successor && previousState == STATE_PARKED )
+            if ( previousState == STATE_PARKED )
             {
                 unpark();
             }
-        }
-
-        void setAsSuccessor()
-        {
-            successor = true;
         }
 
         void unpark()
