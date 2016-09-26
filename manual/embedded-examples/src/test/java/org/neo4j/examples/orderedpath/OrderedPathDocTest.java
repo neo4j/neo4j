@@ -24,12 +24,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.doc.tools.JavaDocsGenerator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.JavaDocsGenerator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 

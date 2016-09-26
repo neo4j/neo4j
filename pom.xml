@@ -45,6 +45,7 @@
     <module>integrationtests</module>
     <module>stresstests</module>
     <module>tools</module>
+    <module>doctools</module>
   </modules>
 
   <build>

@@ -1,5 +1,7 @@
 = The Neo4j Manual v{neo4j-version}
 
+:javadoc-base-uri: http://neo4j.com/docs/java-reference/{gitversion}/javadocs
+
 :neo4j-buildnumber: {neo4j-version}
 :neo4j-git-tag: {gitversion}
 

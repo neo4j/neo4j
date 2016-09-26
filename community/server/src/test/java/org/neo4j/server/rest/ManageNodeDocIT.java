@@ -42,6 +42,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.doc.metatest.TestJavaTestDocsGenerator;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -52,7 +53,6 @@ import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.metatest.TestJavaTestDocsGenerator;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
