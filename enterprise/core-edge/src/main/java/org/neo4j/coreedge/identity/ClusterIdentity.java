@@ -101,8 +101,9 @@ public class ClusterIdentity
                     }
                     else
                     {
-                        throw new TimeoutException( "Failed binding to cluster in time. Last topology was: " +
-                                topology );
+                        throw new TimeoutException( String.format( "Failed to join a cluster with members %s. Another" +
+                                " member should have published a clusterId but none was detected. Please restart the " +
+                                "cluster.", topology ));
                     }
                 }
 
