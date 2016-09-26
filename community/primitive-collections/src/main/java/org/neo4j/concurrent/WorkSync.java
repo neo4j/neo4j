@@ -61,7 +61,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
         this.material = material;
         this.stackEnd = new WorkUnit<>( null, null, null );
         this.stack = new AtomicReference<>( stackEnd );
-        this.lock = new AtomicReference<Thread>();
+        this.lock = new AtomicReference<>();
     }
 
     /**
@@ -72,7 +72,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
     public void apply( W work )
     {
         // Schedule our work on the stack.
-        WorkUnit<Material,W> unit = new WorkUnit<Material,W>( work, Thread.currentThread(), stackEnd );
+        WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread(), stackEnd );
         unit.next = stack.getAndSet( unit ); // benign race, see reverse()
 
         // Try grabbing the lock to do all the work, until our work unit
@@ -120,7 +120,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
             return true;
         }
 
-        // Did not get the lock, spend some time until our work has aither been completed,
+        // Did not get the lock, spend some time until our work has either been completed,
         // or we get the lock.
         if ( tryCount < 10 )
         {
@@ -192,11 +192,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
                 result = result.combine( batch.work );
             }
 
-            do
-            {
-                batch = batch.next;
-            }
-            while ( batch.isCancelled() );
+            batch = batch.next;
         }
         return result;
     }
@@ -209,7 +205,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
         // know that it should wait and complete its task. In fact, it may trail our done-marking
         // process and unpark threads in parallel.
         batch.setAsSuccessor();
-        WorkUnit<Material,W> successor = batch;
         while ( batch != stackEnd )
         {
             batch.complete();
@@ -222,7 +217,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
         static final int STATE_QUEUED = 0;
         static final int STATE_PARKED = 1;
         static final int STATE_DONE = 2;
-        static final int STATE_CANCELLED = 3;
 
         final W work;
         final WorkUnit<Material,W> stackEnd;
@@ -288,11 +282,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
         boolean isDone()
         {
             return get() == STATE_DONE;
-        }
-
-        boolean isCancelled()
-        {
-            return get() == STATE_CANCELLED;
         }
 
         void complete()
