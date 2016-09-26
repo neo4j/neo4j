@@ -19,6 +19,7 @@
  */
 package org.neo4j.concurrent;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,8 +69,12 @@ public class WorkSync<Material, W extends Work<Material,W>>
      * Apply the given work to the material in a thread-safe way, possibly by
      * combining it with other work.
      * @param work The work to be done.
+     * @throws ExecutionException if this thread ends up performing the piled up work,
+     * and any work unit in the pile throws an exception. Thus the current thread is not
+     * guaranteed to observe any exception its unit of work might throw, since the
+     * exception will be thrown in whichever thread that ends up actually performing the work.
      */
-    public void apply( W work )
+    public void apply( W work ) throws ExecutionException
     {
         // Schedule our work on the stack.
         WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread(), stackEnd );
@@ -82,13 +87,15 @@ public class WorkSync<Material, W extends Work<Material,W>>
         do
         {
             tryCount++;
+            Throwable failure = null;
             try
             {
                 if ( tryLock( tryCount, unit ) )
                 {
                     try
                     {
-                        doSynchronizedWork();
+                        failure = doSynchronizedWork();
+
                     }
                     finally
                     {
@@ -102,6 +109,10 @@ public class WorkSync<Material, W extends Work<Material,W>>
                 // scheduled. So instead we're just going to reset the
                 // interruption status when we're done.
                 wasInterrupted = true;
+            }
+            if ( failure != null )
+            {
+                throw new ExecutionException( failure );
             }
         }
         while ( !unit.isDone() );
@@ -143,17 +154,26 @@ public class WorkSync<Material, W extends Work<Material,W>>
         }
     }
 
-    private void doSynchronizedWork()
+    private Throwable doSynchronizedWork()
     {
         WorkUnit<Material,W> batch = reverse( stack.getAndSet( stackEnd ) );
         W combinedWork = combine( batch );
+        Throwable failure = null;
 
         if ( combinedWork != null )
         {
-            combinedWork.apply( material );
+            try
+            {
+                combinedWork.apply( material );
+            }
+            catch ( Throwable throwable )
+            {
+                failure = throwable;
+            }
         }
 
         markAsDone( batch );
+        return failure;
     }
 
     private WorkUnit<Material,W> reverse( WorkUnit<Material,W> batch )

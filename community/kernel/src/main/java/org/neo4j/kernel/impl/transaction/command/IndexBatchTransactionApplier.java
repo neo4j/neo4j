@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.command;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -84,11 +85,18 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         return transactionApplier;
     }
 
-    private void applyIndexUpdates()
+    private void applyIndexUpdates() throws IOException
     {
         if ( indexUpdates != null && indexUpdates.hasUpdates() )
         {
-            indexUpdatesSync.apply( new IndexUpdatesWork( indexUpdates ) );
+            try
+            {
+                indexUpdatesSync.apply( new IndexUpdatesWork( indexUpdates ) );
+            }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "Failed to flush index updates prior to applying schema change", e );
+            }
             indexUpdates = null;
         }
     }

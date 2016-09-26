@@ -65,5 +65,5 @@ public interface Work<Material, W extends Work<Material,W>>
     /**
      * Apply this unit of work to the given material.
      */
-    void apply( Material material );
+    void apply( Material material ) throws Exception;
 }
