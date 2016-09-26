@@ -146,7 +146,7 @@ public class CoreEdgeClusterSettings
 
     @Description("The number of operations to be processed before the state machines flush to disk")
     public static final Setting<Integer> state_machine_flush_window_size =
-            setting( "core_edge.state_machine_flush_window_size", INTEGER, "100" );
+            setting( "core_edge.state_machine_flush_window_size", INTEGER, "4096" );
 
     @Description("The maximum number of operations to be batched during applications of operations in the state machines")
     public static Setting<Integer> state_machine_apply_max_batch_size =
@@ -162,7 +162,7 @@ public class CoreEdgeClusterSettings
 
     @Description( "RAFT log rotation size" )
     public static final Setting<Long> raft_log_rotation_size =
-            setting( "core_edge.raft_log_rotation_size", BYTES, "1M", min( 1024L ) );
+            setting( "core_edge.raft_log_rotation_size", BYTES, "250M", min( 1024L ) );
 
     @Description( "RAFT log reader pool size" )
     public static final Setting<Integer> raft_log_reader_pool_size =
@@ -174,7 +174,7 @@ public class CoreEdgeClusterSettings
 
     @Description("Enable or disable the dump of all network messages pertaining to the RAFT protocol")
     public static final Setting<Boolean> raft_messages_log_enable =
-            setting( "core_edge.raft_messages_log_enable", BOOLEAN, "true");
+            setting( "core_edge.raft_messages_log_enable", BOOLEAN, "false");
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Long> pull_interval = setting( "core_edge.pull_interval", DURATION, "1s" );
