@@ -20,18 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, LogicalPlanningContext, Metrics, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, LogicalPlanConstructionTestSupport, PlannerQuery, RegularPlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, SemanticTable}
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
-  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]), mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver])
+  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
+    mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   val plan1 = mock[LogicalPlan]
   val plan2 = mock[LogicalPlan]

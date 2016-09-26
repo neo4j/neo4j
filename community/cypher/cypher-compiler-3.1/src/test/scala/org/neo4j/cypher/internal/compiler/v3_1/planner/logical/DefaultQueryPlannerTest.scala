@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify, when}
+import org.neo4j.cypher.internal.compiler.v3_1.devNullLogger
+import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{ASTAnnotationMap, Expression, Hint}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
@@ -120,5 +121,6 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     metrics = mock[Metrics],
     semanticTable = semanticTable,
     strategy = mock[QueryGraphSolver],
-    config = QueryPlannerConfiguration.default)
+    config = QueryPlannerConfiguration.default,
+    notificationLogger = devNullLogger)
 }
