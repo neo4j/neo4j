@@ -64,7 +64,7 @@ public class LegacyStoreVersionCheck
             String actualVersion = readVersion( fileChannel, expectedVersionBytes.length );
             if ( !expectedVersion.equals( actualVersion ) )
             {
-                return new Result( Outcome.unexpectedUpgradingStoreVersion, actualVersion, storeFilename );
+                return new Result( Outcome.unexpectedStoreVersion, actualVersion, storeFilename );
             }
         }
         catch ( IOException e )
