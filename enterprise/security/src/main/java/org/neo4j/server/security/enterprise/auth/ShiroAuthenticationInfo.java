@@ -21,6 +21,7 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
+import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.util.ByteSource;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
@@ -49,6 +50,13 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
             setCredentials( hashedCredentials.passwordHash() );
             setCredentialsSalt( ByteSource.Util.bytes( hashedCredentials.salt() ) );
         }
+    }
+
+    public ShiroAuthenticationInfo( Object principal, Object hashedCredentials, ByteSource credentialsSalt,
+            String realmName, AuthenticationResult authenticationResult )
+    {
+        super( principal, hashedCredentials, credentialsSalt, realmName );
+        this.authenticationResult = authenticationResult;
     }
 
     public AuthenticationResult getAuthenticationResult()
