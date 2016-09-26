@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{NodeHashJoin, Selection}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{NodeHashJoin, Selection}
 import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, CardinalityEstimation, IdName, PlannerQuery, QueryGraph, Selections}
 
 class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport {

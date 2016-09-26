@@ -24,11 +24,12 @@ import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{One, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, ast, symbols}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans._
 
 object LogicalPlanConverter {
 

@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, ast}
-import org.neo4j.cypher.internal.ir.v3_1.{IdName, PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.ir.v3_1.{Ascending, Descending, IdName, PlannerQuery, QueryProjection, SortDescription}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 

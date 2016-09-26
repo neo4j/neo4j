@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.idSeekLeafP
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{RelTypeId, SemanticDirection}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{LogicalPlan, Selection}
 import org.neo4j.cypher.internal.ir.v3_1.{Cost, IdName, PatternRelationship, Predicate, QueryGraph, Selections, SimplePatternLength}
 
 import scala.collection.mutable

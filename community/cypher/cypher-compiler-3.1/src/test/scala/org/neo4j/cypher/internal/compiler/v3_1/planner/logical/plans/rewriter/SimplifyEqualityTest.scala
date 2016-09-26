@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{LogicalPlan, _}
 
 class SimplifyEqualityTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite WHERE x.prop in [1] to WHERE x.prop = 1") {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, topDown}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans._
 
 case object unnestApply extends Rewriter {
 

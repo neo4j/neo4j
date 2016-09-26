@@ -29,11 +29,11 @@ import org.neo4j.cypher.internal.compiler.v3_1.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.Provider
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{AllNodesScan, NodeHashJoin}
 import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService

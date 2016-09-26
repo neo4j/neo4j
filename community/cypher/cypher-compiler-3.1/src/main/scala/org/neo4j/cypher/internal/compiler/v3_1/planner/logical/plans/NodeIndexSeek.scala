@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.QueryExpression
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery}
 
+// TODO: Should move to IR module. Need to figure out a way of decoupling from QueryExpression
 case class NodeIndexSeek(idName: IdName,
                          label: LabelToken,
                          propertyKey: PropertyKeyToken,

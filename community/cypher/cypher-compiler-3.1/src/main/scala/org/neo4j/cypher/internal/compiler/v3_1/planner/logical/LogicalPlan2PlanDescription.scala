@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans._
 
 object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) => InternalPlanDescription) {
 
@@ -90,7 +91,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
                             Seq(Expression(count)), symbols)
 
       case row: SingleRow =>
-        new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
+        SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
 
       case x => throw new CantCompileQueryException(x.getClass.getSimpleName)
     }

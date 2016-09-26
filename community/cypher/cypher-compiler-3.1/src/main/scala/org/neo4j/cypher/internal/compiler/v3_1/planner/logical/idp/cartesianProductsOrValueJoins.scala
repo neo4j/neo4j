@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IndexLeafPlan, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
 import org.neo4j.cypher.internal.ir.v3_1.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 
 trait JoinDisconnectedQueryGraphComponents {
   def apply(componentPlans: Set[PlannedComponent], fullQG: QueryGraph)

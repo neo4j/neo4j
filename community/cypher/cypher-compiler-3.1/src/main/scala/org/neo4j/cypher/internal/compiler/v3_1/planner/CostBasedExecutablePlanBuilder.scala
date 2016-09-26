@@ -28,13 +28,13 @@ import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutablePlanBuil
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_1.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStep, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, Scope, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_1.PeriodicCommit
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class CostBasedExecutablePlanBuilder(monitors: Monitors,

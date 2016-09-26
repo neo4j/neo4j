@@ -23,12 +23,12 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1.RecordingNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{IndexHintException, JoinHintException, SemanticDirection}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship, QueryGraph, RegularPlannerQuery, VarPatternLength}
 import org.neo4j.kernel.api.index.IndexDescriptor
 

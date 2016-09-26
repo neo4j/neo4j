@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Eagerness.unnestEager
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{LogicalPlan, _}
 
 class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

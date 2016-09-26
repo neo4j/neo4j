@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.execution.PipeExecutionBu
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
@@ -41,6 +40,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{LazyLogicalPlan, LogicalPlan}
 import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, CardinalityEstimation, FieldSignature, IdName, PatternLength, PatternRelationship, PlannerQuery, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName, QueryGraph, RegularPlannerQuery, RegularQueryProjection, SimplePatternLength, StrictnessMode, UserFunctionSignature}
 
 import scala.collection.mutable

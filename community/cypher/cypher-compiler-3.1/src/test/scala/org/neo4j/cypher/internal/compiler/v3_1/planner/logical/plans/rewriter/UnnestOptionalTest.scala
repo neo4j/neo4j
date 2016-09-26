@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.LazyType
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Equals, Property, PropertyKeyName, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{LogicalPlan, _}
 import org.neo4j.cypher.internal.ir.v3_1.{IdName, VarPatternLength}
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -61,7 +60,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
         )(solved))(solved)
     val lhs = newMockedLogicalPlan("a")
     val apply = Apply(lhs, rhs)(solved)
-    val mergeRel = MergeCreateRelationship(SingleRow()(solved), IdName("r"), IdName("a"), LazyType("T"), IdName("b"),
+    val mergeRel = MergeCreateRelationship(SingleRow()(solved), IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"),
       None)(solved)
 
     val input = AntiConditionalApply(apply, mergeRel, Seq.empty)(solved)

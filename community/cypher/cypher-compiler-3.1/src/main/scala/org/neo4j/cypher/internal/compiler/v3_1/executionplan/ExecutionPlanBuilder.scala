@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v3_1.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
@@ -37,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, ProfileMode, _}
 import org.neo4j.cypher.internal.frontend.v3_1.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_1.notification.InternalNotification
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 import org.neo4j.kernel.GraphDatabaseQueryService
 
 

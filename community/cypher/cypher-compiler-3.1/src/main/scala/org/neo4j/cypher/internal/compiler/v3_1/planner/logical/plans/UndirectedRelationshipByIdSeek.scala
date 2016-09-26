@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery}
 
 case class UndirectedRelationshipByIdSeek(idName: IdName,

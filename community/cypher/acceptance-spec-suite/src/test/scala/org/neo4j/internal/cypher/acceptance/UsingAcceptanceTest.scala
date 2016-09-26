@@ -22,7 +22,8 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.compiler.v3_1.IDPPlannerName
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.NodeHashJoin
 import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.devNullLogger
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.{LogicalPlanProducer, pickBestPlanUsingHintsAndCost}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{LabelName, PropertyKeyName, UsingIndexHint}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, Cost, PlannerQuery}
 
 class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
