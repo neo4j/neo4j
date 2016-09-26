@@ -22,7 +22,7 @@ package org.neo4j.coreedge.stresstests;
 import java.util.concurrent.Callable;
 import java.util.function.BooleanSupplier;
 
-abstract class RepeatUntilCallable implements Callable<Boolean>
+abstract class RepeatUntilCallable implements Callable<Throwable>
 {
     private BooleanSupplier keepGoing;
     private Runnable onFailure;
@@ -34,28 +34,24 @@ abstract class RepeatUntilCallable implements Callable<Boolean>
     }
 
     @Override
-    public final Boolean call()
+    public final Throwable call()
     {
         try
         {
-            boolean success = true;
             while ( keepGoing.getAsBoolean() )
             {
-                success &= doWork();
-                if ( !success )
-                {
-                    onFailure.run();
-                }
+                doWork();
             }
-            return success;
         }
         catch ( Throwable t )
         {
             t.printStackTrace();
             onFailure.run();
-            return false;
+            return t;
         }
+
+        return null;
     }
 
-    protected abstract boolean doWork();
+    protected abstract void doWork();
 }

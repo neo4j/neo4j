@@ -40,17 +40,17 @@ abstract class RepeatUntilOnSelectedMemberCallable extends RepeatUntilCallable
     }
 
     @Override
-    protected final boolean doWork()
+    protected final void doWork()
     {
         boolean isCore = onlyCores || random.nextBoolean();
         Collection<? extends ClusterMember> members = isCore ? cluster.coreMembers() : cluster.edgeMembers();
         if ( members.isEmpty() )
         {
-            return true;
+            return;
         }
         int id = random.nextInt( members.size() );
-        return doWorkOnMember( isCore, id );
+        doWorkOnMember( isCore, id );
     }
 
-    protected abstract boolean doWorkOnMember( boolean isCore, int id );
+    protected abstract void doWorkOnMember( boolean isCore, int id );
 }

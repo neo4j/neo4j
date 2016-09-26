@@ -40,9 +40,10 @@ import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.StressTestingHelper.fromEnv;
+import static org.neo4j.StressTestingHelper.prettyPrintStackTrace;
 import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureRaftLogRotationAndPruning;
 import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureTxLogRotationAndPruning;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
@@ -86,13 +87,13 @@ public class CatchupStoreCopyInteractionStressTesting
         try
         {
             cluster.start();
-            Future<Boolean> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
-            Future<Boolean> startStopWorker = service.submit( new StartStopLoad( keepGoing, onFailure, cluster ) );
-            Future<Boolean> catchUpWorker = service.submit( new CatchUpLoad( keepGoing, onFailure, cluster ) );
+            Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
+            Future<Throwable> startStopWorker = service.submit( new StartStopLoad( keepGoing, onFailure, cluster ) );
+            Future<Throwable> catchUpWorker = service.submit( new CatchUpLoad( keepGoing, onFailure, cluster ) );
 
-            assertTrue( workload.get() );
-            assertTrue( startStopWorker.get() );
-            assertTrue( catchUpWorker.get() );
+            assertNull( prettyPrintStackTrace( workload.get() ), workload.get() );
+            assertNull( prettyPrintStackTrace( startStopWorker.get() ), startStopWorker.get() );
+            assertNull( prettyPrintStackTrace( catchUpWorker.get() ), catchUpWorker.get() );
         }
         finally
         {

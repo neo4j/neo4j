@@ -43,7 +43,7 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
     }
 
     @Override
-    protected boolean doWorkOnMember( boolean isCore, int id )
+    protected void doWorkOnMember( boolean isCore, int id )
     {
         SocketAddress address = backupAddress.apply( isCore, id );
         File backupDirectory = new File( baseDirectory, Integer.toString( address.getPort() ) );
@@ -59,16 +59,14 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
             {
                 // if we could not connect, wait a bit and try again...
                 LockSupport.parkNanos( 10_000_000 );
-                return true;
+                return;
             }
             throw e;
         }
 
-        boolean success = backup.isConsistent();
-        if ( !success )
+        if ( !backup.isConsistent() )
         {
-            System.err.println( "Not consistent backup from " + address );
+            throw new RuntimeException( "Not consistent backup from " + address );
         }
-        return success;
     }
 }
