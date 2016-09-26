@@ -25,11 +25,10 @@ import org.neo4j.coreedge.logging.MessageLogger;
 public class LoggingInbound<M extends Message> implements Inbound<M>
 {
     private final Inbound<M> inbound;
-    private final MessageLogger messageLogger;
+    private final MessageLogger<MemberId> messageLogger;
     private final MemberId me;
 
-    public LoggingInbound( Inbound<M> inbound, MessageLogger messageLogger,
-                           MemberId me )
+    public LoggingInbound( Inbound<M> inbound, MessageLogger<MemberId> messageLogger, MemberId me )
     {
         this.inbound = inbound;
         this.messageLogger = messageLogger;

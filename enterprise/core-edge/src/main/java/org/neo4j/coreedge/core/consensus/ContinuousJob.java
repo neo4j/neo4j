@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.core.consensus;
 
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -44,7 +43,7 @@ public class ContinuousJob extends LifecycleAdapter
         this.scheduler = scheduler;
         this.group = group;
         this.task = task;
-        log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override

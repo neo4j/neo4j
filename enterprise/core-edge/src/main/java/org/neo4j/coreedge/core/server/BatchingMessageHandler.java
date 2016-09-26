@@ -28,35 +28,48 @@ import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMessages.ClusterIdAwareMessage>
+public class BatchingMessageHandler extends LifecycleAdapter
+        implements Runnable, MessageHandler<RaftMessages.ClusterIdAwareMessage>
 {
+    private final MessageHandler<RaftMessages.ClusterIdAwareMessage> handler;
     private final Log log;
-    private final BlockingQueue<RaftMessages.ClusterIdAwareMessage> messageQueue;
-
     private final int maxBatch;
     private final List<RaftMessages.ClusterIdAwareMessage> batch;
+    private final BlockingQueue<RaftMessages.ClusterIdAwareMessage> messageQueue;
 
-    private MessageHandler<RaftMessages.ClusterIdAwareMessage> handler;
+    private volatile boolean stopped;
 
-    public BatchingMessageHandler( MessageHandler<RaftMessages.ClusterIdAwareMessage> handler,
-                                   int queueSize, int maxBatch, LogProvider logProvider )
+    BatchingMessageHandler( MessageHandler<RaftMessages.ClusterIdAwareMessage> handler, int queueSize, int maxBatch,
+            LogProvider logProvider )
     {
         this.handler = handler;
         this.log = logProvider.getLog( getClass() );
         this.maxBatch = maxBatch;
-
         this.batch = new ArrayList<>( maxBatch );
         this.messageQueue = new ArrayBlockingQueue<>( queueSize );
     }
 
     @Override
+    public void stop()
+    {
+        stopped = true;
+    }
+
+    @Override
     public void handle( RaftMessages.ClusterIdAwareMessage message )
     {
+        if ( stopped )
+        {
+            log.warn( "This handler has been stopped, dropping the message: %s", message );
+            return;
+        }
+
         try
         {
             messageQueue.put( message );

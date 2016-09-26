@@ -92,6 +92,7 @@ public class CoreServerModule
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final LifeSupport life = platformModule.life;
         final Monitors monitors = platformModule.monitors;
+        final JobScheduler jobScheduler = platformModule.jobScheduler;
 
         LogProvider logProvider = logging.getInternalLogProvider();
         LogProvider userLogProvider = logging.getUserLogProvider();
@@ -153,20 +154,20 @@ public class CoreServerModule
             } );
         }
 
-        CoreState coreState = new CoreState(
-                consensusModule.raftMachine(), localDatabase, clusteringModule.clusterIdentity(),
-                logProvider,
-                downloader,
+        CommandApplicationProcess commandApplicationProcess =
                 new CommandApplicationProcess( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(),
                         config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
-                        config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
-                        databaseHealthSupplier, logProvider, replicationModule.getProgressTracker(),
-                        lastFlushedStorage, replicationModule.getSessionTracker(), coreStateApplier,
-                        consensusModule.inFlightMap(), platformModule.monitors ) );
+                        config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ), databaseHealthSupplier,
+                        logProvider, replicationModule.getProgressTracker(), lastFlushedStorage,
+                        replicationModule.getSessionTracker(), coreStateApplier, consensusModule.inFlightMap(),
+                        platformModule.monitors );
+        CoreState coreState =
+                new CoreState( consensusModule.raftMachine(), localDatabase, clusteringModule.clusterIdentity(),
+                        logProvider, downloader, commandApplicationProcess );
 
         dependencies.satisfyDependency( coreState );
 
-        life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
+        life.add( new PruningScheduler( coreState, jobScheduler,
                 config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ), logProvider ) );
 
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
@@ -178,8 +179,8 @@ public class CoreServerModule
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
 
         MembershipWaiter membershipWaiter =
-                new MembershipWaiter( identityModule.myself(), platformModule.jobScheduler, dbHealthSupplier,
-                        electionTimeout * 4, logProvider );
+                new MembershipWaiter( identityModule.myself(), jobScheduler, dbHealthSupplier, electionTimeout * 4,
+                        logProvider );
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter,
                 joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
@@ -196,7 +197,8 @@ public class CoreServerModule
 
         life.add( raftServer );
         life.add( catchupServer );
-        life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
+        life.add( batchingMessageHandler );
+        life.add( new ContinuousJob( jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler, logProvider ) );
         life.add( coreState );
     }
