@@ -24,104 +24,34 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class UnknownAddressMonitor
 {
     private final Log log;
     private final Clock clock;
-    private final long initialTimeoutMs;
-    private Map<MemberId,PeriodicLogger> loggers = new ConcurrentHashMap<>();
+    private final long timeLimitMs;
+    private Map<MemberId,CappedLogger> loggers = new ConcurrentHashMap<>();
 
-    public UnknownAddressMonitor( Log log, Clock clock, long initialTimeoutMs )
+    public UnknownAddressMonitor( Log log, Clock clock, long timeLimitMs )
     {
         this.log = log;
         this.clock = clock;
-        this.initialTimeoutMs = initialTimeoutMs;
+        this.timeLimitMs = timeLimitMs;
     }
 
-    public long logAttemptToSendToMemberWithNoKnownAddress( MemberId to )
+    public void logAttemptToSendToMemberWithNoKnownAddress( MemberId to )
     {
-        PeriodicLogger logger = loggers.get( to );
-        if ( logger == null )
+        CappedLogger cappedLogger = loggers.get( to );
+        if ( cappedLogger == null )
         {
-            logger = new PeriodicLogger( clock, log );
-            loggers.put( to, logger );
+            cappedLogger = new CappedLogger( log );
+            cappedLogger.setTimeLimit( timeLimitMs, MILLISECONDS, clock );
+            loggers.put( to, cappedLogger );
         }
-        return logger.attemptLog( to );
-    }
-
-    private static class PeriodicLogger
-    {
-        private final Clock clock;
-        private final Log log;
-        private long numberOfAttemps;
-        private final Penalty penalty = new Penalty();
-
-        PeriodicLogger( Clock clock, Log log )
-        {
-            this.clock = clock;
-            this.log = log;
-        }
-
-        long attemptLog( MemberId to )
-        {
-            numberOfAttemps++;
-
-            if ( clock.millis() > penalty.blockedUntil() )
-            {
-                penalty.cancel();
-            }
-
-            if ( shouldLog() )
-            {
-                log.info( "No address found for member %s, probably because the member has been shut down; " +
-                        "dropped %d message(s) over last %d milliseconds", to, numberOfAttemps, clock.millis() -
-                        penalty.blockedUntil() );
-
-                numberOfAttemps = 0;
-            }
-
-            penalty.increase();
-
-            return penalty.blockedUntil();
-        }
-
-        private boolean shouldLog()
-        {
-            return clock.millis() >= penalty.blockedUntil();
-        }
-    }
-
-    private static class Penalty
-    {
-        private static final long MAX_PENALTY = 60 * 1000;
-        private long currentPenalty = 0;
-
-        void increase()
-        {
-            if ( currentPenalty == 0 )
-            {
-                currentPenalty = 10_000L;
-            }
-            else
-            {
-                currentPenalty = currentPenalty * 2;
-                if ( currentPenalty > MAX_PENALTY )
-                {
-                    currentPenalty = MAX_PENALTY;
-                }
-            }
-        }
-
-        long blockedUntil()
-        {
-            return currentPenalty;
-        }
-
-        public void cancel()
-        {
-            currentPenalty = 0;
-        }
+        cappedLogger.info(String.format("No address found for %s, probably because the member has been shut down.", to)  );
     }
 }

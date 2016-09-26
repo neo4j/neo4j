@@ -21,16 +21,13 @@ package org.neo4j.coreedge.messaging.address;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
-
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static java.util.concurrent.TimeUnit.HOURS;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -46,13 +43,19 @@ public class UnknownAddressMonitorTest
     {
         // given
         Log log = mock( Log.class );
-        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, Clocks.fakeClock(), 10000 );
+        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, testClock(), 100 );
 
         // when
-        logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
+        MemberId to = member( 0 );
+        logger.logAttemptToSendToMemberWithNoKnownAddress( to );
 
         // then
-        verify( log ).info( anyString(), eq( member( 0 ) ), anyLong(), anyLong() );
+        verify( log ).info( format( "No address found for %s, probably because the member has been shut down.", to ) );
+    }
+
+    private FakeClock testClock()
+    {
+        return Clocks.fakeClock( 1_000_000, MILLISECONDS );
     }
 
     @Test
@@ -60,16 +63,18 @@ public class UnknownAddressMonitorTest
     {
         // given
         Log log = mock( Log.class );
-        FakeClock clock = Clocks.fakeClock();
-        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 10000 );
+        FakeClock clock = testClock();
+        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 1000 );
+        MemberId to = member( 0 );
 
         // when
-        logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
+        logger.logAttemptToSendToMemberWithNoKnownAddress( to );
         clock.forward( 1, MILLISECONDS );
-        logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
+        logger.logAttemptToSendToMemberWithNoKnownAddress( to );
 
         // then
-        verify( log, times( 1 ) ).info( anyString(), eq( member( 0 ) ), anyLong(), anyLong() );
+        verify( log, times( 1 ) )
+                .info( format( "No address found for %s, probably because the member has been shut " + "down.", to ) );
     }
 
     @Test
@@ -77,62 +82,19 @@ public class UnknownAddressMonitorTest
     {
         // given
         Log log = mock( Log.class );
-        FakeClock clock = Clocks.fakeClock();
-        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 10000 );
+        FakeClock clock = testClock();
+        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 1000 );
+        MemberId to = member( 0 );
 
         // when
-        logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
+        logger.logAttemptToSendToMemberWithNoKnownAddress( to );
         clock.forward( 20001, MILLISECONDS );
-        logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
+        logger.logAttemptToSendToMemberWithNoKnownAddress( to );
         clock.forward( 80001, MILLISECONDS );
-        logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
+        logger.logAttemptToSendToMemberWithNoKnownAddress( to );
 
         // then
-        verify( log, times( 3 ) ).info( anyString(), eq( member( 0 ) ), anyLong(), anyLong() );
-    }
-
-    @Test
-    public void shouldIncreaseThrottlingWhenClientFloodsLogUpToOneMinute() throws Exception
-    {
-        // given
-        Log log = mock( Log.class );
-        FakeClock clock = Clocks.fakeClock();
-        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 10000 );
-
-        // when
-        ArrayList<Long> tryAfter = new ArrayList<>();
-        for ( int i = 0; i < 10; i++ )
-        {
-            tryAfter.add( logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) ) );
-            clock.forward( 1, SECONDS );
-        }
-
-        // then
-        assertEquals( 10_000L, (long) tryAfter.get( 0 ) );
-        assertEquals( 20_000L, (long) tryAfter.get( 1 ) );
-        assertEquals( 40_000L, (long) tryAfter.get( 2 ) );
-        assertEquals( 60_000L, (long) tryAfter.get( 3 ) );
-        assertEquals( 60_000L, (long) tryAfter.get( 4 ) );
-        assertEquals( 60_000L, (long) tryAfter.get( 9 ) );
-    }
-
-    @Test
-    public void shouldReduceThrottlingWhenClientCallRateDropsOff() throws Exception
-    {
-        // given
-        Log log = mock( Log.class );
-        FakeClock clock = Clocks.fakeClock();
-        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 10000 );
-
-        // when
-        for ( int i = 0; i < 100; i++ ) // aggravate the logger
-        {
-            logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
-        }
-
-        clock.forward( 1, HOURS );
-
-        // then
-        assertEquals( 10_000L, logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) ) );
+        verify( log, times( 3 ) )
+                .info( format( "No address found for %s, probably because the member has been shut " + "down.", to ) );
     }
 }

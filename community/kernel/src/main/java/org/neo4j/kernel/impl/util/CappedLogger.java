@@ -212,7 +212,7 @@ public class CappedLogger
         private boolean hasCountLimit;
         private int countLimit;
         private long timeLimitMillis;
-        private Clock clock;
+        private final Clock clock;
         private boolean filterDuplicates;
 
         // Atomically updated
