@@ -89,7 +89,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             ProgressiveState<Key> originalState = this.state;
             try
             {
-                return lookup.value( !this.state.lookup( key, lookup ) );
+                return lookup.value( !originalState.lookup( key, lookup ) );
             }
             catch ( IllegalStateException e )
             {

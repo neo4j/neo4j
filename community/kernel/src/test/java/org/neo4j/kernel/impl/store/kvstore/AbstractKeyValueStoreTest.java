@@ -45,10 +45,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
@@ -88,14 +85,37 @@ public class AbstractKeyValueStoreTest
     public void retryLookupOnConcurrentStoreStateChange() throws IOException
     {
         Store testStore = resourceManager.managed( createTestStore( TimeUnit.DAYS.toMillis( 2 ) ) );
-        ProgressiveState progressiveState = mock( ProgressiveState.class );
-        CountingErroneousReader countingErroneousReader = new CountingErroneousReader( testStore, progressiveState );
+        ConcurrentMapState<String> newState = new ConcurrentMapState<>( testStore.state, mock( File.class ) );
         testStore.put( "test", "value" );
 
-        testStore.lookup( "test", countingErroneousReader );
+        CountingErroneousReader countingErroneousReader = new CountingErroneousReader( testStore, newState );
 
-        assertEquals( 1, countingErroneousReader.getInvocationCounter() );
-        verify( progressiveState ).lookup( eq( "test" ), any( ValueSink.class ) );
+        assertEquals( "New state contains stored value", "value", testStore.lookup( "test", countingErroneousReader ) );
+        assertEquals( "Should have 2 invocations: first throws exception, second re-read value.", 2,
+                countingErroneousReader.getInvocationCounter() );
+    }
+
+    @Test
+    @Resources.Life( STARTED )
+    public void accessClosedStateCauseIllegalStateException() throws Exception
+    {
+        Store store = resourceManager.managed( new Store() );
+        store.put( "test", "value" );
+        store.prepareRotation( 0 ).rotate();
+        ProgressiveState<String> lookupState = store.state;
+        store.prepareRotation( 0 ).rotate();
+
+        expectedException.expect( IllegalStateException.class );
+        expectedException.expectMessage( "File has been unmapped" );
+
+        lookupState.lookup( "test", new ValueSink()
+        {
+            @Override
+            protected void value( ReadableBuffer value )
+            {
+                // empty
+            }
+        } );
     }
 
     @Test
@@ -520,23 +540,10 @@ public class AbstractKeyValueStoreTest
             invocationCounter++;
             if ( invocationCounter == 1 )
             {
-                closeCurrentState();
                 testStore.state = newStoreState;
                 throw new IllegalStateException( "Exception during state rotation." );
             }
-            return value.toString();
-        }
-
-        private void closeCurrentState()
-        {
-            try
-            {
-                testStore.state.close();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            return testStore.readKey( value );
         }
 
         int getInvocationCounter()
