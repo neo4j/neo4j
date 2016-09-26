@@ -32,6 +32,7 @@ import org.neo4j.coreedge.core.consensus.ReplicatedString;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.ClusterIdentity;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.mock;
@@ -159,5 +160,27 @@ public class BatchingMessageHandlerTest
         verify( raftStateMachine ).handle( new RaftMessages.ClusterIdAwareMessage( localClusterId, batchRequest ) );
         verify( raftStateMachine ).handle( messageB );
         verify( raftStateMachine ).handle( messageD );
+    }
+
+    @Test
+    public void shouldDropMessagesAfterBeingStopped() throws Exception
+    {
+        // given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
+                raftStateMachine, QUEUE_SIZE, MAX_BATCH, logProvider );
+
+        RaftMessages.ClusterIdAwareMessage message = new RaftMessages.ClusterIdAwareMessage(
+                localClusterId, new RaftMessages.NewEntry.Request( null, null ) );
+        batchHandler.stop();
+
+        // when
+        batchHandler.handle( message );
+        batchHandler.run();
+
+        // then
+        verifyZeroInteractions( raftStateMachine );
+        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( BatchingMessageHandler.class )
+                .warn( "This handler has been stopped, dropping the message: %s", message ) );
     }
 }
