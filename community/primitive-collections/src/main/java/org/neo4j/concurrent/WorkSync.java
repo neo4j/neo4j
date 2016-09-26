@@ -77,8 +77,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
     public void apply( W work ) throws ExecutionException
     {
         // Schedule our work on the stack.
-        WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread(), stackEnd );
-        unit.next = stack.getAndSet( unit ); // benign race, see reverse()
+        WorkUnit<Material,W> unit = enqueueWork( work );
 
         // Try grabbing the lock to do all the work, until our work unit
         // has been completed.
@@ -86,24 +85,40 @@ public class WorkSync<Material, W extends Work<Material,W>>
         do
         {
             tryCount++;
-            Throwable failure = null;
-            if ( tryLock( tryCount, unit ) )
-            {
-                try
-                {
-                    failure = doSynchronizedWork();
-                }
-                finally
-                {
-                    unlock();
-                }
-            }
-            if ( failure != null )
-            {
-                throw new ExecutionException( failure );
-            }
+            checkFailure( tryDoWork( unit, tryCount ) );
         }
         while ( !unit.isDone() );
+    }
+
+    private WorkUnit<Material,W> enqueueWork( W work )
+    {
+        WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread(), stackEnd );
+        unit.next = stack.getAndSet( unit ); // benign race, see reverse()
+        return unit;
+    }
+
+    private Throwable tryDoWork( WorkUnit<Material,W> unit, int tryCount )
+    {
+        if ( tryLock( tryCount, unit ) )
+        {
+            try
+            {
+                return doSynchronizedWork();
+            }
+            finally
+            {
+                unlock();
+            }
+        }
+        return null;
+    }
+
+    private void checkFailure( Throwable failure ) throws ExecutionException
+    {
+        if ( failure != null )
+        {
+            throw new ExecutionException( failure );
+        }
     }
 
     private boolean tryLock( int tryCount, WorkUnit<Material,W> unit )
