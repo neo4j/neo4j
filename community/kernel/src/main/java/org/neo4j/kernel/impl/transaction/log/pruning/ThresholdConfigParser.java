@@ -19,20 +19,45 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.util.Objects;
+
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 
 public class ThresholdConfigParser
 {
     public static final class ThresholdConfigValue
     {
-        public static final ThresholdConfigValue NO_PRUNING = new ThresholdConfigValue( "false", -1 );
+        static final ThresholdConfigValue NO_PRUNING = new ThresholdConfigValue( "false", -1 );
+        static final ThresholdConfigValue KEEP_LAST_FILE = new ThresholdConfigValue( "entries", 1 );
+
         public final String type;
         public final long value;
 
-        public ThresholdConfigValue( String type, long value )
+        ThresholdConfigValue( String type, long value )
         {
             this.type = type;
             this.value = value;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            ThresholdConfigValue that = (ThresholdConfigValue) o;
+            return value == that.value && Objects.equals( type, that.type );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( type, value );
         }
     }
 
@@ -55,17 +80,18 @@ public class ThresholdConfigParser
                 return ThresholdConfigValue.NO_PRUNING;
             case "keep_none":
             case "false":
-                return new ThresholdConfigValue( "entries", 1 );
+                return ThresholdConfigValue.KEEP_LAST_FILE;
             default:
                 throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
                         "'. The form is 'all' or '<number><unit> <type>' for example '100k txs' " +
                         "for the latest 100 000 transactions" );
             }
         }
-
-        long thresholdValue = parseLongWithUnit( tokens[0] );
-        String thresholdType = tokens[1];
-
-        return new ThresholdConfigValue( thresholdType, thresholdValue );
+        else
+        {
+            long thresholdValue = parseLongWithUnit( boolOrNumber );
+            String thresholdType = tokens[1];
+            return new ThresholdConfigValue( thresholdType, thresholdValue );
+        }
     }
 }

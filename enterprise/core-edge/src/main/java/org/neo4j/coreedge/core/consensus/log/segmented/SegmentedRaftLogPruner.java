@@ -19,18 +19,17 @@
  */
 package org.neo4j.coreedge.core.consensus.log.segmented;
 
-
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
-public class SegmentedRaftLogPruner
+class SegmentedRaftLogPruner
 {
     private final ThresholdConfigValue parsedConfigOption;
     private final CoreLogPruningStrategy pruneStrategy;
 
-    public SegmentedRaftLogPruner( String pruningStrategyConfig, LogProvider logProvider )
+    SegmentedRaftLogPruner( String pruningStrategyConfig, LogProvider logProvider )
     {
         parsedConfigOption = parse( pruningStrategyConfig );
         pruneStrategy = getPruneStrategy( parsedConfigOption, logProvider );
@@ -38,7 +37,8 @@ public class SegmentedRaftLogPruner
 
     private CoreLogPruningStrategy getPruneStrategy( ThresholdConfigValue configValue, LogProvider logProvider )
     {
-        switch ( configValue.type )
+        String type = configValue.type;
+        switch ( type )
         {
         case "size":
             return new SizeBasedLogPruningStrategy( parsedConfigOption.value );
@@ -47,15 +47,17 @@ public class SegmentedRaftLogPruner
             return new EntryBasedLogPruningStrategy( parsedConfigOption.value, logProvider );
         case "hours": // hours and days are currently not supported as such, default to no prune
         case "days":
+            throw new IllegalArgumentException(
+                    "Time based pruning not supported yet for the segmented raft log, got '" + type + "'." );
         case "false":
             return new NoPruningPruningStrategy();
         default:
             throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue.value +
-                    "'. Invalid type '" + configValue.type + "', valid are files, size, txs, entries, hours, days." );
+                    "'. Invalid type '" + type + "', valid are files, size, txs, entries, hours, days." );
         }
     }
 
-    public long getIndexToPruneFrom( long safeIndex, Segments segments )
+    long getIndexToPruneFrom( long safeIndex, Segments segments )
     {
         return Math.min( safeIndex, pruneStrategy.getIndexToKeep( segments ) );
     }
