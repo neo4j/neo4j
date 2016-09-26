@@ -21,6 +21,7 @@ package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -39,6 +40,7 @@ import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 {
@@ -182,5 +184,15 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertThat( client, eventuallyReceives( msgSuccess(),
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
+    }
+
+    @Test
+    public void shouldAuthenticateWithTestCustomParametersAuthenticationPlugin() throws Throwable
+    {
+        assertConnectionSucceeds( map(
+                "scheme", "custom",
+                "principal", "neo4j",
+                "realm", "plugin-TestCustomParametersAuthenticationPlugin",
+                "parameters", map( "my_credentials", Arrays.asList( 1L, 2L, 3L, 4L ) ) ) );
     }
 }

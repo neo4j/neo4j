@@ -71,10 +71,32 @@ public class PluginApiAuthToken implements AuthToken
 
     public static AuthToken createFromMap( Map<String,Object> authTokenMap ) throws InvalidAuthTokenException
     {
+        String scheme = org.neo4j.kernel.api.security.AuthToken
+                .safeCast( org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY, authTokenMap );
+
+        // Always require principal
         String principal = org.neo4j.kernel.api.security.AuthToken.safeCast( PRINCIPAL, authTokenMap );
-        String credentials = org.neo4j.kernel.api.security.AuthToken.safeCast( CREDENTIALS, authTokenMap );
+
+        String credentials = null;
+        if ( scheme.equals( org.neo4j.kernel.api.security.AuthToken.BASIC_SCHEME ) )
+        {
+            // Basic scheme requires credentials
+            credentials = org.neo4j.kernel.api.security.AuthToken.safeCast( CREDENTIALS, authTokenMap );
+        }
+        else
+        {
+            // Otherwise credentials are optional
+            Object credentialsObject = authTokenMap.get( CREDENTIALS );
+            if ( credentialsObject instanceof String )
+            {
+                credentials = (String) credentialsObject;
+            }
+        }
         Map<String,Object> parameters = org.neo4j.kernel.api.security.AuthToken.safeCastMap( PARAMETERS, authTokenMap );
 
-        return PluginApiAuthToken.of( principal, credentials.toCharArray(), parameters );
+        return PluginApiAuthToken.of(
+                principal,
+                credentials != null ? credentials.toCharArray() : null,
+                parameters );
     }
 }
