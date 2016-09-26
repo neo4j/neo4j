@@ -42,7 +42,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
-public class DynamicIndexStoreIT
+public class DynamicIndexStoreViewIT
 {
 
     private SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -52,14 +52,14 @@ public class DynamicIndexStoreIT
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( suppressOutput );
 
     @Test
-    public void populateDb() throws Exception
+    public void populateDbWithConcurrentUpdates() throws Exception
     {
         GraphDatabaseService database =
                 new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
         try
         {
             int counter = 1;
-            for ( int j = 0; j < 10000; j++ )
+            for ( int j = 0; j < 100; j++ )
             {
                 try ( Transaction transaction = database.beginTx() )
                 {
