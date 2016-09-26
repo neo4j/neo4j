@@ -35,6 +35,7 @@ import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.unmodifiableMap;
@@ -51,8 +52,8 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     private ClusterId clusterId;
 
     @Override
-    public CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider,
-            LogProvider userLogProvider )
+    public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+            LogProvider logProvider, LogProvider userLogProvider )
     {
         SharedDiscoveryCoreClient sharedDiscoveryCoreClient = new SharedDiscoveryCoreClient( this, myself, logProvider, config );
         sharedDiscoveryCoreClient.onCoreTopologyChange( coreTopology( sharedDiscoveryCoreClient ) );

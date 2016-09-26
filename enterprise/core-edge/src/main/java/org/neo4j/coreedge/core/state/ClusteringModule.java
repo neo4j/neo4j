@@ -37,7 +37,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;
-
 import static org.neo4j.coreedge.core.server.CoreServerModule.CLUSTER_ID_NAME;
 
 public class ClusteringModule
@@ -46,7 +45,7 @@ public class ClusteringModule
     private final ClusterIdentity clusterIdentity;
 
     public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself,
-                             PlatformModule platformModule, File clusterStateDirectory )
+            PlatformModule platformModule, File clusterStateDirectory )
     {
         LifeSupport life = platformModule.life;
         Config config = platformModule.config;
@@ -55,20 +54,22 @@ public class ClusteringModule
         Dependencies dependencies = platformModule.dependencies;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
 
-        topologyService = discoveryServiceFactory.coreTopologyService( config, myself, logProvider, userLogProvider );
+        topologyService = discoveryServiceFactory
+                .coreTopologyService( config, myself, platformModule.jobScheduler, logProvider, userLogProvider );
 
         life.add( topologyService );
 
         dependencies.satisfyDependency( topologyService ); // for tests
 
-        SimpleStorage<ClusterId> clusterIdStorage = new SimpleFileStorage<>( fileSystem, clusterStateDirectory,
-                CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
+        SimpleStorage<ClusterId> clusterIdStorage =
+                new SimpleFileStorage<>( fileSystem, clusterStateDirectory, CLUSTER_ID_NAME, new ClusterId.Marshal(),
+                        logProvider );
 
-        CoreBootstrapper coreBootstrapper = new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache,
-                fileSystem, config );
+        CoreBootstrapper coreBootstrapper =
+                new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config );
 
-        clusterIdentity = new ClusterIdentity( clusterIdStorage, topologyService, logProvider,
-                Clocks.systemClock(), () -> sleep( 100 ), 300_000, coreBootstrapper );
+        clusterIdentity = new ClusterIdentity( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
+                () -> sleep( 100 ), 300_000, coreBootstrapper );
     }
 
     public CoreTopologyService topologyService()

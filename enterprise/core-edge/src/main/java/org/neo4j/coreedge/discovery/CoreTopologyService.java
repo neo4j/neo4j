@@ -35,7 +35,9 @@ public interface CoreTopologyService extends TopologyService
      *
      * @return True if the cluster ID was successfully CAS:ed, otherwise false.
      */
-    boolean casClusterId( ClusterId clusterId );
+    boolean setClusterId( ClusterId clusterId );
+
+    void refreshCoreTopology();
 
     interface Listener
     {

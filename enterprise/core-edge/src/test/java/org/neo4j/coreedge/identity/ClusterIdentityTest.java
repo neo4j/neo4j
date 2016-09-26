@@ -108,7 +108,7 @@ public class ClusterIdentityTest
         ClusterId previouslyBoundClusterId = new ClusterId( UUID.randomUUID() );
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
-        when( topologyService.casClusterId( previouslyBoundClusterId ) ).thenReturn( true );
+        when( topologyService.setClusterId( previouslyBoundClusterId ) ).thenReturn( true );
 
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
@@ -121,7 +121,7 @@ public class ClusterIdentityTest
         binder.bindToCluster( null );
 
         // then
-        verify( topologyService ).casClusterId( previouslyBoundClusterId );
+        verify( topologyService ).setClusterId( previouslyBoundClusterId );
         assertEquals( previouslyBoundClusterId, binder.clusterId() );
     }
 
@@ -132,7 +132,7 @@ public class ClusterIdentityTest
         ClusterId previouslyBoundClusterId = new ClusterId( UUID.randomUUID() );
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
-        when( topologyService.casClusterId( previouslyBoundClusterId ) ).thenReturn( false );
+        when( topologyService.setClusterId( previouslyBoundClusterId ) ).thenReturn( false );
 
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
@@ -161,7 +161,7 @@ public class ClusterIdentityTest
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.coreServers() ).thenReturn( bootstrappableTopology );
-        when( topologyService.casClusterId( any() ) ).thenReturn( true );
+        when( topologyService.setClusterId( any() ) ).thenReturn( true );
 
         ClusterIdentity binder = new ClusterIdentity( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
@@ -174,7 +174,7 @@ public class ClusterIdentityTest
 
         // then
         verify( coreBootstrapper ).bootstrap( any() );
-        verify( topologyService ).casClusterId( binder.clusterId() );
+        verify( topologyService ).setClusterId( binder.clusterId() );
         verify( snapshotInstaller ).accept( any() );
     }
 

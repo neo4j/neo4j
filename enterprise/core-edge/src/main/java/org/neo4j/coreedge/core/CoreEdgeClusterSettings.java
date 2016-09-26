@@ -259,4 +259,8 @@ public class CoreEdgeClusterSettings
     @Description( "RELATIONSHIP_GROUP ID Allocation Space Size" )
     public static final Setting<Integer> relationship_group_id_allocation_size =
             setting( "core_edge.relationship_group_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "Time between scanning the cluster to refresh current server's view of topology" )
+    public static final Setting<Long> cluster_topology_refresh =
+            setting( "core_edge.cluster_topology_refresh", DURATION, "1m", min(1_000L) );
 }

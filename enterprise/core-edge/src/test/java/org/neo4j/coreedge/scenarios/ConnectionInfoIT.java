@@ -38,6 +38,7 @@ import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.coreedge.ClusterRule;
@@ -119,8 +120,12 @@ public class ConnectionInfoIT
                 "localhost:" + testSocket.getLocalPort() ) );
         config.augment( singletonMap( GraphDatabaseSettings.boltConnector( "bolt" ).enabled.name(), "true" ) );
 
+        Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
+        jobScheduler.init();
+
         CoreTopologyService coreTopologyService = hzFactory
-                .coreTopologyService( config, new MemberId( UUID.randomUUID() ), logProvider, userLogProvider );
+                .coreTopologyService( config, new MemberId( UUID.randomUUID() ), jobScheduler, logProvider,
+                        userLogProvider );
 
         try
         {

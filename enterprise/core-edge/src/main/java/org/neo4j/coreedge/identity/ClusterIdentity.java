@@ -97,6 +97,7 @@ public class ClusterIdentity
                     if ( clock.millis() < endTime )
                     {
                         retryWaiter.apply();
+                        topologyService.refreshCoreTopology();
                         topology = topologyService.coreServers();
                     }
                     else
@@ -123,7 +124,7 @@ public class ClusterIdentity
 
     private void publishClusterId( ClusterId localClusterId ) throws BindingException
     {
-        boolean success = topologyService.casClusterId( localClusterId );
+        boolean success = topologyService.setClusterId( localClusterId );
         if ( !success )
         {
             throw new BindingException( "Failed to publish: " + localClusterId );
@@ -133,5 +134,4 @@ public class ClusterIdentity
             log.info( "Published: " + localClusterId );
         }
     }
-
 }

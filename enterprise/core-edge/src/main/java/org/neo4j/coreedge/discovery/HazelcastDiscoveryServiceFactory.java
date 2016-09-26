@@ -24,17 +24,17 @@ import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
 
 public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
     @Override
-    public CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider,
-            LogProvider userLogProvider )
+    public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+            LogProvider logProvider, LogProvider userLogProvider )
     {
         configureHazelcast( config );
-        return new HazelcastCoreTopologyService( config, myself, logProvider, userLogProvider );
+        return new HazelcastCoreTopologyService( config, myself, jobScheduler, logProvider, userLogProvider );
     }
 
     @Override

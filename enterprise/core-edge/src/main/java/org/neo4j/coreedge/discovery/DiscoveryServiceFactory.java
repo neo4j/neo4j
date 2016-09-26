@@ -23,13 +23,14 @@ import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
 
 public interface DiscoveryServiceFactory
 {
-    CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider,
-            LogProvider userLogProvider );
+    CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+            LogProvider logProvider, LogProvider userLogProvider );
 
-    TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout, long edgeRefreshRate );
+    TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider,
+            DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout, long edgeRefreshRate );
 }

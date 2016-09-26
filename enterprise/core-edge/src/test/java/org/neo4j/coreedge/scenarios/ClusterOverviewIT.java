@@ -72,7 +72,7 @@ public class ClusterOverviewIT
     @Parameterized.Parameters( name = "discovery-{0}" )
     public static Collection<DiscoveryService> data()
     {
-        return Arrays.asList( DiscoveryService.SHARED, DiscoveryService.HAZELCAST );
+        return Arrays.asList( /*DiscoveryService.SHARED, */DiscoveryService.HAZELCAST );
     }
 
     public ClusterOverviewIT( DiscoveryService discoveryService )
