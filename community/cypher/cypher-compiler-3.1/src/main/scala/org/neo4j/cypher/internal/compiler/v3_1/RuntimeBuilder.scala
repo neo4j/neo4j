@@ -60,7 +60,7 @@ trait RuntimeBuilder {
     } catch {
       case e: CantCompileQueryException =>
         monitor.unableToHandlePlan(logicalPlan, e)
-        fallback(preparedQuery)
+        fallback(preparedQuery, planContext.notificationLogger())
         interpretedProducer
           .apply(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
     }
@@ -70,20 +70,20 @@ trait RuntimeBuilder {
 
   def interpretedProducer: InterpretedPlanBuilder
 
-  def fallback(preparedQuery: PreparedQuerySemantics): Unit
+  def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger): Unit
 }
 
 case class SilentFallbackRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder, compiledProducer: CompiledPlanBuilder)
   extends RuntimeBuilder {
 
-  override def fallback(preparedQuery: PreparedQuerySemantics): Unit = {}
+  override def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger): Unit = {}
 }
 
 case class WarningFallbackRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder, compiledProducer: CompiledPlanBuilder)
   extends RuntimeBuilder {
 
-  override def fallback(preparedQuery: PreparedQuerySemantics): Unit = preparedQuery.notificationLogger
-    .log(RuntimeUnsupportedNotification)
+  override def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger): Unit =
+    notificationLogger.log(RuntimeUnsupportedNotification)
 }
 
 case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder) extends RuntimeBuilder {
@@ -98,15 +98,16 @@ case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder
 
   override def compiledProducer = throw new InternalException("This should never be called")
 
-  override def fallback(preparedQuery: PreparedQuerySemantics) = throw new InternalException("This should never be called")
+  override def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger) =
+    throw new InternalException("This should never be called")
 }
 
 case class ErrorReportingRuntimeBuilder(compiledProducer: CompiledPlanBuilder) extends RuntimeBuilder {
 
   override def interpretedProducer = throw new InternalException("This should never be called")
 
-  override def fallback(preparedQuery: PreparedQuerySemantics) = throw new
-      InvalidArgumentException("The given query is not currently supported in the selected runtime")
+  override def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger) =
+    throw new InvalidArgumentException("The given query is not currently supported in the selected runtime")
 }
 
 case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors,typeConverter: RuntimeTypeConverter) {
@@ -148,8 +149,8 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
             if (executionMode == ExplainMode) {
               //close all statements
               taskCloser.close(success = true)
-              new ExplainExecutionResult(compiled.columns.toList,
-                compiled.planDescription, READ_ONLY, preparedQuery.notificationLogger.notifications)
+              ExplainExecutionResult(compiled.columns.toList,
+                compiled.planDescription, READ_ONLY, planContext.notificationLogger().notifications)
             } else
               compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode), params, taskCloser)
           } catch {

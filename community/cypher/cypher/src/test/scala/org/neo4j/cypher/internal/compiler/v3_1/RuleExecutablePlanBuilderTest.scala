@@ -52,7 +52,7 @@ import org.neo4j.graphdb.Label.label
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory, QuerySource}
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Seq
@@ -81,9 +81,9 @@ class RuleExecutablePlanBuilderTest
   )
 
   class FakePreparedSemanticQuery(q: AbstractQuery)
-    extends PreparedQuerySemantics(mock[Statement], "q", None, Map.empty, mock[SemanticTable], mock[Scope])(devNullLogger) {
+    extends PreparedQuerySemantics(mock[Statement], "q", None, Map.empty, mock[SemanticTable], mock[Scope])() {
 
-    override def abstractQuery: AbstractQuery = q
+    override def abstractQuery(notificationLogger: InternalNotificationLogger): AbstractQuery = q
 
     override def isPeriodicCommit: Boolean = q.isInstanceOf[PeriodicCommitQuery]
 

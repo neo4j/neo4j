@@ -58,7 +58,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConf
     val rewriter = rewriterStepSequencer.apply(reattachAliasedExpressions).rewriter
     val rewrite = in.rewrite(rewriter)
 
-    val res = rewrite.abstractQuery match {
+    val res = rewrite.abstractQuery(planContext.notificationLogger()) match {
       case PeriodicCommitQuery(q: Query, batchSize) =>
         buildQuery(q, planContext).
           copy(periodicCommit = Some(PeriodicCommitInfo(batchSize)))

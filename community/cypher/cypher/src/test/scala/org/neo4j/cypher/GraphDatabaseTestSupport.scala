@@ -20,9 +20,9 @@
 package org.neo4j.cypher
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_1.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerConfiguration, devNullLogger}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
@@ -254,7 +254,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     when(tc.statement).thenReturn(statement)
     when(tc.readOperations).thenReturn(statement.readOperations())
     when(tc.graph).thenReturn(graph)
-    new TransactionBoundPlanContext(tc)
+    new TransactionBoundPlanContext(tc, devNullLogger)
   }
 
   def indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])

@@ -68,7 +68,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     statement match {
       case (ast: Query, rewrittenSemanticTable) =>
         val (periodicCommit, logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
-          produceLogicalPlan(ast, rewrittenSemanticTable)(planContext, inputQuery.notificationLogger)
+          produceLogicalPlan(ast, rewrittenSemanticTable)(planContext, planContext.notificationLogger())
         }
           runtimeBuilder(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable,
                          planBuilderMonitor, plannerName, inputQuery, createFingerprintReference, config)

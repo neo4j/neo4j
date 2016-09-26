@@ -98,7 +98,7 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
 
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
-    val parsedQ = PreparedQuerySemantics(statement, q, None, Map.empty, mock[SemanticTable], mock[Scope])(devNullLogger)
+    val parsedQ = PreparedQuerySemantics(statement, q, None, Map.empty, mock[SemanticTable], mock[Scope])()
     planBuilder.producePipe(parsedQ, planContext, mock[CompilationPhaseTracer]).pipe
   }
 }

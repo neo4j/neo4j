@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_1
 
+import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.{ExpanderStep, TraversalMatcher}
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
@@ -99,4 +100,7 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def getLabelId(labelName: String): Int =
     translateException(inner.getLabelId(labelName))
+
+  override def notificationLogger(): InternalNotificationLogger =
+    translateException(inner.notificationLogger())
 }

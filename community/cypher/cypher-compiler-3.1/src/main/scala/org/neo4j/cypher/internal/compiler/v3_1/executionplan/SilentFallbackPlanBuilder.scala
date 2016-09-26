@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, PreparedQuery, PreparedQuerySemantics}
+import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, InternalNotificationLogger, PreparedQuery, PreparedQuerySemantics}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.PlannerUnsupportedNotification
 
 trait FallbackBuilder extends ExecutablePlanBuilder {
@@ -38,7 +38,7 @@ trait FallbackBuilder extends ExecutablePlanBuilder {
     } catch {
       case e: CantHandleQueryException =>
         monitor.unableToHandleQuery(queryText, statement, e)
-        warn(inputQuery)
+        warn(inputQuery, planContext.notificationLogger())
         oldBuilder.producePlan(inputQuery, planContext, tracer, createFingerprintReference)
     }
   }
@@ -49,7 +49,7 @@ trait FallbackBuilder extends ExecutablePlanBuilder {
 
   def monitor: NewLogicalPlanSuccessRateMonitor
 
-  def warn(preparedQuery: PreparedQuery): Unit
+  def warn(preparedQuery: PreparedQuery, notificationLogger: InternalNotificationLogger): Unit
 
 }
 
@@ -57,14 +57,14 @@ case class SilentFallbackPlanBuilder(oldBuilder: ExecutablePlanBuilder,
                                      newBuilder: ExecutablePlanBuilder,
                                      monitor: NewLogicalPlanSuccessRateMonitor) extends FallbackBuilder {
 
-  override def warn(preparedQuery: PreparedQuery): Unit = {}
+  override def warn(preparedQuery: PreparedQuery, notificationLogger: InternalNotificationLogger): Unit = {}
 }
 
 case class WarningFallbackPlanBuilder(oldBuilder: ExecutablePlanBuilder,
                                       newBuilder: ExecutablePlanBuilder,
                                       monitor: NewLogicalPlanSuccessRateMonitor) extends FallbackBuilder {
 
-  override def warn(preparedQuery: PreparedQuery): Unit =
-    preparedQuery.notificationLogger.log(PlannerUnsupportedNotification)
+  override def warn(preparedQuery: PreparedQuery, notificationLogger: InternalNotificationLogger): Unit =
+    notificationLogger.log(PlannerUnsupportedNotification)
 }
 

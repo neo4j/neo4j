@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Equals
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.TokenType.{Label => _, _}
+import org.neo4j.cypher.internal.compiler.v3_1.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, PropertyKeyId, SemanticDirection, ast}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
@@ -308,7 +309,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
       val transactionalContext = TransactionalContextWrapperv3_1(transactionContext(graph, tx))
-      val ctx = new TransactionBoundPlanContext(transactionalContext)
+      val ctx = new TransactionBoundPlanContext(transactionalContext, devNullLogger)
       val literal = Literal(42)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get
@@ -323,7 +324,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def indexScan(graph: GraphDatabaseQueryService): NodeIndexScanPipe = {
     graph.withTx { tx =>
       val transactionalContext = TransactionalContextWrapperv3_1(transactionContext(graph, tx))
-      val ctx = new TransactionBoundPlanContext(transactionalContext)
+      val ctx = new TransactionBoundPlanContext(transactionalContext, devNullLogger)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get
       val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get

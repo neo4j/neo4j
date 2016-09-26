@@ -203,7 +203,7 @@ case class CypherCompiler(parser: CypherParser,
       astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
     }
 
-    PreparedQuerySyntax(rewrittenStatement, queryText, offset, extractedParams)(notificationLogger, plannerName, postConditions)
+    PreparedQuerySyntax(rewrittenStatement, queryText, offset, extractedParams)(plannerName, postConditions)
   }
 
   def prepareSemanticQuery(syntacticQuery: PreparedQuerySyntax, notificationLogger: InternalNotificationLogger,
