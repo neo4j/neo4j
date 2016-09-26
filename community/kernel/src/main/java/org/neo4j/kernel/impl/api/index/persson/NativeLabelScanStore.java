@@ -24,12 +24,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCIndexDescription;
 import org.neo4j.index.SCInserter;
 import org.neo4j.index.ValueAmender;
@@ -90,78 +86,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public LabelScanReader newReader()
     {
-        return new LabelScanReader()
-        {
-            private Cursor<BTreeHit<LabelScanKey,LabelScanValue>> cursor;
-
-            @Override
-            public void close()
-            {
-                if ( cursor != null )
-                {
-                    cursor.close();
-                }
-            }
-
-            @Override
-            public PrimitiveLongIterator nodesWithLabel( int labelId )
-            {
-                LabelScanKey from = new LabelScanKey().set( labelId, 0 );
-                LabelScanKey to = new LabelScanKey().set( labelId, Long.MAX_VALUE );
-                try
-                {
-                    if ( cursor != null )
-                    {
-                        cursor.close();
-                    }
-                    cursor = index.seek( from, to );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-
-                return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
-                {
-                    private long baseNodeId;
-                    private long bits;
-
-                    @Override
-                    protected boolean fetchNext()
-                    {
-                        while ( true )
-                        {
-                            if ( bits != 0 )
-                            {
-                                return nextFromCurrent();
-                            }
-
-                            if ( !cursor.next() )
-                            {
-                                return false;
-                            }
-
-                            BTreeHit<LabelScanKey,LabelScanValue> hit = cursor.get();
-                            baseNodeId = hit.key().nodeId * rangeSize;
-                            bits = hit.value().bits;
-                        }
-                    }
-
-                    private boolean nextFromCurrent()
-                    {
-                        int delta = Long.numberOfTrailingZeros( bits );
-                        bits &= bits-1;
-                        return next( baseNodeId + delta );
-                    }
-                };
-            }
-
-            @Override
-            public PrimitiveLongIterator labelsForNode( long nodeId )
-            {
-                throw new UnsupportedOperationException( "Use your db..." );
-            }
-        };
+        return new NativeLabelScanReader( index, rangeSize );
     }
 
     private static final Comparator<NodeLabelUpdate> UPDATE_SORTER = new Comparator<NodeLabelUpdate>()
