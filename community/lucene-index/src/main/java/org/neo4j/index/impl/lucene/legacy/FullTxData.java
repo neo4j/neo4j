@@ -402,30 +402,6 @@ class FullTxData extends TxData
         return this.searcher;
     }
 
-    private static void safeClose( Object object )
-    {
-        if ( object == null )
-        {
-            return;
-        }
-
-        try
-        {
-            if ( object instanceof IndexWriter )
-            {
-                ( ( IndexWriter ) object ).close();
-            }
-            else if ( object instanceof IndexReader )
-            {
-                ( ( IndexReader ) object ).close();
-            }
-        }
-        catch ( IOException e )
-        {
-            // Ok
-        }
-    }
-
     @Override
     IndexSearcher asSearcher( TxDataHolder holder, QueryContext context )
     {
