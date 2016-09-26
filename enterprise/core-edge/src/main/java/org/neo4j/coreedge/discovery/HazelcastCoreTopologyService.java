@@ -46,7 +46,6 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -118,8 +117,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         }
 
         JobScheduler.Group group = new JobScheduler.Group( "Scheduler", POOLED );
-        jobHandle = this.scheduler.scheduleRecurring( group, new TopologyRefresher(),
-                config.get( CoreEdgeClusterSettings.cluster_topology_refresh ), TimeUnit.MILLISECONDS );
+        jobHandle = this.scheduler.scheduleRecurring( group, () ->
+        {
+            refreshCoreTopology();
+            refreshEdgeTopology();
+        }, config.get( CoreEdgeClusterSettings.cluster_topology_refresh ), TimeUnit.MILLISECONDS );
     }
 
     @Override
@@ -254,16 +256,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         @Override
         public void memberAttributeChanged( MemberAttributeEvent memberAttributeEvent )
         {
-        }
-    }
-
-    private class TopologyRefresher implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            refreshCoreTopology();
-            refreshEdgeTopology();
         }
     }
 }
