@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_1.SyntaxException
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.{NonEmptyList, fixedPoint}
+import org.neo4j.cypher.internal.frontend.v3_1.notification.DeprecatedPlannerNotification
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
@@ -53,7 +54,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConf
 
   def producePipe(in: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer): PipeInfo = {
 
-
+    planContext.notificationLogger().log(DeprecatedPlannerNotification)
     val rewriterStepSequencer: RewriterStepSequencer = rewriterSequencer.apply("LegacyPipeBuilder")
     val rewriter = rewriterStepSequencer.apply(reattachAliasedExpressions).rewriter
     val rewrite = in.rewrite(rewriter)

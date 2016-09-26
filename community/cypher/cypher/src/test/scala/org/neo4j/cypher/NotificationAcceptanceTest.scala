@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_1.notification._
 import org.neo4j.kernel.impl.proc.Procedures
-import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.procedure.Procedure
 
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -126,7 +125,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
   test("do not warn when requesting RULE on an update query") {
     val result = innerExecute("EXPLAIN CYPHER planner=RULE MATCH (n:Movie) SET n.title = 'The Movie'")
-    result.notifications shouldBe empty
+    result.notifications.toList should equal(List(DeprecatedPlannerNotification))
   }
 
   test("warn when requesting runtime=compiled on an unsupported query") {
@@ -156,7 +155,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("should warn when join hint is used with RULE planner with EXPLAIN") {
     val result = innerExecute( """CYPHER planner=rule EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
 
-    result.notifications should equal(Set(JoinHintUnsupportedNotification(Seq("b"))))
+    result.notifications should equal(Set(JoinHintUnsupportedNotification(Seq("b")), DeprecatedPlannerNotification))
   }
 
   test("should warn when join hint is unfulfilled") {

@@ -47,6 +47,8 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
   val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating,
     typeConverter = IdentityTypeConverter)
 
+  when(planContext.notificationLogger()).thenReturn(devNullLogger)
+
   test("should_use_distinct_pipe_for_distinct") {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")
 

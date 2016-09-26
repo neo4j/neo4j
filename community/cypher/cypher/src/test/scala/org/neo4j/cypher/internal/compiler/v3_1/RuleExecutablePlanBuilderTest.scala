@@ -93,6 +93,7 @@ class RuleExecutablePlanBuilderTest
   test("should not accept returning the input execution plan") {
     val q = Query.empty
     val planContext = mock[PlanContext]
+    when(planContext.notificationLogger()).thenReturn(devNullLogger)
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
       val pipeBuilder = new LegacyExecutablePlanBuilderWithCustomPlanBuilders(Seq(new BadBuilder), WrappedMonitors3_1(kernelMonitors), config)
