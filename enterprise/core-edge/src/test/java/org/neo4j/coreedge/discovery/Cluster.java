@@ -331,6 +331,10 @@ public class Cluster
         {
             CoreClusterMember member = awaitCoreMemberWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
             CoreGraphDatabase db = member.database();
+            if ( db == null )
+            {
+                throw new DatabaseShutdownException();
+            }
 
             try
             {
