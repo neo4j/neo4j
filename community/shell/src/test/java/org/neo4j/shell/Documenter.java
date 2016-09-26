@@ -27,11 +27,11 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Stack;
 
+import org.neo4j.doc.tools.AsciiDocGenerator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteOutput;
 import org.neo4j.shell.impl.SameJvmClient;
-import org.neo4j.test.AsciiDocGenerator;
 
 import static org.junit.Assert.*;
 

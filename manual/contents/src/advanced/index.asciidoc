@@ -27,13 +27,13 @@ include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.asciidoc[]
+include::{importdir}/neo4j-lucene-index-docs-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-kernel-docs-jar/dev/batchinsert.asciidoc[]
+include::{importdir}/neo4j-kernel-docs-docs-jar/dev/batchinsert.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-lucene-index-docs-jar/dev/batchinsertindex.asciidoc[]
+include::{importdir}/neo4j-lucene-index-docs-docs-jar/dev/batchinsertindex.asciidoc[]
 
