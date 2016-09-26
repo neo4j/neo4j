@@ -53,7 +53,7 @@ public class WorkSyncTest
         while ( now < deadline );
     }
 
-    private static class AddWork implements Work<Adder, AddWork>
+    private static class AddWork implements Work<Adder,AddWork>
     {
         private int delta;
 
@@ -150,7 +150,7 @@ public class WorkSyncTest
         ExecutorService executor = Executors.newFixedThreadPool( 64 );
         for ( int i = 0; i < 1000; i++ )
         {
-            executor.submit( new CallableWork( new AddWork( 1 )) );
+            executor.submit( new CallableWork( new AddWork( 1 ) ) );
         }
         executor.shutdown();
         assertTrue( executor.awaitTermination( 2, TimeUnit.SECONDS ) );
