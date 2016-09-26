@@ -140,6 +140,11 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return pageCache;
     }
 
+    protected void configureStandardPageCache() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+    }
+
     protected final void tearDownPageCache( T pageCache ) throws IOException
     {
         fixture.tearDownPageCache( pageCache );
@@ -168,6 +173,18 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return file;
     }
 
+    protected void ensureDirectoryExists( File dir ) throws IOException
+    {
+        fs.mkdir( dir );
+    }
+
+    protected File existingDirectory( String name ) throws IOException
+    {
+        File dir = file( name );
+        ensureDirectoryExists( dir );
+        return dir;
+    }
+
     /**
      * Verifies the records on the current page of the cursor.
      * <p>
@@ -188,7 +205,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             {
                 cursor.setOffset( recordSize * i );
                 cursor.getBytes( record );
-            } while ( cursor.shouldRetry() );
+            }
+            while ( cursor.shouldRetry() );
             actualPageContents.position( recordSize * i );
             actualPageContents.put( record );
         }
@@ -292,7 +310,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected Runnable $close( final PagedFile file )
     {
-        return () -> {
+        return () ->
+        {
             try
             {
                 file.close();

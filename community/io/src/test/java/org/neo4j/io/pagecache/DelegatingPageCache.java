@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class DelegatingPageCache implements PageCache
 {
@@ -65,6 +66,12 @@ public class DelegatingPageCache implements PageCache
             throws IOException
     {
         delegate.renameFile( sourceFile, targetFile, copyOptions );
+    }
+
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return delegate.streamFilesRecursive( directory );
     }
 
     public void flushAndForce( IOLimiter limiter ) throws IOException

@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
+import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.configuration.Config;
 
@@ -67,6 +70,12 @@ public class PageSwapperFactoryForTesting
     public boolean isCachePageSizeHintStrict()
     {
         return cachePageSizeHintIsStrict.get();
+    }
+
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory )
+    {
+        return Stream.empty();
     }
 
     @Override

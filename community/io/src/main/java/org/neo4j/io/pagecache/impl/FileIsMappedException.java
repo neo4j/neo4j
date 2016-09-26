@@ -17,24 +17,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.harness;
+package org.neo4j.io.pagecache.impl;
 
-import org.junit.Rule;
+import java.io.File;
+import java.io.IOException;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.test.rule.TestDirectory;
-
-public class MuninnPageCacheHarnessWithRealFileSystemIT extends MuninnPageCacheHarnessTest
+public class FileIsMappedException extends IOException
 {
-    @Rule
-    public TestDirectory directory = TestDirectory.testDirectory( MuninnPageCacheHarnessWithRealFileSystemIT.class );
+    private final File file;
+    private final Operation operation;
 
-    @Override
-    protected Fixture<MuninnPageCache> createFixture()
+    public FileIsMappedException( File file, Operation operation )
     {
-        return super.createFixture()
-                .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
-                .withFileConstructor( pathname -> directory.file( pathname ) );
+        super( operation.message + ": " + file );
+        this.file = file;
+        this.operation = operation;
+    }
+
+    public File getFile()
+    {
+        return file;
+    }
+
+    public Operation getOperation()
+    {
+        return operation;
+    }
+
+    public enum Operation
+    {
+        RENAME( "Cannot rename mapped file" ),
+        DELETE( "Cannot delete mapped file" );
+
+        private final String message;
+
+        Operation( String message )
+        {
+            this.message = message;
+        }
     }
 }

@@ -279,4 +279,10 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     {
         return Files.getLastModifiedTime( path( file ) ).toMillis();
     }
+
+    @Override
+    public void deleteFileOrThrow( File file ) throws IOException
+    {
+        Files.delete( path( file ) );
+    }
 }

@@ -32,13 +32,15 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Stream;
 
+import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.CannotRenameMappedFileException;
+import org.neo4j.io.pagecache.impl.FileIsMappedException;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
@@ -405,16 +407,64 @@ public class MuninnPageCache implements PageCache
     {
         sourceFile = sourceFile.getCanonicalFile();
         targetFile = targetFile.getCanonicalFile();
-        throwIfMapped( sourceFile );
-        throwIfMapped( targetFile );
+        throwIfMapped( sourceFile, FileIsMappedException.Operation.RENAME );
+        throwIfMapped( targetFile, FileIsMappedException.Operation.RENAME );
         swapperFactory.renameUnopenedFile( sourceFile, targetFile, copyOptions );
     }
 
-    private void throwIfMapped( File file ) throws IOException
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return swapperFactory.streamFilesRecursive( directory.getCanonicalFile() ).map( this::checkingFileHandle );
+    }
+
+    private FileHandle checkingFileHandle( FileHandle fileHandle )
+    {
+        return new FileHandle()
+        {
+            @Override
+            public String getAbsolutePath()
+            {
+                return fileHandle.getAbsolutePath();
+            }
+
+            @Override
+            public File getFile()
+            {
+                return fileHandle.getFile();
+            }
+
+            @Override
+            public void renameFile( File targetFile, CopyOption... options ) throws IOException
+            {
+                synchronized ( MuninnPageCache.this )
+                {
+                    File sourceFile = getFile();
+                    sourceFile = sourceFile.getCanonicalFile();
+                    targetFile = targetFile.getCanonicalFile();
+                    throwIfMapped( sourceFile, FileIsMappedException.Operation.RENAME );
+                    throwIfMapped( targetFile, FileIsMappedException.Operation.RENAME );
+                    fileHandle.renameFile( targetFile, options );
+                }
+            }
+
+            @Override
+            public void delete() throws IOException
+            {
+                synchronized ( MuninnPageCache.this )
+                {
+                    throwIfMapped( getFile(), FileIsMappedException.Operation.DELETE );
+                    fileHandle.delete();
+                }
+            }
+        };
+    }
+
+    private void throwIfMapped( File file, FileIsMappedException.Operation operation ) throws IOException
     {
         if ( tryGetMappingOrNull( file ) != null )
         {
-            throw new CannotRenameMappedFileException( file );
+            throw new FileIsMappedException( file, operation );
         }
     }
 

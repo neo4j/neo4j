@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -116,4 +117,6 @@ public interface PageSwapperFactory
      * @see java.nio.file.Files#move(Path, Path, CopyOption...)
      */
     void renameUnopenedFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException;
+
+    Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
 }

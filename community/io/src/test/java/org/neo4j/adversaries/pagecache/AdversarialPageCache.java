@@ -26,16 +26,19 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.CannotRenameMappedFileException;
+import org.neo4j.io.pagecache.impl.FileIsMappedException;
 
 /**
  * A {@linkplain PageCache page cache} that wraps another page cache and an {@linkplain Adversary adversary} to provide
@@ -120,8 +123,15 @@ public class AdversarialPageCache implements PageCache
     public void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions )
             throws IOException
     {
-        adversary.injectFailure( CannotRenameMappedFileException.class, FileAlreadyExistsException.class,
+        adversary.injectFailure( FileIsMappedException.class, FileAlreadyExistsException.class,
                 IOException.class, SecurityException.class );
         delegate.renameFile( sourceFile, targetFile, copyOptions );
+    }
+
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        adversary.injectFailure( NoSuchFileException.class, IOException.class );
+        return delegate.streamFilesRecursive( directory );
     }
 }

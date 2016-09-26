@@ -25,6 +25,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
@@ -108,4 +109,6 @@ public interface PageCache extends AutoCloseable
      * target path name, instead of throwing an exception.
      */
     void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException;
+
+    Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
 }

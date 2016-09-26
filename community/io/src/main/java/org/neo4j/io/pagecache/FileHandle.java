@@ -17,15 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl;
+package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.CopyOption;
 
-public class CannotRenameMappedFileException extends IOException
+public interface FileHandle
 {
-    public CannotRenameMappedFileException( File file )
-    {
-        super( "Cannot rename mapped file: " + file );
-    }
+    String getAbsolutePath();
+
+    File getFile();
+
+    void renameFile( File to, CopyOption... options ) throws IOException;
+
+    void delete() throws IOException;
 }
