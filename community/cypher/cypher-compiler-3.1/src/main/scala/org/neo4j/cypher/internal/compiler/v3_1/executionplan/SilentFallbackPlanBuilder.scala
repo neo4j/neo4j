@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_1.{PreparedQuery, PreparedQuerySemantics, CompilationPhaseTracer, PreparedQuerySyntax}
-import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, PreparedQuery, PreparedQuerySemantics}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.PlannerUnsupportedNotification
 
 trait FallbackBuilder extends ExecutablePlanBuilder {
@@ -42,10 +41,6 @@ trait FallbackBuilder extends ExecutablePlanBuilder {
         warn(inputQuery)
         oldBuilder.producePlan(inputQuery, planContext, tracer, createFingerprintReference)
     }
-  }
-
-  private def containsUpdateClause(s: Statement) = s.exists {
-    case _: UpdateClause => true
   }
 
   def oldBuilder: ExecutablePlanBuilder

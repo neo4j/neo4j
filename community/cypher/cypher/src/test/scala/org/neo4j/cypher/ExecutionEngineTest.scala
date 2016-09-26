@@ -24,12 +24,10 @@ import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.AcceptVisitor
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -38,7 +36,6 @@ import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
-import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -898,7 +895,7 @@ order by a.COL1""")
   }
 
   test("merge should not support map parameters for defining properties") {
-    intercept[SyntaxException](executeWithRulePlanner("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
+    intercept[SyntaxException](executeWithAllPlanners("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
   }
 
   test("should not hang") {
