@@ -47,6 +47,7 @@ public final class Assert
         try
         {
             f.apply();
+            fail( "Expected exception of type " + typeOfException + ", but no exception was thrown" );
         }
         catch ( Exception e )
         {

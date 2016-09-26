@@ -409,7 +409,8 @@ public interface Status
         AuthenticationRateLimit( ClientError, "The client has provided incorrect authentication details too many times in a row." ),
         ModifiedConcurrently( TransientError, "The user was modified concurrently to this request." ),
         EncryptionRequired( ClientError, "A TLS encrypted connection is required." ),
-        Forbidden( ClientError, "An attempt was made to perform an unauthorized action." );
+        Forbidden( ClientError, "An attempt was made to perform an unauthorized action." ),
+        AuthorizationExpired( ClientError, "The stored authorization info has expired. Please reconnect." );
 
         private final Code code;
 

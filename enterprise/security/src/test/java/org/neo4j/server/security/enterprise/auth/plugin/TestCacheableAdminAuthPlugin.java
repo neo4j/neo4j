@@ -19,15 +19,17 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthenticationInfo;
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.CacheableAuthInfo;
 
-public class TestCacheableAuthenticationPlugin extends AuthenticationPlugin.CachingEnabledAdapter
+public class TestCacheableAdminAuthPlugin extends AuthPlugin.CachingEnabledAdapter
 {
     @Override
     public String name()
@@ -36,32 +38,21 @@ public class TestCacheableAuthenticationPlugin extends AuthenticationPlugin.Cach
     }
 
     @Override
-    public AuthenticationInfo authenticate( Map<String,Object> authToken )
+    public AuthInfo authenticateAndAuthorize( Map<String,Object> authToken )
     {
-        getAuthenticationInfoCallCount.incrementAndGet();
+        getAuthInfoCallCount.incrementAndGet();
 
         String principal = (String) authToken.get( AuthToken.PRINCIPAL );
         String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
 
         if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
         {
-            return new CacheableAuthenticationInfo()
-            {
-                @Override
-                public Object getPrincipal()
-                {
-                    return "neo4j";
-                }
-
-                @Override
-                public byte[] getCredentials()
-                {
-                    return credentials.getBytes();
-                }
-            };
+            return CacheableAuthInfo.of( "neo4j", "neo4j".getBytes(),
+                    Collections.singleton( PredefinedRoles.ADMIN ) );
         }
         return null;
     }
 
-    public static AtomicInteger getAuthenticationInfoCallCount = new AtomicInteger( 0 );
+    // For testing purposes
+    public static AtomicInteger getAuthInfoCallCount = new AtomicInteger( 0 );
 }

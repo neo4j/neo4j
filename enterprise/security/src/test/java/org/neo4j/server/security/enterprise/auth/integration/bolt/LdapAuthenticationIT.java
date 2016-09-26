@@ -298,6 +298,24 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
+    public void shouldFailIfAuthorizationExpiredWithUserLdapContext() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+        } );
+
+        // Then
+        assertAuth( "neo4j", "abc123" );
+
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(),
+                msgFailure( Status.Security.AuthorizationExpired, "LDAP authorization info expired." ) ) );
+    }
+
+    @Test
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContext() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings -> {

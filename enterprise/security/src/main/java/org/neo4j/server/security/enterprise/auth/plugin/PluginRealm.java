@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.AuthExpirationException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
@@ -150,6 +151,14 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
             {
                 return PluginAuthorizationInfo.create( authorizationInfo );
             }
+        }
+        else if ( authPlugin != null && !principals.fromRealm( getName() ).isEmpty() )
+        {
+            // The cached authorization info has expired.
+            // Since we do not have the subject's credentials we cannot perform a new
+            // authenticateAndAuthorize() to renew authorization info.
+            // Instead we need to fail with a special status, so that the client can react by re-authenticating.
+            throw new AuthExpirationException( "Plugin '" + getName() + "' authorization info expired." );
         }
         return null;
     }
