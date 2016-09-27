@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import java.util.function.Supplier;
+
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -42,9 +44,9 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final ThreadToStatementContextBridge txBridge;
     private final KernelTransaction.Type transactionType;
     private final AccessMode mode;
+    private final Supplier<Statement> statementSupplier;
     private final DbmsOperations.Factory dbmsOperationsFactory;
     private final Guard guard;
-    private final TransactionalContextFactory factory;
 
     private InternalTransaction transaction;
     private Statement statement;
@@ -58,25 +60,24 @@ public class Neo4jTransactionalContext implements TransactionalContext
             InternalTransaction initialTransaction,
             KernelTransaction.Type transactionType,
             AccessMode transactionMode,
-            Statement initialStatement,
+            Supplier<Statement> statementSupplier,
             ExecutingQuery executingQuery,
             PropertyContainerLocker locker,
             ThreadToStatementContextBridge txBridge,
             DbmsOperations.Factory dbmsOperationsFactory,
-            Guard guard,
-            TransactionalContextFactory factory
+            Guard guard
     ) {
         this.graph = graph;
         this.transaction = initialTransaction;
         this.transactionType = transactionType;
         this.mode = transactionMode;
-        this.statement = initialStatement;
+        this.statementSupplier = statementSupplier;
+        this.statement = statementSupplier.get();
         this.executingQuery = executingQuery;
         this.locker = locker;
         this.txBridge = txBridge;
         this.dbmsOperationsFactory = dbmsOperationsFactory;
         this.guard = guard;
-        this.factory = factory;
     }
 
     @Override
@@ -197,15 +198,14 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public TransactionalContext getOrBeginNewIfClosed()
     {
-        if ( isOpen )
+        if ( !isOpen )
         {
-            return this;
+            transaction = graph.beginTransaction( transactionType, mode );
+            statement = statementSupplier.get();
+            statement.queryRegistration().registerExecutingQuery( executingQuery );
+            isOpen = true;
         }
-        else
-        {
-            InternalTransaction transaction = graph.beginTransaction( transactionType, mode );
-            return factory.newContext( this.executingQuery, transaction );
-        }
+        return this;
     }
 
     @Override

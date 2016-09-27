@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.query;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 public interface TransactionalContextFactory
@@ -31,6 +30,4 @@ public interface TransactionalContextFactory
                   String queryText,
                   Map<String,Object> queryParameters
     );
-
-    TransactionalContext newContext( ExecutingQuery query, InternalTransaction tx );
 }

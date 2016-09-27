@@ -49,13 +49,10 @@ import static org.mockito.Mockito.when;
 public class Neo4jTransactionalContextTest
 {
     private GraphDatabaseQueryService databaseQueryService;
-    private DependencyResolver dependencyResolver;
-    private ThreadToStatementContextBridge statementContextBridge;
     private Guard guard;
     private KernelStatement statement;
     private PropertyContainerLocker propertyContainerLocker;
     private TopLevelTransaction transaction;
-    private QueryRegistryOperations queryRegistryOperations;
 
     @Before
     public void setUp()
@@ -71,12 +68,11 @@ public class Neo4jTransactionalContextTest
         ExecutingQuery executingQuery = null;
         DbmsOperations.Factory dbmsOperationsFactory = null;
         ThreadToStatementContextBridge txBridge = null;
-        Neo4jTransactionalContextFactory factory = null;
 
         Neo4jTransactionalContext transactionalContext =
                 new Neo4jTransactionalContext(
-                        databaseQueryService, transaction, transactionType, transactionMode, statement, executingQuery,
-                        propertyContainerLocker, txBridge, dbmsOperationsFactory, guard, factory );
+                        databaseQueryService, transaction, transactionType, transactionMode, () -> statement,
+                        executingQuery, propertyContainerLocker, txBridge, dbmsOperationsFactory, guard );
 
         transactionalContext.check();
 
@@ -98,7 +94,6 @@ public class Neo4jTransactionalContextTest
         ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
         Guard guard = mock( Guard.class );
         DbmsOperations.Factory dbmsOperationsFactory = null;
-        Neo4jTransactionalContextFactory factory = mock( Neo4jTransactionalContextFactory.class );
 
         KernelTransaction secondKTX = mock( KernelTransaction.class );
         InternalTransaction secondTransaction = mock( InternalTransaction.class );
@@ -108,14 +103,15 @@ public class Neo4jTransactionalContextTest
         when( executingQuery.queryText() ).thenReturn( "X" );
         when( executingQuery.queryParameters() ).thenReturn( Collections.emptyMap() );
         when( statement.queryRegistration() ).thenReturn( initialQueryRegistry );
-        when( databaseQueryService.beginTransaction( transactionType, transactionMode ) ).thenReturn( secondTransaction );
+        when( databaseQueryService.beginTransaction( transactionType, transactionMode ) )
+                .thenReturn( secondTransaction );
         when( txBridge.getKernelTransactionBoundToThisThread( true ) ).thenReturn( initialKTX, secondKTX );
         when( txBridge.get() ).thenReturn( secondStatement );
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context = new Neo4jTransactionalContext(
-                databaseQueryService, initialTransaction, transactionType, transactionMode, statement, executingQuery,
-                locker, txBridge, dbmsOperationsFactory, guard, factory );
+                databaseQueryService, initialTransaction, transactionType, transactionMode, () -> statement,
+                executingQuery, locker, txBridge, dbmsOperationsFactory, guard );
 
         // When
         context.commitAndRestartTx();
@@ -150,17 +146,18 @@ public class Neo4jTransactionalContextTest
     private void setUpMocks()
     {
         databaseQueryService = mock( GraphDatabaseQueryService.class );
-        dependencyResolver = mock( DependencyResolver.class );
-        statementContextBridge = mock( ThreadToStatementContextBridge.class );
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+        ThreadToStatementContextBridge statementContextBridge = mock( ThreadToStatementContextBridge.class );
         guard = mock( Guard.class );
         statement = mock( KernelStatement.class );
         propertyContainerLocker = mock( PropertyContainerLocker.class );
         transaction = new TopLevelTransaction( mock( KernelTransaction.class ), () -> statement );
-        queryRegistryOperations = mock( QueryRegistryOperations.class );
+        QueryRegistryOperations queryRegistryOperations = mock( QueryRegistryOperations.class );
 
         when( statement.queryRegistration() ).thenReturn( queryRegistryOperations );
         when( databaseQueryService.getDependencyResolver() ).thenReturn( dependencyResolver );
-        when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( statementContextBridge );
+        when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) )
+                .thenReturn( statementContextBridge );
         when( dependencyResolver.resolveDependency( Guard.class ) ).thenReturn( guard );
     }
 
@@ -180,7 +177,6 @@ public class Neo4jTransactionalContextTest
         PropertyContainerLocker locker = null;
         ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
         DbmsOperations.Factory dbmsOperationsFactory = null;
-        Neo4jTransactionalContextFactory factory = mock( Neo4jTransactionalContextFactory.class );
 
         KernelTransaction secondKTX = mock( KernelTransaction.class );
         InternalTransaction secondTransaction = mock( InternalTransaction.class );
@@ -197,9 +193,8 @@ public class Neo4jTransactionalContextTest
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context = new Neo4jTransactionalContext(
-                graph, initialTransaction, transactionType, transactionMode, initialStatement, executingQuery,
-                locker, txBridge, dbmsOperationsFactory, guard, factory
-        );
+                graph, initialTransaction, transactionType, transactionMode, () -> initialStatement, executingQuery,
+                locker, txBridge, dbmsOperationsFactory, guard );
 
         // When
         try
@@ -207,7 +202,7 @@ public class Neo4jTransactionalContextTest
             context.commitAndRestartTx();
             throw new AssertionError( "Expected RuntimeException to be thrown" );
         }
-        catch (RuntimeException e)
+        catch ( RuntimeException e )
         {
             // Then
             Object[] mocks =
