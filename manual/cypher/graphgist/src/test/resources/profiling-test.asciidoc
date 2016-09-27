@@ -50,6 +50,7 @@ CREATE INDEX ON :Person(name)
 [source,cypher]
 ----
 PROFILE MATCH (p:Person {name:"Pernilla"})
+USING INDEX p:Person(name)
 RETURN p
 ----
 
