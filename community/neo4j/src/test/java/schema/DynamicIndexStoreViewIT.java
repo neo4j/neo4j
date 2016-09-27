@@ -5,19 +5,19 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.enterprise;
+package schema;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Rule;
@@ -74,13 +74,12 @@ public class DynamicIndexStoreViewIT
             }
 
             List<Populator> populators = new ArrayList<>();
-            for ( int i = 0; i < 10; i++ )
+            for ( int i = 0; i < 5; i++ )
             {
                 Populator populator = new Populator( database, counter );
                 populators.add( populator );
                 populator.start();
             }
-
 
             try ( Transaction transaction = database.beginTx() )
             {
@@ -112,7 +111,7 @@ public class DynamicIndexStoreViewIT
         private long totalNodes;
         private volatile boolean terminate;
 
-        public Populator( GraphDatabaseService databaseService, long totalNodes )
+        Populator( GraphDatabaseService databaseService, long totalNodes )
         {
             this.databaseService = databaseService;
             this.totalNodes = totalNodes;
@@ -154,12 +153,13 @@ public class DynamicIndexStoreViewIT
                     }
                     catch ( Exception e )
                     {
+                        transaction.failure();
                     }
                 }
             }
         }
 
-        public void terminate()
+        void terminate()
         {
             terminate = true;
         }
