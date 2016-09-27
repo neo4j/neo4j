@@ -51,7 +51,6 @@ import static org.neo4j.function.Suppliers.untilTimeExpired;
 public class CatchupStoreCopyInteractionStressTesting
 {
     private static final String DEFAULT_NUMBER_OF_CORES = "3";
-    private static final String DEFAULT_NUMBER_OF_EDGES = "1";
     private static final String DEFAULT_DURATION_IN_MINUTES = "30";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
 
@@ -60,8 +59,6 @@ public class CatchupStoreCopyInteractionStressTesting
     {
         int numberOfCores =
                 parseInt( fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_NUMBER_OF_CORES", DEFAULT_NUMBER_OF_CORES ) );
-        int numberOfEdges =
-                parseInt( fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_NUMBER_OF_EDGES", DEFAULT_NUMBER_OF_EDGES ) );
         long durationInMinutes =
                 parseLong( fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
         String workingDirectory =
@@ -71,12 +68,11 @@ public class CatchupStoreCopyInteractionStressTesting
 
         Map<String,String> coreParams =
                 configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>() ) );
-        Map<String,String> edgeParams = configureTxLogRotationAndPruning( new HashMap<>() );
 
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
         Cluster cluster =
-                new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
-                        emptyMap(), edgeParams, emptyMap(), StandardV3_0.NAME );
+                new Cluster( clusterDirectory, numberOfCores, 0, discoveryServiceFactory, coreParams,
+                        emptyMap(), emptyMap(), emptyMap(), StandardV3_0.NAME );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier keepGoing =
