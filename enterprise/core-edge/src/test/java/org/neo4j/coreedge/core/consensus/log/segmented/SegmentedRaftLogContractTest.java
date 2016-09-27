@@ -29,6 +29,8 @@ import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogContractTest;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.Clocks;
@@ -51,7 +53,10 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
         FileSystemAbstraction fileSystem = fsRule.get();
         fileSystem.mkdir( directory );
 
+        LogProvider logProvider = getInstance();
+        CoreLogPruningStrategy pruningStrategy =
+                new CoreLogPruningStrategyFactory( "1 entries", logProvider ).newInstance();
         return life.add( new SegmentedRaftLog( fileSystem, directory, 1024, new DummyRaftableContentSerializer(),
-                getInstance(), "1 entries", 8, Clocks.fakeClock(), new OnDemandJobScheduler() ) );
+                logProvider, 8, Clocks.fakeClock(), new OnDemandJobScheduler(), pruningStrategy ) );
     }
 }

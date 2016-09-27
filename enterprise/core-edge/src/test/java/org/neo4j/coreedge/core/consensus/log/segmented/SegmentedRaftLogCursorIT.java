@@ -31,6 +31,8 @@ import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 
@@ -42,7 +44,7 @@ import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class SegmentedRaftLogCursorIT
 {
-    private LifeSupport life = new LifeSupport();
+    private final LifeSupport life = new LifeSupport();
     private FileSystemAbstraction fileSystem;
 
     @After
@@ -62,10 +64,14 @@ public class SegmentedRaftLogCursorIT
         File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
+        LogProvider logProvider = getInstance();
+        CoreLogPruningStrategy pruningStrategy =
+                new CoreLogPruningStrategyFactory( pruneStrategy, logProvider ).newInstance();
         SegmentedRaftLog newRaftLog =
                 new SegmentedRaftLog( fileSystem, directory, rotateAtSize, new DummyRaftableContentSerializer(),
-                        getInstance(), pruneStrategy, 8, Clocks.systemClock(),
-                        new OnDemandJobScheduler() );
+                        logProvider, 8, Clocks.systemClock(),
+                        new OnDemandJobScheduler(),
+                        pruningStrategy );
 
         life.add( newRaftLog );
         life.init();

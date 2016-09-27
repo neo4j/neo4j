@@ -19,46 +19,17 @@
  */
 package org.neo4j.coreedge.core.consensus.log.segmented;
 
-import org.neo4j.logging.LogProvider;
-
-import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
-import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
-
 class SegmentedRaftLogPruner
 {
-    private final ThresholdConfigValue parsedConfigOption;
-    private final CoreLogPruningStrategy pruneStrategy;
+    private final CoreLogPruningStrategy pruningStrategy;
 
-    SegmentedRaftLogPruner( String pruningStrategyConfig, LogProvider logProvider )
+    SegmentedRaftLogPruner( CoreLogPruningStrategy pruningStrategy )
     {
-        parsedConfigOption = parse( pruningStrategyConfig );
-        pruneStrategy = getPruneStrategy( parsedConfigOption, logProvider );
-    }
-
-    private CoreLogPruningStrategy getPruneStrategy( ThresholdConfigValue configValue, LogProvider logProvider )
-    {
-        String type = configValue.type;
-        switch ( type )
-        {
-        case "size":
-            return new SizeBasedLogPruningStrategy( parsedConfigOption.value );
-        case "txs":
-        case "entries": // txs and entries are synonyms
-            return new EntryBasedLogPruningStrategy( parsedConfigOption.value, logProvider );
-        case "hours": // hours and days are currently not supported as such, default to no prune
-        case "days":
-            throw new IllegalArgumentException(
-                    "Time based pruning not supported yet for the segmented raft log, got '" + type + "'." );
-        case "false":
-            return new NoPruningPruningStrategy();
-        default:
-            throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue.value +
-                    "'. Invalid type '" + type + "', valid are files, size, txs, entries, hours, days." );
-        }
+        this.pruningStrategy = pruningStrategy;
     }
 
     long getIndexToPruneFrom( long safeIndex, Segments segments )
     {
-        return Math.min( safeIndex, pruneStrategy.getIndexToKeep( segments ) );
+        return Math.min( safeIndex, pruningStrategy.getIndexToKeep( segments ) );
     }
 }

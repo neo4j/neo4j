@@ -33,6 +33,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
@@ -97,8 +99,12 @@ public class SegmentedRaftLogRotationTest
 
     private SegmentedRaftLog createRaftLog( long rotateAtSize ) throws IOException
     {
+        LogProvider logProvider = getInstance();
+        CoreLogPruningStrategy pruningStrategy =
+                new CoreLogPruningStrategyFactory( raft_log_pruning_strategy.getDefaultValue(), logProvider )
+                        .newInstance();
         return new SegmentedRaftLog( fileSystem, testDirectory.directory(), rotateAtSize,
-                new DummyRaftableContentSerializer(), getInstance(),
-                raft_log_pruning_strategy.getDefaultValue(), 0, Clocks.fakeClock(), new OnDemandJobScheduler() );
+                new DummyRaftableContentSerializer(), logProvider, 0, Clocks.fakeClock(), new OnDemandJobScheduler(),
+                pruningStrategy );
     }
 }

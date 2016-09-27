@@ -22,6 +22,8 @@ package org.neo4j.coreedge.core.consensus.log.debug;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.coreedge.core.consensus.log.segmented.CoreLogPruningStrategy;
+import org.neo4j.coreedge.core.consensus.log.segmented.CoreLogPruningStrategyFactory;
 import org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransaction;
@@ -30,6 +32,8 @@ import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 
@@ -55,11 +59,14 @@ public class ReplayRaftLog
         System.out.println( "logDirectory = " + logDirectory );
         Config config = new Config( stringMap() );
 
+        LogProvider logProvider = getInstance();
+        CoreLogPruningStrategy pruningStrategy =
+                new CoreLogPruningStrategyFactory( config.get( raft_log_pruning_strategy ), logProvider )
+                        .newInstance();
         SegmentedRaftLog log = new SegmentedRaftLog( new DefaultFileSystemAbstraction(), logDirectory,
-                config.get( raft_log_rotation_size ), new CoreReplicatedContentMarshal(),
-                getInstance(), config.get( raft_log_pruning_strategy ),
-                config.get( raft_log_reader_pool_size ), Clocks.systemClock(),
-                new OnDemandJobScheduler() );
+                config.get( raft_log_rotation_size ), new CoreReplicatedContentMarshal(), logProvider,
+                config.get( raft_log_reader_pool_size ), Clocks.systemClock(), new OnDemandJobScheduler(),
+                pruningStrategy );
 
         long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index
         for ( int i = 0; i <= totalCommittedEntries; i++ )

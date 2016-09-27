@@ -25,6 +25,7 @@ import org.neo4j.coreedge.core.consensus.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogVerificationIT;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 
@@ -45,10 +46,14 @@ public class SegmentedRaftLogVerificationIT extends RaftLogVerificationIT
         long rotateAtSizeBytes = 128;
         int readerPoolSize = 8;
 
+        LogProvider logProvider = getInstance();
+        CoreLogPruningStrategy pruningStrategy =
+                new CoreLogPruningStrategyFactory( raft_log_pruning_strategy.getDefaultValue(), logProvider )
+                        .newInstance();
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fsa, directory, rotateAtSizeBytes,
-                new DummyRaftableContentSerializer(), getInstance(),
-                raft_log_pruning_strategy.getDefaultValue(), readerPoolSize, Clocks.systemClock(),
-                new OnDemandJobScheduler() );
+                new DummyRaftableContentSerializer(), logProvider, readerPoolSize, Clocks.systemClock(),
+                new OnDemandJobScheduler(),
+                pruningStrategy );
 
         newRaftLog.init();
         newRaftLog.start();

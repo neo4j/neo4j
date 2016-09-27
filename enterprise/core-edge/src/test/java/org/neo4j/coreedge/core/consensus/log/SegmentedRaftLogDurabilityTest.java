@@ -21,21 +21,17 @@ package org.neo4j.coreedge.core.consensus.log;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 
-import org.neo4j.coreedge.core.EnterpriseCoreEditionModule.RaftLogImplementation;
 import org.neo4j.coreedge.core.consensus.ReplicatedInteger;
 import org.neo4j.coreedge.core.consensus.ReplicatedString;
+import org.neo4j.coreedge.core.consensus.log.segmented.CoreLogPruningStrategyFactory;
 import org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.Clocks;
@@ -43,7 +39,6 @@ import org.neo4j.time.Clocks;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.RaftLogImplementation.SEGMENTED;
 import static org.neo4j.coreedge.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.consensus.log.RaftLogHelper.hasNoContent;
@@ -63,9 +58,11 @@ public class SegmentedRaftLogDurabilityTest
         long rotateAtSizeBytes = 128;
         int readerPoolSize = 8;
 
+        NullLogProvider logProvider = getInstance();
         SegmentedRaftLog log =
                 new SegmentedRaftLog( fileSystem, directory, rotateAtSizeBytes, new DummyRaftableContentSerializer(),
-                        getInstance(), "1 size", readerPoolSize, Clocks.fakeClock(), new OnDemandJobScheduler() );
+                        logProvider, readerPoolSize, Clocks.fakeClock(), new OnDemandJobScheduler(),
+                        new CoreLogPruningStrategyFactory( "1 size", logProvider ).newInstance() );
         log.start();
 
         return log;
