@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Ignore;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -42,7 +40,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Ignore( "This is not a test" )
 public class SchemaIndexTestHelper
 {
     public static KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies> singleInstanceSchemaIndexProviderFactory(
