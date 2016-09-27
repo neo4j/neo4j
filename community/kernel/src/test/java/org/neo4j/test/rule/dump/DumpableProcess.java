@@ -19,12 +19,9 @@
  */
 package org.neo4j.test.rule.dump;
 
-import org.junit.Ignore;
-
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
-@Ignore( "Not a test, just a helper for DumpProcessInformationTest" )
 public class DumpableProcess extends UnicastRemoteObject
 {
     public DumpableProcess() throws RemoteException
