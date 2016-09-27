@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
@@ -81,6 +82,10 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  */
 public class MultipleIndexPopulator implements IndexPopulator
 {
+
+    public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
+    private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
+
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
     protected final Queue<NodePropertyUpdate> queue = new LinkedBlockingQueue<>();
@@ -319,6 +324,19 @@ public class MultipleIndexPopulator implements IndexPopulator
         close( false );
     }
 
+    void populateFromQueueBatched( long currentlyIndexedNodeId )
+    {
+        if ( isQueueThresholdReached() )
+        {
+            populateFromQueue( currentlyIndexedNodeId );
+        }
+    }
+
+    private boolean isQueueThresholdReached()
+    {
+        return queue.size() >= QUEUE_THRESHOLD;
+    }
+
     protected void populateFromQueue( long currentlyIndexedNodeId )
     {
         populateFromQueueIfAvailable( currentlyIndexedNodeId );
@@ -520,7 +538,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         public boolean visit( NodePropertyUpdates updates ) throws IndexPopulationFailedKernelException
         {
             add( updates );
-            populateFromQueue( updates.getNodeId() );
+            populateFromQueueBatched( updates.getNodeId() );
             return false;
         }
 

@@ -253,9 +253,9 @@ public class IndexingServiceTest
         //
         // (We don't get an update for value2 here because we mock a fake store that doesn't contain it
         //  just for the purpose of testing this behavior)
+        order.verify( populator ).verifyDeferredConstraints( storeView );
         order.verify( populator ).newPopulatingUpdater( storeView );
         order.verify( updater ).close();
-        order.verify( populator ).verifyDeferredConstraints( storeView );
         order.verify( populator ).sampleResult();
         order.verify( populator ).close( true );
         verifyNoMoreInteractions( updater );

@@ -89,7 +89,7 @@ public class BatchingMultipleIndexPopulatorTest
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
 
-        batchingPopulator.populateFromQueue( 42 );
+        batchingPopulator.populateFromQueueBatched( 42 );
 
         verify( updater, never() ).process( any() );
         verify( populator, never() ).newPopulatingUpdater( any() );
