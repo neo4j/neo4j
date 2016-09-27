@@ -44,10 +44,7 @@ abstract class RepeatUntilOnSelectedMemberCallable extends RepeatUntilCallable
     {
         boolean isCore = onlyCores || random.nextBoolean();
         Collection<? extends ClusterMember> members = isCore ? cluster.coreMembers() : cluster.edgeMembers();
-        if ( members.isEmpty() )
-        {
-            return;
-        }
+        assert !members.isEmpty();
         int id = random.nextInt( members.size() );
         doWorkOnMember( isCore, id );
     }
