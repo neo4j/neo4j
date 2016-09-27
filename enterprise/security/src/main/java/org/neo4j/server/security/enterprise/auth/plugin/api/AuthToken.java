@@ -19,20 +19,46 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.api;
 
+import java.util.Map;
+
 /**
- * The predefined keys of the auth token <tt>Map&lt;String,Object&gt;</tt>.
+ * The authentication token provided by the client, which is used to authenticate the subject's identity.
+ *
+ * <p>A common scenario is to have principal be a username and credentials be a password.
+ *
+ * @see org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin#authenticate(AuthToken)
+ * @see org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin#authenticateAndAuthorize(AuthToken)
  */
 public interface AuthToken
 {
-    String PRINCIPAL = "principal";
-    String CREDENTIALS = "credentials";
-    String REALM = "realm";
+    /**
+     * Returns the identity to authenticate.
+     *
+     * <p>Most commonly this is a username.
+     *
+     * @return the identity to authenticate.
+     */
+    String principal();
 
     /**
-     * The corresponding value of this key is a <tt>Map<String,Object></tt> of custom parameters
-     * as provided by the client. This can be used as a vehicle to connect a client application
-     * with a server-side auth plugin.
-     * Neo4j will act as a pure transport and will not inspect the contents of this map.
+     * Returns the credentials that verifies the identity.
+     *
+     * <p>Most commonly this is a password.
+     *
+     * <p>The reason this is a character array and not a <tt>String</tt>, is so that sensitive information
+     * can be cleared from memory after useage without having to wait for the garbage collector to act.
+     *
+     * @return the credentials that verifies the identity.
      */
-    String PARAMETERS = "parameters";
+    char[] credentials();
+
+    /**
+     * Returns an optional custom parameter map if provided by the client.
+     *
+     * <p>This can be used as a vehicle to send arbitrary auth data from a client application
+     * to a server-side auth plugin. Neo4j will act as a pure transport and will not touch the contents of this map.
+     *
+     * @return a custom parameter map if provided by the client, otherwise <tt>null</tt>
+     */
+    Map<String,Object> parameters();
 }

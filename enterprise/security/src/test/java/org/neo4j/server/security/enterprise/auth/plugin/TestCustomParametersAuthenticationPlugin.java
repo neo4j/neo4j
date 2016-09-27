@@ -20,15 +20,14 @@
 package org.neo4j.server.security.enterprise.auth.plugin;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.CustomCacheableAuthenticationInfo;
 
-public class TestCustomCacheableAuthenticationPlugin extends AuthenticationPlugin.CachingEnabledAdapter
+public class TestCustomParametersAuthenticationPlugin extends AuthenticationPlugin.Adapter
 {
     @Override
     public String name()
@@ -39,22 +38,17 @@ public class TestCustomCacheableAuthenticationPlugin extends AuthenticationPlugi
     @Override
     public AuthenticationInfo authenticate( AuthToken authToken )
     {
-        getAuthenticationInfoCallCount.incrementAndGet();
+        Map<String,Object> parameters = authToken.parameters();
 
-        String principal = authToken.principal();
-        char[] credentials = authToken.credentials();
-
-        if ( principal.equals( "neo4j" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
+        if ( parameters != null )
         {
-            return CustomCacheableAuthenticationInfo.of( "neo4j",
-                    ( token ) -> {
-                        char[] tokenCredentials = token.credentials();
-                        return Arrays.equals( tokenCredentials, "neo4j".toCharArray() );
-                    } );
+            List<Long> myCredentials = (List<Long>) parameters.get( "my_credentials" );
+
+            if ( myCredentials.containsAll( Arrays.asList( 1L, 2L, 3L, 4L ) ) )
+            {
+                return (AuthenticationInfo) () -> "neo4j";
+            }
         }
         return null;
     }
-
-    // For testing purposes
-    public static AtomicInteger getAuthenticationInfoCallCount = new AtomicInteger( 0 );
 }

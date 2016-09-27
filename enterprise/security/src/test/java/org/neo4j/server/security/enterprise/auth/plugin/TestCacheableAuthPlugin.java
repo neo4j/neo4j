@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
@@ -38,14 +38,14 @@ public class TestCacheableAuthPlugin extends AuthPlugin.CachingEnabledAdapter
     }
 
     @Override
-    public AuthInfo authenticateAndAuthorize( Map<String,Object> authToken )
+    public AuthInfo authenticateAndAuthorize( AuthToken authToken )
     {
         getAuthInfoCallCount.incrementAndGet();
 
-        String principal = (String) authToken.get( AuthToken.PRINCIPAL );
-        String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
+        String principal = authToken.principal();
+        char[] credentials = authToken.credentials();
 
-        if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
+        if ( principal.equals( "neo4j" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
         {
             return CacheableAuthInfo.of( "neo4j", "neo4j".getBytes(),
                     Collections.singleton( PredefinedRoles.READER ) );

@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth.plugin;
 
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.naming.Context;
@@ -53,12 +52,12 @@ public class LdapGroupHasUsersAuthPlugin extends AuthPlugin.Adapter
     }
 
     @Override
-    public AuthInfo authenticateAndAuthorize( Map<String,Object> authToken ) throws AuthenticationException
+    public AuthInfo authenticateAndAuthorize( AuthToken authToken ) throws AuthenticationException
     {
         try
         {
-            String username = (String) authToken.get( AuthToken.PRINCIPAL );
-            String password = (String) authToken.get( AuthToken.CREDENTIALS );
+            String username = authToken.principal();
+            char[] password = authToken.credentials();
 
             LdapContext ctx = authenticate( username, password );
             Set<String> roles = authorize( ctx, username );
@@ -71,7 +70,7 @@ public class LdapGroupHasUsersAuthPlugin extends AuthPlugin.Adapter
         }
     }
 
-    private LdapContext authenticate( String username, String password ) throws NamingException
+    private LdapContext authenticate( String username, char[] password ) throws NamingException
     {
         Hashtable<String,Object> env = new Hashtable<>();
         env.put( Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory" );

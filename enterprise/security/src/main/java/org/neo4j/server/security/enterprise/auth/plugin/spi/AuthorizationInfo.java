@@ -34,7 +34,7 @@ public interface AuthorizationInfo extends Serializable
      *
      * @return the roles assigned to the principals recognized by an <tt>AuthorizationPlugin</tt>
      */
-    Collection<String> getRoles();
+    Collection<String> roles();
 
     static AuthorizationInfo of( Collection<String> roles )
     {

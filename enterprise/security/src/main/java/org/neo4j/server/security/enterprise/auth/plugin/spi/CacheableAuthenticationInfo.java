@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import java.util.Map;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * A cacheable object that can be returned as the result of successful authentication by an
@@ -33,7 +33,7 @@ import java.util.Map;
  *
  * <p>NOTE: Caching only occurs if it is explicitly enabled by the plugin.
  *
- * @see AuthenticationPlugin#authenticate(Map)
+ * @see AuthenticationPlugin#authenticate(AuthToken)
  * @see org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations#setAuthenticationCachingEnabled(boolean)
  * @see CustomCacheableAuthenticationInfo
  */
@@ -47,10 +47,10 @@ public interface CacheableAuthenticationInfo extends AuthenticationInfo
      *
      * @return a principal that uniquely identifies the authenticated subject within this realm
      *
-     * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken#PRINCIPAL
+     * @see AuthToken#principal()
      */
     @Override
-    Object getPrincipal();
+    Object principal();
 
     /**
      * Should return credentials that can be cached, so that successive authentication attempts could be performed
@@ -62,10 +62,10 @@ public interface CacheableAuthenticationInfo extends AuthenticationInfo
      *
      * @return credentials that can be cached
      *
-     * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken#CREDENTIALS
-     * @see AuthenticationPlugin#authenticate(Map)
+     * @see AuthToken#credentials()
+     * @see AuthenticationPlugin#authenticate(AuthToken)
      */
-    byte[] getCredentials();
+    byte[] credentials();
 
     /**
      * Creates a new <tt>CacheableAuthenticationInfo</tt>
@@ -79,13 +79,13 @@ public interface CacheableAuthenticationInfo extends AuthenticationInfo
         return new CacheableAuthenticationInfo()
         {
             @Override
-            public Object getPrincipal()
+            public Object principal()
             {
                 return principal;
             }
 
             @Override
-            public byte[] getCredentials()
+            public byte[] credentials()
             {
                 return credentials;
             }

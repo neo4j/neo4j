@@ -28,13 +28,13 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
 
 public class PluginAuthorizationInfo extends SimpleAuthorizationInfo
 {
-    public PluginAuthorizationInfo( Set<String> roles )
+    private PluginAuthorizationInfo( Set<String> roles )
     {
         super( roles );
     }
 
     public static PluginAuthorizationInfo create( AuthorizationInfo authorizationInfo )
     {
-        return new PluginAuthorizationInfo( new LinkedHashSet<>( authorizationInfo.getRoles() ) );
+        return new PluginAuthorizationInfo( new LinkedHashSet<>( authorizationInfo.roles() ) );
     }
 }

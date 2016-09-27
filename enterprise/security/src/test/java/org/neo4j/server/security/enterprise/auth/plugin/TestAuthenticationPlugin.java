@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.util.Map;
+import java.util.Arrays;
 
-import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 
@@ -34,12 +34,12 @@ public class TestAuthenticationPlugin extends AuthenticationPlugin.Adapter
     }
 
     @Override
-    public AuthenticationInfo authenticate( Map<String,Object> authToken )
+    public AuthenticationInfo authenticate( AuthToken authToken )
     {
-        String principal = (String) authToken.get( AuthToken.PRINCIPAL );
-        String credentials = (String) authToken.get( AuthToken.CREDENTIALS );
+        String principal = authToken.principal();
+        char[] credentials = authToken.credentials();
 
-        if ( principal.equals( "neo4j" ) && credentials.equals( "neo4j" ) )
+        if ( principal.equals( "neo4j" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
         {
             return (AuthenticationInfo) () -> "neo4j";
         }

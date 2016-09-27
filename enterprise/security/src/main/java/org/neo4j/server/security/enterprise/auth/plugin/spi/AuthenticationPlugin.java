@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import java.util.Map;
-
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 
@@ -63,38 +62,18 @@ public interface AuthenticationPlugin extends RealmLifecycle
      * @see CustomCacheableAuthenticationInfo
      * @see RealmOperations#setAuthenticationCachingEnabled(boolean)
      */
-    AuthenticationInfo authenticate( Map<String,Object> authToken ) throws AuthenticationException;
+    AuthenticationInfo authenticate( AuthToken authToken ) throws AuthenticationException;
 
-    abstract class Adapter implements AuthenticationPlugin
+    abstract class Adapter extends RealmLifecycle.Adapter implements AuthenticationPlugin
     {
         @Override
         public String name()
         {
             return getClass().getName();
         }
-
-        @Override
-        public void initialize( RealmOperations realmOperations ) throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-        }
     }
 
-    abstract class CachingEnabledAdapter implements AuthenticationPlugin
+    abstract class CachingEnabledAdapter extends RealmLifecycle.Adapter implements AuthenticationPlugin
     {
         @Override
         public String name()
@@ -106,21 +85,6 @@ public interface AuthenticationPlugin extends RealmLifecycle
         public void initialize( RealmOperations realmOperations ) throws Throwable
         {
             realmOperations.setAuthenticationCachingEnabled( true );
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
         }
     }
 }

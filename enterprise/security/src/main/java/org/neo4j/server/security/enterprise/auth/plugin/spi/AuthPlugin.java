@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import java.util.Map;
-
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 
@@ -32,7 +31,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
  * all objects that implements this interface that exists in the class path at Neo4j startup, will be
  * loaded as services.
  *
- * @see AuthPlugin
+ * @see AuthenticationPlugin
  * @see AuthorizationPlugin
 
  */
@@ -66,38 +65,18 @@ public interface AuthPlugin extends RealmLifecycle
      * @see CustomCacheableAuthenticationInfo
      * @see RealmOperations#setAuthenticationCachingEnabled(boolean)
      */
-    AuthInfo authenticateAndAuthorize( Map<String,Object> authToken ) throws AuthenticationException;
+    AuthInfo authenticateAndAuthorize( AuthToken authToken ) throws AuthenticationException;
 
-    abstract class Adapter implements AuthPlugin
+    abstract class Adapter extends RealmLifecycle.Adapter implements AuthPlugin
     {
         @Override
         public String name()
         {
             return getClass().getName();
         }
-
-        @Override
-        public void initialize( RealmOperations realmOperations ) throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-        }
     }
 
-    abstract class CachingEnabledAdapter implements AuthPlugin
+    abstract class CachingEnabledAdapter extends RealmLifecycle.Adapter implements AuthPlugin
     {
         @Override
         public String name()
@@ -109,21 +88,6 @@ public interface AuthPlugin extends RealmLifecycle
         public void initialize( RealmOperations realmOperations ) throws Throwable
         {
             realmOperations.setAuthenticationCachingEnabled( true );
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
         }
     }
 }
