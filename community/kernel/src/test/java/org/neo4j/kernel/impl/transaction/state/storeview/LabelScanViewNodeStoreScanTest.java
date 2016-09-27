@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -34,12 +34,10 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.FailedIndexProxyFactory;
 import org.neo4j.kernel.impl.api.index.FlippableIndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -48,26 +46,22 @@ import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class LabelScanViewNodeStoreScanTest
 {
-    private NeoStoreIndexStoreView storeView = mock( NeoStoreIndexStoreView.class );
     private NodeStore nodeStore = mock( NodeStore.class );
     private PropertyStore propertyStore = mock( PropertyStore.class );
     private LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -76,13 +70,17 @@ public class LabelScanViewNodeStoreScanTest
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private Visitor<NodePropertyUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
 
+    @Before
+    public void setUp()
+    {
+        when( labelScanStore.newReader() ).thenReturn( labelScanReader );
+    }
+
     @Test
     public void iterateOverLabeledNodeIds() throws Exception
     {
         PrimitiveLongIterator labeledNodes = PrimitiveLongCollections.iterator( 1, 2, 4, 8 );
 
-
-        when( labelScanStore.newReader() ).thenReturn( labelScanReader );
         when( nodeStore.getHighId() ).thenReturn( 15L );
         when( labelScanReader.nodesWithAnyOfLabels( 1, 2 ) ).thenReturn( labeledNodes );
 
@@ -114,113 +112,37 @@ public class LabelScanViewNodeStoreScanTest
     }
 
     @Test
-    public void acceptConcurrentUpdates()
+    public void resetNodeIdIteratorDuringConcurrentUpdates()
     {
+        when( labelScanReader.nodesWithAnyOfLabels( 1, 2 ) )
+                .thenReturn( PrimitiveLongCollections.iterator( 1, 2, 3, 4 ) );
+
         LabelScanViewNodeStoreScan<Exception> scanViewStoreScan = getLabelScanViewStoreScan( new int[]{1, 2} );
+        PrimitiveLongResourceIterator nodeIdIterator = scanViewStoreScan.getNodeIdIterator();
+
+        verify( labelScanStore).newReader();
+        verify( labelScanReader ).nodesWithAnyOfLabels( 1, 2 );
+
+        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
+        assertEquals( "First expected node id is 1.", 1, nodeIdIterator.next() );
+        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
+        assertEquals( "Second expected node id is 2.", 2, nodeIdIterator.next() );
+
         populateWithConcurrentUpdates( scanViewStoreScan );
 
-        assertEquals( "Contain updates only for 3 properties", 3, scanViewStoreScan.propertyLabelNodes.size() );
-        assertEquals( "Contain 2 updates for property 2", 2, scanViewStoreScan.propertyLabelNodes.get( 2 ).size() );
-        assertEquals( "Contain 1 updates for property 5", 1, scanViewStoreScan.propertyLabelNodes.get( 5 ).size() );
-        assertEquals( "Contain 2 updates for property 4", 2, scanViewStoreScan.propertyLabelNodes.get( 4 ).size() );
+        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
+        assertEquals( "Third expected node id is 3.", 3, nodeIdIterator.next() );
 
-        assertTrue( "Should contain update for expected node by property -> label key pair",
-                scanViewStoreScan.propertyLabelNodes.get( 2 ).get( 1 ).contains( 1 ) );
-        assertTrue( "Should contain update for expected node by property -> label key pair",
-                scanViewStoreScan.propertyLabelNodes.get( 2 ).get( 2 ).contains( 2 ) );
+        verify( labelScanReader ).close();
+        verify( labelScanStore, times( 2 ) ).newReader();
+        verify( labelScanReader, times( 2 ) ).nodesWithAnyOfLabels( 1, 2 );
 
-        assertTrue( "Should contain update for expected node by property -> label key pair",
-                scanViewStoreScan.propertyLabelNodes.get( 5 ).get( 1 ).contains( 2 ) );
-        assertTrue( "Should contain update for expected node by property -> label key pair",
-                scanViewStoreScan.propertyLabelNodes.get( 4 ).get( 1 ).contains( 3 ) );
-        assertTrue( "Should contain update for expected node by property -> label key pair",
-                scanViewStoreScan.propertyLabelNodes.get( 4 ).get( 2 ).contains( 3 ) );
-    }
+        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
+        assertEquals( "Fourth expected node id is 4.", 4, nodeIdIterator.next() );
 
-    @Test
-    public void completeScanWithConcurrentAdd() throws Exception
-    {
-        LabelScanViewNodeStoreScan<Exception> scanViewStoreScan = getLabelScanViewStoreScan( new int[]{1, 2} );
-        populateWithConcurrentUpdates( scanViewStoreScan );
+        assertFalse( nodeIdIterator.hasNext() );
 
-        when( nodeStore.getRecord( eq( 1L ), any( NodeRecord.class ), eq( RecordLoad.FORCE) ) )
-                .thenReturn( getActiveRecord( 1L) );
-
-        Property property = Property.property( 2, "testProperty" );
-        when( storeView.getProperty( 1L, 2 ) ).thenReturn( property );
-
-        IndexPopulator indexPopulator = mock( IndexPopulator.class );
-        IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        when( indexPopulator.newPopulatingUpdater( storeView ) ).thenReturn( indexUpdater );
-
-        scanViewStoreScan.complete( indexPopulator, new IndexDescriptor( 1, 2 )  );
-        verify( indexUpdater ).process( NodePropertyUpdate.remove( 1L, 2, StringUtils.EMPTY, new long[] {1}) );
-        verify( indexUpdater ).process( NodePropertyUpdate.add( 1L, 2, "testProperty", new long[] {1}) );
-        verify( indexUpdater ).close();
-        verifyNoMoreInteractions( indexUpdater );
-    }
-
-    @Test
-    public void completeScanWithConcurrentRemoveUpdate() throws Exception
-    {
-        LabelScanViewNodeStoreScan<Exception> scanViewStoreScan = getLabelScanViewStoreScan( new int[]{1, 2} );
-        populateWithConcurrentUpdates( scanViewStoreScan );
-
-        when( nodeStore.getRecord( eq( 3L ), any( NodeRecord.class ), eq( RecordLoad.FORCE) ) )
-                .thenReturn( getDeletedRecord( 3L) );
-
-        IndexPopulator indexPopulator = mock( IndexPopulator.class );
-        IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        when( indexPopulator.newPopulatingUpdater( storeView ) ).thenReturn( indexUpdater );
-
-        scanViewStoreScan.complete( indexPopulator, new IndexDescriptor( 1, 4 )  );
-        verify( indexUpdater ).process( NodePropertyUpdate.remove( 3L, 4, StringUtils.EMPTY, new long[] {1}) );
-        verify( indexUpdater ).close();
-        verifyNoMoreInteractions( indexUpdater );
-    }
-
-    @Test
-    public void completeScanWithConcurrentChangeUpdate() throws Exception
-    {
-        LabelScanViewNodeStoreScan<Exception> scanViewStoreScan = getLabelScanViewStoreScan( new int[]{1, 2} );
-        populateWithConcurrentUpdates( scanViewStoreScan );
-
-        when( nodeStore.getRecord( eq( 2L ), any( NodeRecord.class ), eq( RecordLoad.FORCE) ) )
-                .thenReturn( getActiveRecord( 2L) );
-
-        Property property1 = Property.property( 2, "testProperty1" );
-        when( storeView.getProperty( 2L, 2 ) ).thenReturn( property1 );
-
-        Property property2 = Property.property( 2, "testProperty2" );
-        when( storeView.getProperty( 2L, 5 ) ).thenReturn( property2 );
-
-        IndexPopulator indexPopulator = mock( IndexPopulator.class );
-        IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        when( indexPopulator.newPopulatingUpdater( storeView ) ).thenReturn( indexUpdater );
-
-        scanViewStoreScan.complete( indexPopulator, new IndexDescriptor( 2, 2 )  );
-        verify( indexUpdater ).process( NodePropertyUpdate.remove( 2L, 2, StringUtils.EMPTY, new long[] {2}) );
-        verify( indexUpdater ).process( NodePropertyUpdate.add( 2L, 2, "testProperty1", new long[] {2}) );
-        verify( indexUpdater ).close();
-        verifyNoMoreInteractions( indexUpdater );
-
-        reset( indexUpdater );
-
-        scanViewStoreScan.complete( indexPopulator, new IndexDescriptor( 1, 5 )  );
-        verify( indexUpdater ).process( NodePropertyUpdate.remove( 2L, 5, StringUtils.EMPTY, new long[] {1}) );
-        verify( indexUpdater ).process( NodePropertyUpdate.add( 2L, 5, "testProperty2", new long[] {1}) );
-        verify( indexUpdater ).close();
-        verifyNoMoreInteractions( indexUpdater );
-    }
-
-    private NodeRecord getDeletedRecord( long id )
-    {
-        return new NodeRecord( id, false, 1L, 2L, false );
-    }
-
-    private NodeRecord getActiveRecord( long id )
-    {
-        return new NodeRecord( id, false, 1L, 2L, true );
+        verifyNoMoreInteractions( labelScanReader, labelScanStore );
     }
 
     private void populateWithConcurrentUpdates( LabelScanViewNodeStoreScan<Exception> scanViewStoreScan )
@@ -241,7 +163,7 @@ public class LabelScanViewNodeStoreScanTest
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
     {
-        return new LabelScanViewNodeStoreScan<>( storeView, nodeStore, LockService.NO_LOCK_SERVICE, propertyStore,
+        return new LabelScanViewNodeStoreScan<>( nodeStore, LockService.NO_LOCK_SERVICE, propertyStore,
                 labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter );
     }
 

@@ -46,9 +46,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -469,13 +467,6 @@ public class IndexPopulationJobTest
         public void stop()
         {
             latch.finish();
-        }
-
-        @Override
-        public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
-                throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
-        {
-            // no-op
         }
 
         @Override

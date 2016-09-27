@@ -19,17 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -79,13 +75,6 @@ public interface IndexStoreView extends PropertyAccessor
         @Override
         public void stop()
         {
-        }
-
-        @Override
-        public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
-                throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
-        {
-
         }
 
         @Override

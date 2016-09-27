@@ -24,11 +24,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Label;
@@ -40,6 +42,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -51,6 +54,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
+import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -63,11 +67,10 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
-import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -95,6 +98,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private IndexingService indexService;
     private int propertyId;
     private Map<String,Integer> labelsNameIdMap;
+    private Map<Integer,String> labelsIdNameMap;
 
     @After
     public void tearDown() throws Throwable
@@ -111,6 +115,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         prepareDb();
 
         labelsNameIdMap = getLabelsNameIdMap();
+        labelsIdNameMap = labelsNameIdMap.entrySet()
+                .stream()
+                .collect( Collectors.toMap( Map.Entry::getValue, Map.Entry::getKey ) );
         propertyId = getPropertyKeyId();
     }
 
@@ -381,12 +388,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
         {
             DynamicIndexStoreViewWrapper.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = true;
-            StoreScan<FAILURE> failureStoreScan =
+            StoreScan<FAILURE> storeScan =
                     super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
             DynamicIndexStoreViewWrapper.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = false;
-            return new LabelScanViewNodeStoreWrapper( this, nodeStore, locks, propertyStore, getLabelScanStore(),
+            return new LabelScanViewNodeStoreWrapper( nodeStore, locks, propertyStore, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
-                    (LabelScanViewNodeStoreScan) failureStoreScan, this, updates);
+                    (LabelScanViewNodeStoreScan) storeScan, updates);
         }
 
     }
@@ -394,35 +401,33 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private class LabelScanViewNodeStoreWrapper extends LabelScanViewNodeStoreScan
     {
         private LabelScanViewNodeStoreScan delegate;
-        private DynamicIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
         private List<NodePropertyUpdate> updates;
 
-        public LabelScanViewNodeStoreWrapper( NeoStoreIndexStoreView storeView, NodeStore nodeStore, LockService locks,
+        LabelScanViewNodeStoreWrapper( NodeStore nodeStore, LockService locks,
                 PropertyStore propertyStore,
                 LabelScanStore labelScanStore, Visitor labelUpdateVisitor,
                 Visitor propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
                 LabelScanViewNodeStoreScan delegate,
-                DynamicIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
                 List<NodePropertyUpdate> updates )
         {
-            super( storeView, nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
+            super( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
                     propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
             this.delegate = delegate;
-            this.adaptableIndexStoreViewWrapper = adaptableIndexStoreViewWrapper;
             this.updates = updates;
         }
 
         @Override
-        public void process( NodeRecord loaded ) throws Exception
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+                long currentlyIndexedNodeId )
         {
-            delegate.process( loaded );
+            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
         }
 
         @Override
         public PrimitiveLongResourceIterator getNodeIdIterator()
         {
             PrimitiveLongResourceIterator originalIterator = delegate.getNodeIdIterator();
-            return new DelegatingPrimitiveLongResourceIterator( this, originalIterator, adaptableIndexStoreViewWrapper,
+            return new DelegatingPrimitiveLongResourceIterator( originalIterator,
                     updates );
         }
     }
@@ -430,20 +435,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private class DelegatingPrimitiveLongResourceIterator implements PrimitiveLongResourceIterator
     {
 
-        private DynamicIndexStoreViewWrapper adaptableIndexStoreViewWrapper;
         private List<NodePropertyUpdate> updates;
-        private LabelScanViewNodeStoreWrapper storeScan;
         private PrimitiveLongResourceIterator delegate;
 
         DelegatingPrimitiveLongResourceIterator(
-                LabelScanViewNodeStoreWrapper storeScan,
                 PrimitiveLongResourceIterator delegate,
-                DynamicIndexStoreViewWrapper adaptableIndexStoreViewWrapper,
                 List<NodePropertyUpdate> updates )
         {
-            this.storeScan = storeScan;
             this.delegate = delegate;
-            this.adaptableIndexStoreViewWrapper = adaptableIndexStoreViewWrapper;
             this.updates = updates;
         }
 
@@ -461,25 +460,32 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             {
                 for ( NodePropertyUpdate update : updates )
                 {
-                    storeScan.acceptUpdate( null, update, Long.MAX_VALUE );
-                }
-
-                for ( NodePropertyUpdate update : updates )
-                {
                     try ( Transaction transaction = embeddedDatabase.beginTx() )
                     {
                         Node node = embeddedDatabase.getNodeById( update.getNodeId() );
+
                         switch ( update.getUpdateMode() )
                         {
                         case CHANGED:
                         case ADDED:
+                            node.addLabel( Label.label( labelsIdNameMap.get( (int) update.getLabelsAfter()[0] ) ) );
                             node.setProperty( NAME_PROPERTY, update.getValueAfter() );
                             break;
                         case REMOVED:
+                            node.addLabel( Label.label( labelsIdNameMap.get( (int) update.getLabelsBefore()[0] ) ) );
                             node.delete();
                         }
                         transaction.success();
                     }
+                }
+                DirectIndexUpdates nodePropertyUpdates = new DirectIndexUpdates( updates );
+                try
+                {
+                    indexService.apply( nodePropertyUpdates );
+                }
+                catch ( IOException | IndexEntryConflictException e )
+                {
+                    throw new RuntimeException( e );
                 }
             }
             return value;
@@ -491,4 +497,5 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             delegate.close();
         }
     }
+
 }

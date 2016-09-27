@@ -56,8 +56,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -1077,14 +1075,6 @@ public class IndexingServiceTest
                 public void stop()
                 {
                     throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
-                        throws EntityNotFoundException, PropertyNotFoundException, IOException,
-                        IndexEntryConflictException
-                {
-                    // no-op
                 }
 
                 @Override

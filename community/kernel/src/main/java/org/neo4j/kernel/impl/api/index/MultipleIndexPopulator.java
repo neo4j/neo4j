@@ -503,7 +503,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             flipper.flip( () -> {
                 populateFromQueueIfAvailable( Long.MAX_VALUE );
-                storeScan.complete(populator, descriptor);
                 IndexSample sample = populator.sampleResult();
                 storeView.replaceIndexCounts( descriptor, sample.uniqueValues(), sample.sampleSize(),
                         sample.indexSize() );

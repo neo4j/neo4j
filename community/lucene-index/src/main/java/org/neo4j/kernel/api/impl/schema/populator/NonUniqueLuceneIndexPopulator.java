@@ -93,7 +93,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     private void checkSampler()
     {
-        if (sampler == null)
+        if ( sampler == null )
         {
             throw new IllegalStateException( "Please configure populator sampler before using it." );
         }

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.After;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -30,9 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -378,13 +374,6 @@ public class BatchingMultipleIndexPopulatorTest
         public void stop()
         {
             stop = true;
-        }
-
-        @Override
-        public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
-                throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
-        {
-
         }
 
         @Override

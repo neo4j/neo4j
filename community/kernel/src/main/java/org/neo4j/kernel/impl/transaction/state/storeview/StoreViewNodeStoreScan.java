@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntPredicate;
@@ -30,11 +29,6 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
@@ -142,13 +136,6 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
             }
         }
         return false;
-    }
-
-    @Override
-    public void complete( IndexPopulator indexPopulator, IndexDescriptor descriptor )
-            throws EntityNotFoundException, PropertyNotFoundException, IOException, IndexEntryConflictException
-    {
-        // no-op
     }
 
     @Override

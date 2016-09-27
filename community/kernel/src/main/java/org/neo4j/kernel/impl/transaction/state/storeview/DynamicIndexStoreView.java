@@ -65,7 +65,7 @@ public class DynamicIndexStoreView extends NeoStoreIndexStoreView
         {
             return super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
         }
-        return new LabelScanViewNodeStoreScan<>( this, nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
+        return new LabelScanViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
     }
 
