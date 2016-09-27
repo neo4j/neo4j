@@ -33,6 +33,7 @@ import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.function.Predicates.await;
@@ -62,6 +63,11 @@ class CatchUpLoad extends RepeatUntilCallable
         }
 
         long txIdBeforeStartingNewEdge = txId( leader );
+        if ( txIdBeforeStartingNewEdge < TransactionIdStore.BASE_TX_ID )
+        {
+            // leader has been shut down, let's try again later
+            return;
+        }
         int newMemberId = cluster.edgeMembers().size();
         final EdgeClusterMember edgeClusterMember = cluster.addEdgeMemberWithId( newMemberId );
 
@@ -107,7 +113,12 @@ class CatchUpLoad extends RepeatUntilCallable
 
     private long txId( ClusterMember leader )
     {
-        return leader.database().getDependencyResolver().resolveDependency( TransactionIdStore.class )
+        GraphDatabaseAPI database = leader.database();
+        if ( database == null || !database.isAvailable( 100 ) )
+        {
+            return -1L;
+        }
+        return database.getDependencyResolver().resolveDependency( TransactionIdStore.class )
                 .getLastClosedTransactionId();
     }
 }
