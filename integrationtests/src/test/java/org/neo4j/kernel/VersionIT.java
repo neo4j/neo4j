@@ -23,13 +23,13 @@ import org.junit.Test;
 
 import org.neo4j.kernel.internal.Version;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 public class VersionIT
 {
     @Test
     public void canGetKernelRevision() throws Exception
     {
-        assertFalse( "Kernel revision not specified", "".equals( Version.getKernelVersion() ) );
+        assertNotEquals( "Kernel revision not specified", "", Version.getKernelVersion() );
     }
 }
