@@ -150,12 +150,6 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         }
 
         @Override
-        public String getAbsolutePath()
-        {
-            return file.getAbsolutePath();
-        }
-
-        @Override
         public File getFile()
         {
             return file;

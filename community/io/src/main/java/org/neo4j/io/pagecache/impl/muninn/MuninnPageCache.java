@@ -412,12 +412,6 @@ public class MuninnPageCache implements PageCache
         return new FileHandle()
         {
             @Override
-            public String getAbsolutePath()
-            {
-                return fileHandle.getAbsolutePath();
-            }
-
-            @Override
             public File getFile()
             {
                 return fileHandle.getFile();

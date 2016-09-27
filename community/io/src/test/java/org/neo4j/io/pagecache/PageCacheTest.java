@@ -4747,8 +4747,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File b = existingFile( "b" );
         File c = existingFile( "c" );
         Stream<FileHandle> stream = pageCache.streamFilesRecursive( a.getParentFile() );
-        List<String> filepaths = stream.map( FileHandle::getAbsolutePath ).collect( toList() );
-        assertThat( filepaths, containsInAnyOrder( a.getCanonicalPath(), b.getCanonicalPath(), c.getCanonicalPath() ) );
+        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
+        assertThat( filepaths, containsInAnyOrder( a.getCanonicalFile(), b.getCanonicalFile(), c.getCanonicalFile() ) );
     }
 
     @Test
@@ -4764,8 +4764,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         ensureExists( c );
 
         Stream<FileHandle> stream = pageCache.streamFilesRecursive( a.getParentFile() );
-        List<String> filepaths = stream.map( FileHandle::getAbsolutePath ).collect( toList() );
-        assertThat( filepaths, containsInAnyOrder( a.getCanonicalPath(), b.getCanonicalPath(), c.getCanonicalPath() ) );
+        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
+        assertThat( filepaths, containsInAnyOrder( a.getCanonicalFile(), b.getCanonicalFile(), c.getCanonicalFile() ) );
     }
 
     @Test
@@ -4784,8 +4784,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         ensureExists( c );
 
         Stream<FileHandle> stream = pageCache.streamFilesRecursive( a.getParentFile() );
-        List<String> filepaths = stream.map( FileHandle::getAbsolutePath ).collect( toList() );
-        assertThat( filepaths, containsInAnyOrder( a.getCanonicalPath(), b.getCanonicalPath(), c.getCanonicalPath() ) );
+        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
+        assertThat( filepaths, containsInAnyOrder( a.getCanonicalFile(), b.getCanonicalFile(), c.getCanonicalFile() ) );
     }
 
     @Test
@@ -4797,10 +4797,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         ensureExists( a );
 
         Stream<FileHandle> stream = pageCache.streamFilesRecursive( sub.getParentFile() );
-        List<String> filepaths = stream.map( FileHandle::getAbsolutePath ).collect( toList() );
+        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
         assertThat( filepaths, containsInAnyOrder(
-                a.getCanonicalPath(), // file in our sub directory
-                file( "a" ).getCanonicalPath() ) ); // this file is always created by the test setup
+                a.getCanonicalFile(), // file in our sub directory
+                file( "a" ).getCanonicalFile() ) ); // this file is always created by the test setup
     }
 
     @Test
@@ -4812,8 +4812,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
 
         Stream<FileHandle> stream = pageCache.streamFilesRecursive( a );
-        List<String> filepaths = stream.map( FileHandle::getAbsolutePath ).collect( toList() );
-        assertThat( filepaths, containsInAnyOrder( a.getCanonicalPath() ) ); // note that we don't go into 'sub'
+        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
+        assertThat( filepaths, containsInAnyOrder( a.getCanonicalFile() ) ); // note that we don't go into 'sub'
     }
 
     @Test
@@ -4826,8 +4826,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File queryForA = new File( new File( sub, ".." ), "a" );
 
         Stream<FileHandle> stream = pageCache.streamFilesRecursive( queryForA );
-        List<String> filepaths = stream.map( FileHandle::getAbsolutePath ).collect( toList() );
-        assertThat( filepaths, containsInAnyOrder( a.getCanonicalPath() ) ); // note that we don't go into 'sub'
+        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
+        assertThat( filepaths, containsInAnyOrder( a.getCanonicalFile() ) ); // note that we don't go into 'sub'
     }
 
     @Test( expected = NoSuchFileException.class )
@@ -4850,9 +4850,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             fh.renameFile( b );
         }
-        List<String> filepaths = pageCache.streamFilesRecursive( base ).map( FileHandle::getAbsolutePath )
-                                          .collect( toList() );
-        assertThat( filepaths, containsInAnyOrder( b.getCanonicalPath() ) );
+        List<File> filepaths = pageCache.streamFilesRecursive( base ).map( FileHandle::getFile ).collect( toList() );
+        assertThat( filepaths, containsInAnyOrder( b.getCanonicalFile() ) );
     }
 
     @Test

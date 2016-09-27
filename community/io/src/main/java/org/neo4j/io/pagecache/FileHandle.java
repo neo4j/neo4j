@@ -29,8 +29,6 @@ import java.nio.file.CopyOption;
  */
 public interface FileHandle
 {
-    String getAbsolutePath();
-
     /**
      * Get a {@link File} object for the abstract path name that this file handle represents.
      *
