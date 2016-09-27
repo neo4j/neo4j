@@ -40,8 +40,6 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
         super( testSuite, true );
     }
 
-    @Ignore( "Invalid assumption since we currently must rely on close throwing exception for injected"
-            + "transactions that violate a constraint" )
     @Test
     public void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
     {
