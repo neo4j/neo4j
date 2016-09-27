@@ -19,7 +19,6 @@
  */
 package org.neo4j.metatest;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -100,7 +99,6 @@ public class TestEphemeralFileChannel
     }
 
     @Test
-    @Ignore
     public void absoluteVersusRelative() throws Exception
     {
         // GIVEN
