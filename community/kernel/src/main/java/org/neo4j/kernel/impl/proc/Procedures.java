@@ -45,13 +45,14 @@ import org.neo4j.logging.NullLog;
  */
 public class Procedures extends LifecycleAdapter
 {
+    private final Log log;
     private final ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeMappers typeMappers = new TypeMappers();
     private final ComponentRegistry components = new ComponentRegistry();
-    private final ReflectiveProcedureCompiler compiler;
+    private final ReflectiveProcedureCompiler compiler =
+            new ReflectiveProcedureCompiler(typeMappers, components, this::getLog);
     private final ThrowingConsumer<Procedures, ProcedureException> builtin;
     private final File pluginDir;
-    private final Log log;
 
     public Procedures()
     {
@@ -63,7 +64,11 @@ public class Procedures extends LifecycleAdapter
         this.builtin = builtin;
         this.pluginDir = pluginDir;
         this.log = log;
-        this.compiler = new ReflectiveProcedureCompiler(typeMappers, components, log);
+    }
+
+    private Log getLog()
+    {
+        return this.log;
     }
 
     /**

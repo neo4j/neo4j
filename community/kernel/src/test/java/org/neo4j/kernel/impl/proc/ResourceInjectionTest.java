@@ -128,6 +128,7 @@ public class ResourceInjectionTest
     {
         ComponentRegistry components = new ComponentRegistry();
         components.register( MyAwesomeAPI.class, (ctx) -> new MyAwesomeAPI() );
-        return new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance() ).compileProcedure( clazz );
+        return new ReflectiveProcedureCompiler( new TypeMappers(), components, () -> NullLog.getInstance() )
+                .compileProcedure( clazz );
     }
 }

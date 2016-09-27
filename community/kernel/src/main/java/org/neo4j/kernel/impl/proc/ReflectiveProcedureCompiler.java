@@ -63,10 +63,10 @@ public class ReflectiveProcedureCompiler
     private final OutputMappers outputMappers;
     private final MethodSignatureCompiler inputSignatureDeterminer;
     private final FieldInjections fieldInjections;
-    private final Log log;
+    private final Supplier<Log> log;
     private final TypeMappers typeMappers;
 
-    public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Log log )
+    public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Supplier<Log> log )
     {
         inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
         outputMappers = new OutputMappers( typeMappers );
@@ -223,7 +223,7 @@ public class ReflectiveProcedureCompiler
         }
         else if ( !deprecatedBy.isEmpty() )
         {
-            log.warn( warning );
+            log.get().warn( warning );
             deprecated = Optional.of( deprecatedBy );
         }
 
