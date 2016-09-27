@@ -4980,6 +4980,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertFalse( fs.fileExists( sub ) );
     }
 
+    // todo stream files recursive must delete multiple layers of sub directories if they become empty by rename
+
     @Test
     public void streamFilesRecursiveMustDeleteSubDirectoriesEmptiedByFileDelete() throws Exception
     {
