@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutingQuery;
@@ -47,12 +48,11 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final Supplier<Statement> statementSupplier;
     private final DbmsOperations.Factory dbmsOperationsFactory;
     private final Guard guard;
+    private final ExecutingQuery executingQuery;
+    private final PropertyContainerLocker locker;
 
     private InternalTransaction transaction;
     private Statement statement;
-    private ExecutingQuery executingQuery;
-    private PropertyContainerLocker locker;
-
     private boolean isOpen = true;
 
     public Neo4jTransactionalContext(
@@ -129,6 +129,24 @@ public class Neo4jTransactionalContext implements TransactionalContext
                 statement = null;
                 transaction = null;
                 isOpen = false;
+            }
+        }
+    }
+
+    @Override // TODO: Make the state of this class a state machine that is a single value and maybe CAS state
+    // transitions
+    public void terminate()
+    {
+        if ( isOpen )
+        {
+            try
+            {
+                transaction.terminate();
+                close( false );
+            }
+            catch ( NotInTransactionException e )
+            {
+                // Ok then. Nothing to do
             }
         }
     }

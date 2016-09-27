@@ -69,6 +69,12 @@ public class FakeTransactionalContext implements TransactionalContext
     }
 
     @Override
+    public void terminate()
+    {
+        throw new UnsupportedOperationException( "fake test class" );
+    }
+
+    @Override
     public void commitAndRestartTx()
     {
         throw new UnsupportedOperationException( "fake test class" );

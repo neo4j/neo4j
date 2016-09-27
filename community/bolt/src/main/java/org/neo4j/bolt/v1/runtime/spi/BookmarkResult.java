@@ -45,6 +45,5 @@ public class BookmarkResult extends BoltResult
     @Override
     public void close()
     {
-
     }
 }
