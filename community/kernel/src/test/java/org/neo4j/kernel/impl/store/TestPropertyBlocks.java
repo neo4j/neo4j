@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.store;
 
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.graphdb.Node;
@@ -36,7 +34,6 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
@@ -491,37 +488,6 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    @Ignore( "Assumes space to put a block is searched along the whole chain - that is not the case currently" )
-    public void testAdditionsHappenAtTheFirstRecordWhenFits()
-    {
-        Node node = getGraphDb().createNode();
-        long recordsInUseAtStart = propertyRecordsInUse();
-
-        node.setProperty( "int1", 1 );
-        node.setProperty( "double1", 1.0 );
-        node.setProperty( "int2", 2 );
-        newTransaction();
-
-        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
-
-        node.removeProperty( "int1" );
-        newTransaction();
-        node.setProperty( "double2", 1.0 );
-        newTransaction();
-        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
-
-        node.removeProperty( "int2" );
-        newTransaction();
-        node.setProperty( "double3", 1.0 );
-        newTransaction();
-        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
-
-        node.setProperty( "paddingBoolean", false );
-        newTransaction();
-        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
-    }
-
-    @Test
     public void testAdditionHappensInTheMiddleIfItFits()
     {
         Node node = getGraphDb().createNode();
@@ -567,67 +533,6 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         node.setProperty( "shortString1", 1.0 );
         commit();
-    }
-
-    @Test
-    @Ignore( "Assumes space to put a block is searched along the whole chain - that is not the case currently" )
-    public void testPackingAndOverflowingValueChangeInMiddleRecord()
-    {
-        Node node = getGraphDb().createNode();
-
-        long recordsInUseAtStart = propertyRecordsInUse();
-        long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
-
-        int shortArrays = 0;
-        for ( ; shortArrays < PropertyType.getPayloadSizeLongs() - 1; shortArrays++ )
-        {
-            node.setProperty( "shortArray" + shortArrays, new long[] { 1, 2, 3, 4 } );
-        }
-
-        newTransaction();
-
-        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
-
-        // Takes up two blocks
-        node.setProperty( "theDoubleThatBecomesAnArray", 1.0 );
-        newTransaction();
-
-        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
-
-        // This takes up three blocks
-        node.setProperty( "theLargeArray", new long[] { 1 << 63, 1 << 63 } );
-        newTransaction();
-
-        assertTrue( Arrays.equals( new long[] { 1 << 63, 1 << 63 }, (long[]) node.getProperty( "theLargeArray" ) ) );
-        assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
-
-        node.setProperty( "fillerByte1", (byte) 3 );
-
-        newTransaction();
-
-        assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
-
-        node.setProperty( "fillerByte2", (byte) -4 );
-        assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
-
-        // Make it take up 3 blocks instead of 2
-        node.setProperty( "theDoubleThatBecomesAnArray", new long[] { 1 << 63, 1 << 63, 1 << 63 } );
-
-        assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
-        assertEquals( recordsInUseAtStart + 4, propertyRecordsInUse() );
-        newTransaction();
-        assertEquals( recordsInUseAtStart + 4, propertyRecordsInUse() );
-
-        while ( shortArrays-- > 0 )
-        {
-            assertTrue( Arrays.equals( new long[] { 1, 2, 3, 4 },
-                                       (long[]) node.getProperty( "shortArray" + shortArrays ) ) );
-        }
-        assertEquals( (byte) 3, node.getProperty( "fillerByte1" ) );
-        assertEquals( (byte) -4, node.getProperty( "fillerByte2" ) );
-        assertTrue( Arrays.equals( new long[] { 1 << 63, 1 << 63 }, (long[]) node.getProperty( "theLargeArray" ) ) );
-        assertTrue( Arrays.equals( new long[] { 1 << 63, 1 << 63, 1 << 63 },
-                                   (long[]) node.getProperty( "theDoubleThatBecomesAnArray" ) ) );
     }
 
     @Test
