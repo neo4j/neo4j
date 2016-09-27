@@ -154,7 +154,7 @@ public class CoreEdgeClusterSettings
 
     @Description( "RAFT log pruning strategy" )
     public static final Setting<String> raft_log_pruning_strategy =
-            setting( "core_edge.raft_log_prune_strategy", STRING, "keep_all" );
+            setting( "core_edge.raft_log_prune_strategy", STRING, "1g size" );
 
     @Description( "RAFT log implementation" )
     public static final Setting<String> raft_log_implementation =
