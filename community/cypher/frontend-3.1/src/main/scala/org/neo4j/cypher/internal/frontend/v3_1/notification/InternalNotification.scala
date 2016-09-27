@@ -59,3 +59,5 @@ case class ExhaustiveShortestPathForbiddenNotification(position: InputPosition) 
 case class DeprecatedFunctionNotification(position: InputPosition, oldName: String, newName: String) extends InternalNotification
 
 case class DeprecatedProcedureNotification(position: InputPosition, oldName: String, newName: String) extends InternalNotification
+
+case object DeprecatedPlannerNotification extends InternalNotification

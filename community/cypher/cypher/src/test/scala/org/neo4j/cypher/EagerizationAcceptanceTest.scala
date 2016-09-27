@@ -878,27 +878,6 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
-  ignore("should not introduce an eager pipe between a non-leaf relationship read and a relationship create on different nodes") {
-    // TODO: ExecuteUpdateCommandsPipe could interpret that it creates only rel-bound nodes in this case
-    relate(createLabeledNode("LabelOne"), createLabeledNode("LabelTwo"), "TYPE")
-    relate(createLabeledNode("LabelOne"), createLabeledNode("LabelTwo"), "TYPE")
-    val query = "MATCH ()-[:TYPE]->() MATCH (a:LabelOne)-[:TYPE]->(b:LabelTwo) CREATE ()-[:TYPE]->()"
-
-    assertStats(executeWithRulePlanner(query), relationshipsCreated = 4, nodesCreated = 8)
-    assertNumberOfEagerness(query, 0)
-  }
-
-  ignore("should not introduce eagerness for a non-leaf match on simple pattern and create single node") {
-    // TODO: SimplePatternMatcher uses an AllNodes item in a NodeStartPipe, losing us information
-    // about the match actually being on relationship-bound nodes.
-    relate(createNode(), createNode())
-    relate(createNode(), createNode())
-    val query = "MATCH ()-->() MATCH ()-->() CREATE ()"
-
-    assertStats(executeWithRulePlanner(query), nodesCreated = 4)
-    assertNumberOfEagerness(query, 0)
-  }
-
   test("should not introduce eagerness for match - create on different relationship types") {
     relate(createNode(), createNode(), "T1")
     relate(createNode(), createNode(), "T1")

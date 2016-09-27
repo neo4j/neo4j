@@ -42,10 +42,10 @@ sealed trait PreparedQuery {
   def queryText: String
   def extractedParams: Map[String, Any]
 
-  def notificationLogger: InternalNotificationLogger
   def plannerName: String
 
-  def abstractQuery: AbstractQuery = statement.asQuery(notificationLogger, plannerName).setQueryText(queryText)
+  def abstractQuery(notificationLogger: InternalNotificationLogger): AbstractQuery =
+    statement.asQuery(notificationLogger, plannerName).setQueryText(queryText)
 
   def rewrite(rewriter: Rewriter): SELF
 
@@ -64,8 +64,7 @@ sealed trait PreparedQuery {
 case class PreparedQuerySyntax(statement: Statement,
                                queryText: String,
                                offset: Option[InputPosition],
-                               extractedParams: Map[String, Any])(val notificationLogger: InternalNotificationLogger,
-                                                                  val plannerName: String = "",
+                               extractedParams: Map[String, Any])(val plannerName: String = "",
                                                                   val conditions: Set[RewriterCondition] = Set.empty)
 
   extends PreparedQuery {
@@ -73,11 +72,11 @@ case class PreparedQuerySyntax(statement: Statement,
   override type SELF = PreparedQuerySyntax
 
   override def rewrite(rewriter: Rewriter): PreparedQuerySyntax =
-    copy(statement = statement.endoRewrite(rewriter))(notificationLogger, plannerName, conditions)
+    copy(statement = statement.endoRewrite(rewriter))(plannerName, conditions)
 
   def withSemantics(semanticTable: SemanticTable,
                     scopeTree: Scope) =
-    PreparedQuerySemantics(statement, queryText, offset, extractedParams, semanticTable, scopeTree)(notificationLogger, plannerName, conditions)
+    PreparedQuerySemantics(statement, queryText, offset, extractedParams, semanticTable, scopeTree)(plannerName, conditions)
 }
 
 // Result of semantic analysis of a Cypher query
@@ -90,8 +89,7 @@ case class PreparedQuerySemantics(statement: Statement,
                                   offset: Option[InputPosition],
                                   extractedParams: Map[String, Any],
                                   semanticTable: SemanticTable,
-                                  scopeTree: Scope)(val notificationLogger: InternalNotificationLogger,
-                                                    val plannerName: String = "",
+                                  scopeTree: Scope)(val plannerName: String = "",
                                                     val conditions: Set[RewriterCondition] = Set.empty)
 
   extends PreparedQuery {
@@ -106,7 +104,6 @@ case class PreparedQuerySemantics(statement: Statement,
       statement = statement.endoRewrite(rewriter),
       semanticTable = tableTransformer(semanticTable)
     )(
-      notificationLogger,
       plannerName,
       conditions
     )

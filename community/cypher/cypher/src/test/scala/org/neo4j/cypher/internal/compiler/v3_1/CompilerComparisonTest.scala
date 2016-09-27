@@ -550,7 +550,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
     val (executionPlan: ExecutionPlan, extractedParams: Map[String, Any]) = db.withTx { tx =>
       val transactionalContext = contextFactory.newContext(querySource, tx, query, Collections.emptyMap())
-      val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext))
+      val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext), devNullLogger)
       compiler.planQuery(query, planContext, devNullLogger)
     }
 

@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, Intern
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
-import org.neo4j.cypher.internal.frontend.v3_1.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_1.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
@@ -119,7 +119,7 @@ object typeConversionsFor3_1 extends RuntimeTypeConverter {
   }
 
   private def asPrivateCoordinate(coordinate: spatial.Coordinate) =
-    Coordinate(coordinate.getCoordinate.asScala.toSeq.map(v=>v.doubleValue()):_*)
+    Coordinate(coordinate.getCoordinate.asScala.map(v=>v.doubleValue()):_*)
 
   private def asPrivateGeometry(geometry: spatial.Geometry) = new Geometry {
     override def coordinates: Array[Coordinate] = geometry.getCoordinates.asScala.toArray.map(asPrivateCoordinate)
@@ -241,7 +241,7 @@ trait CompatibilityFor3_1 {
       def isPeriodicCommit = preparedSyntacticQueryForV_3_1.map(_.isPeriodicCommit).getOrElse(false)
 
       def plan(transactionalContext: TransactionalContextWrapperv3_1, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor3_1.runSafely {
-        val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext))
+        val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
         val syntacticQuery = preparedSyntacticQueryForV_3_1.get
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(preParsedQuery.offset), tracer)
 
@@ -395,6 +395,8 @@ class ExecutionResultWrapperFor3_1(val inner: InternalExecutionResult, val plann
       NotificationCode.DEPRECATED_FUNCTION.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
       NotificationCode.DEPRECATED_PROCEDURE.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+    case DeprecatedPlannerNotification =>
+      NotificationCode.DEPRECATED_PLANNER.notification(graphdb.InputPosition.empty)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = inner.accept(wrapVisitor(visitor))
@@ -514,7 +516,7 @@ case class CompatibilityFor3_1Cost(graph: GraphDatabaseQueryService,
     }
 
     val logger = new StringInfoLogger3_1(log)
-    val monitors = new WrappedMonitors3_1(kernelMonitors)
+    val monitors = WrappedMonitors3_1(kernelMonitors)
     CypherCompilerFactory.costBasedCompiler(graph, config, clock, GeneratedQueryStructure, monitors, logger,
       rewriterSequencer, plannerName, runtimeName, updateStrategy, typeConversionsFor3_1)
   }
@@ -528,7 +530,7 @@ case class CompatibilityFor3_1Rule(graph: GraphDatabaseQueryService,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor3_1 {
   protected val compiler = {
-    val monitors = new WrappedMonitors3_1(kernelMonitors)
+    val monitors = WrappedMonitors3_1(kernelMonitors)
     CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, typeConversionsFor3_1)
   }
 

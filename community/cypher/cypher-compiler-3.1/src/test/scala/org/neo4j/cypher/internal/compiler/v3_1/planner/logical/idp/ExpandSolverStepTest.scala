@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, LogicalPlanningContext, Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, SemanticTable}
 
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
@@ -44,7 +45,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   private val table = new IDPTable[LogicalPlan]()
   private val qg = mock[QueryGraph]
 
-  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]), mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver])
+  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
+    mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   test("does not expand based on empty table") {
     implicit val registry = IdRegistry[PatternRelationship]

@@ -47,6 +47,8 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
   val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating,
     typeConverter = IdentityTypeConverter)
 
+  when(planContext.notificationLogger()).thenReturn(devNullLogger)
+
   test("should_use_distinct_pipe_for_distinct") {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")
 
@@ -98,7 +100,7 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
 
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
-    val parsedQ = PreparedQuerySemantics(statement, q, None, Map.empty, mock[SemanticTable], mock[Scope])(devNullLogger)
+    val parsedQ = PreparedQuerySemantics(statement, q, None, Map.empty, mock[SemanticTable], mock[Scope])()
     planBuilder.producePipe(parsedQ, planContext, mock[CompilationPhaseTracer]).pipe
   }
 }

@@ -157,6 +157,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def procedureSignature(name: QualifiedName): ProcedureSignature = ???
 
       override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???
+
+      override def notificationLogger(): InternalNotificationLogger = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {
@@ -175,7 +177,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           val unionQuery = toUnionQuery(ast, semanticTable)
           val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty)
+          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
           val plannerQuery = unionQuery.queries.head
           val resultPlan = planner.internalPlan(plannerQuery)(context)
           SemanticPlan(resultPlan.endoRewrite(fixedPoint(unnestApply)), newTable)
@@ -197,7 +199,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           val unionQuery = toUnionQuery(ast, semanticTable)
           val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, table, queryGraphSolver, QueryGraphSolverInput.empty)
+          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, table, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
           val (periodicCommit, plan) = planner.plan(unionQuery)(context)
           (periodicCommit, plan, table)
       }
@@ -215,7 +217,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         metrics = metrics,
         semanticTable = semanticTable,
         strategy = queryGraphSolver,
-        input = QueryGraphSolverInput.empty
+        input = QueryGraphSolverInput.empty,
+        notificationLogger = devNullLogger
       )
       f(config, ctx)
     }

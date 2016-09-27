@@ -25,7 +25,6 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.query.TransactionalContext
 import org.scalatest.Assertions
 
 import scala.collection.JavaConverters._
@@ -182,7 +181,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, b, "HATES")
     relate(a, b, "LOVES")
 
-    intercept[ConstraintValidationException](executeWithRulePlanner("match (n) where id(n) = 0 match (n)-[r:HATES]->() delete n,r"))
+    intercept[ConstraintValidationException](executeWithAllPlanners("match (n) where id(n) = 0 match (n)-[r:HATES]->() delete n,r"))
   }
 
   test("delete and return") {
@@ -276,7 +275,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     val b = createNode()
     relate(a,b)
 
-    executeWithRulePlanner("""start n=node(*) optional match (n)-[r]-() delete n,r""")
+    executeWithAllPlanners("""match (n) optional match (n)-[r]-() delete n,r""")
 
     graph.inTx {
       graph.getAllNodes.asScala shouldBe empty
@@ -400,7 +399,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("failure_only_fails_inner_transaction") {
     val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     try {
-      executeWithRulePlanner("match (a) where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
+      executeWithAllPlanners("match (a) where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
     } catch {
       case _: Throwable => tx.failure()
     }

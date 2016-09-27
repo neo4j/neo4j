@@ -23,6 +23,7 @@ import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
+import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
@@ -36,12 +37,12 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.proc
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
-import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature, QualifiedName => KernelQualifiedName}
+import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
+class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: InternalNotificationLogger)
   extends TransactionBoundTokenContext(tc.statement) with PlanContext {
 
   @Deprecated
@@ -185,4 +186,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     case Neo4jTypes.NTMap => symbols.CTMap
     case Neo4jTypes.NTAny => symbols.CTAny
   }
+
+  override def notificationLogger(): InternalNotificationLogger = logger
 }

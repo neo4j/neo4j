@@ -53,24 +53,29 @@ class FallbackPlanBuilderTest extends CypherFunSuite {
   }
 
   test("should warn if falling back from a specified plan") {
-    val preparedQuery = new PreparedQuerySemantics(null, null, null, null, null, null)(new RecordingNotificationLogger)
+    val logger = new RecordingNotificationLogger
+    val planContext = mock[PlanContext]
+    when(planContext.notificationLogger()).thenReturn(logger)
+    val preparedQuery = PreparedQuerySemantics(null, null, null, null, null, null)()
     val builder = mock[ExecutablePlanBuilder]
-    when(builder.producePlan(preparedQuery, null, null, null)).thenThrow(classOf[CantHandleQueryException])
+    when(builder.producePlan(preparedQuery, planContext, null, null)).thenThrow(classOf[CantHandleQueryException])
     WarningFallbackPlanBuilder(mock[ExecutablePlanBuilder], builder, mock[NewLogicalPlanSuccessRateMonitor])
-      .producePlan(preparedQuery, null, null, null)
+      .producePlan(preparedQuery, planContext, null, null)
 
-    preparedQuery.notificationLogger.notifications should contain(PlannerUnsupportedNotification)
+    logger.notifications should contain(PlannerUnsupportedNotification)
   }
 
   test("should not warn if falling back from fallback plan") {
-    val preparedQuery = new PreparedQuerySemantics(null, null, null, null, null, null)(new RecordingNotificationLogger)
+    val logger = new RecordingNotificationLogger
+    val planContext = mock[PlanContext]
+    when(planContext.notificationLogger()).thenReturn(logger)
+    val preparedQuery = PreparedQuerySemantics(null, null, null, null, null, null)()
     val builder = mock[ExecutablePlanBuilder]
-    when(builder.producePlan(preparedQuery, null, null, null)).thenThrow(classOf[CantHandleQueryException])
+    when(builder.producePlan(preparedQuery, planContext, null, null)).thenThrow(classOf[CantHandleQueryException])
     SilentFallbackPlanBuilder(mock[ExecutablePlanBuilder], builder, mock[NewLogicalPlanSuccessRateMonitor])
-      .producePlan(preparedQuery, null, null, null)
+      .producePlan(preparedQuery, planContext, null, null)
 
-    preparedQuery.notificationLogger.notifications should not contain PlannerUnsupportedNotification
-
+    logger.notifications should not contain PlannerUnsupportedNotification
   }
 
   class uses(queryText: String) {
@@ -80,8 +85,8 @@ class FallbackPlanBuilderTest extends CypherFunSuite {
     val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference = (fp) => mock[PlanFingerprintReference]
     val oldBuilder = mock[ExecutablePlanBuilder]
     val newBuilder = mock[ExecutablePlanBuilder]
-    val pipeBuilder = new SilentFallbackPlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor])
-    val preparedQuery = PreparedQuerySemantics(parser.parse(queryText), queryText, None, Map.empty, null, null)(null, null, Set.empty)
+    val pipeBuilder = SilentFallbackPlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor])
+    val preparedQuery = PreparedQuerySemantics(parser.parse(queryText), queryText, None, Map.empty, null, null)(null, Set.empty)
     val executionPlan = mock[ExecutionPlan]
     when( oldBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING, createFingerprintReference) ).thenReturn(executionPlan)
     when( newBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING, createFingerprintReference) ).thenReturn(executionPlan)

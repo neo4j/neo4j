@@ -114,9 +114,8 @@ object InterpretedExecutionPlanBuilder {
                                  typeConverter: RuntimeTypeConverter) = {
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = inputQuery.statement.returnColumns
-    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, typeConverter)
-    val func = getExecutionPlanFunction(periodicCommitInfo, inputQuery.queryText, updating, resultBuilderFactory, inputQuery
-      .notificationLogger)
+    val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, typeConverter)
+    val func = getExecutionPlanFunction(periodicCommitInfo, inputQuery.queryText, updating, resultBuilderFactory, planContext.notificationLogger())
     new ExecutionPlan {
       private val fingerprint = createFingerprintReference(fp)
 

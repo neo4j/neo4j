@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{PropertyKeyName, LabelName, UsingIndexHint}
+import org.neo4j.cypher.internal.compiler.v3_1.devNullLogger
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.{LogicalPlanProducer, pickBestPlanUsingHintsAndCost}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{LabelName, PropertyKeyName, UsingIndexHint}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -99,7 +100,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(GIVEN: given) {
     val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.graphStatistics)
-    implicit val context = LogicalPlanningContext(null, LogicalPlanProducer(metrics.cardinality), metrics, null, null)
+    implicit val context = LogicalPlanningContext(null, LogicalPlanProducer(metrics.cardinality), metrics, null, null, notificationLogger = devNullLogger)
     pickBestPlanUsingHintsAndCost(context)(candidates) should equal(Some(winner))
     pickBestPlanUsingHintsAndCost(context)(candidates.reverse) should equal(Some(winner))
   }
