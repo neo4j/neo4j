@@ -170,7 +170,6 @@ public class IndexTest
 
         // WHEN
         long seed = currentTimeMillis();
-        System.out.println( "Seed:" + seed );
         Random random = new Random( seed );
         try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
         {

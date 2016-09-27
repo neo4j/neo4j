@@ -82,7 +82,7 @@ public class IndexInsert<KEY,VALUE>
 
         int keyCount = bTreeNode.keyCount( cursor );
 
-        int pos = search( cursor, key );
+        int pos = positionOf( search( cursor, key ) );
 
         long currentId = cursor.getCurrentPageId();
         cursor.next( bTreeNode.childAt( cursor, pos ) );
@@ -119,7 +119,7 @@ public class IndexInsert<KEY,VALUE>
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
         {
             // No overflow
-            int pos = search( cursor, primKey );
+            int pos = positionOf( search( cursor, primKey ) );
 
             // Insert and move keys
             int tmpLength = bTreeNode.keysFromTo( cursor, pos, keyCount, tmp );
@@ -169,7 +169,7 @@ public class IndexInsert<KEY,VALUE>
         bTreeNode.setRightSibling( cursor, newRight );
 
         // Find position to insert new key
-        int pos = search( cursor, primKey );
+        int pos = positionOf( search( cursor, primKey ) );
 
         // Arrays to temporarily store keys and children in sorted order.
         int allKeysIncludingNewPrimKeyLength = readRecordsWithInsertRecordInPosition( cursor,
@@ -257,25 +257,27 @@ public class IndexInsert<KEY,VALUE>
             throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
+        int search = search( cursor, key );
+        int pos = positionOf( search );
+        if ( isHit( search ) )
+        {
+            // this key already exists, what shall we do? ask the amender
+            bTreeNode.valueAt( cursor, readValue, pos-1 );
+            VALUE amendedValue = amender.amend( readValue, value );
+            if ( amendedValue != null )
+            {
+                // simple, just write the amended value right in there
+                bTreeNode.setValueAt( cursor, amendedValue, pos-1 );
+                return null; // No split has occurred
+            }
+            // else fall-through to normal insert
+        }
 
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
             // No overflow, insert key and value
-            int pos = search( cursor, key );
 
             // Insert and move keys
-            if ( keyCount > 0 && bTreeNode.keyAt( cursor, readKey, pos ).equals( key ) )
-            {
-                // this key already exists, what shall we do? ask the amender
-                bTreeNode.valueAt( cursor, readValue, pos );
-                VALUE amendedValue = amender.amend( readValue, value );
-                if ( amendedValue != null )
-                {
-                    // simple, just write the amended value right in there
-                    bTreeNode.setValueAt( cursor, amendedValue, pos );
-                    return null; // No split has occurred
-                }
-            }
             int tmpLength = bTreeNode.keysFromTo( cursor, pos, keyCount, tmp );
             bTreeNode.setKeyAt( cursor, key, pos );
             bTreeNode.setKeysAt( cursor, tmp, pos + 1, tmpLength );
@@ -293,6 +295,22 @@ public class IndexInsert<KEY,VALUE>
 
         // Overflow, split leaf
         return splitLeaf( cursor, key, value, amender, keyCount );
+    }
+
+    private static int positionOf( int searchResult )
+    {
+        int pos = searchResult & 0x7FFFFFFF;
+        return pos == 0x7FFFFFFF ? -1 : pos;
+    }
+
+    private static boolean isHit( int searchResult )
+    {
+        return (searchResult & 0x80000000) != 0;
+    }
+
+    private static int searchResult( int pos, boolean hit )
+    {
+        return (pos & 0x7FFFFFFF) | ((hit ? 1 : 0) << 31);
     }
 
     /**
@@ -361,7 +379,7 @@ public class IndexInsert<KEY,VALUE>
         //
 
         // Position where newKey / newValue is to be inserted
-        int pos = search( cursor, newKey );
+        int pos = positionOf( search( cursor, newKey ) );
 
         // arrays to temporarily store all keys and values
         int allKeysIncludingNewKeyLength = readRecordsWithInsertRecordInPosition( cursor,
@@ -496,18 +514,24 @@ public class IndexInsert<KEY,VALUE>
 
         if ( keyCount == 0 )
         {
-            return 0;
+            return searchResult( 0, false );
         }
 
         int lower = 0;
         int higher = keyCount-1;
         int pos;
+        boolean hit = false;
 
         // Compare key with lower and higher and sort out special cases
         Comparator<KEY> comparator = bTreeNode.keyComparator();
-        if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) ) >= 0 )
+        int comparedHigher = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) );
+        if ( comparedHigher >= 0 )
         {
             pos = keyCount;
+            if ( comparedHigher == 0 )
+            {
+                hit = true;
+            }
         }
         else if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower ) ) < 0 )
         {
@@ -522,13 +546,19 @@ public class IndexInsert<KEY,VALUE>
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) < 0 )
+                switch ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) )
                 {
+                case -1:
                     higher = pos;
-                }
-                else
-                {
+                    break;
+                case 0:
+                    hit = true;
+                    // fall-through
+                case 1:
                     lower = pos+1;
+                    break;
+                default:
+                    throw new IllegalArgumentException( "Unexpected compare value" );
                 }
             }
             if ( lower != higher )
@@ -538,7 +568,7 @@ public class IndexInsert<KEY,VALUE>
             }
             pos = lower;
         }
-        return pos;
+        return searchResult( pos, hit );
     }
 
     public VALUE remove( PageCursor cursor, KEY key ) throws IOException
@@ -548,7 +578,8 @@ public class IndexInsert<KEY,VALUE>
             return removeFromLeaf( cursor, key );
         }
 
-        int pos = search( cursor, key );
+        int search = search( cursor, key );
+        int pos = positionOf( search );
         cursor.next( bTreeNode.childAt( cursor, pos ) );
         return remove( cursor, key );
     }
@@ -558,15 +589,16 @@ public class IndexInsert<KEY,VALUE>
         int keyCount = bTreeNode.keyCount( cursor );
 
         // No overflow, insert key and value
-        int pos = search( cursor, key ) - 1;
-
-        // Remove and move keys
-        KEY readKey = bTreeNode.newKey();
-        bTreeNode.keyAt( cursor, readKey, pos );
-        if ( !key.equals( readKey ) )
+        int search = search( cursor, key );
+        int pos = positionOf( search );
+        boolean hit = isHit( search );
+        if ( !hit )
         {
             return null;
         }
+
+        // Remove and move keys
+        pos--;
         int tmpLength = bTreeNode.keysFromTo( cursor, pos + 1, keyCount, tmp );
         bTreeNode.setKeysAt( cursor, tmp, pos, tmpLength );
 
