@@ -56,6 +56,22 @@ public class CoreReplicationIT
     }
 
     @Test
+    public void shouldReplicateTransactionsToCoreMembers() throws Exception
+    {
+        // when
+        CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
+        {
+            Node node = db.createNode( label( "boo" ) );
+            node.setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } );
+
+        // then
+        assertEquals( 1, countNodes( leader ) );
+        dataMatchesEventually( leader, cluster.coreMembers() );
+    }
+
+    @Test
     public void shouldNotAllowWritesFromAFollower() throws Exception
     {
         // given
@@ -125,27 +141,6 @@ public class CoreReplicationIT
             // expected
             assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
         }
-    }
-
-    @Test
-    public void shouldReplicateTransactionsToCoreMembers() throws Exception
-    {
-        // when
-        cluster.coreTx( ( db, tx ) ->
-        {
-            Node node = db.createNode( label( "boo" ) );
-            node.setProperty( "foobar", "baz_bat" );
-            tx.success();
-        } );
-        CoreClusterMember last = cluster.coreTx( ( db, tx ) ->
-        {
-            db.schema().indexFor( label( "boo" ) ).on( "foobar" ).create();
-            tx.success();
-        } );
-
-        // then
-        assertEquals( 1, countNodes( last ) );
-        dataMatchesEventually( last, cluster.coreMembers() );
     }
 
     @Test
