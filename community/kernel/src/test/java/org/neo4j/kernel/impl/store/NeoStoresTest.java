@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -362,7 +361,6 @@ public class NeoStoresTest
     }
 
     @Test
-    @Ignore
     public void testRels2() throws Exception
     {
         initializeStores( storeDir, stringMap() );
