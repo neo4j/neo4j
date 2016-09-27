@@ -156,7 +156,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         }
 
         @Override
-        public void renameFile( File to, CopyOption... options ) throws IOException
+        public void rename( File to, CopyOption... options ) throws IOException
         {
             File parentFile = file.getParentFile();
             fs.mkdirs( to.getParentFile() );

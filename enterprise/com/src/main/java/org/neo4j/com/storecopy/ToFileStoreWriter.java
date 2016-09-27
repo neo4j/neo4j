@@ -104,7 +104,7 @@ public class ToFileStoreWriter implements StoreWriter
             Optional<FileHandle> handle = pageCache.streamFilesRecursive( file ).findAny();
             if ( handle.isPresent() )
             {
-                handle.get().renameFile( new File( toDir, file.getName() ), copyOptions );
+                handle.get().rename( new File( toDir, file.getName() ), copyOptions );
             }
         } );
     }

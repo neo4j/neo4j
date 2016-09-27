@@ -4848,7 +4848,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         Iterable<FileHandle> handles = pageCache.streamFilesRecursive( base )::iterator;
         for ( FileHandle fh : handles )
         {
-            fh.renameFile( b );
+            fh.rename( b );
         }
         List<File> filepaths = pageCache.streamFilesRecursive( base ).map( FileHandle::getFile ).collect( toList() );
         assertThat( filepaths, containsInAnyOrder( b.getCanonicalFile() ) );
@@ -4888,7 +4888,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             Iterable<FileHandle> handles = pageCache.streamFilesRecursive( a.getParentFile() )::iterator;
             for ( FileHandle handle : handles )
             {
-                handle.renameFile( b );
+                handle.rename( b );
             }
         }
     }
@@ -4906,7 +4906,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             Iterable<FileHandle> handles = streamOfA::iterator;
             for ( FileHandle handle : handles )
             {
-                handle.renameFile( b );
+                handle.rename( b );
             }
         }
     }
@@ -4946,7 +4946,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File b = existingFile( "b" );
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
-        handle.renameFile( b );
+        handle.rename( b );
     }
 
     @Test
@@ -4957,7 +4957,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File b = existingFile( "b" );
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
-        handle.renameFile( b, StandardCopyOption.REPLACE_EXISTING );
+        handle.rename( b, StandardCopyOption.REPLACE_EXISTING );
     }
 
     @Test
@@ -4972,7 +4972,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         Iterable<FileHandle> handles = pageCache.streamFilesRecursive( sub )::iterator;
         for ( FileHandle handle : handles )
         {
-            handle.renameFile( target );
+            handle.rename( target );
         }
 
         assertFalse( fs.isDirectory( sub ) );
@@ -5008,7 +5008,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File target = new File( sub, "b" );
 
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
-        handle.renameFile( target );
+        handle.rename( target );
 
         assertTrue( fs.isDirectory( sub ) );
         assertTrue( fs.fileExists( target ) );
@@ -5043,7 +5043,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             observedFiles.add( file );
             if ( file.equals( x ) )
             {
-                handle.renameFile( target );
+                handle.rename( target );
             }
         }
         assertThat( observedFiles, containsInAnyOrder( a, x ) );
@@ -5064,7 +5064,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             observedFiles.add( file );
             if ( file.equals( a ) )
             {
-                handle.renameFile( target );
+                handle.rename( target );
             }
         }
         assertThat( observedFiles, containsInAnyOrder( a ) );
@@ -5080,7 +5080,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File b = file( "b" );
 
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
-        handle.renameFile( b ); // must not throw
+        handle.rename( b ); // must not throw
     }
 
     @Test
@@ -5092,7 +5092,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File b = new File( new File( file( "b" ), "poke" ), ".." );
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
-        handle.renameFile( b );
+        handle.rename( b );
     }
 
     @Test
@@ -5102,7 +5102,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File b = file( "b" );
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
-        handle.renameFile( b );
+        handle.rename( b );
         pageCache.map( b, filePageSize ).close();
     }
 
@@ -5113,7 +5113,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File b = file( "b" );
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
-        handle.renameFile( b );
+        handle.rename( b );
         pageCache.map( a, filePageSize );
         fail( "pageCache.map should have thrown" );
     }
@@ -5126,7 +5126,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File b = file( "b" );
         generateFileWithRecords( a, recordCount, recordSize );
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
-        handle.renameFile( b );
+        handle.rename( b );
         verifyRecordsInFile( b, recordCount );
     }
 
@@ -5156,7 +5156,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         // Do the rename
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
-        handle.renameFile( b, REPLACE_EXISTING );
+        handle.rename( b, REPLACE_EXISTING );
 
         // Then verify that the old random data we put in 'b' has been replaced with the contents of 'a'
         verifyRecordsInFile( b, recordCount );

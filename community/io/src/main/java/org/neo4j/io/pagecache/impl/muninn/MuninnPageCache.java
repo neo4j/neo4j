@@ -418,16 +418,16 @@ public class MuninnPageCache implements PageCache
             }
 
             @Override
-            public void renameFile( File targetFile, CopyOption... options ) throws IOException
+            public void rename( File targetFile, CopyOption... options ) throws IOException
             {
                 synchronized ( MuninnPageCache.this )
                 {
                     File sourceFile = getFile();
                     sourceFile = sourceFile.getCanonicalFile();
                     targetFile = targetFile.getCanonicalFile();
-                    throwIfMapped( sourceFile, FileIsMappedException.Operation.RENAME );
-                    throwIfMapped( targetFile, FileIsMappedException.Operation.RENAME );
-                    fileHandle.renameFile( targetFile, options );
+                    assertNotMapped( sourceFile, FileIsMappedException.Operation.RENAME );
+                    assertNotMapped( targetFile, FileIsMappedException.Operation.RENAME );
+                    fileHandle.rename( targetFile, options );
                 }
             }
 
@@ -436,14 +436,14 @@ public class MuninnPageCache implements PageCache
             {
                 synchronized ( MuninnPageCache.this )
                 {
-                    throwIfMapped( getFile(), FileIsMappedException.Operation.DELETE );
+                    assertNotMapped( getFile(), FileIsMappedException.Operation.DELETE );
                     fileHandle.delete();
                 }
             }
         };
     }
 
-    private void throwIfMapped( File file, FileIsMappedException.Operation operation ) throws IOException
+    private void assertNotMapped( File file, FileIsMappedException.Operation operation ) throws IOException
     {
         if ( tryGetMappingOrNull( file ) != null )
         {

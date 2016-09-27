@@ -62,7 +62,7 @@ public interface FileHandle
      * {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} open option was not specified.
      * @throws IOException if an I/O error occurs, for instance when canonicalising the {@code to} path.
      */
-    void renameFile( File to, CopyOption... options ) throws IOException;
+    void rename( File to, CopyOption... options ) throws IOException;
 
     /**
      * Delete the file that this file handle represents.
