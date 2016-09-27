@@ -50,40 +50,26 @@ import static org.neo4j.coreedge.core.consensus.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.coreedge.core.consensus.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
-@RunWith(Parameterized.class)
-public class RaftLogDurabilityTest
+public class SegmentedRaftLogDurabilityTest
 {
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
-    private final RaftLogFactory logFactory;
-
-    public RaftLogDurabilityTest( RaftLogImplementation ignored, RaftLogFactory logFactory )
+    private final RaftLogFactory logFactory = ( fileSystem ) ->
     {
-        this.logFactory = logFactory;
-    }
+        File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
+        fileSystem.mkdir( directory );
 
-    @Parameters(name = "log:{0}")
-    public static Collection<Object[]> data()
-    {
-        RaftLogFactory segmented = ( fileSystem ) -> {
-            File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
-            fileSystem.mkdir( directory );
+        long rotateAtSizeBytes = 128;
+        int readerPoolSize = 8;
 
-            long rotateAtSizeBytes = 128;
-            int readerPoolSize = 8;
+        SegmentedRaftLog log =
+                new SegmentedRaftLog( fileSystem, directory, rotateAtSizeBytes, new DummyRaftableContentSerializer(),
+                        getInstance(), "1 size", readerPoolSize, Clocks.fakeClock(), new OnDemandJobScheduler() );
+        log.start();
 
-            SegmentedRaftLog log = new SegmentedRaftLog( fileSystem, directory, rotateAtSizeBytes,
-                    new DummyRaftableContentSerializer(),
-                    getInstance(), "1 size", readerPoolSize, Clocks.fakeClock(),
-                    new OnDemandJobScheduler() );
-            log.start();
-
-            return log;
-        };
-
-        return Arrays.asList( new Object[][]{ {SEGMENTED, segmented}  } );
-    }
+        return log;
+    };
 
     @Test
     public void shouldAppendDataAndNotCommitImmediately() throws Exception
@@ -107,9 +93,8 @@ public class RaftLogDurabilityTest
         RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
         log.append( logEntry );
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog -> {
-            assertThat( myLog.appendIndex(), is( 0L ) );
-        } );
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(),
+                myLog -> assertThat( myLog.appendIndex(), is( 0L ) ) );
     }
 
     @Test
