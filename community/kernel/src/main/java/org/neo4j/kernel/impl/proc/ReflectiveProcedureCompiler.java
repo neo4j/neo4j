@@ -59,7 +59,6 @@ import static org.neo4j.helpers.collection.Iterators.asRawIterator;
  */
 public class ReflectiveProcedureCompiler
 {
-    private final MethodHandles.Lookup lookup = MethodHandles.lookup();
     private final OutputMappers outputMappers;
     private final MethodSignatureCompiler inputSignatureDeterminer;
     private final FieldInjections fieldInjections;
@@ -68,8 +67,8 @@ public class ReflectiveProcedureCompiler
 
     public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Supplier<Log> log )
     {
-        inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
-        outputMappers = new OutputMappers( typeMappers );
+        this.inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
+        this.outputMappers = new OutputMappers( typeMappers );
         this.fieldInjections = new FieldInjections( components );
         this.log = log;
         this.typeMappers = typeMappers;
@@ -152,7 +151,7 @@ public class ReflectiveProcedureCompiler
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
-        MethodHandle procedureMethod = lookup.unreflect( method );
+        MethodHandle procedureMethod = MethodHandles.lookup().unreflect( method );
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         Optional<String> description = description( method );
@@ -198,7 +197,7 @@ public class ReflectiveProcedureCompiler
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         Class<?> returnType = method.getReturnType();
         TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
-        MethodHandle procedureMethod = lookup.unreflect( method );
+        MethodHandle procedureMethod = MethodHandles.lookup().unreflect( method );
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         Optional<String> description = description( method );
@@ -262,7 +261,7 @@ public class ReflectiveProcedureCompiler
     {
         try
         {
-            return lookup.unreflectConstructor( procDefinition.getConstructor() );
+            return MethodHandles.lookup().unreflectConstructor( procDefinition.getConstructor() );
         }
         catch ( IllegalAccessException | NoSuchMethodException e )
         {
