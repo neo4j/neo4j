@@ -32,11 +32,9 @@ import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.hamcrest.CoreMatchers;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -44,7 +42,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -1051,15 +1048,15 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         creator.delete( b );
         restartTx();
 
-        Iterators.count( (Iterator<Node>) index.get( key, value ) );
+        Iterators.count( index.get( key, value ) );
         rollbackTx();
         beginTx();
 
-        Iterators.count( (Iterator<Node>) index.get( key, value ) );
+        Iterators.count( index.get( key, value ) );
         index.add( c, "something", "whatever" );
         restartTx();
 
-        Iterators.count( (Iterator<Node>) index.get( key, value ) );
+        Iterators.count( index.get( key, value ) );
     }
 
     @Test
@@ -1604,28 +1601,6 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         }
         catch ( IllegalArgumentException e )
         {   // OK
-        }
-    }
-
-    @Ignore( "an issue that should be fixed at some point" )
-    @Test( expected = NotFoundException.class )
-    public void shouldNotBeAbleToIndexNodeThatIsNotCommitted() throws Exception
-    {
-        Index<Node> index = nodeIndex(
-                LuceneIndexImplementation.EXACT_CONFIG );
-        Node node = graphDb.createNode();
-        String key = "noob";
-        String value = "Johan";
-
-        WorkThread thread = new WorkThread( "other thread", index, graphDb, node );
-        thread.beginTransaction();
-        try
-        {
-            thread.add( node, key, value );
-        }
-        finally
-        {
-            thread.rollback();
         }
     }
 
