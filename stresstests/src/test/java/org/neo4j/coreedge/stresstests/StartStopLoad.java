@@ -33,12 +33,11 @@ class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
     }
 
     @Override
-    protected boolean doWorkOnMember( boolean isCore, int id )
+    protected void doWorkOnMember( boolean isCore, int id )
     {
         ClusterMember member = isCore ? cluster.getCoreMemberById( id ) : cluster.getEdgeMemberById( id );
         member.shutdown();
         LockSupport.parkNanos( 5_000_000_000L );
         member.start();
-        return true;
     }
 }

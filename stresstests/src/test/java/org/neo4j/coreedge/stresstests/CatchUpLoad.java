@@ -48,7 +48,7 @@ class CatchUpLoad extends RepeatUntilCallable
     }
 
     @Override
-    protected boolean doWork()
+    protected void doWork()
     {
         CoreClusterMember leader;
         try
@@ -58,7 +58,7 @@ class CatchUpLoad extends RepeatUntilCallable
         catch ( TimeoutException e )
         {
             // whatever... we'll try again
-            return true;
+            return;
         }
 
         long txIdBeforeStartingNewEdge = txId( leader );
@@ -84,8 +84,6 @@ class CatchUpLoad extends RepeatUntilCallable
         {
             throw new RuntimeException( exception.get() );
         }
-
-        return true;
     }
 
     private AtomicReference<Throwable> startAndRegisterExceptionMonitor( EdgeClusterMember edgeClusterMember )

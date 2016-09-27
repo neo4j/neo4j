@@ -37,7 +37,7 @@ class Workload extends RepeatUntilCallable
     }
 
     @Override
-    protected boolean doWork()
+    protected void doWork()
     {
         try
         {
@@ -64,6 +64,5 @@ class Workload extends RepeatUntilCallable
         {
             // whatever let's go on with the workload
         }
-        return true;
     }
 }
