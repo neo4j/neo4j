@@ -432,6 +432,7 @@ public class MultiRealmAuthManagerTest
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
         logProvider.assertExactly(
                 info( "[neo]: logged in" ),
+                info( "[neo]: changed password%s", "" ),
                 info( "[neo]: logged in" ) );
     }
 

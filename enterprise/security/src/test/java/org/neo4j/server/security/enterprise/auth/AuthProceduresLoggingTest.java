@@ -54,14 +54,15 @@ public class AuthProceduresLoggingTest
     @Before
     public void setUp() throws Throwable
     {
-        EnterpriseUserManager userManager = getUserManager();
-        AuthSubject adminSubject = new TestAuthSubject( "admin", true, userManager );
-        matsSubject = new TestAuthSubject( "mats", false, userManager );
-
         log = new AssertableLogProvider();
         authProcedures = new TestAuthProcedures();
-        authProcedures.authSubject = adminSubject;
         authProcedures.securityLog = new SecurityLog( log.getLog( getClass() ) );
+
+        EnterpriseUserManager userManager = getUserManager();
+        AuthSubject adminSubject = new TestAuthSubject( "admin", true, userManager, authProcedures.securityLog );
+        matsSubject = new TestAuthSubject( "mats", false, userManager, authProcedures.securityLog );
+
+        authProcedures.authSubject = adminSubject;
         authProcedures.graph = mock( GraphDatabaseAPI.class );
     }
 
@@ -258,9 +259,9 @@ public class AuthProceduresLoggingTest
 
         // Then
         log.assertExactly(
-                error( "[admin]: tried to change %s: %s", "password for user `andres`", "Old password and new password cannot be the same." ),
-                error( "[admin]: tried to change %s: %s", "password for user `andres`", "A password cannot be empty." ),
-                error( "[admin]: tried to change %s: %s", "password for user `notAndres`", "User 'notAndres' does not exist." )
+                error( "[admin]: tried to change password for user `%s`: %s", "andres", "Old password and new password cannot be the same." ),
+                error( "[admin]: tried to change password for user `%s`: %s", "andres", "A password cannot be empty." ),
+                error( "[admin]: tried to change password for user `%s`: %s", "notAndres", "User 'notAndres' does not exist." )
         );
     }
 
@@ -282,8 +283,8 @@ public class AuthProceduresLoggingTest
 
         // Then
         log.assertExactly(
-                error( "[mats]: tried to change %s: %s", "password", "Old password and new password cannot be the same." ),
-                error( "[mats]: tried to change %s: %s", "password", "A password cannot be empty." ),
+                error( "[mats]: tried to change password: %s", "Old password and new password cannot be the same." ),
+                error( "[mats]: tried to change password: %s", "A password cannot be empty." ),
                 error( "[mats]: tried to change password: %s", "A password cannot be empty." ),
                 error( "[mats]: tried to change password: %s", "A password cannot be empty." ),
                 error( "[mats]: tried to change password: %s", "Old password and new password cannot be the same." )
@@ -303,7 +304,7 @@ public class AuthProceduresLoggingTest
 
         // Then
         log.assertExactly(
-                error( "[mats]: tried to change %s: %s", "password for user `andres`", PERMISSION_DENIED )
+                error( "[mats]: tried to change password for user `%s`: %s", "andres", PERMISSION_DENIED )
         );
     }
 
@@ -628,9 +629,9 @@ public class AuthProceduresLoggingTest
         private final boolean isAdmin;
         private final EnterpriseUserManager userManager;
 
-        TestAuthSubject( String name, boolean isAdmin, EnterpriseUserManager userManager )
+        TestAuthSubject( String name, boolean isAdmin, EnterpriseUserManager userManager, SecurityLog securityLog )
         {
-            super(null, new TestShiroSubject( name ));
+            super( null, new TestShiroSubject( name ), securityLog );
             this.name = name;
             this.isAdmin = isAdmin;
             this.userManager = userManager;

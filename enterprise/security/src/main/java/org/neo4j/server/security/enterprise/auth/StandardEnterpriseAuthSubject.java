@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 
 public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 {
@@ -37,16 +38,19 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 
     private final EnterpriseAuthAndUserManager authManager;
     private final ShiroSubject shiroSubject;
+    private final SecurityLog securityLog;
 
     public static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
     {
         return EnterpriseAuthSubject.castOrFail( StandardEnterpriseAuthSubject.class, authSubject );
     }
 
-    public StandardEnterpriseAuthSubject( EnterpriseAuthAndUserManager authManager, ShiroSubject shiroSubject )
+    public StandardEnterpriseAuthSubject( EnterpriseAuthAndUserManager authManager, ShiroSubject shiroSubject,
+            SecurityLog securityLog )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;
+        this.securityLog = securityLog;
     }
 
     @Override
@@ -71,7 +75,17 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     public void setPassword( String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        getUserManager().setUserPassword( (String) shiroSubject.getPrincipal(), password, requirePasswordChange );
+        try
+        {
+            getUserManager().setUserPassword( (String) shiroSubject.getPrincipal(), password, requirePasswordChange );
+            securityLog.info( this, "changed password%s",
+                    requirePasswordChange ? ", with password change required" : "" );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( this, "tried to change password: %s", e.getMessage() );
+            throw e;
+        }
 
         // Make user authenticated if successful
         if ( getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
