@@ -31,7 +31,7 @@ public interface SCInserter<KEY,VALUE> extends Closeable
         insert( key, value, insertNew() );
     }
 
-    void insert( KEY key, VALUE value, ValueAmender<VALUE> ammender ) throws IOException;
+    void insert( KEY key, VALUE value, ValueAmender<VALUE> amender ) throws IOException;
 
     VALUE remove( KEY key ) throws IOException;
 }

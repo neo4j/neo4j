@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index.persson;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.index.BTreeHit;
@@ -69,39 +68,7 @@ class NativeLabelScanReader implements LabelScanReader
             throw new RuntimeException( e );
         }
 
-        return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
-        {
-            private long baseNodeId;
-            private long bits;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                while ( true )
-                {
-                    if ( bits != 0 )
-                    {
-                        return nextFromCurrent();
-                    }
-
-                    if ( !cursor.next() )
-                    {
-                        return false;
-                    }
-
-                    BTreeHit<LabelScanKey,LabelScanValue> hit = cursor.get();
-                    baseNodeId = hit.key().nodeId * rangeSize;
-                    bits = hit.value().bits;
-                }
-            }
-
-            private boolean nextFromCurrent()
-            {
-                int delta = Long.numberOfTrailingZeros( bits );
-                bits &= bits-1;
-                return next( baseNodeId + delta );
-            }
-        };
+        return new LabelScanValueIterator( rangeSize, cursor );
     }
 
     @Override

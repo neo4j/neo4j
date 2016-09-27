@@ -23,28 +23,28 @@ public class LabelScanValue
 {
     public long bits;
 
-    public boolean get( int bit )
+    /**
+     * Every set bit means a bit which should be set in our bits.
+     *
+     * @param other value containing bits to add.
+     * @return this instance, now with added bits from {@code other}.
+     */
+    public LabelScanValue add( LabelScanValue other )
     {
-        assert bit >= 0 && bit < Long.SIZE;
-        return (bits & mask( bit )) != 0;
+        bits |= other.bits;
+        return this;
     }
 
-    private long mask( int bit )
+    /**
+     * Every set bit means a bit which should be cleared in our bits.
+     *
+     * @param other value containing bits to remove.
+     * @return this instance, now with removed bits from {@code other}.
+     */
+    public LabelScanValue remove( LabelScanValue other )
     {
-        return 1L << bit;
-    }
-
-    public void set( int bit, boolean value )
-    {
-        assert bit >= 0 && bit < Long.SIZE;
-        if ( value )
-        {
-            bits |= mask( bit );
-        }
-        else
-        {
-            bits &= ~mask( bit );
-        }
+        bits &= ~other.bits;
+        return this;
     }
 
     @Override

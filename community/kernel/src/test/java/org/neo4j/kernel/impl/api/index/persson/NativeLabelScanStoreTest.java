@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.BitSet;
+import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -91,7 +92,7 @@ public class NativeLabelScanStoreTest
         }
     }
 
-    private long[] nodesWithLabel( long[] expected, int labelId )
+    public static long[] nodesWithLabel( long[] expected, int labelId )
     {
         int mask = (1 << labelId);
         int count = 0;
@@ -105,7 +106,7 @@ public class NativeLabelScanStoreTest
 
         long[] result = new long[count];
         int cursor = 0;
-        for ( int nodeId = 0; nodeId < NODE_COUNT; nodeId++ )
+        for ( int nodeId = 0; nodeId < expected.length; nodeId++ )
         {
             long labels = expected[nodeId];
             if ( (labels & mask) != 0 )
@@ -135,7 +136,7 @@ public class NativeLabelScanStoreTest
                 long[] labelsBefore = getLabels( labels );
                 for ( int j = 0; j < changeSize; j++ )
                 {
-                    labels = flipRandom( labels );
+                    labels = flipRandom( labels, random.random() );
                 }
                 long[] labelsAfter = getLabels( labels );
                 editedNodes.set( nodeId );
@@ -147,12 +148,12 @@ public class NativeLabelScanStoreTest
         }
     }
 
-    private long flipRandom( long existingLabels )
+    public static long flipRandom( long existingLabels, Random random )
     {
         return existingLabels ^ (1 << random.nextInt( LABEL_COUNT ));
     }
 
-    private static long[] getLabels( long bits )
+    public static long[] getLabels( long bits )
     {
         long[] result = new long[Long.bitCount( bits )];
         for ( int labelId = 0, c = 0; labelId < LABEL_COUNT; labelId++ )
