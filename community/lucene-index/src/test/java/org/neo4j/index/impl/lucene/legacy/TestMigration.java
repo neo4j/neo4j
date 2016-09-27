@@ -19,19 +19,14 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -42,13 +37,11 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestMigration
@@ -75,46 +68,6 @@ public class TestMigration
             verifyConfiguration( db, indexThree, LuceneIndexImplementation.EXACT_CONFIG );
         }
         db.shutdown();
-    }
-
-    @Test
-    @Ignore( "These upgrade tests only work for one version difference" )
-    public void canUpgradeFromPreviousVersion() throws Exception
-    {
-        GraphDatabaseService db = unpackDbFrom( "db-with-v3.0.1.zip" );
-        Index<Node> index = db.index().forNodes( "v3.0.1" );
-        Node node = index.get( "key", "value" ).getSingle();
-        assertNotNull( node );
-        db.shutdown();
-    }
-
-    private GraphDatabaseService unpackDbFrom( String file ) throws IOException
-    {
-        File path = new File( "target/var/zipup" );
-        FileUtils.deleteRecursively( path );
-        path.mkdirs();
-        ZipInputStream zip = new ZipInputStream( getClass().getClassLoader().getResourceAsStream( file ) );
-        ZipEntry entry = null;
-        byte[] buffer = new byte[2048];
-        while ( (entry = zip.getNextEntry()) != null )
-        {
-            if ( entry.isDirectory() )
-            {
-                new File( path, entry.getName() ).mkdirs();
-                continue;
-            }
-            FileOutputStream fos = new FileOutputStream( new File( path, entry.getName() ) );
-            BufferedOutputStream bos = new BufferedOutputStream( fos, buffer.length );
-
-            int size;
-            while ( (size = zip.read( buffer, 0, buffer.length )) != -1 )
-            {
-                bos.write( buffer, 0, size );
-            }
-            bos.flush();
-            bos.close();
-        }
-        return startDatabase( path );
     }
 
     private void verifyConfiguration( GraphDatabaseService db, Index<? extends PropertyContainer> index, Map<String, String> config )
