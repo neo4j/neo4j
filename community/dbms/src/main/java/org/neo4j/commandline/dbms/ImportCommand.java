@@ -79,7 +79,7 @@ public class ImportCommand implements AdminCommand
     private final ImporterFactory importerFactory;
     private final String[] allowedModes = {"database", "csv"};
 
-    ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this( homeDir, configDir, outsideWorld, new ImporterFactory() );
     }

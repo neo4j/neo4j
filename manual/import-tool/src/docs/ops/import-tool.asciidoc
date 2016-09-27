@@ -7,7 +7,7 @@ This chapter explains how to use the tool, format the input data and concludes w
 
 These are some things you'll need to keep in mind when creating your input files:
 
-* Fields are comma separated by default but a different delimiter can be specified.
+* Fields are comma separated.
 * All files must use the same delimiter.
 * Multiple data sources can be used for both nodes and relationships.
 * A data source can optionally be provided using multiple files.
@@ -87,11 +87,13 @@ We also need to reference that id space in our relationships file i.e. `START_ID
 
 === Linux
 
-Under Unix/Linux/OSX, the command is named `neo4j-import`. Depending on the installation type, the tool is either available globally, or used by executing `./bin/neo4j-import` from inside the installation directory.
+Under Unix/Linux/OSX, the command is named `neo4j-admin import --mode=csv`. Depending on the installation type, the tool
+ is either
+available globally, or used by executing `./bin/neo4j-admin import --mode=csv` from inside the installation directory.
 
 === Windows
 
-Under Windows, used by executing `bin\neo4j-import` from inside the installation directory.
+Under Windows, used by executing `bin\neo4j-admin import --mode=csv` from inside the installation directory.
 
 For help with running the import tool under Windows, see the reference in <<powershell-windows,Windows>>.
 
@@ -122,12 +124,6 @@ Would be interpreted as:
 
 Observing the section sizes can give hints about where performance can be improved.
 In the example above, the bottleneck is the data read section (marked with `>`), which might indicate that the disk is being slow, or is poorly handling simultaneous read and write operations (since the last section often revolves around writing to disk).
-
-[[import-tool-verbose-error-information]]
-=== Verbose error information
-
-In some cases if an unexpected error occurs it might be useful to supply the command line option `--stacktrace` to the import (and rerun the import to actually see the additional information).
-This will have the error printed with additional debug information, useful for both developers and issue reporting.
 
 [[import-tool-examples]]
 == Import tool examples
@@ -185,39 +181,9 @@ We're now ready to start up a database from the target directory. (see <<server-
 Once we've got the database up and running we can add appropriate indexes. (see <<cypherdoc-labels-constraints-and-indexes>>.)
 
 [TIP]
-It is possible to import only nodes using the import tool - just don't specify a relationships file when calling `neo4j-import`.
+It is possible to import only nodes using the import tool - just don't specify a relationships file when calling
+`neo4j-admin import`.
 If you do this you'll need to create relationships later by another method - the import tool only works for initial graph population.
-
-[[import-tool-configuration-example]]
-=== Customizing configuration options
-
-We can customize the configuration options that the import tool uses (see <<import-tool-options>>) if our data doesn't fit the default format.
-The following CSV files are delimited by `;`,  use `|` as their array delimiter and use `'` for quotes.
-
-.movies2.csv
-[source]
-----
-include::movies2.csv[]
-----
-
-.actors2.csv
-[source]
-----
-include::actors2.csv[]
-----
-
-.roles2.csv
-[source]
-----
-include::roles2.csv[]
-----
-
-We can then import these files with the following command line options:
-
-[source]
-----
-include::custom-delimiter-quotation-command.adoc[]
-----
 
 [[import-tool-separate-headers-example]]
 === Using separate header files
@@ -335,7 +301,7 @@ include::roles4-part1.csv[]
 include::roles4-part2.csv[]
 ----
 
-The call to `neo4j-import` would look like this:
+The call to `neo4j-admin import` would look like this:
 
 [source]
 ----
@@ -348,7 +314,8 @@ include::multiple-input-files.adoc[]
 [[import-tool-same-label-for-every-node-example]]
 ==== Using the same label for every node
 
-If you want to use the same node label(s) for every node in your nodes file you can do this by specifying the appropriate value as an option to `neo4j-import`.
+If you want to use the same node label(s) for every node in your nodes file you can do this by specifying the
+appropriate value as an option to `neo4j-admin import`.
 In this example we'll put the label `Movie` on every node specified in `movies5.csv`:
 
 .movies5.csv
@@ -381,7 +348,7 @@ include::actors5.csv[]
 include::roles5.csv[]
 ----
 
-The call to `neo4j-import` would look like this:
+The call to `neo4j-admin import` would look like this:
 
 [source]
 ----
@@ -392,7 +359,7 @@ include::same-node-label-everywhere.adoc[]
 ==== Using the same relationship type for every relationship
 
 If you want to use the same relationship type for every relationship in your relationships file you can do this by
-specifying the appropriate value as an option to `neo4j-import`.
+specifying the appropriate value as an option to `neo4j-admin import`.
 In this example we'll put the relationship type `ACTED_IN` on every relationship specified in `roles6.csv`:
 
 .movies6.csv
@@ -417,7 +384,7 @@ include::roles6.csv[]
 If you provide a relationship type on the command line and in the relationships file the one in the file will be
 applied.
 
-The call to `neo4j-import` would look like this:
+The call to `neo4j-admin import` would look like this:
 
 [source]
 ----
@@ -451,7 +418,7 @@ include::actors7.csv[]
 include::roles7.csv[]
 ----
 
-The arguments to `neo4j-import` would be the following:
+The arguments to `neo4j-admin import` would be the following:
 
 [source]
 ----
@@ -461,7 +428,7 @@ include::property-types.adoc[]
 [[import-tool-id-handling]]
 === ID handling
 
-Each node processed by `neo4j-import` must provide a unique id.
+Each node processed by `neo4j-admin import` must provide a unique id.
 We use this id to find the correct nodes when creating relationships.
 
 [[import-tool-sequential-identifiers-example]]
@@ -506,8 +473,6 @@ include::id-spaces.adoc[]
 
 The import tool has a threshold of how many bad entities (nodes/relationships) to tolerate and skip before failing the import.
 By default `1000` bad entities are tolerated.
-A bad tolerance of `0` will as an example fail the import on the first bad entity.
-For more information, see the +<<import-tool-option-bad-tolerance, --bad-tolerance>>+ option.
 
 There are different types of bad input, which we will look into.
 
@@ -515,9 +480,6 @@ There are different types of bad input, which we will look into.
 ==== Relationships referring to missing nodes
 
 Relationships that refer to missing node ids, either for `:START_ID` or `:END_ID` are considered bad relationships.
-Whether or not such relationships are skipped is controlled with `--skip-bad-relationships` flag which can have the values `true` or `false` or no value, which means `true`.
-Specifying `false` means that any bad relationship is considered an error and will fail the import.
-For more information, see the +<<import-tool-option-skip-bad-relationships, --skip-bad-relationships>>+ option.
 
 In the following example there is a missing `emil` node referenced in the roles file.
 
@@ -558,9 +520,6 @@ include::bad-relationships-default-not-imported.bad.adoc[]
 ==== Multiple nodes with same id within same id space
 
 Nodes that specify `:ID` which has already been specified within the id space are considered bad nodes.
-Whether or not such nodes are skipped is controlled with `--skip-duplicate-nodes` flag which can have the values `true` or `false` or no value, which means `true`.
-Specifying `false` means that any duplicate node is considered an error and will fail the import.
-For more information, see the +<<import-tool-option-skip-duplicate-nodes, --skip-duplicate-nodes>>+ option.
 
 In the following example there is a node id that is specified twice within the same id space.
 
