@@ -20,7 +20,6 @@
 package upgrade;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,7 +34,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelAPI;
@@ -126,35 +124,6 @@ public class TestMigrateToDenseNodeSupport
     }
 
     @Test
-    @Ignore( "Used for creating the dataset, using the previous store version" )
-    public void createDb()
-    {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
-        try
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node refNode = db.createNode( referenceNode );
-                // Create 10 dense nodes
-                for ( int i = 0; i < 10; i++ )
-                {
-                    createDenseNode( db, refNode );
-                }
-                // And 10 sparse nodes
-                for ( int i = 0; i < 10; i++ )
-                {
-                    createSparseNode( db, refNode );
-                }
-                tx.success();
-            }
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
-    @Test
     public void migrateDbWithDenseNodes() throws Exception
     {
         // migrate
@@ -235,36 +204,4 @@ public class TestMigrateToDenseNodeSupport
         }
     }
 
-    private void createSparseNode( GraphDatabaseService db, Node refNode )
-    {
-        Node node = db.createNode();
-        refNode.createRelationshipTo( node, Types.SPARSE );
-        createRelationships( db, node, 3, Types.OTHER );
-        setProperties( node );
-    }
-
-    private void createDenseNode( GraphDatabaseService db, Node refNode )
-    {
-        Node node = db.createNode();
-        refNode.createRelationshipTo( node, Types.DENSE );
-        createRelationships( db, node, 100, Types.OTHER );
-        createRelationships( db, node, 2, Types.FOURTH );
-        setProperties( node );
-    }
-
-    private void createRelationships( GraphDatabaseService db, Node node, int count, RelationshipType type )
-    {
-        for ( int i = 0; i < count; i++ )
-        {
-            node.createRelationshipTo( db.createNode(), type );
-        }
-    }
-
-    private void setProperties( Node node )
-    {
-        for ( Properties properties : Properties.values() )
-        {
-            node.setProperty( properties.name(), properties.getValue() );
-        }
-    }
 }
