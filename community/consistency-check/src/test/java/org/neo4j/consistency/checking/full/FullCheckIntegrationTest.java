@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -31,7 +30,6 @@ import org.junit.rules.RuleChain;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -94,7 +92,6 @@ import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -260,34 +257,6 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    @Ignore("Support for checking MetaDataStore needs to be added")
-    public void shouldReportNeoStoreInconsistencies() throws Exception
-    {
-        // given
-        fixture.apply( new GraphStoreFixture.Transaction()
-        {
-            @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
-            {
-                NeoStoreRecord before = new NeoStoreRecord();
-                NeoStoreRecord after = new NeoStoreRecord();
-                after.setNextProp( next.property() );
-                tx.update( before, after );
-                // We get exceptions when only the above happens in a transaction...
-                tx.create( new NodeRecord( next.node(), false, -1, -1 ) );
-            }
-        } );
-
-        // when
-        ConsistencySummaryStatistics stats = check();
-
-        // then
-        on( stats ).verify( RecordType.NEO_STORE, 1 )
-                   .andThatsAllFolks();
-    }
-
-    @Test
     public void shouldReportNodeInconsistencies() throws Exception
     {
         // given
@@ -373,41 +342,6 @@ public class FullCheckIntegrationTest
 
         // then
         assertTrue( "should be consistent", stats.isConsistent() );
-    }
-
-    @Test
-    @Ignore("2013-07-17 Revisit once we store sorted label ids")
-    public void shouldReportOrphanNodeDynamicLabelAsInconsistency() throws Exception
-    {
-        // given
-        final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 130 ).first();
-        assertEquals( 3, chain.size() );
-        fixture.apply( new GraphStoreFixture.Transaction()
-        {
-            @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
-            {
-                DynamicRecord record1 = inUse( new DynamicRecord( chain.get( 0 ).getId() ) );
-                DynamicRecord record2 = notInUse( new DynamicRecord( chain.get( 1 ).getId() ) );
-                long[] data = (long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) );
-                ReusableRecordsAllocator allocator = new ReusableRecordsAllocator( 60, record1 );
-                allocateFromNumbers( new ArrayList<>(), Arrays.copyOf( data, 11 ), allocator );
-
-                NodeRecord before = inUse( new NodeRecord( data[0], false, -1, -1 ) );
-                NodeRecord after = inUse( new NodeRecord( data[0], false, -1, -1 ) );
-                before.setLabelField( dynamicPointer( asList( record1 ) ), chain );
-                after.setLabelField( dynamicPointer( asList( record1 ) ), asList( record1, record2 ) );
-                tx.update( before, after );
-            }
-        } );
-
-        // when
-        ConsistencySummaryStatistics stats = check();
-
-        // then
-        on( stats ).verify( RecordType.NODE_DYNAMIC_LABEL, 1 )
-                   .andThatsAllFolks();
     }
 
     @Test
