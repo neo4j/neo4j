@@ -21,7 +21,6 @@ package org.neo4j.com.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.util.Map;
 import java.util.Optional;
@@ -34,12 +33,12 @@ import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -99,12 +98,6 @@ public class ExternallyManagedPageCache implements PageCache
     public int maxCachedPages()
     {
         return delegate.maxCachedPages();
-    }
-
-    @Override
-    public void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException
-    {
-        delegate.renameFile( sourceFile, targetFile, copyOptions );
     }
 
     @Override

@@ -29,6 +29,16 @@ public interface FileHandle
 
     File getFile();
 
+    /**
+     * Rename source file to the given target file, effectively moving the file from source to target.
+     *
+     * Both files have to be unmapped when performing the rename, otherwise an exception will be thrown.
+     *
+     * @param to The new name of the file after the rename.
+     * @param options Options to modify the behaviour of the move in possibly platform specific ways. In particular,
+     * {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} may be used to overwrite any existing file at the
+     * target path name, instead of throwing an exception.
+     */
     void renameFile( File to, CopyOption... options ) throws IOException;
 
     void delete() throws IOException;

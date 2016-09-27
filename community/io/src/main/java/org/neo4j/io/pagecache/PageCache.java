@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
@@ -96,19 +95,6 @@ public interface PageCache extends AutoCloseable
 
     /** The max number of cached pages. */
     int maxCachedPages();
-
-    /**
-     * Rename source file to the given target file, effectively moving the file from source to target.
-     *
-     * Both files have to be unmapped when performing the rename, otherwise an exception will be thrown.
-     *
-     * @param sourceFile The name of the file to rename.
-     * @param targetFile The new name of the file after the rename.
-     * @param copyOptions Options to modify the behaviour of the move in possibly platform specific ways. In particular,
-     * {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} may be used to overwrite any existing file at the
-     * target path name, instead of throwing an exception.
-     */
-    void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException;
 
     Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
 }

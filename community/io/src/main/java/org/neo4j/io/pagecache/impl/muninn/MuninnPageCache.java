@@ -402,17 +402,6 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions )
-            throws IOException
-    {
-        sourceFile = sourceFile.getCanonicalFile();
-        targetFile = targetFile.getCanonicalFile();
-        throwIfMapped( sourceFile, FileIsMappedException.Operation.RENAME );
-        throwIfMapped( targetFile, FileIsMappedException.Operation.RENAME );
-        swapperFactory.renameUnopenedFile( sourceFile, targetFile, copyOptions );
-    }
-
-    @Override
     public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
         return swapperFactory.streamFilesRecursive( directory.getCanonicalFile() ).map( this::checkingFileHandle );
