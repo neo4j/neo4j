@@ -20,7 +20,6 @@
 package org.neo4j.index.btree;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -57,21 +56,24 @@ public class IndexTest
     public final TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
     private PageCache pageCache;
     private File indexFile;
-    private final int pageSize = 1024;
     private final SCIndexDescription description = new SCIndexDescription( "a", "b", "c", OUTGOING, "d", null );
+    @SuppressWarnings( "rawtypes" )
+    private Index index;
 
-    @Before
-    public void setUpPageCache() throws IOException
+    @SuppressWarnings( "unchecked" )
+    public <KEY,VALUE> Index<KEY,VALUE> createIndex( int pageSize, TreeItemLayout<KEY,VALUE> layout ) throws IOException
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.setFileSystemAbstraction( new DefaultFileSystemAbstraction() );
         pageCache = new MuninnPageCache( swapperFactory, 100, pageSize, NULL );
         indexFile = folder.newFile( "index" );
+        return index = new Index<>( pageCache, indexFile, new PathIndexLayout(), description, pageSize );
     }
 
     @After
     public void closePageCache() throws IOException
     {
+        index.close();
         pageCache.close();
     }
 
@@ -80,88 +82,119 @@ public class IndexTest
     {
         // GIVEN
         TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout();
-        try ( Index<TwoLongs,TwoLongs> index = new Index<>( pageCache, indexFile, layout, description, pageSize ) )
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
         {   // Open/close is enough
         }
 
         // WHEN
-        try ( Index<TwoLongs,TwoLongs> index = new Index<>( pageCache, indexFile, layout ) )
-        {
-            SCIndexDescription readDescription = index.getDescription();
+        index = new Index<>( pageCache, indexFile, layout );
+        SCIndexDescription readDescription = index.getDescription();
 
-            // THEN
-            assertEquals( description, readDescription );
-        }
+        // THEN
+        assertEquals( description, readDescription );
     }
 
     @Test
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        try ( Index<TwoLongs,TwoLongs> index =
-                new Index<>( pageCache, indexFile, new PathIndexLayout(), description, pageSize ) )
+        Index<TwoLongs,TwoLongs> index = createIndex( 1024, new PathIndexLayout() );
+        Comparator<TwoLongs> keyComparator = index.getTreeNode().keyComparator();
+        Map<TwoLongs,TwoLongs> data = new TreeMap<>( keyComparator );
+        long seed = currentTimeMillis();
+        Random random = new Random( seed );
+        int count = 1000;
+        for ( int i = 0; i < count; i++ )
         {
-            Comparator<TwoLongs> keyComparator = index.getTreeNode().keyComparator();
-            Map<TwoLongs,TwoLongs> data = new TreeMap<>( keyComparator );
-            long seed = currentTimeMillis();
-            Random random = new Random( seed );
-            int count = 1000;
+            data.put( randomTreeThing( random ), randomTreeThing( random ) );
+        }
+
+        // WHEN
+        try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
+        {
+            for ( Map.Entry<TwoLongs,TwoLongs> entry : data.entrySet() )
+            {
+                inserter.insert( entry.getKey(), entry.getValue() );
+            }
+        }
+
+        for ( int round = 0; round < 10; round++ )
+        {
+            // THEN
             for ( int i = 0; i < count; i++ )
             {
-                data.put( randomTreeThing( random ), randomTreeThing( random ) );
-            }
-
-            // WHEN
-            try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
-            {
-                for ( Map.Entry<TwoLongs,TwoLongs> entry : data.entrySet() )
+                TwoLongs first = randomTreeThing( random );
+                TwoLongs second = randomTreeThing( random );
+                TwoLongs from, to;
+                if ( first.first < second.first )
                 {
-                    inserter.insert( entry.getKey(), entry.getValue() );
+                    from = first;
+                    to = second;
+                }
+                else
+                {
+                    from = second;
+                    to = first;
+                }
+                Map<TwoLongs,TwoLongs> expectedHits = expectedHits( data, from, to, keyComparator );
+                try ( Cursor<BTreeHit<TwoLongs,TwoLongs>> result = index.seek( from, to ) )
+                {
+                    while ( result.next() )
+                    {
+                        TwoLongs key = result.get().key();
+                        if ( expectedHits.remove( key ) == null )
+                        {
+                            fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
+                        }
+
+                        assertTrue( keyComparator.compare( key, from ) >= 0 );
+                        assertTrue( keyComparator.compare( key, to ) < 0 );
+                    }
+                    if ( !expectedHits.isEmpty() )
+                    {
+                        fail( "There were results which were expected to be returned, but weren't:" + expectedHits +
+                                " when searching range " + from + " - " + to );
+                    }
                 }
             }
 
-            for ( int round = 0; round < 10; round++ )
+            randomlyModifyIndex( index, data, random );
+        }
+    }
+
+    @Test
+    public void shouldSplitCorrectly() throws Exception
+    {
+        // GIVEN
+        Index<TwoLongs,TwoLongs> index = createIndex( 128, new PathIndexLayout() );
+
+        // WHEN
+        long seed = currentTimeMillis();
+        System.out.println( "Seed:" + seed );
+        Random random = new Random( seed );
+        try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
+        {
+            for ( int i = 0; i < 1_000; i++ )
             {
-                // THEN
-                for ( int i = 0; i < count; i++ )
+                TwoLongs key = new TwoLongs( random.nextInt( 100_000 ), 0 );
+                TwoLongs value = new TwoLongs();
+                inserter.insert( key, value );
+            }
+        }
+
+        // THEN
+        try ( Cursor<BTreeHit<TwoLongs,TwoLongs>> cursor = index.seek( new TwoLongs( 0, 0 ), new TwoLongs( Long.MAX_VALUE, 0 ) ) )
+        {
+            TwoLongs prev = new TwoLongs( -1, -1 );
+            while ( cursor.next() )
+            {
+                TwoLongs hit = cursor.get().key();
+                if ( hit.first < prev.first )
                 {
-                    TwoLongs first = randomTreeThing( random );
-                    TwoLongs second = randomTreeThing( random );
-                    TwoLongs from, to;
-                    if ( first.first < second.first )
-                    {
-                        from = first;
-                        to = second;
-                    }
-                    else
-                    {
-                        from = second;
-                        to = first;
-                    }
-                    Map<TwoLongs,TwoLongs> expectedHits = expectedHits( data, from, to, keyComparator );
-                    try ( Cursor<BTreeHit<TwoLongs,TwoLongs>> result = index.seek( from, to ) )
-                    {
-                        while ( result.next() )
-                        {
-                            TwoLongs key = result.get().key();
-                            if ( expectedHits.remove( key ) == null )
-                            {
-                                index.printTree();
-                                fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
-                            }
-
-                            assertTrue( keyComparator.compare( key, from ) >= 0 );
-                            assertTrue( keyComparator.compare( key, to ) < 0 );
-                        }
-                        if ( !expectedHits.isEmpty() )
-                        {
-                            fail( "There were results which were expected to be returned, but weren't:" + expectedHits +
-                                    " when searching range " + from + " - " + to );
-                        }
-                    }
+                    index.printTree();
+                    fail( hit + " smaller than prev " + prev );
                 }
-
-                randomlyModifyIndex( index, data, random );
+                prev = new TwoLongs( hit.first, hit.other );
             }
         }
     }

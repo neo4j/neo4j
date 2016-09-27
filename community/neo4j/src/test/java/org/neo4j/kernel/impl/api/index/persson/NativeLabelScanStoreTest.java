@@ -109,8 +109,8 @@ public class NativeLabelScanStoreTest
         // === WRITE ===
         long time = currentTimeMillis();
         ProgressListener progress = textual( System.out ).singlePart( "Insert", count );
-//        writeSequential( labelScanStore, progress );
-        writeRandomSmallTransactions( labelScanStore, progress );
+        writeSequential( labelScanStore, progress );
+//        writeRandomSmallTransactions( labelScanStore, progress );
         long writeTime = currentTimeMillis() - time;
         System.out.println( "write:" + duration( writeTime ) );
 

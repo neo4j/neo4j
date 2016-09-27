@@ -388,25 +388,28 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
     {
         boolean isLeaf = bTreeNode.isLeaf( cursor );
         int keyCount = bTreeNode.keyCount( cursor );
-        System.out.print( "|{" + cursor.getCurrentPageId() + "}" );
+        System.out.print( (isLeaf ? "[" : "|") + "{" + cursor.getCurrentPageId() + "}" );
+        if ( !isLeaf )
+        {
+            System.out.print( "#0:" + bTreeNode.childAt( cursor, 0 ) );
+        }
         KEY key = bTreeNode.newKey();
         VALUE value = bTreeNode.newValue();
         for ( int i = 0; i < keyCount; i++ )
         {
+            System.out.print( "," );
             bTreeNode.keyAt( cursor, key, i );
-            System.out.print( key + "=" );
             if ( isLeaf )
             {
                 bTreeNode.valueAt( cursor, value, i );
-                System.out.print( value );
+                System.out.print( "#" + i + ":" + key + "=" + value );
             }
             else
             {
-                System.out.print( bTreeNode.childAt( cursor, i + 1 ) );
+                System.out.print( "#" + (i + 1) + ":" + bTreeNode.childAt( cursor, i + 1 ) );
             }
-            System.out.print( "]" );
         }
-        System.out.println( "|" );
+        System.out.println( (isLeaf ? "]" : "|") );
     }
 
     class TheInserter implements SCInserter<KEY,VALUE>
