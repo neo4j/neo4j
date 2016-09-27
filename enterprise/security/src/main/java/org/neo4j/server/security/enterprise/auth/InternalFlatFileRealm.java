@@ -96,6 +96,7 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     {
         super();
 
+        setName( SecuritySettings.NATIVE_REALM_NAME );
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordPolicy = passwordPolicy;

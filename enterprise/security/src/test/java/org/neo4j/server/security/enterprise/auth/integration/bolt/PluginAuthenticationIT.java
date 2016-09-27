@@ -19,11 +19,14 @@
  */
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.graphdb.config.Setting;
@@ -44,10 +47,28 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 {
+    private static final List<String> defaultTestPluginRealmList = Arrays.asList(
+            "TestAuthenticationPlugin",
+            "TestAuthPlugin",
+            "TestCacheableAdminAuthPlugin",
+            "TestCacheableAuthenticationPlugin",
+            "TestCacheableAuthPlugin",
+            "TestCustomCacheableAuthenticationPlugin",
+            "TestCustomParametersAuthenticationPlugin"
+    );
+
+    private static final String DEFAULT_TEST_PLUGIN_REALMS = String.join( ", ",
+            defaultTestPluginRealmList.stream()
+                    .map( s -> StringUtils.prependIfMissing( s, SecuritySettings.PLUGIN_REALM_NAME_PREFIX ) )
+                    .collect( Collectors.toList() )
+    );
+
     @Override
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
-        return super.getSettingsFunction().andThen( pluginOnlyAuthSettings );
+        return super.getSettingsFunction().andThen( settings -> {
+            settings.put( SecuritySettings.active_realms, DEFAULT_TEST_PLUGIN_REALMS );
+        });
     }
 
     @Test
@@ -166,14 +187,35 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldAuthenticateAndAuthorizeWithTestCombinedAuthPlugin() throws Throwable
     {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.active_realms, "plugin-TestCombinedAuthPlugin" );
+        });
+
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCombinedAuthPlugin" ) );
         assertReadSucceeds();
         assertWriteFails( "neo4j" );
     }
 
     @Test
-    public void shouldFailIfAuthorizationExpiredWithUserLdapContext() throws Throwable
+    public void shouldAuthenticateAndAuthorizeWithTwoSeparateTestPlugins() throws Throwable
     {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.active_realms,
+                    "plugin-TestAuthenticationPlugin,plugin-TestAuthorizationPlugin" );
+        });
+
+        assertConnectionSucceeds( authToken( "neo4j", "neo4j", null ) );
+        assertReadSucceeds();
+        assertWriteFails( "neo4j" );
+    }
+
+    @Test
+    public void shouldFailIfAuthorizationExpiredWithAuthPlugin() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.active_realms, "plugin-TestCacheableAdminAuthPlugin" );
+        });
+
         // Then
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
 

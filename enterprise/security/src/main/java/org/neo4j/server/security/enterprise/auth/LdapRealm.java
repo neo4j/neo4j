@@ -95,6 +95,7 @@ public class LdapRealm extends JndiLdapRealm
     public LdapRealm( Config config, SecurityLog securityLog )
     {
         super();
+        setName( SecuritySettings.LDAP_REALM_NAME );
         this.securityLog = securityLog;
         setRolePermissionResolver( PredefinedRolesBuilder.rolePermissionResolver );
         configureRealm( config );

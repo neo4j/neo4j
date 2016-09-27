@@ -100,8 +100,8 @@ public class ActiveDirectoryAuthenticationIT
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, "true" );
             settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
-            settings.put( SecuritySettings.internal_authentication_enabled, "false" );
-            settings.put( SecuritySettings.internal_authorization_enabled, "false" );
+            settings.put( SecuritySettings.native_authentication_enabled, "false" );
+            settings.put( SecuritySettings.native_authorization_enabled, "false" );
             settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
             settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
             settings.put( SecuritySettings.ldap_server, "activedirectory.neohq.net:389" );

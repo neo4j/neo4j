@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.server.security.enterprise.auth.SecuritySettings;
+import org.neo4j.server.security.enterprise.auth.plugin.LdapGroupHasUsersAuthPlugin;
 
 @RunWith( FrameworkRunner.class )
 @CreateDS(
@@ -83,7 +85,9 @@ public class LdapExamplePluginAuthenticationIT extends EnterpriseAuthenticationT
 
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
-        return super.getSettingsFunction().andThen( pluginOnlyAuthSettings ).andThen( settings -> {
+        return super.getSettingsFunction().andThen( settings -> {
+            settings.put( SecuritySettings.active_realm,
+                    SecuritySettings.PLUGIN_REALM_NAME_PREFIX + new LdapGroupHasUsersAuthPlugin().name() );
         } );
     }
 
