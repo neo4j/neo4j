@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.neo4j.kernel.impl.store.format.RecordFormatTest;
+import org.neo4j.kernel.impl.store.format.AbstractRecordFormatTest;
 
-public class HighLimitRecordFormatTest extends RecordFormatTest
+public class HighLimitRecordFormatTest extends AbstractRecordFormatTest
 {
     public HighLimitRecordFormatTest()
     {
