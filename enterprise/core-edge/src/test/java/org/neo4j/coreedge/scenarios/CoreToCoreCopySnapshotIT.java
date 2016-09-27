@@ -43,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_frequency;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_rotation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.state_machine_flush_window_size;
 import static org.neo4j.coreedge.discovery.Cluster.dataOnMemberEventuallyLooksLike;
 import static org.neo4j.coreedge.scenarios.SampleData.createData;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -120,6 +121,7 @@ public class CoreToCoreCopySnapshotIT
         coreParams.put( raft_log_rotation_size.name(), "1K" );
         coreParams.put( raft_log_pruning_strategy.name(), "keep_none" );
         coreParams.put( raft_log_pruning_frequency.name(), "100ms" );
+        coreParams.put( state_machine_flush_window_size.name(), "64" );
         int numberOfTransactions = 100;
         Timeout timeout = new Timeout( Clocks.systemClock(), 60, SECONDS );
 
