@@ -192,7 +192,7 @@ public class IndexInsert<KEY,VALUE>
 
             cursor.setOffset( bTreeNode.childOffset( pos + 1 ) );
             arrayOffset = (pos + 1) * bTreeNode.childSize();
-            cursor.putBytes( tmp3, arrayOffset, (middle - pos) * bTreeNode.valueSize() );
+            cursor.putBytes( tmp3, arrayOffset, (middle - pos) * bTreeNode.childSize() );
         }
 
         bTreeNode.setKeyCount( cursor, middle );
