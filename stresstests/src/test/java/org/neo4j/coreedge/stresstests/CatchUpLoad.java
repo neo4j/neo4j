@@ -21,10 +21,13 @@ package org.neo4j.coreedge.stresstests;
 
 import io.netty.channel.Channel;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -32,6 +35,7 @@ import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
+import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -71,7 +75,7 @@ class CatchUpLoad extends RepeatUntilCallable
         int newMemberId = cluster.edgeMembers().size();
         final EdgeClusterMember edgeClusterMember = cluster.addEdgeMemberWithId( newMemberId );
 
-        AtomicReference<Throwable> exception;
+        Supplier<Throwable> exception;
         try
         {
             exception = startAndRegisterExceptionMonitor( edgeClusterMember );
@@ -92,23 +96,16 @@ class CatchUpLoad extends RepeatUntilCallable
         }
     }
 
-    private AtomicReference<Throwable> startAndRegisterExceptionMonitor( EdgeClusterMember edgeClusterMember )
+    private Supplier<Throwable> startAndRegisterExceptionMonitor( EdgeClusterMember edgeClusterMember )
     {
         edgeClusterMember.start();
 
         // the database is create when starting the edge...
         final Monitors monitors =
                 edgeClusterMember.database().getDependencyResolver().resolveDependency( Monitors.class );
-        AtomicReference<Throwable> exception = new AtomicReference<>();
-        monitors.addMonitorListener( new ExceptionMonitoringHandler.Monitor()
-        {
-            @Override
-            public void exceptionCaught( Channel channel, Throwable cause )
-            {
-                exception.set( cause );
-            }
-        }, CatchUpClient.class.getName() );
-        return exception;
+        ExceptionMonitor exceptionMonitor = new ExceptionMonitor( new ConnectionResetFilter() );
+        monitors.addMonitorListener( exceptionMonitor, CatchUpClient.class.getName() );
+        return exceptionMonitor;
     }
 
     private long txId( ClusterMember leader )
@@ -120,5 +117,42 @@ class CatchUpLoad extends RepeatUntilCallable
         }
         return database.getDependencyResolver().resolveDependency( TransactionIdStore.class )
                 .getLastClosedTransactionId();
+    }
+
+    private static class ConnectionResetFilter implements Predicate<Throwable>
+    {
+        private static final String MSG = "Connection reset by peer";
+
+        @Override
+        public boolean test( Throwable throwable )
+        {
+            return (throwable instanceof IOException) && MSG.equals( throwable.getMessage() );
+        }
+    }
+
+    private static class ExceptionMonitor implements ExceptionMonitoringHandler.Monitor, Supplier<Throwable>
+    {
+        private final AtomicReference<Throwable> exception = new AtomicReference<>();
+        private Predicate<Throwable> reject;
+
+        ExceptionMonitor( Predicate<Throwable> reject )
+        {
+            this.reject = reject;
+        }
+
+        @Override
+        public void exceptionCaught( Channel channel, Throwable cause )
+        {
+            if ( !reject.test( cause ) )
+            {
+                exception.set( cause );
+            }
+        }
+
+        @Override
+        public Throwable get()
+        {
+            return exception.get();
+        }
     }
 }
