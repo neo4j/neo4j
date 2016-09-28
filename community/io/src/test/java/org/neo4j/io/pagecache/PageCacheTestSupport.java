@@ -24,6 +24,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +50,7 @@ import static org.neo4j.test.ByteArrayMatcher.byteArray;
 public abstract class PageCacheTestSupport<T extends PageCache>
 {
     protected static final long SHORT_TIMEOUT_MILLIS = 10_000;
-    protected static final long SEMI_LONG_TIMEOUT_MILLIS = 60_000;
+    protected static final long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
     protected static final long LONG_TIMEOUT_MILLIS = 360_000;
     protected static ExecutorService executor;
 
@@ -64,8 +66,10 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         executor.shutdown();
     }
 
-    @Rule
     public RepeatRule repeatRule = new RepeatRule();
+    public ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( repeatRule ).around( expectedException );
 
     protected int recordSize = 9;
     protected int maxPages = 20;
