@@ -32,7 +32,9 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -45,6 +47,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -62,42 +65,70 @@ import static org.junit.Assert.assertFalse;
 public class DatabaseIndexIntegrationTest
 {
     private static final int THREAD_NUMBER = 5;
+    private static ExecutorService workers;
+
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
 
-    private final CountDownLatch closeRaceSignal = new CountDownLatch( 1 );
-
+    private final CountDownLatch raceSignal = new CountDownLatch( 1 );
     private SyncNotifierDirectoryFactory directoryFactory;
     private WritableTestDatabaseIndex luceneIndex;
-    private ExecutorService workers;
+
+
+    @BeforeClass
+    public static void initExecutors()
+    {
+        workers = Executors.newFixedThreadPool( THREAD_NUMBER );
+    }
+
+    @AfterClass
+    public static void shutDownExecutor()
+    {
+        workers.shutdownNow();
+    }
 
     @Before
     public void setUp() throws IOException
     {
-        directoryFactory = new SyncNotifierDirectoryFactory( closeRaceSignal );
+        directoryFactory = new SyncNotifierDirectoryFactory( raceSignal );
         luceneIndex = createTestLuceneIndex( directoryFactory, testDir.directory() );
-        workers = Executors.newFixedThreadPool( THREAD_NUMBER );
     }
 
     @After
     public void tearDown()
     {
-        workers.shutdownNow();
         directoryFactory.close();
     }
 
     @Test( timeout = 10000 )
-    @RepeatRule.Repeat( times = 5 )
+    @RepeatRule.Repeat( times = 2 )
     public void testSaveCallCommitAndCloseFromMultipleThreads() throws Exception
     {
         generateInitialData();
-        List<Future<?>> closeFutures = submitCloseTasks( closeRaceSignal );
+        Supplier<Runnable> closeTaskSupplier = () -> createConcurrentCloseTask( raceSignal );
+        List<Future<?>> closeFutures = submitTasks( closeTaskSupplier );
 
         for ( Future<?> closeFuture : closeFutures )
         {
             closeFuture.get();
+        }
+
+        assertFalse( luceneIndex.isOpen() );
+    }
+
+    @Test( timeout = 10000 )
+    @RepeatRule.Repeat( times = 2 )
+    public void saveCallCloseAndDropFromMultipleThreads() throws Exception
+    {
+        generateInitialData();
+        Supplier<Runnable> dropTaskSupplier = () -> createConcurrentDropTask( raceSignal );
+        List<Future<?>> futures = submitTasks( dropTaskSupplier );
+
+        for ( Future<?> future : futures )
+        {
+            future.get();
         }
 
         assertFalse( luceneIndex.isOpen() );
@@ -113,15 +144,15 @@ public class DatabaseIndexIntegrationTest
         return index;
     }
 
-    private List<Future<?>> submitCloseTasks( CountDownLatch closeRaceSignal )
+    private List<Future<?>> submitTasks( Supplier<Runnable> taskSupplier )
     {
-        List<Future<?>> closeFutures = new ArrayList<>( THREAD_NUMBER );
-        closeFutures.add( workers.submit( createMainCloseTask() ) );
+        List<Future<?>> futures = new ArrayList<>( THREAD_NUMBER );
+        futures.add( workers.submit( createMainCloseTask() ) );
         for ( int i = 0; i < THREAD_NUMBER - 1; i++ )
         {
-            closeFutures.add( workers.submit( createConcurrentCloseTask( closeRaceSignal ) ) );
+            futures.add( workers.submit( taskSupplier.get() ) );
         }
-        return closeFutures;
+        return futures;
     }
 
     private void generateInitialData() throws IOException
@@ -131,6 +162,22 @@ public class DatabaseIndexIntegrationTest
         {
             indexWriter.addDocument( createTestDocument() );
         }
+    }
+
+    private Runnable createConcurrentDropTask( CountDownLatch dropRaceSignal )
+    {
+        return () -> {
+            try
+            {
+                dropRaceSignal.await();
+                Thread.yield();
+                luceneIndex.drop();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
     }
 
     private Runnable createConcurrentCloseTask( CountDownLatch closeRaceSignal )

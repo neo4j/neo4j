@@ -106,7 +106,15 @@ public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implem
     @Override
     public void drop() throws IOException
     {
-        luceneIndex.drop();
+        commitCloseLock.lock();
+        try
+        {
+            luceneIndex.drop();
+        }
+        finally
+        {
+            commitCloseLock.unlock();
+        }
     }
 
     /**
