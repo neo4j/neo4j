@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.cypher.CypherAdapterStream;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -113,19 +114,19 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
 
     @Override
     public BoltResultHandle executeQuery( String querySource,
-                                          AuthSubject authSubject,
-                                          String statement,
-                                          Map<String,Object> params ) throws QueryExecutionKernelException
+            AuthSubject authSubject,
+            String statement,
+            Map<String,Object> params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
     {
-        InternalTransaction transaction = queryService.beginTransaction( implicit, authSubject );
+        InternalTransaction internalTransaction = queryService.beginTransaction( implicit, authSubject );
         QuerySource sourceDetails = new QuerySource( "bolt-session", querySource );
         TransactionalContext transactionalContext =
-                contextFactory.newContext( sourceDetails, transaction, statement, params );
+                contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
 
         return new BoltResultHandle()
         {
             @Override
-            public BoltResult start() throws QueryExecutionKernelException
+            public BoltResult start() throws KernelException
             {
                 try
                 {
@@ -134,9 +135,14 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
                 }
                 catch ( KernelException e )
                 {
+                    onFail.apply();
                     throw new QueryExecutionKernelException( e );
                 }
-
+                catch ( Throwable e )
+                {
+                    onFail.apply();
+                    throw e;
+                }
             }
 
             @Override
@@ -145,6 +151,5 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
                 transactionalContext.terminate();
             }
         };
-
-        }
+    }
 }
