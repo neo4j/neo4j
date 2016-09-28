@@ -4808,7 +4808,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File sub2 = existingDirectory( "sub2" );
         File sub2sub1 = new File( sub2, "sub1");
         ensureDirectoryExists( sub2sub1 );
-        File sub3 = existingDirectory( "sub3" );
+        existingDirectory( "sub3" ); // must not be observed in the stream
         File a = existingFile( "a" );
         File b = new File( sub1, "b" );
         File c = new File( sub2, "c" );
@@ -4839,8 +4839,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void streamFilesRecursiveMustListSingleFileGivenAsBase() throws Exception
     {
         configureStandardPageCache();
-        File sub = existingDirectory( "sub" );
-        File x = existingFile( "sub/x" );
+        existingDirectory( "sub" ); // must not be observed
+        existingFile( "sub/x" ); // must not be observed
         File a = file( "a" );
 
         Stream<FileHandle> stream = pageCache.streamFilesRecursive( a );
@@ -4853,7 +4853,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         File sub = existingDirectory( "sub" );
-        File x = existingFile( "sub/x" );
+        existingFile( "sub/x" ); // we query specifically for 'a', so this must not be listed
         File a = file( "a" );
         File queryForA = new File( new File( sub, ".." ), "a" );
 
@@ -4916,7 +4916,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         File a = file( "a" );
         File b = file( "b" );
-        try ( PagedFile pf = pageCache.map( a, filePageSize ) )
+        try ( PagedFile ignore = pageCache.map( a, filePageSize ) )
         {
             Iterable<FileHandle> handles = pageCache.streamFilesRecursive( a.getParentFile() )::iterator;
             for ( FileHandle handle : handles )
@@ -4933,7 +4933,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         File a = file( "a" );
         File b = existingFile( "b" );
-        try ( PagedFile pf = pageCache.map( b, filePageSize ) )
+        try ( PagedFile ignore = pageCache.map( b, filePageSize ) )
         {
             Stream<FileHandle> streamOfA =
                     pageCache.streamFilesRecursive( a.getParentFile() ).filter( hasFile( a ) );
@@ -4956,7 +4956,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         File a = file( "a" );
-        try ( PagedFile pf = pageCache.map( a, filePageSize ) )
+        try ( PagedFile ignore = pageCache.map( a, filePageSize ) )
         {
             FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
             expectedException.expect( FileIsMappedException.class );
@@ -4964,7 +4964,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @SuppressWarnings( "OptionalGetWithoutIsPresent" )
     @Test
     public void streamFilesRecursiveMustThrowWhenDeletingNonExistingFile() throws Exception
     {
@@ -5067,7 +5066,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         ensureDirectoryExists( subsub );
         File x = new File( subsub, "x" );
         ensureExists( x );
-        File target = file( "target" );
 
         Iterable<FileHandle> handles = pageCache.streamFilesRecursive( sub )::iterator;
         for ( FileHandle handle : handles )
@@ -5188,7 +5186,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         pageCache.map( b, filePageSize ).close();
     }
 
-    @Test( expected = NoSuchFileException.class )
+    @Test
     public void streamFilesRecursiveSourceFileMustNotBeMappableAfterRename() throws Exception
     {
         configureStandardPageCache();
@@ -5196,6 +5194,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File b = file( "b" );
         FileHandle handle = pageCache.streamFilesRecursive( a ).findAny().get();
         handle.rename( b );
+        expectedException.expect( NoSuchFileException.class );
         pageCache.map( a, filePageSize );
         fail( "pageCache.map should have thrown" );
     }
