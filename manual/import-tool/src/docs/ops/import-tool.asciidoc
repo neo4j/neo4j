@@ -93,8 +93,6 @@ Under Unix/Linux/OSX, the command is named `neo4j-import`. Depending on the inst
 
 Under Windows, used by executing `bin\neo4j-import` from inside the installation directory.
 
-For help with running the import tool under Windows, see the reference in <<powershell-windows,Windows>>.
-
 [[import-tool-options]]
 === Options
 
@@ -180,7 +178,7 @@ With all data in place, we execute the following command:
 include::example-command.adoc[]
 ----
 
-We're now ready to start up a database from the target directory. (see <<server-installation>>)
+We're now ready to start up a database from the target directory.
 
 Once we've got the database up and running we can add appropriate indexes. (see <<cypherdoc-labels-constraints-and-indexes>>.)
 

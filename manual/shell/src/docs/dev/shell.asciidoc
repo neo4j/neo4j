@@ -32,9 +32,6 @@ To connect to a running Neo4j database, use <<read-only-mode>> for local databas
 
 You need to make sure that the shell jar file is on the classpath when you start up your Neo4j instance.
 
-For help with running shell using Windows, see the reference in <<powershell-windows, Windows>>.
-
-
 [[shell-enabling-remote]]
 === Enabling the shell server
 
