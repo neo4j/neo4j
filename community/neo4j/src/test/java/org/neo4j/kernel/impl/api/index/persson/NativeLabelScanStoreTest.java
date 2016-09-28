@@ -25,8 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.progress.ProgressListener;
@@ -47,9 +45,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-
-import static org.junit.Assert.assertEquals;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -64,6 +61,8 @@ public class NativeLabelScanStoreTest
     public PageCacheRule pageCacheRule = new PageCacheRule( false );
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() ).keepDirectoryAfterSuccessfulTest();
+    @Rule
+    public final RandomRule random = new RandomRule();
     private final int count = 100_000;
     private final int txSize = 100;
 
@@ -109,8 +108,8 @@ public class NativeLabelScanStoreTest
         // === WRITE ===
         long time = currentTimeMillis();
         ProgressListener progress = textual( System.out ).singlePart( "Insert", count );
-        writeSequential( labelScanStore, progress );
-//        writeRandomSmallTransactions( labelScanStore, progress );
+//        writeSequential( labelScanStore, progress );
+        writeRandomSmallTransactions( labelScanStore, progress );
         long writeTime = currentTimeMillis() - time;
         System.out.println( "write:" + duration( writeTime ) );
 
@@ -118,25 +117,10 @@ public class NativeLabelScanStoreTest
         time = currentTimeMillis();
         try ( final LabelScanReader reader = labelScanStore.newReader() )
         {
-            long[] reference = null;
             for ( int labelId = 1; labelId <= 2; labelId++ )
             {
                 final PrimitiveLongIterator nodeIds = reader.nodesWithLabel( labelId );
-                long[] array = PrimitiveLongCollections.asArray( nodeIds );
-                System.out.println( array.length );
-                if ( reference == null )
-                {
-                    reference = array;
-                }
-                else
-                {
-                    if ( reference.length != array.length )
-                    {
-                        System.out.println( Arrays.toString( reference ) );
-                        System.out.println( Arrays.toString( array ) );
-                    }
-                    assertEquals( reference.length, array.length );
-                }
+                PrimitiveLongCollections.count( nodeIds ); // to loop through it
             }
         }
         long readTime = currentTimeMillis() - time;
@@ -146,14 +130,13 @@ public class NativeLabelScanStoreTest
     private void writeRandomSmallTransactions( LabelScanStore labelScanStore, ProgressListener progress ) throws IOException
     {
         // Random in txs of size 10
-        ThreadLocalRandom random = ThreadLocalRandom.current();
         int txs = count / txSize;
         long[] ids = new long[txSize];
         for ( int t = 0; t < txs; t++ )
         {
             for ( int i = 0; i < txSize; i++ )
             {
-                ids[i] = random.nextLong( 100_000_000 );
+                ids[i] = random.nextInt( 100_000_000 );
             }
             Arrays.sort( ids );
             try ( LabelScanWriter writer = labelScanStore.newWriter() )

@@ -389,25 +389,32 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
         boolean isLeaf = bTreeNode.isLeaf( cursor );
         int keyCount = bTreeNode.keyCount( cursor );
         System.out.print( (isLeaf ? "[" : "|") + "{" + cursor.getCurrentPageId() + "}" );
-        if ( !isLeaf )
-        {
-            System.out.print( "#0:" + bTreeNode.childAt( cursor, 0 ) );
-        }
         KEY key = bTreeNode.newKey();
         VALUE value = bTreeNode.newValue();
         for ( int i = 0; i < keyCount; i++ )
         {
-            System.out.print( "," );
-            bTreeNode.keyAt( cursor, key, i );
+            if ( i > 0 )
+            {
+                System.out.print( "," );
+            }
+
             if ( isLeaf )
             {
-                bTreeNode.valueAt( cursor, value, i );
-                System.out.print( "#" + i + ":" + key + "=" + value );
+                System.out.print( "#" + i + ":" +
+                        bTreeNode.keyAt( cursor, key, i ) + "=" +
+                        bTreeNode.valueAt( cursor, value, i ) );
             }
             else
             {
-                System.out.print( "#" + (i + 1) + ":" + bTreeNode.childAt( cursor, i + 1 ) );
+                System.out.print( "#" + i + ":" +
+                        "|" + bTreeNode.childAt( cursor, i ) + "|" +
+                        bTreeNode.keyAt( cursor, key, i ) + "|" );
+
             }
+        }
+        if ( !isLeaf )
+        {
+            System.out.println( "#" + keyCount + ":|" + bTreeNode.childAt( cursor, keyCount ) + "|" );
         }
         System.out.println( (isLeaf ? "]" : "|") );
     }

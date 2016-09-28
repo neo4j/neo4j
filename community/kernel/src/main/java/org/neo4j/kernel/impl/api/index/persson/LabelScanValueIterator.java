@@ -32,6 +32,9 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
     private long baseNodeId;
     private long bits;
 
+    private int prevLabel = -1;
+    private long prevRange = -1;
+
     LabelScanValueIterator( int rangeSize, Cursor<BTreeHit<LabelScanKey,LabelScanValue>> cursor )
     {
         this.rangeSize = rangeSize;
@@ -56,7 +59,21 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
             BTreeHit<LabelScanKey,LabelScanValue> hit = cursor.get();
             baseNodeId = hit.key().nodeId * rangeSize;
             bits = hit.value().bits;
+
+            assert keysInOrder( hit.key() );
         }
+    }
+
+    private boolean keysInOrder( LabelScanKey key )
+    {
+        assert key.labelId >= prevLabel : "Expected to get ordered results, got " + key +
+                " where previous label was " + prevLabel;
+        assert key.nodeId > prevRange : "Expected to get ordered results, got " + key +
+                " where previous range was " + prevRange;
+        prevLabel = key.labelId;
+        prevRange = key.nodeId;
+        // Made as a method returning boolean so that it can participate in an assert call.
+        return true;
     }
 
     private boolean nextFromCurrent()

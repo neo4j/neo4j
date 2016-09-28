@@ -121,7 +121,6 @@ public class BTreeNode<KEY,VALUE> implements TreeNode<KEY,VALUE>
         setLeftSibling( cursor, NO_NODE_FLAG );
     }
 
-
     // HEADER METHODS
 
     @Override
