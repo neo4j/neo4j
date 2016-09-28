@@ -19,12 +19,23 @@
  */
 package org.neo4j.index.btree;
 
+import java.nio.charset.Charset;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.index.SCIndexDescription;
 import org.neo4j.io.pagecache.PageCursor;
 
 public class PathIndexLayout implements TreeItemLayout<TwoLongs,TwoLongs>
 {
+    private static final Charset UTF_8 = Charset.forName( "UTF-8" );
     private static final int SIZE_KEY = 2 * Long.BYTES;
     private static final int SIZE_VALUE = 2 * Long.BYTES;
+    private SCIndexDescription description;
+
+    public PathIndexLayout( SCIndexDescription description )
+    {
+        this.description = description;
+    }
 
     @Override
     public int compare( TwoLongs o1, TwoLongs o2 )
@@ -83,5 +94,75 @@ public class PathIndexLayout implements TreeItemLayout<TwoLongs,TwoLongs>
     {
         into.first = cursor.getLong();
         into.other = cursor.getLong();
+    }
+
+    @Override
+    public long identifier()
+    {
+        long namedIdentifier = TreeItemLayout.namedIdentifier( "PIL", description.toString().hashCode() );
+        return namedIdentifier;
+    }
+
+    @Override
+    public void writeMetaData( PageCursor cursor )
+    {
+        writeString( cursor, description.firstLabel );
+        writeString( cursor, description.secondLabel );
+        writeString( cursor, description.relationshipType );
+        cursor.putByte( (byte) description.direction.ordinal() );
+        writeString( cursor, description.relationshipPropertyKey );
+        writeString( cursor, description.nodePropertyKey );
+    }
+
+    private static void writeString( PageCursor cursor, String string )
+    {
+        if ( string == null )
+        {
+            cursor.putInt( -1 );
+        }
+        else
+        {
+            byte[] bytes = string.getBytes( UTF_8 );
+            cursor.putInt( string.length() );
+            cursor.putBytes( bytes );
+        }
+    }
+
+    @Override
+    public void readMetaData( PageCursor cursor )
+    {
+        SCIndexDescription description = new SCIndexDescription(
+                readString( cursor ), // firstLabel
+                readString( cursor ), // secondLabel
+                readString( cursor ), // relationshipType
+                Direction.values()[cursor.getByte()],
+                readString( cursor ), // nodePropertyKey
+                readString( cursor ) ); // relationshipPropertyKey
+        if ( this.description == null )
+        {
+            this.description = description;
+        }
+        else
+        {
+            if ( !this.description.equals( description ) )
+            {
+                throw new IllegalArgumentException( "Index was created with different path description than " +
+                        "the one used to load it. Created with " + description +
+                        ", but loaded with " + this.description );
+            }
+        }
+    }
+
+    private static String readString( PageCursor cursor )
+    {
+        int length = cursor.getInt();
+        if ( length == -1 )
+        {
+            return null;
+        }
+
+        byte[] bytes = new byte[length];
+        cursor.getBytes( bytes );
+        return new String( bytes, UTF_8 );
     }
 }

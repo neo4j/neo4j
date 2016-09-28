@@ -34,7 +34,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCInserter;
 import org.neo4j.index.ValueAmender;
-import org.neo4j.index.btree.CompactLabelScanLayout;
+import org.neo4j.index.btree.LabelScanLayout;
 import org.neo4j.index.btree.LabelScanKey;
 import org.neo4j.index.btree.LabelScanValue;
 import org.neo4j.index.btree.MutableBTreeHit;
@@ -52,7 +52,7 @@ public class NativeLabelScanWriterTest
 {
     private static final int LABEL_COUNT = 5;
     private static final int RANGE_SIZE = 16;
-    private static final Comparator<LabelScanKey> KEY_COMPARATOR = new CompactLabelScanLayout( RANGE_SIZE );
+    private static final Comparator<LabelScanKey> KEY_COMPARATOR = new LabelScanLayout( RANGE_SIZE );
     private static final Comparator<Map.Entry<LabelScanKey,LabelScanValue>> COMPARATOR =
             (o1,o2) -> KEY_COMPARATOR.compare( o1.getKey(), o2.getKey() );
 
@@ -140,7 +140,7 @@ public class NativeLabelScanWriterTest
 
         private LabelScanKey clone( LabelScanKey key )
         {
-            return new LabelScanKey().set( key.labelId, key.nodeId );
+            return new LabelScanKey().set( key.labelId, key.idRange );
         }
 
         @Override

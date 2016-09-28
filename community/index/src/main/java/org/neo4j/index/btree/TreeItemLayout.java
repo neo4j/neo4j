@@ -40,4 +40,33 @@ public interface TreeItemLayout<KEY,VALUE> extends Comparator<KEY>
     void readKey( PageCursor cursor, KEY into );
 
     void readValue( PageCursor cursor, VALUE into );
+
+    /**
+     * Used as a checksum for when loading an index after creation, to verify that the same layout is used,
+     * as the one it was initially created with.
+     * @return a long acting as an identifier, written in the header of an index.
+     */
+    long identifier();
+
+    void writeMetaData( PageCursor cursor );
+
+    void readMetaData( PageCursor cursor );
+
+    static long namedIdentifier( String name, int checksum )
+    {
+        char[] chars = name.toCharArray();
+        if ( chars.length > 4 )
+        {
+            throw new IllegalArgumentException( "Maximum 4 character name, was '" + name + "'" );
+        }
+        long upperInt = 0;
+        for ( int i = 0; i < chars.length; i++ )
+        {
+            byte byteValue = (byte) (((byte) chars[i]) ^ ((byte) (chars[i] >> 8)));
+            upperInt <<= 8;
+            upperInt |= byteValue;
+        }
+
+        return upperInt << Integer.SIZE | (checksum & 0xFFFFFFFF);
+    }
 }

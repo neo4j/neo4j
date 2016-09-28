@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.api.index.persson;
 
 import java.io.File;
 import java.io.IOException;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.index.SCIndexDescription;
 import org.neo4j.index.SCInserter;
-import org.neo4j.index.btree.CompactLabelScanLayout;
+import org.neo4j.index.btree.LabelScanLayout;
 import org.neo4j.index.btree.Index;
 import org.neo4j.index.btree.LabelScanKey;
 import org.neo4j.index.btree.LabelScanValue;
@@ -49,8 +47,7 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         this.indexFile = new File( storeDir, "labelscan.db" );
         this.rangeSize = rangeSize;
-        this.index = new Index<>( pageCache, indexFile, new CompactLabelScanLayout( rangeSize ),
-                new SCIndexDescription( "", "", "", Direction.BOTH, "", null ), pageCache.pageSize() );
+        this.index = new Index<>( pageCache, indexFile, new LabelScanLayout( rangeSize ), 0 );
     }
 
     @Override

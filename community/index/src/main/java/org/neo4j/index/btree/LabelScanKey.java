@@ -22,19 +22,19 @@ package org.neo4j.index.btree;
 public class LabelScanKey
 {
     public int labelId;
-    public long nodeId;
+    public long idRange;
 
-    public LabelScanKey set( int labelId, long nodeId )
+    public LabelScanKey set( int labelId, long idRange )
     {
         this.labelId = labelId;
-        this.nodeId = nodeId;
+        this.idRange = idRange;
         return this;
     }
 
     @Override
     public String toString()
     {
-        return "[lbl:" + labelId + ",node:" + nodeId + "]";
+        return "[lbl:" + labelId + ",range:" + idRange + "]";
     }
 
     @Override
@@ -43,7 +43,7 @@ public class LabelScanKey
         final int prime = 31;
         int result = 1;
         result = prime * result + labelId;
-        result = prime * result + (int) (nodeId ^ (nodeId >>> 32));
+        result = prime * result + (int) (idRange ^ (idRange >>> 32));
         return result;
     }
 
@@ -59,7 +59,7 @@ public class LabelScanKey
         LabelScanKey other = (LabelScanKey) obj;
         if ( labelId != other.labelId )
             return false;
-        if ( nodeId != other.nodeId )
+        if ( idRange != other.idRange )
             return false;
         return true;
     }

@@ -25,8 +25,6 @@ import org.neo4j.cursor.Cursor;
 
 public interface SCIndex<KEY,VALUE> extends Closeable
 {
-    SCIndexDescription getDescription();
-
     Cursor<BTreeHit<KEY,VALUE>> seek( KEY fromInclusive, KEY toExclusive ) throws IOException;
 
     SCInserter<KEY,VALUE> inserter() throws IOException;

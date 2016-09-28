@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCIndexDescription;
 import org.neo4j.index.SCInserter;
@@ -66,14 +67,17 @@ public class IndexTest
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.setFileSystemAbstraction( new DefaultFileSystemAbstraction() );
         pageCache = new MuninnPageCache( swapperFactory, 100, pageSize, NULL );
-        indexFile = folder.newFile( "index" );
-        return index = new Index<>( pageCache, indexFile, new PathIndexLayout(), description, pageSize );
+        indexFile = new File( folder.getRoot(), "index" );
+        return index = new Index<>( pageCache, indexFile, new PathIndexLayout( description ), 0 );
     }
 
     @After
     public void closePageCache() throws IOException
     {
-        index.close();
+        if ( index != null )
+        {
+            index.close();
+        }
         pageCache.close();
     }
 
@@ -81,25 +85,25 @@ public class IndexTest
     public void shouldReadWrittenMetaData() throws Exception
     {
         // GIVEN
-        TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout();
+        TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
         try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
         {   // Open/close is enough
         }
 
         // WHEN
-        index = new Index<>( pageCache, indexFile, layout );
-        SCIndexDescription readDescription = index.getDescription();
+        index = new Index<>( pageCache, indexFile, layout, 0 );
 
-        // THEN
-        assertEquals( description, readDescription );
+        // THEN being able to open validates that the same meta data was read
+        // the test also closes the index afterwards
     }
 
     @Test
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        Index<TwoLongs,TwoLongs> index = createIndex( 1024, new PathIndexLayout() );
-        Comparator<TwoLongs> keyComparator = index.getTreeNode().keyComparator();
+        PathIndexLayout layout = new PathIndexLayout( description );
+        Index<TwoLongs,TwoLongs> index = createIndex( 1024, layout );
+        Comparator<TwoLongs> keyComparator = layout;
         Map<TwoLongs,TwoLongs> data = new TreeMap<>( keyComparator );
         long seed = currentTimeMillis();
         Random random = new Random( seed );
@@ -166,7 +170,7 @@ public class IndexTest
     public void shouldSplitCorrectly() throws Exception
     {
         // GIVEN
-        Index<TwoLongs,TwoLongs> index = createIndex( 128, new PathIndexLayout() );
+        Index<TwoLongs,TwoLongs> index = createIndex( 128, new PathIndexLayout( description ) );
 
         // WHEN
         long seed = currentTimeMillis();
@@ -196,6 +200,64 @@ public class IndexTest
                 prev = new TwoLongs( hit.first, hit.other );
             }
         }
+    }
+
+    @Test
+    public void shouldFailToOpenOnDifferentMetaData() throws Exception
+    {
+        // GIVEN
+        TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
+        {   // Open/close is enough
+        }
+        index = null;
+
+        // WHEN
+        SCIndexDescription wrongDescription = new SCIndexDescription( "_", "_", "_", Direction.INCOMING, null, "prop" );
+        try
+        {
+            new Index<>( pageCache, indexFile, new PathIndexLayout( wrongDescription ), 0 );
+            fail( "Should not load" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN good
+        }
+
+        // THEN being able to open validates that the same meta data was read
+        // the test also closes the index afterwards
+    }
+
+    @Test
+    public void shouldFailToOpenOnDifferentLayout() throws Exception
+    {
+        // GIVEN
+        TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
+        {   // Open/close is enough
+        }
+        index = null;
+
+        // WHEN
+        try
+        {
+            new Index<>( pageCache, indexFile, new PathIndexLayout( description )
+            {
+                @Override
+                public long identifier()
+                {
+                    return 123456;
+                }
+            }, 0 );
+            fail( "Should not load" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN good
+        }
+
+        // THEN being able to open validates that the same meta data was read
+        // the test also closes the index afterwards
     }
 
     private void randomlyModifyIndex( Index<TwoLongs,TwoLongs> index, Map<TwoLongs,TwoLongs> data, Random random )

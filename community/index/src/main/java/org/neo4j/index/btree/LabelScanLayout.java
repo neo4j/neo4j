@@ -21,15 +21,32 @@ package org.neo4j.index.btree;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-public class LabelScanLayout implements TreeItemLayout<LabelScanKey,Void>
+import static java.lang.Long.bitCount;
+
+/**
+ * {@link LabelScanKey} is used, but {@link LabelScanKey#idRange} is instead a range, 64 nodes in each
+ */
+public class LabelScanLayout implements TreeItemLayout<LabelScanKey,LabelScanValue>
 {
-    static final int KEY_SIZE = Integer.BYTES + Long.BYTES; // TODO could be 6B long instead
+    private static final int KEY_SIZE = Integer.BYTES/*labelId*/ + Long.BYTES/*idRange*/;
+
+    private final int rangeSize;
+    private final int rangeSizeBytes;
+
+    public LabelScanLayout( int rangeSize )
+    {
+        // asserts values are 8, 16, 32 or 64
+        assert bitCount( rangeSize ) == 1 && (rangeSize & ~0b1111000) == 0;
+
+        this.rangeSize = rangeSize;
+        this.rangeSizeBytes = rangeSize >>> 3;
+    }
 
     @Override
     public int compare( LabelScanKey o1, LabelScanKey o2 )
     {
         int labelComparison = Integer.compare( o1.labelId, o2.labelId );
-        return labelComparison != 0 ? labelComparison : Long.compare( o1.nodeId, o2.nodeId );
+        return labelComparison != 0 ? labelComparison : Long.compare( o1.idRange, o2.idRange );
     }
 
     @Override
@@ -39,44 +56,114 @@ public class LabelScanLayout implements TreeItemLayout<LabelScanKey,Void>
     }
 
     @Override
-    public Void newValue()
-    {   // Intentionally null since this layout has no values
-        return null;
+    public LabelScanValue newValue()
+    {
+        return new LabelScanValue();
     }
 
     @Override
     public int keySize()
     {
-        return KEY_SIZE;
+        return LabelScanLayout.KEY_SIZE;
     }
 
     @Override
     public int valueSize()
-    {   // Intentionally 0 since this layout has no values
-        return 0;
+    {
+        return rangeSizeBytes;
     }
 
     @Override
     public void writeKey( PageCursor cursor, LabelScanKey key )
     {
         cursor.putInt( key.labelId );
-        cursor.putLong( key.nodeId );
+        cursor.putLong( key.idRange );
+    }
+
+    private void put6ByteLong( PageCursor cursor, long value )
+    {
+        cursor.putInt( (int) value );
+        cursor.putShort( (short) (value >>> 32) );
     }
 
     @Override
-    public void writeValue( PageCursor cursor, Void value )
-    {   // Intentionally left empty since this layout has no values
+    public void writeValue( PageCursor cursor, LabelScanValue value )
+    {
+        switch ( rangeSize )
+        {
+        case 8:
+            cursor.putByte( (byte) value.bits );
+            break;
+        case 16:
+            cursor.putShort( (short) value.bits );
+            break;
+        case 32:
+            cursor.putInt( (int) value.bits );
+            break;
+        case 64:
+            cursor.putLong( value.bits );
+            break;
+        default:
+            throw new IllegalArgumentException( String.valueOf( rangeSize ) );
+        }
     }
 
     @Override
     public void readKey( PageCursor cursor, LabelScanKey into )
     {
         into.labelId = cursor.getInt();
-        into.nodeId = cursor.getLong();
+        into.idRange = cursor.getLong();
+    }
+
+    private long get6ByteLong( PageCursor cursor )
+    {
+        long low4b = cursor.getInt() & 0xFFFFFFFFL;
+        long high2b = cursor.getShort();
+        return low4b | (high2b << 32);
     }
 
     @Override
-    public void readValue( PageCursor cursor, Void into )
-    {   // Intentionally left empty since this layout has no values
+    public void readValue( PageCursor cursor, LabelScanValue into )
+    {
+        switch ( rangeSize )
+        {
+        case 8:
+            into.bits = cursor.getByte() & 0xFF;
+            break;
+        case 16:
+            into.bits = cursor.getShort() & 0xFFFF;
+            break;
+        case 32:
+            into.bits = cursor.getInt() & 0xFFFFFFFFL;
+            break;
+        case 64:
+            into.bits = cursor.getLong();
+            break;
+        default:
+            throw new IllegalArgumentException( String.valueOf( rangeSize ) );
+        }
+    }
+
+    @Override
+    public long identifier()
+    {
+        return TreeItemLayout.namedIdentifier( "LSL", rangeSize );
+    }
+
+    @Override
+    public void writeMetaData( PageCursor cursor )
+    {
+        cursor.putInt( rangeSize );
+    }
+
+    @Override
+    public void readMetaData( PageCursor cursor )
+    {
+        int rangeSize = cursor.getInt();
+        if ( this.rangeSize != rangeSize )
+        {
+            throw new IllegalArgumentException( "A different range size " + this.rangeSize +
+                    " was specified when loading an index with actual range size " + rangeSize );
+        }
     }
 }

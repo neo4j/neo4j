@@ -57,7 +57,7 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
             }
 
             BTreeHit<LabelScanKey,LabelScanValue> hit = cursor.get();
-            baseNodeId = hit.key().nodeId * rangeSize;
+            baseNodeId = hit.key().idRange * rangeSize;
             bits = hit.value().bits;
 
             assert keysInOrder( hit.key() );
@@ -68,10 +68,10 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
     {
         assert key.labelId >= prevLabel : "Expected to get ordered results, got " + key +
                 " where previous label was " + prevLabel;
-        assert key.nodeId > prevRange : "Expected to get ordered results, got " + key +
+        assert key.idRange > prevRange : "Expected to get ordered results, got " + key +
                 " where previous range was " + prevRange;
         prevLabel = key.labelId;
-        prevRange = key.nodeId;
+        prevRange = key.idRange;
         // Made as a method returning boolean so that it can participate in an assert call.
         return true;
     }
