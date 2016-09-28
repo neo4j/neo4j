@@ -28,6 +28,8 @@ import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 
@@ -121,9 +123,12 @@ public class SegmentedRaftLogRotationTruncationPruneTest
         File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
+        LogProvider logProvider = getInstance();
+        CoreLogPruningStrategy pruningStrategy =
+                new CoreLogPruningStrategyFactory( "1 entries", logProvider ).newInstance();
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1,
-                new DummyRaftableContentSerializer(),
-                getInstance(), "1 entries", 8, Clocks.fakeClock(), new OnDemandJobScheduler() );
+                new DummyRaftableContentSerializer(), logProvider, 8, Clocks.fakeClock(), new OnDemandJobScheduler(),
+                pruningStrategy );
 
         newRaftLog.start();
         return newRaftLog;

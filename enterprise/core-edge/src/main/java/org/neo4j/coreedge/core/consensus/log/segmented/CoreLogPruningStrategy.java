@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.core.consensus.log.segmented;
 
-interface CoreLogPruningStrategy
+public interface CoreLogPruningStrategy
 {
     /**
      * Returns the index to keep depending on the configuration strategy.

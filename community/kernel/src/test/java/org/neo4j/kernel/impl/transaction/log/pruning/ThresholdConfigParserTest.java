@@ -24,6 +24,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
+import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue.KEEP_LAST_FILE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue.NO_PRUNING;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
@@ -32,17 +33,15 @@ public class ThresholdConfigParserTest
     @Test
     public void parseTrue() throws Exception
     {
-        ThresholdConfigValue aTrue = parse( "true" );
-        assertEquals( NO_PRUNING.type, aTrue.type );
-        assertEquals( NO_PRUNING.value, aTrue.value );
+        ThresholdConfigValue configValue = parse( "true" );
+        assertEquals( NO_PRUNING, configValue );
     }
 
     @Test
     public void parseFalse() throws Exception
     {
-        ThresholdConfigValue aFalse = parse( "false" );
-        assertEquals( "entries", aFalse.type );
-        assertEquals( 1, aFalse.value );
+        ThresholdConfigValue configValue = parse( "false" );
+        assertEquals( KEEP_LAST_FILE, configValue );
     }
 
     @Test(expected=IllegalArgumentException.class)

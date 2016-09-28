@@ -77,8 +77,8 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     private JobScheduler.JobHandle readerPoolPruner;
 
     public SegmentedRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
-            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider,
-            String pruningConfig, int readerPoolSize, Clock clock, JobScheduler scheduler )
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, int readerPoolSize, Clock clock,
+            JobScheduler scheduler, CoreLogPruningStrategy pruningStrategy )
     {
         this.fileSystem = fileSystem;
         this.directory = directory;
@@ -89,7 +89,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
         this.fileNames = new FileNames( directory );
         this.readerPool = new ReaderPool( readerPoolSize, logProvider, fileNames, fileSystem, clock );
-        this.pruner = new SegmentedRaftLogPruner( pruningConfig, logProvider );
+        this.pruner = new SegmentedRaftLogPruner( pruningStrategy );
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -101,8 +101,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
             throw new IOException( "Could not create: " + directory );
         }
 
-        RecoveryProtocol recoveryProtocol = new RecoveryProtocol( fileSystem, fileNames, readerPool, contentMarshal, logProvider );
-        state = recoveryProtocol.run();
+        state = new RecoveryProtocol( fileSystem, fileNames, readerPool, contentMarshal, logProvider ).run();
         log.info( "log started with recovered state %s", state );
 
         readerPoolPruner = scheduler.scheduleRecurring( new JobScheduler.Group( "reader-pool-pruner", POOLED ),

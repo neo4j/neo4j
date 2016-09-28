@@ -27,6 +27,8 @@ import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.MonitoredRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
+import org.neo4j.coreedge.core.consensus.log.segmented.CoreLogPruningStrategy;
+import org.neo4j.coreedge.core.consensus.log.segmented.CoreLogPruningStrategyFactory;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.core.consensus.membership.MemberIdSetBuilder;
@@ -59,6 +61,7 @@ import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.catchup_batch_size
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.join_catch_up_timeout;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.log_shipping_max_lag;
 import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.time.Clocks.systemClock;
 
 public class ConsensusModule
 {
@@ -118,19 +121,19 @@ public class ConsensusModule
         SendToMyself leaderOnlyReplicator = new SendToMyself( myself, outbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                expectedClusterSize, electionTimeout, Clocks.systemClock(),
+                expectedClusterSize, electionTimeout, systemClock(),
                 config.get( join_catch_up_timeout ), raftMembershipStorage
         );
 
         life.add( raftMembershipManager );
 
         RaftLogShippingManager logShipping =
-                new RaftLogShippingManager( outbound, logProvider, raftLog, Clocks.systemClock(),
+                new RaftLogShippingManager( outbound, logProvider, raftLog, systemClock(),
                         myself, raftMembershipManager, electionTimeout,
                         config.get( catchup_batch_size ),
                         config.get( log_shipping_max_lag ), inFlightMap );
 
-        raftTimeoutService = new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
+        raftTimeoutService = new DelayedRenewableTimeoutService( systemClock(), logProvider );
 
         raftMachine =
                 new RaftMachine( myself, termState, voteState, raftLog, electionTimeout,
@@ -159,16 +162,11 @@ public class ConsensusModule
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
                 int readerPoolSize = config.get( CoreEdgeClusterSettings.raft_log_reader_pool_size );
 
-                String pruningStrategyConfig = config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy );
-
-                return life.add( new SegmentedRaftLog(
-                        fileSystem,
-                        new File( clusterStateDirectory, PHYSICAL_LOG_DIRECTORY_NAME ),
-                        rotateAtSize,
-                        marshal,
-                        logProvider,
-                        pruningStrategyConfig,
-                        readerPoolSize, Clocks.systemClock(), scheduler ) );
+                CoreLogPruningStrategy pruningStrategy = new CoreLogPruningStrategyFactory(
+                        config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy ), logProvider ).newInstance();
+                File directory = new File( clusterStateDirectory, PHYSICAL_LOG_DIRECTORY_NAME );
+                return life.add( new SegmentedRaftLog( fileSystem, directory, rotateAtSize, marshal,
+                        logProvider, readerPoolSize, systemClock(), scheduler, pruningStrategy ) );
             }
             default:
                 throw new IllegalStateException( "Unknown raft log implementation: " + raftLogImplementation );
