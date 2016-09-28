@@ -58,7 +58,7 @@ public class HighAvailabilityLogger
     public void enteredCluster( ClusterConfiguration clusterConfiguration )
     {
         myUri = clusterConfiguration.getUriForId( myId );
-        log.info( "Instance %s joined the cluster", printId( myId, myUri ) );
+        log.info( "Instance %s entered the cluster", printId( myId, myUri ) );
     }
 
     /**
