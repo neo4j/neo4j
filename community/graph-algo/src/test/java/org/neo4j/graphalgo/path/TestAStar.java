@@ -19,19 +19,16 @@
  */
 package org.neo4j.graphalgo.path;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
-import org.junit.Ignore;
+import common.Neo4jAlgoTestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -47,13 +44,8 @@ import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.helpers.collection.MapUtil;
 
-import common.Neo4jAlgoTestCase;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -166,111 +158,6 @@ public class TestAStar extends Neo4jAlgoTestCase
             counter++;
         }
         assertEquals( 1, counter );
-    }
-
-    /**
-     * <pre>
-     *   01234567
-     *  +-------->x  A - C: 10
-     * 0|A      C    A - B:  2 (x2)
-     * 1|  B         B - C:  6
-     *  V
-     *  y
-     * </pre>
-     */
-    @Ignore( "A* doesn't return multiple equal paths" )
-    @Test
-    public void canGetMultiplePathsInTriangleGraph() throws Exception
-    {
-        Node nodeA = graph.makeNode( "A", "x", 0d, "y", 0d );
-        Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
-        Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );
-        Set<Relationship> expectedFirsts = new HashSet<Relationship>();
-        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 2d ) );
-        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 2d ) );
-        Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 6d );
-        graph.makeEdge( "A", "C", "length", 10d );
-
-        Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeC ).iterator();
-        for ( int foundCount = 0; foundCount < 2; foundCount++ )
-        {
-            assertTrue( "expected more paths (found: " + foundCount + ")", paths.hasNext() );
-            Path path = paths.next();
-            assertPath( path, nodeA, nodeB, nodeC );
-
-            Iterator<Relationship> relationships = path.relationships().iterator();
-            assertTrue( "found shorter path than expected",
-                    relationships.hasNext() );
-            assertTrue( "path contained unexpected relationship",
-                    expectedFirsts.remove( relationships.next() ) );
-            assertTrue( "found shorter path than expected",
-                    relationships.hasNext() );
-            assertEquals( expectedSecond, relationships.next() );
-            assertFalse( "found longer path than expected",
-                    relationships.hasNext() );
-        }
-        assertFalse( "expected at most two paths", paths.hasNext() );
-    }
-
-    /**
-     * <pre>
-     *   012345    A - B:  2
-     *  +------>x  A - C:  2.5
-     * 0|  C       C - D:  7.3
-     * 1|A    F    B - D:  2.5
-     * 2| B D      D - E:  3
-     * 3|    E     C - E:  5
-     *  V          E - F:  5
-     *  x          C - F: 12
-     *             A - F: 25
-     * </pre>
-     */
-    @Ignore( "A* doesn't return multiple equal paths" )
-    @Test
-    public void canGetMultiplePathsInASmallRoadNetwork() throws Exception
-    {
-        Node nodeA = graph.makeNode( "A", "x", 1d, "y", 0d );
-        Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
-        Node nodeC = graph.makeNode( "C", "x", 0d, "y", 2d );
-        Node nodeD = graph.makeNode( "D", "x", 2d, "y", 3d );
-        Node nodeE = graph.makeNode( "E", "x", 3d, "y", 4d );
-        Node nodeF = graph.makeNode( "F", "x", 1d, "y", 5d );
-        graph.makeEdge( "A", "B", "length", 2d );
-        graph.makeEdge( "A", "C", "length", 2.5d );
-        graph.makeEdge( "C", "D", "length", 7.3d );
-        graph.makeEdge( "B", "D", "length", 2.5d );
-        graph.makeEdge( "D", "E", "length", 3d );
-        graph.makeEdge( "C", "E", "length", 5d );
-        graph.makeEdge( "E", "F", "length", 5d );
-        graph.makeEdge( "C", "F", "length", 12d );
-        graph.makeEdge( "A", "F", "length", 25d );
-
-        // Try the search in both directions.
-        for ( Node[] nodes : new Node[][] { { nodeA, nodeF }, { nodeF, nodeA } } )
-        {
-            int found = 0;
-            Iterator<WeightedPath> paths = finder.findAllPaths( nodes[0], nodes[1] ).iterator();
-            for ( int foundCount = 0; foundCount < 2; foundCount++ )
-            {
-                assertTrue( "expected more paths (found: " + foundCount + ")", paths.hasNext() );
-                Path path = paths.next();
-                if ( path.length() != found && path.length() == 3 )
-                {
-                    assertContains( path.nodes(), nodeA, nodeC, nodeE, nodeF );
-                }
-                else if ( path.length() != found && path.length() == 4 )
-                {
-                    assertContains( path.nodes(), nodeA, nodeB, nodeD, nodeE,
-                            nodeF );
-                }
-                else
-                {
-                    fail( "unexpected path length: " + path.length() );
-                }
-                found = path.length();
-            }
-            assertFalse( "expected at most two paths", paths.hasNext() );
-        }
     }
 
     @SuppressWarnings( { "rawtypes", "unchecked" } )

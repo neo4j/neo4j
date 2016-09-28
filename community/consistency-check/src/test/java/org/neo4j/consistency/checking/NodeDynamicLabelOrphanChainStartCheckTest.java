@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -42,29 +41,6 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     public NodeDynamicLabelOrphanChainStartCheckTest()
     {
         super( new NodeDynamicLabelOrphanChainStartCheck(), DynamicLabelConsistencyReport.class, new int[0] );
-    }
-
-    @Test
-    @Ignore("2013-07-17 Revisit once we store sorted label ids")
-    public void shouldReportOrphanRecordsThatAreNotFirst() throws Exception
-    {
-        // given
-        DynamicRecord record0 = addNodeDynamicLabels( inUse( new DynamicRecord( 0 ) ) );
-        DynamicRecord record1 = addNodeDynamicLabels( inUse( new DynamicRecord( 1 ) ) );
-        DynamicRecord record2 = addNodeDynamicLabels( inUse( new DynamicRecord( 2 ) ) );
-        long[] longs = new long[130];
-        for ( int i = 0; i < longs.length; i++ )
-        {
-            longs[i] = i;
-        }
-        allocateFromNumbers( new ArrayList<>(), longs, new ReusableRecordsAllocator( 66,  record0, record1, record2 ) );
-        record0.setInUse( false );
-
-        // when
-        DynamicLabelConsistencyReport report = check( record1 );
-
-        // then
-        verify( report ).orphanDynamicLabelRecord();
     }
 
     @Test

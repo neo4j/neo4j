@@ -19,19 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.Iterator;
 import java.util.Random;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
@@ -164,23 +160,6 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         }
 
         setTransaction( getGraphDb().beginTx() );
-    }
-
-    @Test
-    @Ignore
-    // This test wasn't executed before, because of some JUnit bug.
-    // And it fails with NPE.
-    public void testMultipleNeos()
-    {
-        File storePath = getStorePath( "test-neo2" );
-        deleteFileOrDirectory( storePath );
-        GraphDatabaseService graphDb2 = new GraphDatabaseFactory().newEmbeddedDatabase( storePath );
-        Transaction tx2 = graphDb2.beginTx();
-        getGraphDb().createNode();
-        graphDb2.createNode();
-        tx2.success();
-        tx2.close();
-        graphDb2.shutdown();
     }
 
     @Test

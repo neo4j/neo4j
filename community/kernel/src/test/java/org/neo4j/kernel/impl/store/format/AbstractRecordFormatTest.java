@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.format;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -54,8 +53,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-@Ignore( "Not a test, a base class for testing formats" )
-public abstract class RecordFormatTest
+public abstract class AbstractRecordFormatTest
 {
     private static final int PAGE_SIZE = (int) kibiBytes( 1 );
 
@@ -84,7 +82,7 @@ public abstract class RecordFormatTest
     private final int propertyBits;
     private RecordGenerators generators;
 
-    protected RecordFormatTest( RecordFormats formats, int entityBits, int propertyBits )
+    protected AbstractRecordFormatTest( RecordFormats formats, int entityBits, int propertyBits )
     {
         this.formats = formats;
         this.entityBits = entityBits;

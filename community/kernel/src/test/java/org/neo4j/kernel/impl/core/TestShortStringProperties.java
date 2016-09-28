@@ -29,7 +29,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.TestShortString;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.GraphTransactionRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -42,7 +41,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-public class TestShortStringProperties extends TestShortString
+public class TestShortStringProperties
 {
     @ClassRule
     public static DatabaseRule graphdb = new ImpermanentDatabaseRule();
@@ -55,7 +54,7 @@ public class TestShortStringProperties extends TestShortString
         tx.success();
     }
 
-    public void newTx()
+    private void newTx()
     {
         tx.success();
         tx.begin();
@@ -182,10 +181,122 @@ public class TestShortStringProperties extends TestShortString
         assertThat( node, inTx( db, not( hasProperty( "key" ) ) ) );
     }
 
-    // === reuse the test cases from the encoding ===
+    @Test
+    public void canEncodeEmptyString() throws Exception
+    {
+        assertCanEncode( "" );
+    }
 
-    @Override
-    protected void assertCanEncode( String string )
+    @Test
+    public void canEncodeReallyLongString() throws Exception
+    {
+        assertCanEncode( "                    " ); // 20 spaces
+        assertCanEncode( "                " ); // 16 spaces
+    }
+
+    @Test
+    public void canEncodeFifteenSpaces() throws Exception
+    {
+        assertCanEncode( "               " );
+    }
+
+    @Test
+    public void canEncodeNumericalString() throws Exception
+    {
+        assertCanEncode( "0123456789+,'.-" );
+        assertCanEncode( " ,'.-0123456789" );
+        assertCanEncode( "+ '.0123456789-" );
+        assertCanEncode( "+, 0123456789.-" );
+        assertCanEncode( "+,0123456789' -" );
+        assertCanEncode( "+0123456789,'. " );
+        // IP(v4) numbers
+        assertCanEncode( "192.168.0.1" );
+        assertCanEncode( "127.0.0.1" );
+        assertCanEncode( "255.255.255.255" );
+    }
+
+    @Test
+    public void canEncodeTooLongStringsWithCharsInDifferentTables()
+            throws Exception
+    {
+        assertCanEncode( "____________+" );
+        assertCanEncode( "_____+_____" );
+        assertCanEncode( "____+____" );
+        assertCanEncode( "HELLO world" );
+        assertCanEncode( "Hello_World" );
+    }
+
+    @Test
+    public void canEncodeUpToNineEuropeanChars() throws Exception
+    {
+        // Shorter than 10 chars
+        assertCanEncode( "fågel" ); // "bird" in Swedish
+        assertCanEncode( "påfågel" ); // "peacock" in Swedish
+        assertCanEncode( "påfågelö" ); // "peacock island" in Swedish
+        assertCanEncode( "påfågelön" ); // "the peacock island" in Swedish
+        // 10 chars
+        assertCanEncode( "påfågelöar" ); // "peacock islands" in Swedish
+    }
+
+    @Test
+    public void canEncodeEuropeanCharsWithPunctuation() throws Exception
+    {
+        assertCanEncode( "qHm7 pp3" );
+        assertCanEncode( "UKKY3t.gk" );
+    }
+
+    @Test
+    public void canEncodeAlphanumerical() throws Exception
+    {
+        assertCanEncode( "1234567890" ); // Just a sanity check
+        assertCanEncodeInBothCasings( "HelloWor1d" ); // There is a number there
+        assertCanEncode( "          " ); // Alphanum is the first that can encode 10 spaces
+        assertCanEncode( "_ _ _ _ _ " ); // The only available punctuation
+        assertCanEncode( "H3Lo_ or1D" ); // Mixed case + punctuation
+        assertCanEncode( "q1w2e3r4t+" ); // + is not in the charset
+    }
+
+    @Test
+    public void canEncodeHighUnicode() throws Exception
+    {
+        assertCanEncode( "\u02FF" );
+        assertCanEncode( "hello\u02FF" );
+    }
+
+    @Test
+    public void canEncodeLatin1SpecialChars() throws Exception
+    {
+        assertCanEncode( "#$#$#$#" );
+        assertCanEncode( "$hello#" );
+    }
+
+    @Test
+    public void canEncodeTooLongLatin1String() throws Exception
+    {
+        assertCanEncode( "#$#$#$#$" );
+    }
+
+    @Test
+    public void canEncodeLowercaseAndUppercaseStringsUpTo12Chars() throws Exception
+    {
+        assertCanEncodeInBothCasings( "hello world" );
+        assertCanEncode( "hello_world" );
+        assertCanEncode( "_hello_world" );
+        assertCanEncode( "hello::world" );
+        assertCanEncode( "hello//world" );
+        assertCanEncode( "hello world" );
+        assertCanEncode( "http://ok" );
+        assertCanEncode( "::::::::" );
+        assertCanEncode( " _.-:/ _.-:/" );
+    }
+
+    private void assertCanEncodeInBothCasings( String string )
+    {
+        assertCanEncode( string.toLowerCase() );
+        assertCanEncode( string.toUpperCase() );
+    }
+
+    private void assertCanEncode( String string )
     {
         encode( string, true );
     }

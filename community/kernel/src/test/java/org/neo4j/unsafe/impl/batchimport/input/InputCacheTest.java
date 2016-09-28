@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -40,14 +39,11 @@ import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
 import static java.lang.Math.abs;
-import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
@@ -151,46 +147,6 @@ public class InputCacheTest
             }
         }
         assertNoFilesLeftBehind();
-    }
-
-    @Ignore( "Shows performance improvement of adding more threads" )
-    @Test
-    public void shouldReadQuickly() throws Exception
-    {
-        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(),
-                StandardV3_0.RECORD_FORMATS, withMaxProcessors( 8 ) ) )
-        {
-            Randoms random = new Randoms( randomRule.random(), Randoms.DEFAULT );
-            try ( Receiver<InputRelationship[],IOException> cacher = cache.cacheRelationships( MAIN ) )
-            {
-                InputRelationship[] batch = new InputRelationship[1_000];
-                for ( int i = 0; i < batch.length; i++ )
-                {
-                    batch[i] = randomRelationship( random );
-                }
-
-                for ( int b = 0; b < 100_000; b++ )
-                {
-                    cacher.receive( batch );
-                    if ( b % 10_000 == 0 )
-                    {
-                        System.out.println( b );
-                    }
-                }
-            }
-
-            for ( int i = 1; i <= 8; i++ )
-            {
-                try ( InputIterator<InputRelationship> reader = cache.relationships( MAIN, false ).iterator() )
-                {
-                    reader.processors( i - reader.processors( 0 ) );
-                    long time = currentTimeMillis();
-                    count( reader );
-                    time = currentTimeMillis() - time;
-                    System.out.println( i + ":" + duration( time ) );
-                }
-            }
-        }
     }
 
     private Default withMaxProcessors( int maxProcessors )

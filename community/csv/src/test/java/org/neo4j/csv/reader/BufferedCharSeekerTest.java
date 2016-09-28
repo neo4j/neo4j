@@ -20,7 +20,6 @@
 package org.neo4j.csv.reader;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -34,15 +33,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.wrap;
 
@@ -321,13 +318,16 @@ public class BufferedCharSeekerTest
         assertArrayEquals( new String[] {"four", "five", "six"}, nextLineOfAllStrings( seeker, mark ) );
     }
 
-    @Ignore( "TODO add test for characters with surrogate code points or whatever they are called," +
-             " basically consisting of two char values instead of one. Add such a test when adding " +
-             "support for reading such characters in the BufferedCharSeeker" )
     @Test
-    public void shouldHandleDoubleCharValues()
+    public void shouldHandleDoubleCharValues() throws IOException
     {
-        fail( "Test not implemented" );
+        seeker = seeker( "v\uD800\uDC00lue one\t\"v\uD801\uDC01lue two\"\tv\uD804\uDC03lue three" );
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "v𐀀lue one", seeker.extract( mark, extractors.string() ).value() );
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "v𐐁lue two", seeker.extract( mark, extractors.string() ).value() );
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "v𑀃lue three", seeker.extract( mark, extractors.string() ).value() );
     }
 
     @Test

@@ -19,7 +19,6 @@
  */
 package org.neo4j.test;
 
-import org.junit.Ignore;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.MultipleFailureException;
@@ -34,7 +33,6 @@ import java.util.List;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 
-@Ignore( "this is not a test, it is a testing utility" )
 public class TestData<T> implements TestRule
 {
     @Target( ElementType.METHOD )

@@ -19,31 +19,23 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
-import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
-import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.EXACT_CONFIG;
 
 public class BatchInsertionIT
 {
@@ -161,30 +153,4 @@ public class BatchInsertionIT
         }
     }
 
-    @Ignore
-    @Test
-    public void testInsertionSpeed() throws Exception
-    {
-        File file = new File( dbRule.getStoreDirAbsolutePath() );
-        BatchInserter inserter = BatchInserters.inserter( file );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
-        BatchInserterIndex index = provider.nodeIndex( "yeah", EXACT_CONFIG );
-        index.setCacheCapacity( "key", 1000000 );
-        long t = currentTimeMillis();
-        for ( int i = 0; i < 1000000; i++ )
-        {
-            Map<String, Object> properties = map( "key", "value" + i );
-            long id = inserter.createNode( properties );
-            index.add( id, properties );
-        }
-        System.out.println( "insert:" + ( currentTimeMillis() - t ) );
-        index.flush();
-
-        t = currentTimeMillis();
-        for ( int i = 0; i < 1000000; i++ )
-        {
-            count( (Iterator<Long>) index.get( "key", "value" + i ) );
-        }
-        System.out.println( "get:" + ( currentTimeMillis() - t ) );
-    }
 }
