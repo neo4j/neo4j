@@ -103,14 +103,11 @@ public class CoreReplicationIT
     public void shouldNotAllowTokenCreationFromAFollower() throws Exception
     {
         // given
-        CoreClusterMember leader = cluster.awaitLeader();
-
-        CoreGraphDatabase leaderDb = leader.database();
-        try ( Transaction tx = leaderDb.beginTx() )
+        CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
         {
-            leaderDb.createNode( Label.label( "Person" ) );
+            db.createNode( Label.label( "Person" ) );
             tx.success();
-        }
+        } );
 
         dataMatchesEventually( leader, cluster.coreMembers() );
 
