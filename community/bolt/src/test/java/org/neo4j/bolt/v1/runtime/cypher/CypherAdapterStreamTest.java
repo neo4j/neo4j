@@ -24,10 +24,10 @@ import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 
 import java.time.Clock;
 import java.util.Arrays;
@@ -77,6 +77,8 @@ public class CypherAdapterStreamTest
 
         Clock clock = mock( Clock.class );
         when( clock.millis() ).thenReturn( 0L, 1337L );
+
+        TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, clock );
 
         // When
@@ -114,6 +116,7 @@ public class CypherAdapterStreamTest
                 plan("Join", map( "arg1", 1 ), singletonList( "id1" ),
                 plan("Scan", map( "arg2", 1 ), singletonList("id2")) ) );
 
+        TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
         // When
@@ -137,6 +140,7 @@ public class CypherAdapterStreamTest
                 plan( "Join", map( "arg1", 1 ), 2, 1, singletonList( "id1" ),
                         plan( "Scan", map( "arg2", 1 ), 2, 1, singletonList( "id2" ) ) ) );
 
+        TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
         // When
@@ -158,10 +162,11 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
 
-        when( result.getNotifications() ).thenReturn( Arrays.<Notification>asList(
+        when( result.getNotifications() ).thenReturn( Arrays.asList(
                 NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
                 NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
         ) );
+        TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
         // When

@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;

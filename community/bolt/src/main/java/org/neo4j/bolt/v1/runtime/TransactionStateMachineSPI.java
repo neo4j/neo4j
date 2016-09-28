@@ -19,41 +19,60 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
+import org.neo4j.bolt.v1.runtime.cypher.CypherAdapterStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
 class TransactionStateMachineSPI implements TransactionStateMachine.SPI
 {
     private final GraphDatabaseAPI db;
     private final ThreadToStatementContextBridge txBridge;
     private final QueryExecutionEngine queryExecutionEngine;
-    private final StatementRunner statementRunner;
     private final TransactionIdTracker transactionIdTracker;
+    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
+    private final Neo4jTransactionalContextFactory contextFactory;
+    private final GraphDatabaseQueryService queryService;
+    private final Clock clock;
 
     TransactionStateMachineSPI( GraphDatabaseAPI db,
                                 ThreadToStatementContextBridge txBridge,
                                 QueryExecutionEngine queryExecutionEngine,
-                                StatementRunner statementRunner,
-                                TransactionIdStore transactionIdStoreSupplier )
+                                TransactionIdStore transactionIdStoreSupplier,
+                                GraphDatabaseQueryService queryService,
+                                Clock clock )
     {
         this.db = db;
         this.txBridge = txBridge;
         this.queryExecutionEngine = queryExecutionEngine;
-        this.statementRunner = statementRunner;
         this.transactionIdTracker = new TransactionIdTracker( transactionIdStoreSupplier );
+        this.contextFactory = new Neo4jTransactionalContextFactory( queryService, locker );
+        this.queryService = queryService;
+
+        this.clock = clock;
     }
 
     @Override
@@ -94,19 +113,43 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     }
 
     @Override
-    public Result executeQuery( String querySource,
-                                AuthSubject authSubject,
-                                String statement,
-                                Map<String, Object> params ) throws QueryExecutionKernelException
+    public BoltResultHandle executeQuery( String querySource,
+            AuthSubject authSubject,
+            String statement,
+            Map<String,Object> params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
     {
-        try
-        {
-            return statementRunner.run( querySource, authSubject, statement, params );
-        }
-        catch ( KernelException e )
-        {
-            throw new QueryExecutionKernelException( e );
-        }
-    }
+        InternalTransaction internalTransaction = queryService.beginTransaction( implicit, authSubject );
+        QuerySource sourceDetails = new QuerySource( "bolt-session", querySource );
+        TransactionalContext transactionalContext =
+                contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
 
+        return new BoltResultHandle()
+        {
+            @Override
+            public BoltResult start() throws KernelException
+            {
+                try
+                {
+                    Result run = queryExecutionEngine.executeQuery( statement, params, transactionalContext );
+                    return new CypherAdapterStream( run, clock );
+                }
+                catch ( KernelException e )
+                {
+                    onFail.apply();
+                    throw new QueryExecutionKernelException( e );
+                }
+                catch ( Throwable e )
+                {
+                    onFail.apply();
+                    throw e;
+                }
+            }
+
+            @Override
+            public void terminate()
+            {
+                transactionalContext.terminate();
+            }
+        };
+    }
 }

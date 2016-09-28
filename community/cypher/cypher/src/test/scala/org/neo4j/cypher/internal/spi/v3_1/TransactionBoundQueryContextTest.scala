@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_1
 
 import java.net.URL
 import java.util.Collections
+import java.util.function.Supplier
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.DynamicIterable
@@ -32,7 +33,6 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
@@ -74,7 +74,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
     val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`, AccessMode.Static.FULL,
-      statement, null, locker, null, null, null, null)
+      supply(statement), null, locker, null, null, null)
     val transactionalContext = TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -90,7 +90,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
     val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`, AccessMode.Static.FULL,
-      statement, null, locker, null, null, null, null)
+      supply(statement), null, locker, null, null, null)
     val transactionalContext = TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -178,5 +178,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     finally {
       tx.close()
     }
+  }
+
+  private def supply[T](f: => T): Supplier[T] = new Supplier[T] {
+    override def get(): T = f
   }
 }

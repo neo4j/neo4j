@@ -115,34 +115,12 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
                 tx,
                 tx.transactionType(),
                 tx.mode(),
-                statement,
+                statementSupplier,
                 executingQuery,
                 locker,
                 txBridge,
                 dbmsOpsFactory,
-                guard,
-                this
+                guard
         );
-    }
-
-    @Override
-    public Neo4jTransactionalContext newContext( ExecutingQuery query, InternalTransaction transaction )
-    {
-        Statement statement = statementSupplier.get();
-        GraphDatabaseQueryService queryService = queryServiceSupplier.get();
-        statement.queryRegistration().registerExecutingQuery( query );
-
-        return new Neo4jTransactionalContext(
-                queryService,
-                transaction,
-                transaction.transactionType(),
-                transaction.mode(),
-                statement,
-                query,
-                locker,
-                txBridge,
-                dbmsOpsFactory,
-                guard,
-                this );
     }
 }

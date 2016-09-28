@@ -20,8 +20,20 @@
 
 package org.neo4j.bolt.v1.runtime.integration;
 
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.regex.Pattern;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
@@ -30,18 +42,21 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.test.Barrier;
+import org.neo4j.test.DoubleLatch;
 
-import java.util.regex.Pattern;
-
+import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
+
 
 public class TransactionIT
 {
@@ -224,6 +239,131 @@ public class TransactionIT
         }
 
         thread.join();
+    }
+
+    @Test
+    public void shouldTerminateQueriesEvenIfUsingPeriodicCommit() throws Exception
+    {
+        // Spawns a throttled HTTP server, runs a PERIODIC COMMIT that fetches data from this server,
+        // and checks that the query able to be terminated
+
+        // We start with 3, because that is how many actors we have -
+        // 1. the http server
+        // 2. the running query
+        // 3. the one terminating 2
+        final DoubleLatch latch = new DoubleLatch( 3, true );
+
+        // This is used to block the http server between the first and second batch
+        final Barrier.Control barrier = new Barrier.Control();
+
+        // Serve CSV via local web server, let Jetty find a random port for us
+        Server server = createHttpServer( latch, barrier, 20, 30 );
+        server.start();
+        int localPort = getLocalPort( server );
+
+        final BoltStateMachine[] machine = {null};
+
+        Thread thread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try ( BoltStateMachine stateMachine = env.newMachine( "<write>" ) )
+                {
+                    machine[0] = stateMachine;
+                    stateMachine.init( USER_AGENT, emptyMap(), null );
+                    String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
+                                           "CREATE (n:A {id: line[0], square: line[1]}) " +
+                                           "WITH count(*) as number " +
+                                           "CREATE (n:ShouldNotExist)",
+                                           localPort );
+                    try
+                    {
+                        latch.start();
+                        stateMachine.run( query, emptyMap(), nullResponseHandler() );
+                        stateMachine.pullAll( nullResponseHandler() );
+                    }
+                    finally
+                    {
+                        latch.finish();
+                    }
+                }
+                catch ( BoltConnectionFatality connectionFatality )
+                {
+                    throw new RuntimeException( connectionFatality );
+                }
+            }
+        };
+        thread.setName( "query runner" );
+        thread.start();
+
+        // We block this thread here, waiting for the http server to spin up and the running query to get started
+        latch.startAndWaitForAllToStart();
+        Thread.sleep( 1000 );
+
+        // This is the call that RESETs the Bolt connection and will terminate the running query
+        machine[0].reset( nullResponseHandler() );
+
+        barrier.release();
+
+        // We block again here, waiting for the running query to have been terminated, and for the server to have
+        // wrapped up and finished streaming http results
+        latch.finishAndWaitForAllToFinish();
+
+        // And now we check that the last node did not get created
+        try ( Transaction ignored = env.graph().beginTx() )
+        {
+            assertFalse( "Query was not terminated in time - nodes were created!",
+                         env.graph().findNodes( Label.label( "ShouldNotExist" ) ).hasNext() );
+        }
+    }
+
+    // TODO: This code is duplicated from BuiltInProceduresInteractionTestBase.
+    // Should probably be extracted to a common place
+    private Server createHttpServer(
+            DoubleLatch latch, Barrier.Control innerBarrier,
+            int firstBatchSize, int otherBatchSize )
+    {
+        Server server = new Server( 0 );
+        server.setHandler( new AbstractHandler()
+        {
+            @Override
+            public void handle(
+                    String target,
+                    Request baseRequest,
+                    HttpServletRequest request,
+                    HttpServletResponse response
+            ) throws IOException, ServletException
+            {
+                response.setContentType( "text/plain; charset=utf-8" );
+                response.setStatus( HttpServletResponse.SC_OK );
+                PrintWriter out = response.getWriter();
+
+                writeBatch( out, firstBatchSize );
+                out.flush();
+                latch.start();
+                innerBarrier.reached();
+
+                latch.finish();
+                writeBatch( out, otherBatchSize );
+                baseRequest.setHandled(true);
+            }
+
+            private void writeBatch( PrintWriter out, int batchSize )
+            {
+                for ( int i = 0; i < batchSize; i++ )
+                {
+                    out.write( format( "%d %d\n", i, i*i ) );
+                    i++;
+                }
+            }
+        } );
+        return server;
+    }
+
+    private int getLocalPort( Server server )
+    {
+        return ((ServerConnector) (server.getConnectors()[0])).getLocalPort();
     }
 
 }
