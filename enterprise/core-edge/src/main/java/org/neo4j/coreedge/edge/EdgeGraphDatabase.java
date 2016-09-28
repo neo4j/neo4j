@@ -25,25 +25,31 @@ import java.util.function.Function;
 
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 
 public class EdgeGraphDatabase extends GraphDatabaseFacade
 {
-    public EdgeGraphDatabase( File storeDir, Map<String, String> params, Dependencies dependencies )
+    public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
+            "Edge cluster mode is not allowed with custom IO integrations";
+
+    public EdgeGraphDatabase( File storeDir, Map<String,String> params, Dependencies dependencies )
     {
         this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
     }
 
-    public EdgeGraphDatabase( File storeDir, Map<String, String> params, Dependencies
-            dependencies, DiscoveryServiceFactory discoveryServiceFactory )
+    public EdgeGraphDatabase( File storeDir, Map<String,String> params, Dependencies dependencies,
+            DiscoveryServiceFactory discoveryServiceFactory )
     {
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( new Config( params ), CUSTOM_IO_EXCEPTION_MESSAGE );
         Function<PlatformModule,EditionModule> factory =
-                (platformModule) -> new EnterpriseEdgeEditionModule( platformModule, discoveryServiceFactory );
+                ( platformModule ) -> new EnterpriseEdgeEditionModule( platformModule, discoveryServiceFactory );
         new GraphDatabaseFacadeFactory( DatabaseInfo.EDGE, factory ).initFacade( storeDir, params, dependencies, this );
     }
 }

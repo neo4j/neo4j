@@ -23,31 +23,36 @@ import java.io.File;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.roles.Role;
+import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
-    public CoreGraphDatabase( File storeDir, Map<String, String> params,
+    public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
+            "Core cluster mode is not allowed with custom IO integrations";
+
+    public CoreGraphDatabase( File storeDir, Map<String,String> params,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
     }
 
-    public CoreGraphDatabase( File storeDir, Map<String, String> params,
-                              GraphDatabaseFacadeFactory.Dependencies dependencies,
-                              DiscoveryServiceFactory discoveryServiceFactory )
+    public CoreGraphDatabase( File storeDir, Map<String,String> params,
+            GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( new Config( params ), CUSTOM_IO_EXCEPTION_MESSAGE );
         Function<PlatformModule,EditionModule> factory =
-                (platformModule) -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
+                ( platformModule ) -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
         new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, params, dependencies, this );
     }
 
