@@ -20,6 +20,11 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import java.util.Arrays;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
@@ -34,9 +39,11 @@ import static org.mockito.Mockito.when;
 
 public class EnterpriseAuthManagerFactoryTest
 {
-    // Since this depends on the order of static class initialization it doensn't work on full test runs
-    @Ignore
-    public void shouldGetShiroDebugLogs()
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
+    @Test
+    public void shouldFailOnIllegalRealmNameConfiguration()
     {
         // Given
         Config config = mock( Config.class );
@@ -44,21 +51,50 @@ public class EnterpriseAuthManagerFactoryTest
         Log mockLog = mock( Log.class );
         when( mockLogProvider.getLog( anyString() ) ).thenReturn( mockLog );
         when( mockLog.isDebugEnabled() ).thenReturn( true );
-        when( config.get( SecuritySettings.internal_authentication_enabled ) ).thenReturn( false );
-        when( config.get( SecuritySettings.internal_authorization_enabled ) ).thenReturn( false );
+        when( config.get( SecuritySettings.native_authentication_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.native_authorization_enabled ) ).thenReturn( true );
         when( config.get( SecuritySettings.ldap_authentication_enabled ) ).thenReturn( true );
         when( config.get( SecuritySettings.ldap_authorization_enabled ) ).thenReturn( true );
-        when( config.get( SecuritySettings.plugin_authentication_enabled ) ).thenReturn( false );
-        when( config.get( SecuritySettings.plugin_authorization_enabled ) ).thenReturn( false );
-
-        // NOTE: This test assumes Shiro JndiLdapRealm will at least output a debug log with the user dn template and
-        //       is brittle toward future Shiro version updates
-        when( config.get( SecuritySettings.ldap_user_dn_template ) ).thenReturn( "prefix{0}" );
+        when( config.get( SecuritySettings.plugin_authentication_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.plugin_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.active_realms ) ).thenReturn( Arrays.asList( "this-realm-does-not-exist" ) );
+        thrown.expect( IllegalArgumentException.class );
 
         // When
         new EnterpriseAuthManagerFactory().newInstance( config, mockLogProvider, mock( Log.class), null, null );
 
         // Then
-        verify( mockLog, atLeastOnce() ).debug( anyString(), contains( "prefix" ), anyString() );
+        verify( mockLog, atLeastOnce() ).debug( anyString(),
+                contains( "Illegal configuration: No valid security realm is active." ), anyString() );
+    }
+
+    @Test
+    public void shouldFailOnIllegalAdvancedRealmConfiguration()
+    {
+        // Given
+        Config config = mock( Config.class );
+        LogProvider mockLogProvider = mock( LogProvider.class );
+        Log mockLog = mock( Log.class );
+        when( mockLogProvider.getLog( anyString() ) ).thenReturn( mockLog );
+        when( mockLog.isDebugEnabled() ).thenReturn( true );
+        when( config.get( SecuritySettings.native_authentication_enabled ) ).thenReturn( false );
+        when( config.get( SecuritySettings.native_authorization_enabled ) ).thenReturn( false );
+        when( config.get( SecuritySettings.ldap_authentication_enabled ) ).thenReturn( false );
+        when( config.get( SecuritySettings.ldap_authorization_enabled ) ).thenReturn( false );
+        when( config.get( SecuritySettings.plugin_authentication_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.plugin_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.active_realms ) ).thenReturn(
+                Arrays.asList(
+                        SecuritySettings.NATIVE_REALM_NAME,
+                        SecuritySettings.LDAP_REALM_NAME )
+        );
+        thrown.expect( IllegalArgumentException.class );
+
+        // When
+        new EnterpriseAuthManagerFactory().newInstance( config, mockLogProvider, mock( Log.class), null, null );
+
+        // Then
+        verify( mockLog, atLeastOnce() ).debug( anyString(),
+                contains( "Illegal configuration: No valid security realm is active." ), anyString() );
     }
 }

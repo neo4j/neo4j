@@ -19,10 +19,12 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.kernel.configuration.Internal;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
@@ -30,6 +32,7 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -38,31 +41,63 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description( "Security configuration settings" )
 public class SecuritySettings
 {
+    public static final String NATIVE_REALM_NAME = "native";
+    public static final String LDAP_REALM_NAME = "ldap";
+    public static final String PLUGIN_REALM_NAME_PREFIX = "plugin-";
+
     @SuppressWarnings( "unused" ) // accessed by reflection
 
-    @Description( "Enable authentication via internal authentication provider." )
-    public static final Setting<Boolean> internal_authentication_enabled =
-            setting( "dbms.security.realms.internal.authentication_enabled", BOOLEAN, "true" );
+    @Description( "The security realm that contains the users and roles used for authentication and authorization. " +
+                  "This can be one of the built-in `" + NATIVE_REALM_NAME + "` or `" + LDAP_REALM_NAME + "` realms, " +
+                  "or it can be an externally provided plugin realm, with a custom name prefixed by `" +
+                  PLUGIN_REALM_NAME_PREFIX + "`, i.e. `" + PLUGIN_REALM_NAME_PREFIX + "<example_realm_name>`." )
+    public static Setting<String> active_realm =
+            setting( "dbms.security.realm", STRING, NATIVE_REALM_NAME );
 
-    @Description( "Enable authorization via internal authorization provider." )
-    public static final Setting<Boolean> internal_authorization_enabled =
-            setting( "dbms.security.realms.internal.authorization_enabled", BOOLEAN, "true" );
+    @Description( "A list of security realms containing the users and roles used for authentication and " +
+                  "authorization. They will be queried in the given order when login is attempted." )
+    @Internal
+    public static Setting<List<String>> active_realms =
+            derivedSetting( "dbms.security.realms", active_realm,
+                    ( r ) -> Arrays.asList( r ), STRING_LIST );
 
-    @Description( "Enable authentication via settings configurable LDAP authentication realm." )
+    @Description( "Enable authentication via native authentication provider." )
+    @Internal
+    public static final Setting<Boolean> native_authentication_enabled =
+            derivedSetting( "dbms.security.realms.native.authentication_enabled", active_realms,
+                    ( realms ) -> realms.contains( NATIVE_REALM_NAME ), BOOLEAN );
+
+    @Description( "Enable authorization via native authorization provider." )
+    @Internal
+    public static final Setting<Boolean> native_authorization_enabled =
+            derivedSetting( "dbms.security.realms.native.authorization_enabled", active_realms,
+                    ( realms ) -> realms.contains( NATIVE_REALM_NAME ), BOOLEAN );
+
+    @Description( "Enable authentication via settings configurable LDAP authentication provider." )
+    @Internal
     public static final Setting<Boolean> ldap_authentication_enabled =
-            setting( "dbms.security.realms.ldap.authentication_enabled", BOOLEAN, "false" );
+            derivedSetting( "dbms.security.realms.ldap.authentication_enabled", active_realms,
+                    ( realms ) -> realms.contains( LDAP_REALM_NAME ), BOOLEAN );
 
-    @Description( "Enable authotization via settings configurable LDAP authorization realm." )
+    @Description( "Enable authorization via settings configurable LDAP authorization provider." )
+    @Internal
     public static final Setting<Boolean> ldap_authorization_enabled =
-            setting( "dbms.security.realms.ldap.authorization_enabled", BOOLEAN, "false" );
+            derivedSetting( "dbms.security.realms.ldap.authorization_enabled", active_realms,
+                    ( realms ) -> realms.contains( LDAP_REALM_NAME ), BOOLEAN );
 
-    @Description( "Enable authentication via plugin authentication realms." )
+    @Description( "Enable authentication via plugin authentication providers." )
+    @Internal
     public static final Setting<Boolean> plugin_authentication_enabled =
-            setting( "dbms.security.realms.plugin.authentication_enabled", BOOLEAN, "false" );
+            derivedSetting( "dbms.security.realms.plugin.authentication_enabled", active_realms,
+                    ( realms ) -> realms.stream().anyMatch( ( r ) -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
+                    BOOLEAN );
 
-    @Description( "Enable authotization via plugin authorization realms." )
+    @Description( "Enable authorization via plugin authorization providers." )
+    @Internal
     public static final Setting<Boolean> plugin_authorization_enabled =
-            setting( "dbms.security.realms.plugin.authorization_enabled", BOOLEAN, "false" );
+            derivedSetting( "dbms.security.realms.plugin.authorization_enabled", active_realms,
+                    ( realms ) -> realms.stream().anyMatch( ( r ) -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
+                    BOOLEAN );
 
     @Description( "URL of LDAP server (with protocol, hostname and port) to use for authentication and authorization. " +
                   "If no protocol is specified the default will be `ldap://`. To use LDAPS, " +

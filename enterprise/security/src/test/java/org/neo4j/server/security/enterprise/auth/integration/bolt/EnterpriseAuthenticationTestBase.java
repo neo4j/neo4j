@@ -121,22 +121,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected static Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
     {
-        settings.put( SecuritySettings.internal_authentication_enabled, "false" );
-        settings.put( SecuritySettings.internal_authorization_enabled, "false" );
-        settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
-        settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
-        settings.put( SecuritySettings.plugin_authentication_enabled, "false" );
-        settings.put( SecuritySettings.plugin_authorization_enabled, "false" );
-    };
-
-    protected static Consumer<Map<Setting<?>,String>> pluginOnlyAuthSettings = settings ->
-    {
-        settings.put( SecuritySettings.internal_authentication_enabled, "false" );
-        settings.put( SecuritySettings.internal_authorization_enabled, "false" );
-        settings.put( SecuritySettings.ldap_authentication_enabled, "false" );
-        settings.put( SecuritySettings.ldap_authorization_enabled, "false" );
-        settings.put( SecuritySettings.plugin_authentication_enabled, "true" );
-        settings.put( SecuritySettings.plugin_authorization_enabled, "true" );
+        settings.put( SecuritySettings.active_realm, SecuritySettings.LDAP_REALM_NAME );
     };
 
     protected void testCreateReaderUser() throws Exception

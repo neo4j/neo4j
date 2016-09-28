@@ -53,10 +53,10 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CustomCacheableAuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 
+import static org.neo4j.server.security.enterprise.auth.SecuritySettings.PLUGIN_REALM_NAME_PREFIX;
+
 public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
 {
-    private static final String PLUGIN_REALM_NAME_PREFIX = "plugin-";
-
     private AuthenticationPlugin authenticationPlugin;
     private AuthorizationPlugin authorizationPlugin;
     private final Config config;

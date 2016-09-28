@@ -69,21 +69,24 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     {
 //        StaticLoggerBinder.setNeo4jLogProvider( logProvider );
 
-        List<Realm> realms = new ArrayList<>( 2 );
+        List<String> configuredRealms = config.get( SecuritySettings.active_realms );
+        List<Realm> realms = new ArrayList<>( configuredRealms.size() + 1 );
+
         SecurityLog securityLog = getSecurityLog( allegedSecurityLog );
         SecureHasher secureHasher = new SecureHasher();
 
         // We always create the internal realm as it is our only UserManager implementation
         InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
 
-        if ( config.get( SecuritySettings.internal_authentication_enabled ) ||
-             config.get( SecuritySettings.internal_authorization_enabled ) )
+        if ( config.get( SecuritySettings.native_authentication_enabled ) ||
+             config.get( SecuritySettings.native_authorization_enabled ) )
         {
             realms.add( internalRealm );
         }
 
-        if ( config.get( SecuritySettings.ldap_authentication_enabled ) ||
-             config.get( SecuritySettings.ldap_authorization_enabled ) )
+        if ( (config.get( SecuritySettings.ldap_authentication_enabled ) ||
+              config.get( SecuritySettings.ldap_authorization_enabled ))
+             && configuredRealms.contains( SecuritySettings.LDAP_REALM_NAME ) )
         {
             realms.add( new LdapRealm( config, securityLog ) );
         }
@@ -91,8 +94,35 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         // Load plugin realms if we have any
         realms.addAll( createPluginRealms( config, logProvider, secureHasher ) );
 
-        return new MultiRealmAuthManager( internalRealm, realms, createCacheManager( config ),
+        // Select the active realms in the order they are configured
+        List<Realm> orderedActiveRealms = selectOrderedActiveRealms( configuredRealms, realms );
+
+        if ( orderedActiveRealms.isEmpty() )
+        {
+            String message = "Illegal configuration: No valid security realm is active.";
+            securityLog.error( message );
+            throw new IllegalArgumentException( message );
+        }
+
+        return new MultiRealmAuthManager( internalRealm, orderedActiveRealms, createCacheManager( config ),
                 securityLog, config.get( EnterpriseEditionSettings.security_log_successful_authentication ) );
+    }
+
+    private static List<Realm> selectOrderedActiveRealms( List<String> configuredRealms, List<Realm> availableRealms )
+    {
+        List<Realm> orderedActiveRealms = new ArrayList<>( configuredRealms.size() );
+        for ( String configuredRealmName : configuredRealms )
+        {
+            for ( Realm realm : availableRealms )
+            {
+                if ( configuredRealmName.equals( realm.getName() ) )
+                {
+                    orderedActiveRealms.add( realm );
+                    break;
+                }
+            }
+        }
+        return orderedActiveRealms;
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
@@ -102,8 +132,8 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
                 getUserRepository( config, logProvider, fileSystem ),
                 getRoleRepository( config, logProvider, fileSystem ),
                 new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
-                config.get( SecuritySettings.internal_authentication_enabled ),
-                config.get( SecuritySettings.internal_authorization_enabled ), jobScheduler );
+                config.get( SecuritySettings.native_authentication_enabled ),
+                config.get( SecuritySettings.native_authorization_enabled ), jobScheduler );
     }
 
     private SecurityLog getSecurityLog( Log allegedSecurityLog )
