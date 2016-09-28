@@ -23,6 +23,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -109,8 +111,10 @@ public abstract class PageSwapperTest
         return file;
     }
 
-    @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    public final ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public final RuleChain rules = RuleChain.outerRule( testDir ).around( expectedException );
 
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
 
@@ -566,10 +570,11 @@ public abstract class PageSwapperTest
         assertFalse( gotCallback.get() );
     }
 
-    @Test( expected = NoSuchFileException.class )
+    @Test
     public void mustThrowExceptionIfFileDoesNotExist() throws Exception
     {
         PageSwapperFactory factory = swapperFactory();
+        expectedException.expect( NoSuchFileException.class );
         createSwapper( factory, file( "does not exist" ), cachePageSize(), NO_CALLBACK, false );
     }
 
@@ -1018,47 +1023,51 @@ public abstract class PageSwapperTest
         }
     }
 
-    @Test( expected = IOException.class )
+    @Test
     public void readMustThrowForNegativeFilePageIds() throws Exception
     {
         File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = createSwapper( factory, file, 4, NO_CALLBACK, true );
 
+        expectedException.expect( IOException.class );
         swapper.read( -1, createPage( 4 ) );
     }
 
-    @Test( expected = IOException.class )
+    @Test
     public void writeMustThrowForNegativeFilePageIds() throws Exception
     {
         File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = createSwapper( factory, file, 4, NO_CALLBACK, true );
 
+        expectedException.expect( IOException.class );
         swapper.write( -1, createPage( 4 ) );
     }
 
-    @Test( expected = IOException.class )
+    @Test
     public void vectoredReadMustThrowForNegativeFilePageIds() throws Exception
     {
         File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = createSwapper( factory, file, 4, NO_CALLBACK, true );
 
+        expectedException.expect( IOException.class );
         swapper.read( -1, new Page[]{createPage( 4 ), createPage( 4 )}, 0, 2 );
     }
 
-    @Test( expected = IOException.class )
+    @Test
     public void vectoredWriteMustThrowForNegativeFilePageIds() throws Exception
     {
         File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = createSwapper( factory, file, 4, NO_CALLBACK, true );
 
+        expectedException.expect( IOException.class );
         swapper.write( -1, new Page[] {createPage( 4 ), createPage( 4 )}, 0, 2 );
     }
 
-    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    @Test
     public void vectoredReadMustThrowForNegativeArrayOffsets() throws Exception
     {
         File file = file( "file" );
@@ -1067,10 +1076,11 @@ public abstract class PageSwapperTest
 
         Page[] pages = {createPage( 4 ), createPage( 4 )};
         swapper.write( 0, pages, 0, 2 );
+        expectedException.expect( ArrayIndexOutOfBoundsException.class );
         swapper.read( 0, pages, -1, 2 );
     }
 
-    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    @Test
     public void vectoredWriteMustThrowForNegativeArrayOffsets() throws Exception
     {
         File file = file( "file" );
@@ -1078,10 +1088,11 @@ public abstract class PageSwapperTest
         PageSwapper swapper = createSwapper( factory, file, 4, NO_CALLBACK, true );
 
         Page[] pages = {createPage( 4 ), createPage( 4 )};
+        expectedException.expect( ArrayIndexOutOfBoundsException.class );
         swapper.write( 0, pages, -1, 2 );
     }
 
-    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    @Test
     public void vectoredReadMustThrowWhenLengthGoesBeyondArraySize() throws Exception
     {
         File file = file( "file" );
@@ -1090,10 +1101,11 @@ public abstract class PageSwapperTest
 
         Page[] pages = {createPage( 4 ), createPage( 4 )};
         swapper.write( 0, pages, 0, 2 );
+        expectedException.expect( ArrayIndexOutOfBoundsException.class );
         swapper.read( 0, pages, 1, 2 );
     }
 
-    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    @Test
     public void vectoredWriteMustThrowWhenLengthGoesBeyondArraySize() throws Exception
     {
         File file = file( "file" );
@@ -1101,10 +1113,11 @@ public abstract class PageSwapperTest
         PageSwapper swapper = createSwapper( factory, file, 4, NO_CALLBACK, true );
 
         Page[] pages = {createPage( 4 ), createPage( 4 )};
+        expectedException.expect( ArrayIndexOutOfBoundsException.class );
         swapper.write( 0, pages, 1, 2 );
     }
 
-    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    @Test
     public void vectoredReadMustThrowWhenArrayOffsetIsEqualToArrayLength() throws Exception
     {
         File file = file( "file" );
@@ -1113,10 +1126,11 @@ public abstract class PageSwapperTest
 
         Page[] pages = {createPage( 4 ), createPage( 4 )};
         swapper.write( 0, pages, 0, 2 );
+        expectedException.expect( ArrayIndexOutOfBoundsException.class );
         swapper.read( 0, pages, 2, 1 );
     }
 
-    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    @Test
     public void vectoredWriteMustThrowWhenArrayOffsetIsEqualToArrayLength() throws Exception
     {
         File file = file( "file" );
@@ -1124,10 +1138,11 @@ public abstract class PageSwapperTest
         PageSwapper swapper = createSwapper( factory, file, 4, NO_CALLBACK, true );
 
         Page[] pages = {createPage( 4 ), createPage( 4 )};
+        expectedException.expect( ArrayIndexOutOfBoundsException.class );
         swapper.write( 0, pages, 2, 1 );
     }
 
-    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    @Test
     public void vectoredReadMustThrowWhenArrayOffsetIsGreaterThanArrayLength() throws Exception
     {
         File file = file( "file" );
@@ -1136,10 +1151,11 @@ public abstract class PageSwapperTest
 
         Page[] pages = {createPage( 4 ), createPage( 4 )};
         swapper.write( 0, pages, 0, 2 );
+        expectedException.expect( ArrayIndexOutOfBoundsException.class );
         swapper.read( 0, pages, 3, 1 );
     }
 
-    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    @Test
     public void vectoredWriteMustThrowWhenArrayOffsetIsGreaterThanArrayLength() throws Exception
     {
         File file = file( "file" );
@@ -1147,6 +1163,7 @@ public abstract class PageSwapperTest
         PageSwapper swapper = createSwapper( factory, file, 4, NO_CALLBACK, true );
 
         Page[] pages = {createPage( 4 ), createPage( 4 )};
+        expectedException.expect( ArrayIndexOutOfBoundsException.class );
         swapper.write( 0, pages, 3, 1 );
     }
 
