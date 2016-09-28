@@ -76,7 +76,6 @@ public class DatabaseIndexIntegrationTest
     private SyncNotifierDirectoryFactory directoryFactory;
     private WritableTestDatabaseIndex luceneIndex;
 
-
     @BeforeClass
     public static void initExecutors()
     {
