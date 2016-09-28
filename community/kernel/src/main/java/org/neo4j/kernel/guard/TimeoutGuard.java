@@ -21,6 +21,7 @@ package org.neo4j.kernel.guard;
 
 import java.time.Clock;
 
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.logging.Log;
@@ -46,20 +47,22 @@ public class TimeoutGuard implements Guard
         check( statement.getTransaction() );
     }
 
-    private void check (KernelTransactionImplementation transaction)
+    private void check( KernelTransactionImplementation transaction )
     {
-        check( getMaxTransactionCompletionTime( transaction ), "Transaction timeout." );
+        check( transaction, "Transaction timeout." );
     }
 
-    private void check( long maxCompletionTime, String timeoutDescription )
+    private void check( KernelTransactionImplementation transaction, String timeoutDescription )
     {
         long now = clock.millis();
+        long maxCompletionTime = getMaxTransactionCompletionTime( transaction );
         if ( maxCompletionTime < now )
         {
-            final long overtime = now - maxCompletionTime;
+            long overtime = now - maxCompletionTime;
             String message = timeoutDescription + " (Overtime: " + overtime + " ms).";
             log.warn( message );
-            throw new GuardTimeoutException(message, overtime );
+            transaction.markForTermination( Status.Transaction.TransactionTimedOut );
+            throw new GuardTimeoutException( message, overtime );
         }
     }
 

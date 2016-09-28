@@ -28,6 +28,7 @@ import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -37,6 +38,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 
 public class TimeoutGuardTest extends KernelTransactionTestBase
@@ -64,6 +67,9 @@ public class TimeoutGuardTest extends KernelTransactionTestBase
 
         check( timeoutGuard, kernelStatement, overtime, message );
 
+        KernelTransactionImplementation transaction = kernelStatement.getTransaction();
+        assertSame( Status.Transaction.TransactionTimedOut, transaction.getReasonIfTerminated() );
+
         logProvider.assertContainsMessageContaining( message );
     }
 
@@ -79,6 +85,9 @@ public class TimeoutGuardTest extends KernelTransactionTestBase
         clock.forward( overtime, TimeUnit.MILLISECONDS );
 
         timeoutGuard.check( kernelStatement );
+
+        KernelTransactionImplementation transaction = kernelStatement.getTransaction();
+        assertNull( transaction.getReasonIfTerminated() );
 
         logProvider.assertNoLoggingOccurred();
     }

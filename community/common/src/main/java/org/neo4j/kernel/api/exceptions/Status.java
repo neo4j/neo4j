@@ -144,6 +144,9 @@ public interface Status
         TransactionMarkedAsFailed( ClientError,
                 "Transaction was marked as both successful and failed. Failure takes precedence and so this " +
                 "transaction was rolled back although it may have looked like it was going to be committed" ),
+        TransactionTimedOut( ClientError,
+                "The transaction has not completed within the specified timeout. You may want to retry with a longer " +
+                        "timeout." ),
 
         // database errors
         TransactionStartFailed( DatabaseError,
