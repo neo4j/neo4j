@@ -31,13 +31,17 @@ import org.neo4j.graphdb.security.AuthExpirationException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Collections.emptyMap;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltMatchers.canReset;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.hasNoTransaction;
@@ -322,6 +326,7 @@ public class BoltStateMachineTest
 
         // And given that transaction will fail to roll back
         TransactionStateMachine txMachine = (TransactionStateMachine) machine.ctx.statementProcessor;
+        when( txMachine.ctx.currentTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransactionFailureException( "No Mr. Bond, I expect you to die." ) ).
                 when( txMachine.ctx.currentTransaction ).close();
 
@@ -444,5 +449,26 @@ public class BoltStateMachineTest
         // When & Then
         assertException( () -> machine.discardAll( responseHandler ),
                 BoltConnectionAuthFatality.class, "Auth expired!" );
+    }
+
+    @Test
+    public void callResetEvenThoughAlreadyClosed() throws Throwable
+    {
+        // Given
+        BoltStateMachine machine = newMachine( READY );
+
+        // When we close
+        TransactionStateMachine statementProcessor = (TransactionStateMachine) machine.statementProcessor();
+        machine.close();
+        assertThat(statementProcessor.ctx.currentTransaction, nullValue());
+        assertTrue(machine.ctx.closed);
+
+        //But someone runs a query and thus opens a new transaction
+        statementProcessor.run( "RETURN 1", Collections.emptyMap() );
+        assertThat(statementProcessor.ctx.currentTransaction, notNullValue());
+
+        // Then, when we close again we should make sure the transaction is closed againg
+        machine.close();
+        assertThat(statementProcessor.ctx.currentTransaction, nullValue());
     }
 }

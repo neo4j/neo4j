@@ -21,12 +21,9 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.logging.Log;
@@ -47,12 +44,12 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     private BoltWorker worker;
 
     public BoltMessageRouter( Log log, BoltWorker worker, BoltResponseMessageHandler<IOException> output,
-                              Runnable onEachCompletedRequest )
+            Runnable onEachCompletedRequest )
     {
-        this.initHandler = new InitHandler( output, onEachCompletedRequest, log );
-        this.runHandler = new RunHandler( output, onEachCompletedRequest, log );
-        this.resultHandler = new ResultHandler( output, onEachCompletedRequest, log );
-        this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, log );
+        this.initHandler = new InitHandler( output, onEachCompletedRequest, worker, log );
+        this.runHandler = new RunHandler( output, onEachCompletedRequest, worker, log );
+        this.resultHandler = new ResultHandler( output, onEachCompletedRequest, worker, log );
+        this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, worker, log );
 
         this.worker = worker;
     }
@@ -95,137 +92,30 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
         worker.enqueue( session -> session.pullAll( resultHandler ) );
     }
 
-    static class MessageProcessingHandler implements BoltResponseHandler
-    {
-        protected final Map<String, Object> metadata = new HashMap<>();
-
-        // TODO: move this somewhere more sane (when modules are unified)
-        static void publishError( BoltResponseMessageHandler<IOException> out, Neo4jError error )
-                throws IOException
-        {
-            if ( !error.status().code().classification().shouldRespondToClient() )
-            {
-                // If not intended for client, we only return an error reference. This must
-                // be cross-referenced with the log files for full error detail.
-                out.onFailure( error.status(), String.format(
-                        "An unexpected failure occurred, see details in the database " +
-                        "logs, reference number %s.", error.reference() ) );
-            }
-            else
-            {
-                // If intended for client, we forward the message as-is.
-                out.onFailure( error.status(), error.message() );
-            }
-        }
-
-        protected final Log log;
-
-        protected final BoltResponseMessageHandler<IOException> handler;
-
-        private Neo4jError error;
-        private final Runnable onFinish;
-        private boolean ignored;
-
-        MessageProcessingHandler( BoltResponseMessageHandler<IOException> handler, Runnable onFinish, Log logger )
-        {
-            this.handler = handler;
-            this.onFinish = onFinish;
-            this.log = logger;
-        }
-
-        @Override
-        public void onStart()
-        {
-        }
-
-        @Override
-        public void onRecords( BoltResult result, boolean pull ) throws Exception
-        {
-        }
-
-        @Override
-        public void onMetadata( String key, Object value )
-        {
-            metadata.put( key, value );
-        }
-
-        @Override
-        public void markIgnored()
-        {
-            this.ignored = true;
-        }
-
-        @Override
-        public void markFailed( Neo4jError error )
-        {
-            this.error = error;
-        }
-
-        @Override
-        public void onFinish()
-        {
-            try
-            {
-                if ( ignored )
-                {
-                    handler.onIgnored();
-                }
-                else if ( error != null )
-                {
-                    publishError( handler, error );
-                }
-                else
-                {
-                    handler.onSuccess( getMetadata() );
-                }
-            }
-            catch ( Throwable e )
-            {
-                // TODO: we've lost the ability to communicate with the client. Shut down the session, close transactions.
-                log.error( "Failed to write response to driver", e );
-            }
-            finally
-            {
-                onFinish.run();
-                clearState();
-            }
-        }
-
-        Map<String, Object> getMetadata()
-        {
-            return metadata;
-        }
-
-        void clearState()
-        {
-            error = null;
-            ignored = false;
-            metadata.clear();
-        }
-    }
-
     private static class InitHandler extends MessageProcessingHandler
     {
-        InitHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, Log log )
+        InitHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltWorker worker, Log log )
         {
-            super( handler, onCompleted, log );
+            super( handler, onCompleted, worker, log );
         }
 
     }
 
     private static class RunHandler extends MessageProcessingHandler
     {
-        RunHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, Log log )
+        RunHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltWorker worker, Log log )
         {
-            super( handler, onCompleted, log );
+            super( handler, onCompleted, worker, log );
         }
 
     }
+
     private static class ResultHandler extends MessageProcessingHandler
     {
-        ResultHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, Log log )
+        ResultHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltWorker worker,
+                Log log )
         {
-            super( handler, onCompleted, log );
+            super( handler, onCompleted, worker, log );
         }
 
         @Override
