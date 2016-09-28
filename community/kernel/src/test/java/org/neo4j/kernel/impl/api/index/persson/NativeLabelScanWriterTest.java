@@ -52,9 +52,12 @@ public class NativeLabelScanWriterTest
 {
     private static final int LABEL_COUNT = 5;
     private static final int RANGE_SIZE = 16;
+    private static final Comparator<LabelScanKey> KEY_COMPARATOR = new CompactLabelScanLayout( RANGE_SIZE );
+    private static final Comparator<Map.Entry<LabelScanKey,LabelScanValue>> COMPARATOR =
+            (o1,o2) -> KEY_COMPARATOR.compare( o1.getKey(), o2.getKey() );
 
     @Rule
-    public final RandomRule random = new RandomRule();
+    public final RandomRule random = new RandomRule().withSeed( 1475059850721L );
 
     @Test
     public void shouldAddLabels() throws Exception
@@ -89,7 +92,7 @@ public class NativeLabelScanWriterTest
         int changeCount = random.nextInt( 4 ) + 1;
         for ( int i = 0; i < changeCount; i++ )
         {
-            labels = flipRandom( labels, random.random() );
+            labels = flipRandom( labels, LABEL_COUNT, random.random() );
         }
         expected[nodeId] = labels;
         return NodeLabelUpdate.labelChanges( nodeId, before, getLabels( labels ) );
@@ -108,7 +111,10 @@ public class NativeLabelScanWriterTest
         public void insert( LabelScanKey key, LabelScanValue value, ValueAmender<LabelScanValue> amender )
                 throws IOException
         {
-            System.out.println( key + " - " + value );
+            // Clone since these instances are reused between calls, internally in the writer
+            key = clone( key );
+            value = clone( value );
+
             Map<LabelScanKey,LabelScanValue> forLabel = data.get( key.labelId );
             if ( forLabel == null )
             {
@@ -125,6 +131,18 @@ public class NativeLabelScanWriterTest
             }
         }
 
+        private LabelScanValue clone( LabelScanValue value )
+        {
+            LabelScanValue result = new LabelScanValue();
+            result.bits = value.bits;
+            return result;
+        }
+
+        private LabelScanKey clone( LabelScanKey key )
+        {
+            return new LabelScanKey().set( key.labelId, key.nodeId );
+        }
+
         @Override
         public LabelScanValue remove( LabelScanKey key ) throws IOException
         {
@@ -134,7 +152,6 @@ public class NativeLabelScanWriterTest
         @SuppressWarnings( "unchecked" )
         Cursor<BTreeHit<LabelScanKey,LabelScanValue>> nodesFor( int labelId )
         {
-            Comparator<LabelScanKey> comparator = new CompactLabelScanLayout( RANGE_SIZE );
             Map<LabelScanKey,LabelScanValue> forLabel = data.get( labelId );
             if ( forLabel == null )
             {
@@ -143,7 +160,7 @@ public class NativeLabelScanWriterTest
 
             Map.Entry<LabelScanKey,LabelScanValue>[] entries =
                     forLabel.entrySet().toArray( new Map.Entry[forLabel.size()] );
-            Arrays.sort( entries, (o1,o2) -> comparator.compare( o1.getKey(), o2.getKey() ) );
+            Arrays.sort( entries, COMPARATOR );
             return new Cursor<BTreeHit<LabelScanKey,LabelScanValue>>()
             {
                 private int arrayIndex = -1;

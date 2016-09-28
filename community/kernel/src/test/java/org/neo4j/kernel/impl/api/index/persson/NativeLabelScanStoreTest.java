@@ -136,7 +136,7 @@ public class NativeLabelScanStoreTest
                 long[] labelsBefore = getLabels( labels );
                 for ( int j = 0; j < changeSize; j++ )
                 {
-                    labels = flipRandom( labels, random.random() );
+                    labels = flipRandom( labels, LABEL_COUNT, random.random() );
                 }
                 long[] labelsAfter = getLabels( labels );
                 editedNodes.set( nodeId );
@@ -148,9 +148,9 @@ public class NativeLabelScanStoreTest
         }
     }
 
-    public static long flipRandom( long existingLabels, Random random )
+    public static long flipRandom( long existingLabels, int highLabelId, Random random )
     {
-        return existingLabels ^ (1 << random.nextInt( LABEL_COUNT ));
+        return existingLabels ^ (1 << random.nextInt( highLabelId ));
     }
 
     public static long[] getLabels( long bits )
