@@ -3,7 +3,6 @@
 
 In order to prevent unauthorized access to Neo4j, the REST API supports authorization and authentication.
 When enabled, requests to the REST API must be authorized using the username and password of a valid user.
-Authorization is enabled by default, see <<security-server-auth>> for how to disable it.
 
 When Neo4j is first installed you can authenticate with the default user `neo4j` and the default password `neo4j`.
 However, the default password must be changed (see <<rest-api-security-user-status-and-password-changing>>) before access to resources will be permitted.
