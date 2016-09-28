@@ -30,9 +30,11 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExceptionRepresentation;
@@ -122,7 +124,15 @@ public class UserService
 
         try
         {
-            userManager.setUserPassword( username, newPassword, false );
+            AuthSubject subject = getSubjectFromPrincipal( principal );
+            if ( subject == null )
+            {
+                return output.notFound();
+            }
+            else
+            {
+                subject.setPassword( newPassword, false );
+            }
         }
         catch ( IOException e )
         {
@@ -136,4 +146,16 @@ public class UserService
         return output.ok();
     }
 
+    private AuthSubject getSubjectFromPrincipal( Principal principal )
+    {
+        if ( principal instanceof DelegatingPrincipal )
+        {
+            AccessMode mode = ((DelegatingPrincipal) principal).getAccessMode();
+            if ( mode instanceof AuthSubject )
+            {
+                return (AuthSubject) mode;
+            }
+        }
+        return null;
+    }
 }

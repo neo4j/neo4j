@@ -32,12 +32,15 @@ import java.security.Principal;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicAuthManager;
+import org.neo4j.server.security.auth.BasicAuthSubject;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -51,28 +54,28 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class UserServiceTest
 {
-    private static final Principal NEO4J_PRINCIPLE = new Principal()
-    {
-        @Override
-        public String getName()
-        {
-            return "neo4j";
-        }
-    };
     private static final User NEO4J_USER = new User.Builder( "neo4j", Credential.forPassword( "neo4j" ))
             .withRequiredPasswordChange( true ).build();
 
     private final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
     private final InMemoryUserRepository userRepository = new InMemoryUserRepository();
 
-    private final AuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy,
-            mock( AuthenticationStrategy.class) );
+    private AuthManager authManager;
+    private AuthSubject neo4jSubject;
+    private Principal neo4jPrinciple;
+
+    protected void setupAuthManagerAndSubject()
+    {
+        BasicAuthManager m = new BasicAuthManager( userRepository, passwordPolicy,
+                mock( AuthenticationStrategy.class) );
+        authManager = m;
+        neo4jSubject = new BasicAuthSubject( m, NEO4J_USER, AuthenticationResult.SUCCESS );
+    }
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -81,6 +84,8 @@ public class UserServiceTest
     public void setUp() throws InvalidArgumentsException, IOException
     {
         userRepository.create( NEO4J_USER );
+        setupAuthManagerAndSubject();
+        neo4jPrinciple = new DelegatingPrincipal( "neo4j", neo4jSubject );
     }
 
     @After
@@ -94,7 +99,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
         UserManager userManager = mock( UserManager.class );
@@ -142,7 +147,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
@@ -159,7 +164,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
         UserManager userManager = mock( UserManager.class );
@@ -182,7 +187,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
         UserManager userManager = mock( UserManager.class );
@@ -197,7 +202,7 @@ public class UserServiceTest
 
         // Then
         assertThat( response.getStatus(), equalTo( 200 ) );
-        verify( userManager ).setUserPassword( "neo4j", "test", false );
+        userManager.getUser( "neo4j" ).credentials().matchesPassword( "test" );
     }
 
     @Test
@@ -222,7 +227,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
         UserManager userManager = mock( UserManager.class );
@@ -244,7 +249,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );
@@ -263,7 +268,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
@@ -283,7 +288,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
@@ -304,7 +309,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
@@ -325,7 +330,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );
@@ -346,7 +351,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );

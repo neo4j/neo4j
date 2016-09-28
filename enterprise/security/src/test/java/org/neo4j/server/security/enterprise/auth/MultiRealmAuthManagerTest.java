@@ -60,8 +60,6 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class MultiRealmAuthManagerTest
 {
     private InMemoryUserRepository users;
-    private InMemoryRoleRepository roles;
-    private PasswordPolicy passwordPolicy;
     private AuthenticationStrategy authStrategy;
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
@@ -71,17 +69,14 @@ public class MultiRealmAuthManagerTest
     public void setUp() throws Throwable
     {
         users = new InMemoryUserRepository();
-        roles = new InMemoryRoleRepository();
-        passwordPolicy = mock( PasswordPolicy.class );
         authStrategy = mock( AuthenticationStrategy.class );
         logProvider = new AssertableLogProvider();
 
-        manager = createAuthManager( roles, passwordPolicy, true );
+        manager = createAuthManager( true );
         userManager = manager.getUserManager();
     }
 
-    private MultiRealmAuthManager createAuthManager( InMemoryRoleRepository roles, PasswordPolicy passwordPolicy, boolean
-            logSuccessfulAuthentications ) throws Throwable
+    private MultiRealmAuthManager createAuthManager( boolean logSuccessfulAuthentications ) throws Throwable
     {
         Log log = logProvider.getLog( this.getClass() );
 
@@ -139,7 +134,7 @@ public class MultiRealmAuthManagerTest
     {
         // Given
         manager.shutdown();
-        manager = createAuthManager( roles, passwordPolicy, false );
+        manager = createAuthManager( false );
 
         users.create( newUser( "jake", "abc123" , false ) );
         manager.start();
