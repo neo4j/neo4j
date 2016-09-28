@@ -31,6 +31,7 @@ import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
+import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.TransientFailureException;
@@ -49,10 +50,12 @@ import org.neo4j.time.Clocks;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -61,7 +64,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.com.ResourceReleaser.NO_OP;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.logging.NullLog.getInstance;
 
@@ -530,6 +536,38 @@ public class SlaveLocksClientTest
         logProvider.assertExactly( inLog( SlaveLocksClient.class )
                 .warn( equalTo( "Unable to stop lock session on master" ),
                         CoreMatchers.<Throwable>equalTo( error ) ) );
+    }
+
+    @Test
+    public void shouldIncludeReasonForNotLocked() throws Exception
+    {
+        // GIVEN
+        SlaveLocksClient client = newSlaveLocksClient( lockManager );
+        LockResult lockResult = new LockResult( LockStatus.NOT_LOCKED, "Simply not locked" );
+        Response<LockResult> response = new TransactionObligationResponse<>( lockResult, DEFAULT, 2, NO_OP );
+        long nodeId = 0;
+        ResourceTypes resourceType = NODE;
+        when( master.acquireExclusiveLock( any( RequestContext.class ),
+                eq( resourceType ), anyLong() ) ).thenReturn( response );
+
+        // WHEN
+        try
+        {
+            client.acquireExclusive( resourceType, nodeId );
+            fail( "Should have failed" );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( lockResult.getMessage() ) );
+            assertThat( e.getMessage(), containsString( lockResult.getStatus().name() ) );
+        }
+    }
+
+    private SlaveLocksClient newSlaveLocksClient( Locks lockManager )
+    {
+        return new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ),
+                availabilityGuard, logProvider );
     }
 
     private SlaveLocksClient stoppedClient()

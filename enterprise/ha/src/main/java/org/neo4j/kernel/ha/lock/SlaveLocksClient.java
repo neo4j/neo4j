@@ -330,7 +330,7 @@ class SlaveLocksClient implements Locks.Client
             case DEAD_LOCKED:
                 throw new DeadlockDetectedException( result.getMessage() );
             case NOT_LOCKED:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException( result.toString() );
             case OK_LOCKED:
                 break;
             default:
