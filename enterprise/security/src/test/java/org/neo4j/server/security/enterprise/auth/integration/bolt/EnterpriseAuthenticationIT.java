@@ -50,7 +50,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class EnterpriseAuthenticationIT extends AuthenticationIT
 {
-    File securityLog;
+    private File securityLog;
 
     @Override
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
@@ -85,6 +85,7 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
         // Ignore this test in enterprise since custom schemes may be allowed
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldLogInitPasswordChange() throws Throwable
     {
@@ -99,10 +100,13 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgSuccess() ) );
 
+        server.graphDatabaseService().shutdown(); // to force writing of async logs
+
         FullLog log = new FullLog();
         log.assertHasLine( "neo4j", "changed password" );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldLogFailedInitPasswordChange() throws Throwable
     {
@@ -117,6 +121,8 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.General.InvalidArguments,
                 "Old password and new password cannot be the same.") ) );
+
+        server.graphDatabaseService().shutdown(); // to force writing of async logs
 
         FullLog log = new FullLog();
         log.assertHasLine( "neo4j", "tried to change password: Old password and new password cannot be the same." );
