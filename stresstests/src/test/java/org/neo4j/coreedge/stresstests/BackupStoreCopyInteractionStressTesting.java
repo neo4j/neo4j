@@ -98,8 +98,8 @@ public class BackupStoreCopyInteractionStressTesting
                         instanceCoreParams, edgeParams, instanceEdgeParams, StandardV3_0.NAME );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
-        BooleanSupplier keepGoing =
-                () -> !stopTheWorld.get() && untilTimeExpired( durationInMinutes, TimeUnit.MINUTES ).getAsBoolean();
+        BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, TimeUnit.MINUTES );
+        BooleanSupplier keepGoing = () ->!stopTheWorld.get() && notExpired.getAsBoolean();
         Runnable onFailure = () -> stopTheWorld.set( true );
 
         ExecutorService service = Executors.newFixedThreadPool( 3 );
