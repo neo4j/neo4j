@@ -4979,7 +4979,28 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertFalse( fs.fileExists( sub ) );
     }
 
-    // todo stream files recursive must delete multiple layers of sub directories if they become empty by rename
+    @Test
+    public void streamFilesRecursiveMustDeleteMultipleLayersOfSubDirectoriesIfTheyBecomeEmptyByRename() throws Exception
+    {
+        configureStandardPageCache();
+        File sub = existingDirectory( "sub" );
+        File subsub = new File( sub, "subsub" );
+        ensureDirectoryExists( subsub );
+        File x = new File( subsub, "x" );
+        ensureExists( x );
+        File target = file( "target" );
+
+        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( sub )::iterator;
+        for ( FileHandle handle : handles )
+        {
+            handle.rename( target );
+        }
+
+        assertFalse( fs.isDirectory( subsub ) );
+        assertFalse( fs.fileExists( subsub ) );
+        assertFalse( fs.isDirectory( sub ) );
+        assertFalse( fs.fileExists( sub ) );
+    }
 
     @Test
     public void streamFilesRecursiveMustDeleteSubDirectoriesEmptiedByFileDelete() throws Exception
@@ -4995,6 +5016,29 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             handle.delete();
         }
 
+        assertFalse( fs.isDirectory( sub ) );
+        assertFalse( fs.fileExists( sub ) );
+    }
+
+    @Test
+    public void streamFilesRecursiveMustDeleteMultipleLayersOfSubDirectoriesIfTheyBecomeEmptyByDelete() throws Exception
+    {
+        configureStandardPageCache();
+        File sub = existingDirectory( "sub" );
+        File subsub = new File( sub, "subsub" );
+        ensureDirectoryExists( subsub );
+        File x = new File( subsub, "x" );
+        ensureExists( x );
+        File target = file( "target" );
+
+        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( sub )::iterator;
+        for ( FileHandle handle : handles )
+        {
+            handle.delete();
+        }
+
+        assertFalse( fs.isDirectory( subsub ) );
+        assertFalse( fs.fileExists( subsub ) );
         assertFalse( fs.isDirectory( sub ) );
         assertFalse( fs.fileExists( sub ) );
     }

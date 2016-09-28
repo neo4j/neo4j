@@ -166,10 +166,15 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
 
         private void removeEmptyParent( File parentFile )
         {
-            File[] files = fs.listFiles( parentFile );
-            if ( files != null && files.length == 0 )
+            while ( parentFile != null )
             {
+                File[] files = fs.listFiles( parentFile );
+                if ( files == null || files.length > 0 )
+                {
+                    return;
+                }
                 fs.deleteFile( parentFile );
+                parentFile = parentFile.getParentFile();
             }
         }
 
