@@ -19,13 +19,14 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
+import org.junit.Test;
+
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.stringContainsInOrder;
@@ -61,7 +62,6 @@ public class ErrorDocumentationGeneratorTest
                 "|===" + n;
         assertThat( result, is(equalTo( expected )) );
     }
-
 
     @Test
     public void shouldGenerateTableOfClassifications() throws Exception
