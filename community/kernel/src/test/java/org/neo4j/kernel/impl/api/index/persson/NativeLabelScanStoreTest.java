@@ -61,7 +61,7 @@ public class NativeLabelScanStoreTest
     public void before() throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        store = life.add( new NativeLabelScanStore( pageCache, directory.absolutePath() ) );
+        store = life.add( new NativeLabelScanStore( pageCache, directory.absolutePath(), Integer.SIZE ) );
     }
 
     @Test

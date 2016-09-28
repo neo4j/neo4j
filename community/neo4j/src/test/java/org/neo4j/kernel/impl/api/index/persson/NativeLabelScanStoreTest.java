@@ -71,7 +71,7 @@ public class NativeLabelScanStoreTest
     {
         File storeDir = testDirectory.directory();
         final PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        LabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, storeDir );
+        LabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, storeDir, Long.SIZE );
 
         testLabelScanStore( labelScanStore );
 

@@ -45,10 +45,10 @@ public class NativeLabelScanStore implements LabelScanStore
     private final File indexFile;
     private final int rangeSize;
 
-    public NativeLabelScanStore( PageCache pageCache, File storeDir ) throws IOException
+    public NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize ) throws IOException
     {
         this.indexFile = new File( storeDir, "labelscan.db" );
-        this.rangeSize = Integer.SIZE;
+        this.rangeSize = rangeSize;
         this.index = new Index<>( pageCache, indexFile, new CompactLabelScanLayout( rangeSize ),
                 new SCIndexDescription( "", "", "", Direction.BOTH, "", null ), pageCache.pageSize() );
     }
