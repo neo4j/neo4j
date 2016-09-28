@@ -168,7 +168,7 @@ public class StoreMigratorFrom20IT
     public void shouldMigrateCluster() throws Throwable
     {
         // Given
-        File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
+        File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory( "legacy-indexes" ) );
 
         // When
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, getConfig(), NullLogService.getInstance(),
