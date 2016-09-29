@@ -202,7 +202,7 @@ public class RaftLogShipper
         }
         else
         {
-            log.warn( "Match index not progressing. This should be transient." );
+            log.warn( "%s: match index not progressing. This should be transient.", statusAsString() );
         }
 
         switch ( mode )
@@ -433,14 +433,15 @@ public class RaftLogShipper
 
             if ( prevLogTerm > leaderContext.term )
             {
-                log.warn( "%s aborting send. Not leader anymore? %s, prevLogTerm=%d",
+                log.warn( "%s: aborting send. Not leader anymore? %s, prevLogTerm=%d",
                         statusAsString(), leaderContext, prevLogTerm );
                 return;
             }
 
             if ( doesNotExistInLog( prevLogIndex, prevLogTerm ) )
             {
-                log.warn( "Entry was pruned when sending empty (prevLogIndex=%d, prevLogTerm=%d)", prevLogIndex, prevLogTerm );
+                log.warn( "%s: Entry was pruned when sending empty (prevLogIndex=%d, prevLogTerm=%d)",
+                        statusAsString(), prevLogIndex, prevLogTerm );
                 return;
             }
 
@@ -506,7 +507,8 @@ public class RaftLogShipper
                 }
                 else
                 {
-                    log.error( "Could not send compaction info and entries were missing, but log is not behind." );
+                    log.error( "%s: Could not send compaction info and entries were missing, but log is not behind.",
+                            statusAsString() );
                 }
             }
             else
