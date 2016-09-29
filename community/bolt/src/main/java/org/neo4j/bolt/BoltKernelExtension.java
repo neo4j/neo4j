@@ -22,6 +22,7 @@ package org.neo4j.bolt;
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
@@ -38,7 +39,7 @@ import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.bolt.transport.BoltProtocol;
-import org.neo4j.bolt.transport.Netty4LogBridge;
+import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
@@ -78,7 +79,6 @@ import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
@@ -151,7 +151,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         final JobScheduler scheduler = dependencies.scheduler();
 
-        Netty4LogBridge.setLogProvider( logService.getInternalLogProvider() );
+        InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
 
         Authentication authentication = authentication( dependencies.authManager() );
 
