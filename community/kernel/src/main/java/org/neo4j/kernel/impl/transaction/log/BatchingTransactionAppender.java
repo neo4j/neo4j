@@ -146,9 +146,12 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         {
             if ( transactionId != expectedTransactionId )
             {
-                throw new IllegalStateException(
+                IllegalStateException ex = new IllegalStateException(
                         "Received " + tx.transactionRepresentation() + " with txId:" + expectedTransactionId +
-                        " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
+                                " to be applied, but appending it ended up generating an unexpected txId:" +
+                                transactionId );
+                databaseHealth.panic( ex );
+                throw ex;
             }
         }
     }
