@@ -163,6 +163,8 @@ class NativeLabelScanWriter implements LabelScanWriter
         {
             // There are changes in the current range, flush them
             inserter.insert( key, value, addition ? ADD_AMENDER : REMOVE_AMENDER );
+            // TODO: after a remove we could check if the tree value is empty and if so remove it from the index
+            // hmm, or perhaps that could be a feature of ValueAmender?
             value.reset();
         }
     }

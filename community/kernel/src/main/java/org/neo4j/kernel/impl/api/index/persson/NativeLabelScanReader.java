@@ -44,10 +44,7 @@ class NativeLabelScanReader implements LabelScanReader
     @Override
     public void close()
     {
-        if ( cursor != null )
-        {
-            cursor.close();
-        }
+        ensureCurrentCursorClosed();
     }
 
     @Override
@@ -57,10 +54,7 @@ class NativeLabelScanReader implements LabelScanReader
         LabelScanKey to = new LabelScanKey().set( labelId, Long.MAX_VALUE );
         try
         {
-            if ( cursor != null )
-            {
-                cursor.close();
-            }
+            ensureCurrentCursorClosed();
             cursor = index.seek( from, to );
         }
         catch ( IOException e )
@@ -69,6 +63,14 @@ class NativeLabelScanReader implements LabelScanReader
         }
 
         return new LabelScanValueIterator( rangeSize, cursor );
+    }
+
+    private void ensureCurrentCursorClosed()
+    {
+        if ( cursor != null )
+        {
+            cursor.close();
+        }
     }
 
     @Override

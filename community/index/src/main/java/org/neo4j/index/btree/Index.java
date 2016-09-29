@@ -47,7 +47,7 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
     // currently an index only supports one concurrent updater and so this reference will act both as
     // guard so that only one thread can have it at any given time and also as synchronization between threads
     // wanting it
-    private final AtomicReference<TheInserter> inserter;
+    private final AtomicReference<Inserter> inserter;
 
     // when updating these the meta page will also be kept up2date
     private int pageSize;
@@ -78,7 +78,7 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new BTreeNode<>( pageSize, layout );
-        this.inserter = new AtomicReference<>( new TheInserter( new IndexInsert<>( this, bTreeNode, layout ) ) );
+        this.inserter = new AtomicReference<>( new Inserter( new IndexInsert<>( this, bTreeNode, layout ) ) );
 
         if ( created )
         {
@@ -228,89 +228,7 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
         }
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
-        return new Cursor<BTreeHit<KEY,VALUE>>()
-        {
-            private final MutableBTreeHit<KEY,VALUE> hit = new MutableBTreeHit<>( key, value );
-
-            // data structures for the current b-tree node
-            private int keyCount;
-            private int pos;
-
-            {
-                initTreeNode();
-            }
-
-            private void gotoTreeNode( long id )
-            {
-                try
-                {
-                    cursor.next( id );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                cursor.setOffset( 0 );
-                initTreeNode();
-            }
-
-            private void initTreeNode()
-            {
-                // COPY(1)
-                // Find the left-most key within from-range
-                keyCount = bTreeNode.keyCount( cursor );
-                // TODO only do this for first leaf
-                pos = 0;
-                bTreeNode.keyAt( cursor, key, pos );
-                while ( pos < keyCount && layout.compare( key, fromInclusive ) < 0 )
-                {
-                    pos++;
-                    bTreeNode.keyAt( cursor, key, pos );
-                }
-                pos--;
-            }
-
-            @Override
-            public BTreeHit<KEY,VALUE> get()
-            {
-                return hit;
-            }
-
-            @Override
-            public boolean next()
-            {
-                while ( true )
-                {
-                    pos++;
-                    if ( pos >= keyCount )
-                    {
-                        long rightSibling = bTreeNode.rightSibling( cursor );
-                        if ( bTreeNode.isNode( rightSibling ) )
-                        {
-                            gotoTreeNode( rightSibling );
-                            continue;
-                        }
-                        return false;
-                    }
-
-                    // Go to the next one, so that next call to next() gets it
-                    bTreeNode.keyAt( cursor, key, pos );
-                    if ( layout.compare( key, toExclusive ) < 0 )
-                    {
-                        // A hit
-                        bTreeNode.valueAt( cursor, value, pos );
-                        return true;
-                    }
-                    return false;
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                cursor.close();
-            }
-        };
+        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout );
     }
 
     @Override
@@ -365,7 +283,7 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
     @Override
     public SCInserter<KEY,VALUE> inserter() throws IOException
     {
-        TheInserter result = this.inserter.getAndSet( null );
+        Inserter result = this.inserter.getAndSet( null );
         if ( result == null )
         {
             throw new IllegalStateException( "Only supports one concurrent writer" );
@@ -425,18 +343,18 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
         System.out.println( (isLeaf ? "]" : "|") );
     }
 
-    class TheInserter implements SCInserter<KEY,VALUE>
+    class Inserter implements SCInserter<KEY,VALUE>
     {
         // Well, IndexInsert code lives somewhere so we need to instantiate that bastard here as well
         private final IndexInsert<KEY,VALUE> inserter;
         private PageCursor cursor;
 
-        TheInserter( IndexInsert<KEY,VALUE> inserter )
+        Inserter( IndexInsert<KEY,VALUE> inserter )
         {
             this.inserter = inserter;
         }
 
-        TheInserter take( long rootId ) throws IOException
+        Inserter take( long rootId ) throws IOException
         {
             cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
             return this;
