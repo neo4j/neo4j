@@ -52,7 +52,6 @@ public class DatabaseMetadataServiceIT extends AbstractRestFunctionalTestBase
         helper.createRelationship( "LOVES" );
 
         String result = gen.get()
-                .noGraph() // add back the graph when we have a clean graph really
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.dataUri() + "relationship/types" )
                 .entity();

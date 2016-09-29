@@ -19,17 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import org.hamcrest.MatcherAssert;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -42,7 +31,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.doc.metatest.TestJavaTestDocsGenerator;
+import org.hamcrest.MatcherAssert;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -81,6 +79,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static java.lang.System.lineSeparator;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
@@ -91,6 +90,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 import static org.neo4j.test.SuppressOutput.suppressAll;
@@ -136,40 +136,6 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         assertTrue( response.getLocation()
                 .toString()
                 .matches( NODE_URI_PATTERN ) );
-        checkGeneratedFiles();
-    }
-
-    private void checkGeneratedFiles()
-    {
-        String requestDocs, responseDocs, graphDocs;
-        try
-        {
-            requestDocs = TestJavaTestDocsGenerator.readFileAsString( new File(
-                    "target/docs/dev/rest-api/includes/create-node-with-properties.request.asciidoc" ) );
-            responseDocs = TestJavaTestDocsGenerator.readFileAsString( new File(
-                    "target/docs/dev/rest-api/includes/create-node-with-properties.response.asciidoc" ) );
-            graphDocs = TestJavaTestDocsGenerator.readFileAsString( new File(
-                    "target/docs/dev/rest-api/includes/create-node-with-properties.graph.asciidoc" ) );
-        }
-        catch ( IOException ioe )
-        {
-            throw new RuntimeException(
-                    "Error reading generated documentation file: ", ioe );
-        }
-        for ( String s : new String[] { "POST", "Accept", "application/json",
-                "Content-Type", "{", "foo", "bar", "}" } )
-        {
-            assertThat( requestDocs, containsString( s ) );
-        }
-        for ( String s : new String[] { "201", "Created", "Content-Length",
-                "Content-Type", "Location", "{", "foo", "bar", "}" } )
-        {
-            assertThat( responseDocs, containsString( s ) );
-        }
-        for ( String s : new String[] { "foo", "bar" } )
-        {
-            assertThat( graphDocs, containsString( s ) );
-        }
     }
 
     @Test
@@ -192,7 +158,6 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     public void shouldGet400WhenSupplyingNullValueForAProperty() throws Exception
     {
         gen.get()
-                .noGraph()
                 .payload( "{\"foo\":null}" )
                 .expectedStatus( 400 )
                 .post( functionalTestHelper.nodeUri() );
@@ -300,7 +265,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         assertThat( jsonMap, hasKey( "message" ) );
         assertNotNull( jsonMap.get( "message" ) );
 
-        gen.get().description( startGraph( "nodes with rels can not be deleted" ) ).noGraph()
+        gen.get().description( startGraph( "nodes with rels can not be deleted" ) )
                 .expectedStatus( 409 )
                 .delete( functionalTestHelper.dataUri() + "node/" + id );
     }

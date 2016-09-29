@@ -50,7 +50,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
         assertSize( 1, gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .get( nodeAutoIndexUri() + "?query=name:I" )
                 .entity() );
@@ -71,7 +70,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
         assertSize( 1, gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .get( nodeAutoIndexUri() + "name/I" )
                 .entity() );
@@ -86,7 +84,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
         gen.get()
-                .noGraph()
                 .expectedStatus( 405 )
                 .delete( relationshipAutoIndexUri() )
                 .entity();
@@ -100,7 +97,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     public void AutoIndex_is_not_removable()
     {
         gen.get()
-                .noGraph()
                 .expectedStatus( 405 )
                 .delete( nodeAutoIndexUri() )
                 .entity();
@@ -122,7 +118,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
         }
 
         gen.get()
-                .noGraph()
                 .expectedStatus( 405 )
                 .payload( createJsonStringFor( getNodeUri( data.get()
                         .get( "I" ) ), "name", "I" ) )
@@ -154,7 +149,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = graphdb().beginTx() )
         {
             gen.get()
-                    .noGraph()
                     .expectedStatus( 405 )
                     .payload( createJsonStringFor( getRelationshipUri( data.get()
                             .get( "I" )
@@ -183,17 +177,14 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
             tx.success();
         }
         gen.get()
-                .noGraph()
                 .expectedStatus( 405 )
                 .delete( getDataUri() + "index/node/" + indexName + "/name/I/" + id )
                 .entity();
         gen.get()
-                .noGraph()
                 .expectedStatus( 405 )
                 .delete( getDataUri() + "index/node/" + indexName + "/name/" + id )
                 .entity();
         gen.get()
-                .noGraph()
                 .expectedStatus( 405 )
                 .delete( getDataUri() + "index/node/" + indexName + "/" + id )
                 .entity();
@@ -226,17 +217,14 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
                     .getAutoIndex()
                     .getName();
             gen.get()
-                    .noGraph()
                     .expectedStatus( 405 )
                     .delete( getDataUri() + "index/relationship/" + indexName + "/since/today/" + id )
                     .entity();
             gen.get()
-                    .noGraph()
                     .expectedStatus( 405 )
                     .delete( getDataUri() + "index/relationship/" + indexName + "/since/" + id )
                     .entity();
             gen.get()
-                    .noGraph()
                     .expectedStatus( 405 )
                     .delete( getDataUri() + "index/relationship/" + indexName + "/" + id )
                     .entity();
@@ -253,7 +241,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
         assertSize( 1, gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .get( relationshipAutoIndexUri() + "?query=since:today" )
                 .entity() );
@@ -269,7 +256,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
         assertSize( 1, gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .get( relationshipAutoIndexUri() + "since/today/" )
                 .entity() );
@@ -302,7 +288,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     public void addAutoIndexingPropertyForNodes()
     {
         gen.get()
-                .noGraph()
                 .expectedStatus( 204 )
                 .payload( "myProperty1" )
                 .post( autoIndexURI( "node" ) + "/properties" );
@@ -332,7 +317,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     public void removeAutoIndexingPropertyForNodes()
     {
         gen.get()
-                .noGraph()
                 .expectedStatus( 204 )
                 .delete( autoIndexURI( "node" ) + "/properties/myProperty1" );
     }
@@ -375,12 +359,10 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
         String myProperty2 = uriPartForType + "-myProperty2-" + millis;
 
         gen.get()
-                .noGraph()
                 .expectedStatus( 204 )
                 .payload( myProperty1 )
                 .post( autoIndexURI( uriPartForType ) + "/properties" );
         gen.get()
-                .noGraph()
                 .expectedStatus( 204 )
                 .payload( myProperty2 )
                 .post( autoIndexURI( uriPartForType ) + "/properties" );
@@ -391,7 +373,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
         assertTrue( properties.contains( myProperty2 ) );
 
         gen.get()
-                .noGraph()
                 .expectedStatus( 204 )
                 .payload( null )
                 .delete( autoIndexURI( uriPartForType )
@@ -407,7 +388,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
             throws JsonParseException
     {
         String result = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .get( autoIndexURI( uriPartForType ) + "/properties" ).entity();
         return (List<String>) JsonHelper.readJson( result );
@@ -424,7 +404,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     private void setEnabledAutoIndexingForType( String uriPartForType, boolean enabled )
     {
         gen.get()
-                .noGraph()
                 .expectedStatus( 204 )
                 .payload( Boolean.toString( enabled ) )
                 .put( autoIndexURI( uriPartForType ) + "/status" );
@@ -433,7 +412,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     private void checkAndAssertAutoIndexerIsEnabled( String uriPartForType, boolean enabled )
     {
         String result = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .get( autoIndexURI( uriPartForType ) + "/status" ).entity();
         assertEquals( enabled, Boolean.parseBoolean( result ) );

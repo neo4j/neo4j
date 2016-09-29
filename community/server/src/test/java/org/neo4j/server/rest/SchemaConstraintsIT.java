@@ -63,7 +63,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
         String labelName = labels.newInstance(), propertyKey = properties.newInstance();
         Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
-        String result = gen.get().noGraph().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
+        String result = gen.get().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
                 getSchemaConstraintLabelUniquenessUri( labelName ) ).entity();
 
         Map<String, Object> serialized = jsonToMap( result );
@@ -87,7 +87,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
         String labelName = labels.newInstance(), propertyKey = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
 
-        String result = gen.get().noGraph().expectedStatus( 200 ).get(
+        String result = gen.get().expectedStatus( 200 ).get(
                 getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
 
         List<Map<String, Object>> serializedList = jsonToList( result );
@@ -112,7 +112,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName, propertyKey2 );
 
-        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintLabelUniquenessUri( labelName ) ).entity();
+        String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintLabelUniquenessUri( labelName ) ).entity();
 
         List<Map<String, Object>> serializedList = jsonToList( result );
 
@@ -140,7 +140,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
         String labelName = labels.newInstance(), propertyKey1 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
 
-        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintLabelUri( labelName ) ).entity();
+        String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintLabelUri( labelName ) ).entity();
 
         List<Map<String, Object>> serializedList = jsonToList( result );
 
@@ -163,7 +163,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
         String labelName1 = labels.newInstance(), propertyKey1 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName1, propertyKey1 );
 
-        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintUri() ).entity();
+        String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintUri() ).entity();
 
         List<Map<String,Object>> serializedList = jsonToList( result );
 
@@ -187,7 +187,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
         ConstraintDefinition constraintDefinition = createLabelUniquenessPropertyConstraint( labelName, propertyKey );
         assertThat( getConstraints( graphdb(), label( labelName ) ), containsOnly( constraintDefinition ) );
 
-        gen.get().noGraph().expectedStatus( 204 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
+        gen.get().expectedStatus( 204 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
 
         assertThat( getConstraints( graphdb(), label( labelName ) ), isEmpty() );
     }
@@ -202,7 +202,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
 
         Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
-        gen.get().noGraph().expectedStatus( 409 ).payload( createJsonFrom( definition ) )
+        gen.get().expectedStatus( 409 ).payload( createJsonFrom( definition ) )
                 .post( getSchemaConstraintLabelUniquenessUri( labelName ) ).entity();
     }
 
@@ -211,7 +211,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         String labelName = labels.newInstance(), propertyKey = properties.newInstance();
 
-        gen.get().noGraph().expectedStatus( 404 )
+        gen.get().expectedStatus( 404 )
                 .delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) );
     }
 
@@ -224,7 +224,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
         Map<String,Object> definition = map( "property_keys",
                 asList( properties.newInstance(), properties.newInstance() ) );
 
-        gen.get().noGraph().expectedStatus( 400 )
+        gen.get().expectedStatus( 400 )
                 .payload( createJsonFrom( definition ) ).post( getSchemaIndexLabelUri( labels.newInstance() ) );
     }
 

@@ -27,6 +27,6 @@ public class StreamingCypherIT extends CypherIT
 {
     @Override
     public RESTDocsGenerator gen() {
-        return super.gen().noDoc().withHeader(StreamingJsonFormat.STREAM_HEADER, "true");
+        return super.gen().withHeader(StreamingJsonFormat.STREAM_HEADER, "true");
     }
 }

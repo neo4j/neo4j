@@ -304,7 +304,6 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
         long start = helper.createNode();
         long end = helper.createNode();
         gen.get()
-                .noGraph()
                 .expectedStatus( 201 /* created */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\":\"" + value +
@@ -334,7 +333,6 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
             tx.success();
         }
         gen.get()
-                .noGraph()
                 .expectedStatus( 200 /* existing */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(
@@ -357,7 +355,6 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
         helper.createRelationshipIndex( index );
         ResponseEntity response = gen
                 .get()
-                .noGraph()
                 .expectedStatus( 201 /* created */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(
@@ -391,7 +388,6 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
             tx.success();
         }
         gen.get()
-                .noGraph()
                 .expectedStatus( 409 /* conflict */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(
@@ -416,7 +412,6 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
         final String index = indexes.newInstance(), key = "name", value = "Peter";
         helper.createRelationshipIndex( index );
         gen.get()
-                .noGraph()
                 .expectedStatus( 201 /* created */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(
@@ -458,7 +453,6 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
 
         // When & Then
         gen.get()
-                .noGraph()
                 .expectedStatus( 409 /* conflict */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(
@@ -486,7 +480,6 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
 
         // When & Then
         gen.get()
-                .noGraph()
                 .expectedStatus( 201 )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(
@@ -513,7 +506,6 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
             tx.success();
         }
         gen.get()
-                .noGraph()
                 .expectedStatus( 200 /* conflict */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(

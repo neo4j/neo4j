@@ -109,7 +109,7 @@ public class GetOnRootIT extends AbstractRestFunctionalTestBase
     public void streaming() throws Exception
     {
         data.get();
-        ResponseEntity responseEntity = gen().docHeadingLevel( 2 ).noGraph()
+        ResponseEntity responseEntity = gen()
                 .withHeader( StreamingFormat.STREAM_HEADER, "true" )
                 .expectedType( APPLICATION_JSON_TYPE )
                 .expectedStatus( 200 )

@@ -124,7 +124,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
         String labelName = labels.newInstance(), propertyKey = properties.newInstance();
         createLabelPropertyExistenceConstraint( labelName, propertyKey );
 
-        String result = gen.get().noGraph().expectedStatus( 200 ).get(
+        String result = gen.get().expectedStatus( 200 ).get(
                 getSchemaConstraintLabelExistencePropertyUri( labelName, propertyKey ) ).entity();
 
         List<Map<String,Object>> serializedList = jsonToList( result );
@@ -148,7 +148,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
         String typeName = relationshipTypes.newInstance(), propertyKey = properties.newInstance();
         createRelationshipTypePropertyExistenceConstraint( typeName, propertyKey );
 
-        String result = gen.get().noGraph().expectedStatus( 200 ).get(
+        String result = gen.get().expectedStatus( 200 ).get(
                 getSchemaRelationshipConstraintTypeExistencePropertyUri( typeName, propertyKey ) ).entity();
 
         List<Map<String,Object>> serializedList = jsonToList( result );
@@ -175,7 +175,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
         createLabelPropertyExistenceConstraint( labelName, propertyKey2 );
 
         String result =
-                gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintLabelExistenceUri( labelName ) )
+                gen.get().expectedStatus( 200 ).get( getSchemaConstraintLabelExistenceUri( labelName ) )
                         .entity();
 
         List<Map<String,Object>> serializedList = jsonToList( result );
@@ -206,7 +206,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
         createRelationshipTypePropertyExistenceConstraint( typeName, propertyKey1 );
         createRelationshipTypePropertyExistenceConstraint( typeName, propertyKey2 );
 
-        String result = gen.get().noGraph().expectedStatus( 200 )
+        String result = gen.get().expectedStatus( 200 )
                 .get( getSchemaRelationshipConstraintTypeExistenceUri( typeName ) ).entity();
 
         List<Map<String,Object>> serializedList = jsonToList( result );
@@ -238,7 +238,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
         createLabelPropertyExistenceConstraint( labelName, propertyKey2 );
 
         String result =
-                gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintLabelUri( labelName ) ).entity();
+                gen.get().expectedStatus( 200 ).get( getSchemaConstraintLabelUri( labelName ) ).entity();
 
         List<Map<String,Object>> serializedList = jsonToList( result );
 
@@ -268,7 +268,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
         createLabelUniquenessPropertyConstraint( labelName1, propertyKey1 );
         createLabelPropertyExistenceConstraint( labelName2, propertyKey2 );
 
-        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintUri() ).entity();
+        String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintUri() ).entity();
 
         List<Map<String,Object>> serializedList = jsonToList( result );
 

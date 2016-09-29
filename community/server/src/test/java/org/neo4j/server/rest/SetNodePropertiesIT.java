@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.Test;
-
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.MapUtil;
@@ -37,6 +37,7 @@ import org.neo4j.test.GraphDescription.PROP;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
@@ -136,7 +137,6 @@ public class SetNodePropertiesIT extends
             throws Exception
     {
         gen.get()
-                .noGraph()
                 .payload( "{\"foo\" : {\"bar\" : \"baz\"}}" )
                 .expectedStatus(
                 400 ).post( getDataUri() + "node/" );

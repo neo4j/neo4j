@@ -84,7 +84,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     {
         String indexName = indexes.newInstance();
         helper.createNodeIndex( indexName );
-        String entity = gen().noGraph()
+        String entity = gen()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeIndexUri() )
                 .entity();
@@ -111,7 +111,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         Map<String, String> indexSpecification = new HashMap<>();
         indexSpecification.put( "name", indexName );
 
-        gen().noGraph()
+        gen()
                 .payload( JsonHelper.createJsonFrom( indexSpecification ) )
                 .expectedStatus( 201 )
                 .expectedHeader( "Location" )
@@ -149,7 +149,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     {
         int expectedIndexes = helper.getNodeIndexes().length + 1;
 
-        gen().noGraph()
+        gen()
                 .payload( "{\"name\":\"fulltext\", \"config\":{\"type\":\"fulltext\",\"provider\":\"lucene\"}}" )
                 .expectedStatus( 201 )
                 .expectedHeader( "Location" )
@@ -177,7 +177,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         final String value = "some value";
         long nodeId = createNode();
         // implicitly create the index
-        gen().noGraph()
+        gen()
                 .expectedStatus( 201 )
                 .payload(
                         JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
@@ -209,7 +209,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         assertEquals( 201, response.getStatus() );
 
         // search it exact
-        String entity = gen().noGraph()
+        String entity = gen()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) )
                 .entity();
@@ -244,7 +244,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         helper.addNodeToIndex( indexName, key, value, node );
         helper.addNodeToIndex( indexName, "Gender", "Male", node );
 
-        String entity = gen().noGraph()
+        String entity = gen()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.indexNodeUri( indexName ) + "?query=" + key +
                       ":Build~0.1%20AND%20Gender:Male" )
@@ -524,7 +524,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         final String indexName = indexes.newInstance();
         helper.createNodeIndex( indexName );
 
-        gen().noGraph()
+        gen()
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.indexNodeUri( indexName ) );
     }
@@ -548,7 +548,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         helper.addNodeToIndex( indexName, key2, value1, node );
         helper.addNodeToIndex( indexName, key2, value2, node );
 
-        gen().noGraph()
+        gen()
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.indexNodeUri( indexName ) + "/" + node );
 
@@ -577,7 +577,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         helper.addNodeToIndex( indexName, key2, value1, node );
         helper.addNodeToIndex( indexName, key2, value2, node );
 
-        gen().noGraph()
+        gen()
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.nodeIndexUri() + indexName + "/" + key2 + "/" + node );
 
@@ -606,7 +606,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         helper.addNodeToIndex( indexName, key2, value1, node );
         helper.addNodeToIndex( indexName, key2, value2, node );
 
-        gen().noGraph()
+        gen()
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.nodeIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + node );
 
@@ -671,7 +671,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     {
         final String index = indexes.newInstance(), key = "name", value = "Tobias";
         helper.createNodeIndex( index );
-        ResponseEntity response = gen().noGraph()
+        ResponseEntity response = gen()
                 .expectedStatus( 201 /* created */ )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
@@ -739,7 +739,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         }
 
         helper.createNodeIndex( index );
-        ResponseEntity response = gen().noGraph()
+        ResponseEntity response = gen()
                 .expectedStatus( 200 /* ok */ )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
@@ -763,7 +763,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     {
         final String index = indexes.newInstance(), key = "name", value = "Tobias";
         helper.createNodeIndex( index );
-        ResponseEntity response = gen.get().noGraph()
+        ResponseEntity response = gen.get()
                 .expectedStatus( 201 /* created */ )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
@@ -807,7 +807,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
 
         RestRequest.req();
 
-        ResponseEntity response = gen.get().noGraph()
+        ResponseEntity response = gen.get()
                 .expectedStatus( 409 /* conflict */ )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
@@ -837,7 +837,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         final String value = "some value";
         long nodeId = createNode();
         // implicitly create the index
-        gen().noGraph()
+        gen()
                 .expectedStatus( 201 /* created */ )
                 .payload(
                         JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
@@ -871,7 +871,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
             tx.success();
         }
 
-        gen().noGraph()
+        gen()
                 .expectedStatus( 409 /* conflict */ )
                 .payload(
                         JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
@@ -913,7 +913,6 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
 
         // When & Then
         gen.get()
-                .noGraph()
                 .expectedStatus( 201 )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(

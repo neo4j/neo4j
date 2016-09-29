@@ -19,14 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientRequest.Builder;
-import com.sun.jersey.api.client.ClientResponse;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -39,19 +31,20 @@ import java.util.TreeMap;
 import java.util.function.Predicate;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
+import com.sun.jersey.api.client.ClientResponse;
 
 import org.neo4j.doc.tools.AsciiDocGenerator;
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -65,8 +58,6 @@ import static org.junit.Assert.fail;
  */
 public class RESTDocsGenerator extends AsciiDocGenerator
 {
-    private static final String EQUAL_SIGNS = "======";
-
     private static final Builder REQUEST_BUILDER = ClientRequest.create();
 
     private static final List<String> RESPONSE_HEADERS = Arrays.asList( "Content-Type", "Location" );
@@ -96,9 +87,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private final List<Pair<String,Predicate<String>>> expectedHeaderFields = new ArrayList<>();
     private String payload;
     private final Map<String, String> addedRequestHeaders = new TreeMap<>(  );
-    private boolean noDoc = false;
-    private boolean noGraph = false;
-    private int headingLevel = 3;
 
     /**
      * Creates a documented test case. Finish building it by using one of these:
@@ -196,33 +184,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         return this;
     }
 
-    public RESTDocsGenerator noDoc() {
-        this.noDoc = true;
-        return this;
-    }
-
-    public RESTDocsGenerator noGraph()
-    {
-        this.noGraph = true;
-        return this;
-    }
-
-    /**
-     * Set a custom heading level. Defaults to 3.
-     *
-     * @param headingLevel a value between 1 and 6 (inclusive)
-     */
-    public RESTDocsGenerator docHeadingLevel( final int headingLevel )
-    {
-        if ( headingLevel < 1 || headingLevel > EQUAL_SIGNS.length() )
-        {
-            throw new IllegalArgumentException( "Heading level out of bounds: "
-                                                + headingLevel );
-        }
-        this.headingLevel = headingLevel;
-        return this;
-    }
-
     /**
      * Add an expected response header. If the heading is missing in the
      * response the test will fail. The header and its value are also included
@@ -232,7 +193,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      */
     public RESTDocsGenerator expectedHeader( final String expectedHeaderField )
     {
-        this.expectedHeaderFields.add( Pair.of(expectedHeaderField, Predicates.<String>notNull()) );
+        this.expectedHeaderFields.add( Pair.of(expectedHeaderField, Predicates.notNull()) );
         return this;
     }
 
@@ -413,10 +374,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             assertTrue( "wrong headers: " + response.getHeaders(), headerField.other().test( response.getHeaders()
                     .getFirst( headerField.first() ) ) );
         }
-        if ( noDoc )
-        {
-            data.setIgnore();
-        }
         data.setTitle( title );
         data.setDescription( description );
         data.setMethod( request.getMethod() );
@@ -424,17 +381,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setStatus( responseCode );
         assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
         getResponseHeaders( data, response.getHeaders(), headerNames(headerFields) );
-        if ( graph == null )
-        {
-            document( data );
-        }
-        else
-        {
-            try ( Transaction transaction = graph.beginTx() )
-            {
-                document( data );
-            }
-        }
         return new ResponseEntity( response, data.entity );
     }
 
@@ -513,139 +459,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         public JaxRsResponse response()
         {
             return response;
-        }
-    }
-
-    protected void document( final DocumentationData data )
-    {
-        if (data.ignore)
-        {
-            return;
-        }
-        String name = data.title.replace( " ", "-" ).toLowerCase();
-        String filename = name + ".asciidoc";
-        File dir = new File( new File( new File( "target" ), "docs" ), section );
-        data.description = replaceSnippets( data.description, dir, name );
-        try ( Writer fw = AsciiDocGenerator.getFW( dir, filename ) )
-        {
-            String longSection = section.replaceAll( "\\(|\\)", "" )+"-" + name.replaceAll( "\\(|\\)", "" );
-            if(longSection.indexOf( "/" )>0)
-            {
-                longSection = longSection.substring( longSection.indexOf( "/" )+1 );
-            }
-            line( fw, "[[" + longSection + "]]" );
-            //make first Character uppercase
-            String firstChar = data.title.substring(  0, 1 ).toUpperCase();
-            String heading = firstChar + data.title.substring( 1 );
-            line( fw, getAsciidocHeading( heading ) );
-            line( fw, "" );
-            if ( data.description != null && !data.description.isEmpty() )
-            {
-                line( fw, data.description );
-                line( fw, "" );
-            }
-            if ( !noGraph && graph != null )
-            {
-                fw.append( AsciiDocGenerator.dumpToSeparateFile( dir,
-                        name + ".graph",
-                        AsciidocHelper.createGraphVizWithNodeId( "Final Graph",
-                                graph, title ) ) );
-                line(fw, "" );
-            }
-            line( fw, "_Example request_" );
-            line( fw, "" );
-            StringBuilder sb = new StringBuilder( 512 );
-            sb.append( "* *+" )
-                    .append( data.method )
-                    .append( "+*  +" )
-                    .append( data.uri )
-                    .append( "+\n" );
-            if ( data.requestHeaders != null )
-            {
-                for ( Entry<String, String> header : data.requestHeaders.entrySet() )
-                {
-                    sb.append( "* *+" )
-                            .append( header.getKey() )
-                            .append( ":+* +" )
-                            .append( header.getValue() )
-                            .append( "+\n" );
-                }
-            }
-            String prettifiedPayload = data.getPayload();
-            if ( prettifiedPayload != null )
-            {
-                writeEntity( sb, prettifiedPayload );
-            }
-            fw.append( AsciiDocGenerator.dumpToSeparateFile( dir, name
-                                                                  + ".request",
-                    sb.toString() ) );
-            sb = new StringBuilder( 2048 );
-            line( fw, "" );
-            line( fw, "_Example response_" );
-            line( fw, "" );
-            int statusCode = data.status;
-            sb.append( "* *+" )
-                    .append( statusCode )
-                    .append( ":+* +" )
-                    .append( statusNameFromStatusCode( statusCode ) )
-                    .append( "+\n" );
-            if ( data.responseHeaders != null )
-            {
-                for ( Entry<String, String> header : data.responseHeaders.entrySet() )
-                {
-                    sb.append( "* *+" )
-                            .append( header.getKey() )
-                            .append( ":+* +" )
-                            .append( header.getValue() )
-                            .append( "+\n" );
-                }
-            }
-            writeEntity( sb, data.getPrettifiedEntity() );
-            fw.append( AsciiDocGenerator.dumpToSeparateFile( dir,
-                    name + ".response", sb.toString() ) );
-            line( fw, "" );
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail();
-        }
-    }
-
-    private String statusNameFromStatusCode( int statusCode )
-    {
-        Object name = Response.Status.fromStatusCode( statusCode );
-        if ( name == null )
-        {
-            switch ( statusCode )
-            {
-            case 405:
-                name = "Method Not Allowed";
-                break;
-            case 422:
-                name = "Unprocessable Entity";
-                break;
-            default:
-                throw new RuntimeException( "Missing name for status code: [" + statusCode + "]." );
-            }
-        }
-        return String.valueOf( name );
-    }
-
-    private String getAsciidocHeading( final String heading )
-    {
-        String equalSigns = EQUAL_SIGNS.substring( 0, headingLevel );
-        return equalSigns + ' ' + heading + ' ' + equalSigns;
-    }
-
-    public void writeEntity( final StringBuilder sb, final String entity )
-    {
-        if ( entity != null )
-        {
-            sb.append( "\n[source,javascript]\n" )
-                    .append( "----\n" )
-                    .append( entity )
-                    .append( "\n----\n\n" );
         }
     }
 }

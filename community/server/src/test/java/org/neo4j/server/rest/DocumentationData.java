@@ -35,7 +35,6 @@ class DocumentationData
     public String entity;
     public Map<String, String> requestHeaders;
     public Map<String, String> responseHeaders;
-    public boolean ignore;
 
     public void setPayload( final String payload )
     {
@@ -54,11 +53,6 @@ class DocumentationData
         {
             return this.payload;
         }
-    }
-
-    public String getPrettifiedEntity()
-    {
-        return JSONPrettifier.parse( entity );
     }
 
     public void setPayloadType( final MediaType payloadType )
@@ -106,10 +100,6 @@ class DocumentationData
     public void setRequestHeaders( final Map<String, String> request )
     {
         requestHeaders = request;
-    }
-
-    public void setIgnore() {
-        this.ignore = true;
     }
 
     @Override
