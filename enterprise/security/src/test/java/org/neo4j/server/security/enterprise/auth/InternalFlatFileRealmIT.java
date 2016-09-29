@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
-import org.neo4j.server.security.auth.BasicAuthManagerFactory;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
+import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
@@ -77,7 +77,7 @@ public class InternalFlatFileRealmIT
         roleStoreFile = new File( "dbms", "roles" );
         final UserRepository userRepository = new FileUserRepository( fs, userStoreFile, logProvider );
         final RoleRepository roleRepository = new FileRoleRepository( fs, roleStoreFile, logProvider );
-        final UserRepository initialUserRepository = BasicAuthManagerFactory.getInitialUserRepository( Config
+        final UserRepository initialUserRepository = CommunitySecurityModule.getInitialUserRepository( Config
                 .defaults(), logProvider, fs );
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
         AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );

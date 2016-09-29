@@ -45,15 +45,12 @@ import org.neo4j.coreedge.messaging.routing.ConnectToRandomCoreMember;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -64,7 +61,6 @@ import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
@@ -87,7 +83,6 @@ import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
@@ -103,22 +98,11 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THR
  */
 public class EnterpriseEdgeEditionModule extends EditionModule
 {
-    private SecurityLog securityLog;
-
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
         procedures.register( new EdgeRoleProcedure() );
-
-        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
-    }
-
-    @Override
-    protected Log authManagerLog()
-    {
-        return securityLog;
     }
 
     EnterpriseEdgeEditionModule( final PlatformModule platformModule,
@@ -158,14 +142,6 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         life.add( dependencies.satisfyDependency(
                 new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
-
-        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
-                platformModule.fileSystem, platformModule.jobScheduler );
-
-        life.add( securityLog );
-
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
-                platformModule.fileSystem, platformModule.jobScheduler ) ) );
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
@@ -273,8 +249,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     }
 
     @Override
-    protected AuthManager getAuthDisabledAuthManager()
+    public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        return EnterpriseAuthManager.NO_AUTH;
+        setupSecurityModule( platformModule, procedures, "enterprise-security-module" );
     }
 }

@@ -142,10 +142,15 @@ public abstract class KernelIntegrationTest
 
     protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
     {
-        TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory()
+        TestGraphDatabaseBuilder graphDatabaseBuilder = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
                 .newImpermanentDatabaseBuilder();
-        return graphDatabaseFactory.newGraphDatabase();
+        return configure( graphDatabaseBuilder ).newGraphDatabase();
+    }
+
+    protected TestGraphDatabaseBuilder configure( TestGraphDatabaseBuilder graphDatabaseBuilder )
+    {
+        return graphDatabaseBuilder;
     }
 
     protected void dbWithNoCache() throws TransactionFailureException

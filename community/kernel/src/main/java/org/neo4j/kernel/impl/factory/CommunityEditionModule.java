@@ -105,11 +105,6 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
-        createAuthManagerLog( config, logging, platformModule.fileSystem, platformModule.jobScheduler );
-
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
-                platformModule.fileSystem, platformModule.jobScheduler ) ) );
-
         commitProcessFactory = new CommunityCommitProcessFactory();
 
         headerInformationFactory = createHeaderInformationFactory();
@@ -131,12 +126,6 @@ public class CommunityEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         dependencies.satisfyDependency( createSessionTracker() );
-    }
-
-    protected void createAuthManagerLog( Config config, LogService logging, FileSystemAbstraction fileSystem, JobScheduler
-            jobScheduler )
-    {
-        // no auth manager log in community
     }
 
     protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )
@@ -270,5 +259,11 @@ public class CommunityEditionModule extends EditionModule
 
         new RemoveOrphanConstraintIndexesOnStartup( dependencyResolver.resolveDependency( NeoStoreDataSource.class )
                 .getKernel(), dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
+    }
+
+    @Override
+    public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
+    {
+        setupSecurityModule( platformModule, procedures, "community-security-module" );
     }
 }

@@ -25,20 +25,49 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.Log;
+import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
-/**
- * Wraps AuthManager and exposes it as a KernelExtension.
- */
-@Service.Implementation( AuthManager.Factory.class )
-public class BasicAuthManagerFactory extends AuthManager.Factory
+@Service.Implementation( SecurityModule.class )
+public class CommunitySecurityModule extends SecurityModule
 {
+    public CommunitySecurityModule()
+    {
+        super( "community-security-module" );
+    }
+
+    @Override
+    public void setup( PlatformModule platformModule, Procedures procedures ) throws KernelException
+    {
+        Config config = platformModule.config;
+        LogProvider logProvider = platformModule.logging.getUserLogProvider();
+        FileSystemAbstraction fileSystem = platformModule.fileSystem;
+        final UserRepository userRepository = getUserRepository( config, logProvider, fileSystem );
+        final UserRepository initialUserRepository = getInitialUserRepository( config, logProvider, fileSystem );
+
+        final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
+
+        BasicAuthManager authManager =
+                new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(), initialUserRepository );
+
+        platformModule.life.add( platformModule.dependencies.satisfyDependency( authManager ) );
+
+        procedures.registerComponent( UserManager.class, ctx -> authManager.getUserManager() );
+        procedures.registerProcedure( AuthProcedures.class );
+    }
+
+    @Override
+    public void setupAuthDisabled( PlatformModule platformModule, Procedures procedures ) throws KernelException
+    {
+        platformModule.life.add( platformModule.dependencies.satisfyDependency( AuthManager.NO_AUTH ) );
+    }
+
     private static final String USER_STORE_FILENAME = "auth";
     private static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
 
@@ -77,34 +106,5 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
             userStoreFile = new File( authStoreDir, fileName );
         }
         return userStoreFile;
-    }
-
-    public interface Dependencies
-    {
-        Config config();
-        LogService logService();
-    }
-
-    public BasicAuthManagerFactory()
-    {
-        super( "basic-auth-manager" );
-    }
-
-    @Override
-    public AuthManager newInstance( Config config, LogProvider logProvider, Log ignored,
-            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
-    {
-        if ( !config.get( GraphDatabaseSettings.auth_enabled ) )
-        {
-            throw new IllegalStateException( "Attempted to build BasicAuthManager even though " +
-                    "configuration setting auth_enabled=false" );
-        }
-
-        final UserRepository userRepository = getUserRepository( config, logProvider, fileSystem );
-        final UserRepository initialUserRepository = getInitialUserRepository( config, logProvider, fileSystem );
-
-        final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-
-        return new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(), initialUserRepository );
     }
 }

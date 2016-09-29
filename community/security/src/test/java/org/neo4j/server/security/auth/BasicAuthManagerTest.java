@@ -63,9 +63,9 @@ public class BasicAuthManagerTest
     public void setup() throws Throwable
     {
         config = Config.defaults();
-        users = BasicAuthManagerFactory.getUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         UserRepository initUserRepository =
-                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+                CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy, initUserRepository );
         manager.init();
     }
@@ -94,7 +94,7 @@ public class BasicAuthManagerTest
     {
         // Given
         FileUserRepository initialUserRepository =
-                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+                CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         initialUserRepository.start();
         initialUserRepository.create(
                 new User.Builder( "initUser", Credential.forPassword( "123" ))
@@ -118,7 +118,7 @@ public class BasicAuthManagerTest
     {
         // Given
         FileUserRepository initialUserRepository =
-                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+                CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         initialUserRepository.start();
         initialUserRepository.create(
                 new User.Builder( "initUser", Credential.forPassword( "123" ))
@@ -150,7 +150,7 @@ public class BasicAuthManagerTest
     {
         // Given
         FileUserRepository initialUserRepository =
-                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+                CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         initialUserRepository.start();
         initialUserRepository.create(
                 new User.Builder( "oldUser", Credential.forPassword( "newPassword" ))

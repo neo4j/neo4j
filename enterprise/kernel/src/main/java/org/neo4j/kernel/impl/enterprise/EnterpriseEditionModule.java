@@ -49,14 +49,11 @@ import org.neo4j.logging.NullLog;
  */
 public class EnterpriseEditionModule extends CommunityEditionModule
 {
-    private SecurityLog securityLog;
 
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
-        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
     }
 
     public EnterpriseEditionModule( PlatformModule platformModule )
@@ -65,10 +62,6 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
         platformModule.dependencies.satisfyDependency( createSessionTracker() );
-        if ( securityLog != null )
-        {
-            platformModule.life.add( securityLog );
-        }
     }
 
     @Override
@@ -96,22 +89,8 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     }
 
     @Override
-    protected void createAuthManagerLog( Config config, LogService logging, FileSystemAbstraction fileSystem,
-            JobScheduler jobScheduler )
+    public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
-                fileSystem, jobScheduler );
-    }
-
-    @Override
-    protected Log authManagerLog()
-    {
-        return securityLog == null ? NullLog.getInstance() : securityLog;
-    }
-
-    @Override
-    protected AuthManager getAuthDisabledAuthManager()
-    {
-        return EnterpriseAuthManager.NO_AUTH;
+        setupSecurityModule( platformModule, procedures, "enterprise-security-module" );
     }
 }
