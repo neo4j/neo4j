@@ -41,6 +41,7 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.neo4j.helpers.Exceptions.stringify;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
 
@@ -124,7 +125,7 @@ public class ClusterLocksIT
         thread.join();
 
         Throwable throwable = ref.get();
-        assertNull( "" + throwable, throwable );
+        assertNull( stringify( throwable ), throwable );
     }
 
     private void takeExclusiveLockOnSameNodeAfterSwitch( Label testLabel, HighlyAvailableGraphDatabase master,
