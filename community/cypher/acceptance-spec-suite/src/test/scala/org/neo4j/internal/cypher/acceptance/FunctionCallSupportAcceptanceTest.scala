@@ -62,4 +62,32 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
       java.util.Collections.singletonMap("out", stream)
     ))
   }
+
+  test("should not copy unnecessarily") {
+    val value = new util.ArrayList[Any]()
+    value.add("Norris")
+    value.add("Strange")
+
+    registerUserFunction(value)
+
+    // Using graph execute to get a Java value
+    val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
+
+    returned shouldBe value
+  }
+
+  test("should not copy unnecessarily with nested types") {
+    val value = new util.ArrayList[Any]()
+    val inner = new util.ArrayList[Any]()
+    value.add("Norris")
+    value.add(inner)
+
+    registerUserFunction(value)
+
+    // Using graph execute to get a Java value
+    val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
+
+    returned shouldBe value
+    returned.asInstanceOf[util.ArrayList[Any]].get(1) shouldBe inner
+  }
 }
