@@ -42,9 +42,10 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertArrayEquals;
-
+import static org.junit.Assert.assertTrue;
 import static java.lang.Integer.max;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.api.index.persson.NativeLabelScanStoreTest.flipRandom;
 import static org.neo4j.kernel.impl.api.index.persson.NativeLabelScanStoreTest.getLabels;
@@ -85,6 +86,29 @@ public class NativeLabelScanWriterTest
             long[] actualNodeIds = asArray( new LabelScanValueIterator( RANGE_SIZE, inserter.nodesFor( i ) ) );
             assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
         }
+    }
+
+    @Test
+    public void shouldNotAcceptUnsortedLabels() throws Exception
+    {
+        // GIVEN
+        ControlledInserter inserter = new ControlledInserter();
+        boolean failed = false;
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( inserter, RANGE_SIZE, 1 ) )
+        {
+            // WHEN
+            writer.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[] {2, 1} ) );
+            // we can't do the usual "fail( blabla )" here since the actual write will happen
+            // when closing this writer, i.e. in the curly bracket below.
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            assertTrue( e.getMessage().contains( "unsorted" ) );
+            failed = true;
+        }
+
+        assertTrue( failed );
     }
 
     private NodeLabelUpdate randomUpdate( long[] expected )

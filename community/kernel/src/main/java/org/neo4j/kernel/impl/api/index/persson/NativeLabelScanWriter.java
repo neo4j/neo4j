@@ -128,7 +128,16 @@ class NativeLabelScanWriter implements LabelScanWriter
                 // and then break right after
                 if ( li+1 < labels.length && labels[li+1] != -1 )
                 {
-                    nextLabelId = min( nextLabelId, labels[li+1] );
+                    long nextLabelCandidate = labels[li+1];
+                    if ( nextLabelCandidate < currentLabelId )
+                    {
+                        throw new IllegalArgumentException( "The node label update contained unsorted label ids " +
+                                Arrays.toString( labels ) );
+                    }
+                    if ( nextLabelCandidate > currentLabelId )
+                    {
+                        nextLabelId = min( nextLabelId, nextLabelCandidate );
+                    }
                 }
                 break;
             }
