@@ -22,15 +22,16 @@ package org.neo4j.bolt.v1.transport;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.neo4j.bolt.transport.BoltProtocol;
-import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
-import org.neo4j.kernel.impl.logging.LogService;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.neo4j.bolt.transport.BoltProtocol;
+import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.kernel.impl.logging.LogService;
 
 /**
  * Implements version one of the Bolt Protocol when transported over a socket. This means this class will handle a

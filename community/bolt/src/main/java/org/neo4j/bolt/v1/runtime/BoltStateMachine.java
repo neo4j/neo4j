@@ -264,24 +264,20 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
     public void close()
     {
-        if ( !ctx.closed )
+        try
         {
-            if ( onClose != null )
+            //Only run onClose, once
+            if ( !ctx.closed && onClose != null )
             {
                 onClose.run();
             }
-            try
-            {
-                ctx.statementProcessor.reset();
-            }
-            catch ( TransactionFailureException e )
-            {
-                throw new RuntimeException( e );
-            }
-            finally
-            {
-                ctx.closed = true;
-            }
+        }
+        finally
+        {
+            ctx.closed = true;
+            //However a new transaction may have been created
+            //so we must always to reset
+            reset();
         }
     }
 
@@ -628,7 +624,6 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                 throw new BoltConnectionFatality( e.getMessage() );
             }
         }
-
     }
 
     private static void fail( BoltStateMachine machine, Neo4jError neo4jError )
@@ -639,6 +634,18 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         }
 
         machine.ctx.markFailed( neo4jError );
+    }
+
+    private void reset()
+    {
+        try
+        {
+            ctx.statementProcessor.reset();
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     static class MutableConnectionState implements BoltResponseHandler

@@ -199,15 +199,7 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         return executeQuery( ctx, spi, statement, params, () ->
                         {
-                            try // On fail
-                            {
-                                ctx.currentTransaction.failure();
-                                ctx.currentTransaction.close();
-                            }
-                            finally
-                            {
-                                ctx.currentTransaction = null;
-                            }
+                           closeTransaction( ctx, false );
                         } );
                     }
 
@@ -218,12 +210,7 @@ public class TransactionStateMachine implements StatementProcessor
                         assert ctx.currentResult != null;
                         resultConsumer.accept( ctx.currentResult );
                         ctx.currentResult.close();
-                        if ( ctx.currentTransaction != null )
-                        {
-                            ctx.currentTransaction.success();
-                            ctx.currentTransaction.close();
-                            ctx.currentTransaction = null;
-                        }
+                        closeTransaction( ctx, true );
                     }
                 },
         EXPLICIT_TRANSACTION
@@ -239,10 +226,7 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                         else if ( statement.equalsIgnoreCase( COMMIT ) )
                         {
-                            ctx.currentTransaction.success();
-                            ctx.currentTransaction.close();
-                            ctx.currentTransaction = null;
-
+                            closeTransaction( ctx, true );
                             long txId = spi.newestEncounteredTxId();
                             Bookmark bookmark = new Bookmark( txId );
                             ctx.currentResult = new BookmarkResult( bookmark );
@@ -251,9 +235,7 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                         else if ( statement.equalsIgnoreCase( ROLLBACK ) )
                         {
-                            ctx.currentTransaction.failure();
-                            ctx.currentTransaction.close();
-                            ctx.currentTransaction = null;
+                            closeTransaction( ctx, false );
                             ctx.currentResult = BoltResult.EMPTY;
                             return AUTO_COMMIT;
                         }
@@ -314,11 +296,39 @@ public class TransactionStateMachine implements StatementProcessor
                 ctx.currentResult.close();
                 ctx.currentResult = null;
             }
-            if ( ctx.currentTransaction != null && ctx.currentTransaction.isOpen() )
+
+           closeTransaction( ctx, false);
+        }
+
+        /*
+         * This is overly careful about always closing and nulling the transaction since
+         * reset can cause ctx.currentTransaction to be null we store in local variable.
+         */
+        void closeTransaction(MutableTransactionState ctx, boolean success) throws TransactionFailureException
+        {
+            KernelTransaction tx = ctx.currentTransaction;
+            ctx.currentTransaction = null;
+            if (tx != null)
             {
-                ctx.currentTransaction.failure();
-                ctx.currentTransaction.close();
-                ctx.currentTransaction = null;
+                try
+                {
+                    if ( success )
+                    {
+                        tx.success();
+                    }
+                    else
+                    {
+                        tx.failure();
+                    }
+                    if (tx.isOpen())
+                    {
+                        tx.close();
+                    }
+                }
+                finally
+                {
+                    ctx.currentTransaction = null;
+                }
             }
         }
     }
