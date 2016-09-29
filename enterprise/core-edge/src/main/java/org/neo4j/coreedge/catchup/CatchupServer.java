@@ -117,7 +117,11 @@ public class CatchupServer extends LifecycleAdapter
     @Override
     public synchronized void start() throws Throwable
     {
-        assert channel == null && workerGroup == null : "Starting an already started catchup server???";
+        if ( channel != null )
+        {
+            return;
+        }
+
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -199,7 +203,11 @@ public class CatchupServer extends LifecycleAdapter
     @Override
     public synchronized void stop() throws Throwable
     {
-        assert channel != null && workerGroup != null : "Stopping an already stopped catchup server???";
+        if ( channel == null )
+        {
+            return;
+        }
+
         log.info( "CatchupServer stopping and unbinding from " + listenAddress );
         try
         {
