@@ -21,11 +21,11 @@ package org.neo4j.index;
 
 import java.io.Closeable;
 import java.io.IOException;
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.RawCursor;
 
 public interface SCIndex<KEY,VALUE> extends Closeable
 {
-    Cursor<BTreeHit<KEY,VALUE>> seek( KEY fromInclusive, KEY toExclusive ) throws IOException;
+    RawCursor<BTreeHit<KEY,VALUE>,IOException> seek( KEY fromInclusive, KEY toExclusive ) throws IOException;
 
     SCInserter<KEY,VALUE> inserter() throws IOException;
 }

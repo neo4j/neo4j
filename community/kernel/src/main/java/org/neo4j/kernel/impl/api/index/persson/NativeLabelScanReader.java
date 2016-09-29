@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index.persson;
 import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.btree.LabelScanKey;
@@ -33,7 +33,7 @@ class NativeLabelScanReader implements LabelScanReader
 {
     private final SCIndex<LabelScanKey,LabelScanValue> index;
     private final int rangeSize;
-    private Cursor<BTreeHit<LabelScanKey,LabelScanValue>> cursor;
+    private RawCursor<BTreeHit<LabelScanKey,LabelScanValue>,IOException> cursor;
 
     NativeLabelScanReader( SCIndex<LabelScanKey,LabelScanValue> index, int rangeSize )
     {
@@ -44,7 +44,14 @@ class NativeLabelScanReader implements LabelScanReader
     @Override
     public void close()
     {
-        ensureCurrentCursorClosed();
+        try
+        {
+            ensureCurrentCursorClosed();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -65,7 +72,7 @@ class NativeLabelScanReader implements LabelScanReader
         return new LabelScanValueIterator( rangeSize, cursor );
     }
 
-    private void ensureCurrentCursorClosed()
+    private void ensureCurrentCursorClosed() throws IOException
     {
         if ( cursor != null )
         {

@@ -26,7 +26,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.IdProvider;
 import org.neo4j.index.SCIndex;
@@ -51,8 +51,8 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
 
     // when updating these the meta page will also be kept up2date
     private int pageSize;
-    private long rootId = META_PAGE_ID + 1;
-    private long lastId = rootId;
+    private volatile long rootId = META_PAGE_ID + 1;
+    private volatile long lastId = rootId;
     private boolean created;
 
     /**
@@ -196,46 +196,63 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
         }
     }
 
-    private void updateIdsInMetaPage()
-    {
-        metaCursor.putLong( 4, rootId );
-        metaCursor.putLong( 12, lastId );
-    }
-
     @Override
-    public Cursor<BTreeHit<KEY,VALUE>> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
+    public RawCursor<BTreeHit<KEY,VALUE>,IOException> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
     {
         PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK );
         KEY key = bTreeNode.newKey();
         VALUE value = bTreeNode.newValue();
         cursor.next();
 
-        // Find the left-most in-range leaf node, i.e. iterate through internal nodes to find it
-        while ( bTreeNode.isInternal( cursor ) )
+        boolean isInternal;
+        long childId = 0; // initialized to satisfy compiler
+        int pos;
+        do
         {
-            // COPY(1)
-            // Find the left-most key within from-range
-            int keyCount = bTreeNode.keyCount( cursor );
-            int pos = 0;
-            bTreeNode.keyAt( cursor, key, pos );
-            while ( pos < keyCount && layout.compare( key, fromInclusive ) < 0 )
+            do
             {
-                pos++;
+                isInternal = bTreeNode.isInternal( cursor );
+                // Find the left-most key within from-range
+                int keyCount = bTreeNode.keyCount( cursor );
+                pos = 0;
                 bTreeNode.keyAt( cursor, key, pos );
+                while ( pos < keyCount && layout.compare( key, fromInclusive ) < 0 )
+                {
+                    pos++;
+                    bTreeNode.keyAt( cursor, key, pos );
+                }
+                if ( isInternal )
+                {
+                    childId = bTreeNode.childAt( cursor, pos );
+                }
             }
-
-            cursor.next( bTreeNode.childAt( cursor, pos ) );
+            while ( cursor.shouldRetry() );
+            cursor.checkAndClearCursorException();
+            if ( cursor.checkAndClearBoundsFlag() )
+            {
+                // Something's wrong, get a new fresh rootId and go from the top again
+                cursor.next( rootId );
+                continue;
+            }
+            if ( isInternal )
+            {
+                if ( !cursor.next( childId ) )
+                {
+                    throw new IllegalStateException( "Couldn't go to child " + childId );
+                }
+            }
         }
+        while ( isInternal );
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
-        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout );
+        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout, pos - 1 );
     }
 
     @Override
     public long acquireNewId() throws FileNotFoundException
     {
         lastId++;
-        updateIdsInMetaPage();
+        metaCursor.putLong( 12, lastId );
         return lastId;
     }
 
@@ -370,15 +387,16 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
             if ( split != null )
             {
                 // New root
-                rootId = acquireNewId();
-                cursor.next( rootId );
+                long newRootId = acquireNewId();
+                cursor.next( newRootId );
 
                 bTreeNode.initializeInternal( cursor );
                 bTreeNode.setKeyAt( cursor, split.primKey, 0 );
                 bTreeNode.setKeyCount( cursor, 1 );
                 bTreeNode.setChildAt( cursor, split.left, 0 );
                 bTreeNode.setChildAt( cursor, split.right, 1 );
-                updateIdsInMetaPage();
+                metaCursor.putLong( 4, newRootId );
+                rootId = newRootId;
             }
         }
 

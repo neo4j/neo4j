@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.api.index.persson;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.btree.LabelScanKey;
@@ -46,7 +48,7 @@ public class NativeLabelScanReaderTest
     {
         // GIVEN
         SCIndex<LabelScanKey,LabelScanValue> index = mock( SCIndex.class );
-        Cursor<BTreeHit<LabelScanKey,LabelScanValue>> cursor = mock( Cursor.class );
+        RawCursor<BTreeHit<LabelScanKey,LabelScanValue>,IOException> cursor = mock( RawCursor.class );
         when( cursor.next() ).thenReturn( true, true, true, false );
         when( cursor.get() ).thenReturn(
                 // range, bits

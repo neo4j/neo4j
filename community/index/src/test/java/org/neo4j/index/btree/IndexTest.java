@@ -30,7 +30,14 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
-import org.neo4j.cursor.Cursor;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCIndexDescription;
@@ -42,10 +49,13 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.index.ValueAmenders.overwrite;
@@ -66,7 +76,7 @@ public class IndexTest
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.setFileSystemAbstraction( new DefaultFileSystemAbstraction() );
-        pageCache = new MuninnPageCache( swapperFactory, 100, pageSize, NULL );
+        pageCache = new MuninnPageCache( swapperFactory, 10_000, pageSize, NULL );
         indexFile = new File( folder.getRoot(), "index" );
         return index = new Index<>( pageCache, indexFile, new PathIndexLayout( description ), 0 );
     }
@@ -141,7 +151,7 @@ public class IndexTest
                     to = first;
                 }
                 Map<TwoLongs,TwoLongs> expectedHits = expectedHits( data, from, to, keyComparator );
-                try ( Cursor<BTreeHit<TwoLongs,TwoLongs>> result = index.seek( from, to ) )
+                try ( RawCursor<BTreeHit<TwoLongs,TwoLongs>,IOException> result = index.seek( from, to ) )
                 {
                     while ( result.next() )
                     {
@@ -175,18 +185,22 @@ public class IndexTest
         // WHEN
         long seed = currentTimeMillis();
         Random random = new Random( seed );
+        int count = 1_000;
+        PrimitiveLongSet seen = Primitive.longSet( count );
         try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
         {
             for ( int i = 0; i < 1_000; i++ )
             {
                 TwoLongs key = new TwoLongs( random.nextInt( 100_000 ), 0 );
                 TwoLongs value = new TwoLongs();
-                inserter.insert( key, value );
+                inserter.insert( key, value, overwrite() );
+                seen.add( key.first );
             }
         }
 
         // THEN
-        try ( Cursor<BTreeHit<TwoLongs,TwoLongs>> cursor = index.seek( new TwoLongs( 0, 0 ), new TwoLongs( Long.MAX_VALUE, 0 ) ) )
+        try ( RawCursor<BTreeHit<TwoLongs,TwoLongs>,IOException> cursor =
+                index.seek( new TwoLongs( 0, 0 ), new TwoLongs( Long.MAX_VALUE, 0 ) ) )
         {
             TwoLongs prev = new TwoLongs( -1, -1 );
             while ( cursor.next() )
@@ -198,7 +212,9 @@ public class IndexTest
                     fail( hit + " smaller than prev " + prev );
                 }
                 prev = new TwoLongs( hit.first, hit.other );
+                assertTrue( seen.remove( hit.first ) );
             }
+            assertTrue( seen.isEmpty() );
         }
     }
 
@@ -312,6 +328,126 @@ public class IndexTest
         catch ( IllegalArgumentException e )
         {
             // THEN good
+        }
+    }
+
+    @Test
+    public void shouldSeeSimpleInsertions() throws Exception
+    {
+        TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
+        index = createIndex( 1024, layout );
+        TwoLongs first = new TwoLongs( 1, 1 );
+        TwoLongs second = new TwoLongs( 2, 2 );
+        try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
+        {
+            inserter.insert( first, first );
+            inserter.insert( second, second );
+        }
+
+        try ( RawCursor<BTreeHit<TwoLongs,TwoLongs>,IOException> cursor =
+                index.seek( first, new TwoLongs( Long.MAX_VALUE, Long.MAX_VALUE ) ) )
+        {
+            assertTrue( cursor.next() );
+            assertEquals( first, cursor.get().key() );
+            assertTrue( cursor.next() );
+            assertEquals( second, cursor.get().key() );
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Test
+    public void shouldReadCorrectlyWhenConcurrentlyInserting() throws Throwable
+    {
+        // GIVEN
+        TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
+        index = createIndex( 1024, layout );
+        CountDownLatch readerReadySignal = new CountDownLatch( 1 );
+        CountDownLatch startSignal = new CountDownLatch( 1 );
+        AtomicBoolean endSignal = new AtomicBoolean();
+        AtomicInteger highestId = new AtomicInteger( -1 );
+        AtomicReference<Throwable> readerError = new AtomicReference<>();
+        AtomicInteger numberOfReads = new AtomicInteger();
+        Thread reader = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    readerReadySignal.countDown();
+                    startSignal.await( 10, SECONDS );
+
+                    while ( !endSignal.get() )
+                    {
+                        long upToId = highestId.get();
+                        if ( upToId < 10 )
+                        {
+                            continue;
+                        }
+
+                        // Read one go, we should see up to highId
+                        long lastSeen = -1;
+                        try ( RawCursor<BTreeHit<TwoLongs,TwoLongs>,IOException> cursor =
+                                // "to" is exclusive so do +1 on that
+                                index.seek( new TwoLongs( 0, 0 ), new TwoLongs( upToId + 1, 0 ) ) )
+                        {
+                            while ( cursor.next() )
+                            {
+                                TwoLongs hit = cursor.get().key();
+                                assertEquals( lastSeen + 1, hit.first );
+                                lastSeen = hit.first;
+                            }
+                        }
+                        // It's possible that the writer has gone further since we started,
+                        // but we should at least have seen upToId
+                        if ( lastSeen < upToId/2 )
+                        {
+                            fail( "Wanted to have read up to " + upToId/2 +
+                                    " (ideally " + upToId + " though)" +
+                                    " but could only see up to " + lastSeen );
+                        }
+                        numberOfReads.incrementAndGet();
+                    }
+                }
+                catch ( Throwable e )
+                {
+                    readerError.set( e );
+                }
+            }
+        };
+
+        // WHEN
+        try
+        {
+            reader.start();
+            readerReadySignal.await( 10, SECONDS );
+            startSignal.countDown();
+            Random random = ThreadLocalRandom.current();
+            try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
+            {
+                int inserted = 0;
+                while ( (inserted < 100_000 || numberOfReads.get() < 10) && readerError.get() == null )
+                {
+                    int groupCount = random.nextInt( 1_000 ) + 1;
+                    for ( int i = 0; i < groupCount; i++, inserted++ )
+                    {
+                        TwoLongs thing = new TwoLongs( inserted, 0 );
+                        inserter.insert( thing, thing );
+                        highestId.set( inserted );
+                    }
+                    MILLISECONDS.sleep( random.nextInt( 10 ) + 3 );
+                }
+            }
+        }
+        finally
+        {
+            // THEN
+            endSignal.set( true );
+            reader.join( SECONDS.toMillis( 10 ) );
+            if ( readerError.get() != null )
+            {
+                throw readerError.get();
+            }
         }
     }
 

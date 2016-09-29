@@ -30,7 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCInserter;
 import org.neo4j.index.ValueAmender;
@@ -153,7 +153,7 @@ public class NativeLabelScanWriterTest
         }
 
         @SuppressWarnings( "unchecked" )
-        Cursor<BTreeHit<LabelScanKey,LabelScanValue>> nodesFor( int labelId )
+        RawCursor<BTreeHit<LabelScanKey,LabelScanValue>,IOException> nodesFor( int labelId )
         {
             Map<LabelScanKey,LabelScanValue> forLabel = data.get( labelId );
             if ( forLabel == null )
@@ -164,7 +164,7 @@ public class NativeLabelScanWriterTest
             Map.Entry<LabelScanKey,LabelScanValue>[] entries =
                     forLabel.entrySet().toArray( new Map.Entry[forLabel.size()] );
             Arrays.sort( entries, COMPARATOR );
-            return new Cursor<BTreeHit<LabelScanKey,LabelScanValue>>()
+            return new RawCursor<BTreeHit<LabelScanKey,LabelScanValue>,IOException>()
             {
                 private int arrayIndex = -1;
 

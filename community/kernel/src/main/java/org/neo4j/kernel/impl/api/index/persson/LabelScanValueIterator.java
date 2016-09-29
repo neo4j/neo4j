@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index.persson;
 
+import java.io.IOException;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.btree.LabelScanKey;
 import org.neo4j.index.btree.LabelScanValue;
@@ -28,14 +30,14 @@ import org.neo4j.index.btree.LabelScanValue;
 class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
 {
     private final int rangeSize;
-    private final Cursor<BTreeHit<LabelScanKey,LabelScanValue>> cursor;
+    private final RawCursor<BTreeHit<LabelScanKey,LabelScanValue>,IOException> cursor;
     private long baseNodeId;
     private long bits;
 
     private int prevLabel = -1;
     private long prevRange = -1;
 
-    LabelScanValueIterator( int rangeSize, Cursor<BTreeHit<LabelScanKey,LabelScanValue>> cursor )
+    LabelScanValueIterator( int rangeSize, RawCursor<BTreeHit<LabelScanKey,LabelScanValue>,IOException> cursor )
     {
         this.rangeSize = rangeSize;
         this.cursor = cursor;
@@ -51,9 +53,16 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
                 return nextFromCurrent();
             }
 
-            if ( !cursor.next() )
+            try
             {
-                return false;
+                if ( !cursor.next() )
+                {
+                    return false;
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
             }
 
             BTreeHit<LabelScanKey,LabelScanValue> hit = cursor.get();

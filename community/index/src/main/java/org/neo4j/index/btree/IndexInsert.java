@@ -345,7 +345,6 @@ public class IndexInsert<KEY,VALUE>
         long newRight = idProvider.acquireNewId();
 
         long oldRight = bTreeNode.rightSibling( cursor );
-        bTreeNode.setRightSibling( cursor, newRight );
 
         // BALANCE KEYS AND VALUES
         // Two different scenarios
@@ -442,6 +441,7 @@ public class IndexInsert<KEY,VALUE>
 
         // Move cursor back to left
         cursor.next( left );
+        bTreeNode.setRightSibling( cursor, newRight );
 
         return split;
     }

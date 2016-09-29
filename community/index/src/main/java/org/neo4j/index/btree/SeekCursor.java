@@ -22,11 +22,11 @@ package org.neo4j.index.btree;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.io.pagecache.PageCursor;
 
-class SeekCursor<KEY,VALUE> implements Cursor<BTreeHit<KEY,VALUE>>
+class SeekCursor<KEY,VALUE> implements RawCursor<BTreeHit<KEY,VALUE>,IOException>
 {
     private final PageCursor cursor;
     private final KEY mutableKey;
@@ -36,13 +36,13 @@ class SeekCursor<KEY,VALUE> implements Cursor<BTreeHit<KEY,VALUE>>
     private final Comparator<KEY> keyComparator;
     private final MutableBTreeHit<KEY,VALUE> hit;
     private final TreeNode<KEY,VALUE> bTreeNode;
+    private long prevNode;
 
     // data structures for the current b-tree node
-    private int keyCount;
     private int pos;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
-            KEY fromInclusive, KEY toExclusive, Comparator<KEY> keyComparator )
+            KEY fromInclusive, KEY toExclusive, Comparator<KEY> keyComparator, int pos ) throws IOException
     {
         this.cursor = leafCursor;
         this.mutableKey = mutableKey;
@@ -52,38 +52,18 @@ class SeekCursor<KEY,VALUE> implements Cursor<BTreeHit<KEY,VALUE>>
         this.keyComparator = keyComparator;
         this.hit = new MutableBTreeHit<>( mutableKey, mutableValue );
         this.bTreeNode = bTreeNode;
-        initTreeNode( true );
+        this.pos = pos;
     }
 
-    private void gotoTreeNode( long id )
+    private boolean gotoTreeNode( long id ) throws IOException
     {
-        try
+        prevNode = cursor.getCurrentPageId();
+        if ( !cursor.next( id ) )
         {
-            cursor.next( id );
+            return false;
         }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        cursor.setOffset( 0 );
-        initTreeNode( false );
-    }
-
-    private void initTreeNode( boolean firstLeaf )
-    {
-        // Find the left-most key within from-range
-        keyCount = bTreeNode.keyCount( cursor );
-        pos = 0;
-        if ( firstLeaf )
-        {
-            bTreeNode.keyAt( cursor, mutableKey, pos );
-            while ( pos < keyCount && keyComparator.compare( mutableKey, fromInclusive ) < 0 )
-            {
-                pos++;
-                bTreeNode.keyAt( cursor, mutableKey, pos );
-            }
-        }
-        pos--;
+        pos = -1;
+        return true;
     }
 
     @Override
@@ -93,29 +73,65 @@ class SeekCursor<KEY,VALUE> implements Cursor<BTreeHit<KEY,VALUE>>
     }
 
     @Override
-    public boolean next()
+    public boolean next() throws IOException
     {
         while ( true )
         {
             pos++;
+            long rightSibling;
+            boolean hit;
+            int keyCount;
+            do
+            {
+                rightSibling = -1;
+                hit = false;
+
+                // There's a condition in here, choosing between go to next sibling or value,
+                // this condition is mirrored outside the shouldRetry loop to act upon the data
+                // which has by then been consistently read.
+                keyCount = bTreeNode.keyCount( cursor );
+                if ( pos >= keyCount )
+                {
+                    // Go to next sibling
+                    rightSibling = bTreeNode.rightSibling( cursor );
+                }
+                else
+                {
+                    // Go to the next value in this leaf
+                    bTreeNode.keyAt( cursor, mutableKey, pos );
+                    if ( keyComparator.compare( mutableKey, toExclusive ) < 0 )
+                    {
+                        // A hit
+                        bTreeNode.valueAt( cursor, mutableValue, pos );
+                        hit = true;
+                    }
+                }
+            }
+            while ( cursor.shouldRetry() );
+            // TODO: what should we do with an out-of-bounds access here?
+            cursor.checkAndClearBoundsFlag();
+            cursor.checkAndClearCursorException();
+
             if ( pos >= keyCount )
             {
-                long rightSibling = bTreeNode.rightSibling( cursor );
                 if ( bTreeNode.isNode( rightSibling ) )
                 {
-                    gotoTreeNode( rightSibling );
-                    continue;
+                    if ( !gotoTreeNode( rightSibling ) )
+                    {
+                        // TODO: Perhaps re-read if this happens instead?
+                        return false;
+                    }
+                    continue; // in the outer loop
                 }
-                return false;
             }
-
-            // Go to the next one, so that next call to next() gets it
-            bTreeNode.keyAt( cursor, mutableKey, pos );
-            if ( keyComparator.compare( mutableKey, toExclusive ) < 0 )
+            else
             {
-                // A hit
-                bTreeNode.valueAt( cursor, mutableValue, pos );
-                return true;
+                // if hit == false it means we came too far and so the whole seek should end
+                // if hit == true it means we read a value which should be included in the result
+                if ( hit )
+                {
+                    return true;
+                }
             }
             return false;
         }
