@@ -97,70 +97,47 @@ class NativeLabelScanWriter implements LabelScanWriter
             for ( int i = 0; i < pendingUpdatesCursor; i++ )
             {
                 NodeLabelUpdate update = pendingUpdates[i];
-                final long nodeId = update.getNodeId();
-                // Additions
-                long[] labelsAfter = update.getLabelsAfter();
-                for ( int li = 0; li < labelsAfter.length; li++ )
-                {
-                    long labelId = labelsAfter[li];
-                    if ( labelId == -1 )
-                    {
-                        break;
-                    }
-
-                    // Have this check here so that we can pick up the next labelId in our change set
-                    if ( labelId == currentLabelId )
-                    {
-                        change( currentLabelId, nodeId, true );
-
-                        // We can do a little shorter check for next labelId here straight away,
-                        // we just check the next if it's less than what we currently think is next labelId
-                        // and then break right after
-                        if ( li+1 < labelsAfter.length && labelsAfter[li+1] != -1 )
-                        {
-                            nextLabelId = min( nextLabelId, labelsAfter[li+1] );
-                        }
-                        break;
-                    }
-                    else if ( labelId > currentLabelId )
-                    {
-                        nextLabelId = min( nextLabelId, labelId );
-                    }
-                }
-                // Removals
-                long[] labelsBefore = update.getLabelsBefore();
-                for ( int li = 0; li < labelsBefore.length; li++ )
-                {
-                    long labelId = labelsBefore[li];
-                    if ( labelId == -1 )
-                    {
-                        break;
-                    }
-
-                    if ( labelId == currentLabelId )
-                    {
-                        // A removal is now actually an insert (with custom amender)
-                        change( currentLabelId, nodeId, false );
-                        // TODO: special case -- if tree node now is empty, then consider removing
-
-                        // We can do a little shorter check for next labelId here straight away,
-                        // we just check the next if it's less than what we currently think is next labelId
-                        // and then break right after
-                        if ( li+1 < labelsBefore.length && labelsBefore[li+1] != -1 )
-                        {
-                            nextLabelId = min( nextLabelId, labelsBefore[li+1] );
-                        }
-                    }
-                    else if ( labelId > currentLabelId && labelId < nextLabelId )
-                    {
-                        nextLabelId = min( nextLabelId, labelId );
-                    }
-                }
+                long nodeId = update.getNodeId();
+                nextLabelId = extractChange( update.getLabelsAfter(), currentLabelId, nodeId, nextLabelId, true );
+                nextLabelId = extractChange( update.getLabelsBefore(), currentLabelId, nodeId, nextLabelId, false );
             }
             currentLabelId = nextLabelId;
         }
         flushPendingRange();
         pendingUpdatesCursor = 0;
+    }
+
+    private long extractChange( long[] labels, long currentLabelId, long nodeId, long nextLabelId, boolean addition )
+            throws IOException
+    {
+        for ( int li = 0; li < labels.length; li++ )
+        {
+            long labelId = labels[li];
+            if ( labelId == -1 )
+            {
+                break;
+            }
+
+            // Have this check here so that we can pick up the next labelId in our change set
+            if ( labelId == currentLabelId )
+            {
+                change( currentLabelId, nodeId, addition );
+
+                // We can do a little shorter check for next labelId here straight away,
+                // we just check the next if it's less than what we currently think is next labelId
+                // and then break right after
+                if ( li+1 < labels.length && labels[li+1] != -1 )
+                {
+                    nextLabelId = min( nextLabelId, labels[li+1] );
+                }
+                break;
+            }
+            else if ( labelId > currentLabelId )
+            {
+                nextLabelId = min( nextLabelId, labelId );
+            }
+        }
+        return nextLabelId;
     }
 
     private void change( long currentLabelId, long nodeId, boolean add ) throws IOException
