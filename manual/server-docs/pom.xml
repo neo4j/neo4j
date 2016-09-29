@@ -189,7 +189,7 @@
             <phase>process-test-classes</phase>
             <configuration>
               <target>
-                <java classname="org.neo4j.server.rest.transactional.error.ErrorDocumentationGenerator"
+                <java classname="org.neo4j.doc.server.rest.transactional.error.ErrorDocumentationGenerator"
                       classpathref="maven.test.classpath" failonerror="true">
                   <arg value="${project.build.directory}/docs/dev/rest-api"/>
                 </java>
