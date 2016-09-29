@@ -151,6 +151,18 @@ public class LabelScanLayout implements TreeItemLayout<LabelScanKey,LabelScanVal
     }
 
     @Override
+    public int majorVersion()
+    {
+        return 0;
+    }
+
+    @Override
+    public int minorVersion()
+    {
+        return 1;
+    }
+
+    @Override
     public void writeMetaData( PageCursor cursor )
     {
         cursor.putInt( rangeSize );

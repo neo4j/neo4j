@@ -104,6 +104,18 @@ public class PathIndexLayout implements TreeItemLayout<TwoLongs,TwoLongs>
     }
 
     @Override
+    public int majorVersion()
+    {
+        return 0;
+    }
+
+    @Override
+    public int minorVersion()
+    {
+        return 1;
+    }
+
+    @Override
     public void writeMetaData( PageCursor cursor )
     {
         writeString( cursor, description.firstLabel );

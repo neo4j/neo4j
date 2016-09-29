@@ -255,9 +255,64 @@ public class IndexTest
         {
             // THEN good
         }
+    }
 
-        // THEN being able to open validates that the same meta data was read
-        // the test also closes the index afterwards
+    @Test
+    public void shouldFailToOpenOnDifferentMajorVersion() throws Exception
+    {
+        // GIVEN
+        TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
+        {   // Open/close is enough
+        }
+        index = null;
+
+        // WHEN
+        try
+        {
+            new Index<>( pageCache, indexFile, new PathIndexLayout( description )
+            {
+                @Override
+                public int majorVersion()
+                {
+                    return super.majorVersion() + 1;
+                }
+            }, 0 );
+            fail( "Should not load" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN good
+        }
+    }
+
+    @Test
+    public void shouldFailToOpenOnDifferentMinorVersion() throws Exception
+    {
+        // GIVEN
+        TreeItemLayout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
+        {   // Open/close is enough
+        }
+        index = null;
+
+        // WHEN
+        try
+        {
+            new Index<>( pageCache, indexFile, new PathIndexLayout( description )
+            {
+                @Override
+                public int minorVersion()
+                {
+                    return super.minorVersion() + 1;
+                }
+            }, 0 );
+            fail( "Should not load" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN good
+        }
     }
 
     private void randomlyModifyIndex( Index<TwoLongs,TwoLongs> index, Map<TwoLongs,TwoLongs> data, Random random )

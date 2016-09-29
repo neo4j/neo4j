@@ -48,6 +48,10 @@ public interface TreeItemLayout<KEY,VALUE> extends Comparator<KEY>
      */
     long identifier();
 
+    int majorVersion();
+
+    int minorVersion();
+
     void writeMetaData( PageCursor cursor );
 
     void readMetaData( PageCursor cursor );

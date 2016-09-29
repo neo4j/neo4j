@@ -104,6 +104,8 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
                 // Read header
                 openMetaPageCursor( pagedFile ); // and keep open for later frequent updates when splitting and allocating
                 long layoutIdentifier;
+                int majorVersion;
+                int minorVersion;
                 do
                 {
                     metaCursor.setOffset( 0 );
@@ -111,6 +113,8 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
                     rootId = metaCursor.getLong();
                     lastId = metaCursor.getLong();
                     layoutIdentifier = metaCursor.getLong();
+                    majorVersion = metaCursor.getInt();
+                    minorVersion = metaCursor.getInt();
                     layout.readMetaData( metaCursor );
                 }
                 while ( metaCursor.shouldRetry() );
@@ -118,6 +122,13 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
                 {
                     throw new IllegalArgumentException( "Tried to open " + indexFile + " using different layout "
                             + layout.identifier() + " than what it was created with " + layoutIdentifier );
+                }
+                if ( majorVersion != layout.majorVersion() || minorVersion != layout.minorVersion() )
+                {
+                    throw new IllegalArgumentException( "Index is of another version than the layout " +
+                            "it tries to be opened with. Index version is [" + majorVersion + "." + minorVersion + "]" +
+                            ", but tried to load the index with version [" +
+                            layout.majorVersion() + "." + layout.minorVersion() + "]" );
                 }
                 // This index was created with another page size, re-open with that actual page size
                 if ( pageSize != pageCache.pageSize() )
@@ -167,6 +178,8 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
             metaCursor.putLong( rootId );
             metaCursor.putLong( lastId );
             metaCursor.putLong( layout.identifier() );
+            metaCursor.putInt( layout.majorVersion() );
+            metaCursor.putInt( layout.minorVersion() );
             layout.writeMetaData( metaCursor );
             created = true;
             pageSize = pageSizeForCreation;
