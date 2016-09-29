@@ -21,6 +21,8 @@ package org.neo4j.helpers;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.Thread.State;
 import java.lang.reflect.Field;
@@ -150,21 +152,16 @@ public class Exceptions
         return root;
     }
 
-    public static String stringify( Throwable cause )
+    public static String stringify( Throwable throwable )
     {
-        try
+        if ( throwable == null )
         {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            PrintStream target = new PrintStream( bytes, true,  UTF_8.name() );
-            cause.printStackTrace( target );
-            target.flush();
-            return bytes.toString( UTF_8.name());
+            return null;
         }
-        catch ( UnsupportedEncodingException e )
-        {
-            cause.printStackTrace(System.err);
-            return "[ERROR: Unable to serialize stacktrace, UTF-8 not supported.]";
-        }
+
+        StringWriter stringWriter = new StringWriter();
+        throwable.printStackTrace( new PrintWriter( stringWriter ) );
+        return stringWriter.toString();
     }
 
     public static String stringify( Thread thread, StackTraceElement[] elements )
