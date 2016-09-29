@@ -19,10 +19,6 @@
  */
 package org.neo4j.coreedge.helper;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
-
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -71,7 +67,7 @@ public class StatUtil
 
                 if ( totalCount % printEvery == 0 )
                 {
-                    log.info( getText( clearAfterPrint ) );
+                    print();
                 }
             }
         }
@@ -98,39 +94,22 @@ public class StatUtil
             return new TimingContext( this );
         }
 
-        public long totalCount()
+        public synchronized void print()
         {
-            return totalCount;
-        }
-
-        public synchronized String getText( boolean clear )
-        {
-            String text = toString();
-
-            if( clear )
-            {
-                clear();
-            }
-
-            return text;
-        }
-
-        @Override
-        public synchronized String toString()
-        {
-            StringBuilder output = new StringBuilder();
             for ( BasicStats stats : bucket )
             {
                 if( stats.count > 0 )
                 {
-                    output.append( format( "%n%s", stats ) );
+                    log.info( format( "%s%s", name, stats ) );
                 }
             }
-            return output.toString();
+
+            if( clearAfterPrint )
+            {
+                clear();
+            }
         }
     }
-
-    private static Map<String,ScheduledFuture> printingJobs = new HashMap<>();
 
     public static synchronized StatContext create( String name, long printEvery, boolean clearAfterPrint )
     {
