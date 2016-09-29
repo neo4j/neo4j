@@ -132,8 +132,6 @@ public class ParallelBatchImporter implements BatchImporter
         NodeRelationshipCache nodeRelationshipCache = null;
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
-        boolean hasBadEntries = false;
-        File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
         RecordFormats recordFormats = RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() );
         try ( BatchingNeoStores neoStore = new BatchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
@@ -213,12 +211,6 @@ public class ParallelBatchImporter implements BatchImporter
                     format( "%n" ) +
                     "Peak memory usage: " + bytes( peakMemoryUsage ) );
             log.info( "Import completed, took " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
-            hasBadEntries = badCollector.badEntries() > 0;
-            if ( hasBadEntries )
-            {
-                log.warn( "There were " + badCollector.badEntries() + " bad entries which were skipped " +
-                             "and logged into " + badFile.getAbsolutePath() );
-            }
         }
         catch ( Throwable t )
         {
@@ -234,10 +226,6 @@ public class ParallelBatchImporter implements BatchImporter
             if ( nodeLabelsCache != null )
             {
                 nodeLabelsCache.close();
-            }
-            if ( !hasBadEntries )
-            {
-                fileSystem.deleteFile( badFile );
             }
         }
     }
