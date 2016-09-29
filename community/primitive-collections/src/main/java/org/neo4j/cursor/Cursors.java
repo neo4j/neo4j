@@ -17,11 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index;
+package org.neo4j.cursor;
 
-import java.io.IOException;
-
-public interface IdProvider
+public class Cursors
 {
-    long acquireNewId() throws IOException;
+    @SuppressWarnings( "rawtypes" )
+    private static final RawCursor EMPTY_RAW = new RawCursor()
+    {
+        @Override
+        public Object get()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public boolean next() throws Exception
+        {
+            return false;
+        }
+
+        @Override
+        public void close() throws Exception
+        {   // Nothing to close
+        }
+    };
+
+    @SuppressWarnings( "unchecked" )
+    public static <T,EXCEPTION extends Exception> RawCursor<T,EXCEPTION> emptyRawCursor()
+    {
+        return EMPTY_RAW;
+    }
 }

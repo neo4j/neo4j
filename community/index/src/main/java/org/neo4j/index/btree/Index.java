@@ -26,6 +26,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.cursor.Cursors;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.IdProvider;
@@ -43,7 +44,7 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
     private final PagedFile pagedFile;
     private final TreeItemLayout<KEY,VALUE> layout;
     private final TreeNode<KEY,VALUE> bTreeNode;
-    private PageCursor metaCursor;
+    private final PageCursor metaCursor;
     // currently an index only supports one concurrent updater and so this reference will act both as
     // guard so that only one thread can have it at any given time and also as synchronization between threads
     // wanting it
@@ -89,6 +90,7 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
                 bTreeNode.initializeLeaf( cursor );
             }
         }
+        this.metaCursor = openMetaPageCursor( pagedFile );
     }
 
     private PagedFile openOrCreate( PageCache pageCache, File indexFile,
@@ -102,22 +104,23 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
             try
             {
                 // Read header
-                openMetaPageCursor( pagedFile ); // and keep open for later frequent updates when splitting and allocating
                 long layoutIdentifier;
                 int majorVersion;
                 int minorVersion;
-                do
+                try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
                 {
-                    metaCursor.setOffset( 0 );
-                    pageSize = metaCursor.getInt();
-                    rootId = metaCursor.getLong();
-                    lastId = metaCursor.getLong();
-                    layoutIdentifier = metaCursor.getLong();
-                    majorVersion = metaCursor.getInt();
-                    minorVersion = metaCursor.getInt();
-                    layout.readMetaData( metaCursor );
+                    do
+                    {
+                        pageSize = metaCursor.getInt();
+                        rootId = metaCursor.getLong();
+                        lastId = metaCursor.getLong();
+                        layoutIdentifier = metaCursor.getLong();
+                        majorVersion = metaCursor.getInt();
+                        minorVersion = metaCursor.getInt();
+                        layout.readMetaData( metaCursor );
+                    }
+                    while ( metaCursor.shouldRetry() );
                 }
-                while ( metaCursor.shouldRetry() );
                 if ( layoutIdentifier != layout.identifier() )
                 {
                     throw new IllegalArgumentException( "Tried to open " + indexFile + " using different layout "
@@ -148,7 +151,6 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
             {
                 try
                 {
-                    closeMetaCursor();
                     pagedFile.close();
                 }
                 catch ( IOException e )
@@ -172,28 +174,31 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
             PagedFile pagedFile = pageCache.map( indexFile, pageSizeForCreation, StandardOpenOption.CREATE );
 
             // Write header
-            openMetaPageCursor( pagedFile ); // and keep open for later frequent updates when splitting and allocating
-            metaCursor.setOffset( 0 );
-            metaCursor.putInt( pageSizeForCreation );
-            metaCursor.putLong( rootId );
-            metaCursor.putLong( lastId );
-            metaCursor.putLong( layout.identifier() );
-            metaCursor.putInt( layout.majorVersion() );
-            metaCursor.putInt( layout.minorVersion() );
-            layout.writeMetaData( metaCursor );
+            try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
+            {
+                metaCursor.putInt( pageSizeForCreation );
+                metaCursor.putLong( rootId );
+                metaCursor.putLong( lastId );
+                metaCursor.putLong( layout.identifier() );
+                metaCursor.putInt( layout.majorVersion() );
+                metaCursor.putInt( layout.minorVersion() );
+                layout.writeMetaData( metaCursor );
+            }
+            pagedFile.flushAndForce();
             created = true;
             pageSize = pageSizeForCreation;
             return pagedFile;
         }
     }
 
-    private void openMetaPageCursor( PagedFile pagedFile ) throws IOException
+    private PageCursor openMetaPageCursor( PagedFile pagedFile ) throws IOException
     {
-        metaCursor = pagedFile.io( META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
+        PageCursor metaCursor = pagedFile.io( META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
         if ( !metaCursor.next() )
         {
             throw new IllegalStateException( "Couldn't go to meta data page " + META_PAGE_ID );
         }
+        return metaCursor;
     }
 
     @Override
@@ -205,6 +210,7 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
         cursor.next();
 
         boolean isInternal;
+        int keyCount = 0; // initialized to satisfy compiler
         long childId = 0; // initialized to satisfy compiler
         int pos;
         do
@@ -213,7 +219,7 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
             {
                 isInternal = bTreeNode.isInternal( cursor );
                 // Find the left-most key within from-range
-                int keyCount = bTreeNode.keyCount( cursor );
+                keyCount = bTreeNode.keyCount( cursor );
                 pos = 0;
                 bTreeNode.keyAt( cursor, key, pos );
                 while ( pos < keyCount && layout.compare( key, fromInclusive ) < 0 )
@@ -242,7 +248,13 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
                 }
             }
         }
-        while ( isInternal );
+        while ( isInternal && keyCount > 0 );
+
+        if ( keyCount == 0 )
+        {
+            // This index seems to be empty
+            return Cursors.emptyRawCursor();
+        }
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout, pos - 1 );
@@ -284,17 +296,8 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
     @Override
     public void close() throws IOException
     {
-        closeMetaCursor();
+        metaCursor.close();
         pagedFile.close();
-    }
-
-    private void closeMetaCursor()
-    {
-        if ( metaCursor != null )
-        {
-            metaCursor.close();
-            metaCursor = null;
-        }
     }
 
     @Override
