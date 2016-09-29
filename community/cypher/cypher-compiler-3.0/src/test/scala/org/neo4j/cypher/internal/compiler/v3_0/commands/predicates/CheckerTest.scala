@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.predicates
 
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import collection.mutable
+
+import scala.collection.mutable
 
 class CheckerTest extends CypherFunSuite {
 
@@ -102,6 +103,13 @@ class CheckerTest extends CypherFunSuite {
     val (result, newChecker) = buildUp.contains("apa")
     result should equal(Some(false))
     newChecker shouldBe a [SetChecker]
+  }
+
+  test("buildUp handles a single null in the collection") {
+    val buildUp = new BuildUp(Iterator(null))
+    val (result, newChecker) = buildUp.contains("apa")
+    result should equal(None)
+    newChecker shouldBe a [NullListChecker.type]
   }
 
   private def equi(x: Any): Equivalent = Equivalent(x)

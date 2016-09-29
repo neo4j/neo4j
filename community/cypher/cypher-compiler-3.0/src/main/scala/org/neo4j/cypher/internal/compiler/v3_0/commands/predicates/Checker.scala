@@ -31,6 +31,9 @@ trait Checker {
 
 class BuildUp(iterator: Iterator[Any]) extends Checker {
   private val cachedSet: mutable.Set[Equivalent] = new mutable.HashSet[Equivalent]
+
+  // If we don't return true, this is what we will return. If the collection contains any nulls, we'll return None,
+  // else we return Some(false).
   private var falseResult: Option[Boolean] = Some(false)
 
   assert(iterator.nonEmpty)
@@ -60,7 +63,11 @@ class BuildUp(iterator: Iterator[Any]) extends Checker {
       }
     }
 
-    (falseResult, new SetChecker(cachedSet, falseResult))
+    if (cachedSet.isEmpty) {
+      (None, NullListChecker)
+    } else {
+      (falseResult, new SetChecker(cachedSet, falseResult))
+    }
   }
 }
 
