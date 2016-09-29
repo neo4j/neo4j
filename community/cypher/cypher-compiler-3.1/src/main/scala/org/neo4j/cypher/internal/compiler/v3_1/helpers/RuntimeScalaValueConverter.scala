@@ -41,7 +41,7 @@ class RuntimeScalaValueConverter(skip: Any => Boolean, converter: Any => Any) {
 
   def asDeepScalaValue(value: Any): Any = value match {
     case anything if skip(anything) => anything
-    case javaMap: JavaMap[_, _] => immutableMapValues(javaMap.asScala, asDeepScalaValue): immutable.Map[_, _]
+    case javaMap: JavaMap[_, _] => JavaMapWrapper(javaMap.asInstanceOf[java.util.Map[String,Any]], this): immutable.Map[_, _]
     case javaList: java.util.List[_] => JavaListWrapper(javaList, this)
     case javaIterable: JavaIterable[_] => javaIterable.asScala.map(asDeepScalaValue).toVector: Seq[_]
     case map: collection.Map[_, _] => immutableMapValues(map, asDeepScalaValue): immutable.Map[_, _]

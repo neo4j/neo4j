@@ -439,7 +439,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
       s"""MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |RETURN nodes(p) AS nodes""".stripMargin)
 
-    val result = results.columnAs[List[Node]]("nodes").toList
+    val result = results.columnAs[Seq[Node]]("nodes").toList
     result.length should equal(1)
     result.head.length should equal (2 * dim - 1)
     results shouldNot use("ShortestPathVarLengthExpand")
@@ -466,7 +466,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
          |WHERE NONE(r in rels(p) WHERE exists(r.blocked))
          |RETURN nodes(p) AS nodes""".stripMargin)
 
-    val result = results.columnAs[List[Node]]("nodes").toList
+    val result = results.columnAs[Seq[Node]]("nodes").toList
     result.length should equal(1)
     result.head.length should equal (2 * dim - 1)
     results shouldNot use("ShortestPathVarLengthExpand")
@@ -479,7 +479,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
          |WHERE NONE(r in rels(p) WHERE exists(r.blocked) AND src:$bottomLeft) AND src:$topLeft
          |RETURN nodes(p) AS nodes""".stripMargin)
 
-    val result = results.columnAs[List[Node]]("nodes").toList
+    val result = results.columnAs[Seq[Node]]("nodes").toList
     result.length should equal(1)
     result.head.length should equal (2 * dim - 1)
     results shouldNot use("VarLengthExpand(Into)")
@@ -494,7 +494,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
          |WHERE length(p) >= $dim
          |RETURN nodes(p) AS nodes""".stripMargin)
 
-    val result = results.columnAs[List[Node]]("nodes").toList
+    val result = results.columnAs[Seq[Node]]("nodes").toList
     result.length should equal(1)
     result.head.length should equal (dim + 1)
     results should use("VarLengthExpand(Into)")
@@ -695,7 +695,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     nodes.toSet
   }
 
-  private def debugResults(nodes: List[Node]): Unit = {
+  private def debugResults(nodes: Seq[Node]): Unit = {
     dprintln
     val nodeMap: Map[String, Map[Node, Int]] = nodes.foldLeft(Map[String,Map[Node,Int]]()) { (acc, node) =>
       val row = node.getId / dim

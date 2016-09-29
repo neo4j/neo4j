@@ -19,23 +19,39 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.helpers
 
+import java.util
+
 /**
-  * Simple wrapper for a java.util.List which preserves the original list
+  * Simple wrapper for a java.util.Map which preserves the original list
   * while lazily converts to scala values if needed.
-  * @param inner the inner java list
+  *
+  * @param inner the inner java map
   * @param converter converter from java values to scala values
   */
-case class JavaListWrapper[T](inner: java.util.List[T], converter: RuntimeScalaValueConverter) extends Seq[Any] {
+case class JavaMapWrapper(inner: java.util.Map[String,Any], converter: RuntimeScalaValueConverter) extends Map[String,Any] {
 
-  override def length = inner.size()
-
-  override def iterator: Iterator[Any] = new Iterator[Any] {
-    private val innerIterator = inner.iterator()
-    override def hasNext: Boolean = innerIterator.hasNext
-
-    override def next(): Any = converter.asDeepScalaValue(innerIterator.next())
+  override def +[B1 >: Any](kv: (String, B1)): Map[String, B1] = {
+    val newInner = new util.HashMap[String, Any](inner)
+    newInner.put(kv._1, kv._2)
+    copy(inner = newInner)
   }
 
-  override def apply(idx: Int) = converter.asDeepScalaValue(inner.get(idx))
+  override def get(key: String): Option[Any] = Option(inner.get(key))
 
+
+  override def iterator: Iterator[(String, Any)] = new Iterator[(String, Any)] {
+    private val innerIterator = inner.entrySet().iterator();
+    override def hasNext: Boolean = innerIterator.hasNext
+
+    override def next(): (String, Any) = {
+      val entry  = innerIterator.next()
+      (entry.getKey, converter.asDeepScalaValue(entry.getValue))
+    }
+  }
+
+  override def -(key: String): Map[String, Any] = {
+    val newInner = new util.HashMap[String, Any](inner)
+    newInner.remove(key)
+    copy(inner = newInner)
+  }
 }

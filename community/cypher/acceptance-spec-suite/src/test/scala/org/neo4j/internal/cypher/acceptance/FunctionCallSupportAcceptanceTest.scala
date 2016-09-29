@@ -63,7 +63,7 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     ))
   }
 
-  test("should not copy unnecessarily") {
+  test("should not copy lists unnecessarily") {
     val value = new util.ArrayList[Any]()
     value.add("Norris")
     value.add("Strange")
@@ -73,7 +73,7 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     // Using graph execute to get a Java value
     val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
 
-    returned shouldBe value
+    returned should be theSameInstanceAs value
   }
 
   test("should not copy unnecessarily with nested types") {
@@ -87,7 +87,19 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     // Using graph execute to get a Java value
     val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
 
-    returned shouldBe value
-    returned.asInstanceOf[util.ArrayList[Any]].get(1) shouldBe inner
+    returned should be theSameInstanceAs  value
+  }
+
+  test("should not copy maps unnecessarily") {
+    val value = new util.HashMap[String, Any]()
+    value.put("name", "Cypher")
+    value.put("level", 9001)
+
+    registerUserFunction(value)
+
+    // Using graph execute to get a Java value
+    val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
+
+    value.eq(returned) shouldBe true
   }
 }
