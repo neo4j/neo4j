@@ -40,6 +40,7 @@ import org.apache.shiro.util.Initializable;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -183,6 +184,12 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
                 ((RealmLifecycle) realm).shutdown();
             }
         }
+    }
+
+    @Override
+    public EnterpriseUserManager getUserManager( AuthSubject authSubject )
+    {
+        return userManager;
     }
 
     @Override

@@ -39,7 +39,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
-import org.neo4j.server.security.auth.BasicAuthManagerFactory;
+import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
@@ -79,7 +79,7 @@ public class MultiRealmAuthManagerTest
     public void setUp() throws Throwable
     {
         config = Config.defaults();
-        users = BasicAuthManagerFactory.getUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         authStrategy = mock( AuthenticationStrategy.class );
         logProvider = new AssertableLogProvider();
 
@@ -98,7 +98,7 @@ public class MultiRealmAuthManagerTest
                         mock( PasswordPolicy.class ),
                         authStrategy,
                         mock( JobScheduler.class ),
-                        BasicAuthManagerFactory.getInitialUserRepository(
+                        CommunitySecurityModule.getInitialUserRepository(
                                 config, NullLogProvider.getInstance(), fsRule.get() )
                     );
 
@@ -134,7 +134,7 @@ public class MultiRealmAuthManagerTest
     {
         // Given
         FileUserRepository initialUserRepository =
-                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+                CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         initialUserRepository.start();
         initialUserRepository.create(
                 new User.Builder( "initUser", Credential.forPassword( "123" ))
@@ -158,7 +158,7 @@ public class MultiRealmAuthManagerTest
     {
         // Given
         FileUserRepository initialUserRepository =
-                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+                CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         initialUserRepository.start();
         initialUserRepository.create( newUser( "initUser", "123", false ) );
         initialUserRepository.shutdown();
@@ -186,7 +186,7 @@ public class MultiRealmAuthManagerTest
     {
         // Given
         FileUserRepository initialUserRepository =
-                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+                CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         initialUserRepository.start();
         initialUserRepository.create( newUser( "oldUser", "newPassword", false ) );
         initialUserRepository.shutdown();

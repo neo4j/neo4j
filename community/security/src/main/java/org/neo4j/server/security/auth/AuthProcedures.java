@@ -39,6 +39,9 @@ public class AuthProcedures
     @Context
     public AuthSubject authSubject;
 
+    @Context
+    public UserManager userManager;
+
     @Description( "Create a new user." )
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
     public void createUser(
@@ -48,7 +51,8 @@ public class AuthProcedures
             throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
-        subject.getAuthManager().newUser( username, password, requirePasswordChange );
+//        subject.getAuthManager().newUser( username, password, requirePasswordChange );
+        userManager.newUser( username, password, requirePasswordChange );
     }
 
     @Description( "Delete the specified user." )
