@@ -35,7 +35,6 @@ import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
-import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -44,6 +43,7 @@ import static org.neo4j.function.Predicates.await;
 
 class CatchUpLoad extends RepeatUntilCallable
 {
+    private static final IllegalStateException databaseShutdownEx = new IllegalStateException( "database is shutdown" );
     private Cluster cluster;
 
     CatchUpLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
@@ -66,7 +66,7 @@ class CatchUpLoad extends RepeatUntilCallable
             return;
         }
 
-        long txIdBeforeStartingNewEdge = txId( leader );
+        long txIdBeforeStartingNewEdge = txId( leader, false );
         if ( txIdBeforeStartingNewEdge < TransactionIdStore.BASE_TX_ID )
         {
             // leader has been shut down, let's try again later
@@ -79,7 +79,7 @@ class CatchUpLoad extends RepeatUntilCallable
         try
         {
             exception = startAndRegisterExceptionMonitor( edgeClusterMember );
-            await( () -> txIdBeforeStartingNewEdge <= txId( edgeClusterMember ), 3, TimeUnit.MINUTES );
+            await( () -> txIdBeforeStartingNewEdge <= txId( edgeClusterMember, true ), 3, TimeUnit.MINUTES );
         }
         catch ( Exception e )
         {
@@ -108,15 +108,41 @@ class CatchUpLoad extends RepeatUntilCallable
         return exceptionMonitor;
     }
 
-    private long txId( ClusterMember leader )
+    private long txId( ClusterMember member, boolean fail )
     {
-        GraphDatabaseAPI database = leader.database();
-        if ( database == null || !database.isAvailable( 100 ) )
+        GraphDatabaseAPI database = member.database();
+        if ( database == null )
         {
-            return -1L;
+            return errorValueOrThrow( fail, databaseShutdownEx );
         }
-        return database.getDependencyResolver().resolveDependency( TransactionIdStore.class )
-                .getLastClosedTransactionId();
+
+        try
+        {
+            return database.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                    .getLastClosedTransactionId();
+        }
+        catch ( IllegalStateException ex )
+        {
+            return errorValueOrThrow( !isStoreClosed( ex ) || fail, ex );
+        }
+    }
+
+    private long errorValueOrThrow( boolean fail, RuntimeException error )
+    {
+        if ( fail )
+        {
+            throw error;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    private boolean isStoreClosed( IllegalStateException ex )
+    {
+        String message = ex.getMessage();
+        return message.startsWith( "MetaDataStore for file " ) && message.endsWith( " is closed" );
     }
 
     private static class ConnectionResetFilter implements Predicate<Throwable>
