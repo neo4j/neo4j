@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.PageCacheRule;
@@ -54,6 +54,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.EMPTY;
 
 public class NativeLabelScanStoreTest
 {
@@ -63,6 +64,8 @@ public class NativeLabelScanStoreTest
     public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() ).keepDirectoryAfterSuccessfulTest();
     @Rule
     public final RandomRule random = new RandomRule();
+    @Rule
+    public final LifeRule life = new LifeRule( true );
     private final int count = 100_000;
     private final int txSize = 100;
 
@@ -71,11 +74,9 @@ public class NativeLabelScanStoreTest
     {
         File storeDir = testDirectory.directory();
         final PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        LabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, storeDir, Long.SIZE );
+        LabelScanStore labelScanStore = life.add( new NativeLabelScanStore( pageCache, storeDir, Long.SIZE, EMPTY ) );
 
         testLabelScanStore( labelScanStore );
-
-        labelScanStore.shutdown();
     }
 
     @Test
@@ -95,12 +96,9 @@ public class NativeLabelScanStoreTest
                                 .withDocumentFormat( documentFormat )
                                 .build();
 
-        LifeSupport life = new LifeSupport();
         LabelScanStore store = life.add( new LuceneLabelScanStore( index, EMPTY_STORE, NullLogProvider.getInstance(),
                 LuceneLabelScanStore.Monitor.EMPTY ) );
-        life.start();
         testLabelScanStore( store );
-        life.shutdown();
     }
 
     private void testLabelScanStore( LabelScanStore labelScanStore ) throws IOException

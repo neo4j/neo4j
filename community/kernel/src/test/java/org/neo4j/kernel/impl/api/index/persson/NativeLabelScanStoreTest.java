@@ -43,6 +43,7 @@ import static org.junit.rules.RuleChain.outerRule;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.EMPTY;
 
 public class NativeLabelScanStoreTest
 {
@@ -58,10 +59,10 @@ public class NativeLabelScanStoreTest
     private static final int LABEL_COUNT = 12;
 
     @Before
-    public void before() throws IOException
+    public void before()
     {
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        store = life.add( new NativeLabelScanStore( pageCache, directory.absolutePath(), Integer.SIZE ) );
+        store = life.add( new NativeLabelScanStore( pageCache, directory.absolutePath(), Integer.SIZE, EMPTY ) );
     }
 
     @Test

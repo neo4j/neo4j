@@ -21,7 +21,10 @@ package org.neo4j.kernel.impl.api.index.persson;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.index.BTreeHit;
 import org.neo4j.index.SCInserter;
 import org.neo4j.index.btree.LabelScanLayout;
 import org.neo4j.index.btree.Index;
@@ -31,6 +34,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
@@ -39,15 +44,20 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 
 public class NativeLabelScanStore implements LabelScanStore
 {
-    private final Index<LabelScanKey,LabelScanValue> index;
+    private final PageCache pageCache;
     private final File indexFile;
     private final int rangeSize;
+    private final FullStoreChangeStream fullStoreChangeStream;
 
-    public NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize ) throws IOException
+    private Index<LabelScanKey,LabelScanValue> index;
+
+    public NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize,
+            FullStoreChangeStream fullStoreChangeStream )
     {
-        this.indexFile = new File( storeDir, "labelscan.db" );
+        this.pageCache = pageCache;
+        this.fullStoreChangeStream = fullStoreChangeStream;
+        this.indexFile = new File( storeDir, "labelscanstore.db" );
         this.rangeSize = rangeSize;
-        this.index = new Index<>( pageCache, indexFile, new LabelScanLayout( rangeSize ), 0 );
     }
 
     @Override
@@ -94,11 +104,25 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void init() throws IOException
     {
+        index = new Index<>( pageCache, indexFile, new LabelScanLayout( rangeSize ), 0 );
     }
 
     @Override
     public void start() throws IOException
     {
+        if ( isEmpty() )
+        {
+            LabelScanStoreProvider.rebuild( this, fullStoreChangeStream );
+        }
+    }
+
+    private boolean isEmpty() throws IOException
+    {
+        try ( RawCursor<BTreeHit<LabelScanKey,LabelScanValue>,IOException> cursor =
+                index.seek( new LabelScanKey().set( 0, 0 ), new LabelScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ) ) )
+        {
+            return !cursor.next();
+        }
     }
 
     @Override
