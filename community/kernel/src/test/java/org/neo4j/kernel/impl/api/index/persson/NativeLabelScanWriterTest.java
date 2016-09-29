@@ -43,6 +43,8 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertArrayEquals;
 
+import static java.lang.Integer.max;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.api.index.persson.NativeLabelScanStoreTest.flipRandom;
 import static org.neo4j.kernel.impl.api.index.persson.NativeLabelScanStoreTest.getLabels;
@@ -52,23 +54,24 @@ public class NativeLabelScanWriterTest
 {
     private static final int LABEL_COUNT = 5;
     private static final int RANGE_SIZE = 16;
+    private static final int NODE_COUNT = 10_000;
     private static final Comparator<LabelScanKey> KEY_COMPARATOR = new LabelScanLayout( RANGE_SIZE );
     private static final Comparator<Map.Entry<LabelScanKey,LabelScanValue>> COMPARATOR =
             (o1,o2) -> KEY_COMPARATOR.compare( o1.getKey(), o2.getKey() );
 
     @Rule
-    public final RandomRule random = new RandomRule().withSeed( 1475059850721L );
+    public final RandomRule random = new RandomRule();
 
     @Test
     public void shouldAddLabels() throws Exception
     {
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
-        long[] expected = new long[10_000];
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( inserter, RANGE_SIZE, 100 ) )
+        long[] expected = new long[NODE_COUNT];
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( inserter, RANGE_SIZE, max( 5, NODE_COUNT/100 ) ) )
         {
             // WHEN
-            for ( int i = 0; i < 10_000; i++ )
+            for ( int i = 0; i < NODE_COUNT * 3; i++ )
             {
                 NodeLabelUpdate update = randomUpdate( expected );
                 writer.write( update );
@@ -80,7 +83,7 @@ public class NativeLabelScanWriterTest
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
             long[] actualNodeIds = asArray( new LabelScanValueIterator( RANGE_SIZE, inserter.nodesFor( i ) ) );
-            assertArrayEquals( expectedNodeIds, actualNodeIds );
+            assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
         }
     }
 

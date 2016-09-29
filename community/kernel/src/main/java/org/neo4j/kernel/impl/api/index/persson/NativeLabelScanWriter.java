@@ -49,9 +49,9 @@ class NativeLabelScanWriter implements LabelScanWriter
     private final SCInserter<LabelScanKey,LabelScanValue> inserter;
     private final LabelScanKey key = new LabelScanKey();
     private final LabelScanValue value = new LabelScanValue();
+    private boolean addition;
     private final NodeLabelUpdate[] pendingUpdates;
     private int pendingUpdatesCursor;
-    private int pendingUpdatesCount; // there may be many per NodeLabelUpdate
     private long lowestLabelId = Long.MAX_VALUE;
     private final int rangeSize;
 
@@ -71,7 +71,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         }
 
         pendingUpdates[pendingUpdatesCursor++] = update;
-        pendingUpdatesCount += PhysicalToLogicalLabelChanges.convertToAdditionsAndRemovals( update );
+        PhysicalToLogicalLabelChanges.convertToAdditionsAndRemovals( update );
         checkNextLabelId( update.getLabelsBefore() );
         checkNextLabelId( update.getLabelsAfter() );
     }
@@ -89,7 +89,9 @@ class NativeLabelScanWriter implements LabelScanWriter
         Arrays.sort( pendingUpdates, 0, pendingUpdatesCursor, UPDATE_SORTER );
 
         long currentLabelId = lowestLabelId;
-        while ( pendingUpdatesCount > 0 )
+        value.reset();
+        key.set( -1, -1 );
+        while ( currentLabelId != Long.MAX_VALUE )
         {
             long nextLabelId = Long.MAX_VALUE;
             for ( int i = 0; i < pendingUpdatesCursor; i++ )
@@ -109,9 +111,7 @@ class NativeLabelScanWriter implements LabelScanWriter
                     // Have this check here so that we can pick up the next labelId in our change set
                     if ( labelId == currentLabelId )
                     {
-                        inserter.insert( key.set( toIntExact( labelId ), rangeOf( nodeId ) ),
-                                nodeValue( nodeId ), ADD_AMENDER );
-                        pendingUpdatesCount--;
+                        change( currentLabelId, nodeId, true );
 
                         // We can do a little shorter check for next labelId here straight away,
                         // we just check the next if it's less than what we currently think is next labelId
@@ -140,10 +140,8 @@ class NativeLabelScanWriter implements LabelScanWriter
                     if ( labelId == currentLabelId )
                     {
                         // A removal is now actually an insert (with custom amender)
-                        inserter.insert( key.set( toIntExact( labelId ), rangeOf( nodeId ) ),
-                                nodeValue( nodeId ), REMOVE_AMENDER );
+                        change( currentLabelId, nodeId, false );
                         // TODO: special case -- if tree node now is empty, then consider removing
-                        pendingUpdatesCount--;
 
                         // We can do a little shorter check for next labelId here straight away,
                         // we just check the next if it's less than what we currently think is next labelId
@@ -161,14 +159,35 @@ class NativeLabelScanWriter implements LabelScanWriter
             }
             currentLabelId = nextLabelId;
         }
+        flushPendingRange();
         pendingUpdatesCursor = 0;
     }
 
-    private LabelScanValue nodeValue( long nodeId )
+    private void change( long currentLabelId, long nodeId, boolean add ) throws IOException
     {
-        int rest = (int) nodeId % rangeSize;
-        value.bits = (1L << rest);
-        return value;
+        int labelId = toIntExact( currentLabelId );
+        long idRange = rangeOf( nodeId );
+        if ( labelId != key.labelId || idRange != key.idRange || addition != add )
+        {
+            flushPendingRange();
+
+            // Set key to current and reset value
+            key.labelId = labelId;
+            key.idRange = idRange;
+            addition = add;
+        }
+
+        value.set( toIntExact( nodeId % rangeSize ) );
+    }
+
+    private void flushPendingRange() throws IOException
+    {
+        if ( value.bits != 0 )
+        {
+            // There are changes in the current range, flush them
+            inserter.insert( key, value, addition ? ADD_AMENDER : REMOVE_AMENDER );
+            value.reset();
+        }
     }
 
     private long rangeOf( long nodeId )

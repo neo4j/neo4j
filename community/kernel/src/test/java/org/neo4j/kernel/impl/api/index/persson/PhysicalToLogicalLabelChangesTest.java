@@ -26,7 +26,6 @@ import java.util.Arrays;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 public class PhysicalToLogicalLabelChangesTest
 {
@@ -83,11 +82,9 @@ public class PhysicalToLogicalLabelChangesTest
     private void convertAndAssert( long[] before, long[] after, long[] expectedRemoved, long[] expectedAdded )
     {
         NodeLabelUpdate update = NodeLabelUpdate.labelChanges( 0, before, after );
-        int changeCount = PhysicalToLogicalLabelChanges.convertToAdditionsAndRemovals( update );
+        PhysicalToLogicalLabelChanges.convertToAdditionsAndRemovals( update );
         assertArrayEquals( terminate( update.getLabelsBefore() ), expectedRemoved );
         assertArrayEquals( terminate( update.getLabelsAfter() ), expectedAdded );
-        int expectedChangeCount = expectedRemoved.length + expectedAdded.length;
-        assertEquals( expectedChangeCount, changeCount );
     }
 
     private long[] terminate( long[] labels )

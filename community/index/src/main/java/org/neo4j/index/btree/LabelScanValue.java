@@ -47,9 +47,20 @@ public class LabelScanValue
         return this;
     }
 
+    public void reset()
+    {
+        bits = 0;
+    }
+
     @Override
     public String toString()
     {
         return String.valueOf( bits );
+    }
+
+    public void set( int index )
+    {
+        long mask = 1L << index;
+        bits |= mask;
     }
 }

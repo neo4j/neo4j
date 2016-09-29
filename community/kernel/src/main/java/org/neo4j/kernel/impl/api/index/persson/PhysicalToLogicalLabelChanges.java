@@ -30,9 +30,8 @@ public class PhysicalToLogicalLabelChanges
      * equally big or smaller than the physical change set.
      *
      * @param update {@link NodeLabelUpdate} containing physical before/after state.
-     * @return number of logical updates the given {@code update} has.
      */
-    public static int convertToAdditionsAndRemovals( NodeLabelUpdate update )
+    public static void convertToAdditionsAndRemovals( NodeLabelUpdate update )
     {
         int beforeLength = update.getLabelsBefore().length;
         int afterLength = update.getLabelsAfter().length;
@@ -40,7 +39,6 @@ public class PhysicalToLogicalLabelChanges
         int bc = 0, ac = 0;
         long[] before = update.getLabelsBefore();
         long[] after = update.getLabelsAfter();
-        int logicalChangeCount = 0;
         for ( int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; )
         {
             long beforeId = bi < beforeLength ? before[bi] : -1;
@@ -58,7 +56,6 @@ public class PhysicalToLogicalLabelChanges
                 {
                     // looks like there's an id in before which isn't in after ==> REMOVE
                     update.getLabelsBefore()[bc++] = beforeId;
-                    logicalChangeCount++;
                     bi++;
                     beforeId = bi < beforeLength ? before[bi] : -1;
                 }
@@ -69,7 +66,6 @@ public class PhysicalToLogicalLabelChanges
                 {
                     // looks like there's an id in after which isn't in before ==> ADD
                     update.getLabelsAfter()[ac++] = afterId;
-                    logicalChangeCount++;
                     ai++;
                     afterId = ai < afterLength ? after[ai] : -1;
                 }
@@ -78,8 +74,6 @@ public class PhysicalToLogicalLabelChanges
 
         terminateWithMinusOneIfNeeded( update.getLabelsBefore(), bc );
         terminateWithMinusOneIfNeeded( update.getLabelsAfter(), ac );
-
-        return logicalChangeCount;
     }
 
     private static boolean smaller( long id, long otherId )
