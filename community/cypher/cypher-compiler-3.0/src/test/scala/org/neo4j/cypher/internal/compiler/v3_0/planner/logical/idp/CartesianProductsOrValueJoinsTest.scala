@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{AstConstructionTestSupport, Equals}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -65,6 +65,24 @@ class CartesianProductsOrValueJoinsTest
       )(solved))
   }
 
+  test("should plan cartesian product between lots of pattern nodes") {
+    val components = ('a' to 'z') map { x =>
+      PlannedComponent(QueryGraph(patternNodes = Set(x.toString)), allNodesScan(x.toString))
+    }
+
+    val includedPlans = components.map(_.plan).toSet
+
+    testThis(
+      graph = QueryGraph(patternNodes = Set("a", "b", "c")),
+      input = components.toSet,
+      assertion = (x: LogicalPlan) => {
+        val leaves = x.leaves
+        leaves.toSet should equal(includedPlans)
+        leaves.size should equal(components.size)
+      }
+    )
+  }
+
   test("should plan hash join between 2 pattern nodes") {
     val equality = Equals(prop("a", "id"), prop("b", "id"))(pos)
 
@@ -97,7 +115,7 @@ class CartesianProductsOrValueJoinsTest
             ValueHashJoin(planB, planC, eq2)(solved), eq1.switchSides)(solved))(solved))
   }
 
-  private def testThis(graph: QueryGraph, input: Set[PlannedComponent], expectedPlan: LogicalPlan) = {
+  private def testThis(graph: QueryGraph, input: Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
     new given {
       qg = graph
       cardinality = mapCardinality {
@@ -117,7 +135,10 @@ class CartesianProductsOrValueJoinsTest
 
       val result = plans.head.plan
 
-      result should equal(expectedPlan)
+      assertion(result)
     }
   }
+
+  private def testThis(graph: QueryGraph, input: Set[PlannedComponent], expectedPlan: LogicalPlan): Unit =
+    testThis(graph, input, (result: LogicalPlan) => result should equal(expectedPlan))
 }
