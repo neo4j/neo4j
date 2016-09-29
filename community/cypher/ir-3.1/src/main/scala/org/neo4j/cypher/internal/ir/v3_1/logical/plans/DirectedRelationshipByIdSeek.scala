@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_1.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class NodeByIdSeek(idName: IdName, nodeIds: SeekableArgs, argumentIds: Set[IdName])
-                       (val solved: PlannerQuery with CardinalityEstimation)
+case class DirectedRelationshipByIdSeek(idName: IdName,
+                                        relIds: SeekableArgs,
+                                        startNode: IdName,
+                                        endNode: IdName,
+                                        argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  def availableSymbols: Set[IdName] = argumentIds + idName
+  def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, startNode, endNode)
 }

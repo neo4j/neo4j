@@ -17,18 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.helpers
+package org.neo4j.cypher.internal.ir.v3_1.logical.plans
 
-sealed trait ZeroOneOrMany[+T]
+import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery}
 
-object ZeroOneOrMany {
-  def apply[T](elts: Seq[T]) = elts match {
-    case Seq() => Zero
-    case Seq(one) => One(one)
-    case many => Many(many)
-  }
+case class UndirectedRelationshipByIdSeek(idName: IdName,
+                                          relIds: SeekableArgs,
+                                          leftNode: IdName,
+                                          rightNode: IdName,
+                                          argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalLeafPlan {
+
+  def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
 }
-
-case object Zero extends ZeroOneOrMany[Nothing]
-final case class One[T](value: T) extends ZeroOneOrMany[T]
-final case class Many[T](values: Seq[T]) extends ZeroOneOrMany[T]

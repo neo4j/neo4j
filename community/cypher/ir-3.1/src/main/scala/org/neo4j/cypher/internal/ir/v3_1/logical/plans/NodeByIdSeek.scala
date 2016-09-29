@@ -17,17 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_1.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class UndirectedRelationshipByIdSeek(idName: IdName,
-                                          relIds: SeekableArgs,
-                                          leftNode: IdName,
-                                          rightNode: IdName,
-                                          argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+case class NodeByIdSeek(idName: IdName, nodeIds: SeekableArgs, argumentIds: Set[IdName])
+                       (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
+  def availableSymbols: Set[IdName] = argumentIds + idName
 }

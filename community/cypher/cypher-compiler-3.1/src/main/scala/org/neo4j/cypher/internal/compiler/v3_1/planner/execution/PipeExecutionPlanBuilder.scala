@@ -23,6 +23,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.SeekArgsConverter._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v3_1.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
@@ -31,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, Monitors, pipes, ast => compilerAst}
@@ -188,13 +188,13 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       NodeByLabelScanPipe(id, LazyLabel(label))()
 
     case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
-      NodeByIdSeekPipe(id, nodeIdExpr.asCommandSeekArgs)()
+      NodeByIdSeekPipe(id, toCommandSeekArgs(nodeIdExpr))()
 
     case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-      DirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandSeekArgs, toNode, fromNode)()
+      DirectedRelationshipByIdSeekPipe(id, toCommandSeekArgs(relIdExpr), toNode, fromNode)()
 
     case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-      UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandSeekArgs, toNode, fromNode)()
+      UndirectedRelationshipByIdSeekPipe(id, toCommandSeekArgs(relIdExpr), toNode, fromNode)()
 
     case NodeIndexSeek(IdName(id), label, propertyKey, valueExpr, _) =>
       val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
