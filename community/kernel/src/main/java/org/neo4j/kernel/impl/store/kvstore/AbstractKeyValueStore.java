@@ -50,7 +50,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private final Format format;
     final RotationStrategy rotationStrategy;
     private RotationTimerFactory rotationTimerFactory;
-    private volatile ProgressiveState<Key> state;
+    volatile ProgressiveState<Key> state;
     private DataInitializer<EntryUpdater<Key>> stateInitializer;
     private final FileSystemAbstraction fs;
     final int keySize;
@@ -87,7 +87,21 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     protected final <Value> Value lookup( Key key, Reader<Value> reader ) throws IOException
     {
         ValueLookup<Value> lookup = new ValueLookup<>( reader );
-        return lookup.value( !state.lookup( key, lookup ) );
+        while ( true )
+        {
+            ProgressiveState<Key> originalState = this.state;
+            try
+            {
+                return lookup.value( !originalState.lookup( key, lookup ) );
+            }
+            catch ( IllegalStateException e )
+            {
+                if ( originalState == this.state )
+                {
+                    throw e;
+                }
+            }
+        }
     }
 
     /** Introspective feature, not thread safe. */
