@@ -21,9 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -104,23 +102,6 @@ public interface PageSwapperFactory
      * durable regardless of which method that does the forcing.
      */
     void syncDevice() throws IOException;
-
-    /**
-     * Rename the given source file to target file, effectively moving the file from source to target.
-     *
-     * The provided list of {@link CopyOption CopyOptions} can be used to modify and influence platform specific
-     * behaviour. In particular, {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} may be used to overwrite any
-     * existing file at the target path name, instead of throwing an exception.
-     *
-     * Implementors are free to assume that neither file name will be mapped by the page cache at the time of the
-     * rename, and thus the rename will see no interference from concurrent IO operations.
-     * @param sourceFile The existing file to rename.
-     * @param targetFile The desired new name of the source file. This file should not exist, unless
-     * {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} is given as a {@code copyOption}.
-     * @param copyOptions Options to modify the behaviour of the rename in possibly platform specific ways.
-     * @see java.nio.file.Files#move(Path, Path, CopyOption...)
-     */
-    void renameUnopenedFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException;
 
     /**
      * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its

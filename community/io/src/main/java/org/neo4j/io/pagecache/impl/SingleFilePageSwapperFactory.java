@@ -78,12 +78,6 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     }
 
     @Override
-    public void renameUnopenedFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException
-    {
-        fs.renameFile( sourceFile, targetFile, copyOptions );
-    }
-
-    @Override
     public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
         try
