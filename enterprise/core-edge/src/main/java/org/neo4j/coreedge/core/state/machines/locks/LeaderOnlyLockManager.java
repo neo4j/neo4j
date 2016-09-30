@@ -66,18 +66,15 @@ public class LeaderOnlyLockManager implements Locks
     private final Replicator replicator;
     private final LeaderLocator leaderLocator;
     private final Locks localLocks;
-    private final long leaderLockTokenTimeout;
     private final ReplicatedLockTokenStateMachine lockTokenStateMachine;
 
-    public LeaderOnlyLockManager(
-            MemberId myself, Replicator replicator, LeaderLocator leaderLocator,
-            Locks localLocks, long leaderLockTokenTimeout, ReplicatedLockTokenStateMachine lockTokenStateMachine )
+    public LeaderOnlyLockManager( MemberId myself, Replicator replicator, LeaderLocator leaderLocator, Locks localLocks,
+            ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
         this.myself = myself;
         this.replicator = replicator;
         this.leaderLocator = leaderLocator;
         this.localLocks = localLocks;
-        this.leaderLockTokenTimeout = leaderLockTokenTimeout;
         this.lockTokenStateMachine = lockTokenStateMachine;
     }
 
@@ -117,7 +114,7 @@ public class LeaderOnlyLockManager implements Locks
 
         try
         {
-            boolean success = (boolean) future.get( leaderLockTokenTimeout, MILLISECONDS );
+            boolean success = (boolean) future.get();
             if( success )
             {
                 return lockTokenRequest.id();
@@ -127,7 +124,7 @@ public class LeaderOnlyLockManager implements Locks
                 throw new AcquireLockTimeoutException( "Failed to acquire lock token. Was taken by another candidate." );
             }
         }
-        catch ( ExecutionException | TimeoutException e )
+        catch ( ExecutionException e )
         {
             throw new AcquireLockTimeoutException( e, "Failed to acquire lock token." );
         }

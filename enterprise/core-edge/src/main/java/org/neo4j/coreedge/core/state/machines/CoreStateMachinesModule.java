@@ -70,7 +70,6 @@ import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.array_block_id_all
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.id_alloc_state_size;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.label_token_id_allocation_size;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.label_token_name_id_allocation_size;
-import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.leader_lock_token_timeout;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.neostore_block_id_allocation_size;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.node_id_allocation_size;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.node_labels_id_allocation_size;
@@ -176,8 +175,7 @@ public class CoreStateMachinesModule
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
-        long leaderLockTokenTimeout = config.get( leader_lock_token_timeout );
-        lockManager = createLockManager( config, logging, replicator, myself, leaderLocator, leaderLockTokenTimeout,
+        lockManager = createLockManager( config, logging, replicator, myself, leaderLocator,
                 replicatedLockTokenStateMachine );
 
         coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
@@ -228,12 +226,9 @@ public class CoreStateMachinesModule
     }
 
     private Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-                                     MemberId myself, LeaderLocator leaderLocator, long leaderLockTokenTimeout,
-                                     ReplicatedLockTokenStateMachine lockTokenStateMachine )
+            MemberId myself, LeaderLocator leaderLocator, ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
         Locks localLocks = CommunityEditionModule.createLockManager( config, logging );
-
-        return new LeaderOnlyLockManager( myself, replicator, leaderLocator, localLocks, leaderLockTokenTimeout,
-                lockTokenStateMachine );
+        return new LeaderOnlyLockManager( myself, replicator, leaderLocator, localLocks, lockTokenStateMachine );
     }
 }
