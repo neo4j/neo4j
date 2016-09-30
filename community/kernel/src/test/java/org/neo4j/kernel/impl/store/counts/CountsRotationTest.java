@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,13 +32,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
+import org.neo4j.function.ThrowingFunction;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -48,6 +52,7 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -58,11 +63,14 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.ThreadingRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -70,13 +78,44 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.store.counts.FileVersion.INITIAL_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class CountsRotationTest
 {
+
+    private final Label A = Label.label( "A" );
+    private final Label B = Label.label( "B" );
+    private final Label C = Label.label( "C" );
+
+    @Rule
+    public PageCacheRule pcRule = new PageCacheRule();
+    @Rule
+    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTestWithEphemeralFS( fsRule.get(), getClass() );
+
+    @Rule
+    public ThreadingRule threadingRule = new ThreadingRule();
+
+    private FileSystemAbstraction fs;
+    private File dir;
+    private GraphDatabaseBuilder dbBuilder;
+    private PageCache pageCache;
+
+    @Before
+    public void setup()
+    {
+        fs = fsRule.get();
+        dir = testDir.directory( "dir" ).getAbsoluteFile();
+        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
+        pageCache = pcRule.getPageCache( fs );
+    }
+
+    private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+
+
     @Test
     public void shouldCreateEmptyCountsTrackerStoreWhenCreatingDatabase() throws IOException
     {
@@ -108,6 +147,55 @@ public class CountsRotationTest
             assertEquals( 0, store.totalEntriesStored() );
             assertEquals( 0, allRecords( store ).size() );
         }
+    }
+
+    @Test
+    public void rotationShouldNotCauseUnmappedFileProblem() throws IOException
+    {
+        // GIVEN
+        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+
+        DependencyResolver resolver = db.getDependencyResolver();
+        RecordStorageEngine storageEngine = resolver.resolveDependency( RecordStorageEngine.class );
+        CountsTracker countStore = storageEngine.testAccessNeoStores().getCounts();
+
+        AtomicBoolean workerContinueFlag = new AtomicBoolean( true );
+        AtomicLong lookupsCounter = new AtomicLong();
+        int rotations = 100;
+        for ( int i = 0; i < 5; i++ )
+        {
+            threadingRule.execute( countStoreLookup( workerContinueFlag, lookupsCounter ), countStore );
+        }
+
+        long startTxId = countStore.txId();
+        for ( int i = 1; (i < rotations) || (lookupsCounter.get() == 0); i++ )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode( B );
+                tx.success();
+            }
+            checkPoint( db );
+        }
+        workerContinueFlag.set( false );
+
+        assertEquals( "Should perform at least 100 rotations.", rotations, Math.min( rotations, countStore.txId() - startTxId) );
+        assertTrue( "Should perform more then 0 lookups without exceptions.", lookupsCounter.get() > 0 );
+    }
+
+    private static ThrowingFunction<CountsTracker,Void,RuntimeException> countStoreLookup(
+            AtomicBoolean workerContinueFlag, AtomicLong lookups )
+    {
+        return countsTracker ->
+        {
+            while ( workerContinueFlag.get() )
+            {
+                Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
+                countsTracker.get( CountsKeyFactory.nodeKey( 0 ), register );
+                lookups.incrementAndGet();
+            }
+            return null;
+        };
     }
 
     @Test
@@ -265,34 +353,6 @@ public class CountsRotationTest
         TriggerInfo triggerInfo = new SimpleTriggerInfo( "test" );
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );
     }
-
-    private final Label A = Label.label( "A" );
-    private final Label B = Label.label( "B" );
-    private final Label C = Label.label( "C" );
-
-    @Rule
-    public PageCacheRule pcRule = new PageCacheRule();
-    @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTestWithEphemeralFS( fsRule.get(),
-            getClass() );
-
-    private FileSystemAbstraction fs;
-    private File dir;
-    private GraphDatabaseBuilder dbBuilder;
-    private PageCache pageCache;
-
-    @Before
-    public void setup()
-    {
-        fs = fsRule.get();
-        dir = testDir.directory( "dir" ).getAbsoluteFile();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
-        pageCache = pcRule.getPageCache( fs );
-    }
-
-    private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
 
     private File alphaStoreFile()
     {

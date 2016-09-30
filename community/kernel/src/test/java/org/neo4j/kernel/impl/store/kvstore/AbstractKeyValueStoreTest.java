@@ -45,6 +45,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
@@ -81,6 +82,44 @@ public class AbstractKeyValueStoreTest
             return "txId";
         }
     };
+
+    @Test
+    @Resources.Life( STARTED )
+    public void retryLookupOnConcurrentStoreStateChange() throws IOException
+    {
+        Store testStore = resourceManager.managed( createTestStore( TimeUnit.DAYS.toMillis( 2 ) ) );
+        ConcurrentMapState<String> newState = new ConcurrentMapState<>( testStore.state, mock( File.class ) );
+        testStore.put( "test", "value" );
+
+        CountingErroneousReader countingErroneousReader = new CountingErroneousReader( testStore, newState );
+
+        assertEquals( "New state contains stored value", "value", testStore.lookup( "test", countingErroneousReader ) );
+        assertEquals( "Should have 2 invocations: first throws exception, second re-read value.", 2,
+                countingErroneousReader.getInvocationCounter() );
+    }
+
+    @Test
+    @Resources.Life( STARTED )
+    public void accessClosedStateCauseIllegalStateException() throws Exception
+    {
+        Store store = resourceManager.managed( new Store() );
+        store.put( "test", "value" );
+        store.prepareRotation( 0 ).rotate();
+        ProgressiveState<String> lookupState = store.state;
+        store.prepareRotation( 0 ).rotate();
+
+        expectedException.expect( IllegalStateException.class );
+        expectedException.expectMessage( "File has been unmapped" );
+
+        lookupState.lookup( "test", new ValueSink()
+        {
+            @Override
+            protected void value( ReadableBuffer value )
+            {
+                // empty
+            }
+        } );
+    }
 
     @Test
     public void shouldStartAndStopStore() throws Exception
@@ -146,7 +185,7 @@ public class AbstractKeyValueStoreTest
         try ( Lifespan life = new Lifespan() )
         {
             Store store = life.add( createTestStore() );
-            assertEquals( 10l, store.headers().get( TX_ID ).longValue() );
+            assertEquals( 10L, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -216,7 +255,7 @@ public class AbstractKeyValueStoreTest
         {
             life.add( store );
 
-            assertEquals( 64l, store.headers().get( TX_ID ).longValue() );
+            assertEquals( 64L, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -319,7 +358,7 @@ public class AbstractKeyValueStoreTest
 
         assertEquals( 2, rotation.rotate() );
 
-        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5l,
+        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5L,
                 thread -> Thread.State.TIMED_WAITING == thread.getState(), 100, SECONDS );
 
         Thread.sleep( TimeUnit.SECONDS.toMillis( 1 ) );
@@ -339,7 +378,7 @@ public class AbstractKeyValueStoreTest
 
         // when
         updateStore( store, 1 );
-        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, thread -> {
+        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3L, thread -> {
             switch ( thread.getState() )
             {
             case BLOCKED:
@@ -373,7 +412,7 @@ public class AbstractKeyValueStoreTest
         // then
         assertEquals( 3, rotation.get().longValue() );
         assertEquals( 3, store.headers().get( TX_ID ).longValue() );
-        store.rotation.apply( 4l );
+        store.rotation.apply( 4L );
     }
 
     @Test( timeout = 2000 )
@@ -388,7 +427,7 @@ public class AbstractKeyValueStoreTest
         expectedException.expect( RotationTimeoutException.class );
 
         // WHEN
-        store.prepareRotation( 10l ).rotate();
+        store.prepareRotation( 10L ).rotate();
     }
 
     private Store createTestStore()
@@ -406,7 +445,7 @@ public class AbstractKeyValueStoreTest
             {
                 if ( field == TX_ID )
                 {
-                    return (Value) (Object) 1l;
+                    return (Value) (Object) 1L;
                 }
                 else
                 {
@@ -440,7 +479,7 @@ public class AbstractKeyValueStoreTest
     }
 
 
-    static DataProvider data( final Entry... data )
+    private static DataProvider data( final Entry... data )
     {
         return new DataProvider()
         {
@@ -467,6 +506,37 @@ public class AbstractKeyValueStoreTest
     interface Entry
     {
         void write( WritableBuffer key, WritableBuffer value );
+    }
+
+    private static class CountingErroneousReader extends AbstractKeyValueStore.Reader<String>
+    {
+        private final Store testStore;
+        private final ProgressiveState<String> newStoreState;
+        private int invocationCounter;
+
+        CountingErroneousReader( Store testStore, ProgressiveState<String> newStoreState )
+        {
+            this.testStore = testStore;
+            this.newStoreState = newStoreState;
+            invocationCounter = 0;
+        }
+
+        @Override
+        protected String parseValue( ReadableBuffer value )
+        {
+            invocationCounter++;
+            if ( invocationCounter == 1 )
+            {
+                testStore.state = newStoreState;
+                throw new IllegalStateException( "Exception during state rotation." );
+            }
+            return testStore.readKey( value );
+        }
+
+        int getInvocationCounter()
+        {
+            return invocationCounter;
+        }
     }
 
     @Rotation( Rotation.Strategy.INCREMENTING )
@@ -525,12 +595,6 @@ public class AbstractKeyValueStoreTest
         protected int compareHeaders( Headers lhs, Headers rhs )
         {
             return 0;
-        }
-
-        @SuppressWarnings( "unchecked" )
-        private <Value> void putField( Headers.Builder builder, HeaderField<Value> field, Object change )
-        {
-            builder.put( field, (Value) change );
         }
 
         @Override
