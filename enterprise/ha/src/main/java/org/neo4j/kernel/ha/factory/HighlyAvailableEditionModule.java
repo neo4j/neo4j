@@ -227,7 +227,7 @@ public class HighlyAvailableEditionModule
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
-        life.add( new BranchedDataMigrator( platformModule.storeDir ) );
+        life.add( new BranchedDataMigrator( platformModule.storeDir, platformModule.pageCache ) );
         DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( Master.class );
         Master master = (Master) newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},

@@ -553,7 +553,7 @@ public class SwitchToSlave
     void cleanStoreDir() throws IOException
     {
         // Tests verify that this method is called
-        StoreUtil.cleanStoreDir( storeDir );
+        StoreUtil.cleanStoreDir( storeDir, pageCache );
     }
 
     private MasterClient newMasterClient( URI masterUri, URI me, StoreId storeId, LifeSupport life )
@@ -580,7 +580,7 @@ public class SwitchToSlave
             resolver.resolveDependency( serviceClass ).stop();
         }
 
-        branchPolicy.handle( storeDir );
+        branchPolicy.handle( storeDir, pageCache );
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,
