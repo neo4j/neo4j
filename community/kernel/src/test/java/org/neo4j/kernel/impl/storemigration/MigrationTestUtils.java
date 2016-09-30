@@ -222,7 +222,7 @@ public class MigrationTestUtils
             File file = new File( dir, storeFile.storeFileName() );
             StoreVersionCheck.Result result =
                     legacyStoreVersionCheck.hasVersion( file, StandardV3_0.STORE_VERSION, storeFile.isOptional() );
-            success &= result.outcome == Outcome.unexpectedUpgradingStoreVersion ||
+            success &= result.outcome == Outcome.unexpectedStoreVersion ||
                        result.outcome == Outcome.storeVersionNotFound;
         }
         return success;

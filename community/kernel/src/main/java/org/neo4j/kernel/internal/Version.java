@@ -36,6 +36,11 @@ public class Version extends Service
         return getKernel().getVersion();
     }
 
+    public static String getNeo4jVersion()
+    {
+        return getKernel().getReleaseVersion();
+    }
+
     private final String artifactId;
     private final String title;
     private final String vendor;
@@ -73,7 +78,7 @@ public class Version extends Service
 
     /**
      * @return a detailed version string, including source control revision information if that is available, suitable
-     *         for internal use, logging and debugging.
+     * for internal use, logging and debugging.
      */
     public final String getVersion()
     {
@@ -86,37 +91,6 @@ public class Version extends Service
     public String getReleaseVersion()
     {
         return releaseVersion;
-    }
-
-    /**
-     * @return the source control revision information, if that is available
-     */
-    public final String getRevision()
-    {
-        StringBuilder result = new StringBuilder( getReleaseVersion() );
-        result.append( ':' ).append( getBranchName() ).append( ':' );
-        String build = getBuildNumber();
-        if ( !(build.startsWith( "${" ) || build.startsWith( "{" )) )
-        {
-            result.append( build ).append( '/' );
-        }
-        result.append( getCommitId() );
-        return result.toString();
-    }
-
-    protected String getBuildNumber()
-    {
-        return "{BuildNumber}";
-    }
-
-    protected String getCommitId()
-    {
-        return "{CommitId}";
-    }
-
-    protected String getBranchName()
-    {
-        return "{BranchName}";
     }
 
     protected Version( String artifactId, String version )
@@ -146,7 +120,7 @@ public class Version extends Service
         );
 
         Matcher matcher = pattern.matcher( fullVersion );
-        if(matcher.matches())
+        if ( matcher.matches() )
         {
             return matcher.group( 1 );
         }

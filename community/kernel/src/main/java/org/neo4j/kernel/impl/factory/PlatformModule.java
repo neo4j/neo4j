@@ -193,8 +193,8 @@ public class PlatformModule
 
     private void publishPlatformInfo( UsageData sysInfo )
     {
-        sysInfo.set( UsageDataKeys.version, Version.getKernel().getReleaseVersion() );
-        sysInfo.set( UsageDataKeys.revision, Version.getKernel().getVersion() );
+        sysInfo.set( UsageDataKeys.version, Version.getNeo4jVersion() );
+        sysInfo.set( UsageDataKeys.revision, Version.getKernelVersion() );
     }
 
     public LifeSupport createLife()

@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.builtinprocs.ListIndexesProcedure;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.server.security.auth.AuthSubject;
 
 import static java.util.Collections.singletonList;
@@ -284,6 +285,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
                 readOperationsInNewTransaction().procedureCallRead( procedureName( "dbms", "components" ), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel", singletonList("dev"), "community"} ) ) );
+        assertThat( asList( stream ), contains(
+                equalTo( new Object[]{"Neo4j Kernel", singletonList( Version.getNeo4jVersion() ), "community"} ) ) );
     }
 }
