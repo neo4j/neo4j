@@ -80,10 +80,29 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     @Override
     public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
+        return streamFilesRecursive( directory, fs );
+    }
+
+    /**
+     * Static implementation of {@link SingleFilePageSwapperFactory#streamFilesRecursive(File)} that does not require
+     * any external state, other than what is presented through the given {@link FileSystemAbstraction}.
+     *
+     * This method is an implementation detail of {@link PageSwapperFactory page swapper factories}, and it is made
+     * available here so that other {@link PageSwapperFactory} implementations can use it as the basis of their own
+     * implementations. In other words, so that other {@link PageSwapperFactory} implementations can implement
+     * {@link PageSwapperFactory#streamFilesRecursive(File)} by augmenting this stream.
+     * @param directory The base directory.
+     * @param fs The {@link FileSystemAbstraction} to use for manipulating files.
+     * @return A {@link Stream} of {@link FileHandle}s, as per the {@link PageSwapperFactory#streamFilesRecursive(File)}
+     * specification.
+     * @throws IOException If anything goes wrong, like {@link PageSwapperFactory#streamFilesRecursive(File)} describes.
+     */
+    public static Stream<FileHandle> streamFilesRecursive( File directory, FileSystemAbstraction fs ) throws IOException
+    {
         try
         {
             // We grab a snapshot of the file tree to avoid seeing the same file twice or more due to renames.
-            List<File> snapshot = streamFilesRecursiveInner( directory ).collect( toList() );
+            List<File> snapshot = streamFilesRecursiveInner( directory, fs ).collect( toList() );
             return snapshot.stream().map( f -> new WrappingFileHandle( f, directory, fs ) );
         }
         catch ( UncheckedIOException e )
@@ -93,7 +112,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         }
     }
 
-    private Stream<File> streamFilesRecursiveInner( File directory )
+    private static Stream<File> streamFilesRecursiveInner( File directory, FileSystemAbstraction fs )
     {
         File[] files = fs.listFiles( directory );
         if ( files == null )
@@ -105,7 +124,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             return Stream.of( directory );
         }
         return Stream.of( files )
-                     .flatMap( f -> fs.isDirectory( f )? streamFilesRecursiveInner( f ) : Stream.of( f ) );
+                     .flatMap( f -> fs.isDirectory( f ) ? streamFilesRecursiveInner( f, fs ) : Stream.of( f ) );
     }
 
     @Override
@@ -132,7 +151,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         return 1;
     }
 
-    private class WrappingFileHandle implements FileHandle
+    private static class WrappingFileHandle implements FileHandle
     {
         private final File file;
         private final File baseDirectory;
