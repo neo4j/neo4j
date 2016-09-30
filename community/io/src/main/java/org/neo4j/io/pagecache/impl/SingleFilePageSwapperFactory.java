@@ -90,7 +90,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         {
             // We grab a snapshot of the file tree to avoid seeing the same file twice or more due to renames.
             List<File> snapshot = streamFilesRecursiveInner( directory ).collect( toList() );
-            return snapshot.stream().map( f -> new WrappingFileHandle( f, fs ) );
+            return snapshot.stream().map( f -> new WrappingFileHandle( f, directory, fs ) );
         }
         catch ( UncheckedIOException e )
         {
@@ -141,11 +141,13 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     private class WrappingFileHandle implements FileHandle
     {
         private final File file;
+        private final File baseDirectory;
         private final FileSystemAbstraction fs;
 
-        public WrappingFileHandle( File file, FileSystemAbstraction fs )
+        public WrappingFileHandle( File file, File baseDirectory, FileSystemAbstraction fs )
         {
             this.file = file;
+            this.baseDirectory = baseDirectory;
             this.fs = fs;
         }
 
@@ -166,7 +168,11 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
 
         private void removeEmptyParent( File parentFile )
         {
-            while ( parentFile != null )
+            // delete up to and including the base directory, but not above.
+            // Note that this may be 'null' if 'baseDirectory' is the top directory.
+            // Fortunately, 'File.equals(other)' handles 'null' and returns 'false' when 'other' is 'null'.
+            File end = baseDirectory.getParentFile();
+            while ( parentFile != null && !parentFile.equals( end ) )
             {
                 File[] files = fs.listFiles( parentFile );
                 if ( files == null || files.length > 0 )

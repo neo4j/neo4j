@@ -5040,6 +5040,33 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    public void streamFilesRecursiveMustNotDeleteDirectoriesAboveBaseDirectoryIfTheyBecomeEmptyByRename() throws Exception
+    {
+        configureStandardPageCache();
+        File sub = existingDirectory( "sub" );
+        File subsub = new File( sub, "subsub" );
+        File subsubsub = new File( subsub, "subsubsub" );
+        ensureDirectoryExists( subsub );
+        ensureDirectoryExists( subsubsub );
+        File x = new File( subsubsub, "x" );
+        ensureExists( x );
+        File target = file( "target" );
+
+        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( subsub )::iterator;
+        for ( FileHandle handle : handles )
+        {
+            handle.rename( target );
+        }
+
+        assertFalse( fs.fileExists( subsubsub ) );
+        assertFalse( fs.isDirectory( subsubsub ) );
+        assertFalse( fs.fileExists( subsub ) );
+        assertFalse( fs.isDirectory( subsub ) );
+        assertTrue( fs.fileExists( sub ) );
+        assertTrue( fs.isDirectory( sub ) );
+    }
+
+    @Test
     public void streamFilesRecursiveMustDeleteSubDirectoriesEmptiedByFileDelete() throws Exception
     {
         configureStandardPageCache();
@@ -5077,6 +5104,32 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertFalse( fs.fileExists( subsub ) );
         assertFalse( fs.isDirectory( sub ) );
         assertFalse( fs.fileExists( sub ) );
+    }
+
+    @Test
+    public void streamFilesRecursiveMustNotDeleteDirectoriesAboveBaseDirectoryIfTheyBecomeEmptyByDelete() throws Exception
+    {
+        configureStandardPageCache();
+        File sub = existingDirectory( "sub" );
+        File subsub = new File( sub, "subsub" );
+        File subsubsub = new File( subsub, "subsubsub" );
+        ensureDirectoryExists( subsub );
+        ensureDirectoryExists( subsubsub );
+        File x = new File( subsubsub, "x" );
+        ensureExists( x );
+
+        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( subsub )::iterator;
+        for ( FileHandle handle : handles )
+        {
+            handle.delete();
+        }
+
+        assertFalse( fs.fileExists( subsubsub ) );
+        assertFalse( fs.isDirectory( subsubsub ) );
+        assertFalse( fs.fileExists( subsub ) );
+        assertFalse( fs.isDirectory( subsub ) );
+        assertTrue( fs.fileExists( sub ) );
+        assertTrue( fs.isDirectory( sub ) );
     }
 
     @Test

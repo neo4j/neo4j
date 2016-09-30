@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.internal.AssumptionViolatedException;
 
@@ -58,8 +59,14 @@ import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
 {
-    private final File file = new File( "file" );
     private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private File file;
+
+    @Before
+    public void setUp() throws IOException
+    {
+        file = new File( "file" ).getCanonicalFile();
+    }
 
     @After
     public void tearDown()
@@ -77,6 +84,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     protected void mkdirs( File dir ) throws IOException
     {
         getFs().mkdirs( dir );
+    }
+
+    protected File baseDirectory() throws IOException
+    {
+        File dir = getFile().getParentFile();
+        mkdirs( dir );
+        return dir;
     }
 
     protected File getFile()
