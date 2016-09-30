@@ -354,6 +354,29 @@ public class BatchingTransactionAppenderTest
         verify( databaseHealth, times( 1 ) ).panic( ioex );
     }
 
+    @Test
+    public void shouldKernelPanicIfTransactionIdsMismatch() throws Throwable
+    {
+        // Given
+        BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender(
+                logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS, databaseHealth ) );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 42L );
+        TransactionToApply batch = new TransactionToApply( mock( TransactionRepresentation.class ), 43L );
+
+        // When
+        try
+        {
+            appender.append( batch, LogAppendEvent.NULL );
+            fail( "should have thrown " );
+        }
+        catch ( IllegalStateException ex )
+        {
+            // Then
+            verify( databaseHealth, times( 1 ) ).panic( ex );
+        }
+
+    }
+
     private TransactionRepresentation transaction( Collection<StorageCommand> commands, byte[] additionalHeader,
             int masterId, int authorId, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted )
     {
