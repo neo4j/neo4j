@@ -27,14 +27,23 @@ import java.nio.file.Path;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.NullOutsideWorld;
+import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Args;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ImportCommandTest
 {
@@ -42,22 +51,24 @@ public class ImportCommandTest
     public final TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
-    public void requiresModeArgument() throws Exception
+    public void defaultsToCsvWhenModeNotSpecified() throws Exception
     {
+        File homeDir = testDir.directory( "home" );
+        ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        when( mockImporterFactory
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
+                .thenReturn( mock( Importer.class ) );
+
         ImportCommand importCommand =
-                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
-                        new NullOutsideWorld() );
+                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), new RealOutsideWorld(),
+                        mockImporterFactory );
 
         String[] arguments = {"--database=foo", "--from=bar"};
-        try
-        {
-            importCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "mode" ) );
-        }
+
+        importCommand.execute( arguments );
+
+        verify( mockImporterFactory )
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) );
     }
 
     @Test

@@ -24,7 +24,7 @@ import java.io.PrintStream;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-class RealOutsideWorld implements OutsideWorld
+public class RealOutsideWorld implements OutsideWorld
 {
     FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
