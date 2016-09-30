@@ -20,20 +20,16 @@
 package org.neo4j.index;
 
 /**
- * Decides what to do when inserting key which already exists in index. Different implementations of
- * {@link ValueAmender} can result in unique/non-unique indexes for example.
+ * Represents a hit during an {@link Index#seek(Object, Object)}. There's no guarantee about whether or
+ * not the instances returned from {@link #key()} and {@link #value()} are immutable, so if multiple keys/values
+ * are stored temporarily during the seek then it's recommended to take copies of them.
  *
- * @param <VALUE> type of values to amend.
+ * @param <KEY> type of keys
+ * @param <VALUE> type of values
  */
-public interface ValueAmender<VALUE>
+public interface Hit<KEY,VALUE>
 {
-    /**
-     * Amends an existing value with a new value, returning potentially a combination of the two, or {@code null}
-     * if no amend was done effectively meaning that a new value should be inserted for that same key.
-     *
-     * @param value existing value
-     * @param withValue new value
-     * @return {@code value}, now amended with {@code withValue}, or {@code null} if no amend was done.
-     */
-    VALUE amend( VALUE value, VALUE withValue );
+    KEY key();
+
+    VALUE value();
 }

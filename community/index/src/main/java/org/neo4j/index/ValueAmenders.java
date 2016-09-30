@@ -19,6 +19,9 @@
  */
 package org.neo4j.index;
 
+/**
+ * Common {@link ValueAmender} implementations.
+ */
 public class ValueAmenders
 {
     @SuppressWarnings( "rawtypes" )
@@ -41,12 +44,20 @@ public class ValueAmenders
         }
     };
 
+    /**
+     * @return {@link ValueAmender} which overwrites value for existing key when inserting.
+     * This makes an index have unique keys.
+     */
     @SuppressWarnings( "unchecked" )
     public static <VALUE> ValueAmender<VALUE> overwrite()
     {
         return OVERWRITE;
     }
 
+    /**
+     * @return {@link ValueAmender} which inserts new key/value even for existing keys.
+     * This makes an index have non-unique keys.
+     */
     @SuppressWarnings( "unchecked" )
     public static <VALUE> ValueAmender<VALUE> insertNew()
     {

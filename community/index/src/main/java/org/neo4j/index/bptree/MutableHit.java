@@ -17,23 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index;
+package org.neo4j.index.bptree;
 
-/**
- * Decides what to do when inserting key which already exists in index. Different implementations of
- * {@link ValueAmender} can result in unique/non-unique indexes for example.
- *
- * @param <VALUE> type of values to amend.
- */
-public interface ValueAmender<VALUE>
+import org.neo4j.index.Hit;
+
+public class MutableHit<KEY,VALUE> implements Hit<KEY,VALUE>
 {
-    /**
-     * Amends an existing value with a new value, returning potentially a combination of the two, or {@code null}
-     * if no amend was done effectively meaning that a new value should be inserted for that same key.
-     *
-     * @param value existing value
-     * @param withValue new value
-     * @return {@code value}, now amended with {@code withValue}, or {@code null} if no amend was done.
-     */
-    VALUE amend( VALUE value, VALUE withValue );
+    private final KEY key;
+    private final VALUE value;
+
+    public MutableHit( KEY key, VALUE value )
+    {
+        this.key = key;
+        this.value = value;
+    }
+
+    @Override
+    public KEY key()
+    {
+        return key;
+    }
+
+    @Override
+    public VALUE value()
+    {
+        return value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "[key:" + key + ", value:" + value + "]";
+    }
 }
