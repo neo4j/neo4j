@@ -146,9 +146,12 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         {
             if ( transactionId != expectedTransactionId )
             {
-                throw new IllegalStateException(
+                IllegalStateException ex = new IllegalStateException(
                         "Received " + tx.transactionRepresentation() + " with txId:" + expectedTransactionId +
-                        " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
+                                " to be applied, but appending it ended up generating an unexpected txId:" +
+                                transactionId );
+                databaseHealth.panic( ex );
+                throw ex;
             }
         }
     }
@@ -205,11 +208,11 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             transactionLogWriter.append( transaction, transactionId );
             LogPosition logPositionAfterCommit = writer.getCurrentPosition( positionMarker ).newPosition();
 
-            long transactionChecksum = checksum(
-                    transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
-            transactionMetadataCache.cacheTransactionMetadata(
-                    transactionId, logPositionBeforeCommit, transaction.getMasterId(), transaction.getAuthorId(),
-                    transactionChecksum, transaction.getTimeCommitted() );
+            long transactionChecksum =
+                    checksum( transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
+            transactionMetadataCache
+                    .cacheTransactionMetadata( transactionId, logPositionBeforeCommit, transaction.getMasterId(),
+                            transaction.getAuthorId(), transactionChecksum, transaction.getTimeCommitted() );
 
             transaction.accept( indexCommandDetector );
             boolean hasLegacyIndexChanges = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
@@ -218,9 +221,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
                 legacyIndexTransactionOrdering.offer( transactionId );
             }
-            return new TransactionCommitment(
-                    hasLegacyIndexChanges, transactionId, transactionChecksum, transaction.getTimeCommitted(),
-                    logPositionAfterCommit, transactionIdStore );
+            return new TransactionCommitment( hasLegacyIndexChanges, transactionId, transactionChecksum,
+                    transaction.getTimeCommitted(), logPositionAfterCommit, transactionIdStore );
         }
         catch ( final Throwable panic )
         {

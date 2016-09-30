@@ -54,6 +54,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyByte;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -350,6 +351,29 @@ public class BatchingTransactionAppenderTest
 
         // Then
         verify( databaseHealth, times( 1 ) ).panic( ioex );
+    }
+
+    @Test
+    public void shouldKernelPanicIfTransactionIdsMismatch() throws Throwable
+    {
+        // Given
+        BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender(
+                logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS, databaseHealth ) );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 42L );
+        TransactionToApply batch = new TransactionToApply( mock( TransactionRepresentation.class ), 43L );
+
+        // When
+        try
+        {
+            appender.append( batch, LogAppendEvent.NULL );
+            fail( "should have thrown " );
+        }
+        catch ( IllegalStateException ex )
+        {
+            // Then
+            verify( databaseHealth, times( 1 ) ).panic( ex );
+        }
+
     }
 
     public final @Rule CleanupRule cleanup = new CleanupRule();
