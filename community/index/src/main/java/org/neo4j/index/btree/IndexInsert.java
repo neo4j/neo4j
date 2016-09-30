@@ -24,10 +24,12 @@ import java.util.Comparator;
 import java.util.function.Consumer;
 
 import org.neo4j.index.IdProvider;
+import org.neo4j.index.InserterOptions;
 import org.neo4j.index.ValueAmender;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
+import static java.lang.Integer.min;
 
 /**
  * Implementation of the insert algorithm in this B+ tree including split.
@@ -72,12 +74,12 @@ public class IndexInsert<KEY,VALUE>
      * @return              {@link SplitResult} from insert to be used caller.
      * @throws IOException  on cursor failure
      */
-    public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender )
-            throws IOException
+    public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
+            InserterOptions options ) throws IOException
     {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return insertInLeaf( cursor, key, value, amender );
+            return insertInLeaf( cursor, key, value, amender, options );
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
@@ -87,19 +89,19 @@ public class IndexInsert<KEY,VALUE>
         long currentId = cursor.getCurrentPageId();
         cursor.next( bTreeNode.childAt( cursor, pos ) );
 
-        SplitResult<KEY> split = insert( cursor, key, value, amender );
+        SplitResult<KEY> split = insert( cursor, key, value, amender, options );
 
         cursor.next( currentId );
 
         if ( split != null )
         {
-            return insertInInternal( cursor, currentId, keyCount, split.primKey, split.right );
+            return insertInInternal( cursor, currentId, keyCount, split.primKey, split.right, options );
         }
         return null;
     }
 
     /**
-     * Leaves cursor at same page as when called. No guaranties on offset.
+     * Leaves cursor at same page as when called. No guarantees on offset.
      *
      * Insertion in internal is always triggered by a split in child.
      * The result of a split is a primary key that is sent upwards in the b+tree and the newly created right child.
@@ -114,7 +116,7 @@ public class IndexInsert<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> insertInInternal( PageCursor cursor, long nodeId, int keyCount,
-            KEY primKey, long rightChild ) throws IOException
+            KEY primKey, long rightChild, InserterOptions options ) throws IOException
     {
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
         {
@@ -138,7 +140,7 @@ public class IndexInsert<KEY,VALUE>
         }
 
         // Overflow
-        return splitInternal( cursor, nodeId, primKey, rightChild, keyCount );
+        return splitInternal( cursor, nodeId, primKey, rightChild, keyCount, options );
     }
 
     /**
@@ -156,7 +158,7 @@ public class IndexInsert<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> splitInternal( PageCursor cursor, long fullNode, KEY primKey, long newRightChild,
-            int keyCount ) throws IOException
+            int keyCount, InserterOptions options ) throws IOException
     {
         long newRight = idProvider.acquireNewId();
 
@@ -180,7 +182,7 @@ public class IndexInsert<KEY,VALUE>
                 pos+1, keyCount+2, bTreeNode.childSize(), bTreeNode.childOffset( 0 ), tmp3 );
 
         int keyCountAfterInsert = keyCount + 1;
-        int middle = keyCountAfterInsert / 2; // Floor division
+        int middle = middle( keyCountAfterInsert, options.splitLeftChildSize() );
 
         int arrayOffset;
         if ( pos < middle )
@@ -240,8 +242,16 @@ public class IndexInsert<KEY,VALUE>
         return split;
     }
 
+    private int middle( int keyCountAfterInsert, float splitLeftChildSize )
+    {
+        int middle = (int) (keyCountAfterInsert * splitLeftChildSize); // Floor division
+        middle = max( 1, middle );
+        middle = min( keyCountAfterInsert - 1, middle );
+        return middle;
+    }
+
     /**
-     * Leaves cursor at same page as when called. No guaranties on offset.
+     * Leaves cursor at same page as when called. No guarantees on offset.
      *
      * Split in leaf node caused by an insertion of key and value
      *
@@ -250,11 +260,12 @@ public class IndexInsert<KEY,VALUE>
      * @param key           key to be inserted
      * @param value         value to be associated with key
      * @param amender
+     * @param options
      * @return              {@link SplitResult} from insert to be used caller.
      * @throws IOException  on cursor failure
      */
-    private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender )
-            throws IOException
+    private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
+            InserterOptions options ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
         int search = search( cursor, key );
@@ -294,7 +305,7 @@ public class IndexInsert<KEY,VALUE>
         }
 
         // Overflow, split leaf
-        return splitLeaf( cursor, key, value, amender, keyCount );
+        return splitLeaf( cursor, key, value, amender, keyCount, options );
     }
 
     private static int positionOf( int searchResult )
@@ -324,7 +335,7 @@ public class IndexInsert<KEY,VALUE>
      * @throws IOException  if cursor.next( newRight ) fails
      */
     private SplitResult<KEY> splitLeaf( PageCursor cursor, KEY newKey, VALUE newValue, ValueAmender<VALUE> amender,
-            int keyCount ) throws IOException
+            int keyCount, InserterOptions options ) throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.
@@ -389,7 +400,7 @@ public class IndexInsert<KEY,VALUE>
                 pos, bTreeNode.leafMaxKeyCount() + 1, bTreeNode.valueSize(), bTreeNode.valueOffset( 0 ), tmp3 );
 
         int keyCountAfterInsert = keyCount + 1;
-        int middle = keyCountAfterInsert / 2; // Floor division
+        int middle = middle( keyCountAfterInsert, options.splitLeftChildSize() );
 
         // allKeysIncludingNewKey should now contain all keys in sorted order and
         // allValuesIncludingNewValue should now contain all values in same order as corresponding keys

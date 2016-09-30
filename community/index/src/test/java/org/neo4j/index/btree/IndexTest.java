@@ -58,6 +58,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.index.InserterOptions.DEFAULTS;
 import static org.neo4j.index.ValueAmenders.overwrite;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
@@ -124,7 +125,7 @@ public class IndexTest
         }
 
         // WHEN
-        try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
+        try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter( DEFAULTS ) )
         {
             for ( Map.Entry<TwoLongs,TwoLongs> entry : data.entrySet() )
             {
@@ -187,7 +188,7 @@ public class IndexTest
         Random random = new Random( seed );
         int count = 1_000;
         PrimitiveLongSet seen = Primitive.longSet( count );
-        try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
+        try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter( DEFAULTS ) )
         {
             for ( int i = 0; i < 1_000; i++ )
             {
@@ -338,7 +339,7 @@ public class IndexTest
         index = createIndex( 1024, layout );
         TwoLongs first = new TwoLongs( 1, 1 );
         TwoLongs second = new TwoLongs( 2, 2 );
-        try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
+        try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter( DEFAULTS ) )
         {
             inserter.insert( first, first );
             inserter.insert( second, second );
@@ -423,7 +424,7 @@ public class IndexTest
             readerReadySignal.await( 10, SECONDS );
             startSignal.countDown();
             Random random = ThreadLocalRandom.current();
-            try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter() )
+            try ( SCInserter<TwoLongs,TwoLongs> inserter = index.inserter( DEFAULTS ) )
             {
                 int inserted = 0;
                 while ( (inserted < 100_000 || numberOfReads.get() < 10) && readerError.get() == null )
@@ -455,7 +456,7 @@ public class IndexTest
             throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;
-        try ( SCInserter<TwoLongs,TwoLongs> modifier = index.inserter() )
+        try ( SCInserter<TwoLongs,TwoLongs> modifier = index.inserter( DEFAULTS ) )
         {
             for ( int i = 0; i < changeCount; i++ )
             {

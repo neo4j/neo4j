@@ -30,6 +30,7 @@ import org.neo4j.cursor.Cursors;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.BTreeHit;
 import org.neo4j.index.IdProvider;
+import org.neo4j.index.InserterOptions;
 import org.neo4j.index.SCIndex;
 import org.neo4j.index.SCInserter;
 import org.neo4j.index.ValueAmender;
@@ -301,14 +302,14 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
     }
 
     @Override
-    public SCInserter<KEY,VALUE> inserter() throws IOException
+    public SCInserter<KEY,VALUE> inserter( InserterOptions options ) throws IOException
     {
         Inserter result = this.inserter.getAndSet( null );
         if ( result == null )
         {
             throw new IllegalStateException( "Only supports one concurrent writer" );
         }
-        return result.take( rootId );
+        return result.take( rootId, options );
     }
 
     // Utility method
@@ -368,14 +369,16 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
         // Well, IndexInsert code lives somewhere so we need to instantiate that bastard here as well
         private final IndexInsert<KEY,VALUE> inserter;
         private PageCursor cursor;
+        private InserterOptions options;
 
         Inserter( IndexInsert<KEY,VALUE> inserter )
         {
             this.inserter = inserter;
         }
 
-        Inserter take( long rootId ) throws IOException
+        Inserter take( long rootId, InserterOptions options ) throws IOException
         {
+            this.options = options;
             cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
             return this;
         }
@@ -385,7 +388,7 @@ public class Index<KEY,VALUE> implements SCIndex<KEY,VALUE>, IdProvider
         {
             cursor.next( rootId );
 
-            SplitResult<KEY> split = inserter.insert( cursor, key, value, ammender );
+            SplitResult<KEY> split = inserter.insert( cursor, key, value, ammender, options );
 
             if ( split != null )
             {

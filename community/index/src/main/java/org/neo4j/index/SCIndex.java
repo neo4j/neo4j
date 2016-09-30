@@ -27,5 +27,5 @@ public interface SCIndex<KEY,VALUE> extends Closeable
 {
     RawCursor<BTreeHit<KEY,VALUE>,IOException> seek( KEY fromInclusive, KEY toExclusive ) throws IOException;
 
-    SCInserter<KEY,VALUE> inserter() throws IOException;
+    SCInserter<KEY,VALUE> inserter( InserterOptions options ) throws IOException;
 }
