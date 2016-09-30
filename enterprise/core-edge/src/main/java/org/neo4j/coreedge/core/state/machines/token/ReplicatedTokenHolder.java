@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.core.replication.Replicator;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -44,8 +43,6 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder<TOKEN>
 {
     protected final Dependencies dependencies;
@@ -55,13 +52,11 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
     private final IdGeneratorFactory idGeneratorFactory;
     private final IdType tokenIdType;
     private final TokenType type;
-    private final long timeoutMillis;
 
     // TODO: Clean up all the resolving, which now happens every time with special selection strategies.
     ReplicatedTokenHolder( TokenRegistry<TOKEN> tokenRegistry, Replicator replicator,
                            IdGeneratorFactory idGeneratorFactory, IdType tokenIdType,
-                           Dependencies dependencies, TokenType type,
-                           long timeoutMillis )
+                           Dependencies dependencies, TokenType type )
     {
         this.replicator = replicator;
         this.tokenRegistry = tokenRegistry;
@@ -69,7 +64,6 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
         this.tokenIdType = tokenIdType;
         this.type = type;
         this.dependencies = dependencies;
-        this.timeoutMillis = timeoutMillis;
     }
 
     @Override
@@ -102,9 +96,9 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
         try
         {
             Future<Object> future = replicator.replicate( tokenRequest, true );
-            return (int) future.get( timeoutMillis, MILLISECONDS );
+            return (int) future.get();
         }
-        catch ( InterruptedException | TimeoutException e )
+        catch ( InterruptedException e )
         {
             throw new org.neo4j.graphdb.TransactionFailureException( "Could not create token", e );
         }

@@ -45,9 +45,9 @@ public class RaftReplicator implements Replicator, Listener<MemberId>
 
     private MemberId leader;
 
-    public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
-                           LocalSessionPool sessionPool, ProgressTracker progressTracker,
-                           RetryStrategy retryStrategy )
+    public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
+            Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
+            ProgressTracker progressTracker, RetryStrategy retryStrategy )
     {
         this.me = me;
         this.outbound = outbound;

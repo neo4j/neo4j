@@ -85,7 +85,6 @@ import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.replicated_lock_to
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.schema_id_allocation_size;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.state_machine_apply_max_batch_size;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.string_block_id_allocation_size;
-import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.token_creation_timeout;
 
 public class CoreStateMachinesModule
 {
@@ -142,22 +141,19 @@ public class CoreStateMachinesModule
 
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
-        Long tokenCreationTimeout = config.get( token_creation_timeout );
-
         TokenRegistry<RelationshipTypeToken> relationshipTypeTokenRegistry = new TokenRegistry<>( "RelationshipType" );
         ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder =
                 new ReplicatedRelationshipTypeTokenHolder( relationshipTypeTokenRegistry, replicator,
-                        this.idGeneratorFactory, dependencies, tokenCreationTimeout );
+                        this.idGeneratorFactory, dependencies );
 
         TokenRegistry<Token> propertyKeyTokenRegistry = new TokenRegistry<>( "PropertyKey" );
         ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder =
                 new ReplicatedPropertyKeyTokenHolder( propertyKeyTokenRegistry, replicator, this.idGeneratorFactory,
-                        dependencies, tokenCreationTimeout );
+                        dependencies );
 
         TokenRegistry<Token> labelTokenRegistry = new TokenRegistry<>( "Label" );
         ReplicatedLabelTokenHolder labelTokenHolder =
-                new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory, dependencies,
-                        tokenCreationTimeout );
+                new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory, dependencies );
 
         ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine =
                 new ReplicatedLockTokenStateMachine( lockTokenState );

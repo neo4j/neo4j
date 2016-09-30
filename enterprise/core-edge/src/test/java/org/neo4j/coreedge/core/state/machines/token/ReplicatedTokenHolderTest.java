@@ -19,16 +19,11 @@
  */
 package org.neo4j.coreedge.core.state.machines.token;
 
-import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-
 import org.junit.Test;
 
-import org.neo4j.coreedge.core.replication.ReplicatedContent;
-import org.neo4j.coreedge.core.replication.Replicator;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
+
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -45,11 +40,9 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyLong;
@@ -60,7 +53,6 @@ import static org.mockito.Mockito.when;
 public class ReplicatedTokenHolderTest
 {
     private Dependencies dependencies = mock( Dependencies.class );
-    private long TIMEOUT_MILLIS = 10;
 
     @Test
     public void shouldStoreInitialTokens() throws Exception
@@ -68,7 +60,7 @@ public class ReplicatedTokenHolderTest
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenHolder<Token> tokenHolder = new ReplicatedLabelTokenHolder( registry, null,
-                null, dependencies, TIMEOUT_MILLIS );
+                null, dependencies );
 
         // when
         tokenHolder.setInitialTokens( asList( new Token( "name1", 1 ), new Token( "name2", 2 ) ) );
@@ -83,7 +75,7 @@ public class ReplicatedTokenHolderTest
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenHolder<Token> tokenHolder = new ReplicatedLabelTokenHolder( registry, null,
-                null, dependencies, TIMEOUT_MILLIS );
+                null, dependencies );
         tokenHolder.setInitialTokens( asList( new Token( "name1", 1 ), new Token( "name2", 2 ) ) );
 
         // when
@@ -114,55 +106,13 @@ public class ReplicatedTokenHolderTest
                     completeFuture.complete( generatedTokenId );
                     return completeFuture;
                 },
-                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
+                idGeneratorFactory, dependencies );
 
         // when
         Integer tokenId = tokenHolder.getOrCreateId( "name1" );
 
         // then
         assertThat( tokenId, equalTo( generatedTokenId ));
-    }
-
-    @Test
-    public void shouldTimeoutIfTokenDoesNotReplicateWithinTimeout() throws Exception
-    {
-        // given
-        IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
-        IdGenerator idGenerator = mock( IdGenerator.class );
-        when( idGenerator.nextId() ).thenReturn( 1L );
-
-        StorageEngine storageEngine = mockedStorageEngine();
-        when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
-
-        when( idGeneratorFactory.get( any( IdType.class ) ) ).thenReturn( idGenerator );
-
-        Replicator replicator = new DropAllTheThingsReplicator();
-        when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) )
-                .thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
-
-        TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
-        ReplicatedTokenHolder<Token> tokenHolder = new ReplicatedLabelTokenHolder( registry, replicator,
-                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
-
-        // when
-        try
-        {
-            tokenHolder.getOrCreateId( "Person" );
-            fail( "Token creation attempt should have timed out" );
-        }
-        catch ( TransactionFailureException ex )
-        {
-            // expected
-        }
-    }
-
-    private static class DropAllTheThingsReplicator implements Replicator
-    {
-        @Override
-        public Future<Object> replicate( final ReplicatedContent content, boolean trackResult )
-        {
-            return new CompletableFuture<>(); // never to be completed
-        }
     }
 
     @SuppressWarnings( "unchecked" )
