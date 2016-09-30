@@ -110,16 +110,6 @@ class RuntimeScalaValueConverterTest extends CypherFunSuite {
     val converted = converter.asDeepScalaValue(javaList)
 
     converted shouldBe a [JavaListWrapper[_]]
-    converted.asInstanceOf[JavaListWrapper[_]].inner should be theSameInstanceAs javaList
-  }
-
-  test("should preserve java maps without copying") {
-    val javaMap = new util.HashMap[String, Any]()
-    javaMap.put("hello", util.Arrays.asList(1,2,3))
-
-    val converted = converter.asDeepScalaValue(javaMap)
-
-    converted shouldBe a [JavaMapWrapper]
-    converted.asInstanceOf[JavaMapWrapper].inner should be theSameInstanceAs javaMap
+    converted.asInstanceOf[JavaListWrapper[_]].inner shouldBe an [util.ArrayList[_]]
   }
 }

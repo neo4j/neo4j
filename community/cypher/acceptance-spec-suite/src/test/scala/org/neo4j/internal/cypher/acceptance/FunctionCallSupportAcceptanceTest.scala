@@ -21,6 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.util
 
+import org.neo4j.kernel.api.proc.Neo4jTypes
+
 class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should return correctly typed map result (even if converting to and from scala representation internally)") {
@@ -73,7 +75,8 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     // Using graph execute to get a Java value
     val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
 
-    returned should be theSameInstanceAs value
+    returned shouldBe an [util.ArrayList[_]]
+    returned shouldBe value
   }
 
   test("should not copy unnecessarily with nested types") {
@@ -87,19 +90,21 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     // Using graph execute to get a Java value
     val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
 
-    returned should be theSameInstanceAs  value
+    returned shouldBe an [util.ArrayList[_]]
+    returned shouldBe value
   }
 
-  test("should not copy maps unnecessarily") {
-    val value = new util.HashMap[String, Any]()
-    value.put("name", "Cypher")
-    value.put("level", 9001)
+  test("should handle interacting with list") {
+    val value = new util.ArrayList[Integer]()
+    value.add(1)
+    value.add(3)
 
-    registerUserFunction(value)
+    registerUserFunction(value, Neo4jTypes.NTList(Neo4jTypes.NTInteger))
 
     // Using graph execute to get a Java value
-    val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
+    val returned = graph.execute("WITH my.first.value() AS list RETURN list[0] + list[1] AS out")
+      .next().get("out")
 
-    value.eq(returned) shouldBe true
+    returned should equal(4)
   }
 }
