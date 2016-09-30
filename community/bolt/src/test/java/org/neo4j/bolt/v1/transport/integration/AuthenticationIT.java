@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -46,6 +47,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -58,8 +60,12 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 @RunWith( Parameterized.class )
 public class AuthenticationIT
 {
+    protected EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    protected Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
+            fsRule::get, getSettingsFunction() );
+
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), getSettingsFunction() );
+    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {

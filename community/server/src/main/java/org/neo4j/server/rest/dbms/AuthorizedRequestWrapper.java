@@ -54,56 +54,6 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         return AccessMode.Static.NONE;
     }
 
-    public class DelegatingPrincipal implements Principal
-    {
-        private String username;
-        private final AccessMode accessMode;
-
-        private DelegatingPrincipal( String username, AccessMode accessMode )
-        {
-            this.username = username;
-            this.accessMode = accessMode;
-        }
-
-        @Override
-        public String getName()
-        {
-            return username;
-        }
-
-        public AccessMode getAccessMode() { return accessMode; }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( !( o instanceof DelegatingPrincipal) )
-            {
-                return false;
-            }
-
-            DelegatingPrincipal that = (DelegatingPrincipal) o;
-            return username.equals( that.username );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return username.hashCode();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "DelegatingPrincipal{" +
-                    "username='" + username + '\'' +
-                    '}';
-        }
-    }
-
     private final String authType;
     private final DelegatingPrincipal principal;
 

@@ -90,17 +90,9 @@ public class AuthProcedures
     )
             throws InvalidArgumentsException, IOException
     {
-        try
-        {
-            authSubject.setPassword( password, requirePasswordChange );
-            securityLog.info( authSubject, "changed password%s",
-                    requirePasswordChange ? ", with password change required" : "" );
-        }
-        catch ( Exception e )
-        {
-            securityLog.error( authSubject, "tried to change password: %s", e.getMessage() );
-            throw e;
-        }
+        // logging is handled by subject
+        StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
+        enterpriseSubject.setPassword( password, requirePasswordChange );
     }
 
     @Description( "Change the given user's password." )
@@ -109,34 +101,34 @@ public class AuthProcedures
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
-        String ownOrOther = format("password for user `%s`", username );
-        try
+        if ( authSubject.hasUsername( username ) )
+        {
+            changePassword( newPassword, requirePasswordChange );
+        }
+        else
         {
             StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-            if ( enterpriseSubject.hasUsername( username ) )
+            try
             {
-                ownOrOther = "password";
-                enterpriseSubject.setPassword( newPassword, requirePasswordChange );
-                securityLog.info( authSubject, "changed password%s",
-                        requirePasswordChange ? ", with password change required" : "" );
+                if ( !enterpriseSubject.isAdmin() )
+                {
+                    throw new AuthorizationViolationException( PERMISSION_DENIED );
+                }
+                else
+                {
+                    enterpriseSubject.getUserManager().setUserPassword( username, newPassword, requirePasswordChange );
+                    terminateTransactionsForValidUser( username );
+                    terminateConnectionsForValidUser( username );
+                    securityLog.info( authSubject, "changed password for user `%s`%s", username,
+                            requirePasswordChange ? ", with password change required" : "" );
+                }
             }
-            else if ( !enterpriseSubject.isAdmin() )
+            catch ( Exception e )
             {
-                throw new AuthorizationViolationException( PERMISSION_DENIED );
+                securityLog.error( authSubject, "tried to change password for user `%s`: %s",
+                        username, e.getMessage() );
+                throw e;
             }
-            else
-            {
-                enterpriseSubject.getUserManager().setUserPassword( username, newPassword, requirePasswordChange );
-                terminateTransactionsForValidUser( username );
-                terminateConnectionsForValidUser( username );
-                securityLog.info( authSubject, "changed password for user `%s`%s", username,
-                        requirePasswordChange ? ", with password change required" : "" );
-            }
-        }
-        catch ( Exception e )
-        {
-            securityLog.error( authSubject, "tried to change %s: %s", ownOrOther, e.getMessage() );
-            throw e;
         }
     }
 
