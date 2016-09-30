@@ -1,6 +1,11 @@
 [[execution-plans]]
 = Execution Plans =
 
+[abstract]
+--
+This section describes operators used as part of an execution plan to execute a query in the Cypher query language.
+--
+
 Neo4j breaks down the work of executing a query into small pieces called operators.
 Each operator is responsible for a small part of the overall query.
 The operators are connected together in a pattern called a execution plan.

@@ -2,10 +2,22 @@
 Functions
 =========
 
-This chapter contains information on all functions in Cypher.
+[abstract]
+--
+This section contains information on all functions in the Cypher query language.
+--
+
+There are four groups of functions in Cypher:
+
+* _Predicate functions_ return either true or false for the arguments given.
+* _Scalar functions_ return a single value.
+* _List functions_ return lists of other values.
+* _String functions_ are used to manipulate strings or to create a string representation of another value.
+
+
 Note that related information exists in <<query-operators>>.
 
-NOTE: Most functions in Cypher will return `NULL` if an input parameter is `NULL`.
+Most functions in Cypher will return `NULL` if an input parameter is `NULL`.
 
 [[query-predicates]]
 == Predicates ==

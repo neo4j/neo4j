@@ -1,6 +1,11 @@
 [[query-tuning]]
 = Query Tuning
 
+[abstract]
+--
+This section describes query tuning for the Cypher query language.
+--
+
 Neo4j works very hard to execute queries as fast as possible.
 
 However, when optimizing for maximum query execution performance, it may be helpful to rephrase queries using knowledge about the domain and the application.

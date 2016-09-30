@@ -1,6 +1,11 @@
 [[cypher-schema]]
 = Schema =
 
+[abstract]
+--
+This section explains how to work with an optional schema in Neo4j in the Cypher query language.
+--
+
 Neo4j 2.0 introduced an optional schema for the graph, based around the concept of labels.
 Labels are used in the specification of indexes, and for defining constraints on the graph.
 Together, indexes and constraints are the schema of the graph.

@@ -1,7 +1,10 @@
 [[query-write]]
-= Writing Clauses =
+= Write Clauses =
 
-Write data to the database.
+[abstract]
+--
+These comprise clauses that write the date to the database.
+--
 
 //:leveloffset: 2
 

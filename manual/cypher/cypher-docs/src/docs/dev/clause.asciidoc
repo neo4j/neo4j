@@ -1,22 +1,32 @@
 [[query-clause]]
 = Clauses
 
-Hullo!!!!!!
-
 [discrete]
-= Reading Clauses
+= Read Clauses
+
+[abstract]
+--
+These comprise clauses that read data from the database.
+--
 
 The flow of data within a Cypher query is an unordered sequence of maps with key-value pairs -- a set of possible bindings between the variables in the query and values derived from the database.
 This set is refined and augmented by subsequent parts of the query.
 
 [discrete]
-= Writing Clauses =
+= Write Clauses =
 
-Write data to the database.
+[abstract]
+--
+These comprise clauses that write the date to the database.
+--
 
 [discrete]
 = General Clauses
 
+[abstract]
+--
+These comprise general clauses that work in conjunction with other clauses.
+--
 
 [options="header"]
 |===

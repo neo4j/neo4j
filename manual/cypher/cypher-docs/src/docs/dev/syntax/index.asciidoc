@@ -1,6 +1,11 @@
 [[query-syntax]]
 = Syntax =
 
+[abstract]
+--
+This section describes the syntax of the Cypher query language.
+--
+
 //:leveloffset: 2
 
 include::values.asciidoc[leveloffset=+1]

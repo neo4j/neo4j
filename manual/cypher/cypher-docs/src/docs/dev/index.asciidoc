@@ -10,6 +10,12 @@ To take your first steps with Cypher, see <<cypher-getting-started>>.
 For the terminology used, see <<terminology>>.
 --
 
+
+[abstract]
+--
+This chapter contains the complete and authoritative documentation for the Cypher query language.
+--
+
 //:leveloffset: 1
 
 include::general/index.asciidoc[leveloffset=+1]
