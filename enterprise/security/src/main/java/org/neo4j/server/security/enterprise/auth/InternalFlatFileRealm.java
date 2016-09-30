@@ -551,6 +551,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
+    public User silentlyGetUser( String username )
+    {
+        return userRepository.getUserByName( username );
+    }
+
+    @Override
     public void setUserPassword( String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
