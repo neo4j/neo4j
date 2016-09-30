@@ -83,10 +83,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
-        return settings -> {
-            settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
-        };
+        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" );
     }
 
     public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;

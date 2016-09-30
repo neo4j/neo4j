@@ -99,7 +99,6 @@ public class ActiveDirectoryAuthenticationIT
     {
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
             settings.put( SecuritySettings.native_authentication_enabled, "false" );
             settings.put( SecuritySettings.native_authorization_enabled, "false" );
             settings.put( SecuritySettings.ldap_authentication_enabled, "true" );

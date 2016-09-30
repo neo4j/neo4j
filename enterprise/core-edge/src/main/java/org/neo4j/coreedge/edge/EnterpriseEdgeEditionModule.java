@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -251,6 +252,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     @Override
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        setupSecurityModule( platformModule, procedures, "enterprise-security-module" );
+        setupSecurityModule( platformModule, procedures,
+                platformModule.config.get( EnterpriseEditionSettings.security_module ) );
     }
 }

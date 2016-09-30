@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -59,7 +58,6 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
@@ -73,6 +71,8 @@ import org.neo4j.udc.UsageData;
  */
 public class CommunityEditionModule extends EditionModule
 {
+    public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
+
     public CommunityEditionModule( PlatformModule platformModule )
     {
         org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
@@ -264,6 +264,6 @@ public class CommunityEditionModule extends EditionModule
     @Override
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        setupSecurityModule( platformModule, procedures, "community-security-module" );
+        setupSecurityModule( platformModule, procedures, COMMUNITY_SECURITY_MODULE_ID );
     }
 }

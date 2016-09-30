@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.LogProvider;
@@ -39,7 +40,7 @@ public class CommunitySecurityModule extends SecurityModule
 {
     public CommunitySecurityModule()
     {
-        super( "community-security-module" );
+        super( CommunityEditionModule.COMMUNITY_SECURITY_MODULE_ID );
     }
 
     @Override

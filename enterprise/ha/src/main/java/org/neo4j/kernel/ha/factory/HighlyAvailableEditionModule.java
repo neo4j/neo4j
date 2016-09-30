@@ -132,6 +132,7 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -850,6 +851,7 @@ public class HighlyAvailableEditionModule
     @Override
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        setupSecurityModule( platformModule, procedures, "enterprise-security-manager" );
+        setupSecurityModule( platformModule, procedures,
+                platformModule.config.get( EnterpriseEditionSettings.security_module ) );
     }
 }

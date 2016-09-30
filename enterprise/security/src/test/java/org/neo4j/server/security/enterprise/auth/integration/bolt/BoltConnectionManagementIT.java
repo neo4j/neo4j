@@ -113,10 +113,7 @@ public class BoltConnectionManagementIT
 
     protected Consumer<Map<String, String>> getSettingsFunction()
     {
-        return settings -> {
-            settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
-            settings.put( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" );
-        };
+        return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
     }
 
     @Parameterized.Parameter( 0 )
