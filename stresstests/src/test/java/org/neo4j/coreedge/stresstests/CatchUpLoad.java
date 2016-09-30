@@ -36,6 +36,7 @@ import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -150,7 +151,7 @@ class CatchUpLoad extends RepeatUntilCallable
             return database.getDependencyResolver().resolveDependency( TransactionIdStore.class )
                     .getLastClosedTransactionId();
         }
-        catch ( IllegalStateException ex )
+        catch ( IllegalStateException | UnsatisfiedDependencyException ex )
         {
             return errorValueOrThrow( !isStoreClosed( ex ) || fail, ex );
         }
@@ -168,8 +169,18 @@ class CatchUpLoad extends RepeatUntilCallable
         }
     }
 
-    private boolean isStoreClosed( IllegalStateException ex )
+    private boolean isStoreClosed( RuntimeException ex )
     {
+        if ( ex instanceof UnsatisfiedDependencyException )
+        {
+            return true;
+        }
+
+        if ( !(ex instanceof IllegalStateException) )
+        {
+            return false;
+        }
+
         String message = ex.getMessage();
         return message.startsWith( "MetaDataStore for file " ) && message.endsWith( " is closed" );
     }

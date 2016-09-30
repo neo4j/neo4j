@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
@@ -130,5 +131,26 @@ public class DataSourceManager implements Lifecycle, Supplier<KernelAPI>
     public KernelAPI get()
     {
         return dataSource.getKernel();
+    }
+
+    public static class DependencyResolverSupplier implements Supplier<DependencyResolver>
+    {
+        private DataSourceManager dataSourceManager;
+
+        public DependencyResolverSupplier( DataSourceManager dataSourceManager )
+        {
+            this.dataSourceManager = dataSourceManager;
+        }
+
+        @Override
+        public DependencyResolver get()
+        {
+            NeoStoreDataSource dataSource = dataSourceManager.getDataSource();
+            if ( dataSource == null )
+            {
+                return null;
+            }
+            return dataSource.getDependencyResolver();
+        }
     }
 }
