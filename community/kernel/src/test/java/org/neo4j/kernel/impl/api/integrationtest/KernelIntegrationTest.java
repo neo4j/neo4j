@@ -52,7 +52,7 @@ public abstract class KernelIntegrationTest
     private KernelTransaction transaction;
     private Statement statement;
     private EphemeralFileSystemAbstraction fs;
-    private DbmsOperations.Factory dbmsOperationsFactory;
+    private DbmsOperations dbmsOperations;
 
     protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
     {
@@ -82,11 +82,9 @@ public abstract class KernelIntegrationTest
         return statement.readOperations();
     }
 
-    protected DbmsOperations dbmsOperations( AccessMode accessMode ) throws TransactionFailureException
+    protected DbmsOperations dbmsOperations()
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, accessMode );
-        statement = transaction.acquireStatement();
-        return dbmsOperationsFactory.newInstance( transaction );
+        return dbmsOperations;
     }
 
     protected void commit() throws TransactionFailureException
@@ -139,7 +137,7 @@ public abstract class KernelIntegrationTest
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         statementContextSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        dbmsOperationsFactory = db.getDependencyResolver().resolveDependency( DbmsOperations.Factory.class );
+        dbmsOperations = db.getDependencyResolver().resolveDependency( DbmsOperations.class );
     }
 
     protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )

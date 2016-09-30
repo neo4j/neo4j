@@ -46,7 +46,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final KernelTransaction.Type transactionType;
     private final AccessMode mode;
     private final Supplier<Statement> statementSupplier;
-    private final DbmsOperations.Factory dbmsOperationsFactory;
+    private final DbmsOperations dbmsOperations;
     private final Guard guard;
     private final ExecutingQuery executingQuery;
     private final PropertyContainerLocker locker;
@@ -64,7 +64,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
             ExecutingQuery executingQuery,
             PropertyContainerLocker locker,
             ThreadToStatementContextBridge txBridge,
-            DbmsOperations.Factory dbmsOperationsFactory,
+            DbmsOperations dbmsOperations,
             Guard guard
     ) {
         this.graph = graph;
@@ -76,7 +76,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.executingQuery = executingQuery;
         this.locker = locker;
         this.txBridge = txBridge;
-        this.dbmsOperationsFactory = dbmsOperationsFactory;
+        this.dbmsOperations = dbmsOperations;
         this.guard = guard;
     }
 
@@ -95,7 +95,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public DbmsOperations dbmsOperations()
     {
-        return dbmsOperationsFactory.newInstance( txBridge.getKernelTransactionBoundToThisThread( true ) );
+        return dbmsOperations;
     }
 
     @Override

@@ -66,13 +66,13 @@ public class Neo4jTransactionalContextTest
         KernelTransaction.Type transactionType = null;
         AccessMode transactionMode = null;
         ExecutingQuery executingQuery = null;
-        DbmsOperations.Factory dbmsOperationsFactory = null;
+        DbmsOperations dbmsOperations = null;
         ThreadToStatementContextBridge txBridge = null;
 
         Neo4jTransactionalContext transactionalContext =
                 new Neo4jTransactionalContext(
                         databaseQueryService, transaction, transactionType, transactionMode, () -> statement,
-                        executingQuery, propertyContainerLocker, txBridge, dbmsOperationsFactory, guard );
+                        executingQuery, propertyContainerLocker, txBridge, dbmsOperations, guard );
 
         transactionalContext.check();
 
@@ -93,7 +93,7 @@ public class Neo4jTransactionalContextTest
         PropertyContainerLocker locker = null;
         ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
         Guard guard = mock( Guard.class );
-        DbmsOperations.Factory dbmsOperationsFactory = null;
+        DbmsOperations dbmsOperations = null;
 
         KernelTransaction secondKTX = mock( KernelTransaction.class );
         InternalTransaction secondTransaction = mock( InternalTransaction.class );
@@ -111,7 +111,7 @@ public class Neo4jTransactionalContextTest
 
         Neo4jTransactionalContext context = new Neo4jTransactionalContext(
                 databaseQueryService, initialTransaction, transactionType, transactionMode, () -> statement,
-                executingQuery, locker, txBridge, dbmsOperationsFactory, guard );
+                executingQuery, locker, txBridge, dbmsOperations, guard );
 
         // When
         context.commitAndRestartTx();
@@ -176,7 +176,7 @@ public class Neo4jTransactionalContextTest
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         PropertyContainerLocker locker = null;
         ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
-        DbmsOperations.Factory dbmsOperationsFactory = null;
+        DbmsOperations dbmsOperations = null;
 
         KernelTransaction secondKTX = mock( KernelTransaction.class );
         InternalTransaction secondTransaction = mock( InternalTransaction.class );
@@ -194,7 +194,7 @@ public class Neo4jTransactionalContextTest
 
         Neo4jTransactionalContext context = new Neo4jTransactionalContext(
                 graph, initialTransaction, transactionType, transactionMode, () -> initialStatement, executingQuery,
-                locker, txBridge, dbmsOperationsFactory, guard );
+                locker, txBridge, dbmsOperations, guard );
 
         // When
         try
