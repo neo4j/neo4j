@@ -62,7 +62,7 @@ public class EnterpriseSecurityModule extends SecurityModule
 
     public EnterpriseSecurityModule()
     {
-        super( "enterprise-security-module" );
+        super( EnterpriseEditionSettings.ENTERPRISE_SECURITY_MODULE_ID );
     }
 
     @Override

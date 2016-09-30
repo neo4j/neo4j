@@ -33,6 +33,7 @@ import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.max;
@@ -47,6 +48,8 @@ import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP;
  */
 public class EnterpriseEditionSettings
 {
+    public static final String ENTERPRISE_SECURITY_MODULE_ID = "enterprise-security-module";
+
     @Description( "Specified names of id types (comma separated) that should be reused. " +
                   "Currently only 'node' and 'relationship' types are supported. " )
     public static Setting<List<IdType>> idTypesToReuse = setting(
@@ -75,4 +78,7 @@ public class EnterpriseEditionSettings
     public static final Setting<Integer> store_security_log_max_archives =
             setting("dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
 
+    @Internal
+    public static final Setting<String> security_module = setting( "unsupported.dbms.security.module", STRING,
+            ENTERPRISE_SECURITY_MODULE_ID );
 }

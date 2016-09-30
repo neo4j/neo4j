@@ -42,7 +42,6 @@ public class EnterpriseAuthenticationDocIT extends AuthenticationDocIT
     {
         server = EnterpriseServerBuilder.server()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
-                .withProperty( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" )
                 .build();
         server.start();
     }
