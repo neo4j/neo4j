@@ -28,7 +28,7 @@ import static java.lang.Long.bitCount;
  */
 public class LabelScanLayout implements TreeItemLayout<LabelScanKey,LabelScanValue>
 {
-    private static final int KEY_SIZE = Integer.BYTES/*labelId*/ + Long.BYTES/*idRange*/;
+    private static final int KEY_SIZE = Integer.BYTES/*labelId*/ + 6/*idRange*/;
 
     private final int rangeSize;
     private final int rangeSizeBytes;
@@ -64,7 +64,7 @@ public class LabelScanLayout implements TreeItemLayout<LabelScanKey,LabelScanVal
     @Override
     public int keySize()
     {
-        return LabelScanLayout.KEY_SIZE;
+        return KEY_SIZE;
     }
 
     @Override
@@ -77,7 +77,7 @@ public class LabelScanLayout implements TreeItemLayout<LabelScanKey,LabelScanVal
     public void writeKey( PageCursor cursor, LabelScanKey key )
     {
         cursor.putInt( key.labelId );
-        cursor.putLong( key.idRange );
+        put6ByteLong( cursor, key.idRange );
     }
 
     private void put6ByteLong( PageCursor cursor, long value )
@@ -112,7 +112,7 @@ public class LabelScanLayout implements TreeItemLayout<LabelScanKey,LabelScanVal
     public void readKey( PageCursor cursor, LabelScanKey into )
     {
         into.labelId = cursor.getInt();
-        into.idRange = cursor.getLong();
+        into.idRange = get6ByteLong( cursor );
     }
 
     private long get6ByteLong( PageCursor cursor )
