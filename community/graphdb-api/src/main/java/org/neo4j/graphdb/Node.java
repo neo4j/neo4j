@@ -52,8 +52,18 @@ package org.neo4j.graphdb;
  * when nodes and relationships are deleted, which means it's bad practice to
  * refer to them this way. Instead, use application generated ids.
  */
-public interface Node extends PropertyContainer
+public interface Node extends IdentifiablePropertyContainer
 {
+    /**
+     * Returns the unique id of this node. Ids are garbage collected over time
+     * so they are only guaranteed to be unique during a specific time span: if
+     * the node is deleted, it's likely that a new node at some point will get
+     * the old id. <b>Note</b>: this makes node ids brittle as public APIs.
+     *
+     * @return the id of this node
+     */
+    long getId();
+
     /**
      * Deletes this node if it has no relationships attached to it. If
      * <code>delete()</code> is invoked on a node with relationships, an
