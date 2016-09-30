@@ -1,5 +1,5 @@
 [[query-return]]
-= Return
+= RETURN
 
 [abstract]
 The `RETURN` clause defines what to include in the query result set.

@@ -1,5 +1,5 @@
 [[query-merge]]
-= Merge
+= MERGE
 
 [abstract]
 The `MERGE` clause ensures that a pattern exists in the graph.

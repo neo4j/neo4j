@@ -1,5 +1,5 @@
 [[query-load-csv]]
-= Load CSV
+= LOAD CSV
 
 [abstract]
 --

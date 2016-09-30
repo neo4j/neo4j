@@ -1,5 +1,5 @@
 [[query-start]]
-= Start
+= START
 
 [abstract]
 Find starting points through legacy indexes.

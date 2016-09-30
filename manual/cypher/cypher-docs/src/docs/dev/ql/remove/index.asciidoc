@@ -1,5 +1,5 @@
 [[query-remove]]
-= Remove
+= REMOVE
 
 [abstract]
 The `REMOVE` clause is used to remove properties and labels from graph elements.

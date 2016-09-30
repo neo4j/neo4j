@@ -1,10 +1,10 @@
 [[query-where]]
-= Where
+= WHERE
 
 [abstract]
 `WHERE` adds constraints to the patterns in a `MATCH` or `OPTIONAL MATCH` clause or filters the results of a `WITH` clause.
 
-`WHERE` is not a clause in it's own right -- rather, it's part of `MATCH`, `OPTIONAL MATCH`, `START` and `WITH`.
+`WHERE` is not a clause in its own right -- rather, it's part of `MATCH`, `OPTIONAL MATCH`, `START` and `WITH`.
 
 In the case of `WITH` and `START`, `WHERE` simply filters the results.
 

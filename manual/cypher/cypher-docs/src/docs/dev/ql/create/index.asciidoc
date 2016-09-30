@@ -1,5 +1,5 @@
 [[query-create]]
-= Create
+= CREATE
 
 [abstract]
 The `CREATE` clause is used to create graph elements -- nodes and relationships.

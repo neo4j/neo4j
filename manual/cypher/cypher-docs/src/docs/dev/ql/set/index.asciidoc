@@ -1,5 +1,5 @@
 [[query-set]]
-= Set
+= SET
 
 [abstract]
 The `SET` clause is used to update labels on nodes and properties on nodes and relationships.

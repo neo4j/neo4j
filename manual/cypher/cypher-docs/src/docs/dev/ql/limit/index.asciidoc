@@ -1,5 +1,5 @@
 [[query-limit]]
-= Limit
+= LIMIT
 
 [abstract]
 `LIMIT` constrains the number of rows in the output.
