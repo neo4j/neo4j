@@ -57,6 +57,13 @@ public class LabelScanLayout implements Layout<LabelScanKey,LabelScanValue>
     }
 
     @Override
+    public void copyKey( LabelScanKey key, LabelScanKey into )
+    {
+        into.labelId = key.labelId;
+        into.idRange = key.idRange;
+    }
+
+    @Override
     public LabelScanValue newValue()
     {
         return new LabelScanValue();

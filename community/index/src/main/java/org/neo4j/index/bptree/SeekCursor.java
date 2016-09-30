@@ -20,8 +20,6 @@
 package org.neo4j.index.bptree;
 
 import java.io.IOException;
-import java.util.Comparator;
-
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
@@ -33,37 +31,27 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private final VALUE mutableValue;
     private final KEY fromInclusive;
     private final KEY toExclusive;
-    private final Comparator<KEY> keyComparator;
+    private final Layout<KEY,VALUE> layout;
     private final MutableHit<KEY,VALUE> hit;
     private final TreeNode<KEY,VALUE> bTreeNode;
-    private long prevNode;
+    private final KEY prevKey;
 
     // data structures for the current b-tree node
     private int pos;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
-            KEY fromInclusive, KEY toExclusive, Comparator<KEY> keyComparator, int pos ) throws IOException
+            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int pos )
     {
         this.cursor = leafCursor;
         this.mutableKey = mutableKey;
         this.mutableValue = mutableValue;
         this.fromInclusive = fromInclusive;
         this.toExclusive = toExclusive;
-        this.keyComparator = keyComparator;
+        this.layout = layout;
         this.hit = new MutableHit<>( mutableKey, mutableValue );
         this.bTreeNode = bTreeNode;
         this.pos = pos;
-    }
-
-    private boolean gotoTreeNode( long id ) throws IOException
-    {
-        prevNode = cursor.getCurrentPageId();
-        if ( !cursor.next( id ) )
-        {
-            return false;
-        }
-        pos = -1;
-        return true;
+        this.prevKey = layout.newKey();
     }
 
     @Override
@@ -78,17 +66,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         while ( true )
         {
             pos++;
-            long rightSibling;
-            boolean hit;
+            long rightSibling = -1; // initialized to satisfy the compiler
             int keyCount;
             do
             {
-                rightSibling = -1;
-                hit = false;
-
                 // There's a condition in here, choosing between go to next sibling or value,
                 // this condition is mirrored outside the shouldRetry loop to act upon the data
-                // which has by then been consistently read.
+                // which has by then been consistently read. No decision can be made in here directly.
                 keyCount = bTreeNode.keyCount( cursor );
                 if ( pos >= keyCount )
                 {
@@ -97,14 +81,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 }
                 else
                 {
-                    // Go to the next value in this leaf
+                    // Read the next value in this leaf
                     bTreeNode.keyAt( cursor, mutableKey, pos );
-                    if ( keyComparator.compare( mutableKey, toExclusive ) < 0 )
-                    {
-                        // A hit
-                        bTreeNode.valueAt( cursor, mutableValue, pos );
-                        hit = true;
-                    }
+                    bTreeNode.valueAt( cursor, mutableValue, pos );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -116,22 +95,33 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             {
                 if ( bTreeNode.isNode( rightSibling ) )
                 {
-                    if ( !gotoTreeNode( rightSibling ) )
+                    if ( !cursor.next( rightSibling ) )
                     {
                         // TODO: Perhaps re-read if this happens instead?
                         return false;
                     }
-                    continue; // in the outer loop
+                    pos = -1;
+                    continue; // in the outer loop, with the position reset to the beginning of the right sibling
                 }
             }
             else
             {
-                // if hit == false it means we came too far and so the whole seek should end
-                // if hit == true it means we read a value which should be included in the result
-                if ( hit )
+                if ( layout.compare( mutableKey, toExclusive ) < 0 )
                 {
+                    if ( layout.compare( mutableKey, fromInclusive ) < 0 ||
+                            layout.compare( prevKey, mutableKey ) >= 0 )
+                    {
+                        // We've come across a bad read in the middle of a split
+                        // This is outlined in IndexModifier, skip this value (it's fine)
+                        // TODO: perhaps describe the circumstances here quickly as well
+                        continue;
+                    }
+
+                    // A hit
+                    layout.copyKey( mutableKey, prevKey );
                     return true;
                 }
+                // else we've come too far and so this means the end of the result set
             }
             return false;
         }

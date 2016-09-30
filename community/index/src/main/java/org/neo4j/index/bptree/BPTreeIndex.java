@@ -46,7 +46,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     // currently an index only supports one concurrent updater and so this reference will act both as
     // guard so that only one thread can have it at any given time and also as synchronization between threads
     // wanting it
-    private final AtomicReference<Inserter> inserter;
+    private final AtomicReference<Inserter> modifier;
 
     // when updating these the meta page will also be kept up2date
     private int pageSize;
@@ -77,7 +77,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
-        this.inserter = new AtomicReference<>( new Inserter( new IndexModifier<>( this, bTreeNode, layout ) ) );
+        this.modifier = new AtomicReference<>( new Inserter( new IndexModifier<>( this, bTreeNode, layout ) ) );
 
         if ( created )
         {
@@ -160,21 +160,21 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
         catch ( NoSuchFileException e )
         {
-            pageSizeForCreation = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
-            if ( pageSizeForCreation > pageCache.pageSize() )
+            pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
+            if ( pageSize > pageCache.pageSize() )
             {
-                throw new IllegalStateException( "Index was about to be created with page size:" + pageSizeForCreation +
+                throw new IllegalStateException( "Index was about to be created with page size:" + pageSize +
                         ", but page cache used to create it has a smaller page size:" +
                         pageCache.pageSize() + " so cannot be created" );
             }
 
             // We need to create this index
-            PagedFile pagedFile = pageCache.map( indexFile, pageSizeForCreation, StandardOpenOption.CREATE );
+            PagedFile pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
 
             // Write header
             try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
             {
-                metaCursor.putInt( pageSizeForCreation );
+                metaCursor.putInt( pageSize );
                 metaCursor.putLong( rootId );
                 metaCursor.putLong( lastId );
                 metaCursor.putLong( layout.identifier() );
@@ -184,7 +184,6 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             }
             pagedFile.flushAndForce();
             created = true;
-            pageSize = pageSizeForCreation;
             return pagedFile;
         }
     }
@@ -202,7 +201,8 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     @Override
     public RawCursor<Hit<KEY,VALUE>,IOException> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
     {
-        PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK );
+        long localRootId = rootId;
+        PageCursor cursor = pagedFile.io( localRootId, PagedFile.PF_SHARED_READ_LOCK );
         KEY key = bTreeNode.newKey();
         VALUE value = bTreeNode.newValue();
         cursor.next();
@@ -211,6 +211,8 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         int keyCount = 0; // initialized to satisfy compiler
         long childId = 0; // initialized to satisfy compiler
         int pos;
+        int level = 0;
+        long rightSibling;
         do
         {
             do
@@ -220,6 +222,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 keyCount = bTreeNode.keyCount( cursor );
                 pos = 0;
                 bTreeNode.keyAt( cursor, key, pos );
+                rightSibling = bTreeNode.rightSibling( cursor );
                 while ( pos < keyCount && layout.compare( key, fromInclusive ) < 0 )
                 {
                     pos++;
@@ -235,22 +238,50 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             if ( cursor.checkAndClearBoundsFlag() )
             {
                 // Something's wrong, get a new fresh rootId and go from the top again
-                cursor.next( rootId );
+                cursor.next( localRootId = rootId );
                 continue;
             }
             if ( isInternal )
             {
+                if ( pos == keyCount && layout.compare( key, fromInclusive ) < 0 )
+                {
+                    if ( level == 0 )
+                    {   // At root level here, let's see if we've got a new root since we started our seek
+                        long newLocalRootId = rootId;
+                        if ( newLocalRootId != localRootId )
+                        {
+                            childId = localRootId = newLocalRootId;
+                        }
+                    }
+                    else
+                    {
+                        // Means we didn't really find it yet, the fromInclusive is still higher than where we are
+                        // so go to this internal node's right sibling and continue
+                        if ( bTreeNode.isNode( rightSibling ) )
+                        {
+                            childId = rightSibling;
+                        }
+                        // else it's fine, we can go down to this sibling with the assumption that
+                        // it'll have data relevant to us
+                        if ( !bTreeNode.isNode( childId ) )
+                        {
+                            keyCount = 0; // just to let an empty cursor be returned
+                            break;
+                        }
+                    }
+                }
+
                 if ( !cursor.next( childId ) )
                 {
                     throw new IllegalStateException( "Couldn't go to child " + childId );
                 }
             }
+            level++;
         }
         while ( isInternal && keyCount > 0 );
 
         if ( keyCount == 0 )
         {
-            // This index seems to be empty
             return Cursors.emptyRawCursor();
         }
 
@@ -286,7 +317,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     @Override
     public Modifier<KEY,VALUE> modifier( Modifier.Options options ) throws IOException
     {
-        Inserter result = this.inserter.getAndSet( null );
+        Inserter result = this.modifier.getAndSet( null );
         if ( result == null )
         {
             throw new IllegalStateException( "Only supports one concurrent writer" );
@@ -297,13 +328,13 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     class Inserter implements Modifier<KEY,VALUE>
     {
         // Well, IndexInsert code lives somewhere so we need to instantiate that bastard here as well
-        private final IndexModifier<KEY,VALUE> inserter;
+        private final IndexModifier<KEY,VALUE> indexModifier;
         private PageCursor cursor;
         private Modifier.Options options;
 
-        Inserter( IndexModifier<KEY,VALUE> inserter )
+        Inserter( IndexModifier<KEY,VALUE> modifier )
         {
-            this.inserter = inserter;
+            this.indexModifier = modifier;
         }
 
         Inserter take( long rootId, Modifier.Options options ) throws IOException
@@ -318,7 +349,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             cursor.next( rootId );
 
-            SplitResult<KEY> split = inserter.insert( cursor, key, value, ammender, options );
+            SplitResult<KEY> split = indexModifier.insert( cursor, key, value, ammender, options );
 
             if ( split != null )
             {
@@ -341,7 +372,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             cursor.next( rootId );
 
-            return inserter.remove( cursor, key );
+            return indexModifier.remove( cursor, key );
         }
 
         @Override
@@ -353,7 +384,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             }
             finally
             {
-                if ( !BPTreeIndex.this.inserter.compareAndSet( null, this ) )
+                if ( !BPTreeIndex.this.modifier.compareAndSet( null, this ) )
                 {
                     throw new IllegalStateException( "Tried to give back the inserter, but somebody else already did" );
                 }

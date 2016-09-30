@@ -63,6 +63,13 @@ public class PathIndexLayout implements Layout<TwoLongs,TwoLongs>
     }
 
     @Override
+    public void copyKey( TwoLongs key, TwoLongs into )
+    {
+        into.first = key.first;
+        into.other = key.other;
+    }
+
+    @Override
     public int valueSize()
     {
         return SIZE_VALUE;

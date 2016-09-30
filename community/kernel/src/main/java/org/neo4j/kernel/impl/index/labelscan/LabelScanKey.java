@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.index.labelscan;
 
 public class LabelScanKey
 {
-    public int labelId;
-    public long idRange;
+    public int labelId = -1;
+    public long idRange = -1;
 
     public LabelScanKey set( int labelId, long idRange )
     {

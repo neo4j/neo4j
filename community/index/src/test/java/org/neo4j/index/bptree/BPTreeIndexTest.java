@@ -57,6 +57,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static java.lang.Integer.max;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -365,18 +366,20 @@ public class BPTreeIndexTest
     {
         // GIVEN
         Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
-        index = createIndex( 1024, layout );
-        CountDownLatch readerReadySignal = new CountDownLatch( 1 );
+        index = createIndex( 256, layout );
+        int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
+        CountDownLatch readerReadySignal = new CountDownLatch( readers );
         CountDownLatch startSignal = new CountDownLatch( 1 );
         AtomicBoolean endSignal = new AtomicBoolean();
         AtomicInteger highestId = new AtomicInteger( -1 );
         AtomicReference<Throwable> readerError = new AtomicReference<>();
         AtomicInteger numberOfReads = new AtomicInteger();
-        Thread reader = new Thread()
+        Runnable reader = new Runnable()
         {
             @Override
             public void run()
             {
+                int numberOfLocalReads = 0;
                 try
                 {
                     readerReadySignal.countDown();
@@ -391,64 +394,93 @@ public class BPTreeIndexTest
                         }
 
                         // Read one go, we should see up to highId
-                        long lastSeen = -1;
+                        long start = Long.max( 0, upToId - 1000 );
+                        long lastSeen = start - 1;
                         try ( RawCursor<Hit<TwoLongs,TwoLongs>,IOException> cursor =
                                 // "to" is exclusive so do +1 on that
-                                index.seek( new TwoLongs( 0, 0 ), new TwoLongs( upToId + 1, 0 ) ) )
+                                index.seek( new TwoLongs( start, 0 ), new TwoLongs( upToId + 1, 0 ) ) )
                         {
                             while ( cursor.next() )
                             {
                                 TwoLongs hit = cursor.get().key();
+                                if ( hit.first != lastSeen + 1 )
+                                {
+                                    fail( "Expected to see " + (lastSeen + 1) + " as next hit, but was " + hit.first +
+                                            " where start was " + start );
+
+                                }
                                 assertEquals( lastSeen + 1, hit.first );
                                 lastSeen = hit.first;
                             }
                         }
                         // It's possible that the writer has gone further since we started,
                         // but we should at least have seen upToId
-                        if ( lastSeen < upToId/2 )
+                        if ( lastSeen < upToId )
                         {
-                            fail( "Wanted to have read up to " + upToId/2 +
-                                    " (ideally " + upToId + " though)" +
-                                    " but could only see up to " + lastSeen );
+                            fail( "Seeked " + start + " - " + upToId + " (inclusive), but only saw " + lastSeen );
                         }
-                        numberOfReads.incrementAndGet();
+
+                        // Keep a local counter and update the global one now and then, we don't want
+                        // out little statistic here to affect concurrency
+                        if ( ++numberOfLocalReads == 30 )
+                        {
+                            numberOfReads.addAndGet( numberOfLocalReads );
+                            numberOfLocalReads = 0;
+                        }
                     }
                 }
                 catch ( Throwable e )
                 {
                     readerError.set( e );
                 }
+                finally
+                {
+                    numberOfReads.addAndGet( numberOfLocalReads );
+                }
             }
         };
 
-        // WHEN
+        // WHEN starting the readers
+        Thread[] readerThreads = new Thread[readers];
+        for ( int i = 0; i < readers; i++ )
+        {
+            readerThreads[i] = new Thread( reader );
+            readerThreads[i].start();
+        }
+
+        // and then starting the modifier
         try
         {
-            reader.start();
             readerReadySignal.await( 10, SECONDS );
             startSignal.countDown();
             Random random = ThreadLocalRandom.current();
             try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
             {
                 int inserted = 0;
-                while ( (inserted < 100_000 || numberOfReads.get() < 10) && readerError.get() == null )
+                while ( (inserted < 100_000 || numberOfReads.get() < 100) && readerError.get() == null )
                 {
-                    int groupCount = random.nextInt( 1_000 ) + 1;
+                    int groupCount = random.nextInt( 1000 ) + 1;
                     for ( int i = 0; i < groupCount; i++, inserted++ )
                     {
                         TwoLongs thing = new TwoLongs( inserted, 0 );
                         inserter.insert( thing, thing );
                         highestId.set( inserted );
                     }
+                    // Sleep a little in between update groups (transactions, sort of)
                     MILLISECONDS.sleep( random.nextInt( 10 ) + 3 );
                 }
             }
         }
         finally
         {
-            // THEN
+            // THEN no reader should have failed and by this time there have been a certain
+            // number of successful reads. A successful read means that all results were ordered,
+            // no holes and we saw all values that was inserted at the point of making the seek call.
             endSignal.set( true );
-            reader.join( SECONDS.toMillis( 10 ) );
+            for ( Thread readerThread : readerThreads )
+            {
+                readerThread.join( SECONDS.toMillis( 10 ) );
+            }
             if ( readerError.get() != null )
             {
                 throw readerError.get();

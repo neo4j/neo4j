@@ -21,8 +21,8 @@ package org.neo4j.index.bptree.path;
 
 public class TwoLongs
 {
-    public long first;
-    public long other;
+    public long first = -1;
+    public long other = -1;
 
     public TwoLongs()
     {
