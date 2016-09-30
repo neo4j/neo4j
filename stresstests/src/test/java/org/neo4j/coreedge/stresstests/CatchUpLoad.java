@@ -75,25 +75,54 @@ class CatchUpLoad extends RepeatUntilCallable
         int newMemberId = cluster.edgeMembers().size();
         final EdgeClusterMember edgeClusterMember = cluster.addEdgeMemberWithId( newMemberId );
 
-        Supplier<Throwable> exception;
+        Throwable ex = null;
+        Supplier<Throwable> monitoredException = null;
         try
         {
-            exception = startAndRegisterExceptionMonitor( edgeClusterMember );
+            monitoredException = startAndRegisterExceptionMonitor( edgeClusterMember );
             await( () -> txIdBeforeStartingNewEdge <= txId( edgeClusterMember, true ), 3, TimeUnit.MINUTES );
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
-            throw new RuntimeException( e );
+            ex = e;
         }
         finally
         {
-            cluster.removeEdgeMemberWithMemberId( newMemberId );
+            try
+            {
+                cluster.removeEdgeMemberWithMemberId( newMemberId );
+            }
+            catch ( Throwable e )
+            {
+                ex = exception( ex, e );
+            }
         }
 
-        if ( exception.get() != null )
+        if ( monitoredException != null && monitoredException.get() != null )
         {
-            throw new RuntimeException( exception.get() );
+            throw new RuntimeException( exception( monitoredException.get(), ex ) );
         }
+
+        if ( ex != null )
+        {
+            throw new RuntimeException( ex );
+        }
+    }
+
+    private Throwable exception( Throwable outer, Throwable inner )
+    {
+        if ( outer == null )
+        {
+            assert inner != null;
+            return inner;
+        }
+
+        if ( inner != null )
+        {
+            outer.addSuppressed( inner );
+        }
+
+        return outer;
     }
 
     private Supplier<Throwable> startAndRegisterExceptionMonitor( EdgeClusterMember edgeClusterMember )
