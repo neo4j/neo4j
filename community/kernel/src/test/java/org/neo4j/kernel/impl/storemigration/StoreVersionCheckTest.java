@@ -94,7 +94,7 @@ public class StoreVersionCheckTest
 
         // then
         assertFalse( result.outcome.isSuccessful() );
-        assertEquals( StoreVersionCheck.Result.Outcome.unexpectedUpgradingStoreVersion, result.outcome );
+        assertEquals( StoreVersionCheck.Result.Outcome.unexpectedStoreVersion, result.outcome );
         assertEquals( "V1", result.actualVersion );
     }
 

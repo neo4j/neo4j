@@ -68,7 +68,7 @@ public class DesktopModel
 
     public String getNeo4jVersion()
     {
-        return format( "%s", Version.getKernel().getReleaseVersion() );
+        return format( "%s", Version.getNeo4jVersion() );
     }
 
     public ListenSocketAddress getServerAddress()

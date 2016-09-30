@@ -64,6 +64,6 @@ public class DatabaseRepresentation extends MappingRepresentation implements Ext
         serializer.putRelativeUri( "constraints", PATH_SCHEMA_CONSTRAINT );
         serializer.putRelativeUri( "transaction", PATH_TRANSACTION );
         serializer.putRelativeUri( "node_labels", PATH_LABELS );
-        serializer.putString( "neo4j_version", Version.getKernel().getReleaseVersion() );
+        serializer.putString( "neo4j_version", Version.getNeo4jVersion() );
     }
 }

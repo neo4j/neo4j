@@ -1163,7 +1163,7 @@ public class ImportToolTest
     @Test
     public void shouldPrintReferenceLinkOnDataImportErrors() throws Exception
     {
-        String[] versionParts = Version.getKernel().getReleaseVersion().split("-");
+        String[] versionParts = Version.getNeo4jVersion().split("-");
         versionParts[0] = versionParts[0].substring(0, 3);
         String docsVersion = String.join("-", versionParts);
 

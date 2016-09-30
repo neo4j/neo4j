@@ -60,7 +60,7 @@ public class StoreVersionCheck
         String storeVersion = MetaDataStore.versionLongToString( record );
         if ( !expectedVersion.equals( storeVersion ) )
         {
-            return new Result( Outcome.unexpectedUpgradingStoreVersion, storeVersion, neostoreFile.getName() );
+            return new Result( Outcome.unexpectedStoreVersion, storeVersion, neostoreFile.getName() );
         }
 
         return new Result( Outcome.ok, null, neostoreFile.getName() );
@@ -84,7 +84,8 @@ public class StoreVersionCheck
             ok( true ),
             missingStoreFile( false ),
             storeVersionNotFound( false ),
-            unexpectedUpgradingStoreVersion( false ),
+            unexpectedStoreVersion( false ),
+            attemptedStoreDowngrade( false ),
             storeNotCleanlyShutDown( false );
 
             private final boolean success;

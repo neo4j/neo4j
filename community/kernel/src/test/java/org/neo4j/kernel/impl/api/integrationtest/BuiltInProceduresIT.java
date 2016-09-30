@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AccessMode.Static;
+import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -158,8 +158,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 .procedureCallRead( procedureName( "dbms", "components" ), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel", singletonList( "dev" ),
-                "community"} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel",
+                singletonList( Version.getNeo4jVersion() ), "community"} ) ) );
     }
 
     @Test

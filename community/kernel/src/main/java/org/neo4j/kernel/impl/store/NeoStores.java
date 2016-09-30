@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -171,12 +170,12 @@ public class NeoStores implements AutoCloseable
     {
         try
         {
-            String storeVersion = versionLongToString( getRecord( pageCache, neoStoreFileName, STORE_VERSION ) );
-            RecordFormats storeFormat = RecordFormatSelector.selectForVersion( storeVersion );
-            if ( !isCompatibleFormats( storeFormat ) )
+            String expectedStoreVersion = recordFormats.storeVersion();
+            String actualStoreVersion = versionLongToString( getRecord( pageCache, neoStoreFileName, STORE_VERSION ) );
+            RecordFormats actualStoreFormat = RecordFormatSelector.selectForVersion( actualStoreVersion );
+            if ( !isCompatibleFormats( actualStoreFormat ) )
             {
-                throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException( neoStoreFileName.getName(),
-                        storeVersion );
+                throw new UnexpectedStoreVersionException( actualStoreVersion, expectedStoreVersion );
             }
         }
         catch ( NoSuchFileException e )

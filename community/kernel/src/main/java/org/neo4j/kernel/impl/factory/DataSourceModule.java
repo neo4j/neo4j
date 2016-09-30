@@ -347,7 +347,7 @@ public class DataSourceModule
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
 
         Procedures procedures = new Procedures(
-                new SpecialBuiltInProcedures( Version.getKernel().getReleaseVersion(),
+                new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
                 pluginDir, internalLog );
         platform.life.add( procedures );

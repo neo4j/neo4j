@@ -418,7 +418,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
         @Override
         public String neo4jVersion()
         {
-            return Version.getKernel().getReleaseVersion();
+            return Version.getNeo4jVersion();
         }
 
         @Override

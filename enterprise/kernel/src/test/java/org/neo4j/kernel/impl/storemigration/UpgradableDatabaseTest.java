@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -263,8 +264,8 @@ public class UpgradableDatabaseTest
             catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
             {
                 // then
-                File expectedFile = new File( workingDirectory, neostoreFilename ).getAbsoluteFile();
-                assertEquals( String.format( MESSAGE, expectedFile, version ), e.getMessage() );
+                assertEquals( String.format( MESSAGE, version, upgradableDatabase.currentVersion(),
+                        Version.getNeo4jVersion() ), e.getMessage() );
             }
             catch ( StoreUpgrader.UnexpectedUpgradingStoreFormatException e )
             {

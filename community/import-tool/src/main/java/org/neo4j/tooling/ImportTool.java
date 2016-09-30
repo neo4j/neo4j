@@ -501,7 +501,7 @@ public class ImportTool
             Collection<Option<File[]>> relationshipsFiles,
             org.neo4j.unsafe.impl.batchimport.Configuration configuration, PrintStream out )
     {
-        out.println( "Neo4j version: " + Version.getKernel().getReleaseVersion() );
+        out.println( "Neo4j version: " + Version.getNeo4jVersion() );
         out.println( "Importing the contents of these files into " + storeDir + ":" );
         printInputFiles( "Nodes", nodesFiles, out );
         printInputFiles( "Relationships", relationshipsFiles, out );
@@ -592,7 +592,7 @@ public class ImportTool
     private static String manualReference( ManualPage page, Anchor anchor )
     {
         // Docs are versioned major.minor-suffix, so drop the patch version.
-        String[] versionParts = Version.getKernel().getReleaseVersion().split("-");
+        String[] versionParts = Version.getNeo4jVersion().split("-");
         versionParts[0] = versionParts[0].substring(0, 3);
         String docsVersion = String.join("-", versionParts);
 

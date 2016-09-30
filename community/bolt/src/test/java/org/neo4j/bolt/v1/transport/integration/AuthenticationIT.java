@@ -84,7 +84,7 @@ public class AuthenticationIT
     public HostnamePort address;
 
     protected TransportConnection client;
-    private final String version = "Neo4j/" + Version.getKernel().getReleaseVersion();
+    private final String version = "Neo4j/" + Version.getNeo4jVersion();
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()

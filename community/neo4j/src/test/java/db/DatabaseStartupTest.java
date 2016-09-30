@@ -37,9 +37,7 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -120,8 +118,6 @@ public class DatabaseStartupTest
             // then
             assertTrue( ex.getCause() instanceof LifecycleException );
             assertTrue( ex.getCause().getCause() instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
-            assertThat( ex.getCause().getCause().getMessage(),
-                    containsString( "has a store version '" + badStoreVersion + "' that we cannot upgrade from." ) );
         }
     }
 }

@@ -33,6 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
 import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -318,11 +319,22 @@ public class StoreUpgrader
 
     public static class UnexpectedUpgradingStoreVersionException extends UnableToUpgradeException
     {
-        protected static final String MESSAGE = "'%s' has a store version '%s' that we cannot upgrade from.";
+        protected static final String MESSAGE =
+                "Not possible to upgrade a store with version '%s' to current store version `%s` (Neo4j %s).";
 
-        public UnexpectedUpgradingStoreVersionException( String filename, String actualVersion )
+        public UnexpectedUpgradingStoreVersionException( String fileVersion, String currentVersion )
         {
-            super( String.format( MESSAGE, filename, actualVersion ) );
+            super( String.format( MESSAGE, fileVersion, currentVersion, Version.getNeo4jVersion() ) );
+        }
+    }
+
+    public static class AttemptedDowngradeException extends UnableToUpgradeException
+    {
+        protected static final String MESSAGE = "Downgrading stores are not supported.";
+
+        public AttemptedDowngradeException()
+        {
+            super( MESSAGE );
         }
     }
 
