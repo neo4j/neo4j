@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import java.time.Clock;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.logging.Logger;
@@ -62,20 +64,24 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  */
 class RWLock
 {
-    private final Object resource; // the resource this RWLock locks
+    private final LockResource resource; // the resource this RWLock locks
     private final LinkedList<LockRequest> waitingThreadList = new LinkedList<>();
     private final ArrayMap<Object,TxLockElement> txLockElementMap = new ArrayMap<>( (byte) 5, false, true );
     private final RagManager ragManager;
+    private Clock clock;
+    private long lockAcquisitionTimeoutMillis;
 
     // access to these is guarded by synchronized blocks
     private int totalReadCount;
     private int totalWriteCount;
     private int marked; // synch helper in LockManager
 
-    RWLock( Object resource, RagManager ragManager )
+    RWLock( LockResource resource, RagManager ragManager, Clock clock, long lockAcquisitionTimeoutMillis )
     {
         this.resource = resource;
         this.ragManager = ragManager;
+        this.clock = clock;
+        this.lockAcquisitionTimeoutMillis = lockAcquisitionTimeoutMillis;
     }
 
     // keeps track of a transactions read and write lock count on this RWLock
@@ -192,8 +198,10 @@ class RWLock
             tle.incrementRequests();
             Thread currentThread = currentThread();
 
+            long lockAcquisitionTimeBoundary = clock.millis() + lockAcquisitionTimeoutMillis;
             while ( !tle.isTerminated() && (totalWriteCount > tle.writeCount) )
             {
+                assertNotExpired( lockAcquisitionTimeBoundary );
                 ragManager.checkWaitOn( this, tx );
 
                 if ( addLockRequest )
@@ -202,7 +210,7 @@ class RWLock
                     waitingThreadList.addFirst( lockRequest );
                 }
 
-                addLockRequest = waitUninterruptedly();
+                addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );
             }
 
@@ -369,8 +377,10 @@ class RWLock
             tle.incrementRequests();
             Thread currentThread = currentThread();
 
+            long lockAcquisitionTimeBoundary = clock.millis() + lockAcquisitionTimeoutMillis;
             while ( !tle.isTerminated() && (totalWriteCount > tle.writeCount || totalReadCount > tle.readCount) )
             {
+                assertNotExpired( lockAcquisitionTimeBoundary );
                 ragManager.checkWaitOn( this, tx );
 
                 if ( addLockRequest )
@@ -379,7 +389,7 @@ class RWLock
                     waitingThreadList.addFirst( lockRequest );
                 }
 
-                addLockRequest = waitUninterruptedly();
+                addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );
             }
 
@@ -412,12 +422,19 @@ class RWLock
         }
     }
 
-    private boolean waitUninterruptedly()
+    private boolean waitUninterruptedly( long lockAcquisitionTimeBoundary )
     {
         boolean addLockRequest;
         try
         {
-            wait();
+            if ( lockAcquisitionTimeoutMillis > 0 )
+            {
+                wait( Math.abs( lockAcquisitionTimeBoundary - clock.millis() ) );
+            }
+            else
+            {
+                wait();
+            }
             addLockRequest = false;
         }
         catch ( InterruptedException e )
@@ -672,6 +689,18 @@ class RWLock
             txLockElementMap.put( tx, tle = new TxLockElement( tx ) );
         }
         return tle;
+    }
+
+    private void assertNotExpired( long timeBoundary )
+    {
+        if ( lockAcquisitionTimeoutMillis > 0 )
+        {
+            if ( timeBoundary < clock.millis() )
+            {
+                throw new LockAcquisitionTimeoutException( resource.type(), resource.resourceId(),
+                        lockAcquisitionTimeoutMillis );
+            }
+        }
     }
 
     synchronized Object getTxLockElementCount()

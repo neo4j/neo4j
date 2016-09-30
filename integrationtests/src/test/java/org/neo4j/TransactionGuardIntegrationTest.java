@@ -582,6 +582,19 @@ public class TransactionGuardIntegrationTest
         }
 
         @Override
+        protected PlatformModule createPlatform( File storeDir, Map<String,String> params, Dependencies dependencies,
+                GraphDatabaseFacade graphDatabaseFacade )
+        {
+            return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade ) {
+                @Override
+                protected Clock createClock()
+                {
+                    return clock;
+                }
+            };
+        }
+
+        @Override
         protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
                 Supplier<QueryExecutionEngine> queryEngine )
         {
@@ -596,12 +609,6 @@ public class TransactionGuardIntegrationTest
                 Supplier<QueryExecutionEngine> queryEngine  )
         {
             super( platformModule, editionModule, queryEngine );
-        }
-
-        @Override
-        protected Clock getClock()
-        {
-            return clock;
         }
 
     }

@@ -164,7 +164,7 @@ class SharedLock implements ForsetiLockManager.Lock
         }
     }
 
-    public void releaseUpdateLock( ForsetiClient client )
+    public void releaseUpdateLock()
     {
         while ( true )
         {

@@ -184,6 +184,8 @@ public interface Status
                 "transaction was active. Transaction may succeed if retried." ),
         LockClientStopped( TransientError,
                 "Transaction terminated, no more locks can be acquired." ),
+        LockAcquisitionTimeout( TransientError,
+                "Unable to acquire lock within configured timeout." ),
         Terminated( TransientError,
                 "Explicitly terminated by the user." ),
         Interrupted( TransientError,

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -173,7 +176,7 @@ public class ForsetiLockManager implements Locks
     private volatile boolean closed;
 
     @SuppressWarnings( "unchecked" )
-    public ForsetiLockManager( ResourceType... resourceTypes )
+    public ForsetiLockManager( Config config, Clock clock, ResourceType... resourceTypes )
     {
         int maxResourceId = findMaxResourceId( resourceTypes );
         this.lockMaps = new ConcurrentMap[maxResourceId];
@@ -193,7 +196,7 @@ public class ForsetiLockManager implements Locks
         // TODO be good enough. In fact, we could add the required fields for such a stack
         // TODO to the ForsetiClient objects themselves, making the stack garbage-free in
         // TODO the (presumably) common case of client re-use.
-        clientPool = new ForsetiClientFlyweightPool( lockMaps, waitStrategies );
+        clientPool = new ForsetiClientFlyweightPool( config, clock, lockMaps, waitStrategies );
     }
 
     /**
@@ -258,15 +261,18 @@ public class ForsetiLockManager implements Locks
         // very limited set of integers.
         private final Queue<Integer> unusedIds = new ConcurrentLinkedQueue<>();
         private final ConcurrentMap<Integer,ForsetiClient> clientsById = new ConcurrentHashMap<>();
+        private Config config;
+        private Clock clock;
         private final ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps;
         private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
         private final DeadlockResolutionStrategy deadlockResolutionStrategy = DeadlockStrategies.DEFAULT;
 
-        public ForsetiClientFlyweightPool(
-                ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps,
+        public ForsetiClientFlyweightPool( Config config, Clock clock, ConcurrentMap<Long,Lock>[] lockMaps,
                 WaitStrategy<AcquireLockTimeoutException>[] waitStrategies )
         {
             super( 128, null );
+            this.config = config;
+            this.clock = clock;
             this.lockMaps = lockMaps;
             this.waitStrategies = waitStrategies;
         }
@@ -279,8 +285,9 @@ public class ForsetiLockManager implements Locks
             {
                 id = clientIds.getAndIncrement();
             }
-            ForsetiClient client = new ForsetiClient(
-                    id, lockMaps, waitStrategies, this, deadlockResolutionStrategy, clientsById::get );
+            long lockAcquisitionTimeoutMillis = config.get( GraphDatabaseSettings.lock_acquisition_timeout );
+            ForsetiClient client = new ForsetiClient( id, lockMaps, waitStrategies, this,
+                    deadlockResolutionStrategy, clientsById::get, lockAcquisitionTimeoutMillis, clock );
             clientsById.put( id, client );
             return client;
         }

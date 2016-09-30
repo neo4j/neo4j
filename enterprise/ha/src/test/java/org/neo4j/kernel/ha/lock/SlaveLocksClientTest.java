@@ -38,6 +38,7 @@ import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
@@ -86,7 +87,7 @@ public class SlaveLocksClientTest
         master = mock( Master.class );
         availabilityGuard = new AvailabilityGuard( Clocks.fakeClock(), getInstance() );
 
-        lockManager = new CommunityLockManger();
+        lockManager = new CommunityLockManger( Config.defaults(), Clocks.systemClock() );
         local = spy( lockManager.newClient() );
         logProvider = new AssertableLogProvider();
 

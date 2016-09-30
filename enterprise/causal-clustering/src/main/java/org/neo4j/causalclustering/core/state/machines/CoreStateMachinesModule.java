@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.state.machines;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -175,7 +176,7 @@ public class CoreStateMachinesModule
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
-        lockManager = createLockManager( config, logging, replicator, myself, leaderLocator,
+        lockManager = createLockManager( config, platformModule.clock, logging, replicator, myself, leaderLocator,
                 replicatedLockTokenStateMachine );
 
         coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
@@ -225,10 +226,11 @@ public class CoreStateMachinesModule
                 idTypeConfigurationProvider );
     }
 
-    private Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-            MemberId myself, LeaderLocator leaderLocator, ReplicatedLockTokenStateMachine lockTokenStateMachine )
+    private Locks createLockManager( final Config config, Clock clock, final LogService logging,
+                                     final Replicator replicator, MemberId myself, LeaderLocator leaderLocator,
+                                     ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
-        Locks localLocks = CommunityEditionModule.createLockManager( config, logging );
+        Locks localLocks = CommunityEditionModule.createLockManager( config, clock, logging );
         return new LeaderOnlyLockManager( myself, replicator, leaderLocator, localLocks, lockTokenStateMachine );
     }
 }

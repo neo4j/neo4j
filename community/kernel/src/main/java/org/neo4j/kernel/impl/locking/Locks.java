@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.time.Clock;
+
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -53,7 +56,7 @@ public interface Locks
             super( key, altKeys );
         }
 
-        public abstract Locks newInstance( ResourceType[] resourceTypes );
+        public abstract Locks newInstance( Config config, Clock clocks, ResourceType[] resourceTypes );
     }
 
     /** For introspection and debugging. */

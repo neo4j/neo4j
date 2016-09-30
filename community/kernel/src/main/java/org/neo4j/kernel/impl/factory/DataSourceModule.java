@@ -160,8 +160,7 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        Clock clock = getClock();
-        guard = createGuard( deps, clock, logging );
+        guard = createGuard( deps, platformModule.clock, logging );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
@@ -216,7 +215,7 @@ public class DataSourceModule
                 platformModule.tracers,
                 procedures,
                 editionModule.ioLimiter,
-                clock, editionModule.accessCapability ) );
+                platformModule.clock, editionModule.accessCapability ) );
 
         dataSourceManager.register( neoStoreDataSource );
 
@@ -234,11 +233,6 @@ public class DataSourceModule
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
-    }
-
-    protected Clock getClock()
-    {
-        return Clock.systemUTC();
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(

@@ -17,26 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking.community;
+package org.neo4j.kernel.impl.locking;
 
-import java.time.Clock;
+import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.test.OtherThreadExecutor.WaitDetails;
-
-public class CommunityLocksTest extends LockingCompatibilityTestSuite
+/**
+ * Used in lock clients for cases when we unable to acquire a lock for a time that exceed configured
+ * timeout, if any.
+ *
+ * @see Locks.Client
+ */
+public class LockAcquisitionTimeoutException extends TransactionTerminatedException
 {
-    @Override
-    protected Locks createLockManager(Config config, Clock clock)
+    public LockAcquisitionTimeoutException( ResourceType resourceType, long resourceId, long timeoutMillis )
     {
-        return new CommunityLockManger( config, clock );
-    }
-
-    @Override
-    protected boolean isAwaitingLockAcquisition( WaitDetails details )
-    {
-        return details.isAt( RWLock.class, "waitUninterruptedly" );
+        super( Status.Transaction.LockAcquisitionTimeout,
+                String.format( "Unable to acquire lock for resource: %s with id: %d within %d millis.", resourceType,
+                        resourceId, timeoutMillis ) );
     }
 }

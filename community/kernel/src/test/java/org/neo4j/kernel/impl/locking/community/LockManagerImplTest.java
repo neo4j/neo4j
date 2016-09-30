@@ -24,8 +24,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -43,7 +44,7 @@ public class LockManagerImplTest
         LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
         LockResource node2 = new LockResource( ResourceTypes.NODE, 2L );
         LockTransaction lockTransaction = new LockTransaction();
-        LockManagerImpl lockManager = new LockManagerImpl( new RagManager() );
+        LockManagerImpl lockManager = createLockManager();
 
         // expect
         assertTrue( lockManager.getReadLock( node1, lockTransaction ) );
@@ -64,7 +65,7 @@ public class LockManagerImplTest
         // given
         LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
         LockTransaction lockTransaction = new LockTransaction();
-        LockManagerImpl lockManager = new LockManagerImpl( new RagManager() );
+        LockManagerImpl lockManager = createLockManager();
 
         // expect
         expectedException.expect( LockNotFoundException.class );
@@ -80,7 +81,7 @@ public class LockManagerImplTest
         // given
         LockResource node = new LockResource( ResourceTypes.NODE, 1L );
         LockTransaction lockTransaction = new LockTransaction();
-        LockManagerImpl lockManager = new LockManagerImpl( new RagManager() );
+        LockManagerImpl lockManager = createLockManager();
         lockManager.getWriteLock( node, lockTransaction );
 
         // expect
@@ -118,35 +119,18 @@ public class LockManagerImplTest
         assertEquals( 0, countLocks( lockManager ) );
     }
 
-    private RWLock getLockByResource( LockManagerImpl lockManager, final LockResource resource )
+    private LockManagerImpl createLockManager()
     {
-        final RWLock[] locks = new RWLock[1];
-        lockManager.accept( new Visitor<RWLock,RuntimeException>()
-        {
-            @Override
-            public boolean visit( RWLock lock ) throws RuntimeException
-            {
-                if ( resource.equals( lock.resource() ) )
-                {
-                    locks[0] = lock;
-                }
-                return false;
-            }
-        } );
-        return locks[0];
+        return new LockManagerImpl( new RagManager(), Config.defaults(), Clocks.systemClock() );
     }
 
     private int countLocks( LockManagerImpl lockManager )
     {
         final int[] counter = new int[1];
-        lockManager.accept( new Visitor<RWLock,RuntimeException>()
+        lockManager.accept( element ->
         {
-            @Override
-            public boolean visit( RWLock element ) throws RuntimeException
-            {
-                counter[0]++;
-                return false;
-            }
+            counter[0]++;
+            return false;
         } );
         return counter[0];
     }
@@ -158,12 +142,12 @@ public class LockManagerImplTest
 
         public MockedLockLockManager( RagManager ragManager, RWLock lock )
         {
-            super( ragManager );
+            super( ragManager, Config.defaults(), Clocks.systemClock() );
             this.lock = lock;
         }
 
         @Override
-        protected RWLock createLock( Object resource )
+        protected RWLock createLock( LockResource resource )
         {
             return lock;
         }

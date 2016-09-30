@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
+import java.time.Clock;
+
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -27,9 +30,9 @@ import org.neo4j.test.OtherThreadExecutor.WaitDetails;
 public class ForsetiLocksTest extends LockingCompatibilityTestSuite
 {
     @Override
-    protected Locks createLockManager()
+    protected Locks createLockManager(Config config, Clock clock)
     {
-        return new ForsetiLockManager( ResourceTypes.values() );
+        return new ForsetiLockManager( config, clock, ResourceTypes.values() );
     }
 
     @Override
