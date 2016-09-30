@@ -102,7 +102,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
 
     public static long rebuild( LabelScanStore store, FullStoreChangeStream fullStoreStream ) throws IOException
     {
-        try ( LabelScanWriter writer = store.newWriter() )
+        try ( LabelScanWriter writer = store.newWriter( true ) )
         {
             return fullStoreStream.applyTo( writer );
         }

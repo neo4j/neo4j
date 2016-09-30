@@ -41,6 +41,8 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.index.InserterOptions.BATCHING_SEQUENTIAL;
+import static org.neo4j.index.InserterOptions.DEFAULTS;
 
 public class NativeLabelScanStore implements LabelScanStore
 {
@@ -67,19 +69,19 @@ public class NativeLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public LabelScanWriter newWriter()
+    public LabelScanWriter newWriter( boolean batching )
     {
         final SCInserter<LabelScanKey,LabelScanValue> inserter;
         try
         {
-            inserter = index.inserter();
+            inserter = index.inserter( batching ? BATCHING_SEQUENTIAL : DEFAULTS );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
 
-        return new NativeLabelScanWriter( inserter, rangeSize, 1_000 );
+        return new NativeLabelScanWriter( inserter, rangeSize, batching ? 10_000 : 1_000 );
     }
 
     @Override

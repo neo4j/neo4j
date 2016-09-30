@@ -151,7 +151,7 @@ public class NativeLabelScanStoreTest
     private void writeSequential( LabelScanStore labelScanStore, ProgressListener progress ) throws IOException
     {
         // Sequential
-        try ( final LabelScanWriter writer = labelScanStore.newWriter() )
+        try ( final LabelScanWriter writer = labelScanStore.newWriter( true ) )
         {
             int batchSize = 1_000;
             int batches = count / batchSize;

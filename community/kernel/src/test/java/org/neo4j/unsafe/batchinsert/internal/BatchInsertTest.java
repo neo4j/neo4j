@@ -1501,7 +1501,7 @@ public class BatchInsertTest
         }
 
         @Override
-        public LabelScanWriter newWriter()
+        public LabelScanWriter newWriter( boolean batching )
         {
             writersCreated++;
             return new LabelScanWriter()

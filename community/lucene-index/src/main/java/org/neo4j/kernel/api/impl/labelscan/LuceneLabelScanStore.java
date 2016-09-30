@@ -195,7 +195,7 @@ public class LuceneLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public LabelScanWriter newWriter()
+    public LabelScanWriter newWriter( boolean batching )
     {
         return luceneIndex.getLabelScanWriter();
     }
