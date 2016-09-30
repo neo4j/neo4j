@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
@@ -85,7 +87,20 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     @Override
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        setupSecurityModule( platformModule, procedures,
-                platformModule.config.get( EnterpriseEditionSettings.security_module ) );
+        EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
+    }
+
+    public static void setupEnterpriseSecurityModule( PlatformModule platformModule, Procedures procedures )
+    {
+        if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
+        {
+            setupSecurityModule( platformModule,
+                    platformModule.logging.getUserLog( EnterpriseEditionModule.class ),
+                    procedures, platformModule.config.get( EnterpriseEditionSettings.security_module ) );
+        }
+        else
+        {
+            platformModule.life.add( platformModule.dependencies.satisfyDependency( EnterpriseAuthManager.NO_AUTH ) );
+        }
     }
 }

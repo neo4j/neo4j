@@ -32,6 +32,4 @@ public abstract class SecurityModule extends Service
     }
 
     public abstract void setup( PlatformModule platformModule, Procedures procedures ) throws KernelException;
-
-    public abstract void setupAuthDisabled( PlatformModule platformModule, Procedures procedures ) throws KernelException;
 }

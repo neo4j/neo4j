@@ -851,7 +851,6 @@ public class HighlyAvailableEditionModule
     @Override
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        setupSecurityModule( platformModule, procedures,
-                platformModule.config.get( EnterpriseEditionSettings.security_module ) );
+        EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
     }
 }

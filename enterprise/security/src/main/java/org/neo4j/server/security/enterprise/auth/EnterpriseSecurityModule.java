@@ -90,12 +90,6 @@ public class EnterpriseSecurityModule extends SecurityModule
         procedures.registerProcedure( org.neo4j.server.security.enterprise.auth.AuthProcedures.class, true );
     }
 
-    @Override
-    public void setupAuthDisabled( PlatformModule platformModule, Procedures procedures ) throws KernelException
-    {
-        platformModule.life.add( platformModule.dependencies.satisfyDependency( EnterpriseAuthManager.NO_AUTH ) );
-    }
-
     public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {

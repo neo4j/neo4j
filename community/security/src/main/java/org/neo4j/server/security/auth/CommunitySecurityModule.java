@@ -63,12 +63,6 @@ public class CommunitySecurityModule extends SecurityModule
         procedures.registerProcedure( AuthProcedures.class );
     }
 
-    @Override
-    public void setupAuthDisabled( PlatformModule platformModule, Procedures procedures ) throws KernelException
-    {
-        platformModule.life.add( platformModule.dependencies.satisfyDependency( AuthManager.NO_AUTH ) );
-    }
-
     private static final String USER_STORE_FILENAME = "auth";
     private static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
 

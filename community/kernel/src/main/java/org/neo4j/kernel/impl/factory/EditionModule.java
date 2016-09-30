@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
+import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -116,34 +117,29 @@ public abstract class EditionModule
 
     public abstract void setupSecurityModule( PlatformModule platformModule, Procedures procedures );
 
-    protected void setupSecurityModule( PlatformModule platformModule, Procedures procedures, String key )
+    public static void setupSecurityModule( PlatformModule platformModule, Log log, Procedures procedures,
+            String key )
     {
-        boolean authEnabled = platformModule.config.get( GraphDatabaseSettings.auth_enabled );
-
         for ( SecurityModule candidate : Service.load( SecurityModule.class ) )
         {
             if ( candidate.matches( key ) )
             {
                 try
                 {
-                    if ( !authEnabled )
-                    {
-                        candidate.setupAuthDisabled( platformModule, procedures );
-                        return;
-                    }
-                    else
-                    {
-                        candidate.setup( platformModule, procedures );
-                        return;
-                    }
+                    candidate.setup( platformModule, procedures );
+                    return;
                 }
                 catch ( KernelException e )
                 {
-                    throw new RuntimeException( "Failed to load security module.", e );
+                    String errorMessage = "Failed to load security module.";
+                    log.error( errorMessage );
+                    throw new RuntimeException( errorMessage, e );
                 }
             }
         }
-        throw new RuntimeException( "Failed to load security module with key '" + key + "'." );
+        String errorMessage = "Failed to load security module with key '" + key + "'.";
+        log.error( errorMessage );
+        throw new IllegalArgumentException( errorMessage );
     }
 
     protected BoltConnectionTracker createSessionTracker()
