@@ -33,11 +33,11 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -51,6 +51,8 @@ import org.neo4j.server.security.enterprise.auth.plugin.PluginRealm;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.time.Clocks;
 
 import static org.neo4j.kernel.api.proc.Context.AUTH_SUBJECT;
@@ -95,6 +97,16 @@ public class EnterpriseSecurityModule extends SecurityModule
                     ctx -> authManager.getUserManager( ctx.get( AUTH_SUBJECT ) ) );
             procedures.registerProcedure( UserManagementProcedures.class, true );
         }
+    }
+
+    private EnterpriseAuthSubject asEnterprise( AuthSubject authSubject )
+    {
+        if ( authSubject instanceof EnterpriseAuthSubject )
+        {
+            return ((EnterpriseAuthSubject) authSubject);
+        }
+        // TODO: better handling of this possible cast failure
+        throw new RuntimeException( "Expected EnterpriseAuthSubject, got " + authSubject.getClass().getName() );
     }
 
     public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,

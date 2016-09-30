@@ -78,7 +78,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
-        authSubject.setPassword( password, false );
+        userManager.setUserPassword( authSubject.username(), password, false );
     }
 
     @Description( "Show the current user." )

@@ -55,12 +55,14 @@ public class UserManagementProceduresLoggingTest
     public void setUp() throws Throwable
     {
         log = new AssertableLogProvider();
+        SecurityLog securityLog = new SecurityLog( log.getLog( getClass() ) );
+
         authProcedures = new TestUserManagementProcedures();
-        authProcedures.securityLog = new SecurityLog( log.getLog( getClass() ) );
+        authProcedures.securityLog = securityLog;
 
         EnterpriseUserManager userManager = getUserManager();
-        AuthSubject adminSubject = new TestAuthSubject( "admin", true, userManager, authProcedures.securityLog );
-        matsSubject = new TestAuthSubject( "mats", false, userManager, authProcedures.securityLog );
+        AuthSubject adminSubject = new TestAuthSubject( "admin", true, userManager, securityLog );
+        matsSubject = new TestAuthSubject( "mats", false, userManager, securityLog );
 
         authProcedures.authSubject = adminSubject;
         authProcedures.graph = mock( GraphDatabaseAPI.class );

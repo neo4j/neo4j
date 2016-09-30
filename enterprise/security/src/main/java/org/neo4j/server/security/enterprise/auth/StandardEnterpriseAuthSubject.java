@@ -75,18 +75,7 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     public void setPassword( String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        try
-        {
-            getUserManager().setUserPassword( (String) shiroSubject.getPrincipal(), password, requirePasswordChange );
-            securityLog.info( this, "changed password%s",
-                    requirePasswordChange ? ", with password change required" : "" );
-        }
-        catch ( Exception e )
-        {
-            securityLog.error( this, "tried to change password: %s", e.getMessage() );
-            throw e;
-        }
-
+        getUserManager().setUserPassword( (String) shiroSubject.getPrincipal(), password, requirePasswordChange );
         // Make user authenticated if successful
         if ( getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
         {

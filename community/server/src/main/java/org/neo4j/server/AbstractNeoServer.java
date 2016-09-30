@@ -79,6 +79,7 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
+import org.neo4j.server.security.auth.UserManagerSupplier;
 import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -95,6 +96,7 @@ import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_size;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
+import static org.neo4j.server.database.InjectableProvider.providerFromSupplier;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
 public abstract class AbstractNeoServer implements NeoServer
@@ -130,6 +132,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
+    protected Supplier<UserManagerSupplier> userManagerSupplier;
     protected Optional<KeyStoreInformation> keyStoreInfo;
     private DatabaseActions databaseActions;
     private TransactionFacade transactionFacade;
@@ -173,6 +176,8 @@ public abstract class AbstractNeoServer implements NeoServer
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( config, dependencies)) );
 
         this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
+        this.userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
+
         this.webServer = createWebServer();
 
         this.keyStoreInfo = createKeyStore();
@@ -495,7 +500,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
 
         singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
-        singletons.add( new AuthManagerProvider( authManagerSupplier ) );
+        singletons.add( providerFromSupplier( authManagerSupplier, AuthManager.class ) );
+        singletons.add( providerFromSupplier( userManagerSupplier, UserManagerSupplier.class ) );
         singletons.add( new TransactionFilter( database ) );
         singletons.add( new LoggingProvider( logProvider ) );
         singletons.add( providerForSingleton( logProvider.getLog( NeoServer.class ), Log.class ) );
@@ -503,22 +509,6 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
 
         return singletons;
-    }
-
-    private static class AuthManagerProvider extends InjectableProvider<AuthManager>
-    {
-        private final Supplier<AuthManager> authManagerSupplier;
-        private AuthManagerProvider( Supplier<AuthManager> authManagerSupplier )
-        {
-            super(AuthManager.class);
-            this.authManagerSupplier = authManagerSupplier;
-        }
-
-        @Override
-        public AuthManager getValue( HttpContext httpContext )
-        {
-            return authManagerSupplier.get();
-        }
     }
 
     private boolean hasModule( Class<? extends ServerModule> clazz )

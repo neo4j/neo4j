@@ -25,19 +25,38 @@ import com.sun.jersey.core.spi.component.ComponentScope;
 import com.sun.jersey.server.impl.inject.AbstractHttpContextInjectable;
 import com.sun.jersey.spi.inject.Injectable;
 
+import java.util.function.Supplier;
 import javax.ws.rs.core.Context;
 
-public abstract class InjectableProvider<E> extends AbstractHttpContextInjectable<E> implements
-        com.sun.jersey.spi.inject.InjectableProvider<Context, Class<E>>
+public abstract class InjectableProvider<E> extends AbstractHttpContextInjectable<E>
+        implements com.sun.jersey.spi.inject.InjectableProvider<Context,Class<E>>
 {
     public final Class<E> t;
 
-    public static <E> InjectableProvider<? extends E> providerForSingleton(final E component, final Class<E> componentClass)
-    {
-        return new InjectableProvider<E>(componentClass) {
+    public static <E> InjectableProvider<? extends E> providerForSingleton(
+            final E component,
+            final Class<E> componentClass
+    ) {
+        return new InjectableProvider<E>( componentClass )
+        {
             @Override
-            public E getValue(HttpContext httpContext) {
+            public E getValue( HttpContext httpContext )
+            {
                 return component;
+            }
+        };
+    }
+
+    public static <E> InjectableProvider<? extends E> providerFromSupplier(
+            final Supplier<E> supplier,
+            final Class<E> componentClass
+    ) {
+        return new InjectableProvider<E>( componentClass )
+        {
+            @Override
+            public E getValue( HttpContext httpContext )
+            {
+                return supplier.get();
             }
         };
     }

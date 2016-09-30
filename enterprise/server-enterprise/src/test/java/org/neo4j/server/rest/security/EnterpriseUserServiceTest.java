@@ -41,8 +41,7 @@ public class EnterpriseUserServiceTest extends UserServiceTest
     @Override
     protected void setupAuthManagerAndSubject()
     {
-        authManager = authManagerRule.getManager();
-        userManager = authManagerRule.getManager().getUserManager();
+        userManagerSupplier = authManagerRule.getManager();
 
         ShiroSubject shiroSubject = mock( ShiroSubject.class );
         when( shiroSubject.getPrincipal() ).thenReturn( "neo4j" );

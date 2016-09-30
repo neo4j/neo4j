@@ -25,37 +25,47 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.procedure.Mode.DBMS;
 
-@SuppressWarnings( "unused" )
+@SuppressWarnings( {"unused", "WeakerAccess"} )
 public class UserManagementProcedures extends AuthProceduresBase
 {
+    @Context
+    public AuthSubject authSubject;
+
+    @Context
+    public GraphDatabaseAPI graph;
+
+    @Context
+    public KernelTransaction tx;
+
+    @Context
+    public SecurityLog securityLog;
+
+    @Context
+    public EnterpriseUserManager userManager;
+
     @Description( "Create a new user." )
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
-    public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
-            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
+    public void createUser(
+            @Name( "username" ) String username,
+            @Name( "password" ) String password,
+            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange
+    )
             throws InvalidArgumentsException, IOException
     {
-        try
-        {
-            StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-            adminSubject.getUserManager().newUser( username, password, requirePasswordChange );
-            securityLog.info( authSubject, "created user `%s`%s", username,
-                    requirePasswordChange ? ", with password change required" : "" );
-        }
-        catch ( Exception e )
-        {
-            securityLog.error( authSubject, "tried to create user `%s`: %s", username, e.getMessage() );
-            throw e;
-        }
+        userManager.newUser( authSubject.username(), password, requirePasswordChange );
     }
 
     @Deprecated
@@ -74,9 +84,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     )
             throws InvalidArgumentsException, IOException
     {
-        // logging is handled by subject
-        StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-        enterpriseSubject.setPassword( password, requirePasswordChange );
+        userManager.setUserPassword( authSubject.username(), password, requirePasswordChange );
     }
 
     @Description( "Change the given user's password." )
@@ -85,33 +93,7 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
-        if ( authSubject.hasUsername( username ) )
-        {
-            changePassword( newPassword, requirePasswordChange );
-        }
-        else
-        {
-            StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-            try
-            {
-                if ( !enterpriseSubject.isAdmin() )
-                {
-                    throw new AuthorizationViolationException( PERMISSION_DENIED );
-                }
-                else
-                {
-                    enterpriseSubject.getUserManager().setUserPassword( username, newPassword, requirePasswordChange );
-                    securityLog.info( authSubject, "changed password for user `%s`%s", username,
-                            requirePasswordChange ? ", with password change required" : "" );
-                }
-            }
-            catch ( Exception e )
-            {
-                securityLog.error( authSubject, "tried to change password for user `%s`: %s",
-                        username, e.getMessage() );
-                throw e;
-            }
-        }
+        userManager.setUserPassword( username, newPassword, requirePasswordChange );
     }
 
     @Description( "Assign a role to the user." )
