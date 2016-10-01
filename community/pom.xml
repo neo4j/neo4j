@@ -65,6 +65,7 @@
     <module>licensecheck-config</module>
     <module>dbms</module>
     <module>command-line</module>
+    <module>procedure-compiler</module>
   </modules>
 
   <licenses>
