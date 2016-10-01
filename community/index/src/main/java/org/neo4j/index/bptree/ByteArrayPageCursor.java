@@ -26,6 +26,13 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
+/**
+ * This class is bridging something which would otherwise make {@link IndexModifier} code slightly more
+ * complicated. Currently when splitting nodes keys/values/children are read into temporary arrays
+ * and manipulating that data by standard means (which are designed to work on {@link PageCursor}
+ * can stay the same if wrapping the byte array as such. If splitting code later changes to not
+ * do this temporary copy then this class won't be needed anymore.
+ */
 public class ByteArrayPageCursor extends PageCursor
 {
     private final ByteBuffer buffer;
@@ -210,7 +217,7 @@ public class ByteArrayPageCursor extends PageCursor
 
     @Override
     public void close()
-    {
+    {   // Nothing to close
     }
 
     @Override
@@ -233,7 +240,7 @@ public class ByteArrayPageCursor extends PageCursor
 
     @Override
     public void checkAndClearCursorException() throws CursorException
-    {
+    {   // Don't check
     }
 
     @Override
@@ -250,7 +257,7 @@ public class ByteArrayPageCursor extends PageCursor
 
     @Override
     public void clearCursorException()
-    {
+    {   // Don't check
     }
 
     @Override

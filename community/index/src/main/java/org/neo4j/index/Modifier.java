@@ -37,6 +37,10 @@ public interface Modifier<KEY,VALUE> extends Closeable
     /**
      * Defaults to {@link ValueAmenders#insertNew() inserting new key/value pair} on existing key.
      *
+     * @param key key to insert.
+     * @param value value to insert for the {@code key}.
+     * @throws IOException on index access error.
+     *
      * @see #insert(Object, Object, ValueAmender)
      */
     default void insert( KEY key, VALUE value ) throws IOException

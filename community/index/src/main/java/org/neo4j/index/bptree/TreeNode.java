@@ -57,6 +57,8 @@ import org.neo4j.io.pagecache.PageCursor;
  * Calc offset for value i
  * HEADER_LENGTH + SIZE_KEY * MAX_KEY_COUNT_LEAF + i * SIZE_VALUE
  *
+ * @param <KEY> type of key
+ * @param <VALUE> type of value
  */
 public class TreeNode<KEY,VALUE>
 {
