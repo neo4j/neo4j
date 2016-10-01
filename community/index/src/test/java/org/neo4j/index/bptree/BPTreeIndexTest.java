@@ -40,6 +40,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.index.Hit;
+import org.neo4j.index.Index;
 import org.neo4j.index.bptree.BPTreeIndex;
 import org.neo4j.index.bptree.Layout;
 import org.neo4j.index.bptree.path.PathIndexLayout;
@@ -74,17 +75,17 @@ public class BPTreeIndexTest
     private PageCache pageCache;
     private File indexFile;
     private final SCIndexDescription description = new SCIndexDescription( "a", "b", "c", OUTGOING, "d", null );
-    @SuppressWarnings( "rawtypes" )
-    private BPTreeIndex index;
+    private final Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
+    private Index<TwoLongs,TwoLongs> index;
 
-    @SuppressWarnings( "unchecked" )
-    public <KEY,VALUE> BPTreeIndex<KEY,VALUE> createIndex( int pageSize, Layout<KEY,VALUE> layout ) throws IOException
+    public Index<TwoLongs,TwoLongs> createIndex( int pageSize )
+            throws IOException
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.setFileSystemAbstraction( new DefaultFileSystemAbstraction() );
         pageCache = new MuninnPageCache( swapperFactory, 10_000, pageSize, NULL );
         indexFile = new File( folder.getRoot(), "index" );
-        return index = new BPTreeIndex<>( pageCache, indexFile, new PathIndexLayout( description ), 0 );
+        return index = new BPTreeIndex<>( pageCache, indexFile, layout, 0/*i.e. use whatever page cache says*/ );
     }
 
     @After
@@ -101,8 +102,7 @@ public class BPTreeIndexTest
     public void shouldReadWrittenMetaData() throws Exception
     {
         // GIVEN
-        Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
-        try ( BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
 
@@ -117,8 +117,7 @@ public class BPTreeIndexTest
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        PathIndexLayout layout = new PathIndexLayout( description );
-        BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 1024, layout );
+        Index<TwoLongs,TwoLongs> index = createIndex( 1024 );
         Comparator<TwoLongs> keyComparator = layout;
         Map<TwoLongs,TwoLongs> data = new TreeMap<>( keyComparator );
         long seed = currentTimeMillis();
@@ -186,7 +185,7 @@ public class BPTreeIndexTest
     public void shouldSplitCorrectly() throws Exception
     {
         // GIVEN
-        BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 128, new PathIndexLayout( description ) );
+        Index<TwoLongs,TwoLongs> index = createIndex( 128 );
 
         // WHEN
         long seed = currentTimeMillis();
@@ -214,7 +213,6 @@ public class BPTreeIndexTest
                 TwoLongs hit = cursor.get().key();
                 if ( hit.first < prev.first )
                 {
-                    index.printTree();
                     fail( hit + " smaller than prev " + prev );
                 }
                 prev = new TwoLongs( hit.first, hit.other );
@@ -228,17 +226,16 @@ public class BPTreeIndexTest
     public void shouldFailToOpenOnDifferentMetaData() throws Exception
     {
         // GIVEN
-        Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
-        try ( BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
         index = null;
 
         // WHEN
         SCIndexDescription wrongDescription = new SCIndexDescription( "_", "_", "_", Direction.INCOMING, null, "prop" );
-        try
+        try ( Index<TwoLongs,TwoLongs> index =
+                new BPTreeIndex<>( pageCache, indexFile, new PathIndexLayout( wrongDescription ), 0 ) )
         {
-            new BPTreeIndex<>( pageCache, indexFile, new PathIndexLayout( wrongDescription ), 0 );
             fail( "Should not load" );
         }
         catch ( IllegalArgumentException e )
@@ -254,23 +251,23 @@ public class BPTreeIndexTest
     public void shouldFailToOpenOnDifferentLayout() throws Exception
     {
         // GIVEN
-        Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
-        try ( BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
         index = null;
 
         // WHEN
-        try
+        try ( Index<TwoLongs,TwoLongs> index =
+                new BPTreeIndex<>( pageCache, indexFile, new PathIndexLayout( description )
         {
-            new BPTreeIndex<>( pageCache, indexFile, new PathIndexLayout( description )
+            @Override
+            public long identifier()
             {
-                @Override
-                public long identifier()
-                {
-                    return 123456;
-                }
-            }, 0 );
+                return 123456;
+            }
+        }, 0 ) )
+        {
+
             fail( "Should not load" );
         }
         catch ( IllegalArgumentException e )
@@ -283,15 +280,13 @@ public class BPTreeIndexTest
     public void shouldFailToOpenOnDifferentMajorVersion() throws Exception
     {
         // GIVEN
-        Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
-        try ( BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
         index = null;
 
         // WHEN
-        try
-        {
+        try ( Index<TwoLongs,TwoLongs> index =
             new BPTreeIndex<>( pageCache, indexFile, new PathIndexLayout( description )
             {
                 @Override
@@ -299,7 +294,8 @@ public class BPTreeIndexTest
                 {
                     return super.majorVersion() + 1;
                 }
-            }, 0 );
+            }, 0 ) )
+        {
             fail( "Should not load" );
         }
         catch ( IllegalArgumentException e )
@@ -312,15 +308,13 @@ public class BPTreeIndexTest
     public void shouldFailToOpenOnDifferentMinorVersion() throws Exception
     {
         // GIVEN
-        Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
-        try ( BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 1024, layout ) )
+        try ( Index<TwoLongs,TwoLongs> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
         index = null;
 
         // WHEN
-        try
-        {
+        try ( Index<TwoLongs,TwoLongs> index =
             new BPTreeIndex<>( pageCache, indexFile, new PathIndexLayout( description )
             {
                 @Override
@@ -328,7 +322,8 @@ public class BPTreeIndexTest
                 {
                     return super.minorVersion() + 1;
                 }
-            }, 0 );
+            }, 0 ) )
+        {
             fail( "Should not load" );
         }
         catch ( IllegalArgumentException e )
@@ -340,8 +335,7 @@ public class BPTreeIndexTest
     @Test
     public void shouldSeeSimpleInsertions() throws Exception
     {
-        Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
-        index = createIndex( 1024, layout );
+        index = createIndex( 1024 );
         TwoLongs first = new TwoLongs( 1, 1 );
         TwoLongs second = new TwoLongs( 2, 2 );
         try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
@@ -365,8 +359,7 @@ public class BPTreeIndexTest
     public void shouldReadCorrectlyWhenConcurrentlyInserting() throws Throwable
     {
         // GIVEN
-        Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
-        index = createIndex( 256, layout );
+        index = createIndex( 256 );
         int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
         CountDownLatch readerReadySignal = new CountDownLatch( readers );
         CountDownLatch startSignal = new CountDownLatch( 1 );
@@ -488,11 +481,11 @@ public class BPTreeIndexTest
         }
     }
 
-    private void randomlyModifyIndex( BPTreeIndex<TwoLongs,TwoLongs> index, Map<TwoLongs,TwoLongs> data, Random random )
+    private void randomlyModifyIndex( Index<TwoLongs,TwoLongs> index2, Map<TwoLongs,TwoLongs> data, Random random )
             throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;
-        try ( Modifier<TwoLongs,TwoLongs> modifier = index.modifier( DEFAULTS ) )
+        try ( Modifier<TwoLongs,TwoLongs> modifier = index2.modifier( DEFAULTS ) )
         {
             for ( int i = 0; i < changeCount; i++ )
             {
