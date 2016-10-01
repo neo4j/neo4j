@@ -1062,18 +1062,6 @@ public class UserFunctionIT
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
             return "done";
         }
-
-        @UserFunction
-        public List<Long> list()
-        {
-            ArrayList<Long> longs = new ArrayList<>( 1000 );
-            for ( long i = 0L; i < 1000L; i++ )
-            {
-                longs.add( i );
-            }
-
-            return longs;
-        }
     }
 
     private static final ScheduledExecutorService jobs = Executors.newScheduledThreadPool( 5 );
