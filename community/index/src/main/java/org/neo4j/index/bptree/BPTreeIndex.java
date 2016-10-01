@@ -35,6 +35,16 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+/**
+ * A B+tree implementation directly atop a {@link PageCache} with no caching in between.
+ * Additionally internal nodes on same level are linked, this to provide correct reading
+ * when concurrently {@link #modifier(org.neo4j.index.Modifier.Options) modifying} the index.
+ *
+ * Currently no leaves will be removed or merged as part of {@link Modifier#remove(Object) removals}.
+ *
+ * @param <KEY> type of keys
+ * @param <VALUE> type of values
+ */
 public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 {
     private static final int META_PAGE_ID = 0;
