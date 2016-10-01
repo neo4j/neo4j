@@ -63,7 +63,7 @@ package org.neo4j.graphdb;
  * {@link #getOtherNode(Node)} and {@link #getNodes()} are guaranteed to always
  * return valid, non-null nodes.
  * <p>
- * A node's id is unique, but note the following: Neo4j reuses its internal ids
+ * A relationship's id is unique, but note the following: Neo4j reuses its internal ids
  * when nodes and relationships are deleted, which means it's bad practice to
  * refer to them this way. Instead, use application generated ids.
  */
@@ -73,10 +73,10 @@ public interface Relationship extends IdentifiablePropertyContainer
      * Returns the unique id of this relationship. Ids are garbage collected
      * over time so they are only guaranteed to be unique during a specific time
      * span: if the relationship is deleted, it's likely that a new relationship
-     * at some point will get the old id. <b>Note</b>: This makes node ids
-     * brittle as public APIs.
+     * at some point will get the old id. <b>Note</b>: This makes relationship
+     * ids brittle as public APIs.
      *
-     * @return the id of this relationship
+     * @return The id of this relationship
      */
      long getId();
 
