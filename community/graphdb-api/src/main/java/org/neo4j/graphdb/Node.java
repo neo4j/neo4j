@@ -58,7 +58,7 @@ public interface Node extends IdentifiablePropertyContainer
      * Returns the unique id of this node. Ids are garbage collected over time
      * so they are only guaranteed to be unique during a specific time span: if
      * the node is deleted, it's likely that a new node at some point will get
-     * the old id. <b>Note</b>: this makes node ids brittle as public APIs.
+     * the old id. <b>Note</b>: This makes node ids brittle as public APIs.
      *
      * @return the id of this node
      */

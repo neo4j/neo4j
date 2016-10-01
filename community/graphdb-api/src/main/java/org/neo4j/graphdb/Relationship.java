@@ -73,10 +73,10 @@ public interface Relationship extends IdentifiablePropertyContainer
      * Returns the unique id of this relationship. Ids are garbage collected
      * over time so they are only guaranteed to be unique during a specific time
      * span: if the relationship is deleted, it's likely that a new relationship
-     * at some point will get the old id. This makes relationship ids brittle as
-     * public APIs.
+     * at some point will get the old id. <b>Note</b>: This makes node ids
+     * brittle as public APIs.
      *
-     * @return the id of this node
+     * @return the id of this relationship
      */
      long getId();
 

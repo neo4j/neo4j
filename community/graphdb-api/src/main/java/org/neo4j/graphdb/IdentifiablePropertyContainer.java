@@ -19,8 +19,12 @@
  */
 package org.neo4j.graphdb;
 
-public interface IdentifiablePropertyContainer extends PropertyContainer {
-
+/**
+ * Provides the ability to obtain the unique id of the implementing
+ * {@link PropertyContainer}.
+ */
+public interface IdentifiablePropertyContainer extends PropertyContainer
+{
     /**
      * Returns the unique id of this {@link PropertyContainer}. Id's are garbage
      * collected over time so they are only guaranteed to be unique during a
