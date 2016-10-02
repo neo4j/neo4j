@@ -184,7 +184,13 @@ class NativeLabelScanWriter implements LabelScanWriter
     @Override
     public void close() throws IOException
     {
-        flushPendingChanges();
-        inserter.close();
+        try
+        {
+            flushPendingChanges();
+        }
+        finally
+        {
+            inserter.close();
+        }
     }
 }

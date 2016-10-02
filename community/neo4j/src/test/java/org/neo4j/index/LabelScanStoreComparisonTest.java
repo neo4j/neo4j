@@ -21,12 +21,14 @@ package org.neo4j.index;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -53,6 +55,7 @@ import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.EMPTY;
@@ -67,6 +70,8 @@ public class LabelScanStoreComparisonTest
     public final RandomRule random = new RandomRule();
     @Rule
     public final LifeRule life = new LifeRule( true );
+    @Rule
+    public final TestName testName = new TestName();
     private final int count = 100_000;
     private final int txSize = 100;
 
@@ -74,7 +79,8 @@ public class LabelScanStoreComparisonTest
     public void shouldTestNativeStore() throws Exception
     {
         File storeDir = testDirectory.directory();
-        final PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
+        final PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction(),
+                Config.defaults().augment( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "50M" ) ) );
         LabelScanStore labelScanStore = life.add( new NativeLabelScanStore( pageCache, storeDir, Long.SIZE, EMPTY ) );
 
         testLabelScanStore( labelScanStore );
@@ -106,7 +112,7 @@ public class LabelScanStoreComparisonTest
     {
         // === WRITE ===
         long time = currentTimeMillis();
-        ProgressListener progress = textual( System.out ).singlePart( "Insert", count );
+        ProgressListener progress = textual( System.out ).singlePart( "Insert:" + testName.getMethodName(), count );
 //        writeSequential( labelScanStore, progress );
         writeRandomSmallTransactions( labelScanStore, progress );
         long writeTime = currentTimeMillis() - time;

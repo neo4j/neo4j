@@ -26,6 +26,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.Direction;
@@ -194,7 +196,7 @@ public class BPTreeIndexTest
         PrimitiveLongSet seen = Primitive.longSet( count );
         try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
         {
-            for ( int i = 0; i < 1_000; i++ )
+            for ( int i = 0; i < count; i++ )
             {
                 TwoLongs key = new TwoLongs( random.nextInt( 100_000 ), 0 );
                 TwoLongs value = new TwoLongs();
@@ -213,13 +215,23 @@ public class BPTreeIndexTest
                 TwoLongs hit = cursor.get().key();
                 if ( hit.first < prev.first )
                 {
-                    fail( hit + " smaller than prev " + prev );
+                    fail( "Seed:" + seed + ", " + hit + " smaller than prev " + prev );
                 }
                 prev = new TwoLongs( hit.first, hit.other );
                 assertTrue( seen.remove( hit.first ) );
             }
-            assertTrue( seen.isEmpty() );
+
+            if ( !seen.isEmpty() )
+            {
+                fail( "Seed:" + seed + ", expected hits " +
+                        Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
+            }
         }
+    }
+
+    private void printTree( Index<TwoLongs,TwoLongs> index ) throws IOException
+    {
+        ((BPTreeIndex)index).printTree();
     }
 
     @Test
@@ -335,22 +347,24 @@ public class BPTreeIndexTest
     @Test
     public void shouldSeeSimpleInsertions() throws Exception
     {
-        index = createIndex( 1024 );
-        TwoLongs first = new TwoLongs( 1, 1 );
-        TwoLongs second = new TwoLongs( 2, 2 );
+        index = createIndex( 128 );
+        int count = 1000;
         try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
         {
-            inserter.insert( first, first );
-            inserter.insert( second, second );
+            for ( int i = 0; i < count; i++ )
+            {
+                inserter.insert( new TwoLongs( i, i ), new TwoLongs( i, i ) );
+            }
         }
 
         try ( RawCursor<Hit<TwoLongs,TwoLongs>,IOException> cursor =
-                index.seek( first, new TwoLongs( Long.MAX_VALUE, Long.MAX_VALUE ) ) )
+                index.seek( new TwoLongs( 0, 0 ), new TwoLongs( Long.MAX_VALUE, Long.MAX_VALUE ) ) )
         {
-            assertTrue( cursor.next() );
-            assertEquals( first, cursor.get().key() );
-            assertTrue( cursor.next() );
-            assertEquals( second, cursor.get().key() );
+            for ( int i = 0; i < count; i++ )
+            {
+                assertTrue( cursor.next() );
+                assertEquals( new TwoLongs( i, i ), cursor.get().key() );
+            }
             assertFalse( cursor.next() );
         }
     }

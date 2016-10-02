@@ -20,286 +20,100 @@
 package org.neo4j.index.bptree;
 
 import java.util.Comparator;
+import java.util.function.Consumer;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-/**
- * Methods to manipulate single node such as set and get header fields,
- * insert and fetch keys, values and children.
- *
- * DESIGN
- *
- * Using Separate design the internal nodes should look like
- *
- * # = empty space
- *
- * [                    HEADER               ]|[      KEYS     ]|[     CHILDREN      ]
- * [TYPE][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING]|[[KEY][KEY]...##]|[[CHILD][CHILD]...##]
- *  0     1         5             13            21
- *
- * Calc offset for key i (starting from 0)
- * HEADER_LENGTH + i * SIZE_KEY
- *
- * Calc offset for child i
- * HEADER_LENGTH + SIZE_KEY * MAX_KEY_COUNT_INTERNAL + i * SIZE_CHILD
- *
- *
- * Using Separate design the leaf nodes should look like
- *
- *
- * [                   HEADER                ]|[      KEYS     ]|[       VALUES      ]
- * [TYPE][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
- *  0     1         5             13            21
- *
- * Calc offset for key i (starting from 0)
- * HEADER_LENGTH + i * SIZE_KEY
- *
- * Calc offset for value i
- * HEADER_LENGTH + SIZE_KEY * MAX_KEY_COUNT_LEAF + i * SIZE_VALUE
- *
- * @param <KEY> type of key
- * @param <VALUE> type of value
- */
-public class TreeNode<KEY,VALUE>
+public interface TreeNode<KEY,VALUE>
 {
-    private static final int BYTE_POS_TYPE = 0;
-    private static final int BYTE_POS_KEYCOUNT = 1;
-    private static final int BYTE_POS_RIGHTSIBLING = 5;
-    private static final int BYTE_POS_LEFTSIBLING = 13;
-    private static final int HEADER_LENGTH = 21;
+    void initializeLeaf( PageCursor cursor );
 
-    private static final int SIZE_CHILD = Long.BYTES;
+    void initializeInternal( PageCursor cursor );
 
-    private static final byte LEAF_FLAG = 1;
-    private static final byte INTERNAL_FLAG = 0;
-    private static final long NO_NODE_FLAG = -1;
+    boolean isLeaf( PageCursor cursor );
 
-    private final int internalMaxKeyCount;
-    private final int leafMaxKeyCount;
-    private final Layout<KEY,VALUE> layout;
+    boolean isInternal( PageCursor cursor );
 
-    private final int keySize;
-    private final int valueSize;
+    int keyCount( PageCursor cursor );
 
-    public TreeNode( int pageSize, Layout<KEY,VALUE> layout )
-    {
-        this.layout = layout;
-        keySize = layout.keySize();
-        valueSize = layout.valueSize();
-        internalMaxKeyCount = Math.floorDiv( pageSize - (HEADER_LENGTH + SIZE_CHILD),
-                keySize + SIZE_CHILD);
-        leafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
-    }
+    long rightSibling( PageCursor cursor );
 
-    // ROUTINES
+    long leftSibling( PageCursor cursor );
 
-    public KEY newKey()
-    {
-        return layout.newKey();
-    }
+    void setTypeLeaf( PageCursor cursor );
 
-    public VALUE newValue()
-    {
-        return layout.newValue();
-    }
+    void setTypeInternal( PageCursor cursor );
 
-    public void initializeLeaf( PageCursor cursor )
-    {
-        setTypeLeaf( cursor );
-        setKeyCount( cursor, 0 );
-        setRightSibling( cursor, NO_NODE_FLAG );
-        setLeftSibling( cursor, NO_NODE_FLAG );
-    }
+    void setKeyCount( PageCursor cursor, int count );
 
-    public void initializeInternal( PageCursor cursor )
-    {
-        setTypeInternal( cursor );
-        setKeyCount( cursor, 0 );
-        setRightSibling( cursor, NO_NODE_FLAG );
-        setLeftSibling( cursor, NO_NODE_FLAG );
-    }
+    void setRightSibling( PageCursor cursor, long rightSiblingId );
 
-    // HEADER METHODS
+    void setLeftSibling( PageCursor cursor, long leftSiblingId );
 
-    public boolean isLeaf( PageCursor cursor )
-    {
-        return cursor.getByte( BYTE_POS_TYPE ) == LEAF_FLAG;
-    }
+    Object newOrder();
 
-    public boolean isInternal( PageCursor cursor )
-    {
-        return cursor.getByte( BYTE_POS_TYPE ) == INTERNAL_FLAG;
-    }
+    void getOrder( PageCursor cursor, Object into );
 
-    public int keyCount( PageCursor cursor )
-    {
-        return cursor.getInt( BYTE_POS_KEYCOUNT );
-    }
+    KEY keyAt( PageCursor cursor, KEY into, int pos, Object order );
 
-    public long rightSibling( PageCursor cursor )
-    {
-        return cursor.getLong( BYTE_POS_RIGHTSIBLING );
-    }
+    void insertKeyAt( PageCursor cursor, KEY key, int pos, Object order, byte[] tmp );
 
-    public long leftSibling( PageCursor cursor )
-    {
-        return cursor.getLong( BYTE_POS_LEFTSIBLING );
-    }
+    void removeKeyAt( PageCursor cursor, int pos, Object order, byte[] tmp );
 
-    public void setTypeLeaf( PageCursor cursor )
-    {
-        cursor.putByte( BYTE_POS_TYPE, LEAF_FLAG );
-    }
+    // no setKeyAt since we only insert or remove keys, when they're there they're not changed
 
-    public void setTypeInternal( PageCursor cursor )
-    {
-        cursor.putByte( BYTE_POS_TYPE, INTERNAL_FLAG );
-    }
+    VALUE valueAt( PageCursor cursor, VALUE value, int pos, Object order );
 
-    public void setKeyCount( PageCursor cursor, int count )
-    {
-        cursor.putInt( BYTE_POS_KEYCOUNT, count );
-    }
+    void insertValueAt( PageCursor cursor, VALUE value, int pos, Object order, byte[] tmp );
 
-    public void setRightSibling( PageCursor cursor, long rightSiblingId )
-    {
-        cursor.putLong( BYTE_POS_RIGHTSIBLING, rightSiblingId );
-    }
+    void removeValueAt( PageCursor cursor, int pos, Object order, byte[] tmp );
 
-    public void setLeftSibling( PageCursor cursor, long leftSiblingId )
-    {
-        cursor.putLong( BYTE_POS_LEFTSIBLING, leftSiblingId );
-    }
+    void setValueAt( PageCursor cursor, VALUE value, int pos, Object order );
 
-    // BODY METHODS
+    long childAt( PageCursor cursor, int pos, Object order );
 
-    public KEY keyAt( PageCursor cursor, KEY into, int pos )
-    {
-        cursor.setOffset( keyOffset( pos ) );
-        layout.readKey( cursor, into );
-        return into;
-    }
+    void insertChildAt( PageCursor cursor, long child, int pos, Object order, byte[] tmp );
 
-    public void setKeyAt( PageCursor cursor, KEY key, int pos )
-    {
-        cursor.setOffset( keyOffset( pos ) );
-        layout.writeKey( cursor, key );
-    }
+    void setChildAt( PageCursor cursor, long child, int pos, Object order );
 
-    public int keysFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into )
-    {
-        int length = (toExcluding - fromIncluding) * keySize;
-        cursor.setOffset( keyOffset( fromIncluding ) );
-        cursor.getBytes( into, 0, length );
-        return length;
-    }
+    // no removeChildAt since we don't do merge and stuff yet
 
-    public void setKeysAt( PageCursor cursor, byte[] keys, int pos, int length )
-    {
-        cursor.setOffset( keyOffset( pos ) );
-        cursor.putBytes( keys, 0, length );
-    }
+    int internalMaxKeyCount();
 
-    public VALUE valueAt( PageCursor cursor, VALUE value, int pos )
-    {
-        cursor.setOffset( valueOffset( pos ) );
-        layout.readValue( cursor, value );
-        return value;
-    }
+    int leafMaxKeyCount();
 
-    public void setValueAt( PageCursor cursor, VALUE value, int pos )
-    {
-        cursor.setOffset( valueOffset( pos ) );
-        layout.writeValue( cursor, value );
-    }
+    int keyOffset( int pos );
 
-    public int valuesFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into )
-    {
-        int length = (toExcluding - fromIncluding) * valueSize;
-        cursor.setOffset( valueOffset( fromIncluding ) );
-        cursor.getBytes( into, 0, length );
-        return length;
-    }
+    int valueOffset( int pos );
 
-    public void setValuesAt( PageCursor cursor, byte[] values, int pos, int length )
-    {
-        cursor.setOffset( valueOffset( pos ) );
-        cursor.putBytes( values, 0, length );
-    }
+    int childOffset( int pos );
 
-    public long childAt( PageCursor cursor, int pos )
-    {
-        return cursor.getLong( childOffset( pos ) );
-    }
+    boolean isNode( long node );
 
-    public void setChildAt( PageCursor cursor, long child, int pos )
-    {
-        cursor.putLong( childOffset( pos ), child );
-    }
+    int keySize();
 
-    public int childrenFromTo( PageCursor cursor, int fromIncluding, int toExcluding, byte[] into )
-    {
-        int length = (toExcluding - fromIncluding) * SIZE_CHILD;
-        cursor.setOffset( childOffset( fromIncluding ) );
-        cursor.getBytes( into, 0, length );
-        return length;
-    }
+    int valueSize();
 
-    public void setChildrenAt( PageCursor cursor, byte[] children, int pos, int length )
-    {
-        cursor.setOffset( childOffset( pos ) );
-        cursor.putBytes( children, 0, length );
-    }
+    int childSize();
 
-    public int internalMaxKeyCount()
-    {
-        return internalMaxKeyCount;
-    }
+    Comparator<KEY> keyComparator();
 
-    public int leafMaxKeyCount()
-    {
-        return leafMaxKeyCount;
-    }
+    // TODO: incremental methods towards V2
 
-    // HELPERS
+    int readKeysWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
+            int insertPosition, int totalNumberOfRecords, byte[] into );
 
-    public int keyOffset( int pos )
-    {
-        return HEADER_LENGTH + pos * keySize;
-    }
+    int readValuesWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
+            int insertPosition, int totalNumberOfRecords, byte[] into );
 
-    public int valueOffset( int pos )
-    {
-        return HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
-    }
+    int readChildrenWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
+            int insertPosition, int totalNumberOfRecords, byte[] into );
 
-    public int childOffset( int pos )
-    {
-        return HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_CHILD;
-    }
+    void writeKeys( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count );
 
-    public boolean isNode( long node )
-    {
-        return node != NO_NODE_FLAG;
-    }
+    void writeValues( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count );
 
-    public int keySize()
-    {
-        return keySize;
-    }
+    void writeChildren( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count );
 
-    public int valueSize()
-    {
-        return valueSize;
-    }
-
-    public int childSize()
-    {
-        return SIZE_CHILD;
-    }
-
-    public Comparator<KEY> keyComparator()
-    {
-        return layout;
-    }
+    void writeChild( PageCursor cursor, long child );
 }

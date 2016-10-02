@@ -86,7 +86,10 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     {
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
-        this.bTreeNode = new TreeNode<>( pageSize, layout );
+        this.bTreeNode = Knobs.PHYSICALLY_SORTED_ENTRIES
+                ? new TreeNodeV1<>( pageSize, layout )
+                : new TreeNodeV2<>( pageSize, layout );
+
         this.modifier = new AtomicReference<>( new Inserter( new IndexModifier<>( this, bTreeNode, layout ) ) );
 
         if ( created )
@@ -213,8 +216,8 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     {
         long localRootId = rootId;
         PageCursor cursor = pagedFile.io( localRootId, PagedFile.PF_SHARED_READ_LOCK );
-        KEY key = bTreeNode.newKey();
-        VALUE value = bTreeNode.newValue();
+        KEY key = layout.newKey();
+        VALUE value = layout.newValue();
         cursor.next();
 
         boolean isInternal;
@@ -223,6 +226,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         int pos;
         int level = 0;
         long rightSibling;
+        Object order = bTreeNode.newOrder();
         do
         {
             do
@@ -230,17 +234,24 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 isInternal = bTreeNode.isInternal( cursor );
                 // Find the left-most key within from-range
                 keyCount = bTreeNode.keyCount( cursor );
+                bTreeNode.getOrder( cursor, order );
                 pos = 0;
-                bTreeNode.keyAt( cursor, key, pos );
+                if ( pos < keyCount )
+                {
+                    bTreeNode.keyAt( cursor, key, pos, order );
+                }
                 rightSibling = bTreeNode.rightSibling( cursor );
                 while ( pos < keyCount && layout.compare( key, fromInclusive ) < 0 )
                 {
                     pos++;
-                    bTreeNode.keyAt( cursor, key, pos );
+                    if ( pos < keyCount )
+                    {
+                        bTreeNode.keyAt( cursor, key, pos, order );
+                    }
                 }
                 if ( isInternal )
                 {
-                    childId = bTreeNode.childAt( cursor, pos );
+                    childId = bTreeNode.childAt( cursor, pos, order );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -267,7 +278,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                     {
                         // Means we didn't really find it yet, the fromInclusive is still higher than where we are
                         // so go to this internal node's right sibling and continue
-                        if ( bTreeNode.isNode( rightSibling ) )
+                        if ( !Knobs.SPLIT_KEEPS_SOURCE_INTACT && bTreeNode.isNode( rightSibling ) )
                         {
                             childId = rightSibling;
                         }
@@ -296,7 +307,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
-        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout, pos - 1 );
+        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout, pos - 1, order );
     }
 
     @Override
@@ -313,7 +324,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             cursor.next();
-            TreePrinter.printTree( cursor, bTreeNode, System.out );
+            TreePrinter.printTree( cursor, bTreeNode, layout, System.out );
         }
     }
 
@@ -341,6 +352,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         private final IndexModifier<KEY,VALUE> indexModifier;
         private PageCursor cursor;
         private Modifier.Options options;
+        private final byte[] tmp = new byte[0];
 
         Inserter( IndexModifier<KEY,VALUE> modifier )
         {
@@ -361,6 +373,11 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
             SplitResult<KEY> split = indexModifier.insert( cursor, key, value, ammender, options );
 
+            if ( cursor.checkAndClearBoundsFlag() )
+            {
+                throw new IllegalStateException( "Some internal problem causing out of bounds" );
+            }
+
             if ( split != null )
             {
                 // New root
@@ -368,10 +385,12 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 cursor.next( newRootId );
 
                 bTreeNode.initializeInternal( cursor );
-                bTreeNode.setKeyAt( cursor, split.primKey, 0 );
+                Object order = bTreeNode.newOrder();
+                bTreeNode.getOrder( cursor, order );
+                bTreeNode.insertKeyAt( cursor, split.primKey, 0, order, tmp );
                 bTreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, split.left, 0 );
-                bTreeNode.setChildAt( cursor, split.right, 1 );
+                bTreeNode.setChildAt( cursor, split.left, 0, order );
+                bTreeNode.setChildAt( cursor, split.right, 1, order );
                 metaCursor.putLong( 4, newRootId );
                 rootId = newRootId;
             }

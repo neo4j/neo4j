@@ -21,8 +21,6 @@ package org.neo4j.index.bptree;
 
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.function.Consumer;
-
 import org.neo4j.index.Modifier;
 import org.neo4j.index.ValueAmender;
 import org.neo4j.io.pagecache.PageCursor;
@@ -86,6 +84,8 @@ public class IndexModifier<KEY,VALUE>
     private final Layout<KEY,VALUE> layout;
     private final KEY readKey;
     private final VALUE readValue;
+    // Cache during current modifications for order of items in tree nodes
+    private final Object[] orders = new Object[20];
 
     public IndexModifier( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
     {
@@ -100,6 +100,10 @@ public class IndexModifier<KEY,VALUE>
         this.leafSplitResult.primKey = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
+        for ( int i = 0; i < orders.length; i++ )
+        {
+            orders[i] = bTreeNode.newOrder();
+        }
     }
 
     /**
@@ -115,25 +119,36 @@ public class IndexModifier<KEY,VALUE>
     public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
             Modifier.Options options ) throws IOException
     {
+        return insert( cursor, key, value, amender, options, 0 );
+    }
+
+    private SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
+            Modifier.Options options, int level ) throws IOException
+    {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return insertInLeaf( cursor, key, value, amender, options );
+            return insertInLeaf( cursor, key, value, amender, options, level );
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
-
-        int pos = positionOf( search( cursor, key ) );
+        bTreeNode.getOrder( cursor, orders[level] );
+        int pos = positionOf( search( cursor, key, orders[level] ) );
 
         long currentId = cursor.getCurrentPageId();
-        cursor.next( bTreeNode.childAt( cursor, pos ) );
+        cursor.next( bTreeNode.childAt( cursor, pos, orders[level] ) );
 
-        SplitResult<KEY> split = insert( cursor, key, value, amender, options );
+        SplitResult<KEY> split = insert( cursor, key, value, amender, options, level + 1 );
 
         cursor.next( currentId );
 
         if ( split != null )
         {
-            return insertInInternal( cursor, currentId, keyCount, split.primKey, split.right, options );
+            // update left child (key remains and pos is known by this very method)
+            if ( Knobs.SPLIT_KEEPS_SOURCE_INTACT )
+            {
+                bTreeNode.setChildAt( cursor, split.left, pos, orders[level] );
+            }
+            return insertInInternal( cursor, currentId, keyCount, split.primKey, split.right, options, level );
         }
         return null;
     }
@@ -154,22 +169,17 @@ public class IndexModifier<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> insertInInternal( PageCursor cursor, long nodeId, int keyCount,
-            KEY primKey, long rightChild, Modifier.Options options ) throws IOException
+            KEY primKey, long rightChild, Modifier.Options options, int level ) throws IOException
     {
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
         {
             // No overflow
-            int pos = positionOf( search( cursor, primKey ) );
+            int pos = positionOf( search( cursor, primKey, orders[level] ) );
 
-            // Insert and move keys
-            int tmpLength = bTreeNode.keysFromTo( cursor, pos, keyCount, tmp );
-            bTreeNode.setKeyAt( cursor, primKey, pos );
-            bTreeNode.setKeysAt( cursor, tmp, pos + 1, tmpLength );
-
-            // Insert and move children
-            tmpLength = bTreeNode.childrenFromTo( cursor, pos + 1, keyCount + 1, tmp );
-            bTreeNode.setChildAt( cursor, rightChild, pos + 1 );
-            bTreeNode.setChildrenAt( cursor, tmp, pos + 2, tmpLength );
+            bTreeNode.insertKeyAt( cursor, primKey, pos, orders[level], tmp );
+            // NOTE pos+1 since we never insert a new child before child(0) because its key is really
+            // the one from the parent.
+            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, orders[level], tmp );
 
             // Increase key count
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
@@ -178,7 +188,7 @@ public class IndexModifier<KEY,VALUE>
         }
 
         // Overflow
-        return splitInternal( cursor, nodeId, primKey, rightChild, keyCount, options );
+        return splitInternal( cursor, nodeId, primKey, rightChild, keyCount, options, level );
     }
 
     /**
@@ -196,66 +206,76 @@ public class IndexModifier<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> splitInternal( PageCursor cursor, long fullNode, KEY primKey, long newRightChild,
-            int keyCount, Modifier.Options options ) throws IOException
+            int keyCount, Modifier.Options options, int level ) throws IOException
     {
+        long current = cursor.getCurrentPageId();
+        long oldLeft = bTreeNode.leftSibling( cursor );
+        long newLeft = Knobs.SPLIT_KEEPS_SOURCE_INTACT ? idProvider.acquireNewId() : current;
+        long oldRight = bTreeNode.rightSibling( cursor );
         long newRight = idProvider.acquireNewId();
 
-        // First fullNode (left node). Then move on to right node.
-
-        // Need old right sibling to set for new right sibling later
-        long oldRight = bTreeNode.rightSibling( cursor );
-
         // Find position to insert new key
-        int pos = positionOf( search( cursor, primKey ) );
+        int pos = positionOf( search( cursor, primKey, orders[level] ) );
 
         // Arrays to temporarily store keys and children in sorted order.
-        int allKeysIncludingNewPrimKeyLength = readRecordsWithInsertRecordInPosition( cursor,
-                c -> layout.writeKey( c, primKey ),
-                pos, keyCount+1, bTreeNode.keySize(), bTreeNode.keyOffset( 0 ), tmp2 );
-        int allChildrenIncludingNewRightChildLength = readRecordsWithInsertRecordInPosition( cursor,
-                c -> c.putLong( newRightChild ),
-                pos+1, keyCount+2, bTreeNode.childSize(), bTreeNode.childOffset( 0 ), tmp3 );
+        bTreeNode.readKeysWithInsertRecordInPosition( cursor,
+                c -> layout.writeKey( c, primKey ), pos, keyCount+1, tmp2 );
+        bTreeNode.readChildrenWithInsertRecordInPosition( cursor,
+                c -> bTreeNode.writeChild( c, newRightChild ), pos+1, keyCount+2, tmp3 );
 
         int keyCountAfterInsert = keyCount + 1;
         int middle = middle( keyCountAfterInsert, options.splitLeftChildSize() );
 
         SplitResult<KEY> split = internalSplitResult;
-        { // Update right node
+        split.left = newLeft;
+        split.right = newRight;
+
+        {   // Update new right
+            // NOTE: don't include middle
             cursor.next( newRight );
-
-            // Initialize
             bTreeNode.initializeInternal( cursor );
-
-            // Siblings
             bTreeNode.setRightSibling( cursor, oldRight );
-            bTreeNode.setLeftSibling( cursor, fullNode );
-
-            // Keys
-            int arrayOffset = (middle + 1) * bTreeNode.keySize(); // NOTE: (middle + 1) don't include middle
-            cursor.setOffset( bTreeNode.keyOffset( 0 ) );
-            cursor.putBytes( tmp2, arrayOffset, allKeysIncludingNewPrimKeyLength - arrayOffset );
-
-            // Children
-            arrayOffset = (middle + 1) * bTreeNode.childSize();
-            cursor.setOffset( bTreeNode.childOffset( 0 ) );
-            cursor.putBytes( tmp3, arrayOffset,
-                    allChildrenIncludingNewRightChildLength - arrayOffset );
-
-            // Key count
-            // NOTE: Not keyCountAfterInsert because middle key is not kept at this level
+            bTreeNode.setLeftSibling( cursor, newLeft );
+            bTreeNode.writeKeys( cursor, tmp2, middle + 1, 0, keyCountAfterInsert - (middle + 1) );
+            bTreeNode.writeChildren( cursor, tmp3, middle + 1, 0,
+                    keyCountAfterInsert - middle /*there's one more child than key to copy*/ );
             bTreeNode.setKeyCount( cursor, keyCount - middle );
 
             // Extract middle key (prim key)
-            arrayOffset = middle * bTreeNode.keySize();
+            int arrayOffset = middle * bTreeNode.keySize();
             PageCursor buffer = ByteArrayPageCursor.wrap( tmp2, arrayOffset, bTreeNode.keySize() );
 
             // Populate split result
             layout.readKey( buffer, split.primKey );
-            split.left = fullNode;
-            split.right = newRight;
         }
 
-        { // Update left node
+        if ( Knobs.SPLIT_KEEPS_SOURCE_INTACT )
+        {   // Update new left
+            cursor.next( newLeft );
+            bTreeNode.initializeInternal( cursor );
+            bTreeNode.setRightSibling( cursor, newRight );
+            bTreeNode.setLeftSibling( cursor, oldLeft );
+            bTreeNode.writeKeys( cursor, tmp2, 0, 0, middle );
+            bTreeNode.writeChildren( cursor, tmp3, 0, 0, middle + 1 );
+            bTreeNode.setKeyCount( cursor, middle );
+
+            if ( bTreeNode.isNode( oldRight ) )
+            {   // Update old right
+                cursor.next( oldRight );
+                bTreeNode.setLeftSibling( cursor, newRight );
+            }
+
+            if ( bTreeNode.isNode( oldLeft ) )
+            {   // Update old left
+                cursor.next( oldLeft );
+                bTreeNode.setRightSibling( cursor, newLeft );
+            }
+
+            // Move back to current TODO do we really need this?
+            cursor.next( current );
+        }
+        else
+        {   // Update left node
             // Move cursor back to left
             cursor.next( fullNode );
             bTreeNode.setKeyCount( cursor, middle );
@@ -296,24 +316,26 @@ public class IndexModifier<KEY,VALUE>
      * @param value         value to be associated with key
      * @param amender       {@link ValueAmender} for deciding what to do with existing keys
      * @param options       options for this insert
+     * @param level
      * @return              {@link SplitResult} from insert to be used caller.
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
-            Modifier.Options options ) throws IOException
+            Modifier.Options options, int level ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
-        int search = search( cursor, key );
+        bTreeNode.getOrder( cursor, orders[level] );
+        int search = search( cursor, key, orders[level] );
         int pos = positionOf( search );
         if ( isHit( search ) )
         {
             // this key already exists, what shall we do? ask the amender
-            bTreeNode.valueAt( cursor, readValue, pos-1 );
+            bTreeNode.valueAt( cursor, readValue, pos-1, orders[level] );
             VALUE amendedValue = amender.amend( readValue, value );
             if ( amendedValue != null )
             {
                 // simple, just write the amended value right in there
-                bTreeNode.setValueAt( cursor, amendedValue, pos-1 );
+                bTreeNode.setValueAt( cursor, amendedValue, pos-1, orders[level] );
                 return null; // No split has occurred
             }
             // else fall-through to normal insert
@@ -322,25 +344,15 @@ public class IndexModifier<KEY,VALUE>
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
             // No overflow, insert key and value
-
-            // Insert and move keys
-            int tmpLength = bTreeNode.keysFromTo( cursor, pos, keyCount, tmp );
-            bTreeNode.setKeyAt( cursor, key, pos );
-            bTreeNode.setKeysAt( cursor, tmp, pos + 1, tmpLength );
-
-            // Insert and move values
-            tmpLength = bTreeNode.valuesFromTo( cursor, pos, keyCount, tmp );
-            bTreeNode.setValueAt( cursor, value, pos );
-            bTreeNode.setValuesAt( cursor, tmp, pos + 1, tmpLength );
-
-            // Increase key count
+            bTreeNode.insertKeyAt( cursor, key, pos, orders[level], tmp );
+            bTreeNode.insertValueAt( cursor, value, pos, orders[level], tmp );
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
 
             return null; // No split has occurred
         }
 
         // Overflow, split leaf
-        return splitLeaf( cursor, key, value, amender, keyCount, options );
+        return splitLeaf( cursor, key, value, amender, keyCount, options, level );
     }
 
     private static int positionOf( int searchResult )
@@ -372,7 +384,7 @@ public class IndexModifier<KEY,VALUE>
      * @throws IOException  if cursor.next( newRight ) fails
      */
     private SplitResult<KEY> splitLeaf( PageCursor cursor, KEY newKey, VALUE newValue, ValueAmender<VALUE> amender,
-            int keyCount, Modifier.Options options ) throws IOException
+            int keyCount, Modifier.Options options, int level ) throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.
@@ -389,10 +401,11 @@ public class IndexModifier<KEY,VALUE>
         // [left] -> [newRight] -> [oldRight]
         //
 
-        long left = cursor.getCurrentPageId();
-        long newRight = idProvider.acquireNewId();
-
+        long current = cursor.getCurrentPageId();
+        long oldLeft = bTreeNode.leftSibling( cursor );
+        long newLeft = Knobs.SPLIT_KEEPS_SOURCE_INTACT ? idProvider.acquireNewId() : current;
         long oldRight = bTreeNode.rightSibling( cursor );
+        long newRight = idProvider.acquireNewId();
 
         // BALANCE KEYS AND VALUES
         // Two different scenarios
@@ -434,15 +447,13 @@ public class IndexModifier<KEY,VALUE>
         // 5. Write new key/values into L
 
         // Position where newKey / newValue is to be inserted
-        int pos = positionOf( search( cursor, newKey ) );
+        int pos = positionOf( search( cursor, newKey, orders[level] ) );
 
         // arrays to temporarily store all keys and values
-        int allKeysIncludingNewKeyLength = readRecordsWithInsertRecordInPosition( cursor,
-                c -> layout.writeKey( c, newKey ),
-                pos, bTreeNode.leafMaxKeyCount() + 1, bTreeNode.keySize(), bTreeNode.keyOffset( 0 ), tmp2 );
-        int allValuesIncludingNewValueLength = readRecordsWithInsertRecordInPosition( cursor,
-                c -> layout.writeValue( c, newValue ),
-                pos, bTreeNode.leafMaxKeyCount() + 1, bTreeNode.valueSize(), bTreeNode.valueOffset( 0 ), tmp3 );
+        bTreeNode.readKeysWithInsertRecordInPosition( cursor,
+                c -> layout.writeKey( c, newKey ), pos, bTreeNode.leafMaxKeyCount() + 1, tmp2 );
+        bTreeNode.readValuesWithInsertRecordInPosition( cursor,
+                c -> layout.writeValue( c, newValue ), pos, bTreeNode.leafMaxKeyCount() + 1, tmp3 );
 
         int keyCountAfterInsert = keyCount + 1;
         int middle = middle( keyCountAfterInsert, options.splitLeftChildSize() );
@@ -455,97 +466,66 @@ public class IndexModifier<KEY,VALUE>
         // and everything that needs to be updated in left has been so.
 
         SplitResult<KEY> split = leafSplitResult;
-        { // Update new right leaf
-            // Initialize
-            cursor.next( newRight );
-            bTreeNode.initializeLeaf( cursor );
+        split.left = newLeft;
+        split.right = newRight;
 
-            // Siblings
-            bTreeNode.setRightSibling( cursor, oldRight );
-            bTreeNode.setLeftSibling( cursor, left );
-
-            // Keys
-            int arrayOffset = middle * bTreeNode.keySize();
-            cursor.setOffset( bTreeNode.keyOffset( 0 ) );
-            cursor.putBytes( tmp2, arrayOffset, allKeysIncludingNewKeyLength - arrayOffset );
-
-            // Values
-            arrayOffset = middle * bTreeNode.valueSize();
-            cursor.setOffset( bTreeNode.valueOffset( 0 ) );
-            cursor.putBytes( tmp3, arrayOffset, allValuesIncludingNewValueLength - arrayOffset );
-
-            // Key count
-            bTreeNode.setKeyCount( cursor, keyCountAfterInsert - middle );
-
-            split.left = left;
-            split.right = newRight;
-            bTreeNode.keyAt( cursor, split.primKey, 0 );
+        if ( middle == pos )
+        {
+            layout.copyKey( newKey, split.primKey );
+        }
+        else
+        {
+            bTreeNode.keyAt( cursor, split.primKey, pos < middle ? middle - 1 : middle, orders[level] );
         }
 
-        { // Update left child
-            cursor.next( left );
+        {   // Update new right
+            cursor.next( newRight );
+            bTreeNode.initializeLeaf( cursor );
+            bTreeNode.setRightSibling( cursor, oldRight );
+            bTreeNode.setLeftSibling( cursor, newLeft );
+            bTreeNode.writeKeys( cursor, tmp2, middle, 0, keyCountAfterInsert - middle );
+            bTreeNode.writeValues( cursor, tmp3, middle, 0, keyCountAfterInsert - middle );
+            bTreeNode.setKeyCount( cursor, keyCountAfterInsert - middle );
+        }
+
+        if ( Knobs.SPLIT_KEEPS_SOURCE_INTACT )
+        {   // Update new left
+            cursor.next( newLeft );
+            bTreeNode.initializeLeaf( cursor );
+            bTreeNode.setRightSibling( cursor, newRight );
+            bTreeNode.setLeftSibling( cursor, oldLeft );
+            bTreeNode.writeKeys( cursor, tmp2, 0, 0, middle );
+            bTreeNode.writeValues( cursor, tmp3, 0, 0, middle );
+            bTreeNode.setKeyCount( cursor, middle );
+
+            if ( bTreeNode.isNode( oldRight ) )
+            {   // Update old right
+                cursor.next( oldRight );
+                bTreeNode.setLeftSibling( cursor, newRight );
+            }
+
+            if ( bTreeNode.isNode( oldLeft ) )
+            {   // Update old left
+                cursor.next( oldLeft );
+                bTreeNode.setRightSibling( cursor, newLeft );
+            }
+
+            cursor.next( current );
+        }
+        else
+        {   // Update left child
+            cursor.next( current );
             bTreeNode.setKeyCount( cursor, middle );
             // If pos < middle. Write shifted values to left node. Else, don't write anything.
             if ( pos < middle )
             {
-                int arrayOffset = pos * bTreeNode.keySize();
-                cursor.setOffset( bTreeNode.keyOffset( pos ) );
-                cursor.putBytes( tmp2, arrayOffset, (middle - pos) * bTreeNode.keySize() );
-
-                cursor.setOffset( bTreeNode.valueOffset( pos ) );
-                arrayOffset = pos * bTreeNode.valueSize();
-                cursor.putBytes( tmp3, arrayOffset, (middle - pos) * bTreeNode.valueSize() );
+                bTreeNode.writeKeys( cursor, tmp2, pos, pos, middle - pos );
+                bTreeNode.writeValues( cursor, tmp3, pos, pos, middle - pos );
             }
             bTreeNode.setRightSibling( cursor, newRight );
         }
 
         return split;
-    }
-
-    /**
-     * Leaves cursor on same page as when called. No guarantees on offset.
-     *
-     * Create a byte[] with totalNumberOfRecords of recordSize from cursor reading from baseRecordOffset
-     * with newRecord inserted in insertPosition, with the following records shifted to the right.
-     *
-     * Simply: Records of size recordSize that can be read from offset baseRecordOffset in page pinned by cursor has
-     * some ordering. This ordering is preserved with new record inserted in insertPosition in the returned byte[],
-     * NOT in the page.
-     *
-     * @param cursor                {@link org.neo4j.io.pagecache.PageCursor} pinned to page to read records from
-     * @param newRecordWriter       new data to be inserted in insertPosition in returned byte[].
-     *                              This is a {@link Consumer} since the type of data can differ (value/child),
-     *                              although perhaps this can be done in a better way
-     * @param insertPosition        position of newRecord. 0 being before all other records,
-     *                              (totalNumberOfRecords - 1) being after all other records
-     * @param totalNumberOfRecords  the total number of records to be contained in returned byte[], including newRecord
-     * @param recordSize            the size in number of bytes of one record
-     * @param baseRecordOffset      the offset from where cursor should start read records
-     * @param into                  byte array to copy bytes into
-     * @return                      number of bytes copied into the {@code into} byte[],
-     *                              that is insertPosition * recordSize
-     */
-    private int readRecordsWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
-            int insertPosition, int totalNumberOfRecords, int recordSize, int baseRecordOffset, byte[] into )
-    {
-        int length = (totalNumberOfRecords) * recordSize;
-
-        // First read all records
-
-        // Read all records on previous to insertPosition
-        cursor.setOffset( baseRecordOffset );
-        cursor.getBytes( into, 0, insertPosition * recordSize );
-
-        // Read newRecord
-        // TODO: A bit expensive to wrap in a PageCursor tin foil just to write this middle key
-        PageCursor buffer = ByteArrayPageCursor.wrap( into, insertPosition * recordSize, recordSize );
-        newRecordWriter.accept( buffer );
-
-        // Read all records following insertPosition
-        cursor.setOffset( baseRecordOffset + insertPosition * recordSize );
-        cursor.getBytes( into, (insertPosition + 1) * recordSize,
-                ((totalNumberOfRecords - 1) - insertPosition) * recordSize );
-        return length;
     }
 
     /**
@@ -564,9 +544,10 @@ public class IndexModifier<KEY,VALUE>
      *
      * @param cursor    {@link PageCursor} pinned to page with node (internal or leaf does not matter)
      * @param key       long[] of length 2 where key[0] is id and key[1] is property value
+     * @param orders2
      * @return          first position i for which Node.KEY_COMPARATOR.compare( key, Node.keyAt( i ) <= 0;
      */
-    private int search( PageCursor cursor, KEY key )
+    private int search( PageCursor cursor, KEY key, Object order )
     {
         int keyCount = bTreeNode.keyCount( cursor );
 
@@ -582,7 +563,7 @@ public class IndexModifier<KEY,VALUE>
 
         // Compare key with lower and higher and sort out special cases
         Comparator<KEY> comparator = bTreeNode.keyComparator();
-        int comparedHigher = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) );
+        int comparedHigher = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher, order ) );
         if ( comparedHigher >= 0 )
         {
             pos = keyCount;
@@ -591,7 +572,7 @@ public class IndexModifier<KEY,VALUE>
                 hit = true;
             }
         }
-        else if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower ) ) < 0 )
+        else if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower, order ) ) < 0 )
         {
             pos = 0;
         }
@@ -604,7 +585,7 @@ public class IndexModifier<KEY,VALUE>
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                switch ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) )
+                switch ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, order ) ) )
                 {
                 case -1:
                     higher = pos;
@@ -631,40 +612,42 @@ public class IndexModifier<KEY,VALUE>
 
     public VALUE remove( PageCursor cursor, KEY key ) throws IOException
     {
-        if ( bTreeNode.isLeaf( cursor ) )
-        {
-            return removeFromLeaf( cursor, key );
-        }
-
-        int search = search( cursor, key );
-        int pos = positionOf( search );
-        cursor.next( bTreeNode.childAt( cursor, pos ) );
-        return remove( cursor, key );
+        return remove( cursor, key, 0 );
     }
 
-    private VALUE removeFromLeaf( PageCursor cursor, KEY key )
+    private VALUE remove( PageCursor cursor, KEY key, int level ) throws IOException
+    {
+        if ( bTreeNode.isLeaf( cursor ) )
+        {
+            return removeFromLeaf( cursor, key, level + 1 );
+        }
+
+        bTreeNode.getOrder( cursor, orders[level] );
+        int search = search( cursor, key, orders[level] );
+        int pos = positionOf( search );
+        cursor.next( bTreeNode.childAt( cursor, pos, orders[level] ) );
+        return remove( cursor, key, level + 1 );
+    }
+
+    private VALUE removeFromLeaf( PageCursor cursor, KEY key, int level )
     {
         int keyCount = bTreeNode.keyCount( cursor );
+        bTreeNode.getOrder( cursor, orders[level] );
 
         // No overflow, insert key and value
-        int search = search( cursor, key );
+        int search = search( cursor, key, orders[level] );
         int pos = positionOf( search );
         boolean hit = isHit( search );
         if ( !hit )
         {
             return null;
         }
-
-        // Remove and move keys
         pos--;
-        int tmpLength = bTreeNode.keysFromTo( cursor, pos + 1, keyCount, tmp );
-        bTreeNode.setKeysAt( cursor, tmp, pos, tmpLength );
 
-        // Remove and move values
-        VALUE readValue = bTreeNode.newValue();
-        bTreeNode.valueAt( cursor, readValue, pos );
-        tmpLength = bTreeNode.valuesFromTo( cursor, pos + 1, keyCount, tmp );
-        bTreeNode.setValuesAt( cursor, tmp, pos, tmpLength );
+        // Remove key/value
+        bTreeNode.removeKeyAt( cursor, pos, orders[level], tmp );
+        bTreeNode.valueAt( cursor, readValue, pos, orders[level] );
+        bTreeNode.removeValueAt( cursor, pos, orders[level], tmp );
 
         // Decrease key count
         bTreeNode.setKeyCount( cursor, keyCount - 1 );

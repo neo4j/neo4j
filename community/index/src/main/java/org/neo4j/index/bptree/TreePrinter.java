@@ -31,11 +31,12 @@ public class TreePrinter
      *
      * @param cursor {@link PageCursor} placed at root.
      * @param treeNode {@link TreeNode} knowing about how to read keys, values and children.
+     * @param layout {@link Layout} for key/value.
      * @param out target to print tree at.
      * @throws IOException on page cache access error.
      */
-    public static <KEY,VALUE> void printTree( PageCursor cursor, TreeNode<KEY,VALUE> treeNode, PrintStream out )
-            throws IOException
+    public static <KEY,VALUE> void printTree( PageCursor cursor, TreeNode<KEY,VALUE> treeNode,
+            Layout<KEY,VALUE> layout, PrintStream out ) throws IOException
     {
         int level = 0;
         long id;
@@ -43,23 +44,26 @@ public class TreePrinter
         {
             out.println( "Level " + level++ );
             id = cursor.getCurrentPageId();
-            printKeysOfSiblings( cursor, treeNode, out );
+            printKeysOfSiblings( cursor, treeNode, layout, out );
             out.println();
             cursor.next( id );
-            cursor.next( treeNode.childAt( cursor, 0 ) );
+
+            Object order = treeNode.newOrder();
+            treeNode.getOrder( cursor, order );
+            cursor.next( treeNode.childAt( cursor, 0, order ) );
         }
 
         out.println( "Level " + level );
-        printKeysOfSiblings( cursor, treeNode, out );
+        printKeysOfSiblings( cursor, treeNode, layout, out );
         out.println();
     }
 
     private static <KEY,VALUE> void printKeysOfSiblings( PageCursor cursor,
-            TreeNode<KEY,VALUE> bTreeNode, PrintStream out ) throws IOException
+            TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout, PrintStream out ) throws IOException
     {
         while ( true )
         {
-            printKeys( cursor, bTreeNode, out );
+            printKeys( cursor, bTreeNode, layout, out );
             long rightSibling = bTreeNode.rightSibling( cursor );
             if ( !bTreeNode.isNode( rightSibling ) )
             {
@@ -70,13 +74,15 @@ public class TreePrinter
     }
 
     private static <KEY,VALUE> void printKeys( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode,
-            PrintStream out )
+            Layout<KEY,VALUE> layout, PrintStream out )
     {
+        Object order = bTreeNode.newOrder();
+        bTreeNode.getOrder( cursor, order );
         boolean isLeaf = bTreeNode.isLeaf( cursor );
         int keyCount = bTreeNode.keyCount( cursor );
         out.print( (isLeaf ? "[" : "|") + "{" + cursor.getCurrentPageId() + "}" );
-        KEY key = bTreeNode.newKey();
-        VALUE value = bTreeNode.newValue();
+        KEY key = layout.newKey();
+        VALUE value = layout.newValue();
         for ( int i = 0; i < keyCount; i++ )
         {
             if ( i > 0 )
@@ -87,20 +93,20 @@ public class TreePrinter
             if ( isLeaf )
             {
                 out.print( "#" + i + ":" +
-                        bTreeNode.keyAt( cursor, key, i ) + "=" +
-                        bTreeNode.valueAt( cursor, value, i ) );
+                        bTreeNode.keyAt( cursor, key, i, order ) + "=" +
+                        bTreeNode.valueAt( cursor, value, i, order ) );
             }
             else
             {
                 out.print( "#" + i + ":" +
-                        "|" + bTreeNode.childAt( cursor, i ) + "|" +
-                        bTreeNode.keyAt( cursor, key, i ) + "|" );
+                        "|" + bTreeNode.childAt( cursor, i, order ) + "|" +
+                        bTreeNode.keyAt( cursor, key, i, order ) + "|" );
 
             }
         }
         if ( !isLeaf )
         {
-            out.println( "#" + keyCount + ":|" + bTreeNode.childAt( cursor, keyCount ) + "|" );
+            out.print( "#" + keyCount + ":|" + bTreeNode.childAt( cursor, keyCount, order ) + "|" );
         }
         out.println( (isLeaf ? "]" : "|") );
     }

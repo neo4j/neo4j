@@ -35,12 +35,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private final MutableHit<KEY,VALUE> hit;
     private final TreeNode<KEY,VALUE> bTreeNode;
     private final KEY prevKey;
+    private final Object order;
 
     // data structures for the current b-tree node
     private int pos;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
-            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int pos )
+            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int pos, Object order )
     {
         this.cursor = leafCursor;
         this.mutableKey = mutableKey;
@@ -48,6 +49,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         this.fromInclusive = fromInclusive;
         this.toExclusive = toExclusive;
         this.layout = layout;
+        this.order = order;
         this.hit = new MutableHit<>( mutableKey, mutableValue );
         this.bTreeNode = bTreeNode;
         this.pos = pos;
@@ -82,8 +84,17 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 else
                 {
                     // Read the next value in this leaf
-                    bTreeNode.keyAt( cursor, mutableKey, pos );
-                    bTreeNode.valueAt( cursor, mutableValue, pos );
+                    // TODO this is a hack for caching item order for unsorted tree node thingie
+                    try
+                    {
+                        bTreeNode.keyAt( cursor, mutableKey, pos, order );
+                    }
+                    catch ( IllegalArgumentException e )
+                    {
+                        bTreeNode.getOrder( cursor, order );
+                        bTreeNode.keyAt( cursor, mutableKey, pos, order );
+                    }
+                    bTreeNode.valueAt( cursor, mutableValue, pos, order );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -100,6 +111,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                         // TODO: Perhaps re-read if this happens instead?
                         return false;
                     }
+                    bTreeNode.getOrder( cursor, order );
                     pos = -1;
                     continue; // in the outer loop, with the position reset to the beginning of the right sibling
                 }
@@ -108,6 +120,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             {
                 if ( layout.compare( mutableKey, toExclusive ) < 0 )
                 {
+                    // TODO perhaps skip or simplify this check if Knobs.SPLIT_LEAVES_OLD_PAGE_INTACT?
                     if ( layout.compare( mutableKey, fromInclusive ) < 0 ||
                             layout.compare( prevKey, mutableKey ) >= 0 )
                     {
