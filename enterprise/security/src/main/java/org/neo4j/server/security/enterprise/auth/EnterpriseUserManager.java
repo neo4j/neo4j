@@ -37,6 +37,8 @@ public interface EnterpriseUserManager extends UserManager
 
     RoleRecord getRole( String roleName ) throws InvalidArgumentsException;
 
+    RoleRecord silentlyGetRole( String roleName );
+
     /**
      * Assign a role to a user. The role and the user have to exist.
      *
@@ -61,5 +63,9 @@ public interface EnterpriseUserManager extends UserManager
 
     Set<String> getRoleNamesForUser( String username ) throws InvalidArgumentsException;
 
+    Set<String> silentlyGetRoleNamesForUser( String username );
+
     Set<String> getUsernamesForRole( String roleName ) throws InvalidArgumentsException;
+
+    Set<String> silentlyGetUsernamesForRole( String roleName );
 }

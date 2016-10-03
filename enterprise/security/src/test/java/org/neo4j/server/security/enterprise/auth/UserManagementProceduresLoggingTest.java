@@ -50,6 +50,7 @@ public class UserManagementProceduresLoggingTest
     private TestUserManagementProcedures authProcedures;
     private AssertableLogProvider log = null;
     private AuthSubject matsSubject = null;
+    private EnterpriseUserManager generalUserManager;
 
     @Before
     public void setUp() throws Throwable
@@ -58,14 +59,20 @@ public class UserManagementProceduresLoggingTest
         SecurityLog securityLog = new SecurityLog( log.getLog( getClass() ) );
 
         authProcedures = new TestUserManagementProcedures();
+        authProcedures.graph = mock( GraphDatabaseAPI.class );
         authProcedures.securityLog = securityLog;
 
-        EnterpriseUserManager userManager = getUserManager();
-        AuthSubject adminSubject = new TestAuthSubject( "admin", true, userManager, securityLog );
-        matsSubject = new TestAuthSubject( "mats", false, userManager, securityLog );
+        generalUserManager = getUserManager();
+        AuthSubject adminSubject = new TestAuthSubject( "admin", true, generalUserManager, securityLog );
+        matsSubject = new TestAuthSubject( "mats", false, generalUserManager, securityLog );
 
-        authProcedures.authSubject = adminSubject;
-        authProcedures.graph = mock( GraphDatabaseAPI.class );
+        setSubject( adminSubject );
+    }
+
+    private void setSubject( AuthSubject subject )
+    {
+        authProcedures.authSubject = subject;
+        authProcedures.userManager = new PersonalUserManager( generalUserManager, subject, authProcedures.securityLog );
     }
 
     private EnterpriseUserManager getUserManager() throws Throwable
@@ -115,7 +122,7 @@ public class UserManagementProceduresLoggingTest
     @Test
     public void shouldLogUnauthorizedCreatingUser() throws Throwable
     {
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
         catchAuthorizationViolation( () -> authProcedures.createUser( "andres", "", true ) );
 
         log.assertExactly( error( "[mats]: tried to create user `%s`: %s", "andres", PERMISSION_DENIED ) );
@@ -143,7 +150,7 @@ public class UserManagementProceduresLoggingTest
     @Test
     public void shouldLogUnauthorizedDeleteUser() throws Throwable
     {
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
         catchAuthorizationViolation( () -> authProcedures.deleteUser( ADMIN ) );
 
         log.assertExactly( error( "[mats]: tried to delete user `%s`: %s", ADMIN, PERMISSION_DENIED ) );
@@ -174,7 +181,7 @@ public class UserManagementProceduresLoggingTest
     @Test
     public void shouldLogUnauthorizedAddingRole() throws Throwable
     {
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
         catchAuthorizationViolation( () -> authProcedures.addRoleToUser( ADMIN, "mats" ) );
 
         log.assertExactly( error( "[mats]: tried to add role `%s` to user `%s`: %s", ADMIN, "mats", PERMISSION_DENIED ) );
@@ -217,7 +224,7 @@ public class UserManagementProceduresLoggingTest
     @Test
     public void shouldLogUnauthorizedRemovingRole() throws Throwable
     {
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
         catchAuthorizationViolation( () -> authProcedures.removeRoleFromUser( ADMIN, ADMIN ) );
 
         log.assertExactly( error( "[mats]: tried to remove role `%s` from user `%s`: %s", ADMIN, ADMIN, PERMISSION_DENIED ) );
@@ -233,7 +240,8 @@ public class UserManagementProceduresLoggingTest
         // When
         authProcedures.changeUserPassword( "mats", "longPassword", false );
         authProcedures.changeUserPassword( "mats", "longerPassword", true );
-        authProcedures.authSubject = matsSubject;
+
+        setSubject( matsSubject );
         authProcedures.changeUserPassword( "mats", "evenLongerPassword", false );
 
         authProcedures.changePassword( "superLongPassword", false );
@@ -274,7 +282,7 @@ public class UserManagementProceduresLoggingTest
     {
         // Given
         authProcedures.createUser( "mats", "neo4j", true );
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
         log.clear();
 
         // When
@@ -301,7 +309,7 @@ public class UserManagementProceduresLoggingTest
         // Given
         authProcedures.createUser( "andres", "neo4j", true );
         log.clear();
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
 
         // When
         catchAuthorizationViolation( () -> authProcedures.changeUserPassword( "andres", "otherPw", false ) );
@@ -352,7 +360,7 @@ public class UserManagementProceduresLoggingTest
     public void shouldLogUnauthorizedSuspendUser() throws Throwable
     {
         // Given
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
 
         // When
         catchAuthorizationViolation( () -> authProcedures.suspendUser( ADMIN ) );
@@ -400,7 +408,7 @@ public class UserManagementProceduresLoggingTest
     public void shouldLogUnauthorizedActivateUser() throws Throwable
     {
         // Given
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
 
         // When
         catchAuthorizationViolation( () -> authProcedures.activateUser( "admin", true ) );
@@ -448,7 +456,7 @@ public class UserManagementProceduresLoggingTest
     public void shouldLogUnauthorizedCreateRole() throws Exception
     {
         // Given
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
 
         // When
         catchAuthorizationViolation( () -> authProcedures.createRole( "role" ) );
@@ -493,7 +501,7 @@ public class UserManagementProceduresLoggingTest
     public void shouldLogUnauthorizedDeletingRole() throws Exception
     {
         // Given
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
 
         // When
         catchAuthorizationViolation( () -> authProcedures.deleteRole( ADMIN ) );
@@ -525,7 +533,7 @@ public class UserManagementProceduresLoggingTest
     public void shouldLogUnauthorizedListUsers() throws Exception
     {
         // Given
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
 
         // When
         catchAuthorizationViolation( () -> authProcedures.listUsers() );
@@ -537,7 +545,7 @@ public class UserManagementProceduresLoggingTest
     public void shouldLogUnauthorizedListRoles() throws Exception
     {
         // Given
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
 
         // When
         catchAuthorizationViolation( () -> authProcedures.listRoles() );
@@ -566,7 +574,7 @@ public class UserManagementProceduresLoggingTest
     public void shouldLogUnauthorizedListRolesForUser() throws Exception
     {
         // Given
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
 
         // When
         catchAuthorizationViolation( () -> authProcedures.listRolesForUser( "user" ) );
@@ -595,7 +603,7 @@ public class UserManagementProceduresLoggingTest
     public void shouldLogUnauthorizedListUsersForRole() throws Exception
     {
         // Given
-        authProcedures.authSubject = matsSubject;
+        setSubject( matsSubject );
 
         // When
         catchAuthorizationViolation( () -> authProcedures.listUsersForRole( "role" ) );

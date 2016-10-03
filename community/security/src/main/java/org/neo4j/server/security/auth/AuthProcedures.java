@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.procedure.Context;
@@ -78,6 +79,10 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
+        if ( authSubject == AuthSubject.ANONYMOUS )
+        {
+            throw new AuthorizationViolationException( "Anonymous cannot change password" );
+        }
         userManager.setUserPassword( authSubject.username(), password, false );
     }
 

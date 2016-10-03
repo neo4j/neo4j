@@ -99,7 +99,7 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 
     public EnterpriseUserManager getUserManager()
     {
-        return authManager.getUserManager();
+        return authManager.getUserManager( this );
     }
 
     public void clearAuthCache()

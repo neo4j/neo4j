@@ -26,8 +26,9 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.server.security.auth.User;
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 
@@ -63,35 +64,67 @@ public class PersonalUserManager implements EnterpriseUserManager
         }
     }
 
-    private void assertAdmin() throws InvalidArgumentsException
-    {
-        if ( authSubject instanceof EnterpriseAuthSubject )
-        {
-            if ( ((EnterpriseAuthSubject) authSubject).isAdmin() )
-            {
-                return;
-            }
-        }
-        throw new AuthorizationViolationException( PERMISSION_DENIED );
-    }
-
     @Override
     public void suspendUser( String username ) throws IOException, InvalidArgumentsException
     {
-        userManager.suspendUser( username );
+        try
+        {
+            assertAdmin();
+            if ( authSubject.hasUsername( username ) )
+            {
+                throw new InvalidArgumentsException( "Suspending yourself (user '" + username +
+                        "') is not allowed." );
+            }
+            userManager.suspendUser( username );
+            securityLog.info( authSubject, "suspended user `%s`", username );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to suspend user `%s`: %s", username, e.getMessage() );
+            throw e;
+        }
     }
 
     @Override
     public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
     {
-        return userManager.deleteUser( username );
+        try
+        {
+            assertAdmin();
+            if ( authSubject.hasUsername( username ) )
+            {
+                throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
+            }
+            boolean wasDeleted = userManager.deleteUser( username );
+            securityLog.info( authSubject, "deleted user `%s`", username );
+            return wasDeleted;
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to delete user `%s`: %s", username, e.getMessage() );
+            throw e;
+        }
     }
 
     @Override
     public void activateUser( String username, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        userManager.activateUser( username, requirePasswordChange );
+        try
+        {
+            assertAdmin();
+            if ( authSubject.hasUsername( username ) )
+            {
+                throw new InvalidArgumentsException( "Activating yourself (user '" + username + "') is not allowed." );
+            }
+            userManager.activateUser( username, requirePasswordChange );
+            securityLog.info( authSubject, "activated user `%s`", username );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to activate user `%s`: %s", username, e.getMessage() );
+            throw e;
+        }
     }
 
     @Override
@@ -109,7 +142,35 @@ public class PersonalUserManager implements EnterpriseUserManager
     @Override
     public RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
     {
-        return userManager.newRole( roleName, usernames );
+        try
+        {
+            assertAdmin();
+            RoleRecord newRole = userManager.newRole( roleName, usernames );
+            securityLog.info( authSubject, "created role `%s`", roleName );
+            return newRole;
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to create role `%s`: %s", roleName, e.getMessage() );
+            throw e;
+        }
+    }
+
+    @Override
+    public boolean deleteRole( String roleName ) throws IOException, InvalidArgumentsException
+    {
+        try
+        {
+            assertAdmin();
+            boolean wasDeleted = userManager.deleteRole( roleName );
+            securityLog.info( authSubject, "deleted role `%s`", roleName );
+            return wasDeleted;
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to delete role `%s`: %s", roleName, e.getMessage() );
+            throw e;
+        }
     }
 
     @Override
@@ -149,15 +210,18 @@ public class PersonalUserManager implements EnterpriseUserManager
     }
 
     @Override
-    public boolean deleteRole( String roleName ) throws IOException, InvalidArgumentsException
-    {
-        return userManager.deleteRole( roleName );
-    }
-
-    @Override
     public Set<String> getAllUsernames()
     {
-        return userManager.getAllUsernames();
+        try
+        {
+            assertAdmin();
+            return userManager.getAllUsernames();
+        }
+        catch ( AuthorizationViolationException e )
+        {
+            securityLog.error( authSubject, "tried to list users: %s", e.getMessage() );
+            throw e;
+        }
     }
 
     @Override
@@ -167,32 +231,124 @@ public class PersonalUserManager implements EnterpriseUserManager
     }
 
     @Override
+    public RoleRecord silentlyGetRole( String roleName )
+    {
+        return userManager.silentlyGetRole( roleName );
+    }
+
+    @Override
     public void addRoleToUser( String roleName, String username ) throws IOException, InvalidArgumentsException
     {
-        userManager.addRoleToUser( roleName, username );
+        try
+        {
+            assertAdmin();
+            userManager.addRoleToUser( roleName, username );
+            securityLog.info( authSubject, "added role `%s` to user `%s`", roleName, username );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to add role `%s` to user `%s`: %s", roleName, username,
+                    e.getMessage() );
+            throw e;
+        }
     }
 
     @Override
     public void removeRoleFromUser( String roleName, String username ) throws IOException, InvalidArgumentsException
     {
-        userManager.removeRoleFromUser( roleName, username );
+        try
+        {
+            assertAdmin();
+            if ( authSubject.hasUsername( username ) && roleName.equals( PredefinedRoles.ADMIN ) )
+            {
+                throw new InvalidArgumentsException(
+                        "Removing yourself (user '" + username + "') from the admin role is not allowed." );
+            }
+            userManager.removeRoleFromUser( roleName, username );
+            securityLog.info( authSubject, "removed role `%s` from user `%s`", roleName, username );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to remove role `%s` from user `%s`: %s", roleName, username, e
+                    .getMessage() );
+            throw e;
+        }
     }
 
     @Override
     public Set<String> getAllRoleNames()
     {
-        return userManager.getAllRoleNames();
+        try
+        {
+            assertAdmin();
+            return userManager.getAllRoleNames();
+        }
+        catch ( AuthorizationViolationException e )
+        {
+            securityLog.error( authSubject, "tried to list roles: %s", e.getMessage() );
+            throw e;
+        }
     }
 
     @Override
     public Set<String> getRoleNamesForUser( String username ) throws InvalidArgumentsException
     {
-        return userManager.getRoleNamesForUser( username );
+        try
+        {
+            assertSelfOrAdmin( username );
+            return userManager.getRoleNamesForUser( username );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to list roles for user `%s`: %s", username, e.getMessage() );
+            throw e;
+        }
+    }
+
+    @Override
+    public Set<String> silentlyGetRoleNamesForUser( String username )
+    {
+        return userManager.silentlyGetRoleNamesForUser( username );
     }
 
     @Override
     public Set<String> getUsernamesForRole( String roleName ) throws InvalidArgumentsException
     {
-        return userManager.getUsernamesForRole( roleName );
+        try
+        {
+            assertAdmin();
+            return userManager.getUsernamesForRole( roleName );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to list users for role `%s`: %s", roleName, e.getMessage() );
+            throw e;
+        }
+    }
+
+    @Override
+    public Set<String> silentlyGetUsernamesForRole( String roleName )
+    {
+        return userManager.silentlyGetUsernamesForRole( roleName );
+    }
+
+    private void assertSelfOrAdmin( String username )
+    {
+        if ( !authSubject.hasUsername( username ) )
+        {
+            assertAdmin();
+        }
+    }
+
+    private void assertAdmin() throws AuthorizationViolationException
+    {
+        if ( authSubject instanceof EnterpriseAuthSubject )
+        {
+            if ( ((EnterpriseAuthSubject) authSubject).isAdmin() )
+            {
+                return;
+            }
+        }
+        throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 }

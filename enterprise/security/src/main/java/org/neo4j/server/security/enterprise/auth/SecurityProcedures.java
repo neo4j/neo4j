@@ -33,14 +33,9 @@ public class SecurityProcedures extends AuthProceduresBase
 {
     @Description( "Show the current user." )
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
-    public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
+    public Stream<UserManagementProcedures.UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
-        // TODO: Support LDAP or plugin realms with native realm disabled
-        StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-        EnterpriseUserManager userManager = enterpriseSubject.getUserManager();
-        return Stream.of( new UserResult( enterpriseSubject.username(),
-                userManager.getRoleNamesForUser( enterpriseSubject.username() ),
-                userManager.getUser( enterpriseSubject.username() ).getFlags() ) );
+        return Stream.of( userResultForName( authSubject.username() ) );
     }
 
     @Description( "Clears authentication and authorization cache." )

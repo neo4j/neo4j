@@ -61,6 +61,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptySet;
 
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
@@ -71,7 +72,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
      * placed here because of user suspension not being a part of community edition
      */
-    private int MAX_READ_ATTEMPTS = 10;
+    private static int MAX_READ_ATTEMPTS = 10;
 
     static final String IS_SUSPENDED = "is_suspended";
 
@@ -468,6 +469,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
+    public RoleRecord silentlyGetRole( String roleName )
+    {
+        return roleRepository.getRoleByName( roleName );
+    }
+
+    @Override
     public void addRoleToUser( String roleName, String username ) throws IOException, InvalidArgumentsException
     {
         roleRepository.assertValidRoleName( roleName );
@@ -651,10 +658,23 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
+    public Set<String> silentlyGetRoleNamesForUser( String username )
+    {
+        return roleRepository.getRoleNamesByUsername( username );
+    }
+
+    @Override
     public Set<String> getUsernamesForRole( String roleName ) throws InvalidArgumentsException
     {
         RoleRecord role = getRole( roleName );
         return role.users();
+    }
+
+    @Override
+    public Set<String> silentlyGetUsernamesForRole( String roleName )
+    {
+        RoleRecord role = silentlyGetRole( roleName );
+        return role == null ? emptySet() : role.users();
     }
 
     @Override
