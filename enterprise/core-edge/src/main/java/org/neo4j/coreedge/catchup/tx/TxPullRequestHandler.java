@@ -119,11 +119,4 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         monitor.increment();
         protocol.expect( State.MESSAGE_TYPE );
     }
-
-    @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
-    {
-        cause.printStackTrace();
-        ctx.close();
-    }
 }

@@ -46,6 +46,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
+
 /**
  * Test factory for graph databases
  */
@@ -88,6 +91,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         builder.setConfig( GraphDatabaseSettings.logs_directory, new File( storeDir, "logs" ).getAbsolutePath() );
+        builder.setConfig( boltConnector("bolt").type, BOLT.name() );
+        builder.setConfig( boltConnector("bolt").enabled, "false" );
     }
 
     @Override

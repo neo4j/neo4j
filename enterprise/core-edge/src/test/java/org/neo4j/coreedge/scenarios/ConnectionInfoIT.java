@@ -118,7 +118,6 @@ public class ConnectionInfoIT
                 defaults().with( singletonMap( discovery_listen_address.name(), ":" + testSocket.getLocalPort() ) );
         config.augment( singletonMap( CoreEdgeClusterSettings.initial_discovery_members.name(),
                 "localhost:" + testSocket.getLocalPort() ) );
-        config.augment( singletonMap( GraphDatabaseSettings.boltConnector( "bolt" ).enabled.name(), "true" ) );
 
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();

@@ -55,8 +55,9 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.configuration.ServerSettings.HttpConnector;
+import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;
@@ -89,7 +90,7 @@ import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
-import static org.neo4j.server.configuration.ServerSettings.httpConnector;
+import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_size;
@@ -149,14 +150,14 @@ public abstract class AbstractNeoServer implements NeoServer
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
 
-        HttpConnector httpConnector = httpConnector( config, HttpConnector.Encryption.NONE )
+        HttpConnector httpConnector = ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.NONE )
                 .orElseThrow( () ->
                         new IllegalArgumentException( "An HTTP connector must be configured to run the server" ) );
         httpListenAddress = config.get( httpConnector.listen_address );
         httpAdvertisedAddress = config.get( httpConnector.advertised_address );
 
         Optional<HttpConnector> httpsConnector =
-                httpConnector( config, HttpConnector.Encryption.TLS );
+                ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.TLS );
         httpsListenAddress = httpsConnector.map( (connector) -> config.get( connector.listen_address ) );
         httpsAdvertisedAddress = httpsConnector.map( (connector) -> config.get( connector.advertised_address ) );
     }

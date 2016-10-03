@@ -26,14 +26,10 @@ import org.junit.Test;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-import org.neo4j.test.server.HTTP;
 
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class TestJetty9WebServer extends ExclusiveServerTestBase
@@ -44,7 +40,6 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     private Jetty9WebServer webServer;
-    private CommunityNeoServer server;
 
     @Test
     public void shouldBeAbleToUsePortZero() throws Exception
@@ -81,41 +76,12 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
         new Jetty9WebServer( NullLogProvider.getInstance(), null ).stop();
     }
 
-    /*
-     * The default jetty behaviour serves an index page for static resources. The 'directories' exposed through this
-     * behaviour are not file system directories, but only a list of resources present on the classpath, so there is no
-     * security vulnerability. However, it might seem like a vulnerability to somebody without the context of how the
-     * whole stack works, so to avoid confusion we disable the jetty behaviour.
-     */
-    @Test
-    public void shouldDisallowDirectoryListings() throws Exception
-    {
-        // Given
-        server = CommunityServerBuilder.server().build();
-        server.start();
-
-        // When
-        HTTP.Response okResource = HTTP.GET( server.baseUri().resolve( "/browser/index.html" ).toString() );
-        HTTP.Response illegalResource = HTTP.GET( server.baseUri().resolve( "/browser/styles/" ).toString() );
-
-        // Then
-        // Depends on specific resources exposed by the browser module; if this test starts to fail,
-        // check whether the structure of the browser module has changed and adjust accordingly.
-        assertEquals( 200, okResource.status() );
-        assertEquals( 403, illegalResource.status() );
-    }
-
     @After
     public void cleanup()
     {
         if ( webServer != null )
         {
             webServer.stop();
-        }
-
-        if ( server != null )
-        {
-            server.stop();
         }
     }
 

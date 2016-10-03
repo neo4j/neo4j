@@ -40,6 +40,7 @@ public class EmbeddedNeo4jWithBolt
 
         GraphDatabaseService graphDb = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( DB_PATH )
+                .setConfig( bolt.type, "BOLT" )
                 .setConfig( bolt.enabled, "true" )
                 .setConfig( bolt.address, "localhost:7687" )
                 .newGraphDatabase();

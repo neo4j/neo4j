@@ -19,25 +19,23 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
-
 public class EdgeAddresses
 {
-    private final AdvertisedSocketAddress boltAddress;
+    private final ClientConnectorAddresses clientConnectorAddresses;
 
-    public EdgeAddresses( AdvertisedSocketAddress boltAddress )
+    public EdgeAddresses( ClientConnectorAddresses clientConnectorAddresses )
     {
-        this.boltAddress = boltAddress;
+        this.clientConnectorAddresses = clientConnectorAddresses;
     }
 
-    public AdvertisedSocketAddress getBoltAddress()
+    public ClientConnectorAddresses getClientConnectorAddresses()
     {
-        return boltAddress;
+        return clientConnectorAddresses;
     }
 
     @Override
     public String toString()
     {
-        return String.format( "EdgeAddresses{boltAddress=%s}", boltAddress );
+        return String.format( "EdgeAddresses{clientConnectorAddresses=%s}", clientConnectorAddresses );
     }
 }

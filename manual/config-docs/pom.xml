@@ -138,7 +138,7 @@
                 <java classname="org.neo4j.kernel.configuration.docs.GenerateConfigDocumentation"
                       classpathref="maven.compile.classpath" failonerror="true">
                   <arg line="-o ${project.build.directory}/docs/ops/configuration-http-connector-attributes.asciidoc" />
-                  <arg value="org.neo4j.server.configuration.ServerSettings$HttpConnector" />
+                  <arg value="org.neo4j.server.configuration.ClientConnectorSettings$HttpConnector" />
                 </java>
               </target>
             </configuration>

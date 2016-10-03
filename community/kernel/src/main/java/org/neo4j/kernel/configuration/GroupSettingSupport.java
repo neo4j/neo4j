@@ -34,6 +34,7 @@ import org.neo4j.graphdb.config.Setting;
 public class GroupSettingSupport
 {
     private final String groupName;
+    public final String groupKey;
 
     /**
      * List all keys for a given group type, this is a way to enumerate all instances of a group
@@ -61,7 +62,7 @@ public class GroupSettingSupport
         return groupClass.getAnnotation( Group.class ).value();
     }
 
-    public GroupSettingSupport( Class<?> groupClass, Object groupKey )
+    public GroupSettingSupport( Class<?> groupClass, String groupKey )
     {
         this( groupPrefix( groupClass ), groupKey );
     }
@@ -71,8 +72,9 @@ public class GroupSettingSupport
      * @param groupKey the unique key for this particular group instance, eg. '0' or 'group1',
      *                 this gets combined with the groupPrefix to eg. `dbms.mygroup.0`
      */
-    private GroupSettingSupport( String groupPrefix, Object groupKey )
+    private GroupSettingSupport( String groupPrefix, String groupKey )
     {
+        this.groupKey = groupKey;
         this.groupName = String.format( "%s.%s", groupPrefix, groupKey );
     }
 

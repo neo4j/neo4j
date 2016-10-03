@@ -62,6 +62,9 @@ public class HazelcastClusterTopologyTest
         settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
         settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
         settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:3001" );
         config.augment( settings );
 
         // when
@@ -74,7 +77,7 @@ public class HazelcastClusterTopologyTest
         CoreAddresses addresses = extracted.other();
         assertEquals( new AdvertisedSocketAddress( "tx", 1001 ), addresses.getCatchupServer() );
         assertEquals( new AdvertisedSocketAddress( "raft", 2001 ), addresses.getRaftServer() );
-        assertEquals( new AdvertisedSocketAddress( "bolt", 3001 ), addresses.getBoltServer() );
+        assertEquals( new AdvertisedSocketAddress( "bolt", 3001 ), addresses.getClientConnectorAddresses().getBoltAddress() );
     }
 
     @Test
@@ -94,6 +97,10 @@ public class HazelcastClusterTopologyTest
             settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
             settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
             settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
+
             config.augment( settings );
             Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
@@ -110,7 +117,7 @@ public class HazelcastClusterTopologyTest
             CoreAddresses coreAddresses = coreMemberMap.get( coreMembers.get( i ) );
             assertEquals( new AdvertisedSocketAddress( "tx", (i + 1) ), coreAddresses.getCatchupServer() );
             assertEquals( new AdvertisedSocketAddress( "raft", (i + 1) ), coreAddresses.getRaftServer() );
-            assertEquals( new AdvertisedSocketAddress( "bolt", (i + 1) ), coreAddresses.getBoltServer() );
+            assertEquals( new AdvertisedSocketAddress( "bolt", (i + 1) ), coreAddresses.getClientConnectorAddresses().getBoltAddress() );
         }
     }
 
@@ -129,6 +136,10 @@ public class HazelcastClusterTopologyTest
             settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
             settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
             settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
+
             config.augment( settings );
             Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
             if ( i == 2 )

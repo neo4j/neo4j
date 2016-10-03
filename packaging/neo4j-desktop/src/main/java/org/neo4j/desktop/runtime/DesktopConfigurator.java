@@ -29,9 +29,8 @@ import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.server.CommunityBootstrapper;
+import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 
 import static org.neo4j.helpers.collection.Pair.pair;
 
@@ -84,6 +83,6 @@ public class DesktopConfigurator
 
     public ListenSocketAddress getServerAddress()
     {
-        return ServerSettings.httpConnector( config, HttpConnector.Encryption.NONE ).get().address.from( config );
+        return ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.NONE ).get().address.from( config );
     }
 }

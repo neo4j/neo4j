@@ -19,6 +19,27 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import com.hazelcast.core.Client;
 import com.hazelcast.core.ClientService;
 import com.hazelcast.core.Cluster;
@@ -48,34 +69,15 @@ import com.hazelcast.monitor.LocalMapStats;
 import com.hazelcast.query.Predicate;
 import org.junit.Test;
 
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Spliterator;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -84,8 +86,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.coreedge.discovery.HazelcastClient.REFRESH_EDGE;
-import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.BOLT_SERVER;
+import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.CLIENT_CONNECTOR_ADDRESSES;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.MEMBER_UUID;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.RAFT_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.TRANSACTION_SERVER;
@@ -93,14 +96,28 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class HazelcastClientTest
 {
-    private static final AdvertisedSocketAddress ADDRESS = new AdvertisedSocketAddress( "localhost", 7000 );
+    private Config config()
+    {
+        Config defaults = Config.defaults();
+
+        HashMap<String, String> settings = new HashMap<>();
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
+
+        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:3001" );
+
+        return defaults.augment( settings );
+    }
 
     @Test
     public void shouldReturnTopologyUsingHazelcastMembers() throws Exception
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
                 ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
@@ -128,7 +145,7 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
                 ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
@@ -171,7 +188,7 @@ public class HazelcastClientTest
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
-        HazelcastClient client = new HazelcastClient( connector, logProvider, ADDRESS, new
+        HazelcastClient client = new HazelcastClient( connector, logProvider, config(), new
                 ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -193,7 +210,7 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
                 ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
@@ -215,7 +232,7 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
                 ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         HazelcastInstance hazelcastInstance1 = mock( HazelcastInstance.class );
@@ -285,7 +302,7 @@ public class HazelcastClientTest
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS,
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), config(),
                 renewableTimeoutService, 60_000, 5_000 );
 
         hazelcastClient.start();
@@ -329,7 +346,7 @@ public class HazelcastClientTest
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS,
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), config(),
                 renewableTimeoutService, 60_000, 5_000 );
 
         hazelcastClient.start();
@@ -349,7 +366,8 @@ public class HazelcastClientTest
         when( member.getStringAttribute( MEMBER_UUID ) ).thenReturn( UUID.randomUUID().toString() );
         when( member.getStringAttribute( TRANSACTION_SERVER ) ).thenReturn( format( "host%d:%d", id, (7000 + id) ) );
         when( member.getStringAttribute( RAFT_SERVER ) ).thenReturn( format( "host%d:%d", id, (6000 + id) ) );
-        when( member.getStringAttribute( BOLT_SERVER ) ).thenReturn( format( "host%d:%d", id, (5000 + id) ) );
+        when( member.getStringAttribute( CLIENT_CONNECTOR_ADDRESSES ) )
+                .thenReturn( format( "bolt://host%d:%d,http://host%d:%d", id, (5000 + id), id, (5000 + id) ) );
         return member;
     }
 

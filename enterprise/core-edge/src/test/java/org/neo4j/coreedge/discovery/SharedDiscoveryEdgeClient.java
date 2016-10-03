@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -30,11 +30,11 @@ class SharedDiscoveryEdgeClient extends LifecycleAdapter implements TopologyServ
     private final EdgeAddresses addresses;
     private final Log log;
 
-    SharedDiscoveryEdgeClient( SharedDiscoveryService sharedDiscoveryService, AdvertisedSocketAddress boltAddress,
+    SharedDiscoveryEdgeClient( SharedDiscoveryService sharedDiscoveryService, Config config,
                                LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
-        this.addresses = new EdgeAddresses( boltAddress );
+        this.addresses = new EdgeAddresses( ClientConnectorAddresses.extractFromConfig( config ) );
         this.log = logProvider.getLog( getClass() );
     }
 

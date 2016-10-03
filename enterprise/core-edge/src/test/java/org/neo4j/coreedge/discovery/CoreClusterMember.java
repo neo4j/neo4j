@@ -31,14 +31,18 @@ import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.log.segmented.FileNames;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Level;
+import org.neo4j.server.configuration.ClientConnectorSettings;
+import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
+
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -66,6 +70,7 @@ public class CoreClusterMember implements ClusterMember
         int txPort = 6000 + serverId;
         int raftPort = 7000 + serverId;
         int boltPort = 8000 + serverId;
+        int httpPort = 10000 + serverId;
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
@@ -80,10 +85,13 @@ public class CoreClusterMember implements ClusterMember
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + boltPort );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address.name(), "127.0.0.1:" + boltPort );
         boltAdvertisedAddress = "127.0.0.1:" + boltPort;
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
+        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
+        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
+        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
+        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         config.putAll( extraParams );
@@ -175,5 +183,11 @@ public class CoreClusterMember implements ClusterMember
     public int serverId()
     {
         return serverId;
+    }
+
+    @Override
+    public ClientConnectorAddresses clientConnectorAddresses()
+    {
+        return ClientConnectorAddresses.extractFromConfig( new Config( this.config ) );
     }
 }

@@ -25,14 +25,14 @@ public class CoreAddresses
 {
     private final AdvertisedSocketAddress raftServer;
     private final AdvertisedSocketAddress catchupServer;
-    private final AdvertisedSocketAddress boltServer;
+    private final ClientConnectorAddresses clientConnectorAddresses;
 
     public CoreAddresses( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
-            AdvertisedSocketAddress boltServer )
+                          ClientConnectorAddresses clientConnectorAddresses )
     {
         this.raftServer = raftServer;
         this.catchupServer = catchupServer;
-        this.boltServer = boltServer;
+        this.clientConnectorAddresses = clientConnectorAddresses;
     }
 
     public AdvertisedSocketAddress getRaftServer()
@@ -45,8 +45,8 @@ public class CoreAddresses
         return catchupServer;
     }
 
-    public AdvertisedSocketAddress getBoltServer()
+    public ClientConnectorAddresses getClientConnectorAddresses()
     {
-        return boltServer;
+        return clientConnectorAddresses;
     }
 }

@@ -135,6 +135,7 @@ public class Neo4jWithSocket extends ExternalResource
     private Map<String,String> configure( Consumer<Map<String,String>> overrideSettingsFunction ) throws IOException
     {
         Map<String,String> settings = new HashMap<>();
+        settings.put( boltConnector( "0" ).type.name(), "BOLT" );
         settings.put( boltConnector( "0" ).enabled.name(), "true" );
         settings.put( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() );
         settings.put( BoltKernelExtension.Settings.tls_key_file.name(), tempPath( "key.key" ) );

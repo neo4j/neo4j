@@ -28,4 +28,6 @@ public interface ClusterMember<T extends GraphDatabaseAPI>
     void shutdown();
 
     T database();
+
+    ClientConnectorAddresses clientConnectorAddresses();
 }
