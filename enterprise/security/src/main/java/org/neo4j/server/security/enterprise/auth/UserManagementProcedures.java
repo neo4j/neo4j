@@ -101,8 +101,6 @@ public class UserManagementProcedures extends AuthProceduresBase
                 else
                 {
                     enterpriseSubject.getUserManager().setUserPassword( username, newPassword, requirePasswordChange );
-                    terminateTransactionsForValidUser( username );
-                    terminateConnectionsForValidUser( username );
                     securityLog.info( authSubject, "changed password for user `%s`%s", username,
                             requirePasswordChange ? ", with password change required" : "" );
                 }
