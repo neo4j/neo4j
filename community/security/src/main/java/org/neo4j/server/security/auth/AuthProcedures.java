@@ -51,7 +51,6 @@ public class AuthProcedures
             throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
-//        subject.getAuthManager().newUser( username, password, requirePasswordChange );
         userManager.newUser( username, password, requirePasswordChange );
     }
 

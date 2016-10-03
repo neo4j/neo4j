@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.server.security.enterprise.auth.SecuritySettings;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.auth.plugin.LdapGroupHasUsersAuthPlugin;
 
 @RunWith( FrameworkRunner.class )
