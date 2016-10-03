@@ -84,10 +84,17 @@ public class EnterpriseSecurityModule extends SecurityModule
         EnterpriseAuthAndUserManager authManager = newAuthManager( config, logProvider, securityLog, fileSystem, jobScheduler );
         platformModule.life.add( platformModule.dependencies.satisfyDependency( authManager ) );
 
-        procedures.registerComponent( UserManager.class, ctx -> authManager.getUserManager( ctx.get( AUTH_SUBJECT ) ) );
-        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-        procedures.registerProcedure( org.neo4j.server.security.auth.AuthProcedures.class );
-        procedures.registerProcedure( org.neo4j.server.security.enterprise.auth.AuthProcedures.class, true );
+        // Register procedures
+        procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
+        procedures.registerProcedure( SecurityProcedures.class, true );
+
+        if ( config.get( SecuritySettings.native_authentication_enabled )
+             || config.get( SecuritySettings.native_authorization_enabled ) )
+        {
+            procedures.registerComponent( UserManager.class,
+                    ctx -> authManager.getUserManager( ctx.get( AUTH_SUBJECT ) ) );
+            procedures.registerProcedure( UserManagementProcedures.class, true );
+        }
     }
 
     public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,
@@ -98,12 +105,12 @@ public class EnterpriseSecurityModule extends SecurityModule
 
         SecureHasher secureHasher = new SecureHasher();
 
-        // We always create the internal realm as it is our only UserManager implementation
-        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
+        InternalFlatFileRealm internalRealm = null;
 
         if ( config.get( SecuritySettings.native_authentication_enabled ) ||
                 config.get( SecuritySettings.native_authorization_enabled ) )
         {
+            internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
             realms.add( internalRealm );
         }
 

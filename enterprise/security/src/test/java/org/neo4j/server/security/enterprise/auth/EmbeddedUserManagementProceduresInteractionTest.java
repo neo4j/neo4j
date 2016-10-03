@@ -27,7 +27,7 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class EmbeddedAuthProceduresInteractionTest extends AuthProceduresInteractionTestBase<EnterpriseAuthSubject>
+public class EmbeddedUserManagementProceduresInteractionTest extends AuthProceduresInteractionTestBase<EnterpriseAuthSubject>
 {
     @Override
     protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer( Map<String, String> config )
