@@ -47,8 +47,8 @@ public class AuthProceduresTest extends KernelIntegrationTest
         AuthSubject authSubject = mock( AuthSubject.class );
 
         // When
-        RawIterator<Object[], ProcedureException> stream = dbmsOperations( authSubject )
-                .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray );
+        RawIterator<Object[], ProcedureException> stream = dbmsOperations().procedureCallDbms(
+                procedureName( "dbms", "changePassword" ), inputArray, authSubject );
 
         // Then
         verify( authSubject ).setPassword( (String) inputArray[0], false );
@@ -65,7 +65,8 @@ public class AuthProceduresTest extends KernelIntegrationTest
             inputArray[0] = "newPassword";
 
             // When
-            dbmsOperations( AccessMode.Static.NONE ).procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray );
+            dbmsOperations().procedureCallDbms(
+                    procedureName( "dbms", "changePassword" ), inputArray, AccessMode.Static.NONE );
             fail( "Should have failed." );
         }
         catch ( Exception e )
@@ -84,8 +85,8 @@ public class AuthProceduresTest extends KernelIntegrationTest
         AuthSubject authSubject = mock( AuthSubject.class );
 
         // When
-        RawIterator<Object[],ProcedureException> stream = dbmsOperations( authSubject )
-                .procedureCallDbms( procedureName( "dbms", "security", "changePassword" ), inputArray );
+        RawIterator<Object[],ProcedureException> stream = dbmsOperations().procedureCallDbms(
+                procedureName( "dbms", "security", "changePassword" ), inputArray, authSubject );
 
         // Then
         verify( authSubject ).setPassword( (String) inputArray[0], false );
@@ -102,8 +103,8 @@ public class AuthProceduresTest extends KernelIntegrationTest
             inputArray[0] = "newPassword";
 
             // When
-            dbmsOperations( AccessMode.Static.NONE )
-                    .procedureCallDbms( procedureName( "dbms", "security", "changePassword" ), inputArray );
+            dbmsOperations().procedureCallDbms(
+                    procedureName( "dbms", "security", "changePassword" ), inputArray, AccessMode.Static.NONE );
             fail( "Should have failed." );
         }
         catch ( Exception e )

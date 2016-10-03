@@ -172,7 +172,7 @@ public class DataSourceModule
 
         Procedures procedures = setupProcedures( platformModule, editionModule );
 
-        deps.satisfyDependency( new NonTransactionalDbmsOperations.Factory( procedures ) );
+        deps.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
 
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup(
                 editionModule.labelTokenHolder,

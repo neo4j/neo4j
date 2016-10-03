@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.api.dbms;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
-import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -35,21 +33,20 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
 {
 
     private final Procedures procedures;
-    private final KernelTransaction transaction;
 
-    public NonTransactionalDbmsOperations( Procedures procedures, KernelTransaction transaction )
+    public NonTransactionalDbmsOperations( Procedures procedures )
     {
         this.procedures = procedures;
-        this.transaction = transaction;
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name,
-            Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> procedureCallDbms(
+            QualifiedName name,
+            Object[] input,
+            AccessMode mode
+    ) throws ProcedureException
     {
         BasicContext ctx = new BasicContext();
-        ctx.put( Context.KERNEL_TRANSACTION, transaction );
-        AccessMode mode = transaction.mode();
         if ( mode instanceof AuthSubject )
         {
             ctx.put( Context.AUTH_SUBJECT, (AuthSubject) mode );
@@ -58,32 +55,18 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     }
 
     @Override
-    public Object functionCallDbms( QualifiedName name,
-            Object[] input ) throws ProcedureException
+    public Object functionCallDbms(
+            QualifiedName name,
+            Object[] input,
+            AccessMode mode
+    ) throws ProcedureException
     {
         BasicContext ctx = new BasicContext();
-        ctx.put( Context.KERNEL_TRANSACTION, transaction );
-        if ( transaction.mode() instanceof AuthSubject )
+        if ( mode instanceof AuthSubject )
         {
-            AuthSubject subject = (AuthSubject) transaction.mode();
+            AuthSubject subject = (AuthSubject) mode;
             ctx.put( Context.AUTH_SUBJECT, subject );
         }
         return procedures.callFunction( ctx, name, input );
-    }
-
-    public static class Factory implements DbmsOperations.Factory
-    {
-        private final Procedures procedures;
-
-        public Factory( Procedures procedures )
-        {
-            this.procedures = procedures;
-        }
-
-        @Override
-        public DbmsOperations newInstance( KernelTransaction tx )
-        {
-            return new NonTransactionalDbmsOperations( procedures, tx );
-        }
     }
 }

@@ -138,7 +138,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         try
         {
             // When
-            dbmsOperations( Static.NONE ).procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0] );
+            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0], Static.NONE );
             fail( "This should never get here" );
         }
         catch ( Exception e )

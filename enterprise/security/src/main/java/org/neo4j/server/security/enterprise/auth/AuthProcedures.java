@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -55,9 +56,6 @@ public class AuthProcedures
 
     @Context
     public GraphDatabaseAPI graph;
-
-    @Context
-    public KernelTransaction tx;
 
     @Context
     public SecurityLog securityLog;
@@ -396,11 +394,12 @@ public class AuthProcedures
 
     protected void terminateTransactionsForValidUser( String username )
     {
+        KernelTransaction currentTx = getCurrentTx();
         getActiveTransactions()
                 .stream()
                 .filter( tx ->
                     getUsernameFromAccessMode( tx.mode() ).equals( username ) &&
-                    !tx.isUnderlyingTransaction( this.tx )
+                    !tx.isUnderlyingTransaction( currentTx )
                 ).forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
     }
 
@@ -417,6 +416,12 @@ public class AuthProcedures
     private BoltConnectionTracker getBoltConnectionTracker()
     {
         return graph.getDependencyResolver().resolveDependency( BoltConnectionTracker.class );
+    }
+
+    private KernelTransaction getCurrentTx()
+    {
+        return graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true );
     }
 
     private StandardEnterpriseAuthSubject ensureAdminAuthSubject()

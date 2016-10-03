@@ -614,7 +614,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms, ())
+    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.accessMode), ())
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any],

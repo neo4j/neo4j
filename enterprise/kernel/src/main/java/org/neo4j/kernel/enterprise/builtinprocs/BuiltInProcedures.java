@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -81,8 +82,6 @@ public class BuiltInProcedures
     public GraphDatabaseAPI graph;
 
     @Context
-    public KernelTransaction tx;
-    @Context
     public AuthSubject authSubject;
 
     @Procedure( name = "dbms.setTXMetaData", mode = DBMS )
@@ -99,7 +98,13 @@ public class BuiltInProcedures
                             "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
         }
 
-        tx.acquireStatement().queryRegistration().setMetaData( data );
+        getCurrentTx().acquireStatement().queryRegistration().setMetaData( data );
+    }
+
+    private KernelTransaction getCurrentTx()
+    {
+        return graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true );
     }
 
     /*
@@ -126,7 +131,7 @@ public class BuiltInProcedures
     {
         ensureSelfOrAdminEnterpriseAuthSubject( username );
 
-        return terminateTransactionsForValidUser( graph.getDependencyResolver(), username, this.tx );
+        return terminateTransactionsForValidUser( graph.getDependencyResolver(), username, getCurrentTx() );
     }
 
     //@Procedure( name = "dbms.listConnections", mode = DBMS )

@@ -51,7 +51,7 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.procedure.Mode.READ;
 
-@SuppressWarnings( "unused" )
+@SuppressWarnings( {"unused", "WeakerAccess"} )
 public class BuiltInProcedures
 {
     @Context
