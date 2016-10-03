@@ -80,7 +80,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     @Override
     public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
-        return streamFilesRecursive( directory, fs );
+        return streamFilesRecursive( directory.getCanonicalFile(), fs );
     }
 
     /**

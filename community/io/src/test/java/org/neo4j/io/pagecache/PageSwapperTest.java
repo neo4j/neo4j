@@ -1306,10 +1306,11 @@ public abstract class PageSwapperTest
         File sub = new File( base, "sub" );
         mkdirs( sub );
         File a = new File( new File( new File( sub, ".." ), "sub" ), "a" );
-        createSwapperAndFile( factory, a );
-        String actualPath = factory.streamFilesRecursive( base )
+        File canonicalFile = a.getCanonicalFile();
+        createSwapperAndFile( factory, canonicalFile );
+        String actualPath = factory.streamFilesRecursive( a )
                                    .map( fh -> fh.getFile().getAbsolutePath() ).findAny().get();
-        assertThat( actualPath, is( a.getCanonicalPath() ) );
+        assertThat( actualPath, is( canonicalFile.getAbsolutePath() ) );
     }
 
     @Test
