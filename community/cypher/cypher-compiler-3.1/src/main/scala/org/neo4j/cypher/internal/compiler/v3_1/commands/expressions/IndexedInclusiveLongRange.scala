@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 import scala.collection.immutable
 
 /**
-  * An inclusive long range that is also indexable as long as the total length of the range is less that `Int.MaxValue`
+  * An inclusive long range that is also indexable as long as the total length of the range is less than `Int.MaxValue`
   * @param start beginning of range (inclusive)
   * @param end end of range (inclusive)
-  * @param step step between element of range
+  * @param step step between elements of range
   */
 case class IndexedInclusiveLongRange(start: Long, end: Long, step: Long) extends immutable.IndexedSeq[Long] {
 

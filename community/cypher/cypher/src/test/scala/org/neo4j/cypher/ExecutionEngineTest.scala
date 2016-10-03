@@ -733,6 +733,7 @@ order by a.COL1""")
       indexDefinitions should have size 1
 
       val actual = indexDefinitions.head.getPropertyKeys.asScala.toIndexedSeq
+      propertyKeys should equal(actual)
     }
   }
 

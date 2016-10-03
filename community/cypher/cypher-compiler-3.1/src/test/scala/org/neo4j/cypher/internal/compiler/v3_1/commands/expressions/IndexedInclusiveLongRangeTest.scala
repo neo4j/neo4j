@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 import scala.util.Random
 
-//TODO test negative ranges and indexes
 class IndexedInclusiveLongRangeTest extends CypherFunSuite {
 
   test("single element") {

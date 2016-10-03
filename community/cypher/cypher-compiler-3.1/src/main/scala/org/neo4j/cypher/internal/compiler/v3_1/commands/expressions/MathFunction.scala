@@ -286,18 +286,14 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 
     val startVal = asLong(start(ctx))
     val inclusiveEndVal = asLong(end(ctx))
-    //val check: (Long, Long) => Boolean = if (stepVal.signum > 0) _ <= _ else _ >= _
-
-    // due to the limitations of the scala collection library we need to implement iterator on long ranges manually:
-    // the scala one cannot be longer than MaxInt in length since it is an IndexedSeq which is indexed by Ints... :(
 
     IndexedInclusiveLongRange(startVal, inclusiveEndVal, stepVal)
   }
 
   override def arguments = Seq(start, end, step)
 
-  override def rewrite(f: (Expression) => Expression) = f(
-    RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) =
+    f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 
   override def calculateType(symbols: SymbolTable): CypherType = {
     start.evaluateType(CTNumber, symbols)
