@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
-import org.neo4j.cypher.internal.frontend.v3_1.InvalidArgumentException
-
 import scala.collection.immutable
 
 /**
@@ -31,7 +29,6 @@ import scala.collection.immutable
   */
 case class IndexedInclusiveLongRange(start: Long, end: Long, step: Long) extends immutable.IndexedSeq[Long] {
 
-  if (start > end) throw new InvalidArgumentException(s"invalid range [$start, $end]")
   private val check: (Long, Long) => Boolean = if (step.signum > 0) _ <= _ else _ >= _
 
   override def iterator: Iterator[Long] = new Iterator[Long] {

@@ -48,7 +48,7 @@ object PartiallySolvedQuery {
       updates = q.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
       where = predicates,
-      aggregation = q.aggregation.toSeq.flatten.map(Unsolved(_)),
+      aggregation = q.aggregation.toIndexedSeq.flatten.map(Unsolved(_)),
       sort = q.sort.map(Unsolved(_)),
       slice = q.slice.map(Unsolved(_)),
       namedPaths = q.namedPaths.map(Unsolved(_)),
@@ -181,7 +181,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
     val wherePredicates = where.map(_.token)
     val aggregateExpressions = aggregation.map(_.token)
     val sortExpressions = sort.map(_.token.expression)
-    val tailNodes = tail.toSeq.flatMap(_.children)
+    val tailNodes = tail.toIndexedSeq.flatMap(_.children)
     val startItems = start.map(_.token)
     val patternsX = patterns.map(_.token)
 

@@ -34,5 +34,5 @@ class CollectFunction(value:Expression) extends AggregationFunction {
     }
   }
 
-  def result: Any = collection.toSeq
+  def result: Any = collection.toIndexedSeq
 }

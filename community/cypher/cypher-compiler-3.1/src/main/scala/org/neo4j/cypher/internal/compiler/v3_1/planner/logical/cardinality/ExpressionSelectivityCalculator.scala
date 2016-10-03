@@ -96,7 +96,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       apply(inner).negate
 
     case Ors(expressions) =>
-      val selectivities = expressions.toSeq.map(apply)
+      val selectivities = expressions.toIndexedSeq.map(apply)
       combiner.orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
 
     // WHERE id(x) =/IN [...]
@@ -132,7 +132,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
     val labels = selections.labelsOnNode(IdName(variable))
-    val indexSelectivities = labels.toSeq.flatMap {
+    val indexSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
         (labelName.id, propertyKey.id) match {
           case (Some(labelId), Some(propertyKeyId)) =>
@@ -203,7 +203,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
     val labels = selections.labelsOnNode(IdName(variable))
-    val indexPropertyExistsSelectivities = labels.toSeq.flatMap {
+    val indexPropertyExistsSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
         (labelName.id, propertyKey.id) match {
           case (Some(labelId), Some(propertyKeyId)) =>

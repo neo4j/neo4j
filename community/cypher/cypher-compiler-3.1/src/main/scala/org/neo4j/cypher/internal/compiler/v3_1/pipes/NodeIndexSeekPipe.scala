@@ -64,14 +64,14 @@ case class NodeIndexSeekPipe(ident: String,
             PrefixIndex(label.name, propertyKey.name, prefix)
 
           case RangeQueryExpression(InequalitySeekRangeExpression(RangeLessThan(bounds))) =>
-            InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toSeq)
+            InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
 
           case RangeQueryExpression(InequalitySeekRangeExpression(RangeGreaterThan(bounds))) =>
-            InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toSeq)
+            InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
 
           case RangeQueryExpression(InequalitySeekRangeExpression(RangeBetween(greaterThanBounds, lessThanBounds))) =>
-            val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toSeq
-            val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toSeq
+            val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
+            val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
             InequalityIndex(label.name, propertyKey.name, greaterThanBoundsText ++ lessThanBoundsText)
 
           case _ =>

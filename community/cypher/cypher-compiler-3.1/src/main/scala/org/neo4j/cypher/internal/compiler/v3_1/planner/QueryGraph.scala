@@ -30,7 +30,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       patternNodes: Set[IdName] = Set.empty,
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
-                      optionalMatches: Vector[QueryGraph] = Vector.empty,
+                      optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
                       hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
                       mutatingPatterns: Seq[MutatingPattern] = Seq.empty)
@@ -101,10 +101,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = allCoveredIds intersect optionalMatch.allCoveredIds
-    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentIds(argumentIds.toSeq))
+    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentIds(argumentIds.toIndexedSeq))
   }
 
-  def withOptionalMatches(optionalMatches: Vector[QueryGraph]): QueryGraph = {
+  def withOptionalMatches(optionalMatches: IndexedSeq[QueryGraph]): QueryGraph = {
     copy(optionalMatches = optionalMatches)
   }
 
@@ -210,7 +210,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
    */
   def connectedComponents: Seq[QueryGraph] = {
     val visited = mutable.Set.empty[IdName]
-    patternNodes.toSeq.collect {
+    patternNodes.toIndexedSeq.collect {
       case patternNode if !visited(patternNode) =>
         val qg = connectedComponentFor(patternNode, visited)
         val coveredIds = qg.coveredIds
@@ -223,7 +223,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
           withSelections(Selections(predicates)).
           withArgumentIds(argumentIds).
           addHints(filteredHints).
-          addShortestPaths(shortestPaths.toSeq: _*)
+          addShortestPaths(shortestPaths.toIndexedSeq: _*)
     }
   }
 
@@ -248,20 +248,20 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
         val patternsWithSameName =
           patternRelationships.filterNot(filteredPatterns).filter { r => filteredPatterns.exists(_.name == r.name) }
 
-        queue.enqueue(filteredPatterns.toSeq.map(_.otherSide(node)): _*)
-        queue.enqueue(patternsWithSameName.toSeq.flatMap(r => Seq(r.left, r.right)): _*)
+        queue.enqueue(filteredPatterns.toIndexedSeq.map(_.otherSide(node)): _*)
+        queue.enqueue(patternsWithSameName.toIndexedSeq.flatMap(r => Seq(r.left, r.right)): _*)
 
         val patternsInConnectedComponent = filteredPatterns ++ patternsWithSameName
         qg = qg
           .addPatternNodes(node)
-          .addPatternRelationships(patternsInConnectedComponent.toSeq)
+          .addPatternRelationships(patternsInConnectedComponent.toIndexedSeq)
 
         val alreadyHaveArguments = qg.argumentIds.nonEmpty
 
         if (!alreadyHaveArguments && (relationshipPullsInArguments(qg.coveredIds) || predicatePullsInArguments(node))) {
           qg = qg.withArgumentIds(argumentIds)
           val nodesSolvedByArguments = patternNodes intersect qg.argumentIds
-          queue.enqueue(nodesSolvedByArguments.toSeq: _*)
+          queue.enqueue(nodesSolvedByArguments.toIndexedSeq: _*)
         }
       }
     }
@@ -295,7 +295,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                    patternNodes: Set[IdName] = patternNodes,
                    argumentIds: Set[IdName] = argumentIds,
                    selections: Selections = selections,
-                   optionalMatches: Vector[QueryGraph] = optionalMatches,
+                   optionalMatches: IndexedSeq[QueryGraph] = optionalMatches,
                    hints: Set[Hint] = hints,
                    shortestPathPatterns: Set[ShortestPathPattern] = shortestPathPatterns,
                    mutatingPatterns: Seq[MutatingPattern] = mutatingPatterns) =
@@ -315,8 +315,8 @@ object QueryGraph {
     import scala.math.Ordering.Implicits
 
     def compare(x: QueryGraph, y: QueryGraph): Int = {
-      val xs = x.coveredIds.toSeq.sorted(IdName.byName)
-      val ys = y.coveredIds.toSeq.sorted(IdName.byName)
+      val xs = x.coveredIds.toIndexedSeq.sorted(IdName.byName)
+      val ys = y.coveredIds.toIndexedSeq.sorted(IdName.byName)
       Implicits.seqDerivedOrdering[Seq, IdName](IdName.byName).compare(xs, ys)
     }
   }

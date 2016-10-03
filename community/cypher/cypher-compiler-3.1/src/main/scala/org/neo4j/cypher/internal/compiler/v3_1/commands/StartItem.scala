@@ -120,7 +120,7 @@ case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] {
 }
 
 case class SchemaIndex(variable: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
-  extends StartItem(variable, query.map(q => Arguments.LegacyExpression(q.expression)).toSeq :+ Arguments.Index(label, property))
+  extends StartItem(variable, query.map(q => Arguments.LegacyExpression(q.expression)).toIndexedSeq :+ Arguments.Index(label, property))
   with ReadOnlyStartItem with Hint with NodeStartItemVariables {
   override def localEffects(symbols: SymbolTable) = Effects(ReadsNodesWithLabels(label), ReadsGivenNodeProperty(property))
 }

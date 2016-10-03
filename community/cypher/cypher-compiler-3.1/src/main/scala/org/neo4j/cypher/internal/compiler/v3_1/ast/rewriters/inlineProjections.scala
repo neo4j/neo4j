@@ -92,13 +92,13 @@ case object inlineProjections extends Rewriter {
           if context.okToRewrite(item.variable) && inlineAliases =>
           val dependencies = findAllDependencies(item.variable, context)
           if (dependencies == Set(item.variable)) {
-            Seq(item)
+            IndexedSeq(item)
           } else {
             dependencies.map { id =>
               AliasedReturnItem(id.copyId, id.copyId)(item.position)
-            }.toSeq
+            }.toIndexedSeq
           }
-        case item: AliasedReturnItem => Seq(
+        case item: AliasedReturnItem => IndexedSeq(
           item.copy(expression = inlineExpressions(item.expression))(item.position)
         )
       }

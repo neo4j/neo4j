@@ -31,7 +31,7 @@ trait SelectivityEstimator extends (Expression => Selectivity) {
   def combiner: SelectivityCombiner
 
   def and(predicates: Set[Expression], defaultSelectivity: Selectivity = Selectivity.ONE): Selectivity =
-    combiner.andTogetherSelectivities(predicates.map(self).toSeq).getOrElse(defaultSelectivity)
+    combiner.andTogetherSelectivities(predicates.map(self).toIndexedSeq).getOrElse(defaultSelectivity)
 }
 
 case class DelegatingSelectivityEstimator(inner: SelectivityEstimator) extends SelectivityEstimator {

@@ -36,7 +36,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
 
   def withTail(newTail: PlannerQuery): PlannerQueryBuilder = {
-    copy(q = q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toSeq)))))
+    copy(q = q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq)))))
   }
 
   private def currentlyExposedSymbols: Set[IdName] = {
@@ -78,7 +78,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
         (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
       }
       plannerQuery
-        .amendQueryGraph(_.withOptionalMatches(newOptionalMatches.toVector))
+        .amendQueryGraph(_.withOptionalMatches(newOptionalMatches.toIndexedSeq))
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
@@ -107,7 +107,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
           case Selections(predicates) =>
             val optPredicates = predicates.toNonEmptyListOption
             val newPredicates = optPredicates.map { predicates =>
-              groupInequalityPredicates(predicates).toList.toSet
+              groupInequalityPredicates(predicates).toSet
             }.getOrElse(predicates)
             Selections(newPredicates)
         })

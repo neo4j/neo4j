@@ -55,7 +55,7 @@ case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])(va
 
   def planDescriptionWithoutCardinality =
     source.planDescription
-      .andThen(this.id, "Projection", variables, expressions.values.toSeq.map(LegacyExpression):_*)
+      .andThen(this.id, "Projection", variables, expressions.values.toIndexedSeq.map(LegacyExpression):_*)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

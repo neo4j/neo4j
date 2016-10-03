@@ -158,7 +158,7 @@ object ClauseConverters {
       }
       seen.add(pattern.nodeName)
     }
-    result.toVector
+    result.toIndexedSeq
   }
 
   private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {
@@ -243,7 +243,7 @@ object ClauseConverters {
 
   private def toPropertySelection(identifier: Variable,  map:Map[PropertyKeyName, Expression]): Seq[Expression] = map.map {
     case (k, e) => In(Property(identifier, k)(k.position), ListLiteral(Seq(e))(e.position))(identifier.position)
-  }.toSeq
+  }.toIndexedSeq
 
   private def toSetPattern(semanticTable: SemanticTable)(setItem: SetItem): SetMutatingPattern = setItem match {
     case SetLabelItem(id, labels) => SetLabelPattern(IdName.fromVariable(id), labels)
@@ -429,8 +429,8 @@ object ClauseConverters {
       .forIds(currentlyAvailableVariables + foreachVariable))
 
     val innerBuilder = new PlannerQueryBuilder(PlannerQuery.empty, builder.semanticTable)
-      .amendQueryGraph(_.addPatternNodes((builder.allSeenPatternNodes ++ setOfNodeVariables).toSeq:_*)
-                        .addArgumentIds(foreachVariable +: currentlyAvailableVariables.toSeq))
+      .amendQueryGraph(_.addPatternNodes((builder.allSeenPatternNodes ++ setOfNodeVariables).toIndexedSeq:_*)
+                        .addArgumentIds(foreachVariable +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(projectionToInnerUpdates)
 
     val innerPlannerQuery = clause.updates.foldLeft(innerBuilder) {

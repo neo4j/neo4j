@@ -93,7 +93,7 @@ case class LoadCSVPipe(source: Pipe,
   private class IteratorWithoutHeaders(context: ExecutionContext, inner: Iterator[Array[String]]) extends Iterator[ExecutionContext] {
     override def hasNext: Boolean = inner.hasNext
 
-    override def next(): ExecutionContext = context.newWith(variable -> inner.next().toSeq)
+    override def next(): ExecutionContext = context.newWith(variable -> inner.next().toIndexedSeq)
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -108,7 +108,7 @@ case class LoadCSVPipe(source: Pipe,
       val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url, fieldTerminator)
       format match {
         case HasHeaders =>
-          val headers = iterator.next().toSeq // First row is headers
+          val headers = iterator.next().toIndexedSeq // First row is headers
           new IteratorWithHeaders(headers, context, iterator)
         case NoHeaders =>
           new IteratorWithoutHeaders(context, iterator)

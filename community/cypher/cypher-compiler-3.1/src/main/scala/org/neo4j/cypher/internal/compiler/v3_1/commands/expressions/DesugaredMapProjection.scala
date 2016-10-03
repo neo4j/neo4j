@@ -48,7 +48,7 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
   override def rewrite(f: (Expression) => Expression) =
     f(DesugaredMapProjection(id, includeAllProps, literalExpressions.rewrite(f)))
 
-  override def arguments = literalExpressions.values.toSeq
+  override def arguments = literalExpressions.values.toIndexedSeq
 
   override def calculateType(symbols: SymbolTable) = {
     literalExpressions.values.foreach(_.evaluateType(CTAny, symbols))

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 case class ListSlice(collection: Expression, from: Option[Expression], to: Option[Expression])
   extends NullInNullOutExpression(collection) with ListSupport {
-  def arguments: Seq[Expression] = from.toSeq ++ to.toSeq :+ collection
+  def arguments: Seq[Expression] = from.toIndexedSeq ++ to.toIndexedSeq :+ collection
 
   private val function: (Iterable[Any], ExecutionContext, QueryState) => Any =
     (from, to) match {

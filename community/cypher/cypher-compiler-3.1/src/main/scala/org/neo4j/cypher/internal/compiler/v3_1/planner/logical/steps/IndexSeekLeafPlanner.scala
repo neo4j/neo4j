@@ -164,7 +164,7 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
 
 object legacyHintLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
-    qg.hints.toSeq.collect {
+    qg.hints.toIndexedSeq.collect {
       case hint: LegacyIndexHint if !qg.argumentIds(IdName(hint.variable.name)) =>
         context.logicalPlanProducer.planLegacyHintSeek(IdName(hint.variable.name), hint, qg.argumentIds)
     }

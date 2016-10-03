@@ -79,7 +79,7 @@ case class Namespacer(renamings: VariableRenamings) {
     }))
 
   val tableRewriter = (semanticTable: SemanticTable) => {
-    val replacements = renamings.toSeq.collect { case (old, newVariable) => old.value -> newVariable }
+    val replacements = renamings.toIndexedSeq.collect { case (old, newVariable) => old.value -> newVariable }
     val newSemanticTable = semanticTable.replaceVariables(replacements: _*)
     newSemanticTable
   }

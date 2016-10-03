@@ -135,20 +135,20 @@ object StatementConverters {
       }._1.get
 
     private def groupClauses(clauses: Seq[ast.Clause]): IndexedSeq[IndexedSeq[ast.Clause]] = {
-      val (groups, last) = clauses.sliding(2).foldLeft((Vector.empty[Vector[ast.Clause]], Vector(clauses.head))) {
+      val (groups, last) = clauses.sliding(2).foldLeft((IndexedSeq.empty[IndexedSeq[ast.Clause]], IndexedSeq(clauses.head))) {
         case ((groups, last), pair) =>
-          def split   = (groups :+ last, pair.tail.toVector)
+          def split   = (groups :+ last, pair.tail.toIndexedSeq)
           def combine = (groups, last ++ pair.tail)
 
           pair match {
-            case Seq(clause)                                   => (groups, last)
-            case Seq(_: ast.With, _: ast.Return)               => combine
-            case Seq(_: ast.ProjectionClause, _)                  => split
-            case Seq(_, _: ast.ProjectionClause)                  => combine
-            case Seq(_: ast.UpdateClause, _)                   => split
-            case Seq(_, _: ast.UpdateClause)                   => split
-            case Seq(_: ast.Match, _)                          => split
-            case Seq(_, _)                                     => combine
+            case Seq(clause) => (groups, last)
+            case Seq(_: ast.With, _: ast.Return) => combine
+            case Seq(_: ast.ProjectionClause, _) => split
+            case Seq(_, _: ast.ProjectionClause) => combine
+            case Seq(_: ast.UpdateClause, _) => split
+            case Seq(_, _: ast.UpdateClause) => split
+            case Seq(_: ast.Match, _) => split
+            case Seq(_, _) => combine
           }
       }
       groups :+ last
@@ -245,7 +245,7 @@ object StatementConverters {
         Some(commands.NodeByLabel(variable.name, label.name))
       case ast.UsingJoinHint(variables) =>
         if (PlannerName(plannerName) == RulePlannerName) {
-          notifications.log(JoinHintUnsupportedNotification(variables.map(_.name).toSeq))
+          notifications.log(JoinHintUnsupportedNotification(variables.map(_.name).toIndexedSeq))
         }
         None
     }
@@ -386,7 +386,7 @@ object StatementConverters {
       else
         None
 
-      maybeAllVariables.toSeq ++ clause.returnItems.items.map {
+      maybeAllVariables.toIndexedSeq ++ clause.returnItems.items.map {
         case ast.AliasedReturnItem(expr, variable) =>
           commands.ReturnItem(toCommandExpression(expr), variable.name)
         case ast.UnaliasedReturnItem(expr, variable) =>

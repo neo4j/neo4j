@@ -35,7 +35,7 @@ object ExpressionConverters {
       val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
       val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
       val relChain: RelationshipChain = exp.pattern.element
-      val predicates: Vector[Expression] = relChain.fold(uniquePredicates.toVector) {
+      val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
         case _                                                          => identity
       }
@@ -47,7 +47,7 @@ object ExpressionConverters {
         patternRelationships = patternContent.rels.toSet,
         patternNodes = patternContent.nodeIds.toSet
       ).addPredicates(predicates: _*)
-      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toSeq)
+      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toIndexedSeq)
     }
   }
 
@@ -56,7 +56,7 @@ object ExpressionConverters {
       val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
       val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
       val relChain: RelationshipChain = exp.pattern.element
-      val predicates: Vector[Expression] = relChain.fold(uniquePredicates.toVector) {
+      val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
         case _                                                          => identity
       } ++ exp.predicate
@@ -68,7 +68,7 @@ object ExpressionConverters {
         patternRelationships = patternContent.rels.toSet,
         patternNodes = patternContent.nodeIds.toSet
       ).addPredicates(predicates: _*)
-      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toSeq)
+      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toIndexedSeq)
     }
   }
 

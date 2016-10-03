@@ -43,7 +43,7 @@ object indexQuery extends GraphElementPropertyFunctions {
 
     case ManyQueryExpression(inner) =>
       inner(m)(state) match {
-        case IsList(coll) => coll.toSet.toSeq.flatMap {
+        case IsList(coll) => coll.toSet.toIndexedSeq.flatMap {
           value: Any => lookupNodes(value, index)
         }.iterator
         case null => Iterator.empty

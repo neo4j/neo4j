@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
-import org.neo4j.cypher.internal.frontend.v3_1.InvalidArgumentException
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 import scala.util.Random
 
+//TODO test negative ranges and indexes
 class IndexedInclusiveLongRangeTest extends CypherFunSuite {
 
   test("single element") {
@@ -77,10 +77,6 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
 
       IndexedInclusiveLongRange(start, end, step).toIndexedSeq.map(_.toInt) should equal(start to end by step)
     }
-  }
-
-  test("invalid range") {
-    an [InvalidArgumentException] shouldBe thrownBy(IndexedInclusiveLongRange(2, 1, 1))
   }
 
   test("should fail if using a too big range as indexed seq") {

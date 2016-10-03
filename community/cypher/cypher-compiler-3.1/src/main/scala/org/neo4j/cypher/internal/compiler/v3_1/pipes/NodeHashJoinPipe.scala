@@ -61,7 +61,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
       id = id,
       name = "NodeHashJoin",
       children = TwoChildren(left.planDescription, right.planDescription),
-      arguments = Seq(KeyNames(nodeVariables.toSeq)),
+      arguments = Seq(KeyNames(nodeVariables.toIndexedSeq)),
       variables
     )
 
@@ -78,8 +78,8 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-  private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]] = {
-    val table = new mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]]
+  private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]] = {
+    val table = new mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]]
 
     for {context <- input
          joinKey <- computeKey(context)} {
@@ -92,7 +92,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
 
   private val cachedVariables = nodeVariables.toIndexedSeq
 
-  private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
+  private def computeKey(context: ExecutionContext): Option[IndexedSeq[Long]] = {
     val key = new Array[Long](cachedVariables.length)
 
     for (idx <- cachedVariables.indices) {
@@ -102,6 +102,6 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
         case _ => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")
       }
     }
-    Some(key.toVector)
+    Some(key.toIndexedSeq)
   }
 }

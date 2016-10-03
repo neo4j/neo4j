@@ -75,7 +75,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
 
   private def materialize(v: Any): Any = v match {
     case (x: JavaListWrapper[_]) => x
-    case (x: Stream[_])   => x.map(materialize).toVector
+    case (x: Stream[_])   => x.map(materialize).toIndexedSeq
     case (x: collection.Map[_, _])   => Eagerly.immutableMapValues(x.toMap, materialize)
     case (x: Iterable[_]) => x.map(materialize)
     case x => x

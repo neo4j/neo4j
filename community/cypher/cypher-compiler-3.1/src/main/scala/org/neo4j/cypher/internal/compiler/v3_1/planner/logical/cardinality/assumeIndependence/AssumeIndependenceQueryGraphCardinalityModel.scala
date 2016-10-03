@@ -100,7 +100,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
 
     val expressionSelectivities = selections.flatPredicates.map(expressionSelectivityEstimator(_))
 
-    val patternSelectivities = qg.patternRelationships.toSeq.map {
+    val patternSelectivities = qg.patternRelationships.toIndexedSeq.map {
       /* This is here to handle the *0..0 case.
          Our solution to the problem is to keep count of how many of these we see, and decrease the number of pattern
          nodes accordingly. The nice solution would have been to rewrite these relationships away at an earlier phase.

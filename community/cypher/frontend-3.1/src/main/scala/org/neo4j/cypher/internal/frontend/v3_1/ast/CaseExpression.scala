@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticCheck}
 
-case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression])(val position: InputPosition) extends Expression {
+case class CaseExpression(expression: Option[Expression], alternatives: IndexedSeq[(Expression, Expression)], default: Option[Expression])(val position: InputPosition) extends Expression {
+
+
   lazy val possibleExpressions = alternatives.map(_._2) ++ default
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
@@ -36,4 +38,10 @@ case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Exp
       alternatives.map(_._1).expectType(CTBoolean.covariant)
     } chain this.specifyType(possibleTypes)
   }
+}
+
+object CaseExpression {
+  def apply(expression: Option[Expression], alternatives: List[(Expression, Expression)], default: Option[Expression])(position: InputPosition):CaseExpression =
+    CaseExpression(expression, alternatives.toIndexedSeq, default)(position)
+
 }

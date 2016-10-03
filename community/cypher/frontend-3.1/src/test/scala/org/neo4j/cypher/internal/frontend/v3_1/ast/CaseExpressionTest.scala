@@ -28,7 +28,7 @@ class CaseExpressionTest extends CypherFunSuite {
   test("Simple: Should combine types of alternatives") {
     val caseExpression = CaseExpression(
       expression = Some(DummyExpression(CTString)),
-      alternatives = Seq(
+      alternatives = IndexedSeq(
         (
           DummyExpression(CTString),
           DummyExpression(CTFloat)
@@ -48,7 +48,7 @@ class CaseExpressionTest extends CypherFunSuite {
   test("Generic: Should combine types of alternatives") {
     val caseExpression = CaseExpression(
       None,
-      Seq(
+      IndexedSeq(
         (
           DummyExpression(CTBoolean),
           DummyExpression(CTFloat | CTString)
@@ -68,7 +68,7 @@ class CaseExpressionTest extends CypherFunSuite {
   test("Generic: should type check predicates") {
     val caseExpression = CaseExpression(
       None,
-      Seq(
+      IndexedSeq(
         (
           DummyExpression(CTBoolean),
           DummyExpression(CTFloat)

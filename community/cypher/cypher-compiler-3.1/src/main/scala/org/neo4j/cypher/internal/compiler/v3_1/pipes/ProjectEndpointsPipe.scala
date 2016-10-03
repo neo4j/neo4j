@@ -96,7 +96,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   }
 
   private def findVarLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(Node, Node, Seq[Relationship])] = {
-    val rels = makeTraversable(context(relName)).toSeq.asInstanceOf[Seq[Relationship]]
+    val rels = makeTraversable(context(relName)).toIndexedSeq.asInstanceOf[Seq[Relationship]]
     if (rels.nonEmpty && rels.forall(hasAllowedType)) {
       pickStartAndEnd(rels.head, rels.last, context, qtx).map { case (s, e) => (s, e, rels) }
     } else {

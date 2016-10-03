@@ -88,7 +88,7 @@ class PredicateRewriter(namer: Namer = new RandomNamer) extends PlanBuilder {
       rel =>
         val iteratorName = rel.relIterator.getOrElse(namer.nextName())
         val innerSymbolName = namer.nextName()
-        val innerPredicate1: Seq[Predicate] = rel.properties.toSeq.map {
+        val innerPredicate1: Seq[Predicate] = rel.properties.toIndexedSeq.map {
           case (prop, value) => Equals(Property(Variable(innerSymbolName), UnresolvedProperty(prop)), value).asInstanceOf[Predicate]
         }
         val innerPredicate2 = True().andWith(innerPredicate1: _*)
@@ -128,7 +128,7 @@ class PredicateRewriter(namer: Namer = new RandomNamer) extends PlanBuilder {
     token => Unsolved(HasLabel(Variable(name), token).asInstanceOf[Predicate])
   }
 
-  def mapPropertiesToPredicates(props: Map[String, Expression], name: String): Seq[Unsolved[Predicate]] = props.toSeq.map {
+  def mapPropertiesToPredicates(props: Map[String, Expression], name: String): Seq[Unsolved[Predicate]] = props.toIndexedSeq.map {
     case (prop, value) => Unsolved(Equals(Property(Variable(name), UnresolvedProperty(prop)), value).asInstanceOf[Predicate])
   }
 }

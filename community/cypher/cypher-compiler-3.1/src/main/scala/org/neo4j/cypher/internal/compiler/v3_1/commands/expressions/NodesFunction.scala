@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 case class NodesFunction(path: Expression) extends NullInNullOutExpression(path) {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
     case p: PathImpl => p.nodeList
-    case p: Path => p.nodes().asScala.toSeq
+    case p: Path => p.nodes().asScala.toIndexedSeq
     case x       => throw new SyntaxException("Expected " + path + " to be a path.")
   }
 

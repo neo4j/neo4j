@@ -26,5 +26,5 @@ object allNodesLeafPlanner extends LeafPlanner {
   def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) =
     queryGraph.patternNodes
     .filter(!queryGraph.argumentIds.contains(_))
-    .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds)).toSeq
+    .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds)).toIndexedSeq
 }

@@ -83,7 +83,7 @@ class MergeStartPointBuilder extends PlanBuilder {
         val solvedPredicates = startItem.solvedPredicates
         val predicatesLeft = where.toSet -- solvedPredicates
 
-        mergeNodeAction.copy(maybeNodeProducer = Some(nodeProducer), expectations = predicatesLeft.toSeq)
+        mergeNodeAction.copy(maybeNodeProducer = Some(nodeProducer), expectations = predicatesLeft.toIndexedSeq)
 
       case indexes =>
         val startItems: Seq[(KeyToken, KeyToken, RatedStartItem)] = indexes.map {
@@ -104,7 +104,7 @@ class MergeStartPointBuilder extends PlanBuilder {
         }
         val predicatesLeft = where.toSet -- solvedPredicates
 
-        mergeNodeAction.copy(maybeNodeProducer = Some(nodeProducer), expectations = predicatesLeft.toSeq)
+        mergeNodeAction.copy(maybeNodeProducer = Some(nodeProducer), expectations = predicatesLeft.toIndexedSeq)
     }
 
     newMergeNodeAction

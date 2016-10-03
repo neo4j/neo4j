@@ -85,7 +85,7 @@ trait ExpanderStep {
       current = step.next
     }
 
-    allSteps.toSeq
+    allSteps.toIndexedSeq
   }
 }
 

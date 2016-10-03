@@ -30,7 +30,7 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
 
   def nonEmpty: Boolean = !isEmpty
 
-  def variables: Seq[String] = patternGraph.keys.toSeq
+  def variables: Seq[String] = patternGraph.keys.toIndexedSeq
 
   def isEmpty: Boolean = patternNodes.isEmpty && patternRels.isEmpty
 
@@ -44,7 +44,7 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
 
   val (patternGraph, containsLoops) = validatePattern(patternNodes, patternRels)
 
-  lazy val hasBoundRelationships: Boolean = boundElements.exists(patternRels.keys.toSeq.contains)
+  lazy val hasBoundRelationships: Boolean = boundElements.exists(patternRels.keys.toIndexedSeq.contains)
   lazy val hasVarLengthPaths: Boolean = patternRels.values.exists(_.isInstanceOf[VariableLengthPatternRelationship])
 
   def apply(key: String) = patternGraph(key)
@@ -62,16 +62,16 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
     if (isEmpty)
       return (Map(), false)
 
-    val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
+    val overlaps = patternNodes.keys.filter(patternRels.keys.toIndexedSeq contains)
     if (overlaps.nonEmpty) {
       throw new PatternException("Some variables are used as both relationships and nodes: " + overlaps.mkString(", "))
     }
 
     val elementsMap: Map[String, Seq[PatternElement]] = (patternNodes.values.map(Seq[PatternElement](_)) ++
       patternRels.values.asInstanceOf[Iterable[Seq[PatternElement]]]).map(x => x.head.key -> x).toMap
-    val allElements = elementsMap.values.flatMap(_.toSeq).toSeq
+    val allElements = elementsMap.values.flatMap(_.toIndexedSeq).toIndexedSeq
 
-    val boundPattern: Seq[PatternElement] = boundElements.flatMap(i => elementsMap.get(i)).flatMap(_.toSeq)
+    val boundPattern: Seq[PatternElement] = boundElements.flatMap(i => elementsMap.get(i)).flatMap(_.toIndexedSeq)
 
     val hasLoops = checkIfWeHaveLoops(boundPattern, allElements)
 

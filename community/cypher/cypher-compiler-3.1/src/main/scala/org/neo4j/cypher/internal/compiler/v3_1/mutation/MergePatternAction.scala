@@ -73,7 +73,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
     val patternVariables = variables.map(p => p._1)
     val nodeIds = ctx.collect {
       case (variable, node: Node) if patternVariables.contains(variable) => node.getId
-    }.toSeq
+    }.toIndexedSeq
     state.query.lockNodes(nodeIds:_*)
     matchPipe.createResults(state)
   }

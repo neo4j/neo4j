@@ -427,7 +427,7 @@ case class CompatibilityPlanDescriptionFor3_1(inner: InternalPlanDescription, ve
   self =>
 
   def children = exceptionHandlerFor3_1.runSafely {
-    inner.children.toSeq.map(CompatibilityPlanDescriptionFor3_1.apply(_, version, planner, runtime))
+    inner.children.toIndexedSeq.map(CompatibilityPlanDescriptionFor3_1.apply(_, version, planner, runtime))
   }
 
   def arguments: Map[String, AnyRef] = exceptionHandlerFor3_1.runSafely {

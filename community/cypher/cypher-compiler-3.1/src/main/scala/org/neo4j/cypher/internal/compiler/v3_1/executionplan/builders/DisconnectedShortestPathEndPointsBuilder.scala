@@ -36,7 +36,7 @@ class DisconnectedShortestPathEndPointsBuilder extends PlanBuilder {
     val startPoints: Set[RatedStartItem] =
       nodesToAdd.map(key => NodeFetchStrategy.findStartStrategy(key, allPredicates, ctx, plan.pipe.symbols)).toSet
 
-    val singleNodeToAdd: RatedStartItem = startPoints.toSeq.sortBy(_.rating).head
+    val singleNodeToAdd: RatedStartItem = startPoints.toIndexedSeq.sortBy(_.rating).head
 
     val filteredWhere = singleNodeToAdd.solvedPredicates.foldLeft(plan.query.where) {
       (currentWhere: Seq[QueryToken[Predicate]], predicate: Predicate) =>

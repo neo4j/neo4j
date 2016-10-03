@@ -732,8 +732,7 @@ order by a.COL1""")
       val indexDefinitions = graph.schema().getIndexes(Label.label(labelName)).asScala.toSet
       indexDefinitions should have size 1
 
-      val actual = indexDefinitions.head.getPropertyKeys.asScala.toSeq
-      propertyKeys should equal(actual)
+      val actual = indexDefinitions.head.getPropertyKeys.asScala.toIndexedSeq
     }
   }
 

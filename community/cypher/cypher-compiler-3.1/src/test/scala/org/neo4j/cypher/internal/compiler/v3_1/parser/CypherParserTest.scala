@@ -2929,7 +2929,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         matches(SingleNode("a")).
         returns(
-        ReturnItem(GenericCase(Seq(
+        ReturnItem(GenericCase(IndexedSeq(
           (Equals(Property(Variable("a"), PropertyKey("prop")), Literal(1)), Literal("hello"))
         ), Some(Literal("goodbye"))), "result"))
     )
@@ -2943,7 +2943,7 @@ class CypherParserTest extends CypherFunSuite {
         matches(SingleNode("a")).
         returns(
           ReturnItem(GenericCase(
-            Seq((NonEmpty(PathExpression(Seq(relatedTo), True(), PathExtractorExpression(Seq(relatedTo)))), Literal(1))),
+            IndexedSeq((NonEmpty(PathExpression(Seq(relatedTo), True(), PathExtractorExpression(Seq(relatedTo)))), Literal(1))),
             Some(Literal(0))
           ), "result")
         )

@@ -28,7 +28,7 @@ object labelScanLeafPlanner extends LeafPlanner {
     implicit val semanticTable = context.semanticTable
     val labelPredicateMap = qg.selections.labelPredicates
 
-    for (idName <- qg.patternNodes.toSeq if !qg.argumentIds.contains(idName);
+    for (idName <- qg.patternNodes.toIndexedSeq if !qg.argumentIds.contains(idName);
       labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
       labelName <- labelPredicate.labels) yield {
       val identName = idName.name

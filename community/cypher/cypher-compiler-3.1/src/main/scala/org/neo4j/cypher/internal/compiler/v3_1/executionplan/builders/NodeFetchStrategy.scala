@@ -50,7 +50,7 @@ object NodeFetchStrategy {
   def findUniqueIndexesForLabel(label: KeyToken, keys: Iterable[KeyToken], ctx: PlanContext): Seq[(KeyToken, KeyToken)] =
     keys.flatMap { (key: KeyToken) =>
       ctx.getUniquenessConstraint(label.name, key.name).map { _ => (label, key) }
-    }.toSeq
+    }.toIndexedSeq
 
   val Single = 0
   val IndexEquality = 1
@@ -96,7 +96,7 @@ object NodeByIdStrategy extends NodeStrategy {
 
     solutions match {
       case Seq()        => Seq()
-      case head :: tail => Seq(RatedStartItem(NodeByIdOrEmpty(node, head), Single, predicates))
+      case _ => Seq(RatedStartItem(NodeByIdOrEmpty(node, solutions.head), Single, predicates))
     }
   }
 
@@ -135,7 +135,7 @@ object IndexSeekStrategy extends NodeStrategy {
               val indexType = if (optConstraint.isDefined) UniqueIndex else AnyIndex
               val schemaIndex = SchemaIndex(node, labelPredicate.solution, equalityPredicate.solution, indexType, None)
               RatedStartItem(schemaIndex, rating, solvedPredicates = Seq.empty,
-                             newUnsolvedPredicates = equalityPredicate.newUnsolvedPredicate.toSeq)
+                             newUnsolvedPredicates = equalityPredicate.newUnsolvedPredicate.toIndexedSeq)
             }
 
         val seekByPrefixItems: Seq[RatedStartItem] =
@@ -143,7 +143,7 @@ object IndexSeekStrategy extends NodeStrategy {
             yield {
               val schemaIndex = SchemaIndex(node, labelPredicate.solution, seekByPrefixPredicate.solution, AnyIndex, None)
               RatedStartItem(schemaIndex, NodeFetchStrategy.IndexRange, solvedPredicates = Seq.empty,
-                             newUnsolvedPredicates = seekByPrefixPredicate.newUnsolvedPredicate.toSeq)
+                             newUnsolvedPredicates = seekByPrefixPredicate.newUnsolvedPredicate.toIndexedSeq)
             }
 
         val seekByRangeItems: Seq[RatedStartItem] =
@@ -201,7 +201,7 @@ object LabelScanStrategy extends NodeStrategy {
 
     labelPredicates.map {
       case SolvedPredicate(labelName, predicate, newUnsolvedPredicate) =>
-        RatedStartItem(NodeByLabel(node, labelName), LabelScan, Seq(predicate), newUnsolvedPredicate.toSeq)
+        RatedStartItem(NodeByLabel(node, labelName), LabelScan, Seq(predicate), newUnsolvedPredicate.toIndexedSeq)
     }
   }
 }

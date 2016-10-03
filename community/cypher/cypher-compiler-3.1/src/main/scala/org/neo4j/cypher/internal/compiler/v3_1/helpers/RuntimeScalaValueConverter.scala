@@ -45,7 +45,7 @@ class RuntimeScalaValueConverter(skip: Any => Boolean, converter: Any => Any) {
     case javaMap: JavaMap[_, _] => immutableMapValues(javaMap.asScala, asDeepScalaValue)
     case javaList: java.util.LinkedList[_] => copyJavaList(javaList,() => new util.LinkedList[Any]())
     case javaList: java.util.List[_] => copyJavaList(javaList,() => new util.ArrayList[Any](javaList.size()))
-    case javaIterable: JavaIterable[_] => javaIterable.asScala.map(asDeepScalaValue).toVector: Seq[_]
+    case javaIterable: JavaIterable[_] => javaIterable.asScala.map(asDeepScalaValue).toIndexedSeq: Seq[_]
     case map: collection.Map[_, _] => immutableMapValues(map, asDeepScalaValue): immutable.Map[_, _]
     case traversable: TraversableOnce[_] => traversable.map(asDeepScalaValue).toList: Seq[_]
     case anything => converter(anything)

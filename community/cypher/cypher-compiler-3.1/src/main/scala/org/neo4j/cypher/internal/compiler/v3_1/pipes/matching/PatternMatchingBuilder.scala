@@ -79,7 +79,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
     lst.foldRight(List(List[T]()))(// <- the type T needs to be specified here
       (element: Seq[T], result: List[List[T]]) => // types for better readability
         result.flatMap(r => element.map(e => e :: r))
-    ).toSeq
+    ).toIndexedSeq
 
   private def createPatternMatcher(boundPairs: Map[String, Set[MatchingPair]], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] =
       new PatternMatcher(boundPairs, predicates, source, state, variablesInClause)

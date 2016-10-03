@@ -241,8 +241,7 @@ sealed trait NonEmptyList[+T] {
   def size: Int
 
   final def toSet[X >: T]: Set[X] = foldLeft(Set.empty[X])(_ + _)
-  final def toSeq: Seq[T] = foldLeft(Seq.empty[T])(_ :+ _)
-  final def toList: List[T] = foldLeft(List.empty[T])(_ :+ _)
+  final def toIndexedSeq: Seq[T] = foldLeft(IndexedSeq.empty[T])(_ :+ _)
 
   @tailrec
   private def reverseFlatMapLoop[S](acc: NonEmptyList[S], f: T => NonEmptyList[S]): NonEmptyList[S] = self match {

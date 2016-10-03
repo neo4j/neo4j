@@ -150,7 +150,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
     if (input.isEmpty)
       Seq(Unspecified())
     else
-      input.toSeq.map {
+      input.toIndexedSeq.map {
         case label =>
           label.id.map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
       }
@@ -160,7 +160,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
     if (input.isEmpty)
       Seq(Unspecified())
     else
-      input.toSeq.map {
+      input.toIndexedSeq.map {
         case rel =>
           rel.id.map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
       }

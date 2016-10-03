@@ -83,7 +83,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     recordCurrentScope
 
   private def uniqueHints: SemanticCheck = {
-    val errors = hints.groupBy(_.variables.toSeq).collect {
+    val errors = hints.groupBy(_.variables.toIndexedSeq).collect {
       case pair@(variables, identHints) if identHints.size > 1 =>
         SemanticError("Multiple hints for same variable are not supported", variables.head.position, identHints.map(_.position): _*)
     }.toVector

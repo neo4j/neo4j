@@ -67,5 +67,5 @@ abstract class Trail {
 
   def filter(f: Trail => Boolean): Iterable[Trail]
 
-  def asSeq: Seq[Trail] = filter(x => true).toSeq
+  def asSeq: Seq[Trail] = filter(x => true).toIndexedSeq
 }

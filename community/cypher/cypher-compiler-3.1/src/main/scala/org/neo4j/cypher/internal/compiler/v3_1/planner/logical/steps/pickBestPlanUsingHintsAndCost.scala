@@ -34,7 +34,7 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
 
       if (VERBOSE) {
         val costs = context.cost
-        val sortedPlans = input.toSeq.sorted(inputOrdering).map(projector)
+        val sortedPlans = input.toIndexedSeq.sorted(inputOrdering).map(projector)
 
         if (sortedPlans.size > 1) {
           println("- Get best of:")

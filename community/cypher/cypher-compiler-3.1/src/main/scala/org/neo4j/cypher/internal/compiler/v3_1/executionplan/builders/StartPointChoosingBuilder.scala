@@ -96,7 +96,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
         singleNodePoints
       } else {
         // Lastly, let's pick the best start point possible
-        Some(startPoints.toSeq.sortBy(_.rating).head)
+        Some(startPoints.toIndexedSeq.sortBy(_.rating).head)
       }
     }
 

@@ -82,7 +82,7 @@ abstract class LogicalPlan
     else {
       val constructor = this.copyConstructor
       val params = constructor.getParameterTypes
-      val args = children.toVector
+      val args = children.toIndexedSeq
       if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[PlannerQuery]))
         constructor.invoke(this, args :+ this.solved: _*).asInstanceOf[this.type]
       else
@@ -92,7 +92,7 @@ abstract class LogicalPlan
   def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty
 
   override def toString = {
-    val children = lhs.toSeq ++ rhs.toSeq
+    val children = lhs.toIndexedSeq ++ rhs.toIndexedSeq
     val nonChildFields = productIterator.filterNot(children.contains).mkString(", ")
     val l = lhs.map(p => indent("LHS -> " + p) + "\n").getOrElse("")
     val r = rhs.map(p => indent("RHS -> " + p) + "\n").getOrElse("")

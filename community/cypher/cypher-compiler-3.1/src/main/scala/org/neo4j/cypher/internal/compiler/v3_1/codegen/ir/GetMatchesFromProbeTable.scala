@@ -25,7 +25,7 @@ case class GetMatchesFromProbeTable(keys: Set[Variable], code: JoinData, action:
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     generator.trace(code.id) { traced =>
-      traced.probe(code.tableVar, code.tableType, keys.toSeq.map(_.name)) { body =>
+      traced.probe(code.tableVar, code.tableType, keys.toIndexedSeq.map(_.name)) { body =>
         body.incrementRows()
         action.body(body)
       }

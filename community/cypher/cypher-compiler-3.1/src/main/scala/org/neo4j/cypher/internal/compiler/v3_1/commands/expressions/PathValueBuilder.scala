@@ -89,7 +89,7 @@ final class PathValueBuilder {
         addUndirectedRelationship(first)
         consumeIterator(relIterator)
       } else {
-        consumeIterator(relIterator.toSeq.reverseIterator)
+        consumeIterator(relIterator.toIndexedSeq.reverseIterator)
         addUndirectedRelationship(first)
       }
     }

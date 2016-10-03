@@ -75,7 +75,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     }
 
     def findBestCandidateInBlock(blockSize: Int): (Goal, Result) = {
-      val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.plansOfSize(blockSize)).toSeq
+      val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.plansOfSize(blockSize)).toIndexedSeq
       val bestInBlock = goalSelector(blockCandidates)
       bestInBlock.getOrElse {
         throw new IllegalStateException(

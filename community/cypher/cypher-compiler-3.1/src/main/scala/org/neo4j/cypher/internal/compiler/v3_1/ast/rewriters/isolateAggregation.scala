@@ -49,7 +49,7 @@ case object isolateAggregation extends Rewriter {
     case q@SingleQuery(clauses) =>
 
       val newClauses = clauses.flatMap {
-        case clause if !clauseNeedingWork(clause) => Seq(clause)
+        case clause if !clauseNeedingWork(clause) => IndexedSeq(clause)
         case clause =>
           val (withAggregations, others) = getExpressions(clause).partition(hasAggregateButIsNotAggregate(_))
 
@@ -59,12 +59,12 @@ case object isolateAggregation extends Rewriter {
             case e => AliasedReturnItem(e, Variable(AggregationNameGenerator.name(e.position))(e.position))(e.position)
           }
           val pos = clause.position
-          val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toSeq)(pos), None, None, None, None)(pos)
+          val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toIndexedSeq)(pos), None, None, None, None)(pos)
 
           val expressionRewriter = createRewriterFor(withReturnItems)
           val resultClause = clause.endoRewrite(expressionRewriter)
 
-          Seq(withClause, resultClause)
+          IndexedSeq(withClause, resultClause)
       }
 
       q.copy(clauses = newClauses)(q.position)

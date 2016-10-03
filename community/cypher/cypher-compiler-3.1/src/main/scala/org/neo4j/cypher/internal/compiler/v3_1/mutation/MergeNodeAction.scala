@@ -102,7 +102,7 @@ case class MergeNodeAction(variable: String,
   }
 
   override def arguments: Seq[Argument] = {
-    val producers: Seq[Argument] = maybeNodeProducer.map(_.arguments).toSeq.flatten
+    val producers: Seq[Argument] = maybeNodeProducer.map(_.arguments).toIndexedSeq.flatten
     super.arguments ++ producers
   }
 

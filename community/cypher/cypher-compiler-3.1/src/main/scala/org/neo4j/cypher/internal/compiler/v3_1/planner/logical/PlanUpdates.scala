@@ -183,7 +183,7 @@ case object PlanUpdates
     val ids = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
 
     val condApply = if (onMatchPatterns.nonEmpty) {
-      val qgWithAllNeededArguments = matchGraph.addArgumentIds(matchGraph.allCoveredIds.toSeq)
+      val qgWithAllNeededArguments = matchGraph.addArgumentIds(matchGraph.allCoveredIds.toIndexedSeq)
       val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgumentRow(qgWithAllNeededArguments)) {
         case (src, current) => planUpdate(query, src, current, first)
       }

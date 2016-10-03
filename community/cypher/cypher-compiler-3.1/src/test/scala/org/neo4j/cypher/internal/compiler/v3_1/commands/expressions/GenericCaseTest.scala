@@ -83,7 +83,7 @@ class GenericCaseTest extends CypherFunSuite {
 
   test("case_with_a_single_null_value_uses_the_default") {
     //GIVEN CASE WHEN null THEN 42 ELSE "defaults"
-    val caseExpr = GenericCase(Seq(CoercedPredicate(Null())->Literal(42)), Some(Literal("defaults")))
+    val caseExpr = GenericCase(IndexedSeq(CoercedPredicate(Null())->Literal(42)), Some(Literal("defaults")))
 
     //WHEN
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
@@ -93,7 +93,7 @@ class GenericCaseTest extends CypherFunSuite {
   }
 
   private def case_(alternatives: ((Any, Any), Any)*): GenericCase = {
-    val mappedAlt: Seq[(Predicate, Expression)] = alternatives.map {
+    val mappedAlt: IndexedSeq[(Predicate, Expression)] = alternatives.toIndexedSeq.map {
       case ((a, b), c) => (Equals(Literal(a), Literal(b)), Literal(c))
     }
 
