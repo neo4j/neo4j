@@ -20,31 +20,29 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
+import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class UserManagementProcedures extends AuthProceduresBase
 {
 
+    @Context
+    public EnterpriseAuthManager authManager;
+
     @Description( "Create a new user." )
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
-    public void createUser(
-            @Name( "username" ) String username,
-            @Name( "password" ) String password,
-            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange
-    )
+    public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
+            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
         userManager.newUser( username, password, requirePasswordChange );
@@ -53,17 +51,16 @@ public class UserManagementProcedures extends AuthProceduresBase
     @Deprecated
     @Description( "Change the current user's password. Deprecated by dbms.security.changePassword." )
     @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
-    public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
+    public void changePasswordDeprecated( @Name( "password" ) String password )
+            throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password, false );
     }
 
     @Description( "Change the current user's password." )
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
-    public void changePassword(
-            @Name( "password" ) String password,
-            @Name( value = "requirePasswordChange", defaultValue = "false"  ) boolean requirePasswordChange
-    )
+    public void changePassword( @Name( "password" ) String password,
+            @Name( value = "requirePasswordChange", defaultValue = "false" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
         userManager.setUserPassword( authSubject.username(), password, requirePasswordChange );

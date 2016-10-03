@@ -23,12 +23,11 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 {
@@ -38,19 +37,16 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 
     private final EnterpriseAuthAndUserManager authManager;
     private final ShiroSubject shiroSubject;
-    private final SecurityLog securityLog;
 
     public static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
     {
         return EnterpriseAuthSubject.castOrFail( StandardEnterpriseAuthSubject.class, authSubject );
     }
 
-    public StandardEnterpriseAuthSubject( EnterpriseAuthAndUserManager authManager, ShiroSubject shiroSubject,
-            SecurityLog securityLog )
+    public StandardEnterpriseAuthSubject( EnterpriseAuthAndUserManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;
-        this.securityLog = securityLog;
     }
 
     @Override
@@ -100,11 +96,6 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     public EnterpriseUserManager getUserManager()
     {
         return authManager.getUserManager( this );
-    }
-
-    public void clearAuthCache()
-    {
-        authManager.clearAuthCache();
     }
 
     @Override

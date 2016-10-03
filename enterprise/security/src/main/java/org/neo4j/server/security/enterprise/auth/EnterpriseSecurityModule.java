@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -95,6 +96,9 @@ public class EnterpriseSecurityModule extends SecurityModule
         {
             procedures.registerComponent( UserManager.class,
                     ctx -> authManager.getUserManager( ctx.get( AUTH_SUBJECT ) ) );
+            procedures.registerComponent( EnterpriseUserManager.class,
+                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( AUTH_SUBJECT ) ) ) );
+            procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager );
             procedures.registerProcedure( UserManagementProcedures.class, true );
         }
     }
@@ -126,8 +130,8 @@ public class EnterpriseSecurityModule extends SecurityModule
             realms.add( internalRealm );
         }
 
-        if ( (config.get( SecuritySettings.ldap_authentication_enabled ) ||
-                config.get( SecuritySettings.ldap_authorization_enabled ))
+        if ( ( config.get( SecuritySettings.ldap_authentication_enabled ) ||
+                config.get( SecuritySettings.ldap_authorization_enabled ) )
                 && configuredRealms.contains( SecuritySettings.LDAP_REALM_NAME ) )
         {
             realms.add( new LdapRealm( config, securityLog ) );

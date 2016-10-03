@@ -122,7 +122,7 @@ public class AuthProceduresBase
 
         if ( subject.isAdmin() || subject.hasUsername( username ) )
         {
-            subject.getUserManager().getUser( username );
+            userManager.getUser( username );
             return subject;
         }
 

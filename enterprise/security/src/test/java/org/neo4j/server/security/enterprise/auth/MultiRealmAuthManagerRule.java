@@ -89,7 +89,7 @@ public class MultiRealmAuthManagerRule implements TestRule
 
     public AuthSubject makeSubject( ShiroSubject shiroSubject )
     {
-        return new StandardEnterpriseAuthSubject( manager, shiroSubject, securityLog );
+        return new StandardEnterpriseAuthSubject( manager, shiroSubject );
     }
 
     @Override

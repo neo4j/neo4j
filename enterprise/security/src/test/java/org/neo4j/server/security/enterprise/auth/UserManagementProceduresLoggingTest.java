@@ -643,7 +643,7 @@ public class UserManagementProceduresLoggingTest
 
         TestAuthSubject( String name, boolean isAdmin, EnterpriseUserManager userManager, SecurityLog securityLog )
         {
-            super( null, new TestShiroSubject( name ), securityLog );
+            super( null, new TestShiroSubject( name ) );
             this.name = name;
             this.isAdmin = isAdmin;
             this.userManager = userManager;
