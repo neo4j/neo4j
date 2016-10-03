@@ -19,9 +19,7 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 
@@ -34,14 +32,10 @@ import static org.mockito.Mockito.verify;
 
 public class ListCommandTest extends UsersCommandTestBase
 {
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDir );
-
     @Test
     public void shouldFailWithoutSubcommand() throws Exception
     {
-        UsersCommand usersCommand = new UsersCommand( testDir.directory( "home" ).toPath(),
-                testDir.directory( "conf" ).toPath(), out );
+        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(), out );
 
         String[] arguments = {};
         try
@@ -61,8 +55,7 @@ public class ListCommandTest extends UsersCommandTestBase
     @Test
     public void shouldFailWithUnknownSubcommand() throws Exception
     {
-        UsersCommand usersCommand = new UsersCommand( testDir.directory( "home" ).toPath(),
-                testDir.directory( "conf" ).toPath(), out );
+        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(), out );
 
         String[] arguments = {"make-love-not-war"};
         try

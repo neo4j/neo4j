@@ -24,16 +24,11 @@ import org.neo4j.server.security.auth.User;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 class UsersCommandTestBase extends CommandTestBase
 {
     protected static String password_change_required = "password_change_required";
-
-    @Override
-    protected String command()
-    {
-        return "users";
-    }
 
     void assertUserRequiresPasswordChange( String username ) throws Throwable
     {
@@ -46,6 +41,12 @@ class UsersCommandTestBase extends CommandTestBase
         User user = getUser( username );
         assertThat( "User should not require password change", user.getFlags(),
                 not( hasItem( password_change_required ) ) );
+    }
+
+    void assertUsersPasswordMatches( String username, String password ) throws Throwable
+    {
+        User user = getUser( username );
+        assertTrue( "User password didn't match '" + password + "'", user.credentials().matchesPassword( password ) );
     }
 
 }

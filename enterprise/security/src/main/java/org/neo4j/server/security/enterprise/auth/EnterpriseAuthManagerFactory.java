@@ -22,7 +22,6 @@ package org.neo4j.server.security.enterprise.auth;
 import com.github.benmanes.caffeine.cache.Ticker;
 import org.apache.shiro.cache.CacheManager;
 import org.apache.shiro.realm.Realm;
-import org.slf4j.impl.StaticLoggerBinder;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -125,7 +124,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         return orderedActiveRealms;
     }
 
-    private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
+    public static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         return new InternalFlatFileRealm(

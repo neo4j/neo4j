@@ -19,9 +19,7 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -32,15 +30,10 @@ import static org.junit.Assert.fail;
 
 public class SetPasswordCommandTest extends UsersCommandTestBase
 {
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDir );
-
     @Test
     public void shouldFailSetPasswordWithNoArguments() throws Exception
     {
-        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(),
-                testDir.directory( "conf" ).toPath(),out );
+        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(),out );
 
         String[] arguments = {"set-password"};
         try
@@ -57,8 +50,7 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
     @Test
     public void shouldFailSetPasswordWithOnlyOneArgument() throws Exception
     {
-        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(),
-                testDir.directory( "conf" ).toPath(),out );
+        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(),out );
 
         String[] arguments = {"set-password", "neo4j"};
         try
@@ -75,8 +67,7 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
     @Test
     public void shouldFailSetPasswordWithNonExistingUser() throws Exception
     {
-        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(),
-                testDir.directory( "conf" ).toPath(), out );
+        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(), out );
 
         String[] arguments = {"set-password", "nosuchuser", "whatever"};
         try
@@ -98,9 +89,10 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
         // When - the admin command sets the password
         UsersCommand usersCommand =
                 new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
-        usersCommand.execute( new String[]{"set-password", "neo4j", "abc"} );
+        usersCommand.execute( new String[]{"set-password", "neo4j", "abc", "--requires-password-change=false"} );
 
         // Then - the default user does not require a password change
+        assertUsersPasswordMatches( "neo4j", "abc" );
         assertUserDoesNotRequirePasswordChange( "neo4j" );
     }
 
@@ -114,9 +106,10 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
         // When - the admin command sets the password
         UsersCommand usersCommand =
                 new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
-        usersCommand.execute( new String[]{"set-password", "another", "abc"} );
+        usersCommand.execute( new String[]{"set-password", "another", "abc", "--requires-password-change=false"} );
 
         // Then - the new user no longer requires a password change
+        assertUsersPasswordMatches( "another", "abc" );
         assertUserDoesNotRequirePasswordChange( "another" );
     }
 }

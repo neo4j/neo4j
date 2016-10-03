@@ -30,7 +30,7 @@ class RolesCommandTestBase extends CommandTestBase
 
     private File rolesFile()
     {
-        return new File( new File( new File( testDir.graphDbDir(), "data" ), "dbms" ), "roles" );
+        return new File( new File( new File( graphDir, "data" ), "dbms" ), "roles" );
     }
 
     RoleRecord createTestRole( String roleName ) throws Throwable
@@ -40,11 +40,5 @@ class RolesCommandTestBase extends CommandTestBase
         RoleRecord role = new RoleRecord.Builder().withName( roleName ).build();
         roles.create( role );
         return role;
-    }
-
-    @Override
-    protected String command()
-    {
-        return "roles";
     }
 }

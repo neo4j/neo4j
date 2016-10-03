@@ -19,12 +19,16 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -33,17 +37,15 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.DelegateFileSystemAbstraction;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.BasicAuthManagerFactory;
-import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.time.Clocks;
+import org.neo4j.server.security.auth.UserManager;
+import org.neo4j.server.security.auth.UserManagerSupplier;
 
 public class UsersCommand implements AdminCommand
 {
@@ -77,9 +79,9 @@ public class UsersCommand implements AdminCommand
         }
     }
 
-    private final Path homeDir;
-    private final Path configDir;
-    private OutsideWorld outsideWorld;
+    final Path homeDir;
+    final Path configDir;
+    OutsideWorld outsideWorld;
 
     public UsersCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
@@ -161,9 +163,8 @@ public class UsersCommand implements AdminCommand
 
     private void listUsers( String contains ) throws Throwable
     {
-        getAuthManager();   // ensure defaults are created
-        FileUserRepository userRepository = getUserRepository();
-        for ( String username : userRepository.getAllUsernames() )
+        UserManager userManager = getUserManager();
+        for ( String username : userManager.getAllUsernames() )
         {
             if ( contains == null || username.toLowerCase().contains( contains.toLowerCase() ) )
             {
@@ -174,20 +175,20 @@ public class UsersCommand implements AdminCommand
 
     private void createUser( String username, String password, boolean requiresPasswordChange ) throws Throwable
     {
-        BasicAuthManager authManager = getAuthManager();
-        authManager.newUser( username, password, requiresPasswordChange );
+        UserManager userManager = getUserManager();
+        userManager.newUser( username, password, requiresPasswordChange );
         outsideWorld.stdOutLine( "Created new user '" + username + "'" );
     }
 
     private void deleteUser( String username ) throws Throwable
     {
-        BasicAuthManager authManager = getAuthManager();
-        authManager.getUser( username );    // Will throw error on missing user
-        if ( authManager.getAllUsernames().size() == 1 )
+        UserManager userManager = getUserManager();
+        userManager.getUser( username );    // Will throw error on missing user
+        if ( userManager.getAllUsernames().size() == 1 )
         {
             throw new IllegalArgumentException( "Deleting the only remaining user '" + username + "' is not allowed" );
         }
-        if ( authManager.deleteUser( username ) )
+        if ( userManager.deleteUser( username ) )
         {
             outsideWorld.stdOutLine( "Deleted user '" + username + "'" );
         }
@@ -199,8 +200,8 @@ public class UsersCommand implements AdminCommand
 
     private void setPassword( String username, String password, boolean requirePasswordChange ) throws Throwable
     {
-        BasicAuthManager authManager = getAuthManager();
-        authManager.setUserPassword( username, password, requirePasswordChange );
+        UserManager userManager = getUserManager();
+        userManager.setUserPassword( username, password, requirePasswordChange );
         outsideWorld.stdOutLine( "Changed password for user '" + username + "'" );
     }
 
@@ -220,22 +221,154 @@ public class UsersCommand implements AdminCommand
         return settings;
     }
 
-    private FileUserRepository getUserRepository() throws Throwable
+    private UserManager getUserManager() throws Throwable
     {
         Config config = loadNeo4jConfig( homeDir, configDir );
-        FileUserRepository userRepository =
-                BasicAuthManagerFactory.getUserRepository( config,
-                        NullLogProvider.getInstance(), outsideWorld.fileSystem() );
-        userRepository.start();
-        return userRepository;
+        String configuredKey = config.get( GraphDatabaseSettings.auth_manager );
+        List<AuthManager.Factory> wantedAuthManagerFactories = new ArrayList<>();
+        List<AuthManager.Factory> backupAuthManagerFactories = new ArrayList<>();
+
+        for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
+        {
+            if ( StreamSupport.stream( candidate.getKeys().spliterator(), false ).anyMatch( configuredKey::equals ) )
+            {
+                wantedAuthManagerFactories.add( candidate );
+            }
+            else
+            {
+                backupAuthManagerFactories.add( candidate );
+            }
+        }
+
+        AuthManager authManager = tryMakeInOrder( config, wantedAuthManagerFactories );
+
+        if ( authManager == null )
+        {
+            authManager = tryMakeInOrder( config, backupAuthManagerFactories );
+        }
+
+        if ( authManager == null )
+        {
+            outsideWorld.stdErrLine( "No auth manager implementation specified and no default could be loaded. " +
+                    "It is an illegal product configuration to have auth enabled and not provide an auth manager service." );
+            throw new IllegalArgumentException(
+                    "Auth enabled but no auth manager found. This is an illegal product configuration." );
+        }
+        if ( authManager instanceof UserManagerSupplier )
+        {
+            authManager.start();
+            return ((UserManagerSupplier) authManager).getUserManager();
+        }
+        else
+        {
+            outsideWorld.stdErrLine( "The configured auth manager doesn't handle user management." );
+            throw new IllegalArgumentException( "The configured auth manager doesn't handle user management." );
+        }
     }
 
-    private BasicAuthManager getAuthManager() throws Throwable
+    private AuthManager tryMakeInOrder( Config config, List<AuthManager.Factory> authManagerFactories )
     {
-        FileUserRepository userRepository = getUserRepository();
-        PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-        BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock() );
-        authManager.start();    // required to setup default users
-        return authManager;
+        JobScheduler jobScheduler = new NoOpJobScheduler();
+        for ( AuthManager.Factory x : authManagerFactories )
+        {
+            try
+            {
+                return x.newInstance( config, NullLogProvider.getInstance(), NullLog.getInstance(),
+                        outsideWorld.fileSystem(), jobScheduler );
+            }
+            catch ( Exception e )
+            {
+                outsideWorld.stdOutLine(
+                        String.format( "Attempted to load configured auth manager with keys '%s', but failed",
+                                String.join( ", ", x.getKeys() ) ) );
+            }
+        }
+        return null;
+    }
+
+    public static class NoOpJobScheduler implements JobScheduler
+    {
+
+        @Override
+        public void init() throws Throwable
+        {
+
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+
+        }
+
+        @Override
+        public Executor executor( Group group )
+        {
+            return null;
+        }
+
+        @Override
+        public ThreadFactory threadFactory( Group group )
+        {
+            return null;
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable job )
+        {
+            return new NoOpJobHandle();
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
+        {
+            return new NoOpJobHandle();
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
+        {
+            return new NoOpJobHandle();
+        }
+
+        @Override
+        public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
+        {
+            return new NoOpJobHandle();
+        }
+
+        @Override
+        public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
+        {
+            return new NoOpJobHandle();
+        }
+
+        public static class NoOpJobHandle implements JobHandle
+        {
+
+            @Override
+            public void cancel( boolean mayInterruptIfRunning )
+            {
+
+            }
+
+            @Override
+            public void waitTermination() throws InterruptedException, ExecutionException
+            {
+
+            }
+        }
     }
 }

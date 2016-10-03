@@ -20,23 +20,10 @@
 package org.neo4j.commandline.admin.security;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-
-import org.neo4j.commandline.admin.AdminTool;
-import org.neo4j.commandline.admin.CommandLocator;
-
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.contains;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 public class UsersCommandIT extends UsersCommandTestBase
 {
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDir );
-
     @Before
     public void setup()
     {
@@ -45,7 +32,7 @@ public class UsersCommandIT extends UsersCommandTestBase
         // environment that the actual tested commands will encounter. In particular some auth state is created
         // on demand in both the UserCommand and in the real server. We want that state created before the tests
         // are run.
-        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( "list") );
+        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( "users", "list" ) );
         resetOutsideWorldMock();
     }
 
@@ -53,8 +40,7 @@ public class UsersCommandIT extends UsersCommandTestBase
     public void shouldGetUsageErrorsWithNoSubCommand() throws Throwable
     {
         // When running 'users' with no subcommand, expect usage errors
-        assertFailedUserCommand( null,
-                "Missing arguments: expected at least one sub-command as argument",
+        assertFailedUserCommand( "", new String[0], "Missing arguments: expected at least one sub-command as argument",
                 "neo4j-admin users <subcommand> [<username>] [<password>]",
                 "Runs several possible sub-commands for managing the native users" );
     }
@@ -69,7 +55,7 @@ public class UsersCommandIT extends UsersCommandTestBase
         // Given only default user
 
         // When running 'list', expect default user
-        assertSuccessfulSubCommand( "list", args(), "neo4j" );
+        assertSuccessfulUserCommand( "list", args(), "neo4j" );
     }
 
     @Test
@@ -79,7 +65,7 @@ public class UsersCommandIT extends UsersCommandTestBase
         createTestUser( "another", "neo4j" );
 
         // When running 'list', expect only new user (default not created if a new user is created first)
-        assertSuccessfulSubCommand( "list", args(), "another" );
+        assertSuccessfulUserCommand( "list", args(), "another" );
     }
 
     @Test
@@ -89,7 +75,7 @@ public class UsersCommandIT extends UsersCommandTestBase
         createTestUser( "another", "neo4j" );
 
         // When running 'list' with filter, expect specified user
-        assertSuccessfulSubCommand( "list", args("other"), "another" );
+        assertSuccessfulUserCommand( "list", args( "other" ), "another" );
     }
 
     //
@@ -100,7 +86,7 @@ public class UsersCommandIT extends UsersCommandTestBase
     public void shouldGetUsageErrorsWithSetPasswordCommandAndNoArgs() throws Throwable
     {
         // When running 'set-password' with arguments, expect usage errors
-        assertFailedUserCommand( "set-password",
+        assertFailedUserCommand( "set-password", new String[0],
                 "Missing arguments: 'users set-password' expects username and password arguments",
                 "neo4j-admin users <subcommand> [<username>] [<password>]",
                 "Runs several possible sub-commands for managing the native users" );
@@ -112,7 +98,7 @@ public class UsersCommandIT extends UsersCommandTestBase
         // Given no previously existing user
 
         // When running 'set-password' with correct parameters, expect an error
-        assertFailedSubCommand( "set-password", args("another", "abc"), "User 'another' does not exist" );
+        assertFailedUserCommand( "set-password", args( "another", "abc" ), "User 'another' does not exist" );
     }
 
     @Test
@@ -121,9 +107,38 @@ public class UsersCommandIT extends UsersCommandTestBase
         // Given default state (only default user)
 
         // When running 'set-password' with correct parameters, expect correct output
-        assertSuccessfulSubCommand( "set-password", args("neo4j", "abc"), "Changed password for user 'neo4j'" );
+        assertSuccessfulUserCommand( "set-password", args( "neo4j", "abc" ), "Changed password for user 'neo4j'" );
 
-        // And the user no longer requires password change
+        // And the user requires password change
+        assertUsersPasswordMatches( "neo4j", "abc" );
+        assertUserRequiresPasswordChange( "neo4j" );
+    }
+
+    @Test
+    public void shouldSetPasswordWithPasswordChangeRequired() throws Throwable
+    {
+        // Given default state (only default user)
+
+        // When running 'set-password' with correct parameters, expect correct output
+        assertSuccessfulUserCommand( "set-password", args( "neo4j", "abc", "--requires-password-change=true" ),
+                "Changed password for user 'neo4j'" );
+
+        // And the user requires password change
+        assertUsersPasswordMatches( "neo4j", "abc" );
+        assertUserRequiresPasswordChange( "neo4j" );
+    }
+
+    @Test
+    public void shouldSetPasswordWithPasswordChangeRequiredFalse() throws Throwable
+    {
+        // Given no previously existing user
+
+        // When running 'create' with correct parameters, expect success
+        assertSuccessfulUserCommand( "set-password", args( "neo4j", "abc", "--requires-password-change=false" ),
+                "Changed password for user 'neo4j'" );
+
+        // And the user requires no password change
+        assertUsersPasswordMatches( "neo4j", "abc" );
         assertUserDoesNotRequirePasswordChange( "neo4j" );
     }
 
@@ -135,10 +150,11 @@ public class UsersCommandIT extends UsersCommandTestBase
         assertUserRequiresPasswordChange( "another" );
 
         // When running 'set-password' with correct parameters, expect correct output
-        assertSuccessfulSubCommand( "set-password", args("another", "abc"), "Changed password for user 'another'" );
+        assertSuccessfulUserCommand( "set-password", args( "another", "abc" ), "Changed password for user 'another'" );
 
-        // And the user no longer requires password change
-        assertUserDoesNotRequirePasswordChange( "another" );
+        // And the user requires password change
+        assertUsersPasswordMatches( "another", "abc" );
+        assertUserRequiresPasswordChange( "another" );
     }
 
     @Test
@@ -149,13 +165,15 @@ public class UsersCommandIT extends UsersCommandTestBase
         assertUserRequiresPasswordChange( "another" );
 
         // When running 'set-password' with correct parameters, expect correct output
-        assertSuccessfulSubCommand( "set-password", args("another", "abc"), "Changed password for user 'another'" );
+        assertSuccessfulUserCommand( "set-password", args( "another", "abc" ), "Changed password for user 'another'" );
 
-        // And password change is no longer required
-        assertUserDoesNotRequirePasswordChange( "another" );
+        // And password change is required
+        assertUsersPasswordMatches( "another", "abc" );
+        assertUserRequiresPasswordChange( "another" );
 
         // Then when running another password set to same password expect error
-        assertFailedSubCommand( "set-password", args("another", "abc"), "Old password and new password cannot be the same" );
+        assertFailedUserCommand( "set-password", args( "another", "abc" ),
+                "Old password and new password cannot be the same" );
     }
 
     @Test
@@ -166,13 +184,16 @@ public class UsersCommandIT extends UsersCommandTestBase
         assertUserRequiresPasswordChange( "another" );
 
         // When running 'set-password' with correct parameters, expect correct output
-        assertSuccessfulSubCommand( "set-password", args(args("another", "abc")), "Changed password for user 'another'" );
+        assertSuccessfulUserCommand( "set-password",
+                args( args( "another", "abc", "--requires-password-change=false" ) ),
+                "Changed password for user 'another'" );
 
         // And password change is no longer required
+        assertUsersPasswordMatches( "another", "abc" );
         assertUserDoesNotRequirePasswordChange( "another" );
 
         // And then when changing to a different password, expect correct output
-        assertSuccessfulSubCommand( "set-password", args("another", "123"), "Changed password for user 'another'" );
+        assertSuccessfulUserCommand( "set-password", args( "another", "123" ), "Changed password for user 'another'" );
     }
 
     //
@@ -183,7 +204,7 @@ public class UsersCommandIT extends UsersCommandTestBase
     public void shouldGetUsageErrorsWithCreateCommandAndNoArgs() throws Throwable
     {
         // When running 'create' with arguments, expect usage errors
-        assertFailedUserCommand( "create",
+        assertFailedUserCommand( "create", new String[0],
                 "Missing arguments: 'users create' expects username and password arguments",
                 "neo4j-admin users <subcommand> [<username>] [<password>]",
                 "Runs several possible sub-commands for managing the native users" );
@@ -195,9 +216,10 @@ public class UsersCommandIT extends UsersCommandTestBase
         // Given no previously existing user
 
         // When running 'create' with correct parameters, expect success
-        assertSuccessfulSubCommand( "create", args("another", "abc"), "Created new user 'another'" );
+        assertSuccessfulUserCommand( "create", args( "another", "abc" ), "Created new user 'another'" );
 
         // And the user requires password change
+        assertUsersPasswordMatches( "another", "abc" );
         assertUserRequiresPasswordChange( "another" );
     }
 
@@ -207,9 +229,11 @@ public class UsersCommandIT extends UsersCommandTestBase
         // Given no previously existing user
 
         // When running 'create' with correct parameters, expect success
-        assertSuccessfulSubCommand( "create", args("another", "abc", "--requires-password-change=true"), "Created new user 'another'" );
+        assertSuccessfulUserCommand( "create", args( "another", "abc", "--requires-password-change=true" ),
+                "Created new user 'another'" );
 
         // And the user requires password change
+        assertUsersPasswordMatches( "another", "abc" );
         assertUserRequiresPasswordChange( "another" );
     }
 
@@ -219,9 +243,11 @@ public class UsersCommandIT extends UsersCommandTestBase
         // Given no previously existing user
 
         // When running 'create' with correct parameters, expect success
-        assertSuccessfulSubCommand( "create", args("another", "abc", "--requires-password-change=false"), "Created new user 'another'" );
+        assertSuccessfulUserCommand( "create", args( "another", "abc", "--requires-password-change=false" ),
+                "Created new user 'another'" );
 
         // And the user requires password change
+        assertUsersPasswordMatches( "another", "abc" );
         assertUserDoesNotRequirePasswordChange( "another" );
     }
 
@@ -231,7 +257,7 @@ public class UsersCommandIT extends UsersCommandTestBase
         // Given default state (only default user)
 
         // When running 'create' with correct parameters, expect error
-        assertFailedSubCommand( "create", args("neo4j", "abc"), "The specified user 'neo4j' already exists" );
+        assertFailedUserCommand( "create", args( "neo4j", "abc" ), "The specified user 'neo4j' already exists" );
     }
 
     @Test
@@ -242,9 +268,10 @@ public class UsersCommandIT extends UsersCommandTestBase
         assertUserRequiresPasswordChange( "another" );
 
         // When running 'create' with correct parameters, expect correct output
-        assertFailedSubCommand( "create", args("another", "abc"), "The specified user 'another' already exists" );
+        assertFailedUserCommand( "create", args( "another", "abc" ), "The specified user 'another' already exists" );
 
         // And the user still requires password change
+        assertUsersPasswordMatches( "another", "neo4j" );
         assertUserRequiresPasswordChange( "another" );
     }
 
@@ -256,8 +283,7 @@ public class UsersCommandIT extends UsersCommandTestBase
     public void shouldGetUsageErrorsWithDeleteCommandAndNoArgs() throws Throwable
     {
         // When running 'create' with arguments, expect usage errors
-        assertFailedUserCommand( "delete",
-                "Missing arguments: 'users delete' expects username argument",
+        assertFailedUserCommand( "delete", new String[0], "Missing arguments: 'users delete' expects username argument",
                 "neo4j-admin users <subcommand> [<username>] [<password>]",
                 "Runs several possible sub-commands for managing the native users" );
     }
@@ -268,7 +294,7 @@ public class UsersCommandIT extends UsersCommandTestBase
         // Given no previously existing user
 
         // When running 'delete' with correct parameters, expect error
-        assertFailedSubCommand( "delete", args("another"), "User 'another' does not exist" );
+        assertFailedUserCommand( "delete", args( "another" ), "User 'another' does not exist" );
     }
 
     @Test
@@ -277,7 +303,7 @@ public class UsersCommandIT extends UsersCommandTestBase
         // Given default state (only default user)
 
         // When running 'delete' with correct parameters, expect error
-        assertFailedSubCommand( "delete", args("neo4j"), "Deleting the only remaining user 'neo4j' is not allowed" );
+        assertFailedUserCommand( "delete", args( "neo4j" ), "Deleting the only remaining user 'neo4j' is not allowed" );
     }
 
     @Test
@@ -287,7 +313,7 @@ public class UsersCommandIT extends UsersCommandTestBase
         createTestUser( "another", "neo4j" );
 
         // When running 'delete' with correct parameters, expect success
-        assertSuccessfulSubCommand( "delete", args("neo4j"), "Deleted user 'neo4j'" );
+        assertSuccessfulUserCommand( "delete", args( "neo4j" ), "Deleted user 'neo4j'" );
     }
 
     @Test
@@ -297,10 +323,11 @@ public class UsersCommandIT extends UsersCommandTestBase
         createTestUser( "another", "neo4j" );
 
         // When running 'delete' with correct parameters, expect success
-        assertSuccessfulSubCommand( "delete", args("neo4j"), "Deleted user 'neo4j'" );
+        assertSuccessfulUserCommand( "delete", args( "neo4j" ), "Deleted user 'neo4j'" );
 
         // When running 'delete' with correct parameters, expect error
-        assertFailedSubCommand( "delete", args("another"), "Deleting the only remaining user 'another' is not allowed" );
+        assertFailedUserCommand( "delete", args( "another" ),
+                "Deleting the only remaining user 'another' is not allowed" );
     }
 
     @Test
@@ -310,32 +337,20 @@ public class UsersCommandIT extends UsersCommandTestBase
         createTestUser( "another", "neo4j" );
 
         // When running 'create' with correct parameters, expect correct output
-        assertSuccessfulSubCommand( "delete", args("another"), "Deleted user 'another'" );
+        assertSuccessfulUserCommand( "delete", args( "another" ), "Deleted user 'another'" );
     }
 
     //
     // Utilities for testing AdminTool
     //
 
-    private void assertFailedUserCommand( String command, String... errors )
+    private void assertSuccessfulUserCommand( String subCommand, String[] args, String... messages )
     {
-        // When running users command without a command or with incorrect command
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        if ( command == null )
-        {
-            tool.execute( graphDir.toPath(), confDir.toPath(), "users" );
-        }
-        else
-        {
-            tool.execute( graphDir.toPath(), confDir.toPath(), "users", command );
-        }
+        assertSuccessfulSubCommand( "users", subCommand, args, messages );
+    }
 
-        // Then we get the expected error
-        for ( String error : errors )
-        {
-            verify( out ).stdErrLine( contains( error ) );
-        }
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
-        verify( out ).exit( 1 );
+    private void assertFailedUserCommand( String subCommand, String[] args, String... messages )
+    {
+        assertFailedSubCommand( "users", subCommand, args, messages );
     }
 }
