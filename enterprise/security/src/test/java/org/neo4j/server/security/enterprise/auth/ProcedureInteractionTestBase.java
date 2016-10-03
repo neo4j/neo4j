@@ -519,6 +519,7 @@ public abstract class ProcedureInteractionTestBase<S>
         }
     }
 
+    @SuppressWarnings( "unused" )
     public static class ClassWithProcedures
     {
         @Context

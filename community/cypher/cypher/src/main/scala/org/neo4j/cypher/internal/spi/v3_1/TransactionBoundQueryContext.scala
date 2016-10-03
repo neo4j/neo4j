@@ -585,54 +585,49 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
+  type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
+
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val revertable = transactionalContext.accessMode match {
+    val call: KernelProcedureCall = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
-        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_READ))
-      case _ => None
+        transactionalContext.statement.readOperations().procedureCallRead(_, _, AccessMode.Static.OVERRIDE_READ)
+      case _ =>
+        transactionalContext.statement.readOperations().procedureCallRead(_, _)
     }
-    callProcedure(name, args, transactionalContext.statement.readOperations().procedureCallRead, revertable.foreach(_.close))
+    callProcedure(name, args, call)
   }
 
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val revertable = transactionalContext.accessMode match {
+    val call: KernelProcedureCall = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
-        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_WRITE))
-      case _ => None
+        transactionalContext.statement.dataWriteOperations().procedureCallWrite(_, _, AccessMode.Static.OVERRIDE_WRITE)
+      case _ =>
+        transactionalContext.statement.dataWriteOperations().procedureCallWrite(_, _)
     }
-    callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite,
-                  revertable.foreach(_.close))
+    callProcedure(name, args, call)
   }
 
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val revertable = transactionalContext.accessMode match {
+    val call: KernelProcedureCall = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
-        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_SCHEMA))
-      case _ => None
+        transactionalContext.statement.schemaWriteOperations().procedureCallSchema(_, _, AccessMode.Static.OVERRIDE_SCHEMA)
+      case _ =>
+        transactionalContext.statement.schemaWriteOperations().procedureCallSchema(_, _)
     }
-    callProcedure(name, args, transactionalContext.statement.schemaWriteOperations().procedureCallSchema, revertable.foreach(_.close))
+    callProcedure(name, args, call)
   }
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.accessMode), ())
+    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.accessMode))
   }
 
-  private def callProcedure(name: QualifiedName, args: Seq[Any],
-                            call: (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException],
-                            onClose: => Unit) = {
+  private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    val read: RawIterator[Array[AnyRef], ProcedureException] = call(kn, toArray)
+    val read = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {
-      override def hasNext: Boolean = {
-        val has = read.hasNext
-        if (!has) onClose
-        has
-      }
-      override def next(): Array[AnyRef] = {
-        if (!hasNext) Iterator.empty.next
-        read.next
-      }
+      override def hasNext: Boolean = read.hasNext
+      override def next(): Array[AnyRef] = read.next
     }
   }
 

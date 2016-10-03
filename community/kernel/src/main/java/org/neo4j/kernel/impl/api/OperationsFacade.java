@@ -578,6 +578,12 @@ public class OperationsFacade
     }
 
     @Override
+    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    {
+        return callProcedure( name, input, override );
+    }
+
+    @Override
     public Set<ProcedureSignature> proceduresGetAll()
     {
         statement.assertOpen();
@@ -1096,6 +1102,12 @@ public class OperationsFacade
         return callProcedure( name, input, AccessMode.Static.FULL );
     }
 
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    {
+        return callProcedure( name, input, override );
+    }
+
     // </DataWrite>
 
     // <SchemaWrite>
@@ -1164,6 +1176,12 @@ public class OperationsFacade
     public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
     {
         return callProcedure( name, input, AccessMode.Static.FULL );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    {
+        return callProcedure( name, input, override );
     }
 
     // </SchemaWrite>
