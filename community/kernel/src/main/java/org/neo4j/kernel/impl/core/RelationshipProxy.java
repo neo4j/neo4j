@@ -53,8 +53,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 
 import static java.lang.String.format;
 
-public class RelationshipProxy extends PropertyContainerProxy implements Relationship,
-        RelationshipVisitor<RuntimeException>
+public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
 {
     public interface RelationshipActions
     {
@@ -261,7 +260,7 @@ public class RelationshipProxy extends PropertyContainerProxy implements Relatio
 
                 try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
                 {
-                    return super.getProperties( statement, propertyCursor, keys );
+                    return PropertyContainerProxyHelper.getProperties( statement, propertyCursor, keys );
                 }
             }
         }
