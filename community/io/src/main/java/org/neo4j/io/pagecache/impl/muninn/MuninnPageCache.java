@@ -32,13 +32,15 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Stream;
 
+import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.CannotRenameMappedFileException;
+import org.neo4j.io.pagecache.impl.FileIsMappedException;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
@@ -400,21 +402,52 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions )
-            throws IOException
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
-        sourceFile = sourceFile.getCanonicalFile();
-        targetFile = targetFile.getCanonicalFile();
-        throwIfMapped( sourceFile );
-        throwIfMapped( targetFile );
-        swapperFactory.renameUnopenedFile( sourceFile, targetFile, copyOptions );
+        return swapperFactory.streamFilesRecursive( directory.getCanonicalFile() ).map( this::checkingFileHandle );
     }
 
-    private void throwIfMapped( File file ) throws IOException
+    private FileHandle checkingFileHandle( FileHandle fileHandle )
+    {
+        return new FileHandle()
+        {
+            @Override
+            public File getFile()
+            {
+                return fileHandle.getFile();
+            }
+
+            @Override
+            public void rename( File targetFile, CopyOption... options ) throws IOException
+            {
+                synchronized ( MuninnPageCache.this )
+                {
+                    File sourceFile = getFile();
+                    sourceFile = sourceFile.getCanonicalFile();
+                    targetFile = targetFile.getCanonicalFile();
+                    assertNotMapped( sourceFile, FileIsMappedException.Operation.RENAME );
+                    assertNotMapped( targetFile, FileIsMappedException.Operation.RENAME );
+                    fileHandle.rename( targetFile, options );
+                }
+            }
+
+            @Override
+            public void delete() throws IOException
+            {
+                synchronized ( MuninnPageCache.this )
+                {
+                    assertNotMapped( getFile(), FileIsMappedException.Operation.DELETE );
+                    fileHandle.delete();
+                }
+            }
+        };
+    }
+
+    private void assertNotMapped( File file, FileIsMappedException.Operation operation ) throws IOException
     {
         if ( tryGetMappingOrNull( file ) != null )
         {
-            throw new CannotRenameMappedFileException( file );
+            throw new FileIsMappedException( file, operation );
         }
     }
 

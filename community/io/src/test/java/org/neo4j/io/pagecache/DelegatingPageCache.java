@@ -21,9 +21,9 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class DelegatingPageCache implements PageCache
 {
@@ -61,10 +61,9 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
-    public void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions )
-            throws IOException
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
-        delegate.renameFile( sourceFile, targetFile, copyOptions );
+        return delegate.streamFilesRecursive( directory );
     }
 
     public void flushAndForce( IOLimiter limiter ) throws IOException

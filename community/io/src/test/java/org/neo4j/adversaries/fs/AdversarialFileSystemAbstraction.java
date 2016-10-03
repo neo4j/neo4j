@@ -33,6 +33,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -211,6 +212,13 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
                 NullPointerException.class );
         return delegate.lastModifiedTime( file );
+    }
+
+    @Override
+    public void deleteFileOrThrow( File file ) throws IOException
+    {
+        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
+        delegate.deleteFileOrThrow( file );
     }
 
     private <K extends ThirdPartyFileSystem> ThirdPartyFileSystem adversarialProxy(

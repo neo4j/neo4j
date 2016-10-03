@@ -41,10 +41,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
-import java.nio.file.StandardCopyOption;
-import java.time.Clock;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -363,9 +362,18 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public boolean deleteFile( File fileName )
     {
-        EphemeralFileData removed = files.remove( canonicalFile( fileName ) );
+        fileName = canonicalFile( fileName );
+        EphemeralFileData removed = files.remove( fileName );
         free( removed );
-        return removed != null;
+        if ( removed != null )
+        {
+            return true;
+        }
+        else
+        {
+            File[] files = listFiles( fileName );
+            return files != null && files.length == 0 && directories.remove( fileName );
+        }
     }
 
     @Override
@@ -414,7 +422,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     public File[] listFiles( File directory )
     {
         directory = canonicalFile( directory );
-        if ( files.containsKey( directory ) )
+        if ( files.containsKey( directory ) || !directories.contains( directory ) )
         {
             // This means that you're trying to list files on a file, not a directory.
             return null;
@@ -626,6 +634,20 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             throw new FileNotFoundException( "File " + file + " not found" );
         }
         return data.lastModified;
+    }
+
+    @Override
+    public void deleteFileOrThrow( File file ) throws IOException
+    {
+        file = canonicalFile( file );
+        if ( !fileExists( file ) )
+        {
+            throw new NoSuchFileException( file.getAbsolutePath() );
+        }
+        if ( !deleteFile( file ) )
+        {
+            throw new IOException( "Could not delete file: " + file );
+        }
     }
 
     @SuppressWarnings( "serial" )

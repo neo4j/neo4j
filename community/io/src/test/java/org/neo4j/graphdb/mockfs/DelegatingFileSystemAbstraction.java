@@ -86,6 +86,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void deleteFileOrThrow( File file ) throws IOException
+    {
+        delegate.deleteFileOrThrow( file );
+    }
+
+    @Override
     public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         delegate.renameFile( from, to, copyOptions );

@@ -21,8 +21,8 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.CopyOption;
-import java.nio.file.Path;
+import java.nio.file.NoSuchFileException;
+import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -32,6 +32,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  * A PageSwapper is responsible for swapping file pages in and out of memory.
  * <p>
  * The PageSwapperFactory presumably knows about what file system to use.
+ * <p>
+ * Note that this API is <em>only</em> intended to be used by a {@link PageCache} implementation.
+ * It should never be used directly by user code.
  */
 public interface PageSwapperFactory
 {
@@ -101,19 +104,29 @@ public interface PageSwapperFactory
     void syncDevice() throws IOException;
 
     /**
-     * Rename the given source file to target file, effectively moving the file from source to target.
+     * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
+     * sub-directories.
+     * <p>
+     * Alternatively, if the {@link File} given as an argument refers to a file instead of a directory, then a stream
+     * will be returned with a file handle for just that file.
+     * <p>
+     * The stream is based on a snapshot of the file tree, so changes made to the tree using the returned file handles
+     * will not be reflected in the stream.
+     * <p>
+     * No directories will be returned. Only files. If a file handle ends up leaving a directory empty through a
+     * rename or a delete, then the empty directory will automatically be deleted as well.
+     * Likewise, if a file is moved to a path where not all of the directories in the path exists, then those missing
+     * directories will be created prior to the file rename.
+     * <p>
+     * This method form the basis of the implementation of the {@link PageCache#streamFilesRecursive(File)} method.
+     * The key difference is that the stream and file handles are oblivious about which files are mapped or not.
+     * Thus, the returned {@link FileHandle file handles} will never throw any
+     * {@link org.neo4j.io.pagecache.impl.FileIsMappedException}s.
      *
-     * The provided list of {@link CopyOption CopyOptions} can be used to modify and influence platform specific
-     * behaviour. In particular, {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} may be used to overwrite any
-     * existing file at the target path name, instead of throwing an exception.
-     *
-     * Implementors are free to assume that neither file name will be mapped by the page cache at the time of the
-     * rename, and thus the rename will see no interference from concurrent IO operations.
-     * @param sourceFile The existing file to rename.
-     * @param targetFile The desired new name of the source file. This file should not exist, unless
-     * {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} is given as a {@code copyOption}.
-     * @param copyOptions Options to modify the behaviour of the rename in possibly platform specific ways.
-     * @see java.nio.file.Files#move(Path, Path, CopyOption...)
+     * @param directory The base directory to start streaming files from, or the specific individual file to stream.
+     * @return A stream of all files in the tree.
+     * @throws NoSuchFileException If the given base directory or file does not exists.
+     * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
-    void renameUnopenedFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException;
+    Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
 }

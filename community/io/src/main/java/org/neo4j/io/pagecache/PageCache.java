@@ -21,10 +21,11 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.CopyOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
@@ -87,25 +88,40 @@ public interface PageCache extends AutoCloseable
      */
     void flushAndForce( IOLimiter limiter ) throws IOException;
 
-    /** Flush all dirty pages and close the page cache. */
+    /**
+     * Flush all dirty pages and close the page cache.
+     **/
     void close() throws IOException;
 
-    /** The size in bytes of the pages managed by this cache. */
+    /**
+     * The size in bytes of the pages managed by this cache.
+     **/
     int pageSize();
 
-    /** The max number of cached pages. */
+    /**
+     * The max number of cached pages.
+     **/
     int maxCachedPages();
 
     /**
-     * Rename source file to the given target file, effectively moving the file from source to target.
+     * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
+     * sub-directories.
+     * <p>
+     * Alternatively, if the {@link File} given as an argument refers to a file instead of a directory, then a stream
+     * will be returned with a file handle for just that file.
+     * <p>
+     * The stream is based on a snapshot of the file tree, so changes made to the tree using the returned file handles
+     * will not be reflected in the stream.
+     * <p>
+     * No directories will be returned. Only files. If a file handle ends up leaving a directory empty through a
+     * rename or a delete, then the empty directory will automatically be deleted as well.
+     * Likewise, if a file is moved to a path where not all of the directories in the path exists, then those missing
+     * directories will be created prior to the file rename.
      *
-     * Both files have to be unmapped when performing the rename, otherwise an exception will be thrown.
-     *
-     * @param sourceFile The name of the file to rename.
-     * @param targetFile The new name of the file after the rename.
-     * @param copyOptions Options to modify the behaviour of the move in possibly platform specific ways. In particular,
-     * {@link java.nio.file.StandardCopyOption#REPLACE_EXISTING} may be used to overwrite any existing file at the
-     * target path name, instead of throwing an exception.
+     * @param directory The base directory to start streaming files from, or the specific individual file to stream.
+     * @return A stream of all files in the tree.
+     * @throws NoSuchFileException If the given base directory or file does not exists.
+     * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
-    void renameFile( File sourceFile, File targetFile, CopyOption... copyOptions ) throws IOException;
+    Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
 }

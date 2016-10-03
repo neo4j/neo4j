@@ -206,6 +206,12 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         return file.lastModified();
     }
 
+    @Override
+    public void deleteFileOrThrow( File file ) throws IOException
+    {
+        Files.delete( file.toPath() );
+    }
+
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )
     {
         return new StoreFileChannel( channel );

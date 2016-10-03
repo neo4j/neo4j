@@ -285,7 +285,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
     }
 
-    @Test( expected = IllegalStateException.class, timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustThrowIfMappingFileWouldOverflowReferenceCount() throws Exception
     {
         File file = file( "a" );
@@ -296,6 +296,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
         try
         {
+            expectedException.expect( IllegalStateException.class );
             for ( ; i < Integer.MAX_VALUE; i++ )
             {
                 pf = pageCache.map( file, filePageSize );

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.internal.AssumptionViolatedException;
 
@@ -58,8 +59,14 @@ import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
 {
-    private final File file = new File( "file" );
     private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private File file;
+
+    @Before
+    public void setUp() throws IOException
+    {
+        file = new File( "file" ).getCanonicalFile();
+    }
 
     @After
     public void tearDown()
@@ -77,6 +84,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     protected void mkdirs( File dir ) throws IOException
     {
         getFs().mkdirs( dir );
+    }
+
+    protected File baseDirectory() throws IOException
+    {
+        File dir = getFile().getParentFile();
+        mkdirs( dir );
+        return dir;
     }
 
     protected File getFile()
@@ -194,9 +208,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     /**
      * The OverlappingFileLockException is thrown when tryLock is called on the same file *in the same JVM*.
-     * @throws Exception
      */
-    @Test( expected = OverlappingFileLockException.class )
+    @Test
     public void creatingSwapperForFileMustTakeLockOnFile() throws Exception
     {
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS );
@@ -212,7 +225,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try
         {
             StoreChannel channel = fs.open( file, "rw" );
-            assertThat( channel.tryLock(), is( nullValue() ) );
+            expectedException.expect( OverlappingFileLockException.class );
+            channel.tryLock();
         }
         finally
         {
@@ -220,7 +234,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test( expected = FileLockException.class )
+    @Test
     public void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
     {
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
@@ -235,11 +249,12 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try ( FileLock fileLock = channel.tryLock() )
         {
             assertThat( fileLock, is( not( nullValue() ) ) );
+            expectedException.expect( FileLockException.class );
             createSwapper( factory, file, 4, NO_CALLBACK, true );
         }
     }
 
-    @Test( expected = FileLockException.class )
+    @Test
     public void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
     {
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
@@ -263,6 +278,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         try
         {
+            expectedException.expect( FileLockException.class );
             createSwapper( factory, file, 4, NO_CALLBACK, true );
         }
         finally
@@ -293,7 +309,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test( expected = OverlappingFileLockException.class )
+    @Test
     public void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
     {
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
@@ -313,7 +329,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
             Thread.currentThread().interrupt();
             pageSwapper.force();
 
-            assertThat( channel.tryLock(), is( nullValue() ) );
+            expectedException.expect( OverlappingFileLockException.class );
+            channel.tryLock();
         }
         finally
         {

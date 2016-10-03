@@ -186,6 +186,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
         return chooseFileSystem( file ).lastModifiedTime( file );
     }
 
+    @Override
+    public void deleteFileOrThrow( File file ) throws IOException
+    {
+        chooseFileSystem( file ).deleteFileOrThrow( file );
+    }
+
     private FileSystemAbstraction chooseFileSystem( File file )
     {
         return file.equals( specialFile ) ? specialFileSystem : defaultFileSystem;

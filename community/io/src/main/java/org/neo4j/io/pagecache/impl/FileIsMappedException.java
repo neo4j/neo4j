@@ -22,10 +22,38 @@ package org.neo4j.io.pagecache.impl;
 import java.io.File;
 import java.io.IOException;
 
-public class CannotRenameMappedFileException extends IOException
+public class FileIsMappedException extends IOException
 {
-    public CannotRenameMappedFileException( File file )
+    private final File file;
+    private final Operation operation;
+
+    public FileIsMappedException( File file, Operation operation )
     {
-        super( "Cannot rename mapped file: " + file );
+        super( operation.message + ": " + file );
+        this.file = file;
+        this.operation = operation;
+    }
+
+    public File getFile()
+    {
+        return file;
+    }
+
+    public Operation getOperation()
+    {
+        return operation;
+    }
+
+    public enum Operation
+    {
+        RENAME( "Cannot rename mapped file" ),
+        DELETE( "Cannot delete mapped file" );
+
+        private final String message;
+
+        Operation( String message )
+        {
+            this.message = message;
+        }
     }
 }

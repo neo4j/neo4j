@@ -78,6 +78,8 @@ public interface FileSystemAbstraction
 
     long lastModifiedTime( File file ) throws IOException;
 
+    void deleteFileOrThrow( File file ) throws IOException;
+
     interface ThirdPartyFileSystem extends Closeable
     {
         void close();
