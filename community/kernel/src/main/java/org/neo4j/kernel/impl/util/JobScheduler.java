@@ -78,7 +78,7 @@ public interface JobScheduler extends Lifecycle
          * to honor this.
          * @param metadata comes from {@link #schedule(Group, Runnable, Map)}
          */
-        public String threadName( Map<String, String> metadata )
+        String threadName( Map<String,String> metadata )
         {
             if ( metadata.containsKey( THREAD_ID ) )
             {
@@ -178,6 +178,24 @@ public interface JobScheduler extends Lifecycle
         void cancel( boolean mayInterruptIfRunning );
 
         void waitTermination() throws InterruptedException, ExecutionException;
+
+        /**
+         * No-op implementation of JobHandle. Does nothing.
+         */
+        JobHandle NO_OP = new JobHandle()
+        {
+            @Override
+            public void cancel( boolean mayInterruptIfRunning )
+            {
+
+            }
+
+            @Override
+            public void waitTermination() throws InterruptedException, ExecutionException
+            {
+
+            }
+        };
     }
 
     /** Expose a group scheduler as an {@link Executor} */
@@ -211,4 +229,76 @@ public interface JobScheduler extends Lifecycle
 
     /** Schedule a recurring job where the first invocation is delayed the specified time */
     JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
+
+    /**
+     * No-op implementation of JobScheduler. Does nothing.
+     */
+    JobScheduler NO_OP = new JobScheduler()
+    {
+        @Override
+        public void init() throws Throwable
+        {
+
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+
+        }
+
+        @Override
+        public Executor executor( Group group )
+        {
+            return null;
+        }
+
+        @Override
+        public ThreadFactory threadFactory( Group group )
+        {
+            return null;
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable job )
+        {
+            return JobHandle.NO_OP;
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
+        {
+            return JobHandle.NO_OP;
+        }
+
+        @Override
+        public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
+        {
+            return JobHandle.NO_OP;
+        }
+
+        @Override
+        public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
+        {
+            return JobHandle.NO_OP;
+        }
+
+        @Override
+        public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
+        {
+            return JobHandle.NO_OP;
+        }
+    };
 }

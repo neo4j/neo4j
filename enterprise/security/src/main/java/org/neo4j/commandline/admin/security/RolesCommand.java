@@ -289,10 +289,9 @@ public class RolesCommand implements AdminCommand
         if ( this.authManager == null )
         {
             Config config = loadNeo4jConfig( homeDir, configDir );
-            JobScheduler jobScheduler = new UsersCommand.NoOpJobScheduler();
             this.authManager = new EnterpriseAuthManagerFactory()
                     .newInstance( config, NullLogProvider.getInstance(),
-                            NullLog.getInstance(), outsideWorld.fileSystem(), jobScheduler );
+                            NullLog.getInstance(), outsideWorld.fileSystem(), JobScheduler.NO_OP );
             this.authManager.start();    // required to setup default roles
         }
         return this.authManager;
