@@ -194,28 +194,6 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
                 "Old password and new password cannot be the same." );
     }
 
-    @Test
-    public void shouldTerminateTransactionsOnChangeUserPassword() throws Throwable
-    {
-        shouldTerminateTransactionsForUser( writeSubject, "dbms.security.changeUserPassword( '%s', 'newPassword' )" );
-    }
-
-    @Test
-    public void shouldTerminateConnectionsOnChangeUserPassword() throws Exception
-    {
-        TransportConnection conn = startBoltSession( "writeSubject", "abc" );
-
-        Map<String,Long> boltConnections = countBoltConnectionsByUsername();
-        assertThat( boltConnections.get( "writeSubject" ), equalTo( IS_BOLT ? 2L : 1L ) );
-
-        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'writeSubject', 'newPassword' )" );
-
-        boltConnections = countBoltConnectionsByUsername();
-        assertThat( boltConnections.get( "writeSubject" ), equalTo( null ) );
-
-        conn.disconnect();
-    }
-
     //---------- create user -----------
 
     @Test
