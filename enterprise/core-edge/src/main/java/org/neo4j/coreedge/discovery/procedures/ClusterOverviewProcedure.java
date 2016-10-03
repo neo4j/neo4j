@@ -59,7 +59,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             LeaderLocator leaderLocator, LogProvider logProvider )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
-                .out( "id", Neo4jTypes.NTString ).out( "address", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
+                .out( "id", Neo4jTypes.NTString ).out( "addresses", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                 .out( "role", Neo4jTypes.NTString )
                 .description( "Overview of all currently accessible cluster members and their roles." )
                 .build() );
