@@ -25,7 +25,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.util.StoreUtil;
+import org.neo4j.kernel.ha.store.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class BranchedDataMigrator extends LifecycleAdapter
@@ -75,7 +75,7 @@ public class BranchedDataMigrator extends LifecycleAdapter
                 for ( FileHandle handle : handles )
                 {
                     final File fileToMove = handle.getFile();
-                    handle.renameFile( FileUtils.pathToFileAfterMove( oldBranchedDir, targetDir, fileToMove ) );
+                    handle.rename( FileUtils.pathToFileAfterMove( oldBranchedDir, targetDir, fileToMove ) );
                 }
             }
             catch ( IOException e )

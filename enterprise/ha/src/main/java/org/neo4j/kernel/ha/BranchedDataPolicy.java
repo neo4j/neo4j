@@ -24,12 +24,12 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
 
-import static org.neo4j.kernel.impl.util.StoreUtil.cleanStoreDir;
-import static org.neo4j.kernel.impl.util.StoreUtil.deleteRecursive;
-import static org.neo4j.kernel.impl.util.StoreUtil.getBranchedDataRootDirectory;
-import static org.neo4j.kernel.impl.util.StoreUtil.isBranchedDataDirectory;
-import static org.neo4j.kernel.impl.util.StoreUtil.moveAwayDb;
-import static org.neo4j.kernel.impl.util.StoreUtil.newBranchedDataDir;
+import static org.neo4j.kernel.ha.store.StoreUtil.cleanStoreDir;
+import static org.neo4j.kernel.ha.store.StoreUtil.deleteRecursive;
+import static org.neo4j.kernel.ha.store.StoreUtil.getBranchedDataRootDirectory;
+import static org.neo4j.kernel.ha.store.StoreUtil.isBranchedDataDirectory;
+import static org.neo4j.kernel.ha.store.StoreUtil.moveAwayDb;
+import static org.neo4j.kernel.ha.store.StoreUtil.newBranchedDataDir;
 
 public enum BranchedDataPolicy
 {
