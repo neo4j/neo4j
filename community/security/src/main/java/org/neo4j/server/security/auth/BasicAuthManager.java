@@ -44,9 +44,9 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
  */
 public class BasicAuthManager implements AuthManager, UserManager, UserManagerSupplier
 {
-    protected final AuthenticationStrategy authStrategy;
-    protected final UserRepository userRepository;
-    protected final PasswordPolicy passwordPolicy;
+    private final AuthenticationStrategy authStrategy;
+    private final UserRepository userRepository;
+    private final PasswordPolicy passwordPolicy;
 
     public BasicAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
     {

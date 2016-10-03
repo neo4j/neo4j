@@ -22,12 +22,7 @@ package org.neo4j.commandline.admin.security;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -85,10 +80,9 @@ public class RolesCommand implements AdminCommand
     private final Path homeDir;
     private final Path configDir;
     private OutsideWorld outsideWorld;
-    private JobScheduler jobScheduler;
     private EnterpriseAuthAndUserManager authManager;
 
-    public RolesCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    private RolesCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
@@ -149,12 +143,11 @@ public class RolesCommand implements AdminCommand
                 removeRole( roleName, username );
                 break;
             case "for":
-                String user = roleName;
-                if ( user == null )
+                if ( roleName == null )
                 {
                     throw new IncorrectUsage( "Missing arguments: 'roles for' expects username argument" );
                 }
-                rolesFor( user );
+                rolesFor( roleName );
                 break;
             case "users":
                 if ( roleName == null )
@@ -266,7 +259,7 @@ public class RolesCommand implements AdminCommand
         }
     }
 
-    static Config loadNeo4jConfig( Path homeDir, Path configDir )
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir )
     {
         ConfigLoader configLoader = new ConfigLoader( settings() );
         return configLoader.loadConfig(
@@ -296,7 +289,7 @@ public class RolesCommand implements AdminCommand
         if ( this.authManager == null )
         {
             Config config = loadNeo4jConfig( homeDir, configDir );
-            this.jobScheduler = new UsersCommand.NoOpJobScheduler();
+            JobScheduler jobScheduler = new UsersCommand.NoOpJobScheduler();
             this.authManager = new EnterpriseAuthManagerFactory()
                     .newInstance( config, NullLogProvider.getInstance(),
                             NullLog.getInstance(), outsideWorld.fileSystem(), jobScheduler );

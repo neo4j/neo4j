@@ -79,11 +79,11 @@ public class UsersCommand implements AdminCommand
         }
     }
 
-    final Path homeDir;
-    final Path configDir;
-    OutsideWorld outsideWorld;
+    private final Path homeDir;
+    private final Path configDir;
+    private OutsideWorld outsideWorld;
 
-    public UsersCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    UsersCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
