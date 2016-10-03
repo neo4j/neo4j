@@ -16,7 +16,7 @@ This set is refined and augmented by subsequent parts of the query.
 |<<query-optional-match,OPTIONAL MATCH>>    |   Specify the patterns to search for in the database while using `NULLs` for missing parts of the pattern.
 |<<query-where,WHERE>>                      |   Adds constraints to the patterns in a `MATCH` or `OPTIONAL MATCH` clause or filter the results of a `WITH` clause.
 |<<query-start,START>>                      |   Find starting points through legacy indexes.
-|<<query-query-aggregation,Aggregation>>    |   Aggregation functions including `count()`, `sum()`, `avg()`, `max()`, `min()`, `collect()` and others. Includes `DISTINCT`.
+|<<query-aggregation,Aggregation>>    |   Aggregation functions including `count()`, `sum()`, `avg()`, `max()`, `min()`, `collect()` and others. Includes `DISTINCT`.
 |<<query-load-csv,LOAD CSV>>                |   Use when importing data from CSV files.
 |===
 
