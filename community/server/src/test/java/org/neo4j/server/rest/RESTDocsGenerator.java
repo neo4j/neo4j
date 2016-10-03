@@ -96,7 +96,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private final List<Pair<String,Predicate<String>>> expectedHeaderFields = new ArrayList<>();
     private String payload;
     private final Map<String, String> addedRequestHeaders = new TreeMap<>(  );
-    private boolean noDoc = false;
+    private final boolean noDoc = true;
     private boolean noGraph = false;
     private int headingLevel = 3;
 
@@ -197,7 +197,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     }
 
     public RESTDocsGenerator noDoc() {
-        this.noDoc = true;
+//        this.noDoc = true;
         return this;
     }
 

@@ -26,10 +26,14 @@
     <module>neo4j-harness-enterprise-test</module>
     <module>embedded-examples</module>
     <module>server-examples</module>
+    <module>server-docs</module>
+    <module>enterprise-server-docs</module>
     <module>bolt</module>
     <module>import-tool</module>
+    <module>shell</module>
     <module>kernel</module>
     <module>lucene</module>
+    <module>backup</module>
   </modules>
 
   <scm>
