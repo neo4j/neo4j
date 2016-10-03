@@ -7,17 +7,146 @@ Functions
 This section contains information on all functions in the Cypher query language.
 --
 
-There are four groups of functions in Cypher:
-
-* _Predicate functions_ return either true or false for the arguments given.
-* _Scalar functions_ return a single value.
-* _List functions_ return lists of other values.
-* _String functions_ are used to manipulate strings or to create a string representation of another value.
-
-
 Note that related information exists in <<query-operators>>.
 
 Most functions in Cypher will return `NULL` if an input parameter is `NULL`.
+
+[discrete]
+= <<query-predicates,Predicate functions>>
+
+These functions return either true or false for the arguments given.
+
+[options="header"]
+|===
+|Function                         |   Description
+|<<functions-all,all()>>          | Tests whether a predicate holds for all elements in the list.
+|<<functions-any,any()>>          | Tests whether a predicate holds for at least one element in the list.
+|<<functions-exists,exists()>>    | Returns true if a match for the pattern exists in the graph, or the property exists in the node, relationship or map.
+|<<functions-none,none()>>        | Returns true if the predicate holds for no element in the list.
+|<<functions-single,single()>>    | Returns true if the predicate holds for exactly one of the elements in the list.
+|===
+
+[discrete]
+= <<query-functions-scalar,Scalar functions>>
+
+These functions return a single value.
+
+[options="header"]
+|===
+|Function                                           | Description
+|<<functions-coalesce,coalesce()>>                  | Returns the first non-`NULL` value in the list of expressions passed to it.
+|<<functions-endnode,endNode()>>                    | Returns the last node of a relationship.
+|<<functions-head,head()>>                          | Returns the first element in a list.
+|<<functions-id,id()>>                              | Returns the id of the relationship or node.
+|<<functions-last,last()>>                          | Returns the last element in a list.
+|<<functions-length,length() - path>>               | Returns the length of a path.
+|<<functions-length-of-string,length() - string>>   | Returns the length of a string.
+|<<functions-properties,properties()>>              | If the argument is a node or a relationship, the returned map is a map of its properties.
+|<<functions-startnode,startNode()>>                | Returns the first node of a relationship.
+|<<functions-size,size() - list>>                   | Returns the number of items in a list.
+|<<functions-size-of-pattern-expression,size() - pattern expression>>    | Returns the number of sub-graphs matching the pattern expression.
+|<<functions-timestamp,timestamp()>>                | Returns the difference, measured in milliseconds, between the current time and midnight, January 1, 1970 UTC.
+|<<functions-toint,toInt()>>                        | Converts the argument to an integer and returns the result.
+|<<functions-tofloat,toFloat()>>                    | Converts the argument to a float and returns the result.
+|<<functions-type,type()>>                          | Returns a string representation of the relationship type.
+|===
+
+[discrete]
+= <<query-functions-list,List functions>>
+
+These functions return lists of other values.
+
+[options="header"]
+|===
+|Function                                       | Description
+|<<functions-extract,extract()>>                | Returns a single property, or the value of a function from a list of nodes or relationships.
+|<<functions-filter,filter()>>                  | Returns all the elements in a list complying with a predicate.
+|<<functions-keys,keys()>>                      | Returns a list of string representations for the property names of a node, relationship, or map.
+|<<functions-labels,labels()>>                  | Returns a list of string representations for the labels attached to a node.
+|<<functions-nodes,nodes()>>                    | Returns all nodes in a path.
+|<<functions-range,range()>>                    | Returns numerical values in a range.
+|<<functions-reduce,reduce()>>                  | Runs an expression against individual elements of a list, storing the result of the expression in an accumulator.
+|<<functions-relationships,relationships()>>    | Returns all relationships in a path.
+|<<functions-tail,tail()>>                      | Returns all but the first element in a list.
+|===
+
+[discrete]
+= <<query-functions-mathematical,Mathematical functions>>
+
+These functions all operate on numerical expressions only, and will return an error if used on any other values.
+
+[discrete]
+== Numeric functions
+
+[options="header"]
+|===
+|Function                     |   Description
+|abs()      | Returns the absolute value of a number.
+|ceil()     | Returns the smallest integer greater than or equal to the argument.
+|floor()    | Returns the greatest integer less than or equal to the expression.
+|rand()     | Returns a random number in the range from 0 (inclusive) to 1 (exclusive), `[0,1)`.
+|round()    | Returns the numerical expression, rounded to the nearest integer.
+|sign()     | Returns the signum of a number -- zero if the expression is zero, `-1` for any negative number, and `1` for any positive number.
+|===
+
+
+[discrete]
+== Logarithmic functions
+
+[options="header"]
+|===
+|Function   |   Description
+|e()        | Returns the base of the natural logarithm, `e`.
+|exp()      | Returns `e^n`, where `e` is the base of the natural logarithm, and `n` is the value of the argument expression.
+|log()      | Returns the natural logarithm of the expression.
+|log10()    | Returns the common logarithm (base 10) of the expression.
+|sqrt()     | Returns the square root of a number.
+|===
+
+
+[discrete]
+== Trigonometric functions
+
+All trigonometric functions operate on radians, unless otherwise specified.
+
+[options="header"]
+|===
+|Function       |   Description
+|acos()         | Returns the arccosine of the expression.
+|asin()         | Returns the arcsine of the expression.
+|atan()         | Returns the arctangent of the expression.
+|atan2()        | Returns the arctangent2 of a set of coordinates.
+|cos()          | Returns the cosine of the expression.
+|cot()          | Returns the cotangent of the expression.
+|degrees()      | Converts radians to degrees.
+|haversin()     | Returns half the versine of the expression.
+|pi()           | Returns the mathematical constant pi.
+|radians()      | Converts degrees to radians.
+|sin()          | Returns the sine of the expression.
+|tan()          | Returns the tangent of the expression.
+|===
+
+[discrete]
+= <<query-functions-string,String functions>>
+
+These functions are used to manipulate strings or to create a string representation of another value.
+
+[options="header"]
+|===
+|Function                               |   Description
+|<<functions-left,left()>>              | Returns a string containing the left n characters of the original string.
+|<<functions-lower,lower()>>            | Returns the original string in lowercase.
+|<<functions-ltrim,ltrim()>>            | Returns the original string with whitespace removed from the left side.
+|<<functions-replace,replace()>>        | Returns a string with the search string replaced by the replace string, replacing all occurrences.
+|<<functions-reverse,reverse()>>        | Returns the original string reversed.
+|<<functions-right,right()>>            | Returns a string containing the right n characters of the original string.
+|<<functions-rtrim,rtrim()>>            | Returns the original string with whitespace removed from the right side.
+|<<functions-split,split()>>            | Returns the sequence of strings which are delimited by split patterns.
+|<<functions-substring,substring()>>    | Returns a substring of the original, with a 0-based index start and length.
+|<<functions-tostring,toString()>>      | Converts the argument to a string.
+|<<functions-trim,trim()>>              | Returns the original string with whitespace removed from both sides.
+|<<functions-upper,upper()>>            | Returns the original string in uppercase.
+|===
 
 [[query-predicates]]
 == Predicates ==

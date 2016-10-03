@@ -122,7 +122,7 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def size() {
     testThis(
-      title = "size()",
+      title = "size() - list",
       syntax = "size( list )",
       arguments = List("list" -> "An expression that returns a list"),
       text = """To return or filter on the size of a list, use the `size()` function.""",
@@ -133,7 +133,7 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def size2() {
     testThis(
-      title = "Size of pattern expression",
+      title = "size() - pattern expression",
       syntax = "size( pattern expression )",
       arguments = List("pattern expression" -> "A pattern expression that returns a list"),
       text = """
@@ -149,10 +149,10 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def length() {
     testThis(
-      title = "length()",
+      title = "length() - path",
       syntax = "length( path )",
       arguments = List("path" -> "An expression that returns a path"),
-      text = """To return or filter on the length of a path, use the `LENGTH()` function.""",
+      text = """To return or filter on the length of a path, use the `length()` function.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' return length(p)""",
       returns = """The length of the path `p` is returned by the query.""",
       assertions = (p) => assertEquals(2, p.columnAs[Long]("length(p)").toList.head))
@@ -160,10 +160,10 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def lengthString() {
     testThis(
-      title = "Length of string",
+      title = "length() - string",
       syntax = "length( string )",
       arguments = List("string" -> "An expression that returns a string"),
-      text = """To return or filter on the length of a string, use the `LENGTH()` function.""",
+      text = """To return or filter on the length of a string, use the `length()` function.""",
       queryText = """match (a) where length(a.name) > 6 return length(a.name)""",
       returns = """The length of the name `Charlie` is returned by the query.""",
       assertions = (p) => assertEquals(7, p.columnAs[Long]("length(a.name)").toList.head))
@@ -226,7 +226,7 @@ class FunctionsTest extends DocumentingTestBase {
         "accumulator" -> "A variable that will hold the result and the partial results as the list is iterated",
         "initial"    -> "An expression that runs once to give a starting value to the accumulator",
         "list" -> "An expression that returns a list",
-        "variable" -> "The closure will have a variable introduced in it's context. Here you decide which variable to use.",
+        "variable" -> "The closure will have a variable introduced in its context. Here you decide which variable to use.",
         "expression" -> "This expression will run once per value in the list, and produces the result value."
       ),
       text = """To run an expression against individual elements of a list, and store the result of the expression in
@@ -382,7 +382,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       arguments = List(
         "original" -> "An expression that returns a string",
         "splitPattern" -> "The string to split the original string with"),
-      text = "`split()` returns the sequence of strings witch are delimited by split patterns.",
+      text = "`split()` returns the sequence of strings which are delimited by split patterns.",
       queryText = """return split("one,two", ",")""",
       returns = "",
       assertions = (p) => {
