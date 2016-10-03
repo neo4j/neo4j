@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.tooling._
 class UsingTest extends DocumentingTest {
   override def outputPath = "target/docs/dev/ql/"
   override def doc = new DocBuilder {
-    doc("Using", "query-using")
+    doc("USING", "query-using")
     initQueries(
       "CREATE INDEX ON :Scientist(name)",
       "CREATE INDEX ON :Science(name)",

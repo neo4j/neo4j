@@ -21,6 +21,11 @@ This allows Cypher to re-use your queries instead of having to parse and build n
 
 To read more about the execution plan operators mentioned in this chapter, see <<execution-plans>>.
 
+* <<how-are-queries-executed,How are queries executed?>>
+* <<how-do-i-profile-a-query,Profiling a query>>
+* <<cypherdoc-basic-query-tuning-example,Basic query tuning example>>
+* <<query-using,USING>>
+
 [[how-are-queries-executed]]
 == How are queries executed?
 

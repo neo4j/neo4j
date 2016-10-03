@@ -6,6 +6,16 @@
 This section describes the syntax of the Cypher query language.
 --
 
+* <<cypher-values,Values>>
+* <<cypher-expressions,Expressions>>
+* <<cypher-variables,Variables>>
+* <<cypher-parameters,Parameters>>
+* <<query-operators,Operators>>
+* <<cypher-comments,Comments>>
+* <<introduction-pattern,Patterns>>
+* <<syntax-lists,Lists>>
+* <<cypher-working-with-null,Working with NULL>>
+
 //:leveloffset: 2
 
 include::values.asciidoc[leveloffset=+1]

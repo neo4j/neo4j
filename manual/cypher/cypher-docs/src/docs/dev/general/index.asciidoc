@@ -5,6 +5,12 @@ For a short introduction, see <<cypher-introduction>>.
 To take your first steps with Cypher, see <<cypher-getting-started>>.
 For the terminology used, see <<terminology>>.
 
+* <<cypher-introduction,What is Cypher?>>
+* <<query-updating,Querying and updating the graph>>
+* <<query-transactions,Transactions>>
+* <<cypherdoc-uniqueness,Uniqueness>>
+* <<cypher-compatibility,Compatibility>>
+
 //:leveloffset: 2
 
 include::introduction.asciidoc[leveloffset=+1]

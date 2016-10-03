@@ -28,6 +28,13 @@ Operators are grouped into high-level categories.
 Please remember that the statistics of the actual database where the queries run on will decide the plan used.
 There is no guarantee that a specific query will always be solved with the same plan.
 
+* <<execution-plans-starting-query,Starting point operators>>
+* <<execution-plan-expand,Expand operators>>
+* <<combining-operators,Combining operators>>
+* <<execution-plans-row-operators,Row operators>>
+* <<execution-plans-update,Update operators>>
+* <<query-shortestpath-planning,Shortest path planning>>
+
 //:leveloffset: 1
 
 include::execution-plan-groups/starting-query.asciidoc[leveloffset=+1]
