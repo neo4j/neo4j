@@ -45,9 +45,9 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class AuthProceduresLoggingTest
+public class UserManagementProceduresLoggingTest
 {
-    private TestAuthProcedures authProcedures;
+    private TestUserManagementProcedures authProcedures;
     private AssertableLogProvider log = null;
     private AuthSubject matsSubject = null;
 
@@ -55,7 +55,7 @@ public class AuthProceduresLoggingTest
     public void setUp() throws Throwable
     {
         log = new AssertableLogProvider();
-        authProcedures = new TestAuthProcedures();
+        authProcedures = new TestUserManagementProcedures();
         authProcedures.securityLog = new SecurityLog( log.getLog( getClass() ) );
 
         EnterpriseUserManager userManager = getUserManager();
@@ -681,7 +681,7 @@ public class AuthProceduresLoggingTest
         }
     }
 
-    private static class TestAuthProcedures extends AuthProcedures
+    private static class TestUserManagementProcedures extends UserManagementProcedures
     {
         private boolean failTerminateTransactions = false;
 

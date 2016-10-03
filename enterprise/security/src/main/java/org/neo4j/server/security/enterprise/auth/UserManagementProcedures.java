@@ -26,40 +26,18 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.KernelTransactionHandle;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
-import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-import static java.lang.String.format;
-import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( "unused" )
-public class AuthProcedures
+public class UserManagementProcedures extends AuthProceduresBase
 {
-    @Context
-    public AuthSubject authSubject;
-
-    @Context
-    public GraphDatabaseAPI graph;
-
-    @Context
-    public SecurityLog securityLog;
-
     @Description( "Create a new user." )
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
     public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
@@ -78,6 +56,14 @@ public class AuthProcedures
             securityLog.error( authSubject, "tried to create user `%s`: %s", username, e.getMessage() );
             throw e;
         }
+    }
+
+    @Deprecated
+    @Description( "Change the current user's password. Deprecated by dbms.security.changePassword." )
+    @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
+    public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
+    {
+        authSubject.setPassword( password, false );
     }
 
     @Description( "Change the current user's password." )
@@ -259,17 +245,6 @@ public class AuthProcedures
         }
     }
 
-    @Description( "Show the current user." )
-    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
-    public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
-    {
-        StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-        EnterpriseUserManager userManager = enterpriseSubject.getUserManager();
-        return Stream.of( new UserResult( enterpriseSubject.username(),
-                userManager.getRoleNamesForUser( enterpriseSubject.username() ),
-                userManager.getUser( enterpriseSubject.username() ).getFlags() ) );
-    }
-
     @Description( "List all local users." )
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
@@ -380,110 +355,6 @@ public class AuthProcedures
         {
             securityLog.error( authSubject, "tried to delete role `%s`: %s", roleName, e.getMessage() );
             throw e;
-        }
-    }
-
-    @Description( "Clears authentication and authorization cache." )
-    @Procedure( name = "dbms.security.clearAuthCache", mode = DBMS )
-    public void clearAuthenticationCache()
-    {
-        ensureAdminAuthSubject().clearAuthCache();
-    }
-
-    // ----------------- helpers ---------------------
-
-    protected void terminateTransactionsForValidUser( String username )
-    {
-        KernelTransaction currentTx = getCurrentTx();
-        getActiveTransactions()
-                .stream()
-                .filter( tx ->
-                    getUsernameFromAccessMode( tx.mode() ).equals( username ) &&
-                    !tx.isUnderlyingTransaction( currentTx )
-                ).forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
-    }
-
-    protected void terminateConnectionsForValidUser( String username )
-    {
-        getBoltConnectionTracker().getActiveConnections( username ).forEach( ManagedBoltStateMachine::terminate );
-    }
-
-    private Set<KernelTransactionHandle> getActiveTransactions()
-    {
-        return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
-    }
-
-    private BoltConnectionTracker getBoltConnectionTracker()
-    {
-        return graph.getDependencyResolver().resolveDependency( BoltConnectionTracker.class );
-    }
-
-    private KernelTransaction getCurrentTx()
-    {
-        return graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                .getKernelTransactionBoundToThisThread( true );
-    }
-
-    private StandardEnterpriseAuthSubject ensureAdminAuthSubject()
-    {
-        StandardEnterpriseAuthSubject enterpriseAuthSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-        if ( !enterpriseAuthSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        return enterpriseAuthSubject;
-    }
-
-    private StandardEnterpriseAuthSubject ensureSelfOrAdminAuthSubject( String username )
-            throws InvalidArgumentsException
-    {
-        StandardEnterpriseAuthSubject subject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-
-        if ( subject.isAdmin() || subject.hasUsername( username ) )
-        {
-            subject.getUserManager().getUser( username );
-            return subject;
-        }
-
-        throw new AuthorizationViolationException( PERMISSION_DENIED );
-    }
-
-    public static class StringResult
-    {
-        public final String value;
-
-        StringResult( String value )
-        {
-            this.value = value;
-        }
-    }
-
-    public static class UserResult
-    {
-        public final String username;
-        public final List<String> roles;
-        public final List<String> flags;
-
-        UserResult( String username, Set<String> roles, Iterable<String> flags )
-        {
-            this.username = username;
-            this.roles = new ArrayList<>();
-            this.roles.addAll( roles );
-            this.flags = new ArrayList<>();
-            for ( String f : flags ) {this.flags.add( f );}
-        }
-    }
-
-    public static class RoleResult
-    {
-        public final String role;
-        public final List<String> users;
-
-        RoleResult( String role, Set<String> users )
-        {
-            this.role = role;
-            this.users = new ArrayList<>();
-            this.users.addAll( users );
         }
     }
 }
