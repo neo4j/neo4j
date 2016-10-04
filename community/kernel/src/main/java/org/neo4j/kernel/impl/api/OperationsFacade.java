@@ -101,6 +101,8 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
+import static java.lang.String.format;
+
 public class OperationsFacade
         implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations,
         ProcedureCallOperations
@@ -1496,6 +1498,10 @@ public class OperationsFacade
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException
     {
+        if ( !tx.mode().allowsReads() )
+        {
+            throw tx.mode().onViolation( format( "Read operations are not allowed for '%s'.", tx.mode().name() ) );
+        }
         return callProcedure( name, input, AccessMode.Static.READ );
     }
 
@@ -1508,6 +1514,10 @@ public class OperationsFacade
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException
     {
+        if ( !tx.mode().allowsWrites() )
+        {
+            throw tx.mode().onViolation( format( "Write operations are not allowed for '%s'.", tx.mode().name() ) );
+        }
         // FIXME: should this be AccessMode.Static.WRITE instead?
         return callProcedure( name, input, AccessMode.Static.FULL );
     }
@@ -1521,6 +1531,10 @@ public class OperationsFacade
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
     {
+        if ( !tx.mode().allowsSchemaWrites() )
+        {
+            throw tx.mode().onViolation( format( "Schema operations are not allowed for '%s'.", tx.mode().name() ) );
+        }
         return callProcedure( name, input, AccessMode.Static.FULL );
     }
 

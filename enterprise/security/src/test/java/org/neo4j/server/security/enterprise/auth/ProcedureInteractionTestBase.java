@@ -541,6 +541,24 @@ public abstract class ProcedureInteractionTestBase<S>
             return Stream.of( new CountResult( nNodes ) );
         }
 
+        @Procedure( name = "test.staticReadProcedure", mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> staticReadProcedure()
+        {
+            return Stream.of( new AuthProceduresBase.StringResult( "static" ) );
+        }
+
+        @Procedure( name = "test.staticWriteProcedure", mode = Mode.WRITE )
+        public Stream<AuthProceduresBase.StringResult> staticWriteProcedure()
+        {
+            return Stream.of( new AuthProceduresBase.StringResult( "static" ) );
+        }
+
+        @Procedure( name = "test.staticSchemaProcedure", mode = Mode.SCHEMA )
+        public Stream<AuthProceduresBase.StringResult> staticSchemaProcedure()
+        {
+            return Stream.of( new AuthProceduresBase.StringResult( "static" ) );
+        }
+
         @Procedure( name = "test.allowedProcedure1", allowed = {"role1"}, mode = Mode.READ )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure1()
         {
