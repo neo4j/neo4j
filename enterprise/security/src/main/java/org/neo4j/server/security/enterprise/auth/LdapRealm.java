@@ -62,6 +62,8 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
@@ -71,7 +73,7 @@ import org.neo4j.server.security.auth.Credential;
 /**
  * Shiro realm for LDAP based on configuration settings
  */
-public class LdapRealm extends JndiLdapRealm
+public class LdapRealm extends JndiLdapRealm implements RealmLifecycle
 {
     private static final String GROUP_DELIMITER = ";";
     private static final String KEY_VALUE_DELIMITER = "=";
@@ -360,12 +362,6 @@ public class LdapRealm extends JndiLdapRealm
         useSystemAccountForAuthorization = config.get( SecuritySettings.ldap_authorization_use_system_account );
         groupToRoleMapping =
                 parseGroupToRoleMapping( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) );
-
-        if ( authorizationEnabled )
-        {
-            // For some combinations of settings we will never find anything
-            assertValidUserSearchSettings();
-        }
     }
 
     private String parseLdapServerUrl( String rawLdapServer )
@@ -520,5 +516,30 @@ public class LdapRealm extends JndiLdapRealm
     Map<String,Collection<String>> getGroupToRoleMapping()
     {
         return groupToRoleMapping;
+    }
+
+    @Override
+    public void initialize( RealmOperations realmOperations ) throws Throwable
+    {
+        if ( authorizationEnabled )
+        {
+            // For some combinations of settings we will never find anything
+            assertValidUserSearchSettings();
+        }
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
     }
 }

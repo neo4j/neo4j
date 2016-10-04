@@ -130,7 +130,6 @@ public class EnterpriseSecurityModule extends SecurityModule
         if ( orderedActiveRealms.isEmpty() )
         {
             String message = "Illegal configuration: No valid security realm is active.";
-            securityLog.error( message );
             throw new IllegalArgumentException( message );
         }
 
