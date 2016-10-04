@@ -1531,18 +1531,39 @@ public class OperationsFacade
     }
 
     private RawIterator<Object[],ProcedureException> callProcedure(
-            QualifiedName name, Object[] input, AccessMode mode )
+            QualifiedName name, Object[] input, final AccessMode mode )
             throws ProcedureException
     {
         statement.assertOpen();
 
+        final RawIterator<Object[],ProcedureException> procedureCall;
         try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );
             ctx.put( Context.THREAD, Thread.currentThread() );
-            return procedures.callProcedure( ctx, name, input );
+            procedureCall = procedures.callProcedure( ctx, name, input );
         }
+        return new RawIterator<Object[],ProcedureException>()
+        {
+            @Override
+            public boolean hasNext() throws ProcedureException
+            {
+                try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
+                {
+                    return procedureCall.hasNext();
+                }
+            }
+
+            @Override
+            public Object[] next() throws ProcedureException
+            {
+                try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
+                {
+                    return procedureCall.next();
+                }
+            }
+        };
     }
 
     private Object callFunction(
