@@ -40,9 +40,25 @@ import org.neo4j.time.Clocks;
 public class BasicAuthManagerFactory extends AuthManager.Factory
 {
     private static final String USER_STORE_FILENAME = "auth";
+    private static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
 
     public static FileUserRepository getUserRepository( Config config, LogProvider logProvider,
             FileSystemAbstraction fileSystem )
+    {
+        return new FileUserRepository( fileSystem, getUserRepositoryFile( config ), logProvider );
+    }
+
+    public static File getUserRepositoryFile( Config config )
+    {
+        return getUserRepositoryFile( config, USER_STORE_FILENAME );
+    }
+
+    public static File getInitialUserRepositoryFile( Config config )
+    {
+        return getUserRepositoryFile( config, INITIAL_USER_STORE_FILENAME );
+    }
+
+    private static File getUserRepositoryFile( Config config, String fileName )
     {
         // Resolve auth store file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
@@ -52,9 +68,9 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
         File userStoreFile = config.get( GraphDatabaseSettings.auth_store );
         if ( userStoreFile == null )
         {
-            userStoreFile = new File( authStoreDir, USER_STORE_FILENAME );
+            userStoreFile = new File( authStoreDir, fileName );
         }
-        return new FileUserRepository( fileSystem, userStoreFile, logProvider );
+        return userStoreFile;
     }
 
     public interface Dependencies
