@@ -44,7 +44,7 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
 
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
-  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot(r => history.exists(_.matches(r))).toSeq
+  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot(r => history.exists(_.matches(r))).toIndexedSeq
 
   def getGraphRelationships(node: Node, pRel: PatternRelationship, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] =
     pRel.getGraphRelationships(this, node, state, f)

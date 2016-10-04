@@ -82,7 +82,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, argumentIds)(solved)
   }
@@ -98,7 +98,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode, argumentIds)(solved)
   }
@@ -143,7 +143,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     NodeByIdSeek(idName, nodeIds, argumentIds)(solved)
   }
@@ -155,7 +155,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     NodeByLabelScan(idName, label, argumentIds)(solved)
   }
@@ -171,7 +171,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     NodeIndexSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
   }
@@ -186,7 +186,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     NodeIndexScan(idName, label, propertyKey, argumentIds)(solved)
   }
@@ -202,7 +202,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     NodeIndexContainsScan(idName, label, propertyKey, valueExpr, argumentIds)(solved)
   }
@@ -218,7 +218,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     NodeIndexEndsWithScan(idName, label, propertyKey, valueExpr, argumentIds)(solved)
   }
@@ -232,7 +232,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(patternNode: _*)
       .addHints(Some(hint))
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     LegacyIndexSeek(idName, hint, argumentIds)(solved)
   }
@@ -262,7 +262,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
-      .addArgumentIds(argumentIds.toSeq)
+      .addArgumentIds(argumentIds.toIndexedSeq)
     )
     NodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
   }
@@ -353,9 +353,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
     val relIds = patternRels.map(_.name)
     val coveredIds = patternNodes ++ relIds ++ other
-    val typeInfoSeq = patternNodes.toSeq.map((x: IdName) => x.name -> CTNode) ++
-      relIds.toSeq.map((x: IdName) => x.name -> CTRelationship) ++
-      other.toSeq.map((x: IdName) => x.name -> CTAny)
+    val typeInfoSeq = patternNodes.toIndexedSeq.map((x: IdName) => x.name -> CTNode) ++
+      relIds.toIndexedSeq.map((x: IdName) => x.name -> CTRelationship) ++
+      other.toIndexedSeq.map((x: IdName) => x.name -> CTAny)
     val typeInfo = typeInfoSeq.toMap
 
     val solved = RegularPlannerQuery(queryGraph =

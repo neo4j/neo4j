@@ -50,7 +50,7 @@ with ListSupport {
 
         var idx = longValue.toInt
 
-        val collectionValue = collection.toVector
+        val collectionValue = collection.toIndexedSeq
 
         if (idx < 0)
           idx = collectionValue.size + idx

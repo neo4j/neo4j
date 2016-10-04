@@ -39,7 +39,7 @@ case class EagerPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)
   override def planDescription = src.planDescription.andThen(this.id, "Eager", variables)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.toVector.toIterator
+    input.toIndexedSeq.toIterator
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription = src.planDescription.andThen(this.id, "Eager", variables)
 

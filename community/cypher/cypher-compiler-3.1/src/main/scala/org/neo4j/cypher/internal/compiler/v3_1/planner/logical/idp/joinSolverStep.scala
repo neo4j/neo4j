@@ -95,8 +95,8 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
     registry.explode(goal).flatMap(_.coveredIds)
 
   private def showIds(ids: Set[Int]) =
-    ids.toSeq.sorted.mkString("{", ", ", "}")
+    ids.toIndexedSeq.sorted.mkString("{", ", ", "}")
 
   private def showNames(ids: Set[IdName]) =
-    ids.map(_.name).toSeq.sorted.mkString("[", ", ", "]")
+    ids.map(_.name).toIndexedSeq.sorted.mkString("[", ", ", "]")
 }

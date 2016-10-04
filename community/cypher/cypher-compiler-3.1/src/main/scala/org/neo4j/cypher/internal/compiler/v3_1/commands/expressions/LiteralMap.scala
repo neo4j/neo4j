@@ -34,7 +34,7 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
 
   def rewrite(f: (Expression) => Expression) = f(LiteralMap(data.rewrite(f)))
 
-  def arguments = data.values.toSeq
+  def arguments = data.values.toIndexedSeq
 
   def calculateType(symbols: SymbolTable): CypherType = {
     data.values.foreach(_.evaluateType(CTAny, symbols))

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaListWrapper
 import org.neo4j.cypher.internal.frontend.v3_1.CypherException
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
 
@@ -72,9 +73,9 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
     result
   }
 
-  // TODO: Get rid of this in favor of using ScalaRuntimeValueConverter
   private def materialize(v: Any): Any = v match {
-    case (x: Stream[_])   => x.map(materialize).toList
+    case (x: JavaListWrapper[_]) => x
+    case (x: Stream[_])   => x.map(materialize).toIndexedSeq
     case (x: collection.Map[_, _])   => Eagerly.immutableMapValues(x.toMap, materialize)
     case (x: Iterable[_]) => x.map(materialize)
     case x => x

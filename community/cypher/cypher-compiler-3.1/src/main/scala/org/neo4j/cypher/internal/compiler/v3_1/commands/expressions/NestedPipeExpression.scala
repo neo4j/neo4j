@@ -31,7 +31,7 @@ the result of the NestedPipeExpression evaluation is a collection containing the
 case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expression {
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val innerState = state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator )
-    pipe.createResults(innerState).map(ctx => inner(ctx)).toSeq
+    pipe.createResults(innerState).map(ctx => inner(ctx)).toIndexedSeq
   }
 
   override def rewrite(f: (Expression) => Expression) = f(this)

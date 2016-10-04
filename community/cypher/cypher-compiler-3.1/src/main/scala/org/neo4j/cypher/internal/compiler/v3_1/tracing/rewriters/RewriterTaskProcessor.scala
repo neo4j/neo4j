@@ -32,7 +32,7 @@ trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
 
 case class RunConditionRewriter(sequenceName: String, name: Option[String], conditions: Set[RewriterCondition]) extends Rewriter {
   def apply(input: AnyRef): AnyRef = {
-    val failures = conditions.toSeq.flatMap(condition => condition(input))
+    val failures = conditions.toIndexedSeq.flatMap(condition => condition(input))
     if (failures.isEmpty) {
       input
     } else {

@@ -67,7 +67,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     graph.inTx {
       val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p")
         .map(_.mapValues {
-          case l: List[Any] => l.toSet
+          case l: Seq[Any] => l.toSet
           case x => x
         }).toList
 
@@ -121,7 +121,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     graph.inTx {
       val result = executeWithAllPlannersAndCompatibilityMode("match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c")
         .map(_.mapValues {
-          case l: List[Any] => l.toSet
+          case l: Seq[Any] => l.toSet
           case x => x
         }).toSet
 

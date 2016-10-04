@@ -35,7 +35,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-  val keyNames: Seq[String] = expressions.keys.toSeq
+  val keyNames: Seq[String] = expressions.keys.toIndexedSeq
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
@@ -67,7 +67,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
   }
 
   def planDescriptionWithoutCardinality = source.planDescription.
-                        andThen(this.id, "Distinct", variables, KeyNames(expressions.keys.toSeq))
+                        andThen(this.id, "Distinct", variables, KeyNames(expressions.keys.toIndexedSeq))
 
   def symbols: SymbolTable = {
     val variables = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))

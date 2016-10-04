@@ -44,7 +44,7 @@ case object projectNamedPaths extends Rewriter {
 
     def returnItems = paths.map {
       case (ident, pathExpr) => AliasedReturnItem(pathExpr, ident)(ident.position)
-    }.toSeq
+    }.toIndexedSeq
 
     def withVariableRewritesForExpression(expr: Expression) =
       expr.treeFold(self) {

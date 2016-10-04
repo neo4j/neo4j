@@ -40,7 +40,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
 
     val probeTable = buildProbeTableAndFindNullRows(input)
 
-    val seenKeys = mutable.Set[Vector[Long]]()
+    val seenKeys = mutable.Set[IndexedSeq[Long]]()
     val joinedRows = (
       for {context <- inner.createResults(state)
            joinKey <- computeKey(context)}
@@ -99,7 +99,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
 
   private val myVariables = nodeVariables.toIndexedSeq
 
-  private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
+  private def computeKey(context: ExecutionContext): Option[IndexedSeq[Long]] = {
     val key = new Array[Long](myVariables.length)
 
     for (idx <- 0 until myVariables.length) {
@@ -108,17 +108,17 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
         case _ => return None
       }
     }
-    Some(key.toVector)
+    Some(key.toIndexedSeq)
   }
 }
 
 class ProbeTable() {
-  private val table: mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]] =
-    new mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]]
+  private val table: mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]] =
+    new mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]]
 
   private val rowsWithNullInKey: ListBuffer[ExecutionContext] = new ListBuffer[ExecutionContext]()
 
-  def addValue(key: Vector[Long], newValue: ExecutionContext) {
+  def addValue(key: IndexedSeq[Long], newValue: ExecutionContext) {
     val values = table.getOrElseUpdate(key, mutable.MutableList.empty)
     values += newValue
   }
@@ -126,9 +126,9 @@ class ProbeTable() {
   def addNull(context: ExecutionContext) = rowsWithNullInKey += context
 
   val EMPTY = mutable.MutableList.empty
-  def apply(key: Vector[Long]) = table.getOrElse(key, EMPTY)
+  def apply(key: IndexedSeq[Long]) = table.getOrElse(key, EMPTY)
 
-  def keySet: collection.Set[Vector[Long]] = table.keySet
+  def keySet: collection.Set[IndexedSeq[Long]] = table.keySet
 
   def nullRows = rowsWithNullInKey.iterator
 }

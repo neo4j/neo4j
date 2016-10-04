@@ -93,9 +93,9 @@ abstract class CompositeBooleanPredicate extends Predicate {
     }
   }
 
-  def arguments: Seq[Expression] = predicates.toSeq
+  def arguments: Seq[Expression] = predicates.toIndexedSeq
 
-  override def atoms: Seq[Predicate] = predicates.toSeq
+  override def atoms: Seq[Predicate] = predicates.toIndexedSeq
 }
 
 case class Not(a: Predicate) extends Predicate {

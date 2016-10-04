@@ -135,7 +135,7 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
     val a = orig.symbolTableDependencies ++
             start.symbolTableDependencies
 
-    val b = length.toSeq.flatMap(_.symbolTableDependencies.toSeq).toSet
+    val b = length.toIndexedSeq.flatMap(_.symbolTableDependencies.toIndexedSeq).toSet
 
     a ++ b
   }

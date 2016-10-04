@@ -107,7 +107,7 @@ case class MatchPattern(nodes:Seq[String], relationships:Seq[MatchRelationship])
         currentNodes ++= interestingNodes
       } else {
         // Done finding a disjoint subgraph, save it off and clear space for the next one
-        result += MatchPattern(currentNodes.toSeq, currentRels.toSeq)
+        result += MatchPattern(currentNodes.toIndexedSeq, currentRels.toIndexedSeq)
         currentNodes.clear()
         currentRels.clear()
 
@@ -116,8 +116,8 @@ case class MatchPattern(nodes:Seq[String], relationships:Seq[MatchRelationship])
     }
 
     // Add last graph
-    result += MatchPattern(currentNodes.toSeq, currentRels.toSeq)
-    result.toSeq
+    result += MatchPattern(currentNodes.toIndexedSeq, currentRels.toIndexedSeq)
+    result.toIndexedSeq
   }
 
 }

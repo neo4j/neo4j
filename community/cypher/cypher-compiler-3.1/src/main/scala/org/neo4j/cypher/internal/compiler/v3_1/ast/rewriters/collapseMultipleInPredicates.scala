@@ -37,13 +37,13 @@ case object collapseMultipleInPredicates extends Rewriter {
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case predicate@Ors(exprs) =>
       // Find all the expressions we want to rewrite
-      val (const: List[Expression], nonRewritable: List[Expression]) = exprs.toList.partition {
+      val (const: Seq[Expression], nonRewritable: Seq[Expression]) = exprs.toList.partition {
         case in@In(_, rhs: ListLiteral) => true
         case _ => false
       }
 
       // For each expression on the RHS of any IN, produce a InValue place holder
-      val ins: List[InValue] = const.flatMap {
+      val ins: Seq[InValue] = const.flatMap {
         case In(lhs, rhs: ListLiteral) =>
           rhs.expressions.map(expr => InValue(lhs, expr))
       }
@@ -53,7 +53,7 @@ case object collapseMultipleInPredicates extends Rewriter {
       val flattenConst: Iterable[In] = groupedINPredicates.map {
         case (lhs, values) =>
           val pos = lhs.position
-          In(lhs, ListLiteral(values.map(_.expr).toSeq)(pos))(pos)
+          In(lhs, ListLiteral(values.map(_.expr).toIndexedSeq)(pos))(pos)
       }
 
       // Return the original non-rewritten predicates with our new ones

@@ -98,7 +98,7 @@ trait PatternGraphBuilder {
       }
     }
 
-    val patternsDone = (patterns.toSet -- patternsLeft).toSeq
+    val patternsDone = (patterns.toSet -- patternsLeft).toIndexedSeq
 
     new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, symbols.keys, patternsDone)
   }

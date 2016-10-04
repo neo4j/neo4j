@@ -37,7 +37,7 @@ case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: S
     if(types.isEmpty)
       generator.connectingRelationships(iterVar, fromVar.name, dir, toVar.name)
     else
-      generator.connectingRelationships(iterVar, fromVar.name, dir, types.keys.toSeq, toVar.name)
+      generator.connectingRelationships(iterVar, fromVar.name, dir, types.keys.toIndexedSeq, toVar.name)
     generator.incrementDbHits()
   }
 

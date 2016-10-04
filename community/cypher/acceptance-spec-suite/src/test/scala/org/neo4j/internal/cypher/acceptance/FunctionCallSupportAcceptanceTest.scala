@@ -21,6 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.util
 
+import org.neo4j.kernel.api.proc.Neo4jTypes
+
 class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should return correctly typed map result (even if converting to and from scala representation internally)") {
@@ -61,5 +63,48 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     graph.execute("RETURN my.first.value() AS out").stream().toArray.toList should equal(List(
       java.util.Collections.singletonMap("out", stream)
     ))
+  }
+
+  test("should not copy lists unnecessarily") {
+    val value = new util.ArrayList[Any]()
+    value.add("Norris")
+    value.add("Strange")
+
+    registerUserFunction(value)
+
+    // Using graph execute to get a Java value
+    val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
+
+    returned shouldBe an [util.ArrayList[_]]
+    returned shouldBe value
+  }
+
+  test("should not copy unnecessarily with nested types") {
+    val value = new util.ArrayList[Any]()
+    val inner = new util.ArrayList[Any]()
+    value.add("Norris")
+    value.add(inner)
+
+    registerUserFunction(value)
+
+    // Using graph execute to get a Java value
+    val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
+
+    returned shouldBe an [util.ArrayList[_]]
+    returned shouldBe value
+  }
+
+  test("should handle interacting with list") {
+    val value = new util.ArrayList[Integer]()
+    value.add(1)
+    value.add(3)
+
+    registerUserFunction(value, Neo4jTypes.NTList(Neo4jTypes.NTInteger))
+
+    // Using graph execute to get a Java value
+    val returned = graph.execute("WITH my.first.value() AS list RETURN list[0] + list[1] AS out")
+      .next().get("out")
+
+    returned should equal(4)
   }
 }

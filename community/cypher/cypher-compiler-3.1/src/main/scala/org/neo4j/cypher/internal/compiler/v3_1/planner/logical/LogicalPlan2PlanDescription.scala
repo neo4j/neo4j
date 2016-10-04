@@ -68,10 +68,10 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
 
       case NodeHashJoin(nodes, lhs, rhs) =>
         val children = TwoChildren(apply(lhs, idMap), apply(rhs, idMap))
-        PlanDescriptionImpl(id = idMap(plan), "NodeHashJoin", children, Seq(KeyNames(nodes.toSeq.map(_.name))), symbols)
+        PlanDescriptionImpl(id = idMap(plan), "NodeHashJoin", children, Seq(KeyNames(nodes.toIndexedSeq.map(_.name))), symbols)
 
       case Projection(lhs, expr) =>
-        PlanDescriptionImpl(id = idMap(plan), "Projection", SingleChild(apply(lhs, idMap)), expr.values.toSeq.map(Expression.apply), symbols )
+        PlanDescriptionImpl(id = idMap(plan), "Projection", SingleChild(apply(lhs, idMap)), expr.values.toIndexedSeq.map(Expression.apply), symbols )
 
       case Selection(predicates, lhs) =>
         PlanDescriptionImpl(id = idMap(plan), "Filter", SingleChild(apply(lhs, idMap)), predicates.map(Expression.apply), symbols)

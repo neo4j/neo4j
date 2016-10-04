@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-case class GenericCase(alternatives: Seq[(Predicate, Expression)], default: Option[Expression]) extends Expression {
+case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], default: Option[Expression]) extends Expression {
 
   require(alternatives.nonEmpty)
 
@@ -41,16 +41,16 @@ case class GenericCase(alternatives: Seq[(Predicate, Expression)], default: Opti
     }
   }
 
-  private def alternativePredicates: Seq[Predicate] = alternatives.map(_._1)
-  private def alternativeExpressions: Seq[Expression] = alternatives.map(_._2)
+  private def alternativePredicates: IndexedSeq[Predicate] = alternatives.map(_._1)
+  private def alternativeExpressions: IndexedSeq[Expression] = alternatives.map(_._2)
 
-  def arguments = alternatives.map(_._1) ++ alternatives.map(_._2) ++ default.toSeq
+  def arguments = alternatives.map(_._1) ++ alternatives.map(_._2) ++ default.toIndexedSeq
 
   protected def calculateType(symbols: SymbolTable): CypherType =
-    calculateUpperTypeBound(CTAny, symbols, alternativeExpressions ++ default.toSeq)
+    calculateUpperTypeBound(CTAny, symbols, alternativeExpressions ++ default.toIndexedSeq)
 
   def rewrite(f: (Expression) => Expression): Expression = {
-    val newAlternatives: Seq[(Predicate, Expression)] = alternatives map {
+    val newAlternatives: IndexedSeq[(Predicate, Expression)] = alternatives map {
       case (p, e) => (p.rewriteAsPredicate(f), e.rewrite(f))
     }
 
@@ -60,7 +60,7 @@ case class GenericCase(alternatives: Seq[(Predicate, Expression)], default: Opti
   }
 
   def symbolTableDependencies: Set[String] = {
-    val expressions = alternativePredicates ++ default.toSeq ++ alternativeExpressions
+    val expressions = alternativePredicates ++ default.toIndexedSeq ++ alternativeExpressions
     expressions.flatMap(_.symbolTableDependencies).toSet
   }
 }

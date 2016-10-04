@@ -126,7 +126,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConf
     psq.where.map(p => p.token) match {
       case None => psq
       case Some(predicates) =>
-        val newWhere = groupInequalityPredicatesForLegacy(predicates).map(Unsolved(_)).toSeq
+        val newWhere = groupInequalityPredicatesForLegacy(predicates).map(Unsolved(_)).toIndexedSeq
         psq.copy(where = newWhere)
     }
   }

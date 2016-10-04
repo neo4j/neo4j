@@ -150,7 +150,7 @@ case class MergeIntoPipe(source: Pipe,
    * Properties can contain arrays which are not comparable with ==
    */
   private def toComparableProperty(property: Any) = property match {
-    case a: Array[_] => a.toVector
+    case a: Array[_] => a.toIndexedSeq
     case o => o
   }
 

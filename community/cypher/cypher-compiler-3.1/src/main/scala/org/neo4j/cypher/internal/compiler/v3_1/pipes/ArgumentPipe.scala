@@ -37,7 +37,7 @@ case class ArgumentPipe(symbols: SymbolTable)
 
   private val typeAssertions =
     SymbolTypeAssertionCompiler.compile(
-      symbols.variables.toSeq.collect { case entry@(_, typ) if typ == CTNode || typ == CTRelationship => entry}
+      symbols.variables.toIndexedSeq.collect { case entry@(_, typ) if typ == CTNode || typ == CTRelationship => entry}
     )
 
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =

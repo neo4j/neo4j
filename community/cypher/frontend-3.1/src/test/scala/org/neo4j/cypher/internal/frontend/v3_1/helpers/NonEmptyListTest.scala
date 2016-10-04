@@ -63,14 +63,12 @@ class NonEmptyListTest extends CypherFunSuite {
   }
 
   test("Should convert from NonEmptyList") {
-    NonEmptyList(1).toSeq should equal(Seq(1))
+    NonEmptyList(1).toIndexedSeq should equal(Seq(1))
     NonEmptyList(1).toSet should equal(Set(1))
-    NonEmptyList(1).toList should equal(List(1))
     NonEmptyList(1).toIterable.toArray should equal(Array(1))
 
-    NonEmptyList(1, 2, 2).toSeq should equal(Seq(1, 2, 2))
+    NonEmptyList(1, 2, 2).toIndexedSeq should equal(Seq(1, 2, 2))
     NonEmptyList(1, 2, 2).toSet should equal(Set(1, 2))
-    NonEmptyList(1, 2, 2).toList should equal(List(1, 2, 2))
     NonEmptyList(1, 2, 2).toIterable.toArray should equal(Array(1, 2, 2))
   }
 

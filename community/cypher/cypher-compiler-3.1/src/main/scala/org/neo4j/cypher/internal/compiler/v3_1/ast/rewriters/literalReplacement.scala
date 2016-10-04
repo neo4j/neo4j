@@ -75,7 +75,7 @@ object literalReplacement {
     case l: ast.ListLiteral if l.expressions.forall(_.isInstanceOf[Literal])=>
       acc =>
         val parameter = ast.Parameter(s"  AUTOLIST${acc.size}", CTList(CTAny))(l.position)
-        val values: Seq[AnyRef] = l.expressions.map(_.asInstanceOf[Literal].value)
+        val values: Seq[AnyRef] = l.expressions.map(_.asInstanceOf[Literal].value).toIndexedSeq
         (acc + (l -> LiteralReplacement(parameter, values)), None)
   }
 

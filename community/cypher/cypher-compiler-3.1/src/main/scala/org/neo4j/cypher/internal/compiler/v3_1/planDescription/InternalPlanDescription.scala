@@ -45,7 +45,7 @@ sealed trait InternalPlanDescription {
 
   def flatten: Seq[InternalPlanDescription] = {
     def flattenAcc(acc: Seq[InternalPlanDescription], plan: InternalPlanDescription): Seq[InternalPlanDescription] = {
-      plan.children.toSeq.foldLeft(acc :+ plan) {
+      plan.children.toIndexedSeq.foldLeft(acc :+ plan) {
         case (acc1, plan1) => flattenAcc(acc1, plan1)
       }
     }
@@ -55,7 +55,7 @@ sealed trait InternalPlanDescription {
   def andThen(id: Id, name: String, variables: Set[String], arguments: Argument*) =
     PlanDescriptionImpl(id, name, SingleChild(this), arguments, variables)
 
-  def orderedVariables: Seq[String] = variables.toSeq.sorted
+  def orderedVariables: Seq[String] = variables.toIndexedSeq.sorted
 
   def totalDbHits: Option[Long] = {
     val allMaybeDbHits: Seq[Option[Long]] = flatten.map {
@@ -123,29 +123,29 @@ object InternalPlanDescription {
 }
 
 sealed trait Children {
-  def isEmpty = toSeq.isEmpty
-  def tail = toSeq.tail
-  def head = toSeq.head
-  def toSeq: Seq[InternalPlanDescription]
-  def find(name: String): Seq[InternalPlanDescription] = toSeq.flatMap(_.find(name))
+  def isEmpty = toIndexedSeq.isEmpty
+  def tail = toIndexedSeq.tail
+  def head = toIndexedSeq.head
+  def toIndexedSeq: Seq[InternalPlanDescription]
+  def find(name: String): Seq[InternalPlanDescription] = toIndexedSeq.flatMap(_.find(name))
   def map(f: InternalPlanDescription => InternalPlanDescription): Children
   def foreach[U](f: InternalPlanDescription => U) {
-    toSeq.foreach(f)
+    toIndexedSeq.foreach(f)
   }
 }
 
 case object NoChildren extends Children {
-  def toSeq = Seq.empty
+  def toIndexedSeq = Seq.empty
   def map(f: InternalPlanDescription => InternalPlanDescription) = NoChildren
 }
 
 final case class SingleChild(child: InternalPlanDescription) extends Children {
-  val toSeq = Seq(child)
+  val toIndexedSeq = Seq(child)
   def map(f: InternalPlanDescription => InternalPlanDescription) = SingleChild(child = child.map(f))
 }
 
 final case class TwoChildren(lhs: InternalPlanDescription, rhs: InternalPlanDescription) extends Children {
-  val toSeq = Seq(lhs, rhs)
+  val toIndexedSeq = Seq(lhs, rhs)
   def map(f: InternalPlanDescription => InternalPlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
 }
 
@@ -165,7 +165,7 @@ final case class PlanDescriptionImpl(id: Id,
 
   def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(copy(children = children.map(f)))
 
-  def toSeq: Seq[InternalPlanDescription] = this +: children.toSeq
+  def toIndexedSeq: Seq[InternalPlanDescription] = this +: children.toIndexedSeq
 
   val NL = System.lineSeparator()
 
@@ -214,7 +214,7 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
           case _ => true
         }
         acc ++ args
-    }.toSeq ++ dbHits.map(DbHits.apply) ++ time.map(Time.apply) ++ rows.map(Rows.apply)
+    }.toIndexedSeq ++ dbHits.map(DbHits.apply) ++ time.map(Time.apply) ++ rows.map(Rows.apply)
   }
 
   override def find(name: String): Seq[InternalPlanDescription] = similar.last.find(name)
@@ -246,5 +246,5 @@ final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq
 
   def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = f(this)
 
-  def toSeq: Seq[InternalPlanDescription] = Seq(this)
+  def toIndexedSeq: Seq[InternalPlanDescription] = Seq(this)
 }

@@ -41,7 +41,7 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
 
     if (list == null) None
     else {
-      val seq = makeTraversable(list).toSeq
+      val seq = makeTraversable(list).toIndexedSeq
 
       seqMethod(seq)(item => predicate.isMatch(m.newWith(id -> item)))
     }

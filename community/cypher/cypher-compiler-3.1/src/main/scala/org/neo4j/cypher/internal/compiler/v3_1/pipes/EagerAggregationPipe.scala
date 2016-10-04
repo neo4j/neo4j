@@ -55,7 +55,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[Equals, Seq[AggregationFunction]]()
     val keyNames = keyExpressions.toList
-    val aggregationNames: Seq[String] = aggregations.keys.toSeq
+    val aggregationNames: Seq[String] = aggregations.keys.toIndexedSeq
     val keyNamesSize = keyNames.size
     val mapSize = keyNamesSize + aggregationNames.size
 
@@ -107,7 +107,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
         case _ => keyNames.map( k => Equivalent(ctx(k)))
       }
       val functions = result.getOrElseUpdate(groupValues, {
-        val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
+        val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toIndexedSeq
         aggregateFunctions
       })
       functions.foreach(func => func(ctx)(state))
@@ -123,7 +123,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
   }
 
   def planDescriptionWithoutCardinality = source.planDescription.
-                        andThen(this.id, "EagerAggregation", variables, Arguments.KeyNames(keyExpressions.toSeq))
+                        andThen(this.id, "EagerAggregation", variables, Arguments.KeyNames(keyExpressions.toIndexedSeq))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

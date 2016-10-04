@@ -58,7 +58,7 @@ object QueryProjection {
   val empty = RegularQueryProjection()
 
   def forIds(coveredIds: Set[IdName]) =
-    coveredIds.toSeq.map(idName =>
+    coveredIds.toIndexedSeq.map(idName =>
       AliasedReturnItem(Variable(idName.name)(null), Variable(idName.name)(null))(null))
 
   def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {

@@ -83,6 +83,6 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     plan.arguments.collectFirst {
       case EstimatedRows(estimate) => estimate
     }.get +:
-      plan.children.toSeq.flatMap(collectEstimations)
+      plan.children.toIndexedSeq.flatMap(collectEstimations)
   }
 }

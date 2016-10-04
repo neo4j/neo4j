@@ -50,7 +50,7 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
 
       shortestPathCommand.relIterator match {
         case Some(relName) =>
-          result.map { (path: Path) => ctx.newWith2(pathName, path, relName, path.relationships().asScala.toSeq) }
+          result.map { (path: Path) => ctx.newWith2(pathName, path, relName, path.relationships().asScala.toIndexedSeq) }
         case None =>
           result.map { (path: Path) => ctx.newWith1(pathName, path) }
       }

@@ -46,11 +46,11 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
-  }.toSeq
+  }.toIndexedSeq
 
   def predicatesGivenForRequiredSymbol(allowed: Set[IdName], required: IdName): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMetForRequiredSymbol(allowed, required) => predicate
-  }.toSeq
+  }.toIndexedSeq
 
   def unsolvedPredicates(plan: LogicalPlan): Seq[Expression] =
     scalarPredicatesGiven(plan.availableSymbols)
@@ -68,7 +68,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   }
 
   def flatPredicates: Seq[Expression] =
-    predicates.map(_.expr).toSeq
+    predicates.map(_.expr).toIndexedSeq
 
   def labelPredicates: Map[IdName, Set[HasLabels]] =
     predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) {

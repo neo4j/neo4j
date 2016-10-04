@@ -69,10 +69,10 @@ class AddedHistory(val parent : History, val pair : MatchingPair) extends Histor
   def add(pair: MatchingPair) = if (contains(pair)) this else new AddedHistory(this,pair)
 
   lazy val toMap = {
-    parent.toMap.newWith(toSeq(pair))
+    parent.toMap.newWith(toIndexedSeq(pair))
   }
 
-  def toSeq(p: MatchingPair) : Seq[(String,Any)] = {
+  def toIndexedSeq(p: MatchingPair) : Seq[(String,Any)] = {
     p match {
       case MatchingPair(pe: PatternNode, entity: Node)                                                  => Seq(pe.key -> entity)
       case MatchingPair(pe: PatternRelationship, entity: SingleGraphRelationship)                       => Seq(pe.key -> entity.rel)

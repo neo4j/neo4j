@@ -101,6 +101,15 @@ class RuntimeScalaValueConverterTest extends CypherFunSuite {
   test("should convert traversable to Iterable") {
     val it = Stream[Any](1, 2, 3)
 
-    it shouldBe an [Iterable[_]]
+    converter.asDeepScalaValue(it) shouldBe an [Iterable[_]]
+  }
+
+  test("should preserve java lists without copying") {
+    val javaList = util.Arrays.asList(1,2,3)
+
+    val converted = converter.asDeepScalaValue(javaList)
+
+    converted shouldBe a [JavaListWrapper[_]]
+    converted.asInstanceOf[JavaListWrapper[_]].inner shouldBe an [util.ArrayList[_]]
   }
 }

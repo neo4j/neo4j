@@ -37,7 +37,7 @@ case class ExpandAllLoopDataGenerator(opName: String, fromVar: Variable, dir: Se
     if(types.isEmpty)
       generator.nodeGetAllRelationships(iterVar, fromVar.name, dir)
     else
-      generator.nodeGetRelationships(iterVar, fromVar.name, dir, types.keys.toSeq)
+      generator.nodeGetRelationships(iterVar, fromVar.name, dir, types.keys.toIndexedSeq)
     generator.incrementDbHits()
   }
 

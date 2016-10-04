@@ -52,7 +52,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
 
   test("generic_cases") {
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
-      legacy.GenericCase(Seq((True(), legacy.Literal("ONE"))), None)
+      legacy.GenericCase(IndexedSeq((True(), legacy.Literal("ONE"))), None)
 
     val alt1 = (Equals(legacy.Literal(1), legacy.Literal(2)), legacy.Literal("ONE"))
     val alt2 = (predicates.Equals(legacy.Literal(2), legacy.Literal("apa")), legacy.Literal("TWO"))
@@ -62,7 +62,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
          END""") shouldGive
-      legacy.GenericCase(Seq(alt1, alt2), None)
+      legacy.GenericCase(IndexedSeq(alt1, alt2), None)
 
     parsing(
       """CASE
@@ -70,7 +70,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
          END""") shouldGive
-      legacy.GenericCase(Seq(alt1, alt2), Some(legacy.Literal("OTHER")))
+      legacy.GenericCase(IndexedSeq(alt1, alt2), Some(legacy.Literal("OTHER")))
   }
 
   test("list_comprehension") {

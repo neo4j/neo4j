@@ -24,17 +24,17 @@ import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 
 trait MatchPredicateNormalizer {
-  val extract: PartialFunction[AnyRef, Vector[Expression]]
+  val extract: PartialFunction[AnyRef, IndexedSeq[Expression]]
   val replace: PartialFunction[AnyRef, AnyRef]
 }
 
 case class MatchPredicateNormalizerChain(normalizers: MatchPredicateNormalizer*) extends MatchPredicateNormalizer {
-  val extract = PartialFunctionSupport.reduceAnyDefined(normalizers.map(_.extract))(Vector.empty[Expression])(_ ++ _)
+  val extract = PartialFunctionSupport.reduceAnyDefined(normalizers.map(_.extract))(IndexedSeq.empty[Expression])(_ ++ _)
   val replace = PartialFunctionSupport.composeIfDefined(normalizers.map(_.replace))
 }
 
 object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
-  override val extract: PartialFunction[AnyRef, Vector[Expression]] = {
+  override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
     case NodePattern(Some(id), _, Some(props)) if !isParameter(props) =>
       propertyPredicates(id, props)
 
@@ -55,12 +55,12 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
     case _            => false
   }
 
-  private def propertyPredicates(id: Variable, props: Expression): Vector[Expression] = props match {
+  private def propertyPredicates(id: Variable, props: Expression): IndexedSeq[Expression] = props match {
     case mapProps: MapExpression =>
       mapProps.items.map {
         // MATCH (a {a: 1, b: 2}) => MATCH (a) WHERE a.a = 1 AND a.b = 2
         case (propId, expression) => Equals(Property(id.copyId, propId)(mapProps.position), expression)(mapProps.position)
-      }.toVector
+      }.toIndexedSeq
     case expr: Expression =>
       Vector(Equals(id.copyId, expr)(expr.position))
     case _ =>
@@ -83,7 +83,7 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
 }
 
 object LabelPredicateNormalizer extends MatchPredicateNormalizer {
-  override val extract: PartialFunction[AnyRef, Vector[Expression]] = {
+  override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
     case p@NodePattern(Some(id), labels, _) if labels.nonEmpty => Vector(HasLabels(id.copyId, labels)(p.position))
   }
 

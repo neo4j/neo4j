@@ -52,9 +52,9 @@ class PatternRelationship(key: String,
         map(new SingleGraphRelationship(_))
 
     if (startNode == endNode)
-      result.filter(r => r.getOtherNode(realNode) == realNode).toSeq
+      result.filter(r => r.getOtherNode(realNode) == realNode).toIndexedSeq
     else
-      result.toSeq
+      result.toIndexedSeq
   }
 
   protected def getDirection(node: PatternNode): SemanticDirection = {

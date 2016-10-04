@@ -48,7 +48,7 @@ case class QueryBuilder(
 
   def updates(cmds: UpdateAction*): QueryBuilder = copy(updates = cmds)
 
-  def using(indexHints: StartItem with Hint*): QueryBuilder = copy(using = indexHints.toSeq)
+  def using(indexHints: StartItem with Hint*): QueryBuilder = copy(using = indexHints.toIndexedSeq)
 
   def where(predicate: Predicate): QueryBuilder = copy(where = predicate)
 

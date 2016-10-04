@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, InvalidArgumentException}
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
+
   def innerExpectedType = CTNumber
 
   override def arguments = Seq(arg)
@@ -36,6 +37,7 @@ abstract class MathFunction(arg: Expression) extends Expression with NumericHelp
 }
 
 abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
+
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val value = arg(ctx)
     if (null == value) null else apply(asDouble(value))
@@ -45,21 +47,24 @@ abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
 }
 
 trait NumericHelper {
+
   protected def asLongEntityId(a: Any): Long = a match {
     case _ if a.isInstanceOf[Double] || a.isInstanceOf[Float] =>
       throw new CypherTypeException("Expected entity id to be an integral value")
-    case _  =>
+    case _ =>
       asLong(a)
   }
 
   protected def asDouble(a: Any) = asNumber(a).doubleValue()
+
   protected def asInt(a: Any) = asNumber(a).intValue()
+
   protected def asLong(a: Any) = asNumber(a).longValue()
 
   private def asNumber(a: Any): Number = a match {
-    case null     => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
-    case a:Number => a
-    case _        => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + a.toString)
+    case null => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
+    case a: Number => a
+    case _ => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + a.toString)
   }
 }
 
@@ -83,6 +88,7 @@ case class AbsFunction(argument: Expression) extends MathFunction(argument) {
 }
 
 case class AcosFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double): Double = Math.acos(value)
 
   override def rewrite(f: (Expression) => Expression) = f(AcosFunction(argument.rewrite(f)))
@@ -91,6 +97,7 @@ case class AcosFunction(argument: Expression) extends NullSafeMathFunction(argum
 }
 
 case class AsinFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double): Double = Math.asin(value)
 
   override def rewrite(f: (Expression) => Expression) = f(AsinFunction(argument.rewrite(f)))
@@ -99,6 +106,7 @@ case class AsinFunction(argument: Expression) extends NullSafeMathFunction(argum
 }
 
 case class AtanFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double): Double = Math.atan(value)
 
   override def rewrite(f: (Expression) => Expression) = f(AtanFunction(argument.rewrite(f)))
@@ -107,6 +115,7 @@ case class AtanFunction(argument: Expression) extends NullSafeMathFunction(argum
 }
 
 case class Atan2Function(y: Expression, x: Expression) extends Expression with NumericHelper {
+
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val yValue = y(ctx)
     val xValue = x(ctx)
@@ -126,12 +135,14 @@ case class Atan2Function(y: Expression, x: Expression) extends Expression with N
 }
 
 case class CeilFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double) = math.ceil(value)
 
   override def rewrite(f: (Expression) => Expression) = f(CeilFunction(argument.rewrite(f)))
 }
 
 case class CosFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double): Double = math.cos(value)
 
   override def rewrite(f: (Expression) => Expression) = f(CosFunction(argument.rewrite(f)))
@@ -140,7 +151,8 @@ case class CosFunction(argument: Expression) extends NullSafeMathFunction(argume
 }
 
 case class CotFunction(argument: Expression) extends NullSafeMathFunction(argument) {
-  override def apply(value: Double): Double = 1.0/math.tan(value)
+
+  override def apply(value: Double): Double = 1.0 / math.tan(value)
 
   override def rewrite(f: (Expression) => Expression) = f(CotFunction(argument.rewrite(f)))
 
@@ -148,6 +160,7 @@ case class CotFunction(argument: Expression) extends NullSafeMathFunction(argume
 }
 
 case class DegreesFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double): Double = math.toDegrees(value)
 
   override def rewrite(f: (Expression) => Expression) = f(DegreesFunction(argument.rewrite(f)))
@@ -156,6 +169,7 @@ case class DegreesFunction(argument: Expression) extends NullSafeMathFunction(ar
 }
 
 case class EFunction() extends Expression() {
+
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.E
 
   override def arguments = Seq()
@@ -168,6 +182,7 @@ case class EFunction() extends Expression() {
 }
 
 case class ExpFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double): Double = math.exp(value)
 
   override def rewrite(f: (Expression) => Expression) = f(ExpFunction(argument.rewrite(f)))
@@ -176,12 +191,14 @@ case class ExpFunction(argument: Expression) extends NullSafeMathFunction(argume
 }
 
 case class FloorFunction(argument: Expression) extends NullSafeMathFunction(argument) {
-  override def apply(value: Double) =  math.floor(value)
+
+  override def apply(value: Double) = math.floor(value)
 
   override def rewrite(f: (Expression) => Expression) = f(FloorFunction(argument.rewrite(f)))
 }
 
 case class LogFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double) = math.log(value)
 
   override def rewrite(f: (Expression) => Expression) = f(LogFunction(argument.rewrite(f)))
@@ -190,6 +207,7 @@ case class LogFunction(argument: Expression) extends NullSafeMathFunction(argume
 }
 
 case class Log10Function(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double) = math.log10(value)
 
   override def rewrite(f: (Expression) => Expression) = f(Log10Function(argument.rewrite(f)))
@@ -198,6 +216,7 @@ case class Log10Function(argument: Expression) extends NullSafeMathFunction(argu
 }
 
 case class PiFunction() extends Expression {
+
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.Pi
 
   override def arguments = Seq()
@@ -210,6 +229,7 @@ case class PiFunction() extends Expression {
 }
 
 case class RadiansFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double) = math.toRadians(value)
 
   override def rewrite(f: (Expression) => Expression) = f(RadiansFunction(argument.rewrite(f)))
@@ -218,6 +238,7 @@ case class RadiansFunction(argument: Expression) extends NullSafeMathFunction(ar
 }
 
 case class SinFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double) = math.sin(value)
 
   override def rewrite(f: (Expression) => Expression) = f(SinFunction(argument.rewrite(f)))
@@ -226,7 +247,8 @@ case class SinFunction(argument: Expression) extends NullSafeMathFunction(argume
 }
 
 case class HaversinFunction(argument: Expression) extends NullSafeMathFunction(argument) {
-  override def apply(value: Double) = ( 1.0d - math.cos(value) ) / 2
+
+  override def apply(value: Double) = (1.0d - math.cos(value)) / 2
 
   override def rewrite(f: (Expression) => Expression) = f(HaversinFunction(argument.rewrite(f)))
 
@@ -234,6 +256,7 @@ case class HaversinFunction(argument: Expression) extends NullSafeMathFunction(a
 }
 
 case class TanFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double) = math.tan(value)
 
   override def rewrite(f: (Expression) => Expression) = f(TanFunction(argument.rewrite(f)))
@@ -242,6 +265,7 @@ case class TanFunction(argument: Expression) extends NullSafeMathFunction(argume
 }
 
 case class RandFunction() extends Expression {
+
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Double = math.random
 
   override def arguments = Seq()
@@ -254,6 +278,7 @@ case class RandFunction() extends Expression {
 }
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
+
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val stepVal = asLong(step(ctx))
     if (stepVal == 0L)
@@ -261,28 +286,14 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 
     val startVal = asLong(start(ctx))
     val inclusiveEndVal = asLong(end(ctx))
-    val check: (Long, Long) => Boolean = if (stepVal.signum > 0) _ <= _ else _ >= _
 
-    // due to the limitations of the scala collection library we need to implement iterator on long ranges manually:
-    // the scala one cannot be longer than MaxInt in length since it is an IndexedSeq which is indexed by Ints... :(
-    new Iterable[Long] {
-      override def iterator: Iterator[Long] = new Iterator[Long] {
-        private var current = startVal
-
-        override def hasNext: Boolean = check(current, inclusiveEndVal)
-
-        override def next(): Long = {
-          val c = current
-          current = current + stepVal
-          c
-        }
-      }
-    }
+    IndexedInclusiveLongRange(startVal, inclusiveEndVal, stepVal)
   }
 
   override def arguments = Seq(start, end, step)
 
-  override def rewrite(f: (Expression) => Expression) = f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) =
+    f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 
   override def calculateType(symbols: SymbolTable): CypherType = {
     start.evaluateType(CTNumber, symbols)
@@ -297,9 +308,11 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 }
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {
+
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val value = argument(ctx)
-    if (null == value) null else {
+    if (null == value) null
+    else {
       Math.signum(asDouble(value)).toLong
     }
   }
@@ -310,12 +323,14 @@ case class SignFunction(argument: Expression) extends MathFunction(argument) {
 }
 
 case class RoundFunction(expression: Expression) extends NullSafeMathFunction(expression) {
-  override def apply(value: Double) =  math.round(value)
+
+  override def apply(value: Double) = math.round(value)
 
   override def rewrite(f: (Expression) => Expression) = f(RoundFunction(expression.rewrite(f)))
 }
 
 case class SqrtFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+
   override def apply(value: Double) = Math.sqrt(value)
 
   override def rewrite(f: (Expression) => Expression) = f(SqrtFunction(argument.rewrite(f)))

@@ -72,7 +72,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
         throw new JoinHintException(firstJoinHint.variables.map(_.name).reduceLeft(_ + ", " + _), "Unable to plan hash join")
       } else {
         hints.foreach { hint =>
-          context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toSeq))
+          context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toIndexedSeq))
         }
       }
     }

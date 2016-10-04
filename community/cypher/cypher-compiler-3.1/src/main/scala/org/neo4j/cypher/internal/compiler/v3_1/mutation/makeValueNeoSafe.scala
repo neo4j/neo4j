@@ -35,7 +35,7 @@ object makeValueNeoSafe extends (Any => Any) with ListSupport {
   can be coerced to according to Cypher coercion rules
    */
   private def transformTraversableToArray(a: Any): Any = {
-    val seq: Seq[Any] = a.asInstanceOf[Traversable[_]].toSeq
+    val seq: Seq[Any] = a.asInstanceOf[Traversable[_]].toIndexedSeq
 
     if (seq.isEmpty) {
       Array[String]()

@@ -38,7 +38,7 @@ case object planShortestPaths {
     val variables = Set(shortestPaths.name, Some(shortestPaths.rel.name)).flatten
     val predicates = queryGraph.selections.predicates.collect {
       case Predicate(dependencies, expr: Expression) if (dependencies intersect variables).nonEmpty => expr
-    }.toSeq
+    }.toIndexedSeq
 
     def doesNotDependOnFullPath(predicate: Expression): Boolean = {
       (predicate.dependencies.map(IdName.fromVariable) intersect variables).isEmpty

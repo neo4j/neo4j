@@ -78,7 +78,7 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
           initialReturnItems.map(item =>
             item.alias.fold(item)(alias => AliasedReturnItem(alias.copyId, alias.copyId)(item.position))
           ) ++
-            requiredVariablesForOrderBy.toVector.map(i => AliasedReturnItem(i.copyId, i.copyId)(i.position)) ++
+            requiredVariablesForOrderBy.toIndexedSeq.map(i => AliasedReturnItem(i.copyId, i.copyId)(i.position)) ++
             introducedReturnItems
         }
 
@@ -89,7 +89,7 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
             .flatMap(_.alias).toSet
           val requiredVariables = requiredReturnItems ++ requiredVariablesForOrderBy
 
-          requiredVariables.toVector.map(i => AliasedReturnItem(i.copyId, i.copyId)(i.position)) ++ initialReturnItems
+          requiredVariables.toIndexedSeq.map(i => AliasedReturnItem(i.copyId, i.copyId)(i.position)) ++ initialReturnItems
         }
 
         val introducedVariables = introducedReturnItems.map(_.variable.copyId)

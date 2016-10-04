@@ -68,7 +68,7 @@ extends UpdateAction
   def localEffects(symbols: SymbolTable) = props.values.foldLeft(Effects(CreatesRelationship(typ)))(_ ++ _.effects(symbols))
 
   override def children =
-    props.values.toSeq ++ Seq(from.node, to.node) ++
+    props.values.toIndexedSeq ++IndexedSeq(from.node, to.node) ++
       from.props.values ++ to.props.values ++ to.labels.flatMap(_.children) ++ from.labels.flatMap(_.children)
 
   override def rewrite(f: (Expression) => Expression) = {

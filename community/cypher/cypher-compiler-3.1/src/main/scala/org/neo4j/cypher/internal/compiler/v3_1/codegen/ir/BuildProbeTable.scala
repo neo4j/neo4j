@@ -51,7 +51,7 @@ case class BuildRecordingProbeTable(id:String, name: String, nodes: Set[Variable
     fieldToVarName.foreach {
       case (fieldName, localName) => generator.putField(valueStructure, value, localName.incoming.codeGenType, fieldName, localName.incoming.name)
     }
-    generator.updateProbeTable(valueStructure, name, tableType, nodes.toSeq.map(_.name), value)
+    generator.updateProbeTable(valueStructure, name, tableType, nodes.toIndexedSeq.map(_.name), value)
   }
 
   override protected def operatorId = Set(id)
@@ -75,7 +75,7 @@ case class BuildRecordingProbeTable(id:String, name: String, nodes: Set[Variable
 case class BuildCountingProbeTable(id: String, name: String, nodes: Set[Variable]) extends BuildProbeTable {
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator.updateProbeTableCount(name, tableType, nodes.toSeq.map(_.name))
+    generator.updateProbeTableCount(name, tableType, nodes.toIndexedSeq.map(_.name))
 
   override protected def operatorId = Set(id)
 

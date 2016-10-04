@@ -62,7 +62,7 @@ trait AstNode[T] {
           case e: Expression if isMatch(e) => f(e)
         }
       }
-    }.toSeq
+    }.toIndexedSeq
 
   def visitChildren(f: PartialFunction[AstNode[_], Any]) {
     children.foreach(child => {

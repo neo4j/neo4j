@@ -36,7 +36,7 @@ object projection {
     val projectAllCoveredIds: Set[(String, Expression)] = ids.map {
       case IdName(id) => id -> ast.Variable(id)(null)
     }
-    val projections: Set[(String, Expression)] = projectionsMap.toSeq.toSet
+    val projections: Set[(String, Expression)] = projectionsMap.toIndexedSeq.toSet
 
     if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds)
       context.logicalPlanProducer.planStarProjection(plan, projectionsMap, projs)

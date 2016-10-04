@@ -47,7 +47,7 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
 
     val relationshipsInContextButNotInPattern = source.collect {
       case (key, r: Relationship) if !boundRels.contains(key) && variablesInClause.contains(key) => r
-    }.toSeq
+    }.toIndexedSeq
 
     new InitialHistory(source, relationshipsInContextButNotInPattern)
   }
