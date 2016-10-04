@@ -1384,8 +1384,8 @@ public abstract class PageSwapperTest
         File base = baseDirectory();
         File a = new File( base, "a" );
         File b = new File( base, "b" );
-        createSwapperAndFile( factory, a );
-        createSwapperAndFile( factory, b );
+        createSwapperAndFile( factory, a ).close();
+        createSwapperAndFile( factory, b ).close();
         FileHandle handle = factory.streamFilesRecursive( a ).findAny().get();
         expectedException.expect( FileAlreadyExistsException.class );
         handle.rename( b );
@@ -1398,8 +1398,8 @@ public abstract class PageSwapperTest
         File base = baseDirectory();
         File a = new File( base, "a" );
         File b = new File( base, "b" );
-        createSwapperAndFile( factory, a );
-        createSwapperAndFile( factory, b );
+        createSwapperAndFile( factory, a ).close();
+        createSwapperAndFile( factory, b ).close();
         FileHandle handle = factory.streamFilesRecursive( a ).findAny().get();
         handle.rename( b, REPLACE_EXISTING );
     }
