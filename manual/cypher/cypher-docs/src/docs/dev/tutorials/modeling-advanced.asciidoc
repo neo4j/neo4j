@@ -4,7 +4,7 @@
 The following chapters contain simplified examples of how different domains can be modeled using Neo4j. 
 The aim is not to give full examples, but to suggest possible ways to think using nodes, relationships, graph patterns and data locality in traversals.
 
-The examples use Cypher queries a lot, read <<cypher-query-lang>> for more information.
+The examples use Cypher queries a lot, read <<cypher>> for more information.
 
 
 :leveloffset: 2

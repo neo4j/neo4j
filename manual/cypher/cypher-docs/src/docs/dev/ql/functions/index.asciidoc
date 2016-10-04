@@ -149,7 +149,7 @@ See also <<query-operators-comparison>>.
 .Graph
 include::includes/cypher-functions-graph.asciidoc[]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::all.asciidoc[leveloffset=+1]
 
@@ -161,7 +161,7 @@ include::single.asciidoc[leveloffset=+1]
 
 include::exists.asciidoc[leveloffset=+1]
 
-//:leveloffset: 1
+ifndef::asciidoctor[:leveloffset: 1]
 
 [[query-functions-scalar]]
 == Scalar functions ==
@@ -177,7 +177,7 @@ However, for clarity it is recommended to only use `length()` on strings and pat
 .Graph
 include::includes/cypher-functions-graph.asciidoc[]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::size.asciidoc[leveloffset=+1]
 
@@ -209,7 +209,7 @@ include::toint.asciidoc[leveloffset=+1]
 
 include::tofloat.asciidoc[leveloffset=+1]
 
-//:leveloffset: 1
+ifndef::asciidoctor[:leveloffset: 1]
 
 [[query-functions-list]]
 == List functions ==
@@ -221,7 +221,7 @@ See also <<query-operators-list>>.
 .Graph
 include::includes/cypher-functions-graph.asciidoc[]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::nodes.asciidoc[leveloffset=+1]
 
@@ -241,11 +241,11 @@ include::range.asciidoc[leveloffset=+1]
 
 include::reduce.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::query-functions-mathematical.adoc[leveloffset=+1]
 
-//:leveloffset: 1
+ifndef::asciidoctor[:leveloffset: 1]
 
 [[query-functions-string]]
 == String functions ==
@@ -258,7 +258,7 @@ See also <<query-operators-string>>.
 .Graph
 include::includes/cypher-functions-graph.asciidoc[]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::replace.asciidoc[leveloffset=+1]
 

@@ -37,11 +37,11 @@ See the examples below for further details.
 
 There is also a worked example, see <<cypherdoc-importing-csv-files-with-cypher>>.
 
-// :leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
 include::csv-file-format.asciidoc[leveloffset=+1]
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::import-data-from-a-csv-file.asciidoc[]
 
@@ -51,11 +51,11 @@ include::import-data-from-a-csv-file-with-a-custom-field-delimiter.asciidoc[]
 
 include::importing-large-amounts-of-data.asciidoc[]
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::setting-the-rate-of-periodic-commits.asciidoc[]
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::import-data-containing-escaped-characters.asciidoc[]
 

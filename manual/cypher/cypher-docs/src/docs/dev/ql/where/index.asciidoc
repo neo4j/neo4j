@@ -20,7 +20,7 @@ include::includes/cypher-where-graph.asciidoc[]
 
 == Basic usage ==
 
-// :leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
 include::boolean-operations.asciidoc[leveloffset=+1]
 
@@ -34,7 +34,7 @@ include::filter-on-dynamic-node-property.asciidoc[leveloffset=+1]
 
 include::property-exists.asciidoc[leveloffset=+1]
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 [[query-where-string]]
 == String matching ==
@@ -43,7 +43,7 @@ The start and end of strings can be matched using `STARTS WITH` and `ENDS WITH`.
 To match regardless of location in a string, use `CONTAINS`.
 The matching is _case-sensitive_.
 
-// :leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
 include::match-the-start-of-a-string.asciidoc[leveloffset=+1]
 
@@ -53,7 +53,7 @@ include::match-anywhere-in-a-string.asciidoc[leveloffset=+1]
 
 include::string-matching-negation.asciidoc[leveloffset=+1]
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 [[query-where-regex]]
 == Regular expressions ==
@@ -63,7 +63,7 @@ The regular expression syntax is inherited from https://docs.oracle.com/javase/7
 This includes support for flags that change how strings are matched, including case-insensitive `(?i)`, multiline `(?m)` and dotall `(?s)`.
 Flags are given at the start of the regular expression, for example `MATCH (n) WHERE n.name =~ '(?i)Lon.*' RETURN n` will return nodes with name `London` or with name `LonDoN`.
 
-// :leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
 include::regular-expressions.asciidoc[leveloffset=+1]
 
@@ -73,12 +73,12 @@ include::case-insensitive-regular-expressions.asciidoc[leveloffset=+1]
 
 
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 [[query-where-patterns]]
 == Using path patterns in WHERE ==
 
-// :leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
 include::filter-on-patterns.asciidoc[leveloffset=+1]
 
@@ -88,19 +88,19 @@ include::filter-on-patterns-with-properties.asciidoc[leveloffset=+1]
 
 include::filtering-on-relationship-type.asciidoc[leveloffset=+1]
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 == Lists ==
 
-// :leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
 include::in-operator.asciidoc[leveloffset=+1]
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 == Missing properties and values ==
 
-// :leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
 include::default-to-false-if-property-is-missing.asciidoc[leveloffset=+1]
 
@@ -108,11 +108,11 @@ include::default-to-true-if-property-is-missing.asciidoc[leveloffset=+1]
 
 include::filter-on-null.asciidoc[leveloffset=+1]
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 == Using ranges ==
 
-// :leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
 include::simple-range.asciidoc[leveloffset=+1]
 

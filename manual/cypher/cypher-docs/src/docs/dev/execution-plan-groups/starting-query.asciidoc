@@ -3,7 +3,7 @@
 
 These operators find parts of the graph from which to start.
 
-// :leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 1]
 
 include::../ql/query-plan/all-nodes-scan.asciidoc[]
 include::../ql/query-plan/directed-relationship-by-id-seek.asciidoc[]

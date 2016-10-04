@@ -83,7 +83,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
             "types, you are free to create any relationship types and give them any semantics you want.\n" +
             " \n" +
             "Lets now have a look at how to retrieve information from the graph. The Java code is using\n" +
-            "the Neo4j Traversal API (see <<tutorial-traversal-java-api>>), the queries are done using <<cypher-query-lang, Cypher>>.\n" +
+            "the Neo4j Traversal API (see <<tutorial-traversal-java-api>>), the queries are done using <<cypher, Cypher>>.\n" +
             "\n" +
             "== Get the admins ==\n" +
             " \n" +

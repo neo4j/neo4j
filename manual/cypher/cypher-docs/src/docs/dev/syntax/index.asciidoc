@@ -16,43 +16,43 @@ This section describes the syntax of the Cypher query language.
 * <<syntax-lists,Lists>>
 * <<cypher-working-with-null,Working with NULL>>
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::values.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::expressions.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::variables.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::parameters.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::operators.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::comparison.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::comments.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::../ql/introduction/pattern.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::../ql/syntax/lists.asciidoc[leveloffset=+1]
 
-//:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::working-with-null.asciidoc[leveloffset=+1]
 
