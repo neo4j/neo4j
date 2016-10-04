@@ -19,15 +19,15 @@
  */
 package org.neo4j.backup;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -42,23 +42,21 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
-import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestBackup
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     private File serverPath;
     private File otherServerPath;
@@ -151,29 +149,26 @@ public class TestBackup
             protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
                     GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                return new CommunityFacadeFactory()
+                return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY,
+                        ( platformModule) -> new CommunityEditionModule( platformModule )
                 {
 
                     @Override
-                    protected EditionModule createEdition( PlatformModule platformModule )
+                    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
                     {
-                        return new CommunityEditionModule( platformModule )
+                        return new TransactionHeaderInformationFactory.WithRandomBytes()
                         {
-
                             @Override
-                            protected TransactionHeaderInformationFactory createHeaderInformationFactory()
+                            protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
                             {
-                                return new TransactionHeaderInformationFactory.WithRandomBytes()
-                                {
-                                    @Override
-                                    protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
-                                    {
-                                        return new TransactionHeaderInformation( 1, 2, additionalHeader );
-                                    }
-                                };
+                                return new TransactionHeaderInformation( 1, 2, additionalHeader );
                             }
                         };
                     }
+                })
+                {
+
+
                 }.newFacade( storeDir, config, dependencies );
             }
         };
