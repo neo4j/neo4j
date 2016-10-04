@@ -62,7 +62,7 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "false" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
-        userManager.setUserPassword( authSubject.username(), password, requirePasswordChange );
+        changeUserPassword( authSubject.username(), password, requirePasswordChange );
     }
 
     @Description( "Change the given user's password." )
@@ -72,6 +72,10 @@ public class UserManagementProcedures extends AuthProceduresBase
             throws InvalidArgumentsException, IOException
     {
         userManager.setUserPassword( username, newPassword, requirePasswordChange );
+        if ( authSubject.hasUsername( username ) )
+        {
+            authSubject.passwordChangeNoLongerRequired();
+        }
     }
 
     @Description( "Assign a role to the user." )
