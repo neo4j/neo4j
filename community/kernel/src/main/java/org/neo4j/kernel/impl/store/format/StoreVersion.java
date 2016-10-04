@@ -31,8 +31,8 @@ public enum StoreVersion
     STANDARD_V3_0( "v0.A.7" ),
 
     HIGH_LIMIT_V3_0_0( "vE.H.0" ),
-    HIGH_LIMIT_V3_0_6( "vE.H.0b"),
-    HIGH_LIMIT_V3_1( "vE.H.1" );
+    HIGH_LIMIT_V3_0_6( "vE.H.0b" ),
+    HIGH_LIMIT_V3_1_0( "vE.H.2" );
 
     private final String versionString;
 
