@@ -104,8 +104,13 @@ public class ClusterSettings
     public static final Setting<Long> heartbeat_interval = setting( "ha.heartbeat_interval", DURATION,
             default_timeout );
 
-    @Description( "Timeout for heartbeats between cluster members. Should be at least twice that of ha.heartbeat_interval." )
-    public static final Setting<Long> heartbeat_timeout = setting( "ha.heartbeat_timeout", DURATION, "11s" );
+    @Description( "How long to wait for heartbeats from other instances before marking them as suspects for failure. " +
+            "This value reflects considerations of network latency, expected duration of garbage collection pauses " +
+            "and other factors that can delay message sending and processing. Larger values will result in more " +
+            "stable masters but also will result in longer waits before a failover in case of master failure. This " +
+            "value should not be set to less than twice the ha.heartbeat_interval value otherwise there is a high " +
+            "risk of frequent master switches and possibly branched data occurrence." )
+    public static final Setting<Long> heartbeat_timeout = setting( "ha.heartbeat_timeout", DURATION, "40s" );
 
     /*
      * ha.join_timeout
