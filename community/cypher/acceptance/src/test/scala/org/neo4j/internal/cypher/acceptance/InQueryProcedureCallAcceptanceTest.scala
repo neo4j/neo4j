@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.util
+import java.{lang, util}
 
 import org.neo4j.cypher._
+import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.proc.Neo4jTypes
 
 class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
@@ -143,7 +144,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     createLabeledNode("C")
 
     //When
-    a [SyntaxException] shouldBe thrownBy(
+    a[SyntaxException] shouldBe thrownBy(
       execute("WITH 'Hi' AS label CALL db.labels YIELD label RETURN *")
     )
   }
@@ -153,7 +154,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
-    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten') YIELD x RETURN x"))
+    a[SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten') YIELD x RETURN x"))
   }
 
   test("if signature declares number all number types are valid") {
@@ -178,7 +179,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerDummyInOutProcedure(Neo4jTypes.NTFloat)
 
     // Then
-    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42) YIELD out0 RETURN *")))
+    a[CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42) YIELD out0 RETURN *")))
   }
 
   test("should not fail if a procedure declares a float but gets called with an integer") {
@@ -186,7 +187,8 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerDummyInOutProcedure(Neo4jTypes.NTFloat)
 
     // Then
-    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param}) YIELD out0 RETURN *", "param" -> 42)))
+    a[CypherTypeException] shouldNot be(
+      thrownBy(execute("CALL my.first.proc({param}) YIELD out0 RETURN *", "param" -> 42)))
   }
 
   test("should fail if too many arguments") {
@@ -194,7 +196,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42) YIELD x, y, z RETURN *"))
+    an[SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42) YIELD x, y, z RETURN *"))
   }
 
   test("should be able to call a procedure with explain") {
@@ -213,28 +215,28 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
-    a [SyntaxException] shouldBe thrownBy(execute("MATCH (n) CALL my.first.proc(count(n)) YIELD out0 RETURN out0"))
+    a[SyntaxException] shouldBe thrownBy(execute("MATCH (n) CALL my.first.proc(count(n)) YIELD out0 RETURN out0"))
   }
 
   test("should fail if calling non-existent procedure") {
-    a [CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42) YIELD x RETURN *"))
+    a[CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42) YIELD x RETURN *"))
   }
 
 
   test("should fail if arguments are missing when calling procedure in a query") {
-    a [SyntaxException] shouldBe thrownBy(execute("CALL db.labels YIELD label RETURN *"))
+    a[SyntaxException] shouldBe thrownBy(execute("CALL db.labels YIELD label RETURN *"))
   }
 
   test("should fail if outputs are missing when calling procedure in a query") {
-    a [SyntaxException] shouldBe thrownBy(execute("CALL db.labels() RETURN *"))
+    a[SyntaxException] shouldBe thrownBy(execute("CALL db.labels() RETURN *"))
   }
 
   test("should fail if outputs and arguments are missing when calling procedure in a query") {
-    a [SyntaxException] shouldBe thrownBy(execute("CALL db.labels RETURN *"))
+    a[SyntaxException] shouldBe thrownBy(execute("CALL db.labels RETURN *"))
   }
 
   test("should fail if calling procedure via rule planner") {
-    an [InternalException] shouldBe thrownBy(execute(
+    an[InternalException] shouldBe thrownBy(execute(
       "CYPHER planner=rule CALL db.labels() YIELD label RETURN *"
     ))
   }
@@ -242,7 +244,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
   test("should return correctly typed map result (even if converting to and from scala representation internally)") {
     val value = new util.HashMap[String, Any]()
     value.put("name", "Cypher")
-    value.put("level", 9001)
+    value.put("level", 9001L)
 
     registerProcedureReturningSingleValue(value)
 
@@ -277,5 +279,22 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
       java.util.Collections.singletonMap("out", stream)
     ))
+  }
+
+  val types: List[(AnyRef,Class[_])] = List(
+    Byte.box(11.asInstanceOf[Byte]) -> classOf[java.lang.Long],
+    Short.box(11.asInstanceOf[Short]) -> classOf[java.lang.Long],
+    Int.box(11) -> classOf[java.lang.Long],
+    Float.box(13.1f) -> classOf[java.lang.Double]
+  )
+
+  types.foreach {
+    case (given, expected) =>
+      test(s"${given.getClass.getSimpleName} should be ${expected.getSimpleName} in procedure") {
+        registerProcedureReturningSingleValue(given)
+        val result: Result = graph.execute("CALL my.first.value() YIELD out RETURN out")
+        result.next().get("out").getClass should equal(expected)
+        result.close()
+      }
   }
 }
