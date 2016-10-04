@@ -21,7 +21,7 @@ include::{importdir}/neo4j-ha-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-backup-docs-jar/ops/backup.asciidoc[]
+include::{importdir}/neo4j-backup-docs-docs-jar/ops/backup.asciidoc[]
 
 :leveloffset: 1
 
