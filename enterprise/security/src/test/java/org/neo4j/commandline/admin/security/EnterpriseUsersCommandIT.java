@@ -19,69 +19,7 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.File;
-import java.util.Collections;
-
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.security.enterprise.auth.FileRoleRepository;
-import org.neo4j.server.security.enterprise.auth.RoleRecord;
-
-import static org.junit.Assert.assertThat;
-
 public class EnterpriseUsersCommandIT extends UsersCommandIT
 {
 
-    @Before
-    public void setup()
-    {
-        super.setup();
-        // the following line ensures that the test setup code (like creating test users) works on the same initial
-        // environment that the actual tested commands will encounter. In particular some auth state is created
-        // on demand in both the UserCommand and in the real server. We want that state created before the tests
-        // are run.
-        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( "users", "list" ) );
-        tool.execute( graphDir.toPath(), confDir.toPath(), makeArgs( "roles", "list" ) );
-        resetOutsideWorldMock();
-    }
-
-    @Test
-    public void shouldRemoveUserFromRoleWhenRemovingUser() throws Throwable
-    {
-        // given
-        createTestRole( "test_role" );
-        createTestUser( "another", "abc" );
-        assertSuccessfulSubCommand( "roles", "assign", args( "test_role", "another" ),
-                "Assigned role 'test_role' to user 'another'" );
-        assertSuccessfulSubCommand( "roles", "users", args( "test_role" ), "another" );
-
-        // when
-        assertSuccessfulSubCommand( "users", "delete", args( "another" ), "Deleted user 'another'" );
-
-        // then
-        assertThat( getRole( "test_role" ).users(), org.hamcrest.core.IsEqual.equalTo( Collections.emptySortedSet() ) );
-    }
-
-    private File rolesFile()
-    {
-        return new File( new File( new File( graphDir, "data" ), "dbms" ), "roles" );
-    }
-
-    private RoleRecord createTestRole( String roleName ) throws Throwable
-    {
-        FileRoleRepository roles = new FileRoleRepository( fileSystem, rolesFile(), NullLogProvider.getInstance() );
-        roles.start();
-        RoleRecord role = new RoleRecord.Builder().withName( roleName ).build();
-        roles.create( role );
-        return role;
-    }
-
-    private RoleRecord getRole( String roleName ) throws Throwable
-    {
-        FileRoleRepository roles = new FileRoleRepository( fileSystem, rolesFile(), NullLogProvider.getInstance() );
-        roles.start();
-        return roles.getRoleByName( roleName );
-    }
 }

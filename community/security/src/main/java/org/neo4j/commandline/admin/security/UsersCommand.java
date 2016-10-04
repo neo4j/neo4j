@@ -66,10 +66,7 @@ public class UsersCommand implements AdminCommand
         @Override
         public String description()
         {
-            return "Runs several possible sub-commands for managing the native users repository: 'list', 'create', " +
-                   "'delete' and 'set-password'. When creating a new user, it is created with a requirement to " +
-                   "change password on first login. Use the option --requires-password-change=false to disable this. " +
-                   "Passing a username to the 'list' command will do a case-insensitive substring search.";
+            return "Sets the initial (admin) user.";
         }
 
         @Override
@@ -97,8 +94,7 @@ public class UsersCommand implements AdminCommand
         if ( parsedArgs.orphans().size() < 1 )
         {
             throw new IncorrectUsage(
-                    "Missing arguments: expected at least one sub-command as argument: list, create, delete or " +
-                    "set-password" );
+                    "Missing arguments: expected sub-command argument 'set-password'" );
         }
 
         String command = parsedArgs.orphans().size() > 0 ? parsedArgs.orphans().get( 0 ) : null;
@@ -110,9 +106,6 @@ public class UsersCommand implements AdminCommand
         {
             switch ( command.trim().toLowerCase() )
             {
-            case "list":
-                listUsers( username );
-                break;
             case "set-password":
                 if ( username == null || password == null )
                 {
@@ -120,21 +113,6 @@ public class UsersCommand implements AdminCommand
                             "Missing arguments: 'users set-password' expects username and password arguments" );
                 }
                 setPassword( username, password, requiresPasswordChange );
-                break;
-            case "create":
-                if ( username == null || password == null )
-                {
-                    throw new IncorrectUsage(
-                            "Missing arguments: 'users create' expects username and password arguments" );
-                }
-                createUser( username, password, requiresPasswordChange );
-                break;
-            case "delete":
-                if ( username == null )
-                {
-                    throw new IncorrectUsage( "Missing arguments: 'users delete' expects username argument" );
-                }
-                deleteUser( username );
                 break;
             default:
                 throw new IncorrectUsage( "Unknown users command: " + command );
@@ -159,43 +137,6 @@ public class UsersCommand implements AdminCommand
     {
         Map<String,String> argsMap = parsedArgs.asMap();
         return argsMap.containsKey( key ) && (argsMap.get( key ).trim().toLowerCase().equals( expectedValue ));
-    }
-
-    private void listUsers( String contains ) throws Throwable
-    {
-        UserManager userManager = getUserManager();
-        for ( String username : userManager.getAllUsernames() )
-        {
-            if ( contains == null || username.toLowerCase().contains( contains.toLowerCase() ) )
-            {
-                outsideWorld.stdOutLine( username );
-            }
-        }
-    }
-
-    private void createUser( String username, String password, boolean requiresPasswordChange ) throws Throwable
-    {
-        UserManager userManager = getUserManager();
-        userManager.newUser( username, password, requiresPasswordChange );
-        outsideWorld.stdOutLine( "Created new user '" + username + "'" );
-    }
-
-    private void deleteUser( String username ) throws Throwable
-    {
-        UserManager userManager = getUserManager();
-        userManager.getUser( username );    // Will throw error on missing user
-        if ( userManager.getAllUsernames().size() == 1 )
-        {
-            throw new IllegalArgumentException( "Deleting the only remaining user '" + username + "' is not allowed" );
-        }
-        if ( userManager.deleteUser( username ) )
-        {
-            outsideWorld.stdOutLine( "Deleted user '" + username + "'" );
-        }
-        else
-        {
-            outsideWorld.stdErrLine( "Failed to delete user '" + username + "'" );
-        }
     }
 
     private void setPassword( String username, String password, boolean requirePasswordChange ) throws Throwable
