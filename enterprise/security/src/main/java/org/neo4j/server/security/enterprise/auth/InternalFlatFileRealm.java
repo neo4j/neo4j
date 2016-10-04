@@ -63,13 +63,13 @@ import static java.lang.String.format;
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
  */
-public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager
+class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager
 {
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
      * placed here because of user suspension not being a part of community edition
      */
-    private int MAX_READ_ATTEMPTS = 10;
+    private static final int MAX_READ_ATTEMPTS = 10;
 
     static final String IS_SUSPENDED = "is_suspended";
 
@@ -82,7 +82,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private final JobScheduler jobScheduler;
     private volatile JobScheduler.JobHandle reloadJobHandle;
 
-    public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
+    InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
             JobScheduler jobScheduler )
     {
@@ -131,7 +131,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         scheduleNextFileReload();
     }
 
-    protected void scheduleNextFileReload()
+    private void scheduleNextFileReload()
     {
         reloadJobHandle = jobScheduler.schedule(
                 JobScheduler.Groups.nativeSecurity,

@@ -124,7 +124,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         return orderedActiveRealms;
     }
 
-    public static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
+    private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         return new InternalFlatFileRealm(

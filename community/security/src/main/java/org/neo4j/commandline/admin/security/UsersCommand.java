@@ -79,11 +79,11 @@ public class UsersCommand implements AdminCommand
         }
     }
 
-    final Path homeDir;
-    final Path configDir;
-    OutsideWorld outsideWorld;
+    private final Path homeDir;
+    private final Path configDir;
+    private OutsideWorld outsideWorld;
 
-    public UsersCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    UsersCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
@@ -268,7 +268,7 @@ public class UsersCommand implements AdminCommand
 
     private AuthManager tryMakeInOrder( Config config, List<AuthManager.Factory> authManagerFactories )
     {
-        JobScheduler jobScheduler = new NoOpJobScheduler();
+        JobScheduler jobScheduler = JobScheduler.NO_OP;
         for ( AuthManager.Factory x : authManagerFactories )
         {
             try
@@ -284,91 +284,5 @@ public class UsersCommand implements AdminCommand
             }
         }
         return null;
-    }
-
-    public static class NoOpJobScheduler implements JobScheduler
-    {
-
-        @Override
-        public void init() throws Throwable
-        {
-
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-
-        }
-
-        @Override
-        public Executor executor( Group group )
-        {
-            return null;
-        }
-
-        @Override
-        public ThreadFactory threadFactory( Group group )
-        {
-            return null;
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable job )
-        {
-            return new NoOpJobHandle();
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
-        {
-            return new NoOpJobHandle();
-        }
-
-        @Override
-        public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
-        {
-            return new NoOpJobHandle();
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
-        {
-            return new NoOpJobHandle();
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
-        {
-            return new NoOpJobHandle();
-        }
-
-        public static class NoOpJobHandle implements JobHandle
-        {
-
-            @Override
-            public void cancel( boolean mayInterruptIfRunning )
-            {
-
-            }
-
-            @Override
-            public void waitTermination() throws InterruptedException, ExecutionException
-            {
-
-            }
-        }
     }
 }
