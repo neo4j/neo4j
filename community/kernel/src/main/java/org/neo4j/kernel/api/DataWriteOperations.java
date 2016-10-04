@@ -149,10 +149,4 @@ public interface DataWriteOperations extends TokenWriteOperations
     void nodeLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
 
     void relationshipLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
-
-    /** Invoke a read/write procedure by name */
-    RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException;
-
-    RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input, AccessMode override )
-            throws ProcedureException;
 }

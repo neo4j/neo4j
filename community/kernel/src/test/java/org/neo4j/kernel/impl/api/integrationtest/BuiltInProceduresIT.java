@@ -57,7 +57,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[], ProcedureException> stream =
-                readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "labels" ), new Object[0] );
+                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "labels" ), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyLabel"} ) ) );
@@ -72,7 +72,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[], ProcedureException> stream = readOperationsInNewTransaction()
+        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx()
                 .procedureCallRead( procedureName( "db", "propertyKeys" ), new Object[0] );
 
         // Then
@@ -89,7 +89,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[], ProcedureException> stream = readOperationsInNewTransaction()
+        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx()
                 .procedureCallRead( procedureName( "db", "relationshipTypes" ), new Object[0] );
 
         // Then
@@ -100,7 +100,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listProcedures() throws Throwable
     {
         // When
-        RawIterator<Object[], ProcedureException> stream = readOperationsInNewTransaction()
+        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx()
                 .procedureCallRead( procedureName( "dbms", "procedures" ), new Object[0] );
 
         // Then
@@ -154,7 +154,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // Given a running database
 
         // When
-        RawIterator<Object[], ProcedureException> stream = readOperationsInNewTransaction()
+        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx()
                 .procedureCallRead( procedureName( "dbms", "components" ), new Object[0] );
 
         // Then
@@ -183,7 +183,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "indexes" ), new Object[0] );
+                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "indexes" ), new Object[0] );
 
         // Then
         assertThat( stream.next(), equalTo( new Object[]{"INDEX ON :Age(foo)", "ONLINE",

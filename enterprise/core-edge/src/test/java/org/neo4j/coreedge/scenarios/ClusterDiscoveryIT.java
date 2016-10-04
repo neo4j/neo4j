@@ -107,7 +107,7 @@ public class ClusterDiscoveryIT
         try ( Statement statement = transaction.acquireStatement() )
         {
             // when
-            return asList( statement.readOperations().procedureCallRead(
+            return asList( statement.procedureCallOperations().procedureCallRead(
                     procedureName( "dbms", "cluster", "routing", GetServersProcedure.NAME ),
                     new Object[0] ) );
         }

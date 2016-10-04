@@ -67,6 +67,7 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.isA;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -687,6 +688,21 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         userManager.addRoleToUser( "role1", "role1Subject" );
         userManager.addRoleToUser( PUBLISHER, "role1Subject" );
         assertEmpty( neo.login( "role1Subject", "abc" ), "CALL test.allowedProcedure1() YIELD value CREATE (:NEWNODE {name:value})" );
+    }
+
+    @Test
+    public void shouldNotAllowNonWriterToWriteAfterCallingAllowedWriteProc() throws Exception
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "nopermission", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "nopermission" );
+        // should be able to invoke allowed procedure
+        assertSuccess( neo.login( "nopermission", "abc" ), "CALL test.allowedProcedure2()",
+                itr -> assertEquals( itr.stream().collect( toList() ).size(), 2 ) );
+        // should not be able to do writes
+        assertFail( neo.login( "nopermission", "abc" ),
+                "CALL test.allowedProcedure2() YIELD value CREATE (:NEWNODE {name:value})", WRITE_OPS_NOT_ALLOWED );
     }
 
     /*

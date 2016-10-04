@@ -30,7 +30,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
@@ -118,7 +117,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         kernel.registerProcedure( procedure );
 
         // When
-        RawIterator<Object[], ProcedureException> found = readOperationsInNewTransaction()
+        RawIterator<Object[], ProcedureException> found = procedureCallOpsInNewTx()
                 .procedureCallRead( new QualifiedName( new String[]{"example"}, "exampleProc" ), new Object[]{ 1337 } );
 
         // Then
@@ -139,7 +138,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         } );
 
         // When
-        RawIterator<Object[], ProcedureException> stream = readOperationsInNewTransaction().procedureCallRead( signature.name(), new Object[]{""} );
+        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx().procedureCallRead( signature.name(), new Object[]{""} );
 
         // Then
         assertNotNull( asList( stream  ).get( 0 )[0] );

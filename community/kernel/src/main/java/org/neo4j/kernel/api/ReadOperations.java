@@ -568,12 +568,5 @@ public interface ReadOperations
     Set<ProcedureSignature> proceduresGetAll();
 
     /** Invoke a read-only procedure by name */
-    RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input )
-            throws ProcedureException;
-
-    RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input, AccessMode override )
-            throws ProcedureException;
-
-    /** Invoke a read-only procedure by name */
    Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException;
 }

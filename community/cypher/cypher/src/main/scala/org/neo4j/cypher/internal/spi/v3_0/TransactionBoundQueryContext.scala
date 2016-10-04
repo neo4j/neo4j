@@ -617,10 +617,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.statement.readOperations().procedureCallRead)
+    callProcedure(name, args, transactionalContext.statement.procedureCallOperations().procedureCallRead)
 
   override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite)
+    callProcedure(name, args, transactionalContext.statement.procedureCallOperations().procedureCallWrite)
 
   override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
     callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.accessMode))

@@ -65,11 +65,4 @@ public interface SchemaWriteOperations extends TokenWriteOperations
      * That external job should become an internal job, at which point this operation should go away.
      */
     void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
-
-    /** Invoke a schema procedure by name */
-    RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input )
-            throws ProcedureException;
-
-    RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input, AccessMode override )
-            throws ProcedureException;
 }

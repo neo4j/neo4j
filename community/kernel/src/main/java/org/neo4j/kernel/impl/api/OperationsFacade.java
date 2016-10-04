@@ -33,6 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -101,7 +102,8 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 public class OperationsFacade
-        implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations
+        implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations,
+        ProcedureCallOperations
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;
@@ -569,18 +571,6 @@ public class OperationsFacade
     public Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException
     {
         return callFunction( name, input );
-    }
-
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException
-    {
-        return callProcedure( name, input, AccessMode.Static.READ );
-    }
-
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
-    {
-        return callProcedure( name, input, override );
     }
 
     @Override
@@ -1095,19 +1085,6 @@ public class OperationsFacade
         return dataWrite().graphRemoveProperty( statement, propertyKeyId );
     }
 
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException
-    {
-        // FIXME: should this be AccessMode.Static.WRITE instead?
-        return callProcedure( name, input, AccessMode.Static.FULL );
-    }
-
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
-    {
-        return callProcedure( name, input, override );
-    }
-
     // </DataWrite>
 
     // <SchemaWrite>
@@ -1170,18 +1147,6 @@ public class OperationsFacade
     {
         statement.assertOpen();
         schemaWrite().uniqueIndexDrop( statement, descriptor );
-    }
-
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
-    {
-        return callProcedure( name, input, AccessMode.Static.FULL );
-    }
-
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
-    {
-        return callProcedure( name, input, override );
     }
 
     // </SchemaWrite>
@@ -1527,6 +1492,43 @@ public class OperationsFacade
     // query monitoring
 
     // <Procedures>
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        return callProcedure( name, input, AccessMode.Static.READ );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    {
+        return callProcedure( name, input, override );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        // FIXME: should this be AccessMode.Static.WRITE instead?
+        return callProcedure( name, input, AccessMode.Static.FULL );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    {
+        return callProcedure( name, input, override );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        return callProcedure( name, input, AccessMode.Static.FULL );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    {
+        return callProcedure( name, input, override );
+    }
 
     private RawIterator<Object[],ProcedureException> callProcedure(
             QualifiedName name, Object[] input, AccessMode mode )

@@ -27,6 +27,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -73,6 +74,13 @@ public abstract class KernelIntegrationTest
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         statement = transaction.acquireStatement();
         return statement.schemaWriteOperations();
+    }
+
+    protected ProcedureCallOperations procedureCallOpsInNewTx() throws TransactionFailureException
+    {
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
+        statement = transaction.acquireStatement();
+        return statement.procedureCallOperations();
     }
 
     protected ReadOperations readOperationsInNewTransaction() throws TransactionFailureException
