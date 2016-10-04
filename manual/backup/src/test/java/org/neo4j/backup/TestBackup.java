@@ -165,11 +165,7 @@ public class TestBackup
                             }
                         };
                     }
-                })
-                {
-
-
-                }.newFacade( storeDir, config, dependencies );
+                } ).newFacade( storeDir, config, dependencies );
             }
         };
         return dbFactory.newEmbeddedDatabaseBuilder( storeDir )
