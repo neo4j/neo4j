@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.ClusterSettings;
@@ -266,6 +267,7 @@ public class SwitchToSlaveTest
         PagedFile pagedFileMock = mock( PagedFile.class );
         when( pagedFileMock.getLastPageId() ).thenReturn( 1L );
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
+        when( pageCacheMock.streamFilesRecursive( any( File.class ) ) ).thenReturn( Stream.empty() );
 
         return newSwitchToSlaveSpy( pageCacheMock, mock( StoreCopyClient.class) );
     }
