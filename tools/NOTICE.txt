@@ -28,8 +28,6 @@ Apache Software License, Version 2.0
   airline
   Apache Commons Compress
   Apache Commons Lang
-  Caffeine cache
-  ConcurrentLinkedHashMap
   Guava: Google Core Libraries for Java
   javax.inject
   Lucene codecs
@@ -38,19 +36,4 @@ Apache Software License, Version 2.0
   Lucene Memory
   Lucene QueryParsers
   Netty
-  Netty/All-in-One
-  opencsv
-  parboiled-core
-  parboiled-scala
-
-BSD - Scala License
-  Scala Library
-
-BSD License
-  ASM Core
-  Scala Compiler
-
-Bouncy Castle License
-  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
-  Bouncy Castle Provider
 
