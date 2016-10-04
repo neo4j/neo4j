@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
@@ -64,9 +65,7 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
-public class NodeProxy
-        extends PropertyContainerProxy
-        implements Node
+public class NodeProxy implements Node
 {
     public interface NodeActions
     {
@@ -384,10 +383,7 @@ public class NodeProxy
     @Override
     public Map<String, Object> getProperties( String... keys )
     {
-        if ( keys == null )
-        {
-            throw new NullPointerException( "keys" );
-        }
+        Objects.requireNonNull( keys, "Properties keys should be not null array." );
 
         if ( keys.length == 0 )
         {
@@ -406,7 +402,7 @@ public class NodeProxy
 
                 try ( Cursor<PropertyItem> propertyCursor = node.get().properties() )
                 {
-                    return super.getProperties( statement, propertyCursor, keys );
+                    return PropertyContainerProxyHelper.getProperties( statement, propertyCursor, keys );
                 }
             }
         }
