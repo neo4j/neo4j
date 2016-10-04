@@ -23,6 +23,7 @@ import junit.framework.TestCase;
 import org.hamcrest.core.IsEqual;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -31,9 +32,13 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -46,16 +51,23 @@ import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class BasicAuthManagerTest
 {
-    private InMemoryUserRepository users;
+    @Rule
+    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+
+    private Config config;
+    private UserRepository users;
     private BasicAuthManager manager;
-    private AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );;
+    private AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
 
     @Before
     public void setup() throws Throwable
     {
-        users = new InMemoryUserRepository();
-        manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
-        manager.start();
+        config = Config.defaults();
+        users = BasicAuthManagerFactory.getUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        UserRepository initUserRepository =
+                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy, initUserRepository );
+        manager.init();
     }
 
     @After
@@ -65,21 +77,106 @@ public class BasicAuthManagerTest
     }
 
     @Test
-    public void shouldCreateDefaultUserIfNoneExist()
+    public void shouldCreateDefaultUserIfNoneExist() throws Throwable
     {
         // When
-        final User user = users.getUserByName( "neo4j" );
+        manager.start();
 
         // Then
+        final User user = users.getUserByName( "neo4j" );
         assertNotNull( user );
         assertTrue( user.credentials().matchesPassword( "neo4j" ) );
         assertTrue( user.passwordChangeRequired() );
     }
 
     @Test
+    public void shouldLoadInitialUserIfNoneExist() throws Throwable
+    {
+        // Given
+        FileUserRepository initialUserRepository =
+                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        initialUserRepository.start();
+        initialUserRepository.create(
+                new User.Builder( "initUser", Credential.forPassword( "123" ))
+                        .withRequiredPasswordChange( false )
+                        .build()
+        );
+        initialUserRepository.shutdown();
+
+        // When
+        manager.start();
+
+        // Then
+        final User user = users.getUserByName( "initUser" );
+        assertNotNull( user );
+        assertTrue( user.credentials().matchesPassword( "123" ) );
+        assertFalse( user.passwordChangeRequired() );
+    }
+
+    @Test
+    public void shouldAddInitialUserIfUsersExist() throws Throwable
+    {
+        // Given
+        FileUserRepository initialUserRepository =
+                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        initialUserRepository.start();
+        initialUserRepository.create(
+                new User.Builder( "initUser", Credential.forPassword( "123" ))
+                        .withRequiredPasswordChange( false )
+                        .build()
+        );
+        initialUserRepository.shutdown();
+        users.start();
+        createUser( "oldUser", "321", false );
+        users.shutdown();
+
+        // When
+        manager.start();
+
+        // Then
+        final User initUser = users.getUserByName( "initUser" );
+        assertNotNull( initUser );
+        assertTrue( initUser.credentials().matchesPassword( "123" ) );
+        assertFalse( initUser.passwordChangeRequired() );
+
+        final User oldUser = users.getUserByName( "oldUser" );
+        assertNotNull( oldUser );
+        assertTrue( oldUser.credentials().matchesPassword( "321" ) );
+        assertFalse( oldUser.passwordChangeRequired() );
+    }
+
+    @Test
+    public void shouldUpdateUserIfInitialUserExist() throws Throwable
+    {
+        // Given
+        FileUserRepository initialUserRepository =
+                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        initialUserRepository.start();
+        initialUserRepository.create(
+                new User.Builder( "oldUser", Credential.forPassword( "newPassword" ))
+                        .withRequiredPasswordChange( false )
+                        .build()
+        );
+        initialUserRepository.shutdown();
+        users.start();
+        createUser( "oldUser", "oldPassword", true );
+        users.shutdown();
+
+        // When
+        manager.start();
+
+        // Then
+        final User oldUser = users.getUserByName( "oldUser" );
+        assertNotNull( oldUser );
+        assertTrue( oldUser.credentials().matchesPassword( "newPassword" ) );
+        assertFalse( oldUser.passwordChangeRequired() );
+    }
+
+    @Test
     public void shouldFindAndAuthenticateUserSuccessfully() throws Throwable
     {
         // Given
+        manager.start();
         final User user = createUser( "jake", "abc123", false );
 
         // When
@@ -93,6 +190,7 @@ public class BasicAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnAuthStrategyResult() throws Throwable
     {
         // Given
+        manager.start();
         final User user = createUser( "jake", "abc123", true );
 
         // When
@@ -106,6 +204,7 @@ public class BasicAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnPasswordChangeIfRequired() throws Throwable
     {
         // Given
+        manager.start();
         final User user = createUser( "jake", "abc123", true );
 
         // When
@@ -119,6 +218,7 @@ public class BasicAuthManagerTest
     public void shouldFailAuthenticationIfUserIsNotFound() throws Throwable
     {
         // Given
+        manager.start();
         createUser( "jake", "abc123", true );
 
         // Then
@@ -128,6 +228,9 @@ public class BasicAuthManagerTest
     @Test
     public void shouldCreateUser() throws Throwable
     {
+        // Given
+        manager.start();
+
         // When
         manager.newUser( "foo", "bar", true );
 
@@ -142,6 +245,7 @@ public class BasicAuthManagerTest
     public void shouldDeleteUser() throws Throwable
     {
         // Given
+        manager.start();
         manager.newUser( "jake", "abc123", true );
 
         // When
@@ -155,6 +259,7 @@ public class BasicAuthManagerTest
     public void shouldFailToDeleteUnknownUser() throws Throwable
     {
         // Given
+        manager.start();
         manager.newUser( "jake", "abc123", true );
 
         try
@@ -180,6 +285,7 @@ public class BasicAuthManagerTest
     public void shouldSetPassword() throws Throwable
     {
         // Given
+        manager.start();
         manager.newUser( "jake", "abc123", true );
 
         // When
@@ -194,6 +300,9 @@ public class BasicAuthManagerTest
     @Test
     public void shouldReturnNullWhenSettingPasswordForUnknownUser() throws Throwable
     {
+        // Given
+        manager.start();
+
         // When
         try
         {

@@ -36,6 +36,7 @@ import org.apache.shiro.subject.SimplePrincipalCollection;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.SortedSet;
@@ -75,6 +76,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final UserRepository initialUserRepository;
     private final PasswordPolicy passwordPolicy;
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
@@ -84,21 +86,23 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
-            JobScheduler jobScheduler )
+            JobScheduler jobScheduler, UserRepository initialUserRepository )
     {
         this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true,
-                jobScheduler );
+                jobScheduler, initialUserRepository );
     }
 
     InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
-            boolean authenticationEnabled, boolean authorizationEnabled, JobScheduler jobScheduler )
+            boolean authenticationEnabled, boolean authorizationEnabled, JobScheduler jobScheduler,
+            UserRepository initialUserRepository )
     {
         super();
 
         setName( SecuritySettings.NATIVE_REALM_NAME );
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.initialUserRepository = initialUserRepository;
         this.passwordPolicy = passwordPolicy;
         this.authenticationStrategy = authenticationStrategy;
         this.authenticationEnabled = authenticationEnabled;
@@ -115,6 +119,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public void initialize( RealmOperations ignore ) throws Throwable
     {
+        initialUserRepository.init();
         userRepository.init();
         roleRepository.init();
     }
@@ -122,11 +127,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public void start() throws Throwable
     {
+        initialUserRepository.start();
         userRepository.start();
         roleRepository.start();
 
-        ensureDefaultUsers();
-        ensureDefaultRoles();
+        Set<String> addedDefaultUsers = ensureDefaultUsers();
+        ensureDefaultRoles( addedDefaultUsers );
 
         scheduleNextFileReload();
     }
@@ -198,19 +204,38 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     /* Adds neo4j user if no users exist */
-    private void ensureDefaultUsers() throws IOException, InvalidArgumentsException
+    private Set<String> ensureDefaultUsers() throws Throwable
     {
         if ( authenticationEnabled || authorizationEnabled )
         {
-            if ( numberOfUsers() == 0 )
+            if ( userRepository.numberOfUsers() == 0 )
             {
-                newUser( "neo4j", "neo4j", true );
+                if ( initialUserRepository.numberOfUsers() == 0 )
+                {
+                    newUser( "neo4j", "neo4j", true );
+                    return Collections.singleton( "neo4j" );
+                }
             }
+            for ( String username : initialUserRepository.getAllUsernames() )
+            {
+                User oldUser = userRepository.getUserByName( username );
+                User newUser = initialUserRepository.getUserByName( username );
+                if ( oldUser == null )
+                {
+                    userRepository.create( newUser );
+                }
+                else
+                {
+                    userRepository.update( oldUser, newUser );
+                }
+            }
+            return initialUserRepository.getAllUsernames();
         }
+        return Collections.emptySet();
     }
 
     /* Builds all predefined roles if no roles exist. Adds 'neo4j' to admin role if no admin is assigned */
-    private void ensureDefaultRoles() throws IOException, InvalidArgumentsException
+    private void ensureDefaultRoles( Set<String> addedDefaultUsers ) throws IOException, InvalidArgumentsException
     {
         if ( authenticationEnabled || authorizationEnabled )
         {
@@ -221,12 +246,9 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                     newRole( role );
                 }
             }
-            if ( this.getUsernamesForRole( PredefinedRoles.ADMIN ).size() == 0 )
+            for ( String username : addedDefaultUsers )
             {
-                if ( getAllUsernames().contains( "neo4j" ) )
-                {
-                    addRoleToUser( PredefinedRoles.ADMIN, "neo4j" );
-                }
+                addRoleToUser( PredefinedRoles.ADMIN, username );
             }
         }
     }
@@ -234,6 +256,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public void stop() throws Throwable
     {
+        initialUserRepository.stop();
         userRepository.stop();
         roleRepository.stop();
 
@@ -247,6 +270,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public void shutdown() throws Throwable
     {
+        initialUserRepository.shutdown();
         userRepository.shutdown();
         roleRepository.shutdown();
         setCacheManager( null );

@@ -70,7 +70,8 @@ public class LdapCachingTest
                 new InMemoryRoleRepository(),
                 new BasicPasswordPolicy(),
                 new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
-                mock( JobScheduler.class )
+                mock( JobScheduler.class ),
+                new InMemoryUserRepository()
             );
 
         testRealm = new TestRealm( getLdapConfig(), securityLog );

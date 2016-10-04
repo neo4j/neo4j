@@ -34,6 +34,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
+import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 
 import static org.junit.Assert.fail;
@@ -70,7 +71,8 @@ public class MultiRealmAuthManagerRule implements TestRule
                         new InMemoryRoleRepository(),
                         new BasicPasswordPolicy(),
                         authStrategy,
-                        mock( JobScheduler.class )
+                        mock( JobScheduler.class ),
+                        new InMemoryUserRepository()
                     );
 
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),

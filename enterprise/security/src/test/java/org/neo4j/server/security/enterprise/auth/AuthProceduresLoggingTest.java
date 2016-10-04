@@ -73,7 +73,9 @@ public class AuthProceduresLoggingTest
                                             new InMemoryRoleRepository(),
                                             new BasicPasswordPolicy(),
                                             mock( AuthenticationStrategy.class ),
-                                            mock( JobScheduler.class ) );
+                                            mock( JobScheduler.class ),
+                                            new InMemoryUserRepository()
+                                        );
         realm.start(); // creates default user and roles
         return realm;
     }

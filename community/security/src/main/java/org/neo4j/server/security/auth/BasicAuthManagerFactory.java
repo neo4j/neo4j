@@ -48,6 +48,12 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
         return new FileUserRepository( fileSystem, getUserRepositoryFile( config ), logProvider );
     }
 
+    public static FileUserRepository getInitialUserRepository( Config config, LogProvider logProvider,
+            FileSystemAbstraction fileSystem )
+    {
+        return new FileUserRepository( fileSystem, getInitialUserRepositoryFile( config ), logProvider );
+    }
+
     public static File getUserRepositoryFile( Config config )
     {
         return getUserRepositoryFile( config, USER_STORE_FILENAME );
@@ -95,9 +101,10 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
         }
 
         final UserRepository userRepository = getUserRepository( config, logProvider, fileSystem );
+        final UserRepository initialUserRepository = getInitialUserRepository( config, logProvider, fileSystem );
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
-        return new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock() );
+        return new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(), initialUserRepository );
     }
 }

@@ -44,6 +44,7 @@ import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
+import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.time.Clocks;
 
@@ -72,7 +73,9 @@ public class InternalFlatFileRealmTest
                         new InMemoryRoleRepository(),
                         new BasicPasswordPolicy(),
                         new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
-                        mock( JobScheduler.class ) );
+                        mock( JobScheduler.class ),
+                        new InMemoryUserRepository()
+                    );
 
         List<Realm> realms = listOf( testRealm );
 
@@ -132,16 +135,23 @@ public class InternalFlatFileRealmTest
     {
         final UserRepository userRepository = mock( UserRepository.class );
         final RoleRepository roleRepository = mock( RoleRepository.class );
+        final UserRepository initialUserRepository = mock( UserRepository.class );
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
         AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
         InternalFlatFileRealmIT.TestJobScheduler jobScheduler = new InternalFlatFileRealmIT.TestJobScheduler();
-        InternalFlatFileRealm realm = new InternalFlatFileRealm( userRepository, roleRepository,
-                passwordPolicy,
-                authenticationStrategy,
-                true, true, jobScheduler );
+        InternalFlatFileRealm realm =
+                new InternalFlatFileRealm(
+                        userRepository,
+                        roleRepository,
+                        passwordPolicy,
+                        authenticationStrategy,
+                        jobScheduler,
+                        initialUserRepository
+                    );
 
         when( userRepository.getPersistedSnapshot() ).thenReturn(
                 new ListSnapshot<>( 10L, Collections.emptyList(), usersChanged ) );
+        when( userRepository.getUserByName( any() ) ).thenReturn( new User.Builder(  ).build() );
         when( roleRepository.getPersistedSnapshot() ).thenReturn(
                 new ListSnapshot<>( 10L, Collections.emptyList(), rolesChanged ) );
         when( roleRepository.getRoleByName( anyString() ) ).thenReturn( new RoleRecord( "" ) );
@@ -161,9 +171,10 @@ public class InternalFlatFileRealmTest
         private boolean authorizationFlag = false;
 
         public TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
-                AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler )
+                AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler,
+                UserRepository initialUserRepository )
         {
-            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler );
+            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler, initialUserRepository );
         }
 
         boolean takeAuthenticationFlag()
