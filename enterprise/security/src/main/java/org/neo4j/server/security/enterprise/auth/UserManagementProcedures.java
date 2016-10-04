@@ -35,7 +35,6 @@ import static org.neo4j.procedure.Mode.DBMS;
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class UserManagementProcedures extends AuthProceduresBase
 {
-
     @Context
     public EnterpriseAuthManager authManager;
 
@@ -54,7 +53,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     public void changePasswordDeprecated( @Name( "password" ) String password )
             throws InvalidArgumentsException, IOException
     {
-        authSubject.setPassword( password, false );
+        changePassword( password, false );
     }
 
     @Description( "Change the current user's password." )

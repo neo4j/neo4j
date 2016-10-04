@@ -23,14 +23,19 @@ import java.io.IOException;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
+import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.procedure.Mode.DBMS;
 
-@SuppressWarnings( "unused" )
+@SuppressWarnings( {"unused", "WeakerAccess"} )
 public class SecurityProcedures extends AuthProceduresBase
 {
+    @Context
+    public EnterpriseAuthManager authManager;
+
     @Description( "Show the current user." )
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
     public Stream<UserManagementProcedures.UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
@@ -42,6 +47,7 @@ public class SecurityProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.clearAuthCache", mode = DBMS )
     public void clearAuthenticationCache()
     {
-        ensureAdminAuthSubject().clearAuthCache();
+        ensureAdminAuthSubject();
+        authManager.clearAuthCache();
     }
 }

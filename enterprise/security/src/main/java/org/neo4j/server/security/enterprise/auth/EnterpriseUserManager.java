@@ -23,7 +23,10 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserManager;
+
+import static java.util.Collections.emptySet;
 
 public interface EnterpriseUserManager extends UserManager
 {
@@ -68,4 +71,119 @@ public interface EnterpriseUserManager extends UserManager
     Set<String> getUsernamesForRole( String roleName ) throws InvalidArgumentsException;
 
     Set<String> silentlyGetUsernamesForRole( String roleName );
+
+    EnterpriseUserManager NOOP = new EnterpriseUserManager()
+    {
+        @Override
+        public void suspendUser( String username ) throws IOException, InvalidArgumentsException
+        {
+        }
+
+        @Override
+        public void activateUser( String username, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
+        {
+        }
+
+        @Override
+        public RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
+        {
+            return null;
+        }
+
+        @Override
+        public boolean deleteRole( String roleName ) throws IOException, InvalidArgumentsException
+        {
+            return false;
+        }
+
+        @Override
+        public RoleRecord getRole( String roleName ) throws InvalidArgumentsException
+        {
+            return null;
+        }
+
+        @Override
+        public RoleRecord silentlyGetRole( String roleName )
+        {
+            return null;
+        }
+
+        @Override
+        public void addRoleToUser( String roleName, String username ) throws IOException, InvalidArgumentsException
+        {
+        }
+
+        @Override
+        public void removeRoleFromUser( String roleName, String username ) throws IOException, InvalidArgumentsException
+        {
+        }
+
+        @Override
+        public Set<String> getAllRoleNames()
+        {
+            return emptySet();
+        }
+
+        @Override
+        public Set<String> getRoleNamesForUser( String username ) throws InvalidArgumentsException
+        {
+            return emptySet();
+        }
+
+        @Override
+        public Set<String> silentlyGetRoleNamesForUser( String username )
+        {
+            return emptySet();
+        }
+
+        @Override
+        public Set<String> getUsernamesForRole( String roleName ) throws InvalidArgumentsException
+        {
+            return emptySet();
+        }
+
+        @Override
+        public Set<String> silentlyGetUsernamesForRole( String roleName )
+        {
+            return emptySet();
+        }
+
+        @Override
+        public User newUser( String username, String initialPassword, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
+        {
+            return null;
+        }
+
+        @Override
+        public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
+        {
+            return false;
+        }
+
+        @Override
+        public User getUser( String username ) throws InvalidArgumentsException
+        {
+            return null;
+        }
+
+        @Override
+        public User silentlyGetUser( String username )
+        {
+            return null;
+        }
+
+        @Override
+        public void setUserPassword( String username, String password, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
+        {
+        }
+
+        @Override
+        public Set<String> getAllUsernames()
+        {
+            return emptySet();
+        }
+    };
 }

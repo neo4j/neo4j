@@ -89,18 +89,21 @@ public class EnterpriseSecurityModule extends SecurityModule
 
         // Register procedures
         procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
-        procedures.registerProcedure( SecurityProcedures.class, true );
+        procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager );
 
         if ( config.get( SecuritySettings.native_authentication_enabled )
              || config.get( SecuritySettings.native_authorization_enabled ) )
         {
-            procedures.registerComponent( UserManager.class,
-                    ctx -> authManager.getUserManager( ctx.get( AUTH_SUBJECT ) ) );
             procedures.registerComponent( EnterpriseUserManager.class,
                     ctx -> authManager.getUserManager( asEnterprise( ctx.get( AUTH_SUBJECT ) ) ) );
-            procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager );
             procedures.registerProcedure( UserManagementProcedures.class, true );
         }
+        else
+        {
+            procedures.registerComponent( EnterpriseUserManager.class, ctx -> EnterpriseUserManager.NOOP );
+        }
+
+        procedures.registerProcedure( SecurityProcedures.class, true );
     }
 
     private EnterpriseAuthSubject asEnterprise( AuthSubject authSubject )
