@@ -19,97 +19,132 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
+import java.io.File;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.security.auth.BasicAuthManagerFactory;
+import org.neo4j.server.security.auth.FileUserRepository;
+import org.neo4j.server.security.auth.User;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class SetPasswordCommandTest extends UsersCommandTestBase
 {
+
+    private UsersCommand usersCommand;
+    private Config config;
+    private File file;
+
+    @Before
+    @Override
+    public void setup()
+    {
+        super.setup();
+        usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(), out );
+        config = usersCommand.loadNeo4jConfig();
+        file = BasicAuthManagerFactory.getInitialUserRepositoryFile( config );
+    }
+
     @Test
     public void shouldFailSetPasswordWithNoArguments() throws Exception
     {
-        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(),out );
-
         String[] arguments = {"set-password"};
-        try
-        {
-            usersCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "username" ) );
-        }
+        assertException( () -> usersCommand.execute( arguments ), IncorrectUsage.class, "username" );
     }
 
     @Test
     public void shouldFailSetPasswordWithOnlyOneArgument() throws Exception
     {
-        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(),out );
-
         String[] arguments = {"set-password", "neo4j"};
-        try
-        {
-            usersCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "password" ) );
-        }
+        assertException( () -> usersCommand.execute( arguments ), IncorrectUsage.class, "password" );
     }
 
     @Test
-    public void shouldFailSetPasswordWithNonExistingUser() throws Exception
+    public void shouldAllowSetPasswordWithPasswordChangeRequiredFlag() throws Exception
     {
-        UsersCommand usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(), out );
-
-        String[] arguments = {"set-password", "nosuchuser", "whatever"};
-        try
-        {
-            usersCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), containsString( "does not exist" ) );
-        }
+        String[] arguments = {"set-password", "neo4j", "123", "--requires-password-change"};
+        usersCommand.execute( arguments );
     }
 
     @Test
-    public void shouldRunSetPasswordWithDefaultUser() throws Throwable
+    public void shouldCreateInitialUserWithPasswordChangeRequired() throws Throwable
     {
-        // Given - no created user
+        // Given
+        assertFalse( fileSystem.fileExists( file ) );
 
-        // When - the admin command sets the password
-        UsersCommand usersCommand =
-                new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
-        usersCommand.execute( new String[]{"set-password", "neo4j", "abc", "--requires-password-change=false"} );
+        // When
+        String[] arguments = {"set-password", "another", "123", "--requires-password-change=false "};
+        usersCommand.execute( arguments );
 
-        // Then - the default user does not require a password change
-        assertUsersPasswordMatches( "neo4j", "abc" );
-        assertUserDoesNotRequirePasswordChange( "neo4j" );
+        // Then
+        assertTrue( fileSystem.fileExists( file ) );
+        FileUserRepository userRepository = new FileUserRepository( fileSystem, file, NullLogProvider.getInstance() );
+        userRepository.start();
+        User neo4j = userRepository.getUserByName( "another" );
+        assertNotNull( neo4j );
+        assertTrue( neo4j.credentials().matchesPassword( "123" ) );
+        assertTrue( !neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
     }
 
     @Test
-    public void shouldRunSetPasswordWithExistingUser() throws Throwable
+    public void shouldCreateInitialUserFile() throws Throwable
     {
-        // Given - new user that requires password change
-        createTestUser( "another", "neo4j" );
-        assertUserRequiresPasswordChange( "another" );
+        // Given
+        assertFalse( fileSystem.fileExists( file ) );
 
-        // When - the admin command sets the password
-        UsersCommand usersCommand =
-                new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
-        usersCommand.execute( new String[]{"set-password", "another", "abc", "--requires-password-change=false"} );
+        // When
+        String[] arguments = {"set-password", "neo4j", "123"};
+        usersCommand.execute( arguments );
 
-        // Then - the new user no longer requires a password change
-        assertUsersPasswordMatches( "another", "abc" );
-        assertUserDoesNotRequirePasswordChange( "another" );
+        // Then
+        assertTrue( fileSystem.fileExists( file ) );
+        FileUserRepository userRepository = new FileUserRepository( fileSystem, file, NullLogProvider.getInstance() );
+        userRepository.start();
+        User neo4j = userRepository.getUserByName( "neo4j" );
+        assertNotNull( neo4j );
+        assertTrue( neo4j.credentials().matchesPassword( "123" ) );
+        assertTrue( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
+    }
+
+    @Test
+    public void shouldFailToCreateInitialUserFileIfExists() throws Throwable
+    {
+        // Given
+        fileSystem.mkdirs( file.getParentFile() );
+        fileSystem.create( file );
+
+        // When
+        String[] arguments = {"set-password", "neo4j", "123"};
+        assertException( () -> usersCommand.execute( arguments ), IncorrectUsage.class,
+                "Initial user already set. Overwrite this user with --force" );
+    }
+
+    @Test
+    public void shouldCreateInitialUserFileEvenIfExistsWhenForced() throws Throwable
+    {
+        // Given
+        fileSystem.mkdirs( file.getParentFile() );
+        fileSystem.create( file );
+
+        // When
+        String[] arguments = {"set-password", "neo4j", "123", "--force"};
+        usersCommand.execute( arguments );
+
+        // Then
+        assertTrue( fileSystem.fileExists( file ) );
+        FileUserRepository userRepository = new FileUserRepository( fileSystem, file, NullLogProvider.getInstance() );
+        userRepository.start();
+        User neo4j = userRepository.getUserByName( "neo4j" );
+        assertNotNull( neo4j );
+        assertTrue( neo4j.credentials().matchesPassword( "123" ) );
+        assertTrue( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
     }
 }

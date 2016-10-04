@@ -47,33 +47,55 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     protected final AuthenticationStrategy authStrategy;
     protected final UserRepository userRepository;
     protected final PasswordPolicy passwordPolicy;
+    private final UserRepository initialUserRepository;
 
-    public BasicAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
+    public BasicAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy,
+            AuthenticationStrategy authStrategy, UserRepository initialUserRepository )
     {
         this.userRepository = userRepository;
         this.passwordPolicy = passwordPolicy;
         this.authStrategy = authStrategy;
+        this.initialUserRepository = initialUserRepository;
     }
 
-    public BasicAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy, Clock clock )
+    public BasicAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy, Clock clock,
+            UserRepository initialUserRepository )
     {
-        this( userRepository, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ) );
+        this( userRepository, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), initialUserRepository );
     }
 
     @Override
     public void init() throws Throwable
     {
         userRepository.init();
+        initialUserRepository.init();
     }
 
     @Override
     public void start() throws Throwable
     {
         userRepository.start();
+        initialUserRepository.start();
 
         if ( userRepository.numberOfUsers() == 0 )
         {
-            newUser( "neo4j", "neo4j", true );
+            if ( initialUserRepository.numberOfUsers() == 0 )
+            {
+                newUser( "neo4j", "neo4j", true );
+            }
+        }
+        for ( String username : initialUserRepository.getAllUsernames() )
+        {
+            User oldUser = userRepository.getUserByName( username );
+            User newUser = initialUserRepository.getUserByName( username );
+            if ( oldUser == null )
+            {
+                userRepository.create( newUser );
+            }
+            else
+            {
+                userRepository.update( oldUser, newUser );
+            }
         }
     }
 
@@ -81,12 +103,14 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     public void stop() throws Throwable
     {
         userRepository.stop();
+        initialUserRepository.stop();
     }
 
     @Override
     public void shutdown() throws Throwable
     {
         userRepository.shutdown();
+        initialUserRepository.shutdown();
     }
 
     @Override

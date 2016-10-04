@@ -22,6 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -31,15 +32,20 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
+import org.neo4j.server.security.auth.BasicAuthManagerFactory;
 import org.neo4j.server.security.auth.Credential;
-import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
+import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -59,7 +65,11 @@ import static org.neo4j.test.assertion.Assert.assertException;
 
 public class MultiRealmAuthManagerTest
 {
-    private InMemoryUserRepository users;
+    @Rule
+    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+
+    private Config config;
+    private UserRepository users;
     private AuthenticationStrategy authStrategy;
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
@@ -68,7 +78,8 @@ public class MultiRealmAuthManagerTest
     @Before
     public void setUp() throws Throwable
     {
-        users = new InMemoryUserRepository();
+        config = Config.defaults();
+        users = BasicAuthManagerFactory.getUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         authStrategy = mock( AuthenticationStrategy.class );
         logProvider = new AssertableLogProvider();
 
@@ -81,8 +92,15 @@ public class MultiRealmAuthManagerTest
         Log log = logProvider.getLog( this.getClass() );
 
         InternalFlatFileRealm internalFlatFileRealm =
-                new InternalFlatFileRealm( users, new InMemoryRoleRepository(), mock( PasswordPolicy.class ),
-                        authStrategy, mock( JobScheduler.class ) );
+                new InternalFlatFileRealm(
+                        users,
+                        new InMemoryRoleRepository(),
+                        mock( PasswordPolicy.class ),
+                        authStrategy,
+                        mock( JobScheduler.class ),
+                        BasicAuthManagerFactory.getInitialUserRepository(
+                                config, NullLogProvider.getInstance(), fsRule.get() )
+                    );
 
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
                 new MemoryConstrainedCacheManager(), new SecurityLog( log ), logSuccessfulAuthentications );
@@ -101,8 +119,6 @@ public class MultiRealmAuthManagerTest
     @Test
     public void shouldCreateDefaultUserIfNoneExist() throws Throwable
     {
-        // Given
-
         // When
         manager.start();
 
@@ -111,6 +127,81 @@ public class MultiRealmAuthManagerTest
         assertNotNull( user );
         assertTrue( user.credentials().matchesPassword( "neo4j" ) );
         assertTrue( user.passwordChangeRequired() );
+    }
+
+    @Test
+    public void shouldLoadInitialUserIfNoneExist() throws Throwable
+    {
+        // Given
+        FileUserRepository initialUserRepository =
+                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        initialUserRepository.start();
+        initialUserRepository.create(
+                new User.Builder( "initUser", Credential.forPassword( "123" ))
+                        .withRequiredPasswordChange( false )
+                        .build()
+        );
+        initialUserRepository.shutdown();
+
+        // When
+        manager.start();
+
+        // Then
+        final User user = users.getUserByName( "initUser" );
+        assertNotNull( user );
+        assertTrue( user.credentials().matchesPassword( "123" ) );
+        assertFalse( user.passwordChangeRequired() );
+    }
+
+    @Test
+    public void shouldAddInitialUserIfUsersExist() throws Throwable
+    {
+        // Given
+        FileUserRepository initialUserRepository =
+                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        initialUserRepository.start();
+        initialUserRepository.create( newUser( "initUser", "123", false ) );
+        initialUserRepository.shutdown();
+        users.start();
+        users.create( newUser( "oldUser", "321", false ) );
+        users.shutdown();
+
+        // When
+        manager.start();
+
+        // Then
+        final User initUser = users.getUserByName( "initUser" );
+        assertNotNull( initUser );
+        assertTrue( initUser.credentials().matchesPassword( "123" ) );
+        assertFalse( initUser.passwordChangeRequired() );
+
+        final User oldUser = users.getUserByName( "oldUser" );
+        assertNotNull( oldUser );
+        assertTrue( oldUser.credentials().matchesPassword( "321" ) );
+        assertFalse( oldUser.passwordChangeRequired() );
+    }
+
+    @Test
+    public void shouldUpdateUserIfInitialUserExist() throws Throwable
+    {
+        // Given
+        FileUserRepository initialUserRepository =
+                BasicAuthManagerFactory.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        initialUserRepository.start();
+        initialUserRepository.create( newUser( "oldUser", "newPassword", false ) );
+        initialUserRepository.shutdown();
+        users.start();
+        users.create( newUser( "oldUser", "oldPassword", true ) );
+        users.shutdown();
+
+        // When
+        manager.start();
+
+        // Then
+        final User oldUser = users.getUserByName( "oldUser" );
+        assertNotNull( oldUser );
+        assertTrue( oldUser.credentials().matchesPassword( "newPassword" ) );
+        assertFalse( oldUser.passwordChangeRequired() );
     }
 
     @Test

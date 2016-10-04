@@ -213,7 +213,7 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = new BasicAuthManager( mock( UserRepository.class), mock( PasswordPolicy.class ),
-                FakeClock.systemUTC() );
+                FakeClock.systemUTC(), mock( UserRepository.class ) );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );

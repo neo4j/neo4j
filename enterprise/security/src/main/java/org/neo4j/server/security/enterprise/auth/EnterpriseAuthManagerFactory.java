@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.BasicAuthManagerFactory;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.enterprise.auth.plugin.PluginRealm;
@@ -130,9 +131,13 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         return new InternalFlatFileRealm(
                 getUserRepository( config, logProvider, fileSystem ),
                 getRoleRepository( config, logProvider, fileSystem ),
-                new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
+                new BasicPasswordPolicy(),
+                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
                 config.get( SecuritySettings.native_authentication_enabled ),
-                config.get( SecuritySettings.native_authorization_enabled ), jobScheduler );
+                config.get( SecuritySettings.native_authorization_enabled ),
+                jobScheduler,
+                BasicAuthManagerFactory.getInitialUserRepository( config, logProvider, fileSystem )
+            );
     }
 
     private SecurityLog getSecurityLog( Log allegedSecurityLog )

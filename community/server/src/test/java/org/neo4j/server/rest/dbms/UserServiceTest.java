@@ -72,7 +72,7 @@ public class UserServiceTest
     protected void setupAuthManagerAndSubject()
     {
         BasicAuthManager basicAuthManager = new BasicAuthManager( userRepository, passwordPolicy,
-                mock( AuthenticationStrategy.class) );
+                mock( AuthenticationStrategy.class), new InMemoryUserRepository() );
         authManager = basicAuthManager;
         userManager = basicAuthManager.getUserManager();
         neo4jSubject = new BasicAuthSubject( basicAuthManager, NEO4J_USER, AuthenticationResult.SUCCESS );
