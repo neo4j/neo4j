@@ -19,13 +19,19 @@
  */
 package org.neo4j.kernel.ha.store;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
+
+import static org.neo4j.io.pagecache.FileHandle.HANDLE_DELETE;
 
 public class StoreUtil
 {
@@ -33,6 +39,16 @@ public class StoreUtil
     public static final String BRANCH_SUBDIRECTORY = "branched";
     private static final String[] DONT_MOVE_DIRECTORIES = {"metrics", "logs", "certificates"};
 
+    private static final FileFilter STORE_FILE_FILTER = file -> {
+        for ( String directory : DONT_MOVE_DIRECTORIES )
+        {
+            if ( file.getName().equals( directory ) )
+            {
+                return false;
+            }
+        }
+        return !isBranchedDataRootDirectory( file );
+    };
     private static final FileFilter DEEP_STORE_FILE_FILTER = file -> {
         for ( String directory : DONT_MOVE_DIRECTORIES )
         {
@@ -51,12 +67,8 @@ public class StoreUtil
             FileUtils.deleteRecursively( file );
         }
 
-        final Iterable<FileHandle> handles = pageCache.streamFilesRecursive( storeDir )
-                .filter( fh -> DEEP_STORE_FILE_FILTER.accept( fh.getFile() ) )::iterator;
-        for ( FileHandle handle : handles )
-        {
-            handle.delete();
-        }
+        pageCache.streamFilesRecursive( storeDir )
+                .filter( fh -> DEEP_STORE_FILE_FILTER.accept( fh.getFile() ) ).forEach( HANDLE_DELETE );
     }
 
     public static File newBranchedDataDir( File storeDir )
@@ -73,29 +85,36 @@ public class StoreUtil
             FileUtils.moveFileToDirectory( file, branchedDataDir );
         }
 
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( storeDir )
-                .filter( fh -> DEEP_STORE_FILE_FILTER.accept( fh.getFile() ) )::iterator;
-        for ( FileHandle handle : handles )
+        moveAwayDbWithPageCache( storeDir, branchedDataDir, pageCache, DEEP_STORE_FILE_FILTER );
+    }
+
+    public static void moveAwayDbWithPageCache( File from, File to, PageCache pageCache, FileFilter filter )
+            throws IOException
+    {
+        final Stream<FileHandle> fileHandleStream;
+        try
         {
-            final File fileToMove = handle.getFile();
-            handle.rename( FileUtils.pathToFileAfterMove( storeDir, branchedDataDir, fileToMove ) );
+            fileHandleStream = pageCache.streamFilesRecursive( from );
         }
+        catch ( IOException e )
+        {
+            // Directory does not exist, has possibly been moved with file system previous to this call.
+            return;
+        }
+        final Consumer<FileHandle> handleRename = FileHandle.handleRenameBetweenDirectories( from, to );
+        fileHandleStream.filter( fh -> filter.accept( fh.getFile() ) ).forEach( handleRename );
     }
 
     public static void deleteRecursive( File storeDir, PageCache pageCache ) throws IOException
     {
         FileUtils.deleteRecursively( storeDir );
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( storeDir )::iterator;
-        for ( FileHandle handle : handles )
-        {
-            handle.delete();
-        }
+        pageCache.streamFilesRecursive( storeDir ).forEach( HANDLE_DELETE );
     }
 
     public static boolean isBranchedDataDirectory( File file )
     {
         return file.isDirectory() && file.getParentFile().getName().equals( BRANCH_SUBDIRECTORY ) &&
-               isNumerical( file.getName() );
+               StringUtils.isNumeric( file.getName() );
     }
 
     public static File getBranchedDataRootDirectory( File storeDir )
@@ -115,37 +134,16 @@ public class StoreUtil
             return new File[0];
         }
 
-        return storeDir.listFiles( file -> {
-            for ( String directory : DONT_MOVE_DIRECTORIES )
-            {
-                if ( file.getName().equals( directory ) )
-                {
-                    return false;
-                }
-            }
-            return !isBranchedDataRootDirectory( file );
-        } );
+        return storeDir.listFiles( STORE_FILE_FILTER );
     }
 
     private static boolean isBranchedDataRootDirectory( File file )
     {
-        return file.isDirectory() && file.getName().equals( BRANCH_SUBDIRECTORY );
+        return file.isDirectory() && BRANCH_SUBDIRECTORY.equals( file.getName() );
     }
 
     private static boolean isPartOfBranchedDataRootDirectory( File file )
     {
         return file.getPath().contains( BRANCH_SUBDIRECTORY );
-    }
-
-    private static boolean isNumerical( String string )
-    {
-        for ( char c : string.toCharArray() )
-        {
-            if ( !Character.isDigit( c ) )
-            {
-                return false;
-            }
-        }
-        return true;
     }
 }
