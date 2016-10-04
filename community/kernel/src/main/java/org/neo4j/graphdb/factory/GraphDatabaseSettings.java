@@ -306,7 +306,7 @@ public abstract class GraphDatabaseSettings
             setting("dbms.index_sampling.background_enabled", BOOLEAN, TRUE );
 
     @Description("Size of buffer used by index sampling. " +
-                 "This configuration setting is no longer applicable as from Neo4j 3.0.3." +
+                 "This configuration setting is no longer applicable as from Neo4j 3.0.3. " +
                  "Please use dbms.index_sampling.sample_size_limit instead.")
     @Deprecated
     public static final Setting<Long> index_sampling_buffer_size = setting("dbms.index_sampling.buffer_size", BYTES, "64m",
@@ -466,8 +466,11 @@ public abstract class GraphDatabaseSettings
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold = setting( "dbms.relationship_grouping_threshold", INTEGER, "50", min(1) );
 
-    @Description( "Log executed queries that takes longer than the configured threshold. "
-            + "_NOTE: This feature is only available in the Neo4j Enterprise Edition_." )
+    @Description( "Log executed queries that take longer than the configured threshold, dbms.logs.query.threshold. " +
+            "Log entries are written to the file _query.log_ located in the Logs directory. " +
+            "For location of the Logs directory, see <<file-locations>>. " +
+            "This feature is available in the Neo4j Enterprise Edition." )
+
     public static final Setting<Boolean> log_queries = setting("dbms.logs.query.enabled", BOOLEAN, FALSE );
 
     @Description("Path of the logs directory")
