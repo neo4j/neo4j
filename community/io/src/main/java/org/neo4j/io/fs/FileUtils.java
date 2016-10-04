@@ -335,6 +335,62 @@ public class FileUtils
         return root;
     }
 
+    /**
+     * Useful when you want to move a file from one directory to another by renaming the file
+     * and keep eventual sub directories. Example:
+     * <p>
+     * You want to move file /a/b1/c/d/file from /a/b1 to /a/b2 and keep the sub path /c/d/file.
+     * <pre>
+     * <code>fileToMove = new File( "/a/b1/c/d/file" );
+     * fromDir = new File( "/a/b1" );
+     * toDir = new File( "/a/b2" );
+     * fileToMove.rename( pathToFileAfterMove( fromDir, toDir, fileToMove ) );
+     * // fileToMove.getAbsolutePath() -> /a/b2/c/d/file</code>
+     * </pre>
+     * Calls {@link #pathToFileAfterMove(Path, Path, Path)} after
+     * transforming given files to paths by calling {@link File#toPath()}.
+     * <p>
+     * NOTE: This that this does not perform the move, it only calculates the new file name.
+     * <p>
+     * Throws {@link IllegalArgumentException} is fileToMove is not a sub path to fromDir.
+     *
+     * @param fromDir Current parent directory for fileToMove
+     * @param toDir Directory denoting new parent directory for fileToMove after move
+     * @param fileToMove File denoting current location for fileToMove
+     * @return {@link File} denoting new abstract path for file after move.
+     */
+    public static File pathToFileAfterMove( File fromDir, File toDir, File fileToMove )
+    {
+        final Path fromDirPath = fromDir.toPath();
+        final Path toDirPath = toDir.toPath();
+        final Path fileToMovePath = fileToMove.toPath();
+        return pathToFileAfterMove( fromDirPath, toDirPath, fileToMovePath ).toFile();
+    }
+
+    /**
+     * Resolve toDir against fileToMove relativized against fromDir, resulting in a path denoting the location of
+     * fileToMove after being moved fromDir toDir.
+     * <p>
+     * NOTE: This that this does not perform the move, it only calculates the new file name.
+     * <p>
+     * Throws {@link IllegalArgumentException} is fileToMove is not a sub path to fromDir.
+     *
+     * @param fromDir Path denoting current parent directory for fileToMove
+     * @param toDir Path denoting location for fileToMove after move
+     * @param fileToMove Path denoting current location for fileToMove
+     * @return {@link Path} denoting new abstract path for file after move.
+     */
+    public static Path pathToFileAfterMove( Path fromDir, Path toDir, Path fileToMove )
+    {
+        // File to move must be true sub path to from dir
+        if ( !fileToMove.startsWith( fromDir ) || fileToMove.equals( fromDir ) )
+        {
+            throw new IllegalArgumentException( "File " + fileToMove + " is not a sub path to dir " + fromDir );
+        }
+
+        return toDir.resolve( fromDir.relativize( fileToMove ) );
+    }
+
     public interface FileOperation
     {
         void perform() throws IOException;

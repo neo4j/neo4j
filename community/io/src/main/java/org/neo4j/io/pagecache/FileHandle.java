@@ -21,7 +21,11 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.CopyOption;
+import java.util.function.Consumer;
+
+import org.neo4j.io.fs.FileUtils;
 
 /**
  * A handle to a file as seen by the page cache. The file may or may not be mapped.
@@ -29,6 +33,46 @@ import java.nio.file.CopyOption;
  */
 public interface FileHandle
 {
+    /**
+     * Useful consumer when doing deletion in stream pipeline.
+     * <p>
+     * Possible IOException caused by fileHandle.delete() is wrapped in UncheckedIOException
+     */
+    Consumer<FileHandle> HANDLE_DELETE = fh -> {
+        try
+        {
+            fh.delete();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    };
+
+    /**
+     * Create a consumer of FileHandle that uses fileHandle.rename to move file held by file handle to move from
+     * directory to directory.
+     * <p>
+     * Possibly IOException will be wrapped in UncheckedIOException
+     *
+     * @param from Directory to move file from.
+     * @param to Directory to move file to.
+     * @return A new Consumer that moves the file wrapped by the file handle.
+     */
+    static Consumer<FileHandle> handleRenameBetweenDirectories( File from, File to )
+    {
+        return fileHandle -> {
+            try
+            {
+                fileHandle.rename( FileUtils.pathToFileAfterMove( from, to, fileHandle.getFile() ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        };
+    }
+
     /**
      * Get a {@link File} object for the abstract path name that this file handle represents.
      *

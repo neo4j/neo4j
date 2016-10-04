@@ -77,7 +77,7 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.util.StoreUtil;
+import org.neo4j.kernel.ha.store.StoreUtil;
 import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -553,7 +553,7 @@ public class SwitchToSlave
     void cleanStoreDir() throws IOException
     {
         // Tests verify that this method is called
-        StoreUtil.cleanStoreDir( storeDir );
+        StoreUtil.cleanStoreDir( storeDir, pageCache );
     }
 
     private MasterClient newMasterClient( URI masterUri, URI me, StoreId storeId, LifeSupport life )
@@ -580,7 +580,7 @@ public class SwitchToSlave
             resolver.resolveDependency( serviceClass ).stop();
         }
 
-        branchPolicy.handle( storeDir );
+        branchPolicy.handle( storeDir, pageCache );
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,

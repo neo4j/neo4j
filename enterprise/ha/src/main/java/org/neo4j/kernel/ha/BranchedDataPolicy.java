@@ -22,36 +22,37 @@ package org.neo4j.kernel.ha;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
 
-import static org.neo4j.kernel.impl.util.StoreUtil.cleanStoreDir;
-import static org.neo4j.kernel.impl.util.StoreUtil.getBranchedDataRootDirectory;
-import static org.neo4j.kernel.impl.util.StoreUtil.isBranchedDataDirectory;
-import static org.neo4j.kernel.impl.util.StoreUtil.moveAwayDb;
-import static org.neo4j.kernel.impl.util.StoreUtil.newBranchedDataDir;
+import static org.neo4j.kernel.ha.store.StoreUtil.cleanStoreDir;
+import static org.neo4j.kernel.ha.store.StoreUtil.deleteRecursive;
+import static org.neo4j.kernel.ha.store.StoreUtil.getBranchedDataRootDirectory;
+import static org.neo4j.kernel.ha.store.StoreUtil.isBranchedDataDirectory;
+import static org.neo4j.kernel.ha.store.StoreUtil.moveAwayDb;
+import static org.neo4j.kernel.ha.store.StoreUtil.newBranchedDataDir;
 
 public enum BranchedDataPolicy
 {
     keep_all
             {
                 @Override
-                public void handle( File storeDir ) throws IOException
+                public void handle( File storeDir, PageCache pageCache ) throws IOException
                 {
-                    moveAwayDb( storeDir, newBranchedDataDir( storeDir ) );
+                    moveAwayDb( storeDir, newBranchedDataDir( storeDir ), pageCache );
                 }
             },
     keep_last
             {
                 @Override
-                public void handle( File storeDir ) throws IOException
+                public void handle( File storeDir, PageCache pageCache ) throws IOException
                 {
                     File branchedDataDir = newBranchedDataDir( storeDir );
-                    moveAwayDb( storeDir, branchedDataDir );
+                    moveAwayDb( storeDir, branchedDataDir, pageCache );
                     for ( File file : getBranchedDataRootDirectory( storeDir ).listFiles() )
                     {
                         if ( isBranchedDataDirectory( file ) && !file.equals( branchedDataDir ) )
                         {
-                            FileUtils.deleteRecursively( file );
+                            deleteRecursive( file, pageCache );
                         }
                     }
                 }
@@ -59,11 +60,11 @@ public enum BranchedDataPolicy
     keep_none
             {
                 @Override
-                public void handle( File storeDir ) throws IOException
+                public void handle( File storeDir, PageCache pageCache ) throws IOException
                 {
-                    cleanStoreDir( storeDir );
+                    cleanStoreDir( storeDir, pageCache );
                 }
             };
 
-    public abstract void handle( File storeDir ) throws IOException;
+    public abstract void handle( File storeDir, PageCache pageCache ) throws IOException;
 }

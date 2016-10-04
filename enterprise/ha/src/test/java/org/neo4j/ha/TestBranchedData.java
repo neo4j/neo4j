@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.impl.util.StoreUtil;
+import org.neo4j.kernel.ha.store.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.TestGraphDatabaseFactory;

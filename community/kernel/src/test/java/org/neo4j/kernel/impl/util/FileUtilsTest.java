@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.util;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,14 +31,20 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.io.fs.FileUtils.pathToFileAfterMove;
 
 public class FileUtilsTest
 {
-    @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public ExpectedException expected = ExpectedException.none();
+
+    @Rule
+    public RuleChain chain = RuleChain.outerRule( testDirectory ).around( expected );
 
     private File path;
 
@@ -82,6 +90,133 @@ public class FileUtilsTest
 
         assertTrue( FileUtils.isEmptyDirectory( emptyDir ) );
         assertFalse( FileUtils.isEmptyDirectory( nonEmptyDir ) );
+    }
+
+    @Test
+    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromShorter() throws Exception
+    {
+        File file = new File( "/a" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/a/c" );
+
+        expected.expect( IllegalArgumentException.class );
+        pathToFileAfterMove( from, to, file );
+    }
+
+    // INVALID
+    @Test
+    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromSameLength() throws Exception
+    {
+        File file = new File( "/a/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/a/c" );
+
+        expected.expect( IllegalArgumentException.class );
+        pathToFileAfterMove( from, to, file );
+    }
+
+    @Test
+    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromLonger() throws Exception
+    {
+        File file = new File( "/a/c/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/a/c" );
+
+        expected.expect( IllegalArgumentException.class );
+        pathToFileAfterMove( from, to, file );
+    }
+
+    @Test
+    public void pathToFileAfterMoveMustThrowIfFromDirIsCompletePathToFile() throws Exception
+    {
+        File file = new File( "/a/b/f" );
+        File from = new File( "/a/b/f" );
+        File to   = new File( "/a/c" );
+
+        expected.expect( IllegalArgumentException.class );
+        pathToFileAfterMove( from, to, file );
+    }
+
+    // SIBLING
+    @Test
+    public void pathToFileAfterMoveMustWorkIfMovingToSibling() throws Exception
+    {
+        File file = new File( "/a/b/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/a/c" );
+
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/c/f" ) );
+    }
+
+    @Test
+    public void pathToFileAfterMoveMustWorkIfMovingToSiblingAndFileHasSubDir() throws Exception
+    {
+        File file = new File( "/a/b/d/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/a/c" );
+
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/c/d/f" ) );
+    }
+
+    // DEEPER
+    @Test
+    public void pathToFileAfterMoveMustWorkIfMovingToSubDir() throws Exception
+    {
+        File file = new File( "/a/b/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/a/b/c" );
+
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/b/c/f" ) );
+    }
+
+    @Test
+    public void pathToFileAfterMoveMustWorkIfMovingToSubDirAndFileHasSubDir() throws Exception
+    {
+        File file = new File( "/a/b/d/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/a/b/c" );
+
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/b/c/d/f" ) );
+    }
+
+    @Test
+    public void pathToFileAfterMoveMustWorkIfMovingOutOfDir() throws Exception
+    {
+        File file = new File( "/a/b/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/c" );
+
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/c/f" ) );
+    }
+
+    @Test
+    public void pathToFileAfterMoveMustWorkIfMovingOutOfDirAndFileHasSubDir() throws Exception
+    {
+        File file = new File( "/a/b/d/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/c" );
+
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/c/d/f" ) );
+    }
+
+    @Test
+    public void pathToFileAfterMoveMustWorkIfNotMovingAtAll() throws Exception
+    {
+        File file = new File( "/a/b/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/a/b" );
+
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/b/f" ) );
+    }
+
+    @Test
+    public void pathToFileAfterMoveMustWorkIfNotMovingAtAllAndFileHasSubDir() throws Exception
+    {
+        File file = new File( "/a/b/d/f" );
+        File from = new File( "/a/b" );
+        File to   = new File( "/a/b" );
+
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/b/d/f" ) );
     }
 
     private File directory( String name ) throws IOException
