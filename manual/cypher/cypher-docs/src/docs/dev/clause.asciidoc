@@ -1,8 +1,7 @@
 [[query-clause]]
 = Clauses
 
-[discrete]
-= Read Clauses
+**Read Clauses**
 
 These comprise clauses that read data from the database.
 
@@ -20,8 +19,7 @@ This set is refined and augmented by subsequent parts of the query.
 |<<query-load-csv,LOAD CSV>>                |   Use when importing data from CSV files.
 |===
 
-[discrete]
-= Write Clauses =
+**Write Clauses**
 
 These comprise clauses that write the data to the database.
 
@@ -39,8 +37,7 @@ These comprise clauses that write the data to the database.
 |<<query-periodic-commit,PERIODIC COMMIT>>  |  How and when to use `PERIODIC COMMIT`
 |===
 
-[discrete]
-= General Clauses
+**General Clauses**
 
 These comprise general clauses that work in conjunction with other clauses.
 

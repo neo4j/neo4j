@@ -11,8 +11,7 @@ Note that related information exists in <<query-operators>>.
 
 Most functions in Cypher will return `NULL` if an input parameter is `NULL`.
 
-[discrete]
-= <<query-predicates,Predicate functions>>
+**<<query-predicates,Predicate functions>>**
 
 These functions return either true or false for the arguments given.
 
@@ -26,8 +25,7 @@ These functions return either true or false for the arguments given.
 |<<functions-single,single()>>    | Returns true if the predicate holds for exactly one of the elements in the list.
 |===
 
-[discrete]
-= <<query-functions-scalar,Scalar functions>>
+**<<query-functions-scalar,Scalar functions>>**
 
 These functions return a single value.
 
@@ -51,8 +49,7 @@ These functions return a single value.
 |<<functions-type,type()>>                          | Returns a string representation of the relationship type.
 |===
 
-[discrete]
-= <<query-functions-list,List functions>>
+**<<query-functions-list,List functions>>**
 
 These functions return lists of other values.
 
@@ -70,13 +67,11 @@ These functions return lists of other values.
 |<<functions-tail,tail()>>                      | Returns all but the first element in a list.
 |===
 
-[discrete]
-= <<query-functions-mathematical,Mathematical functions>>
+**<<query-functions-mathematical,Mathematical functions>>**
 
 These functions all operate on numerical expressions only, and will return an error if used on any other values.
 
-[discrete]
-== Numeric functions
+**1. Numeric functions**
 
 [options="header"]
 |===
@@ -89,9 +84,7 @@ These functions all operate on numerical expressions only, and will return an er
 |sign()     | Returns the signum of a number -- zero if the expression is zero, `-1` for any negative number, and `1` for any positive number.
 |===
 
-
-[discrete]
-== Logarithmic functions
+**2. Logarithmic functions**
 
 [options="header"]
 |===
@@ -103,9 +96,7 @@ These functions all operate on numerical expressions only, and will return an er
 |sqrt()     | Returns the square root of a number.
 |===
 
-
-[discrete]
-== Trigonometric functions
+**3. Trigonometric functions**
 
 All trigonometric functions operate on radians, unless otherwise specified.
 
@@ -126,8 +117,7 @@ All trigonometric functions operate on radians, unless otherwise specified.
 |tan()          | Returns the tangent of the expression.
 |===
 
-[discrete]
-= <<query-functions-string,String functions>>
+**<<query-functions-string,String functions>>**
 
 These functions are used to manipulate strings or to create a string representation of another value.
 

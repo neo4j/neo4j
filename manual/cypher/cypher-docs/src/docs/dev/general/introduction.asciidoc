@@ -20,9 +20,7 @@ Most of the keywords like +WHERE+ and +ORDER BY+ are inspired by http://en.wikip
 Pattern matching borrows expression approaches from http://en.wikipedia.org/wiki/SPARQL[SPARQL].
 Some of the collection semantics have been borrowed from languages such as Haskell and Python.
 
-
-[discrete]
-= Structure
+**Structure**
 
 Cypher borrows its structure from SQL -- queries are built up using various clauses.
 
