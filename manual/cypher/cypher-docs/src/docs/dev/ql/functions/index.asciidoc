@@ -37,12 +37,12 @@ These functions return a single value.
 |<<functions-head,head()>>                          | Returns the first element in a list.
 |<<functions-id,id()>>                              | Returns the id of the relationship or node.
 |<<functions-last,last()>>                          | Returns the last element in a list.
-|<<functions-length,length() - path>>               | Returns the length of a path.
-|<<functions-length-of-string,length() - string>>   | Returns the length of a string.
+|<<functions-length,length()>>               | Returns the length of a path.
+|<<functions-length-of-string,Length of string>>   | Returns the length of a string.
 |<<functions-properties,properties()>>              | If the argument is a node or a relationship, the returned map is a map of its properties.
 |<<functions-startnode,startNode()>>                | Returns the first node of a relationship.
-|<<functions-size,size() - list>>                   | Returns the number of items in a list.
-|<<functions-size-of-pattern-expression,size() - pattern expression>>    | Returns the number of sub-graphs matching the pattern expression.
+|<<functions-size,size()>>                   | Returns the number of items in a list.
+|<<functions-size-of-pattern-expression,Size of pattern expression>>    | Returns the number of sub-graphs matching the pattern expression.
 |<<functions-timestamp,timestamp()>>                | Returns the difference, measured in milliseconds, between the current time and midnight, January 1, 1970 UTC.
 |<<functions-toint,toInt()>>                        | Converts the argument to an integer and returns the result.
 |<<functions-tofloat,toFloat()>>                    | Converts the argument to a float and returns the result.

@@ -122,7 +122,7 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def size() {
     testThis(
-      title = "size() - list",
+      title = "size()",
       syntax = "size( list )",
       arguments = List("list" -> "An expression that returns a list"),
       text = """To return or filter on the size of a list, use the `size()` function.""",
@@ -133,7 +133,7 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def size2() {
     testThis(
-      title = "size() - pattern expression",
+      title = "Size of pattern expression",
       syntax = "size( pattern expression )",
       arguments = List("pattern expression" -> "A pattern expression that returns a list"),
       text = """
@@ -149,7 +149,7 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def length() {
     testThis(
-      title = "length() - path",
+      title = "length()",
       syntax = "length( path )",
       arguments = List("path" -> "An expression that returns a path"),
       text = """To return or filter on the length of a path, use the `length()` function.""",
@@ -160,7 +160,7 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def lengthString() {
     testThis(
-      title = "length() - string",
+      title = "Length of string",
       syntax = "length( string )",
       arguments = List("string" -> "An expression that returns a string"),
       text = """To return or filter on the length of a string, use the `length()` function.""",
