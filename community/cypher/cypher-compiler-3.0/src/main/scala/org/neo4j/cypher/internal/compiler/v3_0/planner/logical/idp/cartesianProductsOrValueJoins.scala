@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{LogicalPlan, IndexLeafPlan}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IndexLeafPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
@@ -49,28 +49,57 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
     assert(plans.size > 1, "Can't build cartesian product with less than two input plans")
 
-    // Map of newly found plans to originating LHS and RHS plans to join
-    val connectedPlans: Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
-      val joins = produceJoinVariations(plans, qg)
+    /*
+    To connect disconnected query parts, we have a couple of different ways. First we check if there are any joins that
+    we could do. Joins are equal or better than cartesian products, so we always go for the joins when possible.
 
-      if (joins.nonEmpty)
-        joins
-      else
-        produceCartesianProducts(plans, qg)
+    Next we perform an exhaustive search for how to combine the remaining query parts together. In-between each step we
+    check if any joins have been made available and if any predicates can be applied. This exhaustive search makes for
+    better plans, but is exponentially expensive.
+
+    So, when we have too many plans to combine, we fall back to the naive way of just building a left deep tree with
+    all query parts cross joined together.
+     */
+    val joins = produceJoinVariations(plans, qg)
+
+    if (joins.nonEmpty) {
+      pickTheBest(plans, kit, joins)
+    } else if (plans.size < 8) {
+      val cartesianProducts = produceCartesianProducts(plans, qg)
+      pickTheBest(plans, kit, cartesianProducts)
     }
+    else {
+      planLotsOfCartesianProducts(plans, qg)
+    }
+  }
 
-    val bestPlan = kit.pickBest(connectedPlans.map(_._1.plan)).get
-    val bestQG: QueryGraph = connectedPlans.collectFirst {
+  private def pickTheBest(plans: Set[PlannedComponent], kit: QueryPlannerKit, joins: Map[PlannedComponent, (PlannedComponent, PlannedComponent)]): Set[PlannedComponent] = {
+    val bestPlan = kit.pickBest(joins.map(_._1.plan)).get
+    val bestQG: QueryGraph = joins.collectFirst {
       case (PlannedComponent(fqg, pl), _) if bestPlan == pl => fqg
     }.get
-    val (p1, p2) = connectedPlans(PlannedComponent(bestQG, bestPlan))
+    val (p1, p2) = joins(PlannedComponent(bestQG, bestPlan))
 
     plans - p1 - p2 + PlannedComponent(bestQG, bestPlan)
   }
 
+  /**
+    * Plans a large amount of query parts together. Produces a left deep tree sorted by the cost of the query parts.
+    */
+  private def planLotsOfCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph)
+                                         (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): Set[PlannedComponent] = {
+    val allPlans = plans.toList.sortBy(c => context.cost.apply(c.plan, context.input))
+    val onePlanToRuleThemAll = allPlans.tail.foldLeft(allPlans.head) {
+      case (l, r) =>
+        val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(l.plan, r.plan), qg)
+        PlannedComponent(l.queryGraph ++ r.queryGraph, crossProduct)
+    }
+    Set(onePlanToRuleThemAll)
+  }
+
   private def produceCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph)
                                       (implicit context: LogicalPlanningContext, kit: QueryPlannerKit):
-                                      Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
+  Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
     (for (t1@PlannedComponent(qg1, p1) <- plans; t2@PlannedComponent(qg2, p2) <- plans if p1 != p2) yield {
       val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(p1, p2), qg)
       (PlannedComponent(qg1 ++ qg2, crossProduct), (t1, t2))
