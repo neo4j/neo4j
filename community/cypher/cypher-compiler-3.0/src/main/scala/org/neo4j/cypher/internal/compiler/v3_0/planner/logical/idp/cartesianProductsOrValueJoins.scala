@@ -53,8 +53,9 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     To connect disconnected query parts, we have a couple of different ways. First we check if there are any joins that
     we could do. Joins are equal or better than cartesian products, so we always go for the joins when possible.
 
-    Next we can do an exhaustive search for how to combine the remaining query parts together. In-between each step
-    we check if any joins have been made available. This makes for better plans, but is exponentially expensive.
+    Next we perform an exhaustive search for how to combine the remaining query parts together. In-between each step we
+    check if any joins have been made available and if any predicates can be applied. This exhaustive search makes for
+    better plans, but is exponentially expensive.
 
     So, when we have too many plans to combine, we fall back to the naive way of just building a left deep tree with
     all query parts cross joined together.
@@ -83,7 +84,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
   }
 
   /**
-    * Used to plan a large amount of query parts together. Produces a left deep tree sorted by the cost of the query parts.
+    * Plans a large amount of query parts together. Produces a left deep tree sorted by the cost of the query parts.
     */
   private def planLotsOfCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph)
                                          (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): Set[PlannedComponent] = {
