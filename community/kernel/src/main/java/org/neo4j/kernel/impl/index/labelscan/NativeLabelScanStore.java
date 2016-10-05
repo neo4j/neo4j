@@ -84,8 +84,14 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void force() throws UnderlyingStorageException
     {
-        // No need, this call was made with Lucene in mind. Before call to LabelScanStore#force()
-        // the page cache is also forced, so ignore this.
+        try
+        {
+            index.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
     }
 
     @Override

@@ -55,4 +55,11 @@ public interface Index<KEY,VALUE> extends Closeable
      * @throws IOException on error accessing the index.
      */
     Modifier<KEY,VALUE> modifier( Modifier.Options options ) throws IOException;
+
+    /**
+     * Flushes any pending changes to storage.
+     *
+     * @throws IOException on error flushing to storage.
+     */
+    void flush() throws IOException;
 }

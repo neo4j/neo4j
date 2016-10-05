@@ -52,7 +52,6 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private final PagedFile pagedFile;
     private final Layout<KEY,VALUE> layout;
     private final TreeNode<KEY,VALUE> bTreeNode;
-    private final PageCursor metaCursor;
     // currently an index only supports one concurrent updater and so this reference will act both as
     // guard so that only one thread can have it at any given time and also as synchronization between threads
     // wanting it
@@ -101,7 +100,6 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 bTreeNode.initializeLeaf( cursor );
             }
         }
-        this.metaCursor = openMetaPageCursor( pagedFile );
     }
 
     private PagedFile openOrCreate( PageCache pageCache, File indexFile,
@@ -309,7 +307,6 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     public long acquireNewId()
     {
         lastId++;
-        metaCursor.putLong( 12, lastId );
         return lastId;
     }
 
@@ -324,9 +321,19 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     }
 
     @Override
+    public void flush() throws IOException
+    {
+        try ( PageCursor cursor = openMetaPageCursor( pagedFile ) )
+        {
+            cursor.putLong( 4, rootId );
+            cursor.putLong( 12, lastId );
+        }
+    }
+
+    @Override
     public void close() throws IOException
     {
-        metaCursor.close();
+        flush();
         pagedFile.close();
     }
 
@@ -386,7 +393,6 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 bTreeNode.setKeyCount( cursor, 1 );
                 bTreeNode.setChildAt( cursor, split.left, 0, order );
                 bTreeNode.setChildAt( cursor, split.right, 1, order );
-                metaCursor.putLong( 4, newRootId );
                 rootId = newRootId;
             }
         }
