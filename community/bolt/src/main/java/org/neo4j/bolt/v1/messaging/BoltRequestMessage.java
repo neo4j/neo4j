@@ -36,7 +36,13 @@ public enum BoltRequestMessage
     DISCARD_ALL( 0x2F ),
     PULL_ALL( 0x3F );
 
-    private static BoltRequestMessage[] valuesBySignature = null;
+    private static BoltRequestMessage[] valuesBySignature = new BoltRequestMessage[0x40];
+    static {
+        for ( BoltRequestMessage value : values() )
+        {
+            valuesBySignature[value.signature()] = value;
+        }
+    }
 
     /**
      * Obtain a request message by signature.
@@ -47,14 +53,6 @@ public enum BoltRequestMessage
      */
     public static BoltRequestMessage withSignature( int signature )
     {
-        if ( valuesBySignature == null )
-        {
-            valuesBySignature = new BoltRequestMessage[0x40];
-            for ( BoltRequestMessage value : values() )
-            {
-                valuesBySignature[value.signature()] = value;
-            }
-        }
         BoltRequestMessage message = valuesBySignature[signature];
         if ( message == null )
         {
