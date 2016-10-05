@@ -103,5 +103,12 @@ class CheckerTest extends CypherFunSuite {
     newChecker shouldBe a [SetChecker]
   }
 
+  test("buildUp handles a single null in the collection") {
+    val buildUp = new BuildUp(Iterator(null))
+    val (result, newChecker) = buildUp.contains("apa")
+    result should equal(None)
+    newChecker shouldBe a [NullListChecker.type]
+  }
+
   private def equi(x: Any): Equivalent = Equivalent(x)
 }

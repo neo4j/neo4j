@@ -24,6 +24,14 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 // Only put tests that assert on memory performance behaviour in this class
 class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  test("check for contents of collection that contains only a single null") {
+    createNode()
+
+    val result = executeWithAllPlanners("MATCH (a) WHERE 42 IN [a.prop] RETURN *", "param" -> null)
+
+    result shouldBe empty
+  }
+
   test("should be able to handle a large DNF predicate without running out of memory") {
     // given
     val query = """MATCH (a)-[r]->(b) WHERE
