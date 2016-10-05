@@ -35,6 +35,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.User;
+import org.neo4j.server.security.auth.UserManager;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertFalse;
@@ -124,7 +125,7 @@ public class SetInitialPasswordCommandTest
         FileUserRepository userRepository = new FileUserRepository( fileSystem, authInitFile,
                 NullLogProvider.getInstance() );
         userRepository.start();
-        User neo4j = userRepository.getUserByName( "neo4j" );
+        User neo4j = userRepository.getUserByName( UserManager.INITIAL_USER_NAME );
         assertNotNull( neo4j );
         assertTrue( neo4j.credentials().matchesPassword( password ) );
         assertFalse( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );

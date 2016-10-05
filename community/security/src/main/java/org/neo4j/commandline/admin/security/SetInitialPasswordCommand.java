@@ -40,6 +40,8 @@ import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.User;
 
+import static org.neo4j.server.security.auth.UserManager.INITIAL_USER_NAME;
+
 public class SetInitialPasswordCommand implements AdminCommand
 {
     public static class Provider extends AdminCommand.Provider
@@ -69,7 +71,6 @@ public class SetInitialPasswordCommand implements AdminCommand
         }
     }
 
-    private static final String INITIAL_USER_NAME = "neo4j";
     private final Path homeDir;
     private final Path configDir;
     private OutsideWorld outsideWorld;
