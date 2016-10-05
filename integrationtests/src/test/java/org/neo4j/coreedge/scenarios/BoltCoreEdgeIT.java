@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -62,6 +63,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class BoltCoreEdgeIT
 {
+    private static final long DEFAULT_TIMEOUT_MS = 15_000;
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
@@ -84,22 +86,20 @@ public class BoltCoreEdgeIT
 
         CoreClusterMember leader = cluster.awaitLeader();
 
-        Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
-        try ( Session session = driver.session( AccessMode.WRITE) )
+        try ( Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
+            inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+            {
+                // when
+                session.run( "CREATE CONSTRAINT ON (p:Person) ASSERT p.name is UNIQUE" ).consume();
+                session.run( "MERGE (n:Person {name: 'Jim'})-[:BOOM]->(m)" ).consume();
 
-            // when
-            session.run( "CREATE CONSTRAINT ON (p:Person) ASSERT p.name is UNIQUE" ).consume();
-            session.run( "MERGE (n:Person {name: 'Jim'})-[:BOOM]->(m)" ).consume();
+                Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
 
-            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-
-            // then
-            assertEquals( 1, record.get( "count" ).asInt() );
-        }
-        finally
-        {
-            driver.close();
+                // then
+                assertEquals( 1, record.get( "count" ).asInt() );
+                return null;
+            } );
         }
     }
 
@@ -111,21 +111,20 @@ public class BoltCoreEdgeIT
 
         CoreClusterMember follower = cluster.getDbWithRole(Role.FOLLOWER);
 
-        Driver driver = GraphDatabase.driver( follower.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
-        try ( Session session = driver.session(AccessMode.WRITE) )
+        try ( Driver driver = GraphDatabase.driver( follower.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
-            // when
-            session.run( "CREATE CONSTRAINT ON (p:Person) ASSERT p.name is UNIQUE" ).consume();
-            session.run( "MERGE (n:Person {name: 'Jim'})-[:BOOM]->(m)" ).consume();
+            inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+            {
+                // when
+                session.run( "CREATE CONSTRAINT ON (p:Person) ASSERT p.name is UNIQUE" ).consume();
+                session.run( "MERGE (n:Person {name: 'Jim'})-[:BOOM]->(m)" ).consume();
 
-            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
 
-            // then
-            assertEquals( 1, record.get( "count" ).asInt() );
-        }
-        finally
-        {
-            driver.close();
+                // then
+                assertEquals( 1, record.get( "count" ).asInt() );
+                return null;
+            } );
         }
     }
 
@@ -183,7 +182,8 @@ public class BoltCoreEdgeIT
         catch ( SessionExpiredException sep )
         {
             // then
-            assertEquals( String.format("Server at %s no longer accepts writes", leader.boltAdvertisedAddress()), sep.getMessage() );
+            assertEquals( String.format( "Server at %s no longer accepts writes",
+                    leader.boltAdvertisedAddress() ), sep.getMessage() );
         }
         finally
         {
@@ -220,10 +220,11 @@ public class BoltCoreEdgeIT
 
         Driver driver = GraphDatabase.driver( coreServer.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
-        try ( Session session = driver.session() )
+        inExpirableSession( driver, Driver::session, ( session ) ->
         {
             session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
-        }
+            return null;
+        } );
 
         try ( Session readSession = driver.session( AccessMode.READ) )
         {
@@ -258,39 +259,42 @@ public class BoltCoreEdgeIT
     {
         // given
         cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
-        CoreClusterMember leader = cluster.awaitLeader(  );
+        CoreClusterMember leader = cluster.awaitLeader();
 
-        Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
+        try ( Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
+        {
+            inExpirableSession( driver, Driver::session, ( session ) ->
+            {
+                // execute a write/read query
+                session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+                Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                assertEquals( 1, record.get( "count" ).asInt() );
 
-        try ( Session session = driver.session() )
-        {
-            // execute a write/read query
-            session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
-            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-            assertEquals( 1, record.get( "count" ).asInt() );
+                // change leader
+                switchLeader( leader );
 
-            // change leader
-            switchLeader( leader );
-            session.run( "CREATE (p:Person {name: {name} })" ).consume();
-            fail( "Should have thrown an exception as the leader went away mid session" );
-        }
-        catch ( SessionExpiredException sep )
-        {
-            // then
-            assertEquals( String.format("Server at %s no longer accepts writes", leader.boltAdvertisedAddress()),
-                    sep.getMessage() );
-        }
+                try
+                {
+                    session.run( "CREATE (p:Person {name: {name} })" ).consume();
+                    fail( "Should have thrown an exception as the leader went away mid session" );
+                }
+                catch ( SessionExpiredException sep )
+                {
+                    // then
+                    assertEquals( String.format( "Server at %s no longer accepts writes",
+                            leader.boltAdvertisedAddress() ), sep.getMessage() );
+                }
+                return null;
+            } );
 
-        try ( Session session = driver.session() )
-        {
-            // execute a write/read query
-            session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
-            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-            assertEquals( 2, record.get( "count" ).asInt() );
-        }
-        finally
-        {
-            driver.close();
+            inExpirableSession( driver, Driver::session, ( session ) ->
+            {
+                // execute a write/read query
+                session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+                Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                assertEquals( 2, record.get( "count" ).asInt() );
+                return null;
+            } );
         }
     }
 
@@ -302,28 +306,27 @@ public class BoltCoreEdgeIT
         cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
         CoreClusterMember leader = cluster.awaitLeader(  );
 
-        Driver driver = GraphDatabase.driver( leader.directURI(),
-                AuthTokens.basic( "neo4j", "neo4j" ) );
-
-        String bookmark;
-        try ( Session session = driver.session() )
+        try ( Driver driver = GraphDatabase.driver( leader.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
-            try ( Transaction tx = session.beginTransaction() )
+            String bookmark = inExpirableSession( driver, Driver::session, ( session ) ->
             {
-                tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+                try ( Transaction tx = session.beginTransaction() )
+                {
+                    tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
+                    tx.success();
+                }
+
+                return session.lastBookmark();
+            } );
+
+            assertNotNull( bookmark );
+
+            try ( Session session = driver.session(); Transaction tx = session.beginTransaction( bookmark ) )
+            {
+                Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                assertEquals( 1, record.get( "count" ).asInt() );
                 tx.success();
             }
-
-            bookmark = session.lastBookmark();
-        }
-
-        assertNotNull( bookmark );
-
-        try ( Session session = driver.session(); Transaction tx = session.beginTransaction( bookmark ) )
-        {
-            Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-            assertEquals( 1, record.get( "count" ).asInt() );
-            tx.success();
         }
     }
 
@@ -334,39 +337,44 @@ public class BoltCoreEdgeIT
         cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
         CoreClusterMember leader = cluster.awaitLeader(  );
 
-        Driver driver = GraphDatabase.driver( leader.directURI(),
-                AuthTokens.basic( "neo4j", "neo4j" ) );
-
-        try ( Session session = driver.session(AccessMode.WRITE) )
+        try(Driver driver = GraphDatabase.driver( leader.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) ))
         {
-            session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
-        }
-
-        String bookmark;
-        try ( Session session = driver.session( AccessMode.READ ) )
-        {
-            try ( Transaction tx = session.beginTransaction() )
+            inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
             {
-                tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-                tx.success();
+                session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+                return null;
+            } );
+
+            String bookmark;
+            try ( Session session = driver.session( AccessMode.READ ) )
+            {
+                try ( Transaction tx = session.beginTransaction() )
+                {
+                    tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                    tx.success();
+                }
+
+                bookmark = session.lastBookmark();
             }
 
-            bookmark = session.lastBookmark();
-        }
+            assertNotNull( bookmark );
 
-        assertNotNull( bookmark );
+            inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+            {
+                try ( Transaction tx = session.beginTransaction( bookmark ) )
+                {
+                    tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
+                    tx.success();
+                }
 
-        try ( Session session = driver.session( AccessMode.WRITE );
-              Transaction tx = session.beginTransaction( bookmark ) )
-        {
-            tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
-            tx.success();
-        }
+                return null;
+            } );
 
-        try ( Session session = driver.session() )
-        {
-            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-            assertEquals( 2, record.get( "count" ).asInt() );
+            try ( Session session = driver.session() )
+            {
+                Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                assertEquals( 2, record.get( "count" ).asInt() );
+            }
         }
     }
 
@@ -383,8 +391,7 @@ public class BoltCoreEdgeIT
 
         Driver driver = GraphDatabase.driver( leader.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
-        String bookmark;
-        try ( Session session = driver.session(AccessMode.WRITE) )
+        String bookmark = inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -395,8 +402,8 @@ public class BoltCoreEdgeIT
                 tx.success();
             }
 
-            bookmark = session.lastBookmark();
-        }
+            return session.lastBookmark();
+        } );
 
         assertNotNull( bookmark );
         edgeMember.txPollingClient().resume();
@@ -414,6 +421,27 @@ public class BoltCoreEdgeIT
         }
     }
 
+    private <T> T inExpirableSession( Driver driver, Function<Driver, Session> acquirer, Function<Session, T> op )
+            throws TimeoutException, InterruptedException
+    {
+        long endTime = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
+
+        do
+        {
+            try ( Session session = acquirer.apply( driver ) )
+            {
+                return op.apply( session );
+            }
+            catch ( SessionExpiredException e )
+            {
+                // role might have changed; try again;
+            }
+        }
+        while ( System.currentTimeMillis() < endTime );
+
+        throw new TimeoutException( "Transaction did not succeed in time" );
+    }
+
     private ClusterMember connectedServer( Session session ) throws NoSuchFieldException, IllegalAccessException
     {
         Field connectionField = NetworkSession.class.getDeclaredField( "connection" );
@@ -426,11 +454,18 @@ public class BoltCoreEdgeIT
         return cluster.getMemberByBoltAddress( new AdvertisedSocketAddress( host, port ) ) ;
     }
 
-    private void switchLeader( CoreClusterMember initialLeader ) throws TimeoutException, IOException
+    private void switchLeader( CoreClusterMember initialLeader )
     {
         while ( initialLeader.database().getRole() != Role.FOLLOWER )
         {
-            triggerElection();
+            try
+            {
+                triggerElection();
+            }
+            catch ( IOException | TimeoutException e )
+            {
+                fail(e.getMessage());
+            }
         }
     }
 
