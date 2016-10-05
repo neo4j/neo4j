@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 {

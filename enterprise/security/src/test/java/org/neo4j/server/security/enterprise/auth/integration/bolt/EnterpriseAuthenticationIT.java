@@ -74,7 +74,6 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
 
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
-            settings.put( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" );
             settings.put( GraphDatabaseSettings.logs_directory.name(), homeDir.toAbsolutePath().toString() );
         };
     }

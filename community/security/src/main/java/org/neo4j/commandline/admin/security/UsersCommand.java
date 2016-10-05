@@ -35,7 +35,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.security.auth.BasicAuthManagerFactory;
+import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.User;
@@ -131,7 +131,7 @@ public class UsersCommand implements AdminCommand
             throws Throwable
     {
         Config config = loadNeo4jConfig();
-        File file = BasicAuthManagerFactory.getInitialUserRepositoryFile( config );
+        File file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
         if ( outsideWorld.fileSystem().fileExists( file ) )
         {
             if ( force )

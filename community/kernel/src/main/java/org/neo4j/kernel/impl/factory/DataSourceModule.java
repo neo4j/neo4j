@@ -174,6 +174,8 @@ public class DataSourceModule
 
         deps.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
 
+        editionModule.setupSecurityModule( platformModule, procedures );
+
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup(
                 editionModule.labelTokenHolder,
                 editionModule.relationshipTypeTokenHolder,

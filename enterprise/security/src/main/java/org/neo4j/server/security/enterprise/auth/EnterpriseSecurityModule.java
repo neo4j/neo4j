@@ -32,61 +32,91 @@ import java.util.Set;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.BasicAuthManagerFactory;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
+import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
+import org.neo4j.server.security.auth.UserManager;
 import org.neo4j.server.security.enterprise.auth.plugin.PluginRealm;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
 import org.neo4j.time.Clocks;
 
-import static org.neo4j.server.security.auth.BasicAuthManagerFactory.getUserRepository;
+import static org.neo4j.kernel.api.proc.Context.AUTH_SUBJECT;
 
-/**
- * Wraps EnterpriseAuthManager and exposes it as a Service
- */
-@Service.Implementation( AuthManager.Factory.class )
-public class EnterpriseAuthManagerFactory extends AuthManager.Factory
+@Service.Implementation( SecurityModule.class )
+public class EnterpriseSecurityModule extends SecurityModule
 {
     private static final String ROLE_STORE_FILENAME = "roles";
 
-    public EnterpriseAuthManagerFactory()
+    public EnterpriseSecurityModule()
     {
-        super( "enterprise-auth-manager" );
+        super( EnterpriseEditionSettings.ENTERPRISE_SECURITY_MODULE_ID );
     }
 
     @Override
-    public EnterpriseAuthAndUserManager newInstance( Config config, LogProvider logProvider, Log allegedSecurityLog,
+    public void setup( PlatformModule platformModule, Procedures procedures ) throws KernelException
+    {
+        Config config = platformModule.config;
+        LogProvider logProvider = platformModule.logging.getUserLogProvider();
+        JobScheduler jobScheduler = platformModule.jobScheduler;
+        FileSystemAbstraction fileSystem = platformModule.fileSystem;
+
+        SecurityLog securityLog = SecurityLog.create(
+                config,
+                platformModule.logging.getInternalLog( GraphDatabaseFacade.class ),
+                fileSystem,
+                jobScheduler
+            );
+        platformModule.life.add( securityLog );
+
+        EnterpriseAuthAndUserManager authManager = newAuthManager( config, logProvider, securityLog, fileSystem, jobScheduler );
+        platformModule.life.add( platformModule.dependencies.satisfyDependency( authManager ) );
+
+        // Register procedures
+        procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
+        procedures.registerProcedure( SecurityProcedures.class, true );
+
+        if ( config.get( SecuritySettings.native_authentication_enabled )
+             || config.get( SecuritySettings.native_authorization_enabled ) )
+        {
+            procedures.registerComponent( UserManager.class,
+                    ctx -> authManager.getUserManager( ctx.get( AUTH_SUBJECT ) ) );
+            procedures.registerProcedure( UserManagementProcedures.class, true );
+        }
+    }
+
+    public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-//        StaticLoggerBinder.setNeo4jLogProvider( logProvider );
-
         List<String> configuredRealms = config.get( SecuritySettings.active_realms );
         List<Realm> realms = new ArrayList<>( configuredRealms.size() + 1 );
 
-        SecurityLog securityLog = getSecurityLog( allegedSecurityLog );
         SecureHasher secureHasher = new SecureHasher();
 
-        // We always create the internal realm as it is our only UserManager implementation
-        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
+        InternalFlatFileRealm internalRealm = null;
 
         if ( config.get( SecuritySettings.native_authentication_enabled ) ||
-             config.get( SecuritySettings.native_authorization_enabled ) )
+                config.get( SecuritySettings.native_authorization_enabled ) )
         {
+            internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
             realms.add( internalRealm );
         }
 
         if ( (config.get( SecuritySettings.ldap_authentication_enabled ) ||
-              config.get( SecuritySettings.ldap_authorization_enabled ))
-             && configuredRealms.contains( SecuritySettings.LDAP_REALM_NAME ) )
+                config.get( SecuritySettings.ldap_authorization_enabled ))
+                && configuredRealms.contains( SecuritySettings.LDAP_REALM_NAME ) )
         {
             realms.add( new LdapRealm( config, securityLog ) );
         }
@@ -105,7 +135,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         }
 
         return new MultiRealmAuthManager( internalRealm, orderedActiveRealms, createCacheManager( config ),
-                securityLog, config.get( EnterpriseEditionSettings.security_log_successful_authentication ) );
+                securityLog, config.get( SecuritySettings.security_log_successful_authentication ) );
     }
 
     private static List<Realm> selectOrderedActiveRealms( List<String> configuredRealms, List<Realm> availableRealms )
@@ -129,22 +159,15 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         return new InternalFlatFileRealm(
-                getUserRepository( config, logProvider, fileSystem ),
+                CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem ),
                 getRoleRepository( config, logProvider, fileSystem ),
                 new BasicPasswordPolicy(),
                 new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
                 config.get( SecuritySettings.native_authentication_enabled ),
                 config.get( SecuritySettings.native_authorization_enabled ),
                 jobScheduler,
-                BasicAuthManagerFactory.getInitialUserRepository( config, logProvider, fileSystem )
+                CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem )
             );
-    }
-
-    private SecurityLog getSecurityLog( Log allegedSecurityLog )
-    {
-        return allegedSecurityLog instanceof SecurityLog ?
-               (SecurityLog) allegedSecurityLog :
-               new SecurityLog( allegedSecurityLog );
     }
 
     private static CacheManager createCacheManager( Config config )

@@ -38,7 +38,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.security.enterprise.auth.SecuritySettings;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -83,10 +83,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
-        return settings -> {
-            settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
-        };
+        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" );
     }
 
     public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;

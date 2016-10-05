@@ -72,7 +72,6 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
         builder.setConfig( BoltKernelExtension.Settings.tls_certificate_file,
                 NeoInteractionLevel.tempPath( "cert", ".cert" ) );
         builder.setConfig( GraphDatabaseSettings.auth_enabled, "true" );
-        builder.setConfig( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
 
         builder.setConfig( config );
 

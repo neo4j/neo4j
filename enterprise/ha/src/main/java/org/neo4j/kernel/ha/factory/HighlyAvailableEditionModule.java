@@ -63,10 +63,8 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataMigrator;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -133,15 +131,14 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
@@ -186,21 +183,11 @@ public class HighlyAvailableEditionModule
 {
     private HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
-    private SecurityLog securityLog;
-
-    @Override
-    protected Log authManagerLog()
-    {
-        return securityLog;
-    }
 
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
-
-        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
     }
 
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
@@ -512,14 +499,6 @@ public class HighlyAvailableEditionModule
         dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
                         storeDir, lastUpdateTime, lastTxIdGetter, life ) );
-
-        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
-                platformModule.fileSystem, platformModule.jobScheduler );
-
-        life.add( securityLog );
-
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
-                platformModule.fileSystem, platformModule.jobScheduler ) ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
@@ -870,8 +849,8 @@ public class HighlyAvailableEditionModule
     }
 
     @Override
-    protected AuthManager getAuthDisabledAuthManager()
+    public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        return EnterpriseAuthManager.NO_AUTH;
+        EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
     }
 }

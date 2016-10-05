@@ -17,22 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.configuration;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Internal;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
+import static org.neo4j.kernel.configuration.Settings.max;
+import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -46,6 +52,10 @@ public class SecuritySettings
     public static final String PLUGIN_REALM_NAME_PREFIX = "plugin-";
 
     @SuppressWarnings( "unused" ) // accessed by reflection
+
+    //=========================================================================
+    // Realm settings
+    //=========================================================================
 
     @Description( "The security realm that contains the users and roles used for authentication and authorization. " +
                   "This can be one of the built-in `" + NATIVE_REALM_NAME + "` or `" + LDAP_REALM_NAME + "` realms, " +
@@ -98,6 +108,10 @@ public class SecuritySettings
             derivedSetting( "dbms.security.realms.plugin.authorization_enabled", active_realms,
                     ( realms ) -> realms.stream().anyMatch( ( r ) -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
                     BOOLEAN );
+
+    //=========================================================================
+    // LDAP settings
+    //=========================================================================
 
     @Description( "URL of LDAP server (with protocol, hostname and port) to use for authentication and authorization. " +
                   "If no protocol is specified the default will be `ldap://`. To use LDAPS, " +
@@ -189,6 +203,10 @@ public class SecuritySettings
     public static Setting<String> ldap_authorization_group_to_role_mapping =
             setting( "dbms.security.realms.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
 
+    //=========================================================================
+    // Cache settings
+    //=========================================================================
+
     @Description( "The time to live (TTL) for cached authentication and authorization info. Setting the TTL to 0 will" +
             " disable auth caching." )
     public static Setting<Long> auth_cache_ttl =
@@ -197,4 +215,30 @@ public class SecuritySettings
     @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
     public static Setting<Integer> auth_cache_max_capacity =
             setting( "dbms.security.realms.auth_cache_max_capacity", INTEGER, "10000" );
+
+    //=========================================================================
+    // Security log settings
+    //=========================================================================
+
+    @Internal
+    public static final Setting<File> security_log_filename = derivedSetting("dbms.security.log_path",
+            GraphDatabaseSettings.logs_directory,
+            ( logs ) -> new File( logs, "security.log" ),
+            PATH );
+
+    @Description( "Set to log successful authentication events." )
+    public static final Setting<Boolean> security_log_successful_authentication =
+            setting("dbms.security.log_successful_authentication", BOOLEAN, "true" );
+
+    @Description( "Threshold for rotation of the security log." )
+    public static final Setting<Long> store_security_log_rotation_threshold =
+            setting("dbms.logs.security.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+
+    @Description( "Minimum time interval after last rotation of the security log before it may be rotated again." )
+    public static final Setting<Long> store_security_log_rotation_delay =
+            setting("dbms.logs.security.rotation.delay", DURATION, "300s" );
+
+    @Description( "Maximum number of history files for the security log." )
+    public static final Setting<Integer> store_security_log_max_archives =
+            setting("dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
 }

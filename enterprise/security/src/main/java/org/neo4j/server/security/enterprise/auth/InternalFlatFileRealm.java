@@ -58,6 +58,7 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static java.lang.String.format;
 

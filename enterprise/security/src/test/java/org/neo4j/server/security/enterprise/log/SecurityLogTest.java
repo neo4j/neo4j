@@ -17,8 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.enterprise;
+package org.neo4j.server.security.enterprise.log;
 
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -28,12 +30,9 @@ import java.util.Scanner;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SecurityLogTest
@@ -42,8 +41,8 @@ public class SecurityLogTest
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     Config config = Config.defaults().augment(
-            stringMap( EnterpriseEditionSettings.store_security_log_rotation_threshold.name(), "5",
-                    EnterpriseEditionSettings.store_security_log_rotation_delay.name(), "1ms" ) );
+            stringMap( SecuritySettings.store_security_log_rotation_threshold.name(), "5",
+                    SecuritySettings.store_security_log_rotation_delay.name(), "1ms" ) );
 
     @Test
     public void shouldRotateLog() throws IOException
@@ -54,18 +53,18 @@ public class SecurityLogTest
 
         FileSystemAbstraction fs = fileSystemRule.get();
 
-        File activeLogFile = config.get( EnterpriseEditionSettings.security_log_filename );
-        assertThat( fs.fileExists( activeLogFile ), equalTo( true ) );
-        assertThat( fs.fileExists( archive( 1 ) ), equalTo( true ) );
-        assertThat( fs.fileExists( archive( 2 ) ), equalTo( false ) );
+        File activeLogFile = config.get( SecuritySettings.security_log_filename );
+        MatcherAssert.assertThat( fs.fileExists( activeLogFile ), Matchers.equalTo( true ) );
+        MatcherAssert.assertThat( fs.fileExists( archive( 1 ) ), Matchers.equalTo( true ) );
+        MatcherAssert.assertThat( fs.fileExists( archive( 2 ) ), Matchers.equalTo( false ) );
 
         String[] activeLines = readLogFile( fs, activeLogFile );
-        assertThat( activeLines.length, equalTo( 1 ) );
-        assertThat( activeLines[0], containsString( "line 2" ) );
+        MatcherAssert.assertThat( activeLines.length, Matchers.equalTo( 1 ) );
+        MatcherAssert.assertThat( activeLines[0], Matchers.containsString( "line 2" ) );
 
         String[] archiveLines = readLogFile( fs, archive( 1 ) );
-        assertThat( archiveLines.length, equalTo( 1 ) );
-        assertThat( archiveLines[0], containsString( "line 1" ) );
+        MatcherAssert.assertThat( archiveLines.length, Matchers.equalTo( 1 ) );
+        MatcherAssert.assertThat( archiveLines[0], Matchers.containsString( "line 1" ) );
     }
 
     private String[] readLogFile( FileSystemAbstraction fs, File activeLogFile ) throws IOException
@@ -79,7 +78,7 @@ public class SecurityLogTest
 
     private File archive( int archiveNumber )
     {
-        return new File( String.format( "%s.%d", config.get( EnterpriseEditionSettings.security_log_filename ),
+        return new File( String.format( "%s.%d", config.get( SecuritySettings.security_log_filename ),
                 archiveNumber ) );
     }
 }

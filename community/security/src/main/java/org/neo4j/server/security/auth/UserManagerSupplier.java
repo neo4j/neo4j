@@ -19,7 +19,11 @@
  */
 package org.neo4j.server.security.auth;
 
+import org.neo4j.kernel.api.security.AuthSubject;
+
 public interface UserManagerSupplier
 {
+    UserManager getUserManager( AuthSubject authSubject );
+
     UserManager getUserManager();
 }

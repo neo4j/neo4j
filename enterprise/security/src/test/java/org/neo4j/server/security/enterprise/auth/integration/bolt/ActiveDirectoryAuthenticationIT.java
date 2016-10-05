@@ -39,7 +39,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.security.enterprise.auth.SecuritySettings;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -99,7 +99,6 @@ public class ActiveDirectoryAuthenticationIT
     {
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
             settings.put( SecuritySettings.native_authentication_enabled, "false" );
             settings.put( SecuritySettings.native_authorization_enabled, "false" );
             settings.put( SecuritySettings.ldap_authentication_enabled, "true" );

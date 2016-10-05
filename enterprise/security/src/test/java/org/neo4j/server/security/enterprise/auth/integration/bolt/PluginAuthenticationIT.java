@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.security.enterprise.auth.SecuritySettings;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCustomCacheableAuthenticationPlugin;

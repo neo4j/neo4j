@@ -17,24 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.kernel.api.security;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.factory.ProceduresProvider;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.proc.Procedures;
 
-@Service.Implementation( ProceduresProvider.class )
-public class AuthProceduresProvider extends ProceduresProvider
+public abstract class SecurityModule extends Service
 {
-    public AuthProceduresProvider()
+    public SecurityModule( String key, String... altKeys )
     {
-        super( "auth-procedures-provider" );
+        super( key, altKeys );
     }
 
-    @Override
-    public void registerProcedures( Procedures procedures ) throws KernelException
-    {
-        procedures.registerProcedure( AuthProcedures.class );
-    }
+    public abstract void setup( PlatformModule platformModule, Procedures procedures ) throws KernelException;
 }

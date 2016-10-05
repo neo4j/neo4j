@@ -25,12 +25,12 @@ import java.util.Map;
 
 import org.neo4j.test.rule.SuppressOutput;
 
-public class BoltAuthProceduresInteractionTest extends AuthProceduresInteractionTestBase<BoltInteraction.BoltSubject>
+public class BoltUserManagementProceduresInteractionTest extends AuthProceduresInteractionTestBase<BoltInteraction.BoltSubject>
 {
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    public BoltAuthProceduresInteractionTest()
+    public BoltUserManagementProceduresInteractionTest()
     {
         super();
         IS_EMBEDDED = false;
