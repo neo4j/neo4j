@@ -1518,8 +1518,7 @@ public class OperationsFacade
         {
             throw tx.mode().onViolation( format( "Write operations are not allowed for '%s'.", tx.mode().name() ) );
         }
-        // FIXME: should this be AccessMode.Static.WRITE instead?
-        return callProcedure( name, input, AccessMode.Static.FULL );
+        return callProcedure( name, input, AccessMode.Static.WRITE );
     }
 
     @Override
