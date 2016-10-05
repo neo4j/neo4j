@@ -121,7 +121,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                         // TODO: Perhaps re-read if this happens instead?
                         return false;
                     }
-                    bTreeNode.getOrder( cursor, order );
                     pos = -1;
                     reread = true;
                     continue; // in the outer loop, with the position reset to the beginning of the right sibling

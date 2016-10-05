@@ -236,18 +236,12 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 keyCount = bTreeNode.keyCount( cursor );
                 bTreeNode.getOrder( cursor, order );
                 pos = 0;
-                if ( pos < keyCount )
-                {
-                    bTreeNode.keyAt( cursor, key, pos, order );
-                }
                 rightSibling = bTreeNode.rightSibling( cursor );
-                while ( pos < keyCount && layout.compare( key, fromInclusive ) < 0 )
+                int search = IndexSearch.search( cursor, bTreeNode, fromInclusive, order, key, keyCount );
+                pos = IndexSearch.positionOf( search );
+                if ( IndexSearch.isHit( search ) )
                 {
-                    pos++;
-                    if ( pos < keyCount )
-                    {
-                        bTreeNode.keyAt( cursor, key, pos, order );
-                    }
+                    pos--;
                 }
                 if ( isInternal )
                 {

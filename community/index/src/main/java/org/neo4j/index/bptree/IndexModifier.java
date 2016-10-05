@@ -20,13 +20,16 @@
 package org.neo4j.index.bptree;
 
 import java.io.IOException;
-import java.util.Comparator;
 import org.neo4j.index.Modifier;
 import org.neo4j.index.ValueAmender;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
+
+import static org.neo4j.index.bptree.IndexSearch.isHit;
+import static org.neo4j.index.bptree.IndexSearch.positionOf;
+import static org.neo4j.index.bptree.IndexSearch.search;
 
 /**
  * Implementation of the insert algorithm in this B+ tree including split.
@@ -132,7 +135,7 @@ public class IndexModifier<KEY,VALUE>
 
         int keyCount = bTreeNode.keyCount( cursor );
         bTreeNode.getOrder( cursor, orders[level] );
-        int pos = positionOf( search( cursor, key, orders[level] ) );
+        int pos = positionOf( search( cursor, bTreeNode, key, orders[level], readKey, keyCount ) );
 
         long currentId = cursor.getCurrentPageId();
         cursor.next( bTreeNode.childAt( cursor, pos, orders[level] ) );
@@ -174,7 +177,7 @@ public class IndexModifier<KEY,VALUE>
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
         {
             // No overflow
-            int pos = positionOf( search( cursor, primKey, orders[level] ) );
+            int pos = positionOf( search( cursor, bTreeNode, primKey, orders[level], readKey, keyCount ) );
 
             bTreeNode.insertKeyAt( cursor, primKey, pos, orders[level], tmp );
             // NOTE pos+1 since we never insert a new child before child(0) because its key is really
@@ -215,7 +218,7 @@ public class IndexModifier<KEY,VALUE>
         long newRight = idProvider.acquireNewId();
 
         // Find position to insert new key
-        int pos = positionOf( search( cursor, primKey, orders[level] ) );
+        int pos = positionOf( search( cursor, bTreeNode, primKey, orders[level], readKey, keyCount ) );
 
         // Arrays to temporarily store keys and children in sorted order.
         bTreeNode.readKeysWithInsertRecordInPosition( cursor,
@@ -325,7 +328,7 @@ public class IndexModifier<KEY,VALUE>
     {
         int keyCount = bTreeNode.keyCount( cursor );
         bTreeNode.getOrder( cursor, orders[level] );
-        int search = search( cursor, key, orders[level] );
+        int search = search( cursor, bTreeNode, key, orders[level], readKey, keyCount );
         int pos = positionOf( search );
         if ( isHit( search ) )
         {
@@ -353,22 +356,6 @@ public class IndexModifier<KEY,VALUE>
 
         // Overflow, split leaf
         return splitLeaf( cursor, key, value, amender, keyCount, options, level );
-    }
-
-    private static int positionOf( int searchResult )
-    {
-        int pos = searchResult & 0x7FFFFFFF;
-        return pos == 0x7FFFFFFF ? -1 : pos;
-    }
-
-    private static boolean isHit( int searchResult )
-    {
-        return (searchResult & 0x80000000) != 0;
-    }
-
-    private static int searchResult( int pos, boolean hit )
-    {
-        return (pos & 0x7FFFFFFF) | ((hit ? 1 : 0) << 31);
     }
 
     /**
@@ -447,7 +434,7 @@ public class IndexModifier<KEY,VALUE>
         // 5. Write new key/values into L
 
         // Position where newKey / newValue is to be inserted
-        int pos = positionOf( search( cursor, newKey, orders[level] ) );
+        int pos = positionOf( search( cursor, bTreeNode, newKey, orders[level], readKey, keyCount ) );
 
         // arrays to temporarily store all keys and values
         bTreeNode.readKeysWithInsertRecordInPosition( cursor,
@@ -528,88 +515,6 @@ public class IndexModifier<KEY,VALUE>
         return split;
     }
 
-    /**
-     * Leaves cursor on same page as when called. No guarantees on offset.
-     *
-     * Search for keyAtPos such that key <= keyAtPos. Return first position of keyAtPos (not offset),
-     * or key count if no such key exist.
-     *
-     * On insert, key should be inserted at pos.
-     * On seek in internal, child at pos should be followed from internal node.
-     * On seek in leaf, value at pos is correct if keyAtPos is equal to key.
-     *
-     * Simple implementation, linear search.
-     *
-     * //TODO: Implement binary search
-     *
-     * @param cursor    {@link PageCursor} pinned to page with node (internal or leaf does not matter)
-     * @param key       long[] of length 2 where key[0] is id and key[1] is property value
-     * @param orders2
-     * @return          first position i for which Node.KEY_COMPARATOR.compare( key, Node.keyAt( i ) <= 0;
-     */
-    private int search( PageCursor cursor, KEY key, Object order )
-    {
-        int keyCount = bTreeNode.keyCount( cursor );
-
-        if ( keyCount == 0 )
-        {
-            return searchResult( 0, false );
-        }
-
-        int lower = 0;
-        int higher = keyCount-1;
-        int pos;
-        boolean hit = false;
-
-        // Compare key with lower and higher and sort out special cases
-        Comparator<KEY> comparator = bTreeNode.keyComparator();
-        int comparedHigher = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher, order ) );
-        if ( comparedHigher >= 0 )
-        {
-            pos = keyCount;
-            if ( comparedHigher == 0 )
-            {
-                hit = true;
-            }
-        }
-        else if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower, order ) ) < 0 )
-        {
-            pos = 0;
-        }
-        else
-        {
-            // Start binary search
-            // If key <= keyAtPos -> move higher to pos
-            // If key > keyAtPos -> move lower to pos+1
-            // Terminate when lower == higher
-            while ( lower < higher )
-            {
-                pos = (lower + higher) / 2;
-                switch ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, order ) ) )
-                {
-                case -1:
-                    higher = pos;
-                    break;
-                case 0:
-                    hit = true;
-                    // fall-through
-                case 1:
-                    lower = pos+1;
-                    break;
-                default:
-                    throw new IllegalArgumentException( "Unexpected compare value" );
-                }
-            }
-            if ( lower != higher )
-            {
-                throw new IllegalStateException( "Something went terribly wrong. The binary search terminated in an " +
-                                                 "unexpected way." );
-            }
-            pos = lower;
-        }
-        return searchResult( pos, hit );
-    }
-
     public VALUE remove( PageCursor cursor, KEY key ) throws IOException
     {
         return remove( cursor, key, 0 );
@@ -623,7 +528,8 @@ public class IndexModifier<KEY,VALUE>
         }
 
         bTreeNode.getOrder( cursor, orders[level] );
-        int search = search( cursor, key, orders[level] );
+        int keyCount = bTreeNode.keyCount( cursor );
+        int search = search( cursor, bTreeNode, key, orders[level], readKey, keyCount );
         int pos = positionOf( search );
         cursor.next( bTreeNode.childAt( cursor, pos, orders[level] ) );
         return remove( cursor, key, level + 1 );
@@ -635,7 +541,7 @@ public class IndexModifier<KEY,VALUE>
         bTreeNode.getOrder( cursor, orders[level] );
 
         // No overflow, insert key and value
-        int search = search( cursor, key, orders[level] );
+        int search = search( cursor, bTreeNode, key, orders[level], readKey, keyCount );
         int pos = positionOf( search );
         boolean hit = isHit( search );
         if ( !hit )
