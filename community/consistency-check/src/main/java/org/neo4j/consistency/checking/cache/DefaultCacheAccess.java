@@ -108,6 +108,12 @@ public class DefaultCacheAccess implements CacheAccess
         }
 
         @Override
+        public boolean getBooleanFromCache( long id, int slot )
+        {
+            return cache.get( id, slot ) != 0;
+        }
+
+        @Override
         public void putToCache( long id, long... values )
         {
             cache.put( id, values );

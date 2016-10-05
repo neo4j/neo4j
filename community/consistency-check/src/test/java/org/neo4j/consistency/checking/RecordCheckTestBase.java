@@ -99,21 +99,12 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
 
     public static RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> dummyPropertyChecker()
     {
-        return new RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport>()
-        {
-            @Override
-            public void check( PropertyRecord record,
-                               CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                               RecordAccess records )
-            {
-            }
-        };
+        return ( record, engine, records ) -> {};
     }
 
     public static PrimitiveRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> dummyNeoStoreCheck()
     {
-        return new NeoStoreCheck( new PropertyChain<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>(
-                from -> null ) )
+        return new NeoStoreCheck( new PropertyChain<>( from -> null ) )
         {
             @Override
             public void check( NeoStoreRecord record,

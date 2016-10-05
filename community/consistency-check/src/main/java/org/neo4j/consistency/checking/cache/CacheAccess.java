@@ -57,6 +57,17 @@ public interface CacheAccess
         long getFromCache( long id, int slot );
 
         /**
+         * Gets a cached value, put there with {@link #putToCache(long, long...)} or
+         * {@link #putToCacheSingle(long, int, long)} and interpret field value as a boolean.
+         * 0 will be treated as false all the rest as true.
+         *
+         * @param id the entity id this cached value is tied to.
+         * @param slot which cache slot for this id.
+         * @return false if slot value is 0, true otherwise.
+         */
+        boolean getBooleanFromCache(long id, int slot);
+
+        /**
          * Caches all values for an id, i.e. fills all slots.
          *
          * @param id the entity id these cached values will be tied to.
@@ -198,6 +209,12 @@ public interface CacheAccess
         public long getFromCache( long id, int slot )
         {
             return 0;
+        }
+
+        @Override
+        public boolean getBooleanFromCache( long id, int slot )
+        {
+            return false;
         }
 
         @Override

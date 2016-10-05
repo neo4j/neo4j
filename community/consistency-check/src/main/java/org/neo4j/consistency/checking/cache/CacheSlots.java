@@ -43,6 +43,7 @@ public interface CacheSlots
         int SLOT_PREV_OR_NEXT = 1;
         int SLOT_RELATIONSHIP_ID = 2;
         int SLOT_REFERENCE = 3;
+        int SLOT_IN_USE = 4;
         long SOURCE = 0;
         long TARGET = -1;
         long PREV = 0;
