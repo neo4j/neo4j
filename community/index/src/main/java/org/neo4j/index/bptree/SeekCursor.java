@@ -81,9 +81,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 if ( reread )
                 {
                     keyCount = bTreeNode.keyCount( cursor );
+                    bTreeNode.getOrder( cursor, order );
                     currentContainsEnd = layout.compare(
                             bTreeNode.keyAt( cursor, mutableKey, keyCount - 1, order ), toExclusive ) >= 0;
-                    bTreeNode.getOrder( cursor, order );
                     reread = false;
                 }
                 // There's a condition in here, choosing between go to next sibling or value,
