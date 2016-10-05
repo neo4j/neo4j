@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
 
+import org.neo4j.coreedge.catchup.tx.TxPollingClient;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -94,7 +95,7 @@ public class EdgeClusterMember implements ClusterMember
         return boltAdvertisedAddress;
     }
 
-    public String routingAddress()
+    public String routingURI()
     {
         return String.format( "bolt+routing://%s", boltAdvertisedAddress );
     }
@@ -117,6 +118,11 @@ public class EdgeClusterMember implements ClusterMember
         database = null;
     }
 
+    public TxPollingClient txPollingClient()
+    {
+        return database.getDependencyResolver().resolveDependency( TxPollingClient.class );
+    }
+
     @Override
     public EdgeGraphDatabase database()
     {
@@ -137,5 +143,10 @@ public class EdgeClusterMember implements ClusterMember
     public String toString()
     {
         return format( "EdgeClusterMember{memberId=%d}", memberId );
+    }
+
+    public String directURI()
+    {
+        return String.format( "bolt://%s", boltAdvertisedAddress );
     }
 }

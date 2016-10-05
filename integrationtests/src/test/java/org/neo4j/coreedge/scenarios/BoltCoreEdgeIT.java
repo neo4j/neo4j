@@ -84,7 +84,7 @@ public class BoltCoreEdgeIT
 
         CoreClusterMember leader = cluster.awaitLeader();
 
-        Driver driver = GraphDatabase.driver( leader.routingAddress(), AuthTokens.basic( "neo4j", "neo4j" ) );
+        Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
         try ( Session session = driver.session( AccessMode.WRITE) )
         {
 
@@ -111,7 +111,7 @@ public class BoltCoreEdgeIT
 
         CoreClusterMember follower = cluster.getDbWithRole(Role.FOLLOWER);
 
-        Driver driver = GraphDatabase.driver( follower.routingAddress(), AuthTokens.basic( "neo4j", "neo4j" ) );
+        Driver driver = GraphDatabase.driver( follower.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
         try ( Session session = driver.session(AccessMode.WRITE) )
         {
             // when
@@ -139,7 +139,7 @@ public class BoltCoreEdgeIT
         {
             triggerElection();
             CoreClusterMember leader = cluster.awaitLeader();
-            Driver driver = GraphDatabase.driver( leader.routingAddress(), AuthTokens.basic( "neo4j", "neo4j" ) );
+            Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
             try ( Session session = driver.session(AccessMode.READ) )
             {
@@ -168,7 +168,7 @@ public class BoltCoreEdgeIT
 
         CoreClusterMember leader = cluster.awaitLeader();
 
-        Driver driver = GraphDatabase.driver( leader.routingAddress(), AuthTokens.basic( "neo4j", "neo4j" ) );
+        Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
         try ( Session session = driver.session() )
         {
             session.run( "CREATE CONSTRAINT ON (p:Person) ASSERT p.name is UNIQUE" ).consume();
@@ -200,7 +200,7 @@ public class BoltCoreEdgeIT
         EdgeClusterMember edgeServer = cluster.getEdgeMemberById( 0 );
         try
         {
-            GraphDatabase.driver( edgeServer.routingAddress(), AuthTokens.basic( "neo4j", "neo4j" ) );
+            GraphDatabase.driver( edgeServer.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
             fail( "Should have thrown an exception using an edge address for routing" );
         }
         catch ( ServiceUnavailableException ex )
@@ -218,7 +218,7 @@ public class BoltCoreEdgeIT
         cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
         CoreClusterMember coreServer = cluster.getCoreMemberById( 0 );
 
-        Driver driver = GraphDatabase.driver( coreServer.routingAddress(), AuthTokens.basic( "neo4j", "neo4j" ) );
+        Driver driver = GraphDatabase.driver( coreServer.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
         try ( Session session = driver.session() )
         {
@@ -260,7 +260,7 @@ public class BoltCoreEdgeIT
         cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
         CoreClusterMember leader = cluster.awaitLeader(  );
 
-        Driver driver = GraphDatabase.driver( leader.routingAddress(), AuthTokens.basic( "neo4j", "neo4j" ) );
+        Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
         try ( Session session = driver.session() )
         {
@@ -302,7 +302,7 @@ public class BoltCoreEdgeIT
         cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
         CoreClusterMember leader = cluster.awaitLeader(  );
 
-        Driver driver = GraphDatabase.driver( "bolt://" + leader.boltAdvertisedAddress(),
+        Driver driver = GraphDatabase.driver( leader.directURI(),
                 AuthTokens.basic( "neo4j", "neo4j" ) );
 
         String bookmark;
@@ -334,7 +334,7 @@ public class BoltCoreEdgeIT
         cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
         CoreClusterMember leader = cluster.awaitLeader(  );
 
-        Driver driver = GraphDatabase.driver( "bolt://" + leader.boltAdvertisedAddress(),
+        Driver driver = GraphDatabase.driver( leader.directURI(),
                 AuthTokens.basic( "neo4j", "neo4j" ) );
 
         try ( Session session = driver.session(AccessMode.WRITE) )
@@ -343,7 +343,7 @@ public class BoltCoreEdgeIT
         }
 
         String bookmark;
-        try ( Session session = driver.session(AccessMode.READ) )
+        try ( Session session = driver.session( AccessMode.READ ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -375,10 +375,13 @@ public class BoltCoreEdgeIT
     {
         // given
         cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
-        CoreClusterMember leader = cluster.awaitLeader(  );
 
-        Driver driver = GraphDatabase.driver( "bolt://" + leader.boltAdvertisedAddress(),
-                AuthTokens.basic( "neo4j", "neo4j" ) );
+        CoreClusterMember leader = cluster.awaitLeader(  );
+        EdgeClusterMember edgeMember = cluster.getEdgeMemberById( 0 );
+
+        edgeMember.txPollingClient().pause();
+
+        Driver driver = GraphDatabase.driver( leader.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
         String bookmark;
         try ( Session session = driver.session(AccessMode.WRITE) )
@@ -396,11 +399,18 @@ public class BoltCoreEdgeIT
         }
 
         assertNotNull( bookmark );
+        edgeMember.txPollingClient().resume();
+
+        driver = GraphDatabase.driver( edgeMember.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
         try ( Session session = driver.session(AccessMode.READ) )
         {
-            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-            assertEquals( 4, record.get( "count" ).asInt() );
+            try ( Transaction tx = session.beginTransaction( bookmark ) )
+            {
+                Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                tx.success();
+                assertEquals( 4, record.get( "count" ).asInt() );
+            }
         }
     }
 

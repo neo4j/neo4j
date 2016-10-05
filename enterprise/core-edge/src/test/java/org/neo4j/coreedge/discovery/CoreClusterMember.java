@@ -114,9 +114,14 @@ public class CoreClusterMember implements ClusterMember
         return boltAdvertisedAddress;
     }
 
-    public String routingAddress()
+    public String routingURI()
     {
         return String.format( "bolt+routing://%s", boltAdvertisedAddress );
+    }
+
+    public String directURI()
+    {
+        return String.format( "bolt://%s", boltAdvertisedAddress );
     }
 
     @Override
