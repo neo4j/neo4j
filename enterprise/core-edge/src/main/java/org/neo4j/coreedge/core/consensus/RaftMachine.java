@@ -37,6 +37,7 @@ import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.shipping.RaftLogShippingManager;
+import org.neo4j.coreedge.core.consensus.state.ExposedRaftState;
 import org.neo4j.coreedge.core.consensus.state.RaftState;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.core.consensus.term.TermState;
@@ -163,7 +164,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         return new RaftCoreState( membershipManager.getCommitted() );
     }
 
-    public void installCoreState( RaftCoreState coreState ) throws IOException
+    public synchronized void installCoreState( RaftCoreState coreState ) throws IOException
     {
         membershipManager.install( coreState.committed() );
     }
@@ -204,7 +205,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         }
     }
 
-    public void setTargetMembershipSet( Set<MemberId> targetMembers )
+    public synchronized void setTargetMembershipSet( Set<MemberId> targetMembers )
     {
         membershipManager.setTargetMembershipSet( targetMembers );
 
@@ -255,9 +256,14 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         leaderListeners.remove( listener );
     }
 
-    public ReadableRaftState state()
+    /**
+     * Every call to state() gives you an immutable copy of the current state.
+     *
+     * @return A fresh view of the state.
+     */
+    public synchronized ExposedRaftState state()
     {
-        return state;
+        return state.copy();
     }
 
     private void notifyLeaderChanges( Outcome outcome )

@@ -207,4 +207,47 @@ public class RaftState implements ReadableRaftState
             log.info( "Leader changed from %s to %s", this.leader, leader );
         }
     }
+
+    public ExposedRaftState copy()
+    {
+        return new ExposedRaftState()
+        {
+            final long leaderCommit = RaftState.this.leaderCommit();
+            final long commitIndex = RaftState.this.commitIndex();
+            final long appendIndex = RaftState.this.entryLog().appendIndex();
+            final long term = RaftState.this.term();
+
+            final Set<MemberId> votingMembers = RaftState.this.votingMembers(); // returned set is never mutated
+
+            @Override
+            public long leaderCommit()
+            {
+                return this.leaderCommit;
+            }
+
+            @Override
+            public long commitIndex()
+            {
+                return this.commitIndex;
+            }
+
+            @Override
+            public long appendIndex()
+            {
+                return this.appendIndex;
+            }
+
+            @Override
+            public long term()
+            {
+                return this.term;
+            }
+
+            @Override
+            public Set<MemberId> votingMembers()
+            {
+                return this.votingMembers;
+            }
+        };
+    }
 }

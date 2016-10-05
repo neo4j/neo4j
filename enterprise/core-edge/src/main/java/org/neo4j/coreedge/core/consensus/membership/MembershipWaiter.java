@@ -23,7 +23,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
+import org.neo4j.coreedge.core.consensus.RaftMachine;
+import org.neo4j.coreedge.core.consensus.state.ExposedRaftState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -31,7 +32,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
@@ -67,11 +67,11 @@ public class MembershipWaiter
         this.log = logProvider.getLog( getClass() );
     }
 
-    CompletableFuture<Boolean> waitUntilCaughtUpMember( ReadableRaftState raftState )
+    CompletableFuture<Boolean> waitUntilCaughtUpMember( RaftMachine raft )
     {
         CompletableFuture<Boolean> catchUpFuture = new CompletableFuture<>();
 
-        Evaluator evaluator = new Evaluator( raftState, catchUpFuture, dbHealthSupplier );
+        Evaluator evaluator = new Evaluator( raft, catchUpFuture, dbHealthSupplier );
 
         JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
                 new JobScheduler.Group( getClass().toString(), POOLED ),
@@ -84,18 +84,18 @@ public class MembershipWaiter
 
     private class Evaluator implements Runnable
     {
-        private final ReadableRaftState raftState;
+        private final RaftMachine raft;
         private final CompletableFuture<Boolean> catchUpFuture;
 
         private long lastLeaderCommit;
         private final Supplier<DatabaseHealth> dbHealthSupplier;
 
-        private Evaluator( ReadableRaftState raftState, CompletableFuture<Boolean> catchUpFuture,
+        private Evaluator( RaftMachine raft, CompletableFuture<Boolean> catchUpFuture,
                 Supplier<DatabaseHealth> dbHealthSupplier )
         {
-            this.raftState = raftState;
+            this.raft = raft;
             this.catchUpFuture = catchUpFuture;
-            this.lastLeaderCommit = raftState.leaderCommit();
+            this.lastLeaderCommit = raft.state().leaderCommit();
             this.dbHealthSupplier = dbHealthSupplier;
         }
 
@@ -113,7 +113,7 @@ public class MembershipWaiter
 
         private boolean iAmAVotingMember()
         {
-            Set votingMembers = raftState.votingMembers();
+            Set votingMembers = raft.state().votingMembers();
             boolean votingMember = votingMembers.contains( myself );
             if ( !votingMember )
             {
@@ -126,12 +126,14 @@ public class MembershipWaiter
         {
             boolean caughtUpWithLeader = false;
 
-            long localCommit = raftState.commitIndex();
+            ExposedRaftState state = raft.state();
+
+            long localCommit = state.commitIndex();
             if ( lastLeaderCommit != -1 )
             {
                 caughtUpWithLeader = localCommit >= lastLeaderCommit;
             }
-            lastLeaderCommit = raftState.leaderCommit();
+            lastLeaderCommit = state.leaderCommit();
             if ( lastLeaderCommit != -1 )
             {
                 long gap = lastLeaderCommit - localCommit;

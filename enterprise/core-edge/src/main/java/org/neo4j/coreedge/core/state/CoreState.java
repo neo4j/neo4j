@@ -176,7 +176,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
 
     private boolean haveState()
     {
-        return raftMachine.state().entryLog().appendIndex() > -1;
+        return raftMachine.state().appendIndex() > -1;
     }
 
     @Override
