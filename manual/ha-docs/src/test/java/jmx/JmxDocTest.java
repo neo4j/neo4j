@@ -19,11 +19,6 @@
  */
 package jmx;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -47,14 +42,19 @@ import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.doc.tools.AsciiDocGenerator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.configuration.docs.SettingDescription;
 import org.neo4j.kernel.configuration.docs.AsciiDocListGenerator;
+import org.neo4j.kernel.configuration.docs.SettingDescription;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
