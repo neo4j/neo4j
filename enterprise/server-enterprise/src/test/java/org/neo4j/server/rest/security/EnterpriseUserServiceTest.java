@@ -41,8 +41,7 @@ public class EnterpriseUserServiceTest extends UserServiceTest
     @Override
     protected void setupAuthManagerAndSubject()
     {
-        authManager = authManagerRule.getManager();
-        userManager = authManagerRule.getManager().getUserManager();
+        userManagerSupplier = authManagerRule.getManager();
 
         ShiroSubject shiroSubject = mock( ShiroSubject.class );
         when( shiroSubject.getPrincipal() ).thenReturn( "neo4j" );
@@ -54,7 +53,8 @@ public class EnterpriseUserServiceTest extends UserServiceTest
     {
         shouldChangePasswordAndReturnSuccess();
 
-        authManagerRule.assertExactlyInfoInLog( "[neo4j]: changed password%s", "" );
+        MultiRealmAuthManagerRule.FullSecurityLog fullLog = authManagerRule.getFullSecurityLog();
+        fullLog.assertHasLine( "neo4j", "changed password" );
     }
 
     @Test
@@ -62,7 +62,7 @@ public class EnterpriseUserServiceTest extends UserServiceTest
     {
         shouldReturn422IfPasswordIdentical();
 
-        authManagerRule.assertExactlyErrorInLog( "[neo4j]: tried to change password: %s",
-                "Old password and new password cannot be the same." );
+        MultiRealmAuthManagerRule.FullSecurityLog fullLog = authManagerRule.getFullSecurityLog();
+        fullLog.assertHasLine( "neo4j", "tried to change password: Old password and new password cannot be the same." );
     }
 }

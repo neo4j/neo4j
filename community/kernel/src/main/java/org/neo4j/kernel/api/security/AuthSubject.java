@@ -41,6 +41,11 @@ public interface AuthSubject extends AccessMode
     void setPassword( String password, boolean requirePasswordChange ) throws IOException, InvalidArgumentsException;
 
     /**
+     * Changes authentication status to SUCCESS if in PASSWORD_CHANGE_REQUIRED
+     */
+    void passwordChangeNoLongerRequired();
+
+    /**
      * Determines whether this subject is allowed to execute a procedure with the parameter string in its procedure annotation.
      * @param roleNames
      * @return
@@ -90,6 +95,11 @@ public interface AuthSubject extends AccessMode
                 throws IOException, InvalidArgumentsException
         {
             throw new AuthorizationViolationException( "Anonymous cannot change password" );
+        }
+
+        @Override
+        public void passwordChangeNoLongerRequired()
+        {
         }
 
         @Override
@@ -208,6 +218,11 @@ public interface AuthSubject extends AccessMode
         @Override
         public void setPassword( String password, boolean requirePasswordChange )
                 throws IOException, InvalidArgumentsException
+        {
+        }
+
+        @Override
+        public void passwordChangeNoLongerRequired()
         {
         }
 

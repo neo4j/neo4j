@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.procedure.Context;
@@ -32,8 +33,10 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import static java.util.Collections.emptyList;
 import static org.neo4j.procedure.Mode.DBMS;
 
+@SuppressWarnings( {"unused", "WeakerAccess"} )
 public class AuthProcedures
 {
     @Context
@@ -50,7 +53,6 @@ public class AuthProcedures
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
-        BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
         userManager.newUser( username, password, requirePasswordChange );
     }
 
@@ -58,12 +60,11 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
-        BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
-        if ( subject.hasUsername( username ) )
+        if ( authSubject.hasUsername( username ) )
         {
             throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
         }
-        subject.getAuthManager().deleteUser( username );
+        userManager.deleteUser( username );
     }
 
     @Deprecated
@@ -71,42 +72,49 @@ public class AuthProcedures
     @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
     public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
-        authSubject.setPassword( password, false );
+        changePassword( password );
     }
 
     @Description( "Change the current user's password." )
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
-        authSubject.setPassword( password, false );
+        if ( authSubject == AuthSubject.ANONYMOUS )
+        {
+            throw new AuthorizationViolationException( "Anonymous cannot change password" );
+        }
+        userManager.setUserPassword( authSubject.username(), password, false );
+        authSubject.passwordChangeNoLongerRequired();
     }
 
     @Description( "Show the current user." )
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
-        BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
-        return Stream.of( new UserResult(
-                subject.name(),
-                subject.getAuthManager().getUser( subject.name() ).getFlags()
-            ) );
+        return Stream.of( userResultForName( authSubject.username() ) );
     }
 
     @Description( "List all local users." )
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
     {
-        BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
-        Set<String> usernames = subject.getAuthManager().getAllUsernames();
-        List<UserResult> results = new ArrayList<>();
-        for ( String username : usernames )
+        Set<String> usernames = userManager.getAllUsernames();
+
+        if ( usernames.isEmpty() )
         {
-            results.add( new UserResult(
-                    username,
-                    subject.getAuthManager().getUser( username ).getFlags()
-                ) );
+            return showCurrentUser();
         }
-        return results.stream();
+        else
+        {
+            return usernames.stream().map( this::userResultForName );
+        }
+    }
+
+    private UserResult userResultForName( String username )
+    {
+        User user = userManager.silentlyGetUser( username );
+        Iterable<String> flags = user == null ? emptyList() : user.getFlags();
+        return new UserResult( username, flags );
     }
 
     public static class UserResult

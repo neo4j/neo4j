@@ -26,7 +26,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -44,11 +43,12 @@ public class CommunitySecurityModule extends SecurityModule
     }
 
     @Override
-    public void setup( PlatformModule platformModule, Procedures procedures ) throws KernelException
+    public void setup( Dependencies dependencies ) throws KernelException
     {
-        Config config = platformModule.config;
-        LogProvider logProvider = platformModule.logging.getUserLogProvider();
-        FileSystemAbstraction fileSystem = platformModule.fileSystem;
+        Config config = dependencies.config();
+        Procedures procedures = dependencies.procedures();
+        LogProvider logProvider = dependencies.logService().getUserLogProvider();
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
         final UserRepository userRepository = getUserRepository( config, logProvider, fileSystem );
         final UserRepository initialUserRepository = getInitialUserRepository( config, logProvider, fileSystem );
 
@@ -57,9 +57,9 @@ public class CommunitySecurityModule extends SecurityModule
         BasicAuthManager authManager =
                 new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(), initialUserRepository );
 
-        platformModule.life.add( platformModule.dependencies.satisfyDependency( authManager ) );
+        dependencies.lifeSupport().add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
-        procedures.registerComponent( UserManager.class, ctx -> authManager.getUserManager() );
+        procedures.registerComponent( UserManager.class, ctx -> authManager );
         procedures.registerProcedure( AuthProcedures.class );
     }
 

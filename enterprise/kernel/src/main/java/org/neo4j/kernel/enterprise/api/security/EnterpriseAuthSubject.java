@@ -114,6 +114,11 @@ public interface EnterpriseAuthSubject extends AuthSubject
         }
 
         @Override
+        public void passwordChangeNoLongerRequired()
+        {
+        }
+
+        @Override
         public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
         {
             return AuthSubject.AUTH_DISABLED.allowsProcedureWith( roleNames );

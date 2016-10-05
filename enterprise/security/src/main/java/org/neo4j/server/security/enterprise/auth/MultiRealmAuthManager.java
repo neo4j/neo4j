@@ -96,7 +96,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         try
         {
             subject = new StandardEnterpriseAuthSubject(
-                    this, (ShiroSubject) securityManager.login( null, token ), securityLog );
+                    this, (ShiroSubject) securityManager.login( null, token ) );
             if ( logSuccessfulLogin )
             {
                 securityLog.info( subject, "logged in" );
@@ -111,14 +111,14 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         {
             // NOTE: We only get this with single (internal) realm authentication
             subject = new StandardEnterpriseAuthSubject( this,
-                    new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS ), securityLog );
+                    new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS ) );
             securityLog.error( "[%s]: failed to log in: too many failed attempts",
                     escape( token.getPrincipal().toString() ) );
         }
         catch ( AuthenticationException e )
         {
             subject = new StandardEnterpriseAuthSubject( this,
-                    new ShiroSubject( securityManager, AuthenticationResult.FAILURE ), securityLog );
+                    new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );
             securityLog.error( "[%s]: failed to log in: invalid principal or credentials",
                     escape( token.getPrincipal().toString() ) );
         }
@@ -189,7 +189,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     @Override
     public EnterpriseUserManager getUserManager( AuthSubject authSubject )
     {
-        return userManager;
+        return new PersonalUserManager( userManager, authSubject, securityLog );
     }
 
     @Override

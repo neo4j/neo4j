@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
@@ -38,13 +38,17 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.util.DependencySatisfier;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -126,7 +130,50 @@ public abstract class EditionModule
             {
                 try
                 {
-                    candidate.setup( platformModule, procedures );
+                    candidate.setup( new SecurityModule.Dependencies()
+                    {
+                        @Override
+                        public LogService logService()
+                        {
+                            return platformModule.logging;
+                        }
+
+                        @Override
+                        public Config config()
+                        {
+                            return platformModule.config;
+                        }
+
+                        @Override
+                        public Procedures procedures()
+                        {
+                            return procedures;
+                        }
+
+                        @Override
+                        public JobScheduler scheduler()
+                        {
+                            return platformModule.jobScheduler;
+                        }
+
+                        @Override
+                        public FileSystemAbstraction fileSystem()
+                        {
+                            return platformModule.fileSystem;
+                        }
+
+                        @Override
+                        public LifeSupport lifeSupport()
+                        {
+                            return platformModule.life;
+                        }
+
+                        @Override
+                        public DependencySatisfier dependencySatisfier()
+                        {
+                            return platformModule.dependencies;
+                        }
+                    } );
                     return;
                 }
                 catch ( KernelException e )

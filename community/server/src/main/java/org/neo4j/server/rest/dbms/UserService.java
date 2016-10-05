@@ -30,10 +30,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -53,17 +52,14 @@ public class UserService
 {
     public static final String PASSWORD = "password";
 
-    private final UserManager userManager;
+    private final UserManagerSupplier userManagerSupplier;
     private final InputFormat input;
     private final OutputFormat output;
 
-    public UserService( @Context AuthManager authManager, @Context InputFormat input, @Context OutputFormat output )
+    public UserService( @Context UserManagerSupplier userManagerSupplier, @Context InputFormat input, @Context OutputFormat
+            output )
     {
-        if ( !(authManager instanceof UserManagerSupplier) )
-        {
-            throw new IllegalArgumentException( "The provided auth manager is not capable of user management" );
-        }
-        this.userManager = ((UserManagerSupplier) authManager).getUserManager();
+        this.userManagerSupplier = userManagerSupplier;
         this.input = input;
         this.output = output;
     }
@@ -77,6 +73,9 @@ public class UserService
         {
             return output.notFound();
         }
+
+        AuthSubject authSubject = getSubjectFromPrincipal( principal );
+        UserManager userManager = userManagerSupplier.getUserManager( authSubject );
 
         try
         {
@@ -131,7 +130,8 @@ public class UserService
             }
             else
             {
-                subject.setPassword( newPassword, false );
+                UserManager userManager = userManagerSupplier.getUserManager( subject );
+                userManager.setUserPassword( username, newPassword, false );
             }
         }
         catch ( IOException e )

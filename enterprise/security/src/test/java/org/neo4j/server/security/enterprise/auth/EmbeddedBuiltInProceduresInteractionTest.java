@@ -98,7 +98,6 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
     {
         return new EnterpriseAuthSubject()
         {
-
             @Override
             public boolean allowsReads()
             {
@@ -159,6 +158,11 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
             {
                 ANONYMOUS.setPassword( password, requirePasswordChange );
 
+            }
+
+            @Override
+            public void passwordChangeNoLongerRequired()
+            {
             }
 
             @Override

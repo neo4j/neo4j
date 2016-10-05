@@ -20,9 +20,14 @@
 package org.neo4j.kernel.api.security;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.util.DependencySatisfier;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public abstract class SecurityModule extends Service
 {
@@ -31,5 +36,22 @@ public abstract class SecurityModule extends Service
         super( key, altKeys );
     }
 
-    public abstract void setup( PlatformModule platformModule, Procedures procedures ) throws KernelException;
+    public abstract void setup( Dependencies dependencies ) throws KernelException;
+
+    public interface Dependencies
+    {
+        LogService logService();
+
+        Config config();
+
+        Procedures procedures();
+
+        JobScheduler scheduler();
+
+        FileSystemAbstraction fileSystem();
+
+        LifeSupport lifeSupport();
+
+        DependencySatisfier dependencySatisfier();
+    }
 }

@@ -35,8 +35,10 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
+import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
+import static java.util.Collections.emptyList;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 
@@ -51,7 +53,25 @@ public class AuthProceduresBase
     @Context
     public SecurityLog securityLog;
 
+    @Context
+    public EnterpriseUserManager userManager;
+
     // ----------------- helpers ---------------------
+
+    protected void kickoutUser( String username, String reason )
+    {
+        try
+        {
+            terminateTransactionsForValidUser( username );
+            terminateConnectionsForValidUser( username );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "failed to terminate running transaction and bolt connections for " +
+                    "user `%s` following %s: %s", username, reason, e.getMessage() );
+            throw e;
+        }
+    }
 
     protected void terminateTransactionsForValidUser( String username )
     {
@@ -102,7 +122,7 @@ public class AuthProceduresBase
 
         if ( subject.isAdmin() || subject.hasUsername( username ) )
         {
-            subject.getUserManager().getUser( username );
+            userManager.getUser( username );
             return subject;
         }
 
@@ -119,6 +139,14 @@ public class AuthProceduresBase
         }
     }
 
+    protected UserResult userResultForName( String username )
+    {
+        User user = userManager.silentlyGetUser( username );
+        Iterable<String> flags = user == null ? emptyList() : user.getFlags();
+        Set<String> roles = userManager.silentlyGetRoleNamesForUser( username );
+        return new UserResult( username, roles, flags );
+    }
+
     public static class UserResult
     {
         public final String username;
@@ -133,6 +161,11 @@ public class AuthProceduresBase
             this.flags = new ArrayList<>();
             for ( String f : flags ) {this.flags.add( f );}
         }
+    }
+
+    protected RoleResult roleResultForName( String roleName )
+    {
+        return new RoleResult( roleName, userManager.silentlyGetUsernamesForRole( roleName ) );
     }
 
     public static class RoleResult

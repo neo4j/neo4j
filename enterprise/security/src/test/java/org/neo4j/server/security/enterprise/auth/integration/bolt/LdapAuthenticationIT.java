@@ -52,9 +52,14 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
@@ -62,6 +67,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 @RunWith( FrameworkRunner.class )
 @CreateDS(
@@ -238,6 +244,23 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnly() throws Throwable
     {
         testAuthWithNoPermissionUser( "smith" );
+    }
+
+    @Test
+    public void shouldShowCurrentUser() throws Throwable
+    {
+        // When
+        assertAuth( "smith", "abc123" );
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.security.showCurrentUser()" ),
+                pullAll() ) );
+
+        // Then
+        // Assuming showCurrentUser has fields username, roles, flags
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgRecord( eqRecord( equalTo( "smith" ), equalTo( emptyList() ), equalTo( emptyList() ) ) )
+            ) );
     }
 
     @Test

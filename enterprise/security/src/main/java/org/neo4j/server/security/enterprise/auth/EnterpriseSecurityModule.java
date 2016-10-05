@@ -33,24 +33,26 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.server.security.auth.UserManager;
 import org.neo4j.server.security.enterprise.auth.plugin.PluginRealm;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.time.Clocks;
 
 import static org.neo4j.kernel.api.proc.Context.AUTH_SUBJECT;
@@ -66,35 +68,53 @@ public class EnterpriseSecurityModule extends SecurityModule
     }
 
     @Override
-    public void setup( PlatformModule platformModule, Procedures procedures ) throws KernelException
+    public void setup( Dependencies dependencies ) throws KernelException
     {
-        Config config = platformModule.config;
-        LogProvider logProvider = platformModule.logging.getUserLogProvider();
-        JobScheduler jobScheduler = platformModule.jobScheduler;
-        FileSystemAbstraction fileSystem = platformModule.fileSystem;
+        Config config = dependencies.config();
+        Procedures procedures = dependencies.procedures();
+        LogProvider logProvider = dependencies.logService().getUserLogProvider();
+        JobScheduler jobScheduler = dependencies.scheduler();
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        LifeSupport life = dependencies.lifeSupport();
 
         SecurityLog securityLog = SecurityLog.create(
                 config,
-                platformModule.logging.getInternalLog( GraphDatabaseFacade.class ),
+                dependencies.logService().getInternalLog( GraphDatabaseFacade.class ),
                 fileSystem,
                 jobScheduler
             );
-        platformModule.life.add( securityLog );
+        life.add( securityLog );
 
         EnterpriseAuthAndUserManager authManager = newAuthManager( config, logProvider, securityLog, fileSystem, jobScheduler );
-        platformModule.life.add( platformModule.dependencies.satisfyDependency( authManager ) );
+        life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
         // Register procedures
         procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
-        procedures.registerProcedure( SecurityProcedures.class, true );
+        procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager );
 
         if ( config.get( SecuritySettings.native_authentication_enabled )
              || config.get( SecuritySettings.native_authorization_enabled ) )
         {
-            procedures.registerComponent( UserManager.class,
-                    ctx -> authManager.getUserManager( ctx.get( AUTH_SUBJECT ) ) );
+            procedures.registerComponent( EnterpriseUserManager.class,
+                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( AUTH_SUBJECT ) ) ) );
             procedures.registerProcedure( UserManagementProcedures.class, true );
         }
+        else
+        {
+            procedures.registerComponent( EnterpriseUserManager.class, ctx -> EnterpriseUserManager.NOOP );
+        }
+
+        procedures.registerProcedure( SecurityProcedures.class, true );
+    }
+
+    private EnterpriseAuthSubject asEnterprise( AuthSubject authSubject )
+    {
+        if ( authSubject instanceof EnterpriseAuthSubject )
+        {
+            return ((EnterpriseAuthSubject) authSubject);
+        }
+        // TODO: better handling of this possible cast failure
+        throw new RuntimeException( "Expected EnterpriseAuthSubject, got " + authSubject.getClass().getName() );
     }
 
     public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,
@@ -114,8 +134,8 @@ public class EnterpriseSecurityModule extends SecurityModule
             realms.add( internalRealm );
         }
 
-        if ( (config.get( SecuritySettings.ldap_authentication_enabled ) ||
-                config.get( SecuritySettings.ldap_authorization_enabled ))
+        if ( ( config.get( SecuritySettings.ldap_authentication_enabled ) ||
+                config.get( SecuritySettings.ldap_authorization_enabled ) )
                 && configuredRealms.contains( SecuritySettings.LDAP_REALM_NAME ) )
         {
             realms.add( new LdapRealm( config, securityLog ) );

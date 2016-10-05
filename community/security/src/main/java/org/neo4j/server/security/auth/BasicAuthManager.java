@@ -174,6 +174,12 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         return user;
     }
 
+    @Override
+    public User silentlyGetUser( String username )
+    {
+        return  userRepository.getUserByName( username );
+    }
+
     public void setPassword( AuthSubject authSubject, String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {

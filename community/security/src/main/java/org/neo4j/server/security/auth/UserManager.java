@@ -33,6 +33,8 @@ public interface UserManager
 
     User getUser( String username ) throws InvalidArgumentsException;
 
+    User silentlyGetUser( String username );
+
     void setUserPassword( String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException;
 
