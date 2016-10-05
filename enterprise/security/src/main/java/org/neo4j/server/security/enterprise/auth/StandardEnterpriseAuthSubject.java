@@ -73,11 +73,11 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     {
         getUserManager().setUserPassword( shiroSubject.getPrincipal().toString(), password, requirePasswordChange );
         // Make user authenticated if successful
-        passwordChangeNoLongerRequired();
+        setPasswordChangeNoLongerRequired();
     }
 
     @Override
-    public void passwordChangeNoLongerRequired()
+    public void setPasswordChangeNoLongerRequired()
     {
         if ( getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
         {

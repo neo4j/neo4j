@@ -41,9 +41,10 @@ public interface AuthSubject extends AccessMode
     void setPassword( String password, boolean requirePasswordChange ) throws IOException, InvalidArgumentsException;
 
     /**
-     * Changes authentication status to SUCCESS if in PASSWORD_CHANGE_REQUIRED
+     * Changes the {@link AuthenticationResult} status to {@link AuthenticationResult#SUCCESS SUCCESS} if it was {@link AuthenticationResult#PASSWORD_CHANGE_REQUIRED PASSWORD_CHANGE_REQUIRED}.
+     * This allows users that changed their password to become authorized for continued processing.
      */
-    void passwordChangeNoLongerRequired();
+    void setPasswordChangeNoLongerRequired();
 
     /**
      * Determines whether this subject is allowed to execute a procedure with the parameter string in its procedure annotation.
@@ -98,7 +99,7 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public void passwordChangeNoLongerRequired()
+        public void setPasswordChangeNoLongerRequired()
         {
         }
 
@@ -222,7 +223,7 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public void passwordChangeNoLongerRequired()
+        public void setPasswordChangeNoLongerRequired()
         {
         }
 

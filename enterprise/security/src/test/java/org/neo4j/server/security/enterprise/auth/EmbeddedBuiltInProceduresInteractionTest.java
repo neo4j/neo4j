@@ -161,7 +161,7 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
             }
 
             @Override
-            public void passwordChangeNoLongerRequired()
+            public void setPasswordChangeNoLongerRequired()
             {
             }
 

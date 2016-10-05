@@ -70,7 +70,7 @@ public class UserManagementProcedures extends AuthProceduresBase
         userManager.setUserPassword( username, newPassword, requirePasswordChange );
         if ( authSubject.hasUsername( username ) )
         {
-            authSubject.passwordChangeNoLongerRequired();
+            authSubject.setPasswordChangeNoLongerRequired();
         }
     }
 

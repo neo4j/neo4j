@@ -94,11 +94,11 @@ public class BasicAuthSubject implements AuthSubject
         authManager.setPassword( this, user.name(), password, requirePasswordChange );
 
         // Make user authenticated if successful
-        passwordChangeNoLongerRequired();
+        setPasswordChangeNoLongerRequired();
     }
 
     @Override
-    public void passwordChangeNoLongerRequired()
+    public void setPasswordChangeNoLongerRequired()
     {
         if ( authenticationResult == PASSWORD_CHANGE_REQUIRED )
         {
