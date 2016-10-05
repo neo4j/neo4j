@@ -536,6 +536,13 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     }
 
                     @Override
+                    public State ackFailure( BoltStateMachine machine ) throws BoltConnectionFatality
+                    {
+                        machine.ctx.markIgnored();
+                        return INTERRUPTED;
+                    }
+
+                    @Override
                     public State run( BoltStateMachine machine, String statement, Map<String, Object>
                             params ) throws BoltConnectionFatality
                     {
