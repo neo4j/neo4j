@@ -175,6 +175,94 @@ public class GraphDatabaseServiceTest
     }
 
     @Test
+    public void terminateNestedTransactionThrowsExceptionOnNextNestedOperationMultiThreadedVersion() throws Exception
+    {
+        // Given
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try
+        {
+            // When
+            final CountDownLatch txSet = new CountDownLatch( 1 );
+            final CountDownLatch terminated = new CountDownLatch( 1 );
+            final Transaction[] outer = {null};
+            final Exception[] threadFail = {null};
+
+            Thread worker = new Thread( () ->
+                                        {
+                                            try ( Transaction inner = db.beginTx() )
+                                            {
+                                                outer[0] = inner;
+                                                txSet.countDown();
+                                                terminated.await();
+                                                db.createNode();
+                                                fail( "should have failed earlier" );
+                                            }
+                                            catch ( Exception e )
+                                            {
+                                                threadFail[0] = e;
+                                            }
+                                        } );
+            worker.start();
+            txSet.await();
+            outer[0].terminate();
+            terminated.countDown();
+            worker.join();
+            assertThat(threadFail[0], instanceOf(TransactionTerminatedException.class));
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void terminateNestedTransactionThrowsExceptionOnNextNestedOperationMultiThreadedVersionWithNestedTx()
+            throws Exception
+    {
+        // Given
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try
+        {
+            // When
+            final CountDownLatch txSet = new CountDownLatch( 1 );
+            final CountDownLatch terminated = new CountDownLatch( 1 );
+            final Transaction[] outer = {null};
+            final Exception[] threadFail = {null};
+
+            Thread worker = new Thread( () ->
+                                        {
+                                            Transaction transaction = db.beginTx();
+                                            try ( Transaction inner = db.beginTx() )
+                                            {
+                                                outer[0] = inner;
+                                                txSet.countDown();
+                                                terminated.await();
+                                                db.createNode();
+                                                fail( "should have failed earlier" );
+                                            }
+                                            catch ( Exception e )
+                                            {
+                                                threadFail[0] = e;
+                                            }
+                                            finally
+                                            {
+                                                transaction.close();
+                                            }
+                                        } );
+            worker.start();
+            txSet.await();
+            outer[0].terminate();
+            terminated.countDown();
+            worker.join();
+            assertThat(threadFail[0], instanceOf(TransactionTerminatedException.class));
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
     public void givenDatabaseAndStartedTxWhenShutdownAndStartNewTxThenBeginTxTimesOut() throws Exception
     {
         // Given
