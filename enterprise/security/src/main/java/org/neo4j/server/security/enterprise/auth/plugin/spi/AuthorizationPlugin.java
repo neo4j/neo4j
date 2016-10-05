@@ -26,7 +26,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 /**
  * An authorization plugin realm for the Neo4j enterprise security module.
  *
- * <p>If the configuration setting <tt>dbms.security.realms.plugin.authorization_enabled</tt> is set to <tt>true</tt>,
+ * <p>If the configuration setting <tt>dbms.security.providers.plugin.authorization_enabled</tt> is set to <tt>true</tt>,
  * all objects that implements this interface that exists in the class path at Neo4j startup, will be
  * loaded as services.
  *
