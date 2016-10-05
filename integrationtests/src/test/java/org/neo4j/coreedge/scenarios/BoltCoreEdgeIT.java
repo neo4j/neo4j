@@ -41,6 +41,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -241,6 +242,82 @@ public class BoltCoreEdgeIT
         finally
         {
             driver.close();
+        }
+    }
+
+    /*
+       Create a session with empty arg list (no AccessMode arg), in a driver that was initialized with a bolt+routing
+       URI, and ensure that it
+       a) works against the Leader for reads and writes before a leader switch, and
+       b) receives a SESSION EXPIRED after a leader switch, and
+       c) keeps working if a new session is created after that exception, again with no access mode specified.
+     */
+    @Test
+    public void shouldReadAndWriteToANewSessionCreatedAfterALeaderSwitch() throws Exception
+    {
+        // given
+        cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
+        CoreClusterMember leader = cluster.awaitLeader(  );
+
+        Driver driver = GraphDatabase.driver( leader.routingAddress(), AuthTokens.basic( "neo4j", "neo4j" ) );
+
+        try ( Session session = driver.session() )
+        {
+            // execute a write/read query
+            session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+            assertEquals( 1, record.get( "count" ).asInt() );
+
+            // change leader
+            switchLeader( leader );
+            session.run( "CREATE (p:Person {name: {name} })" ).consume();
+            fail( "Should have thrown an exception as the leader went away mid session" );
+        }
+        catch ( SessionExpiredException sep )
+        {
+            // then
+            assertEquals( String.format("Server at %s no longer accepts writes", leader.boltAdvertisedAddress()),
+                    sep.getMessage() );
+        }
+
+        try ( Session session = driver.session() )
+        {
+            // execute a write/read query
+            session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+            assertEquals( 2, record.get( "count" ).asInt() );
+        }
+        finally
+        {
+            driver.close();
+        }
+    }
+
+    // Ensure that Bookmarks work with single instances using a driver created using a bolt[not+routing] URI.
+    @Test
+    public void bookmarksShouldWorkWithDriverPinnedToSingleServer() throws Exception
+    {
+        // given
+        cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
+        CoreClusterMember leader = cluster.awaitLeader(  );
+
+        Driver driver = GraphDatabase.driver( "bolt://" + leader.boltAdvertisedAddress(),
+                AuthTokens.basic( "neo4j", "neo4j" ) );
+
+        String bookmark;
+        try ( Session session = driver.session(); Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+            tx.success();
+
+            bookmark = session.lastBookmark();
+        }
+
+        try ( Session session = driver.session(); Transaction tx = session.beginTransaction( bookmark ) )
+        {
+            Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+            assertEquals( 1, record.get( "count" ).asInt() );
+            tx.success();
         }
     }
 
