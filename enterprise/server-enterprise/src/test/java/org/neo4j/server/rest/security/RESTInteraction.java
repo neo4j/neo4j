@@ -80,8 +80,7 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
                         NeoInteractionLevel.tempPath( "key", ".key" ) )
                 .withProperty( BoltKernelExtension.Settings.tls_certificate_file.name(),
                         NeoInteractionLevel.tempPath( "cert", ".cert" ) )
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( true ) )
-                .withProperty( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" );
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( true ) );
 
         for ( Map.Entry<String,String> entry : config.entrySet() )
         {

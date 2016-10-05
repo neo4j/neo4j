@@ -25,45 +25,49 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class MultiRealmAuthManagerRule implements TestRule
 {
     private UserRepository users;
     private AuthenticationStrategy authStrategy;
     private MultiRealmAuthManager manager;
-    private EnterpriseUserManager userManager;
-    private AssertableLogProvider logProvider;
     private SecurityLog securityLog;
+    private StringWriter securityLogWriter;
 
     public MultiRealmAuthManagerRule(
             UserRepository users,
             AuthenticationStrategy authStrategy
-    )
-    {
+    ) {
         this.users = users;
         this.authStrategy = authStrategy;
-
-        logProvider = new AssertableLogProvider();
     }
 
     private void setupAuthManager( AuthenticationStrategy authStrategy ) throws Throwable
     {
-        Log log = logProvider.getLog( this.getClass() );
+        FormattedLog.Builder builder = FormattedLog.withUTCTimeZone();
+        securityLogWriter = new StringWriter();
+        Log log = builder.toWriter( securityLogWriter );
+
         securityLog = new SecurityLog( log );
         InternalFlatFileRealm internalFlatFileRealm =
                 new InternalFlatFileRealm(
@@ -78,8 +82,6 @@ public class MultiRealmAuthManagerRule implements TestRule
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
                 new MemoryConstrainedCacheManager(), securityLog, true );
         manager.init();
-
-        userManager = manager.getUserManager();
     }
 
     public EnterpriseAuthAndUserManager getManager()
@@ -129,33 +131,23 @@ public class MultiRealmAuthManagerRule implements TestRule
         manager.shutdown();
     }
 
-    public void assertExactlyInfoInLog( String message )
+    public FullSecurityLog getFullSecurityLog()
     {
-        logProvider.assertExactly( inLog( this.getClass() ).info( message ) );
+        return new FullSecurityLog( securityLogWriter.getBuffer().toString().split( "\n" ) );
     }
 
-    public void assertExactlyInfoInLog( String message, Object... values )
+    public static class FullSecurityLog
     {
-        logProvider.assertExactly( inLog( this.getClass() ).info( message, values ) );
-    }
+        List<String> lines;
 
-    public void assertExactlyWarnInLog( String message )
-    {
-        logProvider.assertExactly( inLog( this.getClass() ).warn( message ) );
-    }
+        private FullSecurityLog( String[] logLines )
+        {
+            lines = Arrays.asList( logLines );
+        }
 
-    public void assertExactlyWarnInLog( String message, Object... values )
-    {
-        logProvider.assertExactly( inLog( this.getClass() ).warn( message, values ) );
-    }
-
-    public void assertExactlyErrorInLog( String message )
-    {
-        logProvider.assertExactly( inLog( this.getClass() ).error( message ) );
-    }
-
-    public void assertExactlyErrorInLog( String message, Object... values )
-    {
-        logProvider.assertExactly( inLog( this.getClass() ).error( message, values ) );
+        public void assertHasLine( String subject, String msg )
+        {
+            assertThat( lines, hasItem( containsString( "[" + subject + "]: " + msg ) ) );
+        }
     }
 }

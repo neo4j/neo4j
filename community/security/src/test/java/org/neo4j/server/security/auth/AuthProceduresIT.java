@@ -239,13 +239,11 @@ public class AuthProceduresIT
         removePreviousAuthFile();
         Map<Setting<?>, String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-        settings.put( GraphDatabaseSettings.auth_manager, "basic-auth-manager" );
 
         TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
             .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.auth_enabled, "true" )
-                .setConfig( GraphDatabaseSettings.auth_manager, "basic-auth-manager" );
+                .setConfig( GraphDatabaseSettings.auth_enabled, "true" );
 
         return graphDatabaseFactory.newGraphDatabase();
     }

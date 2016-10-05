@@ -537,25 +537,25 @@ public abstract class ProcedureInteractionTestBase<S>
         }
 
         @Procedure( name = "test.allowedProcedure1", allowed = {"role1"}, mode = Mode.READ )
-        public Stream<AuthProcedures.StringResult> allowedProcedure1()
+        public Stream<AuthProceduresBase.StringResult> allowedProcedure1()
         {
             db.execute( "MATCH (:Foo) RETURN 'foo' AS foo" );
-            return Stream.of( new AuthProcedures.StringResult( "foo" ) );
+            return Stream.of( new AuthProceduresBase.StringResult( "foo" ) );
         }
 
         @Procedure( name = "test.allowedProcedure2", allowed = {"otherRole", "role1"}, mode = Mode.WRITE )
-        public Stream<AuthProcedures.StringResult> allowedProcedure2()
+        public Stream<AuthProceduresBase.StringResult> allowedProcedure2()
         {
             db.execute( "CREATE (:VeryUniqueLabel {prop: 'a'})" );
             return db.execute( "MATCH (n:VeryUniqueLabel) RETURN n.prop AS a LIMIT 1" ).stream()
-                    .map( r -> new AuthProcedures.StringResult( (String) r.get( "a" ) ) );
+                    .map( r -> new AuthProceduresBase.StringResult( (String) r.get( "a" ) ) );
         }
 
         @Procedure( name = "test.allowedProcedure3", allowed = {"role1"}, mode = Mode.SCHEMA )
-        public Stream<AuthProcedures.StringResult> allowedProcedure3()
+        public Stream<AuthProceduresBase.StringResult> allowedProcedure3()
         {
             db.execute( "CREATE INDEX ON :VeryUniqueLabel(prop)" );
-            return Stream.of( new AuthProcedures.StringResult( "OK" ) );
+            return Stream.of( new AuthProceduresBase.StringResult( "OK" ) );
         }
 
         @Procedure( name = "test.createNode", mode = WRITE )

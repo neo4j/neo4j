@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.enterprise;
+package org.neo4j.server.security.enterprise.log;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLog;
@@ -35,9 +34,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.logging.async.AsyncLog;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static org.neo4j.helpers.Strings.escape;
-import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.security_log_filename;
 
 public class SecurityLog extends LifecycleAdapter implements Log
 {
@@ -47,12 +46,12 @@ public class SecurityLog extends LifecycleAdapter implements Log
     public SecurityLog( Config config, FileSystemAbstraction fileSystem, Executor executor ) throws IOException
     {
         FormattedLog.Builder builder = FormattedLog.withUTCTimeZone();
-        File logFile = config.get( security_log_filename );
+        File logFile = config.get( SecuritySettings.security_log_filename );
 
         rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile,
-                config.get( EnterpriseEditionSettings.store_security_log_rotation_threshold ),
-                config.get( EnterpriseEditionSettings.store_security_log_rotation_delay ),
-                config.get( EnterpriseEditionSettings.store_security_log_max_archives ), executor );
+                config.get( SecuritySettings.store_security_log_rotation_threshold ),
+                config.get( SecuritySettings.store_security_log_rotation_delay ),
+                config.get( SecuritySettings.store_security_log_max_archives ), executor );
 
         this.inner = new AsyncLog(
                 event -> executor.execute( event::process ),
