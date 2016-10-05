@@ -33,6 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -100,8 +101,11 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
+import static java.lang.String.format;
+
 public class OperationsFacade
-        implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations
+        implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations,
+        ProcedureCallOperations
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;
@@ -569,12 +573,6 @@ public class OperationsFacade
     public Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException
     {
         return callFunction( name, input );
-    }
-
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException
-    {
-        return callProcedure( name, input, AccessMode.Static.READ );
     }
 
     @Override
@@ -1089,13 +1087,6 @@ public class OperationsFacade
         return dataWrite().graphRemoveProperty( statement, propertyKeyId );
     }
 
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException
-    {
-        // FIXME: should this be AccessMode.Static.WRITE instead?
-        return callProcedure( name, input, AccessMode.Static.FULL );
-    }
-
     // </DataWrite>
 
     // <SchemaWrite>
@@ -1158,12 +1149,6 @@ public class OperationsFacade
     {
         statement.assertOpen();
         schemaWrite().uniqueIndexDrop( statement, descriptor );
-    }
-
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
-    {
-        return callProcedure( name, input, AccessMode.Static.FULL );
     }
 
     // </SchemaWrite>
@@ -1510,19 +1495,88 @@ public class OperationsFacade
 
     // <Procedures>
 
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        if ( !tx.mode().allowsReads() )
+        {
+            throw tx.mode().onViolation( format( "Read operations are not allowed for '%s'.", tx.mode().name() ) );
+        }
+        return callProcedure( name, input, AccessMode.Static.READ );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    {
+        return callProcedure( name, input, override );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        if ( !tx.mode().allowsWrites() )
+        {
+            throw tx.mode().onViolation( format( "Write operations are not allowed for '%s'.", tx.mode().name() ) );
+        }
+        return callProcedure( name, input, AccessMode.Static.WRITE );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    {
+        return callProcedure( name, input, override );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        if ( !tx.mode().allowsSchemaWrites() )
+        {
+            throw tx.mode().onViolation( format( "Schema operations are not allowed for '%s'.", tx.mode().name() ) );
+        }
+        return callProcedure( name, input, AccessMode.Static.FULL );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    {
+        return callProcedure( name, input, override );
+    }
+
     private RawIterator<Object[],ProcedureException> callProcedure(
-            QualifiedName name, Object[] input, AccessMode mode )
+            QualifiedName name, Object[] input, final AccessMode mode )
             throws ProcedureException
     {
         statement.assertOpen();
 
+        final RawIterator<Object[],ProcedureException> procedureCall;
         try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );
             ctx.put( Context.THREAD, Thread.currentThread() );
-            return procedures.callProcedure( ctx, name, input );
+            procedureCall = procedures.callProcedure( ctx, name, input );
         }
+        return new RawIterator<Object[],ProcedureException>()
+        {
+            @Override
+            public boolean hasNext() throws ProcedureException
+            {
+                try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
+                {
+                    return procedureCall.hasNext();
+                }
+            }
+
+            @Override
+            public Object[] next() throws ProcedureException
+            {
+                try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
+                {
+                    return procedureCall.next();
+                }
+            }
+        };
     }
 
     private Object callFunction(

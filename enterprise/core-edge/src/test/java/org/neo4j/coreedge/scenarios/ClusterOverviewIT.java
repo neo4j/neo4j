@@ -339,7 +339,7 @@ public class ClusterOverviewIT
         try ( Statement statement = transaction.acquireStatement() )
         {
 
-            RawIterator<Object[],ProcedureException> itr = statement.readOperations().procedureCallRead(
+            RawIterator<Object[],ProcedureException> itr = statement.procedureCallOperations().procedureCallRead(
                     procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
 
             while ( itr.hasNext() )

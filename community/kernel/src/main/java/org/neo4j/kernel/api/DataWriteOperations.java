@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.security.AccessMode;
 
 public interface DataWriteOperations extends TokenWriteOperations
 {
@@ -148,7 +149,4 @@ public interface DataWriteOperations extends TokenWriteOperations
     void nodeLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
 
     void relationshipLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
-
-    /** Invoke a read/write procedure by name */
-    RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException;
 }

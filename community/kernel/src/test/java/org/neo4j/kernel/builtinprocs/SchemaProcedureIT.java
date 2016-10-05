@@ -58,7 +58,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
+                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{new ArrayList<>(), new ArrayList<>()} ) ) );
@@ -84,7 +84,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
+                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
 
         // Then
         while ( stream.hasNext() )
@@ -117,7 +117,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
+                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
 
         // Then
         while ( stream.hasNext() )

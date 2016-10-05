@@ -91,7 +91,7 @@ public class ClusterMembershipChangeIT
         Statement statement = transaction.acquireStatement();
 
         // when
-        return asList( statement.readOperations().procedureCallRead(
+        return asList( statement.procedureCallOperations().procedureCallRead(
                 procedureName( "dbms", "cluster", GetServersProcedure.NAME ), new Object[0] ) );
     }
 }

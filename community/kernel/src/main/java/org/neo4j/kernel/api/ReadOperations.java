@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -565,9 +566,6 @@ public interface ReadOperations
 
     /** Fetch all registered procedures */
     Set<ProcedureSignature> proceduresGetAll();
-
-    /** Invoke a read-only procedure by name */
-    RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException;
 
     /** Invoke a read-only procedure by name */
    Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException;

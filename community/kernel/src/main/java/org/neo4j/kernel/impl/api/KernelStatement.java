@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.QueryRegistryOperations;
@@ -94,6 +95,12 @@ public class KernelStatement implements TxStateHolder, Statement
             throw transaction.mode().onViolation(
                     String.format( "Read operations are not allowed for '%s'.", transaction.mode().name() ) );
         }
+        return facade;
+    }
+
+    @Override
+    public ProcedureCallOperations procedureCallOperations()
+    {
         return facade;
     }
 

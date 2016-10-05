@@ -41,6 +41,7 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.HostnamePort;
@@ -75,13 +76,16 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
-import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
 public abstract class ProcedureInteractionTestBase<S>
 {
     protected boolean PWD_CHANGE_CHECK_FIRST = false;
     protected String CHANGE_PWD_ERR_MSG = AuthorizationViolationException.PERMISSION_DENIED;
-    private String BOLT_PWD_ERR_MSG =
+    private static final String BOLT_PWD_ERR_MSG =
             "The credentials you provided were valid, but must be changed before you can use this instance.";
     String READ_OPS_NOT_ALLOWED = "Read operations are not allowed";
     String WRITE_OPS_NOT_ALLOWED = "Write operations are not allowed";
@@ -300,7 +304,7 @@ public abstract class ProcedureInteractionTestBase<S>
         assertSuccess( subject, "CALL test.allowedProcedure1()",
                 r -> assertKeyIs( r, "value", "foo" ) );
         assertSuccess( subject, "CALL test.allowedProcedure2()",
-                r -> assertKeyIs( r, "value", "a" ) );
+                r -> assertKeyIs( r, "value", "a", "a" ) );
         assertSuccess( subject, "CALL test.allowedProcedure3()",
                 r -> assertKeyIs( r, "value", "OK" ) );
     }
@@ -420,7 +424,7 @@ public abstract class ProcedureInteractionTestBase<S>
     @SuppressWarnings( "unchecked" )
     public static void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
     {
-        List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
+        List<Map<String, Object>> result = r.stream().collect( toList() );
 
         assertEquals( "Results for should have size " + expected.size() + " but was " + result.size(),
                 expected.size(), result.size() );
@@ -519,6 +523,7 @@ public abstract class ProcedureInteractionTestBase<S>
         }
     }
 
+    @SuppressWarnings( "unused" )
     public static class ClassWithProcedures
     {
         @Context
@@ -536,19 +541,37 @@ public abstract class ProcedureInteractionTestBase<S>
             return Stream.of( new CountResult( nNodes ) );
         }
 
+        @Procedure( name = "test.staticReadProcedure", mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> staticReadProcedure()
+        {
+            return Stream.of( new AuthProceduresBase.StringResult( "static" ) );
+        }
+
+        @Procedure( name = "test.staticWriteProcedure", mode = Mode.WRITE )
+        public Stream<AuthProceduresBase.StringResult> staticWriteProcedure()
+        {
+            return Stream.of( new AuthProceduresBase.StringResult( "static" ) );
+        }
+
+        @Procedure( name = "test.staticSchemaProcedure", mode = Mode.SCHEMA )
+        public Stream<AuthProceduresBase.StringResult> staticSchemaProcedure()
+        {
+            return Stream.of( new AuthProceduresBase.StringResult( "static" ) );
+        }
+
         @Procedure( name = "test.allowedProcedure1", allowed = {"role1"}, mode = Mode.READ )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure1()
         {
-            db.execute( "MATCH (:Foo) RETURN 'foo' AS foo" );
-            return Stream.of( new AuthProceduresBase.StringResult( "foo" ) );
+            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "foo" ).toString() ) );
         }
 
         @Procedure( name = "test.allowedProcedure2", allowed = {"otherRole", "role1"}, mode = Mode.WRITE )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure2()
         {
-            db.execute( "CREATE (:VeryUniqueLabel {prop: 'a'})" );
-            return db.execute( "MATCH (n:VeryUniqueLabel) RETURN n.prop AS a LIMIT 1" ).stream()
-                    .map( r -> new AuthProceduresBase.StringResult( (String) r.get( "a" ) ) );
+            db.execute( "UNWIND [1, 2] AS i CREATE (:VeryUniqueLabel {prop: 'a'})" );
+            Result result = db.execute( "MATCH (n:VeryUniqueLabel) RETURN n.prop AS a LIMIT 2" );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "a" ).toString() ) );
         }
 
         @Procedure( name = "test.allowedProcedure3", allowed = {"role1"}, mode = Mode.SCHEMA )

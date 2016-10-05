@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.security.AccessMode;
 
 public interface SchemaWriteOperations extends TokenWriteOperations
 {
@@ -64,7 +65,4 @@ public interface SchemaWriteOperations extends TokenWriteOperations
      * That external job should become an internal job, at which point this operation should go away.
      */
     void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
-
-    /** Invoke a schema procedure by name */
-    RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException;
 }

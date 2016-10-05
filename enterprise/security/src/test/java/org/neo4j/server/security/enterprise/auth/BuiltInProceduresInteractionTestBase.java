@@ -67,11 +67,13 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.isA;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
 
 public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
@@ -660,6 +662,72 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         assertFalse( result.hasNext() );
         result.close();
+    }
+
+    @Test
+    public void shouldHandleWriteAfterAllowedReadProcedureWithAuthDisabled() throws Throwable
+    {
+        neo.tearDown();
+        neo = setUpNeoServer( stringMap( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
+        neo
+                .getLocalGraph()
+                .getDependencyResolver()
+                .resolveDependency( Procedures.class )
+                .registerProcedure( ClassWithProcedures.class );
+
+        S subject = neo.login( "no_auth", "" );
+        assertEmpty( subject, "CALL test.allowedProcedure1() YIELD value CREATE (:NEWNODE {name:value})" );
+    }
+
+    @Test
+    public void shouldHandleWriteAfterAllowedReadProcedureForWriteUser() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        userManager.addRoleToUser( PUBLISHER, "role1Subject" );
+        assertEmpty( neo.login( "role1Subject", "abc" ), "CALL test.allowedProcedure1() YIELD value CREATE (:NEWNODE {name:value})" );
+    }
+
+    @Test
+    public void shouldNotAllowNonWriterToWriteAfterCallingAllowedWriteProc() throws Exception
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "nopermission", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "nopermission" );
+        // should be able to invoke allowed procedure
+        assertSuccess( neo.login( "nopermission", "abc" ), "CALL test.allowedProcedure2()",
+                itr -> assertEquals( itr.stream().collect( toList() ).size(), 2 ) );
+        // should not be able to do writes
+        assertFail( neo.login( "nopermission", "abc" ),
+                "CALL test.allowedProcedure2() YIELD value CREATE (:NEWNODE {name:value})", WRITE_OPS_NOT_ALLOWED );
+    }
+
+    @Test
+    public void shouldNotAllowUnauthorizedAccessToProcedure() throws Exception
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "nopermission", "abc", false );
+        // should not be able to invoke any procedure
+        assertFail( neo.login( "nopermission", "abc" ), "CALL test.staticReadProcedure()", READ_OPS_NOT_ALLOWED );
+        assertFail( neo.login( "nopermission", "abc" ), "CALL test.staticWriteProcedure()", WRITE_OPS_NOT_ALLOWED );
+        assertFail( neo.login( "nopermission", "abc" ), "CALL test.staticSchemaProcedure()", SCHEMA_OPS_NOT_ALLOWED );
+    }
+
+    @Test
+    public void shouldNotAllowNonReaderToReadAfterCallingAllowedReadProc() throws Exception
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "nopermission", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "nopermission" );
+        // should not be able to invoke any procedure
+        assertSuccess( neo.login( "nopermission", "abc" ), "CALL test.allowedProcedure1()",
+                itr -> assertEquals( itr.stream().collect( toList() ).size(), 1 ));
+        assertFail( neo.login( "nopermission", "abc" ),
+                "CALL test.allowedProcedure1() YIELD value MATCH (n:Secret) RETURN n.pass", READ_OPS_NOT_ALLOWED);
     }
 
     /*
