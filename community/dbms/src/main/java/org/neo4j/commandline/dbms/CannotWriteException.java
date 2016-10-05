@@ -19,10 +19,14 @@
  */
 package org.neo4j.commandline.dbms;
 
-public class CannotWriteException extends Exception
+import java.nio.file.Path;
+
+import static java.lang.String.format;
+
+class CannotWriteException extends Exception
 {
-    public CannotWriteException( String message )
+    CannotWriteException( Path file )
     {
-        super(message);
+        super( format("Could not write to: %s", file.toAbsolutePath().toString() ));
     }
 }

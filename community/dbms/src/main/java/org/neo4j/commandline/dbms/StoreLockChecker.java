@@ -27,9 +27,9 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.internal.StoreLocker;
 
-public class StoreLockChecker
+class StoreLockChecker
 {
-    public Closeable withLock( Path databaseDirectory ) throws CommandFailed, CannotWriteException
+    Closeable withLock( Path databaseDirectory ) throws CommandFailed, CannotWriteException
     {
         Path lockFile = databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME );
         if ( Files.exists( lockFile ) )
@@ -44,7 +44,7 @@ public class StoreLockChecker
             }
             else
             {
-                throw new CannotWriteException( "Store is not writable. Check permissions and try again." );
+                throw new CannotWriteException( lockFile );
             }
         }
         return () ->
