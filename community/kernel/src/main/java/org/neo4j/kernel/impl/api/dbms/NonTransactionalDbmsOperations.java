@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.impl.api.security.AccessModeSnapshot;
 import org.neo4j.kernel.impl.proc.Procedures;
 
 public class NonTransactionalDbmsOperations implements DbmsOperations
@@ -47,9 +48,13 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     ) throws ProcedureException
     {
         BasicContext ctx = new BasicContext();
-        if ( mode instanceof AuthSubject )
+        AccessMode originalMode = (mode instanceof AccessModeSnapshot) ?
+                                  ((AccessModeSnapshot) mode).getOriginalAccessMode() :
+                                  mode;
+
+        if ( originalMode instanceof AuthSubject )
         {
-            ctx.put( Context.AUTH_SUBJECT, (AuthSubject) mode );
+            ctx.put( Context.AUTH_SUBJECT, (AuthSubject) originalMode );
         }
         return procedures.callProcedure( ctx, name, input );
     }

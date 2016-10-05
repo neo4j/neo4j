@@ -135,6 +135,12 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
             }
 
             @Override
+            public AccessMode getSnapshot()
+            {
+                return ANONYMOUS.getSnapshot();
+            }
+
+            @Override
             public boolean isAdmin()
             {
                 return false;

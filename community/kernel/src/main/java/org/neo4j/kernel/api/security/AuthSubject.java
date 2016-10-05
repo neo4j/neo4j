@@ -75,10 +75,62 @@ public interface AuthSubject extends AccessMode
         throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
     }
 
+    abstract class AccessModeAdapter implements AuthSubject
+    {
+        private final AccessMode accessMode;
+
+        public AccessModeAdapter( AccessMode accessMode )
+        {
+            this.accessMode = accessMode;
+        }
+
+        @Override
+        public boolean allowsReads()
+        {
+            return accessMode.allowsReads();
+        }
+
+        @Override
+        public boolean allowsWrites()
+        {
+            return accessMode.allowsWrites();
+        }
+
+        @Override
+        public boolean allowsSchemaWrites()
+        {
+            return accessMode.allowsSchemaWrites();
+        }
+
+        @Override
+        public boolean overrideOriginalMode()
+        {
+            return accessMode.overrideOriginalMode();
+        }
+
+        @Override
+        public AuthorizationViolationException onViolation( String msg )
+        {
+            return accessMode.onViolation( msg );
+        }
+
+        @Override
+        public String name()
+        {
+            return accessMode.name();
+        }
+
+        @Override
+        public AccessMode getSnapshot()
+        {
+            return accessMode;
+        }
+    }
+
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
-    AuthSubject ANONYMOUS = new AuthSubject()
+    AuthSubject ANONYMOUS = new AuthSubject.AccessModeAdapter( Static.NONE )
     {
         @Override
         public void logout()
@@ -116,36 +168,6 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public boolean allowsReads()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean allowsWrites()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean allowsSchemaWrites()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean overrideOriginalMode()
-        {
-            return false;
-        }
-
-        @Override
-        public AuthorizationViolationException onViolation( String msg )
-        {
-            return new AuthorizationViolationException( msg );
-        }
-
-        @Override
         public String name()
         {
             return "<anonymous>";
@@ -161,38 +183,8 @@ public interface AuthSubject extends AccessMode
     /**
      * Implementation to use when authentication is disabled. Allows everything.
      */
-    AuthSubject AUTH_DISABLED = new AuthSubject()
+    AuthSubject AUTH_DISABLED = new AuthSubject.AccessModeAdapter( Static.FULL )
     {
-        @Override
-        public boolean allowsReads()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean allowsWrites()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean allowsSchemaWrites()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean overrideOriginalMode()
-        {
-            return false;
-        }
-
-        @Override
-        public AuthorizationViolationException onViolation( String msg )
-        {
-            return new AuthorizationViolationException( msg );
-        }
-
         @Override
         public String name()
         {

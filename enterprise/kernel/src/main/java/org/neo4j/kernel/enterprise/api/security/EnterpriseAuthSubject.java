@@ -22,6 +22,7 @@ package org.neo4j.kernel.enterprise.api.security;
 import java.io.IOException;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -86,6 +87,12 @@ public interface EnterpriseAuthSubject extends AuthSubject
         public String name()
         {
             return AuthSubject.AUTH_DISABLED.name();
+        }
+
+        @Override
+        public AccessMode getSnapshot()
+        {
+            return AuthSubject.AUTH_DISABLED.getSnapshot();
         }
 
         @Override

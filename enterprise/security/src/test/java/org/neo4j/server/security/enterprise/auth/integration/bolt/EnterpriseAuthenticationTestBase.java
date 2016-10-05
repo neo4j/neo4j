@@ -27,18 +27,27 @@ import org.junit.Rule;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.Log;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Procedure;
+import org.neo4j.server.security.enterprise.auth.AuthProceduresBase;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -50,6 +59,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.procedure.Mode.READ;
 
 public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestUnit
 {
@@ -255,6 +265,39 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
                         String.format( "Write operations are not allowed for '%s'.", username ) ) ) );
+    }
+
+    protected void assertBeginTransaction() throws Exception
+    {
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "BEGIN" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+    }
+
+    protected void assertCommitTransaction() throws Exception
+    {
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "COMMIT" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+    }
+
+    protected void assertQuerySucceeds( String query ) throws Exception
+    {
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( query ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     protected Map<String,Object> authToken( String username, String password, String realm )

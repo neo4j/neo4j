@@ -80,6 +80,12 @@ public class OverriddenAccessMode implements AccessMode
         }
     }
 
+    @Override
+    public AccessMode getSnapshot()
+    {
+        return null;
+    }
+
     public String username()
     {
         return getUsernameFromAccessMode( originalMode );
@@ -94,6 +100,10 @@ public class OverriddenAccessMode implements AccessMode
         else if ( accessMode instanceof OverriddenAccessMode )
         {
             return ((OverriddenAccessMode) accessMode).username();
+        }
+        else if ( accessMode instanceof AccessModeSnapshot )
+        {
+            return getUsernameFromAccessMode( ((AccessModeSnapshot) accessMode).getOriginalAccessMode() );
         }
         else
         {

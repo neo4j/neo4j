@@ -161,6 +161,12 @@ public class BasicAuthSubject implements AuthSubject
     }
 
     @Override
+    public AccessMode getSnapshot()
+    {
+        return accessMode;
+    }
+
+    @Override
     public String username()
     {
         return user.name();
