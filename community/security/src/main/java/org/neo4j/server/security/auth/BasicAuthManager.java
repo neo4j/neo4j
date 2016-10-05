@@ -79,22 +79,14 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
 
         if ( userRepository.numberOfUsers() == 0 )
         {
-            if ( initialUserRepository.numberOfUsers() == 0 )
+            User neo4j = newUser( "neo4j", "neo4j", true );
+            if ( initialUserRepository.numberOfUsers() > 0 )
             {
-                newUser( "neo4j", "neo4j", true );
-            }
-        }
-        for ( String username : initialUserRepository.getAllUsernames() )
-        {
-            User oldUser = userRepository.getUserByName( username );
-            User newUser = initialUserRepository.getUserByName( username );
-            if ( oldUser == null )
-            {
-                userRepository.create( newUser );
-            }
-            else
-            {
-                userRepository.update( oldUser, newUser );
+                User user = initialUserRepository.getUserByName( "neo4j" );
+                if ( user != null )
+                {
+                    userRepository.update( neo4j, user );
+                }
             }
         }
     }

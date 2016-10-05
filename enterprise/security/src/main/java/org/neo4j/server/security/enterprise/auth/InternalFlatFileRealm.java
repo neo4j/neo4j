@@ -212,26 +212,17 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         {
             if ( userRepository.numberOfUsers() == 0 )
             {
-                if ( initialUserRepository.numberOfUsers() == 0 )
+                User neo4j = newUser( "neo4j", "neo4j", true );
+                if ( initialUserRepository.numberOfUsers() > 0 )
                 {
-                    newUser( "neo4j", "neo4j", true );
-                    return Collections.singleton( "neo4j" );
+                    User initUser = initialUserRepository.getUserByName( "neo4j" );
+                    if (initUser != null)
+                    {
+                        userRepository.update( neo4j, initUser );
+                    }
                 }
+                return Collections.singleton( "neo4j" );
             }
-            for ( String username : initialUserRepository.getAllUsernames() )
-            {
-                User oldUser = userRepository.getUserByName( username );
-                User newUser = initialUserRepository.getUserByName( username );
-                if ( oldUser == null )
-                {
-                    userRepository.create( newUser );
-                }
-                else
-                {
-                    userRepository.update( oldUser, newUser );
-                }
-            }
-            return initialUserRepository.getAllUsernames();
         }
         return Collections.emptySet();
     }

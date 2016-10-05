@@ -137,7 +137,7 @@ public class MultiRealmAuthManagerTest
                 CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         initialUserRepository.start();
         initialUserRepository.create(
-                new User.Builder( "initUser", Credential.forPassword( "123" ))
+                new User.Builder( "neo4j", Credential.forPassword( "123" ))
                         .withRequiredPasswordChange( false )
                         .build()
         );
@@ -147,14 +147,14 @@ public class MultiRealmAuthManagerTest
         manager.start();
 
         // Then
-        final User user = users.getUserByName( "initUser" );
+        final User user = users.getUserByName( "neo4j" );
         assertNotNull( user );
         assertTrue( user.credentials().matchesPassword( "123" ) );
         assertFalse( user.passwordChangeRequired() );
     }
 
     @Test
-    public void shouldAddInitialUserIfUsersExist() throws Throwable
+    public void shouldNotAddInitialUserIfUsersExist() throws Throwable
     {
         // Given
         FileUserRepository initialUserRepository =
@@ -171,9 +171,7 @@ public class MultiRealmAuthManagerTest
 
         // Then
         final User initUser = users.getUserByName( "initUser" );
-        assertNotNull( initUser );
-        assertTrue( initUser.credentials().matchesPassword( "123" ) );
-        assertFalse( initUser.passwordChangeRequired() );
+        assertNull( initUser );
 
         final User oldUser = users.getUserByName( "oldUser" );
         assertNotNull( oldUser );
@@ -182,7 +180,7 @@ public class MultiRealmAuthManagerTest
     }
 
     @Test
-    public void shouldUpdateUserIfInitialUserExist() throws Throwable
+    public void shouldNotUpdateUserIfInitialUserExist() throws Throwable
     {
         // Given
         FileUserRepository initialUserRepository =
@@ -200,8 +198,8 @@ public class MultiRealmAuthManagerTest
         // Then
         final User oldUser = users.getUserByName( "oldUser" );
         assertNotNull( oldUser );
-        assertTrue( oldUser.credentials().matchesPassword( "newPassword" ) );
-        assertFalse( oldUser.passwordChangeRequired() );
+        assertTrue( oldUser.credentials().matchesPassword( "oldPassword" ) );
+        assertTrue( oldUser.passwordChangeRequired() );
     }
 
     @Test
