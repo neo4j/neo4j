@@ -716,6 +716,20 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertFail( neo.login( "nopermission", "abc" ), "CALL test.staticSchemaProcedure()", SCHEMA_OPS_NOT_ALLOWED );
     }
 
+    @Test
+    public void shouldNotAllowNonReaderToReadAfterCallingAllowedReadProc() throws Exception
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "nopermission", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "nopermission" );
+        // should not be able to invoke any procedure
+        assertSuccess( neo.login( "nopermission", "abc" ), "CALL test.allowedProcedure1()",
+                itr -> assertEquals( itr.stream().collect( toList() ).size(), 1 ));
+        assertFail( neo.login( "nopermission", "abc" ),
+                "CALL test.allowedProcedure1() YIELD value MATCH (n:Secret) RETURN n.pass", READ_OPS_NOT_ALLOWED);
+    }
+
     /*
     This surface is hidden in 3.1, to possibly be completely removed or reworked later
     ==================================================================================
