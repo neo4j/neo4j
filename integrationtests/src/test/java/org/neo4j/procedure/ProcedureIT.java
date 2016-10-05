@@ -575,7 +575,7 @@ public class ProcedureIT
     {
         // Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Cannot perform schema updates in a transaction that has performed data updates" );
+        exception.expectMessage( "Schema operations are not allowed for 'FULL restricted to WRITE'." );
 
         // Give
         try ( Transaction ignore = db.beginTx() )
