@@ -32,25 +32,25 @@ public class PlaceboTransaction implements InternalTransaction
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private final Supplier<Statement> stmt;
-    private final Supplier<KernelTransaction> currentTransaction;
+    private final KernelTransaction currentTransaction;
     private boolean success;
 
     public PlaceboTransaction( Supplier<KernelTransaction> currentTransaction, Supplier<Statement> stmt )
     {
         this.stmt = stmt;
-        this.currentTransaction = currentTransaction;
+        this.currentTransaction = currentTransaction.get();
     }
 
     @Override
     public void terminate()
     {
-        currentTransaction.get().markForTermination( Status.Transaction.Terminated );
+        currentTransaction.markForTermination( Status.Transaction.Terminated );
     }
 
     @Override
     public void failure()
     {
-        currentTransaction.get().failure();
+        currentTransaction.failure();
     }
 
     @Override
@@ -64,7 +64,7 @@ public class PlaceboTransaction implements InternalTransaction
     {
         if ( !success )
         {
-            currentTransaction.get().failure();
+            currentTransaction.failure();
         }
     }
 
@@ -83,18 +83,18 @@ public class PlaceboTransaction implements InternalTransaction
     @Override
     public KernelTransaction.Type transactionType()
     {
-        return currentTransaction.get().transactionType();
+        return currentTransaction.transactionType();
     }
 
     @Override
     public AccessMode mode()
     {
-        return currentTransaction.get().mode();
+        return currentTransaction.mode();
     }
 
     @Override
     public KernelTransaction.Revertable overrideWith( AccessMode mode )
     {
-        return currentTransaction.get().overrideWith( mode );
+        return currentTransaction.overrideWith( mode );
     }
 }
