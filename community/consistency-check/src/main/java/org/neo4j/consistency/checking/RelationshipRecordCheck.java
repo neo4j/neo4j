@@ -453,7 +453,7 @@ public class RelationshipRecordCheck extends
         };
         protected final NodeField NODE;
 
-        private RelationshipField( NodeField node )
+        RelationshipField( NodeField node )
         {
             this.NODE = node;
         }
