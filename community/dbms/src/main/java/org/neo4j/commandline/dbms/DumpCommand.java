@@ -38,8 +38,8 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.server.configuration.ConfigLoader;
 
@@ -53,6 +53,9 @@ import static org.neo4j.kernel.impl.util.Converters.mandatory;
 
 public class DumpCommand implements AdminCommand
 {
+
+    private final StoreLockChecker storeLockChecker;
+
     public static class Provider extends AdminCommand.Provider
     {
         public Provider()
@@ -90,6 +93,7 @@ public class DumpCommand implements AdminCommand
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.dumper = dumper;
+        this.storeLockChecker = new StoreLockChecker();
     }
 
     @Override
@@ -99,7 +103,7 @@ public class DumpCommand implements AdminCommand
         Path archive = calculateArchive( database, parse( args, "to", Paths::get ) );
         Path databaseDirectory = toDatabaseDirectory( database );
 
-        try ( Closeable ignored = withLock( databaseDirectory ) )
+        try ( Closeable ignored = storeLockChecker.withLock( databaseDirectory ) )
         {
             dump( database, databaseDirectory, archive );
         }
@@ -110,6 +114,11 @@ public class DumpCommand implements AdminCommand
         catch ( IOException e )
         {
             wrapIOException( e );
+        }
+        catch ( CannotWriteException e )
+        {
+            throw new CommandFailed( "you do not have permission to dump the database -- is Neo4j running as a " +
+                    "different user?", e );
         }
     }
 
@@ -139,28 +148,6 @@ public class DumpCommand implements AdminCommand
     private Path calculateArchive( String database, Path to )
     {
         return Files.isDirectory( to ) ? to.resolve( database + ".dump" ) : to;
-    }
-
-    private Closeable withLock( Path databaseDirectory ) throws CommandFailed
-    {
-        Path lockFile = databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME );
-        if ( Files.exists( lockFile ) )
-        {
-            if ( Files.isWritable( lockFile ) )
-            {
-                StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
-                storeLocker.checkLock( databaseDirectory.toFile() );
-                return storeLocker::release;
-            }
-            else
-            {
-                throw new CommandFailed( "you do not have permission to dump the database -- is Neo4j running as a " +
-                        "different user?" );
-            }
-        }
-        return () ->
-        {
-        };
     }
 
     private void dump( String database, Path databaseDirectory, Path archive ) throws CommandFailed

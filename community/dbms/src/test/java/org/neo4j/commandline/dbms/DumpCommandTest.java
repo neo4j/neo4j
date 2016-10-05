@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -117,7 +118,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldRespectTheStoreLock() throws IOException, IncorrectUsage
+    public void shouldRespectTheStoreLock() throws IOException, IncorrectUsage, CommandFailed
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
@@ -318,7 +319,7 @@ public class DumpCommandTest
         }
     }
 
-    private void execute( final String database ) throws IncorrectUsage, CommandFailed
+    private void execute( final String database ) throws IncorrectUsage, CommandFailed, AccessDeniedException
     {
         new DumpCommand( homeDir, configDir, dumper )
                 .execute( new String[]{"--database=" + database, "--to=" + archive} );

@@ -20,21 +20,27 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.StoreLockException;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
 import static java.nio.file.Files.exists;
@@ -65,17 +71,17 @@ public class UnbindFromClusterCommand implements AdminCommand
         @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
-            return new UnbindFromClusterCommand( homeDir, new DefaultFileSystemAbstraction() );
+            return new UnbindFromClusterCommand( homeDir, configDir );
         }
     }
 
     private Path homeDir;
-    private FileSystemAbstraction fsa;
+    private Path configDir;
 
-    UnbindFromClusterCommand( Path homeDir, FileSystemAbstraction fsa )
+    UnbindFromClusterCommand( Path homeDir, Path configDir )
     {
         this.homeDir = homeDir;
-        this.fsa = fsa;
+        this.configDir = configDir;
     }
 
     @Override
@@ -85,54 +91,38 @@ public class UnbindFromClusterCommand implements AdminCommand
 
         try
         {
-            Path pathToSpecificDatabase =
-                    homeDir.resolve( "data" ).resolve( "databases" ).resolve( databaseNameFrom( parsedArgs ) );
-            confirmTargetDatabaseDirectoryExists( pathToSpecificDatabase );
+            Config config = loadNeo4jConfig( homeDir, configDir, databaseNameFrom( parsedArgs ) );
+            Path pathToSpecificDatabase = config.get( DatabaseManagementSystemSettings.database_path ).toPath();
+
+            Validators.CONTAINS_EXISTING_DATABASE.validate( pathToSpecificDatabase.toFile() );
             confirmClusterStateDirectoryExists( Paths.get( pathToSpecificDatabase.toString(), "cluster-state" ) );
             confirmTargetDirectoryIsWritable( pathToSpecificDatabase );
             deleteClusterStateIn( clusterStateFrom( pathToSpecificDatabase ) );
+        }
+        catch ( StoreLockException e )
+        {
+            throw new CommandFailed(
+                    "Database is currently locked. Please check that no other Neo4j instance using it.", e );
         }
         catch ( IllegalArgumentException e )
         {
             throw new IncorrectUsage( e.getMessage() );
         }
-        catch ( UnbindFailureException e )
+        catch ( UnbindFailureException | CannotWriteException e )
         {
             throw new CommandFailed( "Unbind failed: " + e.getMessage(), e );
         }
     }
 
+    private void confirmTargetDirectoryIsWritable( Path pathToSpecificDatabase )
+            throws CommandFailed, CannotWriteException
+    {
+        new StoreLockChecker().withLock( pathToSpecificDatabase );
+    }
+
     private Path clusterStateFrom( Path target )
     {
         return Paths.get( target.toString(), CLUSTER_STATE_DIRECTORY_NAME );
-    }
-
-    private void confirmTargetDirectoryIsWritable( Path dbDir ) throws CommandFailed
-    {
-        Path lockFile = dbDir.resolve( StoreLocker.STORE_LOCK_FILENAME );
-        if ( exists( lockFile ) )
-        {
-            if ( Files.isWritable( lockFile ) )
-            {
-                StoreLocker storeLocker = new StoreLocker( fsa );
-                try
-                {
-                    storeLocker.checkLock( dbDir.toFile() );
-                }
-                catch ( StoreLockException e )
-                {
-                    throw new CommandFailed( "Database is currently locked. Is a Neo4j instance still using it?" );
-                }
-            }
-        }
-    }
-
-    private void confirmTargetDatabaseDirectoryExists( Path target )
-    {
-        if ( !exists( target ) )
-        {
-            throw new IllegalArgumentException( format( "Database %s does not exist", target ) );
-        }
     }
 
     private void confirmClusterStateDirectoryExists( Path clusterStateDirectory ) throws UnbindFailureException
@@ -157,16 +147,7 @@ public class UnbindFromClusterCommand implements AdminCommand
 
     private String databaseNameFrom( Args parsedArgs )
     {
-        String databaseName = parsedArgs.get( "database" );
-        if ( databaseName == null )
-        {
-            throw new IllegalArgumentException(
-                    "No database name specified. Usage: neo4j-admin " + "unbind --database-<name>" );
-        }
-        else
-        {
-            return databaseName;
-        }
+        return parsedArgs.interpretOption( "database", Converters.mandatory(), s -> s );
     }
 
     private class UnbindFailureException extends Exception
@@ -180,5 +161,20 @@ public class UnbindFromClusterCommand implements AdminCommand
         {
             super( format( message, args ) );
         }
+    }
+
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
+    {
+        ConfigLoader configLoader = new ConfigLoader( settings() );
+        Config config = configLoader.loadConfig( Optional.of( homeDir.toFile() ),
+                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
+        Map<String,String> additionalConfig = new HashMap<>();
+        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
+        return config.with( additionalConfig );
+    }
+
+    private static List<Class<?>> settings()
+    {
+        return Arrays.asList( GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
     }
 }

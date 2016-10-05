@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
@@ -33,7 +32,6 @@ import java.util.UUID;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -60,7 +58,7 @@ public class UnbindFromClusterCommandTest
         fsa.mkdir( testDir.directory() );
 
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), fsa );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
 
         try
         {
@@ -71,7 +69,7 @@ public class UnbindFromClusterCommandTest
         catch ( IncorrectUsage e )
         {
             // then
-            assertThat( e.getMessage(), containsString( "No database name specified" ) );
+            assertThat( e.getMessage(), containsString( "Missing argument 'database'" ) );
         }
     }
 
@@ -83,7 +81,7 @@ public class UnbindFromClusterCommandTest
         fsa.mkdir( testDir.directory() );
 
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), fsa );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
 
         try
         {
@@ -94,7 +92,7 @@ public class UnbindFromClusterCommandTest
         catch ( IncorrectUsage e )
         {
             // then
-            assertThat( e.getMessage(), containsString( "does not exist" ) );
+            assertThat( e.getMessage(), containsString( "does not contain a database" ) );
         }
     }
 
@@ -106,9 +104,9 @@ public class UnbindFromClusterCommandTest
         fsa.mkdir( testDir.directory() );
 
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), fsa );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
 
-        Path fakeDbDir = createLockedFakeDbDir( testDir.directory().toPath() );
+        FileLock fileLock = createLockedFakeDbDir( testDir.directory().toPath() );
 
         try
         {
@@ -119,8 +117,12 @@ public class UnbindFromClusterCommandTest
         catch ( CommandFailed e )
         {
             // then
-            assertThat( e.getMessage(),
-                    containsString( "Database is currently locked. Is a Neo4j instance still using it?" ) );
+            assertThat( e.getMessage(), containsString(
+                    "Database is currently locked. Please check that no other Neo4j instance using it." ) );
+        }
+        finally
+        {
+            fileLock.release();
         }
     }
 
@@ -135,7 +137,7 @@ public class UnbindFromClusterCommandTest
 
         Path fakeDbDir = createUnlockedFakeDbDir( testDir.directory().toPath() );
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), fsa );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
 
         // when
         command.execute( databaseName( "graph.db" ) );
@@ -155,7 +157,7 @@ public class UnbindFromClusterCommandTest
         Files.delete( Paths.get( fakeDbDir.toString(), "cluster-state" ) );
 
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), fsa );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
 
         // when
         try
@@ -177,15 +179,17 @@ public class UnbindFromClusterCommandTest
 
     private Path createUnlockedFakeDbDir( Path parent ) throws IOException
     {
-        return createFakeDbDir( parent, false );
+        Path fakeDbDir = createFakeDbDir( parent );
+        Files.createFile( Paths.get( fakeDbDir.toString(), STORE_LOCK_FILENAME ) );
+        return fakeDbDir;
     }
 
-    private Path createLockedFakeDbDir( Path parent ) throws IOException
+    private FileLock createLockedFakeDbDir( Path parent ) throws IOException
     {
-        return createFakeDbDir( parent, true );
+        return createLockedStoreLockFileIn( createFakeDbDir( parent ) );
     }
 
-    private Path createFakeDbDir( Path parent, boolean locked ) throws IOException
+    private Path createFakeDbDir( Path parent ) throws IOException
     {
         Path data = createDirectory( parent, "data" );
         Path database = createDirectory( data, "databases" );
@@ -225,14 +229,6 @@ public class UnbindFromClusterCommandTest
         createFile( graph_db, "neostore.schemastore.db" );
         createFile( graph_db, "neostore.schemastore.db.id" );
         createFile( graph_db, "neostore.transaction.db.0" );
-        if ( locked )
-        {
-            createLockedStoreLockFileIn( graph_db );
-        }
-        else
-        {
-            createFile( graph_db, "store_lock" );
-        }
 
         return graph_db;
     }

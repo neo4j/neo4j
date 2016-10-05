@@ -17,24 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.admin;
+package org.neo4j.commandline.dbms;
 
-import org.neo4j.kernel.StoreLockException;
-
-public class CommandFailed extends Exception
+public class CannotWriteException extends Exception
 {
-    public CommandFailed( String message, Exception cause )
+    public CannotWriteException( String message )
     {
-        super( message, cause );
-    }
-
-    public CommandFailed( StoreLockException exception )
-    {
-        super( exception );
-    }
-
-    public CommandFailed( String message )
-    {
-        super( message );
+        super(message);
     }
 }
