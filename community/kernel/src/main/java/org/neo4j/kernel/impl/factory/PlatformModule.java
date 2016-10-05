@@ -24,9 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Iterables;
@@ -110,14 +108,10 @@ public class PlatformModule
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.databaseInfo = databaseInfo;
-        dependencies = new org.neo4j.kernel.impl.util.Dependencies( new Supplier<DependencyResolver>()
-        {
-            @Override
-            public DependencyResolver get()
-            {
-                return dataSourceManager.getDataSource().getDependencyResolver();
-            }
-        } );
+        this.dataSourceManager = new DataSourceManager();
+        dependencies = new org.neo4j.kernel.impl.util.Dependencies(
+                new DataSourceManager.DependencyResolverSupplier( dataSourceManager ) );
+
         life = dependencies.satisfyDependency( createLife() );
         this.graphDatabaseFacade = dependencies.satisfyDependency( graphDatabaseFacade );
 
@@ -172,7 +166,7 @@ public class PlatformModule
         // this was the place of the XaDataSourceManager. NeoStoreXaDataSource is create further down than
         // (specifically) KernelExtensions, which creates an interesting out-of-order issue with #doAfterRecovery().
         // Anyways please fix this.
-        dataSourceManager = dependencies.satisfyDependency( new DataSourceManager() );
+        dependencies.satisfyDependency( dataSourceManager );
 
         availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), logging.getInternalLog(
                 AvailabilityGuard.class ) );
