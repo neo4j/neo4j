@@ -74,38 +74,38 @@ public class SecuritySettings
     @Description( "Enable authentication via native authentication provider." )
     @Internal
     public static final Setting<Boolean> native_authentication_enabled =
-            derivedSetting( "dbms.security.auth_providers.native.authentication_enabled", active_realms,
+            derivedSetting( "dbms.security.native.authentication_enabled", active_realms,
                     ( providers ) -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authorization via native authorization provider." )
     @Internal
     public static final Setting<Boolean> native_authorization_enabled =
-            derivedSetting( "dbms.security.auth_providers.native.authorization_enabled", active_realms,
+            derivedSetting( "dbms.security.native.authorization_enabled", active_realms,
                     ( providers ) -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authentication via settings configurable LDAP authentication provider." )
     @Internal
     public static final Setting<Boolean> ldap_authentication_enabled =
-            derivedSetting( "dbms.security.auth_providers.ldap.authentication_enabled", active_realms,
+            derivedSetting( "dbms.security.ldap.authentication_enabled", active_realms,
                     ( providers ) -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authorization via settings configurable LDAP authorization provider." )
     @Internal
     public static final Setting<Boolean> ldap_authorization_enabled =
-            derivedSetting( "dbms.security.auth_providers.ldap.authorization_enabled", active_realms,
+            derivedSetting( "dbms.security.ldap.authorization_enabled", active_realms,
                     ( providers ) -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authentication via plugin authentication providers." )
     @Internal
     public static final Setting<Boolean> plugin_authentication_enabled =
-            derivedSetting( "dbms.security.auth_providers.plugin.authentication_enabled", active_realms,
+            derivedSetting( "dbms.security.plugin.authentication_enabled", active_realms,
                     ( providers ) -> providers.stream().anyMatch( ( r ) -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
                     BOOLEAN );
 
     @Description( "Enable authorization via plugin authorization providers." )
     @Internal
     public static final Setting<Boolean> plugin_authorization_enabled =
-            derivedSetting( "dbms.security.auth_providers.plugin.authorization_enabled", active_realms,
+            derivedSetting( "dbms.security.plugin.authorization_enabled", active_realms,
                     ( providers ) -> providers.stream().anyMatch( ( r ) -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
                     BOOLEAN );
 
@@ -117,20 +117,20 @@ public class SecuritySettings
                   "If no protocol is specified the default will be `ldap://`. To use LDAPS, " +
                   "set the protocol and port, e.g. `ldaps://ldap.example.com:636`" )
     public static final Setting<String> ldap_server =
-            setting( "dbms.security.auth_providers.ldap.host", STRING, "0.0.0.0:389" );
+            setting( "dbms.security.ldap.host", STRING, "0.0.0.0:389" );
 
     @Description( "Use secure communication with the LDAP server using opportunistic TLS. " +
             "First an initial insecure connection will be made with the LDAP server and a STARTTLS command will be " +
             "issued to negotiate an upgrade of the connection to TLS before initiating authentication." )
     public static final Setting<Boolean> ldap_use_starttls =
-            setting( "dbms.security.auth_providers.ldap.use_starttls", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.use_starttls", BOOLEAN, "false" );
 
     @Description( "LDAP authentication mechanism. This is one of `simple` or a SASL mechanism supported by JNDI, " +
                   "e.g. `DIGEST-MD5`. `simple` is basic username" +
                   " and password authentication and SASL is used for more advanced mechanisms. See RFC 2251 LDAPv3 " +
                   "documentation for more details." )
     public static final Setting<String> ldap_auth_mechanism =
-            setting( "dbms.security.auth_providers.ldap.auth_mechanism", STRING, "simple" );
+            setting( "dbms.security.ldap.auth_mechanism", STRING, "simple" );
 
     @Description(
             "The LDAP referral behavior when creating a connection. This is one of `follow`, `ignore` or `throw`.\n" +
@@ -138,7 +138,7 @@ public class SecuritySettings
             "* `ignore` ignores any referrals\n" +
             "* `throw` throws a `javax.naming.ReferralException` exception, which will lead to authentication failure\n" )
     public static final Setting<String> ldap_referral =
-            setting( "dbms.security.auth_providers.ldap.referral", STRING, "follow" );
+            setting( "dbms.security.ldap.referral", STRING, "follow" );
 
     @Description(
             "LDAP user DN template. An LDAP object is referenced by its distinguished name (DN), and a user DN is " +
@@ -147,61 +147,61 @@ public class SecuritySettings
             "authentication token when logging in. The special token {0} is a " +
             "placeholder where the user principal will be substituted into the DN string." )
     public static final Setting<String> ldap_user_dn_template =
-            setting( "dbms.security.auth_providers.ldap.user_dn_template", STRING, "uid={0},ou=users,dc=example,dc=com" );
+            setting( "dbms.security.ldap.user_dn_template", STRING, "uid={0},ou=users,dc=example,dc=com" );
 
     @Description( "Determines if the result of authentication via the LDAP server should be cached or not. " +
                   "Caching is used to limit the number of LDAP requests that have to be made over the network " +
                   "for users that have already been authenticated successfully. A user can be authenticated against " +
                   "an existing cache entry (instead of via an LDAP server) as long as it is alive " +
-                  "(see `dbms.security.auth_providers.auth_cache_ttl`).\n" +
+                  "(see `dbms.security.auth_cache_ttl`).\n" +
                   "An important consequence of setting this to `true` than needs to be well understood, is that " +
                   "Neo4j then needs to cache a hashed version of the credentials in order to perform credentials " +
                   "matching. This hashing is done using a cryptographic hash function together with a random salt. " +
                   "Preferably a conscious decision should be made if this method is considered acceptable by " +
                   "the security standards of the organization in which this Neo4j instance is deployed." )
     public static final Setting<Boolean> ldap_authentication_cache_enabled =
-            setting( "dbms.security.auth_providers.ldap.authentication_cache_enabled", BOOLEAN, "true" );
+            setting( "dbms.security.ldap.authentication_cache_enabled", BOOLEAN, "true" );
 
     @Description( "Perform LDAP search for authorization info using a system account." )
     public static final Setting<Boolean> ldap_authorization_use_system_account =
-            setting( "dbms.security.auth_providers.ldap.authorization.use_system_account", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.authorization.use_system_account", BOOLEAN, "false" );
 
     @Description(
             "An LDAP system account username to use for authorization searches when " +
-            "`dbms.security.auth_providers.ldap.authorization.use_system_account` is `true`. " +
-            "Note that the `dbms.security.auth_providers.ldap.user_dn_template` will not be applied to this username, " +
+            "`dbms.security.ldap.authorization.use_system_account` is `true`. " +
+            "Note that the `dbms.security.ldap.user_dn_template` will not be applied to this username, " +
             "so you may have to specify a full DN." )
     public static final Setting<String> ldap_system_username =
-            setting( "dbms.security.auth_providers.ldap.system_username", STRING, NO_DEFAULT );
+            setting( "dbms.security.ldap.system_username", STRING, NO_DEFAULT );
 
     @Description(
             "An LDAP system account password to use for authorization searches when " +
-            "`dbms.security.auth_providers.ldap.authorization.use_system_account` is `true`." )
+            "`dbms.security.ldap.authorization.use_system_account` is `true`." )
     public static final Setting<String> ldap_system_password =
-            setting( "dbms.security.auth_providers.ldap.system_password", STRING, NO_DEFAULT );
+            setting( "dbms.security.ldap.system_password", STRING, NO_DEFAULT );
 
     @Description( "The name of the base object or named context to search for user objects when LDAP authorization is " +
                   "enabled." )
     public static Setting<String> ldap_authorization_user_search_base =
-            setting( "dbms.security.auth_providers.ldap.authorization.user_search_base", STRING, NO_DEFAULT );
+            setting( "dbms.security.ldap.authorization.user_search_base", STRING, NO_DEFAULT );
 
     @Description( "The LDAP search filter to search for a user principal when LDAP authorization is " +
                   "enabled. The filter should contain the placeholder token {0} which will be substituted for the " +
                   "user principal." )
     public static Setting<String> ldap_authorization_user_search_filter =
-            setting( "dbms.security.auth_providers.ldap.authorization.user_search_filter", STRING, "(&(objectClass=*)(uid={0}))" );
+            setting( "dbms.security.ldap.authorization.user_search_filter", STRING, "(&(objectClass=*)(uid={0}))" );
 
     @Description( "A list of attribute names on a user object that contains groups to be used for mapping to roles " +
                   "when LDAP authorization is enabled." )
     public static Setting<List<String>> ldap_authorization_group_membership_attribute_names =
-            setting( "dbms.security.auth_providers.ldap.authorization.group_membership_attributes", STRING_LIST, "memberOf" );
+            setting( "dbms.security.ldap.authorization.group_membership_attributes", STRING_LIST, "memberOf" );
 
     @Description( "An authorization mapping from LDAP group names to internal role names. " +
                   "The map should be formatted as semicolon separated list of key-value pairs, where the " +
                   "key is the LDAP group name and the value is a comma separated list of corresponding role names. " +
                   "E.g. group1=role1;group2=role2;group3=role3,role4,role5" )
     public static Setting<String> ldap_authorization_group_to_role_mapping =
-            setting( "dbms.security.auth_providers.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
+            setting( "dbms.security.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
 
     //=========================================================================
     // Cache settings
@@ -210,11 +210,11 @@ public class SecuritySettings
     @Description( "The time to live (TTL) for cached authentication and authorization info. Setting the TTL to 0 will" +
             " disable auth caching." )
     public static Setting<Long> auth_cache_ttl =
-            setting( "dbms.security.auth_providers.auth_cache_ttl", DURATION, "10m" );
+            setting( "dbms.security.auth_cache_ttl", DURATION, "10m" );
 
     @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
     public static Setting<Integer> auth_cache_max_capacity =
-            setting( "dbms.security.auth_providers.auth_cache_max_capacity", INTEGER, "10000" );
+            setting( "dbms.security.auth_cache_max_capacity", INTEGER, "10000" );
 
     //=========================================================================
     // Security log settings
