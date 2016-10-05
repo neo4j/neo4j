@@ -40,14 +40,13 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.server.security.auth.UserManager;
 import org.neo4j.server.security.enterprise.auth.plugin.PluginRealm;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
@@ -69,23 +68,25 @@ public class EnterpriseSecurityModule extends SecurityModule
     }
 
     @Override
-    public void setup( PlatformModule platformModule, Procedures procedures ) throws KernelException
+    public void setup( Dependencies dependencies ) throws KernelException
     {
-        Config config = platformModule.config;
-        LogProvider logProvider = platformModule.logging.getUserLogProvider();
-        JobScheduler jobScheduler = platformModule.jobScheduler;
-        FileSystemAbstraction fileSystem = platformModule.fileSystem;
+        Config config = dependencies.config();
+        Procedures procedures = dependencies.procedures();
+        LogProvider logProvider = dependencies.logService().getUserLogProvider();
+        JobScheduler jobScheduler = dependencies.scheduler();
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        LifeSupport life = dependencies.lifeSupport();
 
         SecurityLog securityLog = SecurityLog.create(
                 config,
-                platformModule.logging.getInternalLog( GraphDatabaseFacade.class ),
+                dependencies.logService().getInternalLog( GraphDatabaseFacade.class ),
                 fileSystem,
                 jobScheduler
             );
-        platformModule.life.add( securityLog );
+        life.add( securityLog );
 
         EnterpriseAuthAndUserManager authManager = newAuthManager( config, logProvider, securityLog, fileSystem, jobScheduler );
-        platformModule.life.add( platformModule.dependencies.satisfyDependency( authManager ) );
+        life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
         // Register procedures
         procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );

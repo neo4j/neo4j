@@ -43,11 +43,12 @@ public class CommunitySecurityModule extends SecurityModule
     }
 
     @Override
-    public void setup( PlatformModule platformModule, Procedures procedures ) throws KernelException
+    public void setup( Dependencies dependencies ) throws KernelException
     {
-        Config config = platformModule.config;
-        LogProvider logProvider = platformModule.logging.getUserLogProvider();
-        FileSystemAbstraction fileSystem = platformModule.fileSystem;
+        Config config = dependencies.config();
+        Procedures procedures = dependencies.procedures();
+        LogProvider logProvider = dependencies.logService().getUserLogProvider();
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
         final UserRepository userRepository = getUserRepository( config, logProvider, fileSystem );
         final UserRepository initialUserRepository = getInitialUserRepository( config, logProvider, fileSystem );
 
@@ -56,7 +57,7 @@ public class CommunitySecurityModule extends SecurityModule
         BasicAuthManager authManager =
                 new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(), initialUserRepository );
 
-        platformModule.life.add( platformModule.dependencies.satisfyDependency( authManager ) );
+        dependencies.lifeSupport().add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
         procedures.registerComponent( UserManager.class, ctx -> authManager );
         procedures.registerProcedure( AuthProcedures.class );
