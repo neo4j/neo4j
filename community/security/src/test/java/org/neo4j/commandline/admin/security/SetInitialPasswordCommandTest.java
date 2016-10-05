@@ -92,7 +92,7 @@ public class SetInitialPasswordCommandTest
     }
 
     @Test
-    public void shouldFailToCreateInitialPasswordFileIfExists() throws Throwable
+    public void shouldOverwriteInitialPasswordFileIfExists() throws Throwable
     {
         // Given
         fileSystem.mkdirs( authInitFile.getParentFile() );
@@ -100,23 +100,20 @@ public class SetInitialPasswordCommandTest
 
         // When
         String[] arguments = {"123"};
-        assertException( () -> setPasswordCommand.execute( arguments ), CommandFailed.class,
-                "Initial password already set. Overwrite this password with --force" );
-    }
-
-    @Test
-    public void shouldCreateInitialPasswordFileEvenIfExistsWhenForced() throws Throwable
-    {
-        // Given
-        fileSystem.mkdirs( authInitFile.getParentFile() );
-        fileSystem.create( authInitFile );
-
-        // When
-        String[] arguments = {"123", "--force"};
         setPasswordCommand.execute( arguments );
 
         // Then
         assertAuthIniFile( "123" );
+    }
+
+    @Test
+    public void shouldWorkAlsoWithSamePassword() throws Throwable
+    {
+        String[] arguments = {"neo4j"};
+        setPasswordCommand.execute( arguments );
+
+        // Then
+        assertAuthIniFile( "neo4j" );
     }
 
     private void assertAuthIniFile( String password ) throws Throwable

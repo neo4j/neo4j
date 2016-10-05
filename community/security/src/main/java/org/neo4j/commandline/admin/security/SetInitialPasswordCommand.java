@@ -55,7 +55,7 @@ public class SetInitialPasswordCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "<password> [--force]" );
+            return Optional.of( "<password>" );
         }
 
         @Override
@@ -89,7 +89,7 @@ public class SetInitialPasswordCommand implements AdminCommand
 
         try
         {
-            setPassword( parsedArgs.orphans().get( 0 ), parsedArgs.getBoolean( "force" ) );
+            setPassword( parsedArgs.orphans().get( 0 ) );
         }
         catch ( IncorrectUsage e )
         {
@@ -104,7 +104,7 @@ public class SetInitialPasswordCommand implements AdminCommand
 
     private Args validateArgs( String[] args ) throws IncorrectUsage
     {
-        Args parsedArgs = Args.withFlags( "force" ).parse( args );
+        Args parsedArgs = Args.parse( args );
         if ( parsedArgs.orphans().size() < 1 )
         {
             throw new IncorrectUsage( "No password specified." );
@@ -116,20 +116,13 @@ public class SetInitialPasswordCommand implements AdminCommand
         return parsedArgs;
     }
 
-    private void setPassword( String password, boolean force ) throws Throwable
+    private void setPassword( String password ) throws Throwable
     {
         Config config = loadNeo4jConfig();
         File file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
         if ( outsideWorld.fileSystem().fileExists( file ) )
         {
-            if ( force )
-            {
-                outsideWorld.fileSystem().deleteFile( file );
-            }
-            else
-            {
-                throw new CommandFailed( "Initial password already set. Overwrite this password with --force" );
-            }
+            outsideWorld.fileSystem().deleteFile( file );
         }
 
         FileUserRepository userRepository =

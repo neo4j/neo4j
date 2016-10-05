@@ -74,24 +74,23 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldSetPasswordAgainWithForce() throws Throwable
+    public void shouldOverwriteIfSetPasswordAgain() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
         assertAuthIniFile( "abc" );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "muchBetter", "--force" );
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "muchBetter" );
         verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
         assertAuthIniFile( "muchBetter" );
     }
 
     @Test
-    public void shouldFailToSetPasswordAgainWithoutForce() throws Throwable
+    public void shouldWorkWithSamePassword() throws Throwable
     {
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
-        assertAuthIniFile( "abc" );
-        verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "muchBetter" );
-        verify( out ).stdErrLine( "command failed: Failed to execute 'set-initial-password' command: Initial password already set. Overwrite this password with --force" );
-        assertAuthIniFile( "abc" );
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "neo4j" );
+        assertAuthIniFile( "neo4j" );
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "neo4j" );
+        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
+        assertAuthIniFile( "neo4j" );
     }
 
     @Test
@@ -99,7 +98,7 @@ public class SetInitialPasswordCommandIT
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
-        verify( out, times( 2 ) ).stdErrLine( "neo4j-admin set-initial-password <password> [--force]" );
+        verify( out, times( 2 ) ).stdErrLine( "neo4j-admin set-initial-password <password>" );
         verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
 
