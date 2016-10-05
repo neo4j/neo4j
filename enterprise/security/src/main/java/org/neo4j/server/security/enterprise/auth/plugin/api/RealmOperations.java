@@ -107,7 +107,7 @@ public interface RealmOperations
     /**
      * If set to <tt>true</tt> the authentication information returned by the plugin will be cached.
      * The expiration time of the cached information is configured by the
-     * <tt>dbms.security.realms.auth_cache_ttl</tt> configuration setting.
+     * <tt>dbms.security.auth_cache_ttl</tt> configuration setting.
      *
      * <p>Since a principal can be authenticated against cached authentication information this requires
      * the capability of matching the credentials of an authentication token against the credentials of the
@@ -123,7 +123,7 @@ public interface RealmOperations
      * If set to <tt>true</tt> the authorization information (i.e. the list of roles for a given principal)
      * returned by the plugin will be cached.
      * The expiration time of the cached information is configured by the
-     * <tt>dbms.security.realms.auth_cache_ttl</tt> configuration setting.
+     * <tt>dbms.security.auth_cache_ttl</tt> configuration setting.
      *
      * The default value is <tt>true</tt>.
      *
