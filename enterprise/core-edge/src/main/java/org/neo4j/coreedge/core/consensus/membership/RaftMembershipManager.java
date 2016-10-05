@@ -22,6 +22,7 @@ package org.neo4j.coreedge.core.consensus.membership;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.LongSupplier;
@@ -65,8 +66,8 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
 
     private final int expectedClusterSize;
 
-    private volatile Set<MemberId> votingMembers = new HashSet<>();
-    private volatile Set<MemberId> replicationMembers = new HashSet<>(); // votingMembers + additionalReplicationMembers
+    private volatile Set<MemberId> votingMembers = Collections.unmodifiableSet( new HashSet<>() );
+    private volatile Set<MemberId> replicationMembers = Collections.unmodifiableSet( new HashSet<>() ); // votingMembers + additionalReplicationMembers
 
     private Set<Listener> listeners = new HashSet<>();
     private Set<MemberId> additionalReplicationMembers = new HashSet<>();
@@ -137,12 +138,12 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
      */
     private void updateMemberSets()
     {
-        votingMembers = state.getLatest();
+        votingMembers = Collections.unmodifiableSet( state.getLatest() );
 
         HashSet<MemberId> newReplicationMembers = new HashSet<>( votingMembers );
         newReplicationMembers.addAll( additionalReplicationMembers );
 
-        replicationMembers = newReplicationMembers;
+        replicationMembers = Collections.unmodifiableSet( newReplicationMembers );
         listeners.forEach( Listener::onMembershipChanged );
     }
 

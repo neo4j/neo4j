@@ -50,7 +50,7 @@ public class MembershipWaiterLifecycle extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        CompletableFuture<Boolean> caughtUp = membershipWaiter.waitUntilCaughtUpMember( raft.state() );
+        CompletableFuture<Boolean> caughtUp = membershipWaiter.waitUntilCaughtUpMember( raft );
 
         try
         {

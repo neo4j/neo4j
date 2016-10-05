@@ -25,9 +25,10 @@ import java.util.concurrent.TimeoutException;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
-import org.neo4j.coreedge.core.consensus.state.RaftState;
+import org.neo4j.coreedge.core.consensus.state.ExposedRaftState;
 import org.neo4j.coreedge.core.consensus.state.RaftStateBuilder;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
@@ -62,14 +63,17 @@ public class MembershipWaiterTest
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        RaftState raftState = RaftStateBuilder.raftState()
+        ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ) )
                 .leaderCommit( 0 )
                 .entryLog( raftLog )
                 .commitIndex( 0L )
-                .build();
+                .build().copy();
 
-        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raftState );
+        RaftMachine raft = mock( RaftMachine.class );
+        when( raft.state() ).thenReturn( raftState );
+
+        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raft );
         jobScheduler.runJob();
 
         future.get( 0, NANOSECONDS );
@@ -82,12 +86,15 @@ public class MembershipWaiterTest
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
                 NullLogProvider.getInstance() );
 
-        RaftState raftState = RaftStateBuilder.raftState()
+        ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 1 ) )
                 .leaderCommit( 0 )
-                .build();
+                .build().copy();
 
-        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raftState );
+        RaftMachine raft = mock( RaftMachine.class );
+        when( raft.state() ).thenReturn( raftState );
+
+        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raft );
         jobScheduler.runJob();
         jobScheduler.runJob();
 
@@ -109,12 +116,15 @@ public class MembershipWaiterTest
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
                 NullLogProvider.getInstance() );
 
-        RaftState raftState = RaftStateBuilder.raftState()
+        ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ), member( 1 ) )
                 .leaderCommit( 0 )
-                .build();
+                .build().copy();
 
-        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raftState );
+        RaftMachine raft = mock( RaftMachine.class );
+        when( raft.state() ).thenReturn( raftState );
+
+        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raft );
         jobScheduler.runJob();
         jobScheduler.runJob();
 
