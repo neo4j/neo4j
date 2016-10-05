@@ -23,19 +23,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class EditionModuleTest
 {
@@ -43,32 +33,13 @@ public class EditionModuleTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldFailWhenAuthEnabledAndNoAuthManagerServiceFound()
+    public void shouldFailWhenAuthEnabledAndNoSecurityModuleFound()
     {
-        // Given
-        Config config = new Config( stringMap(
-                GraphDatabaseSettings.auth_manager.name(), "",
-                GraphDatabaseSettings.auth_enabled.name(), "true")
-        );
-
-        LogService logService = mock( LogService.class );
-        Log userLog = mock( Log.class ) ;
-        when( logService.getUserLog( GraphDatabaseFacadeFactory.class ) ).thenReturn( userLog );
-
         // Expect
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Auth enabled but no auth manager found. This is an illegal product configuration." );
+        exception.expectMessage( "Failed to load security module with key 'non-existent-security-module'" );
 
         // When
-        new EditionModule() {
-            @Override
-            public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
-            {
-
-            }
-        }.createAuthManager( config, logService, new EphemeralFileSystemAbstraction(), null );
-
-        // Then
-        verify( userLog ).error( anyString() );
+        EditionModule.setupSecurityModule( null, mock( Log.class ), null, "non-existent-security-module" );
     }
 }

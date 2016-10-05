@@ -221,6 +221,12 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
+    public UserManager getUserManager( AuthSubject authSubject )
+    {
+        return this;
+    }
+
+    @Override
     public UserManager getUserManager()
     {
         return this;

@@ -30,7 +30,7 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.security.enterprise.auth.SecuritySettings;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static java.util.Arrays.asList;
 

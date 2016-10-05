@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -39,9 +38,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
 
 /**
  * This implementation of {@link EditionModule} creates the implementations of services
@@ -49,14 +45,11 @@ import org.neo4j.logging.NullLog;
  */
 public class EnterpriseEditionModule extends CommunityEditionModule
 {
-    private SecurityLog securityLog;
 
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
-        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
     }
 
     public EnterpriseEditionModule( PlatformModule platformModule )
@@ -65,10 +58,6 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
         platformModule.dependencies.satisfyDependency( createSessionTracker() );
-        if ( securityLog != null )
-        {
-            platformModule.life.add( securityLog );
-        }
     }
 
     @Override
@@ -96,22 +85,22 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     }
 
     @Override
-    protected void createAuthManagerLog( Config config, LogService logging, FileSystemAbstraction fileSystem,
-            JobScheduler jobScheduler )
+    public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
-                fileSystem, jobScheduler );
+        EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
     }
 
-    @Override
-    protected Log authManagerLog()
+    public static void setupEnterpriseSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        return securityLog == null ? NullLog.getInstance() : securityLog;
-    }
-
-    @Override
-    protected AuthManager getAuthDisabledAuthManager()
-    {
-        return EnterpriseAuthManager.NO_AUTH;
+        if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
+        {
+            setupSecurityModule( platformModule,
+                    platformModule.logging.getUserLog( EnterpriseEditionModule.class ),
+                    procedures, platformModule.config.get( EnterpriseEditionSettings.security_module ) );
+        }
+        else
+        {
+            platformModule.life.add( platformModule.dependencies.satisfyDependency( EnterpriseAuthManager.NO_AUTH ) );
+        }
     }
 }

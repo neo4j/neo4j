@@ -59,20 +59,18 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
+import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -86,7 +84,6 @@ import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 
@@ -101,7 +98,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private final ConsensusModule consensusModule;
     private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
-    private SecurityLog securityLog;
     private final Config config;
 
     public enum RaftLogImplementation
@@ -112,21 +108,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
-        procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
-        registerProceduresFromProvider( "enterprise-auth-procedures-provider", procedures );
-
         procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
         procedures.register(
                 new GetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
         procedures.register(
                 new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
-    }
-
-    @Override
-    protected Log authManagerLog()
-    {
-        return securityLog;
     }
 
     EnterpriseCoreEditionModule( final PlatformModule platformModule,
@@ -228,14 +215,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.storeDir,
                         config, platformModule.graphDatabaseFacade, life ) );
-
-        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
-                platformModule.fileSystem, platformModule.jobScheduler );
-
-        life.add( securityLog );
-
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
-                platformModule.fileSystem, platformModule.jobScheduler ) ) );
 
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
@@ -340,8 +319,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     @Override
-    protected AuthManager getAuthDisabledAuthManager()
+    public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        return EnterpriseAuthManager.NO_AUTH;
+        EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
     }
 }

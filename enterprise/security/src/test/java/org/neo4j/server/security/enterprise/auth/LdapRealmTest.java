@@ -48,7 +48,9 @@ import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapContext;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
+import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -222,7 +224,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldWarnAboutUserSearchFilterWithoutArgument() throws NamingException
+    public void shouldWarnAboutUserSearchFilterWithoutArgument() throws Exception
     {
         when( config.get( SecuritySettings.ldap_authorization_user_search_filter ) ).thenReturn( "" );
 
@@ -231,7 +233,7 @@ public class LdapRealmTest
         when( ldapContext.search( anyString(), anyString(), anyObject(), anyObject() ) ).thenReturn( result );
         when( result.hasMoreElements() ).thenReturn( false );
 
-        new LdapRealm( config, securityLog );
+        makeAndInit();
 
         verify( securityLog ).warn( contains( "LDAP user search filter does not contain the argument placeholder {0}" ) );
     }
@@ -246,7 +248,7 @@ public class LdapRealmTest
         when( ldapContext.search( anyString(), anyString(), anyObject(), anyObject() ) ).thenReturn( result );
         when( result.hasMoreElements() ).thenReturn( false );
 
-        assertException( () -> new LdapRealm( config, securityLog ), IllegalArgumentException.class,
+        assertException( this::makeAndInit, IllegalArgumentException.class,
                 "Illegal LDAP user search settings, see security log for details." );
 
         verify( securityLog ).error( contains( "LDAP user search base is empty." ) );
@@ -263,7 +265,7 @@ public class LdapRealmTest
         when( ldapContext.search( anyString(), anyString(), anyObject(), anyObject() ) ).thenReturn( result );
         when( result.hasMoreElements() ).thenReturn( false );
 
-        assertException( () -> new LdapRealm( config, securityLog ), IllegalArgumentException.class,
+        assertException( this::makeAndInit, IllegalArgumentException.class,
                 "Illegal LDAP user search settings, see security log for details." );
 
         verify( securityLog ).error( contains( "LDAP group membership attribute names are empty. " +
@@ -474,6 +476,22 @@ public class LdapRealmTest
             }
             return new SimpleAuthorizationInfo();
         }
+    }
 
+    private void makeAndInit() throws Exception
+    {
+        try
+        {
+            LdapRealm realm = new LdapRealm( config, securityLog );
+            realm.initialize( mock( RealmOperations.class ) );
+        }
+        catch ( Exception e )
+        {
+            throw e;
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( t );
+        }
     }
 }

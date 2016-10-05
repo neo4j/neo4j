@@ -29,7 +29,7 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.impl.enterprise.SecurityLog;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -45,9 +45,9 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class AuthProceduresLoggingTest
+public class UserManagementProceduresLoggingTest
 {
-    private TestAuthProcedures authProcedures;
+    private TestUserManagementProcedures authProcedures;
     private AssertableLogProvider log = null;
     private AuthSubject matsSubject = null;
 
@@ -55,7 +55,7 @@ public class AuthProceduresLoggingTest
     public void setUp() throws Throwable
     {
         log = new AssertableLogProvider();
-        authProcedures = new TestAuthProcedures();
+        authProcedures = new TestUserManagementProcedures();
         authProcedures.securityLog = new SecurityLog( log.getLog( getClass() ) );
 
         EnterpriseUserManager userManager = getUserManager();
@@ -681,7 +681,7 @@ public class AuthProceduresLoggingTest
         }
     }
 
-    private static class TestAuthProcedures extends AuthProcedures
+    private static class TestUserManagementProcedures extends UserManagementProcedures
     {
         private boolean failTerminateTransactions = false;
 

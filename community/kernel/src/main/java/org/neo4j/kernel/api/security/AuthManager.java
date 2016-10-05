@@ -19,33 +19,16 @@
  */
 package org.neo4j.kernel.api.security;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-
 import java.util.Map;
+
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * An AuthManager is used to do basic authentication and user management.
  */
 public interface AuthManager extends Lifecycle
 {
-    abstract class Factory extends Service
-    {
-        public Factory( String key, String... altKeys )
-        {
-            super( key, altKeys );
-        }
-
-        public abstract AuthManager newInstance( Config config, LogProvider logProvider, Log log,
-                FileSystemAbstraction fileSystem, JobScheduler jobScheduler );
-    }
-
     /**
      * Log in using the provided authentication token
      * @param authToken The authentication token to login with. Typically contains principals and credentials.

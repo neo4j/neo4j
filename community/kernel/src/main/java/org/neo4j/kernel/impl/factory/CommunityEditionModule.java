@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
@@ -73,6 +72,8 @@ import org.neo4j.udc.UsageData;
  */
 public class CommunityEditionModule extends EditionModule
 {
+    public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
+
     public CommunityEditionModule( PlatformModule platformModule )
     {
         org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
@@ -105,11 +106,6 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
-        createAuthManagerLog( config, logging, platformModule.fileSystem, platformModule.jobScheduler );
-
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
-                platformModule.fileSystem, platformModule.jobScheduler ) ) );
-
         commitProcessFactory = new CommunityCommitProcessFactory();
 
         headerInformationFactory = createHeaderInformationFactory();
@@ -131,12 +127,6 @@ public class CommunityEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         dependencies.satisfyDependency( createSessionTracker() );
-    }
-
-    protected void createAuthManagerLog( Config config, LogService logging, FileSystemAbstraction fileSystem, JobScheduler
-            jobScheduler )
-    {
-        // no auth manager log in community
     }
 
     protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )
@@ -270,5 +260,19 @@ public class CommunityEditionModule extends EditionModule
 
         new RemoveOrphanConstraintIndexesOnStartup( dependencyResolver.resolveDependency( NeoStoreDataSource.class )
                 .getKernel(), dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
+    }
+
+    @Override
+    public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
+    {
+        if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
+        {
+            setupSecurityModule( platformModule, platformModule.logging.getUserLog( getClass() ),
+                    procedures, COMMUNITY_SECURITY_MODULE_ID );
+        }
+        else
+        {
+            platformModule.life.add( platformModule.dependencies.satisfyDependency( AuthManager.NO_AUTH ) );
+        }
     }
 }

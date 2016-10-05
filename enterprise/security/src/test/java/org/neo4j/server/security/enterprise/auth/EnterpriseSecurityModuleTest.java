@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,6 +26,8 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -37,7 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class EnterpriseAuthManagerFactoryTest
+public class EnterpriseSecurityModuleTest
 {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -61,7 +62,7 @@ public class EnterpriseAuthManagerFactoryTest
         thrown.expect( IllegalArgumentException.class );
 
         // When
-        new EnterpriseAuthManagerFactory().newInstance( config, mockLogProvider, mock( Log.class), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
 
         // Then
         verify( mockLog, atLeastOnce() ).debug( anyString(),
@@ -91,7 +92,7 @@ public class EnterpriseAuthManagerFactoryTest
         thrown.expect( IllegalArgumentException.class );
 
         // When
-        new EnterpriseAuthManagerFactory().newInstance( config, mockLogProvider, mock( Log.class), null, null );
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
 
         // Then
         verify( mockLog, atLeastOnce() ).debug( anyString(),

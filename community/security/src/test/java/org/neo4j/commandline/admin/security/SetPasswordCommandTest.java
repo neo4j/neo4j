@@ -27,7 +27,7 @@ import java.io.File;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.security.auth.BasicAuthManagerFactory;
+import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.User;
 
@@ -50,7 +50,7 @@ public class SetPasswordCommandTest extends UsersCommandTestBase
         super.setup();
         usersCommand = new UsersCommand( homeDir.toPath(), confDir.toPath(), out );
         config = usersCommand.loadNeo4jConfig();
-        file = BasicAuthManagerFactory.getInitialUserRepositoryFile( config );
+        file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
     }
 
     @Test
