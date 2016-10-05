@@ -1,0 +1,91 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.commandline.admin.security;
+
+import org.junit.Test;
+
+import java.io.File;
+
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.security.auth.FileUserRepository;
+import org.neo4j.server.security.auth.User;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+public class SetInitialPasswordCommandIT extends CommandTestBase
+{
+    private static final String SET_PASSWORD = "set-initial-password";
+
+    @Test
+    public void shouldSetPassword() throws Throwable
+    {
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
+        verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
+        assertAuthIniFile( "abc" );
+    }
+
+    @Test
+    public void shouldSetPasswordAgainWithForce() throws Throwable
+    {
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
+        assertAuthIniFile( "abc" );
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "muchBetter", "--force" );
+        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
+        assertAuthIniFile( "muchBetter" );
+    }
+
+    @Test
+    public void shouldFailToSetPasswordAgainWithoutForce() throws Throwable
+    {
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
+        assertAuthIniFile( "abc" );
+        verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "muchBetter" );
+        verify( out ).stdErrLine( "command failed: Failed to execute 'set-initial-password' command: Initial password already set. Overwrite this password with --force" );
+        assertAuthIniFile( "abc" );
+    }
+
+    @Test
+    public void shouldGetUsageOnWrongArguments() throws Throwable
+    {
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
+        verify( out, times( 2 ) ).stdErrLine( "neo4j-admin set-initial-password <password> [--force]" );
+        verify( out, times( 0 ) ).stdOutLine( anyString() );
+    }
+
+    private void assertAuthIniFile(String password) throws Throwable
+    {
+        File authIniFile = new File( authDir(), "auth.ini" );
+        assertTrue( fileSystem.fileExists( authIniFile ) );
+        FileUserRepository userRepository = new FileUserRepository( fileSystem, authIniFile, NullLogProvider.getInstance() );
+        userRepository.start();
+        User neo4j = userRepository.getUserByName( "neo4j" );
+        assertNotNull( neo4j );
+        assertTrue( neo4j.credentials().matchesPassword( password ) );
+        assertFalse( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
+    }
+
+}

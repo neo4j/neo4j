@@ -70,7 +70,12 @@ abstract class CommandTestBase
 
     private File authFile()
     {
-        return new File( new File( new File( graphDir, "data" ), "dbms" ), "auth" );
+        return new File( authDir(), "auth" );
+    }
+
+    File authDir()
+    {
+        return new File( new File( homeDir, "data" ), "dbms" );
     }
 
     User createTestUser( String username, String password ) throws Throwable
