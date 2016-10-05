@@ -19,10 +19,16 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.commandline.admin.AdminTool;
+import org.neo4j.commandline.admin.CommandLocator;
+import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.User;
@@ -31,12 +37,32 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class SetInitialPasswordCommandIT extends CommandTestBase
+public class SetInitialPasswordCommandIT
 {
+    private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    private File confDir;
+    private File homeDir;
+    private OutsideWorld out;
+    private AdminTool tool;
+
     private static final String SET_PASSWORD = "set-initial-password";
+
+    @Before
+    public void setup()
+    {
+        File graphDir = new File( "graph-db" );
+        confDir = new File( graphDir, "conf" );
+        homeDir = new File( graphDir, "home" );
+        out = mock( OutsideWorld.class );
+        resetOutsideWorldMock();
+        tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
+    }
 
     @Test
     public void shouldSetPassword() throws Throwable
@@ -78,7 +104,7 @@ public class SetInitialPasswordCommandIT extends CommandTestBase
 
     private void assertAuthIniFile(String password) throws Throwable
     {
-        File authIniFile = new File( authDir(), "auth.ini" );
+        File authIniFile = new File( new File( new File( homeDir, "data" ), "dbms" ), "auth.ini" );
         assertTrue( fileSystem.fileExists( authIniFile ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, authIniFile, NullLogProvider.getInstance() );
         userRepository.start();
@@ -88,4 +114,9 @@ public class SetInitialPasswordCommandIT extends CommandTestBase
         assertFalse( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
     }
 
+    private void resetOutsideWorldMock()
+    {
+        reset(out);
+        when( out.fileSystem() ).thenReturn( fileSystem );
+    }
 }
