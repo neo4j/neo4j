@@ -177,10 +177,10 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     @Override
     public User silentlyGetUser( String username )
     {
-        return  userRepository.getUserByName( username );
+        return userRepository.getUserByName( username );
     }
 
-    public void setPassword( AuthSubject authSubject, String username, String password, boolean requirePasswordChange )
+    void setPassword( AuthSubject authSubject, String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
         BasicAuthSubject basicAuthSubject = BasicAuthSubject.castOrFail( authSubject );

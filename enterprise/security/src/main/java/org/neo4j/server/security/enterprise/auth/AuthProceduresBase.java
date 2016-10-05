@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -42,6 +41,7 @@ import static java.util.Collections.emptyList;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 
+@SuppressWarnings( "WeakerAccess" )
 public class AuthProceduresBase
 {
     @Context
@@ -113,20 +113,6 @@ public class AuthProceduresBase
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
         return enterpriseAuthSubject;
-    }
-
-    protected StandardEnterpriseAuthSubject ensureSelfOrAdminAuthSubject( String username )
-            throws InvalidArgumentsException
-    {
-        StandardEnterpriseAuthSubject subject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-
-        if ( subject.isAdmin() || subject.hasUsername( username ) )
-        {
-            userManager.getUser( username );
-            return subject;
-        }
-
-        throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 
     public static class StringResult
