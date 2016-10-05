@@ -307,7 +307,8 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
-        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout, pos - 1, order );
+        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout, pos - 1,
+                order, keyCount );
     }
 
     @Override

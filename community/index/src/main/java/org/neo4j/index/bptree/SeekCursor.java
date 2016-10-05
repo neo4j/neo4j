@@ -39,9 +39,12 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
 
     // data structures for the current b-tree node
     private int pos;
+    private int keyCount;
+    private boolean currentContainsEnd;
+    private boolean reread;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
-            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int pos, Object order )
+            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int pos, Object order, int keyCount )
     {
         this.cursor = leafCursor;
         this.mutableKey = mutableKey;
@@ -49,11 +52,15 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         this.fromInclusive = fromInclusive;
         this.toExclusive = toExclusive;
         this.layout = layout;
-        this.order = order;
         this.hit = new MutableHit<>( mutableKey, mutableValue );
         this.bTreeNode = bTreeNode;
         this.pos = pos;
         this.prevKey = layout.newKey();
+
+        this.order = order;
+        this.keyCount = keyCount;
+        this.currentContainsEnd = layout.compare(
+                bTreeNode.keyAt( cursor, mutableKey, keyCount - 1, order ), toExclusive ) >= 0;
     }
 
     @Override
@@ -69,13 +76,19 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         {
             pos++;
             long rightSibling = -1; // initialized to satisfy the compiler
-            int keyCount;
             do
             {
+                if ( reread )
+                {
+                    keyCount = bTreeNode.keyCount( cursor );
+                    currentContainsEnd = layout.compare(
+                            bTreeNode.keyAt( cursor, mutableKey, keyCount - 1, order ), toExclusive ) >= 0;
+                    bTreeNode.getOrder( cursor, order );
+                    reread = false;
+                }
                 // There's a condition in here, choosing between go to next sibling or value,
                 // this condition is mirrored outside the shouldRetry loop to act upon the data
                 // which has by then been consistently read. No decision can be made in here directly.
-                keyCount = bTreeNode.keyCount( cursor );
                 if ( pos >= keyCount )
                 {
                     // Go to next sibling
@@ -97,10 +110,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     bTreeNode.valueAt( cursor, mutableValue, pos, order );
                 }
             }
-            while ( cursor.shouldRetry() );
-            // TODO: what should we do with an out-of-bounds access here?
-            cursor.checkAndClearBoundsFlag();
-            cursor.checkAndClearCursorException();
+            while ( reread = cursor.shouldRetry() );
 
             if ( pos >= keyCount )
             {
@@ -113,20 +123,21 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     }
                     bTreeNode.getOrder( cursor, order );
                     pos = -1;
+                    reread = true;
                     continue; // in the outer loop, with the position reset to the beginning of the right sibling
                 }
             }
             else
             {
-                if ( layout.compare( mutableKey, toExclusive ) < 0 )
+                if ( !currentContainsEnd || layout.compare( mutableKey, toExclusive ) < 0 )
                 {
-                    // TODO perhaps skip or simplify this check if Knobs.SPLIT_LEAVES_OLD_PAGE_INTACT?
                     if ( layout.compare( mutableKey, fromInclusive ) < 0 ||
                             layout.compare( prevKey, mutableKey ) >= 0 )
                     {
                         // We've come across a bad read in the middle of a split
                         // This is outlined in IndexModifier, skip this value (it's fine)
                         // TODO: perhaps describe the circumstances here quickly as well
+                        reread = true;
                         continue;
                     }
 
