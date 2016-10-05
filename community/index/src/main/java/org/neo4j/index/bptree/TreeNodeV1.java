@@ -195,9 +195,9 @@ public class TreeNodeV1<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void insertKeyAt( PageCursor cursor, KEY key, int pos, Object order, byte[] tmp )
+    public void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Object order, byte[] tmp )
     {
-        insertSlotAt( cursor, pos, keyCount( cursor ), keyOffset( 0 ), keySize, tmp );
+        insertSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize, tmp );
         cursor.setOffset( keyOffset( pos ) );
         layout.writeKey( cursor, key );
     }
@@ -252,9 +252,9 @@ public class TreeNodeV1<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void insertValueAt( PageCursor cursor, VALUE value, int pos, Object order, byte[] tmp )
+    public void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, Object order, byte[] tmp )
     {
-        insertSlotAt( cursor, pos, keyCount( cursor ), valueOffset( 0 ), valueSize, tmp );
+        insertSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize, tmp );
         setValueAt( cursor, value, pos, order );
     }
 
@@ -278,9 +278,9 @@ public class TreeNodeV1<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void insertChildAt( PageCursor cursor, long child, int pos, Object order, byte[] tmp )
+    public void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, Object order, byte[] tmp )
     {
-        insertSlotAt( cursor, pos, keyCount( cursor ) + 1, childOffset( 0 ), SIZE_CHILD, tmp );
+        insertSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), SIZE_CHILD, tmp );
         setChildAt( cursor, child, pos, order );
     }
 

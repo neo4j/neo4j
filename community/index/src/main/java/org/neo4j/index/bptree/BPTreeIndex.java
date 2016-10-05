@@ -382,7 +382,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 bTreeNode.initializeInternal( cursor );
                 Object order = bTreeNode.newOrder();
                 bTreeNode.getOrder( cursor, order );
-                bTreeNode.insertKeyAt( cursor, split.primKey, 0, order, tmp );
+                bTreeNode.insertKeyAt( cursor, split.primKey, 0, 0, order, tmp );
                 bTreeNode.setKeyCount( cursor, 1 );
                 bTreeNode.setChildAt( cursor, split.left, 0, order );
                 bTreeNode.setChildAt( cursor, split.right, 1, order );

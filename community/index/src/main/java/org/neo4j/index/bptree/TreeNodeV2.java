@@ -274,13 +274,13 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void insertKeyAt( PageCursor cursor, KEY key, int pos, Object theOrder, byte[] tmp )
+    public void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Object theOrder, byte[] tmp )
     {
         // TODO dangerous assumption in here: we call this BEFORE incrementing keyCount and only
         // when inserting a new key/value entry. We'll use keyCount as the physical position
         // FIXME this doesn't work for internal nodes since it'll have a the extra child to the right
 
-        int physicalPos = keyCount( cursor );
+        int physicalPos = keyCount;
         setPhysicalPos( cursor, pos, physicalPos, theOrder, tmp );
         cursor.setOffset( keyOffset( physicalPos ) );
         layout.writeKey( cursor, key );
@@ -302,7 +302,7 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void insertValueAt( PageCursor cursor, VALUE value, int pos, Object order, byte[] tmp )
+    public void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, Object order, byte[] tmp )
     {
         // TODO we'd really like to set key/value and key/child pairs together in this TreeNode implementation,
         // because they live together anyway.
@@ -332,7 +332,7 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void insertChildAt( PageCursor cursor, long child, int pos, Object order, byte[] tmp )
+    public void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, Object order, byte[] tmp )
     {
         int physicalPos = getPhysicalChildPos( cursor, pos, order );
         cursor.setOffset( childOffset( physicalPos ) );

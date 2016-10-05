@@ -179,10 +179,10 @@ public class IndexModifier<KEY,VALUE>
             // No overflow
             int pos = positionOf( search( cursor, bTreeNode, primKey, orders[level], readKey, keyCount ) );
 
-            bTreeNode.insertKeyAt( cursor, primKey, pos, orders[level], tmp );
+            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, orders[level], tmp );
             // NOTE pos+1 since we never insert a new child before child(0) because its key is really
             // the one from the parent.
-            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, orders[level], tmp );
+            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, orders[level], tmp );
 
             // Increase key count
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
@@ -347,8 +347,8 @@ public class IndexModifier<KEY,VALUE>
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
             // No overflow, insert key and value
-            bTreeNode.insertKeyAt( cursor, key, pos, orders[level], tmp );
-            bTreeNode.insertValueAt( cursor, value, pos, orders[level], tmp );
+            bTreeNode.insertKeyAt( cursor, key, pos, keyCount, orders[level], tmp );
+            bTreeNode.insertValueAt( cursor, value, pos, keyCount, orders[level], tmp );
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
 
             return null; // No split has occurred

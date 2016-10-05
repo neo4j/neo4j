@@ -56,7 +56,7 @@ public interface TreeNode<KEY,VALUE>
 
     KEY keyAt( PageCursor cursor, KEY into, int pos, Object order );
 
-    void insertKeyAt( PageCursor cursor, KEY key, int pos, Object order, byte[] tmp );
+    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Object order, byte[] tmp );
 
     void removeKeyAt( PageCursor cursor, int pos, Object order, byte[] tmp );
 
@@ -64,7 +64,7 @@ public interface TreeNode<KEY,VALUE>
 
     VALUE valueAt( PageCursor cursor, VALUE value, int pos, Object order );
 
-    void insertValueAt( PageCursor cursor, VALUE value, int pos, Object order, byte[] tmp );
+    void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, Object order, byte[] tmp );
 
     void removeValueAt( PageCursor cursor, int pos, Object order, byte[] tmp );
 
@@ -72,7 +72,7 @@ public interface TreeNode<KEY,VALUE>
 
     long childAt( PageCursor cursor, int pos, Object order );
 
-    void insertChildAt( PageCursor cursor, long child, int pos, Object order, byte[] tmp );
+    void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, Object order, byte[] tmp );
 
     void setChildAt( PageCursor cursor, long child, int pos, Object order );
 
