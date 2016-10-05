@@ -1,1 +1,1 @@
-org.neo4j.commandline.admin.security.UsersCommand$Provider
+org.neo4j.commandline.admin.security.SetInitialPasswordCommand$Provider

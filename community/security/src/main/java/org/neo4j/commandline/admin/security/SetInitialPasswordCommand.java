@@ -40,40 +40,42 @@ import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.User;
 
-public class UsersCommand implements AdminCommand
+import static org.neo4j.server.security.auth.UserManager.INITIAL_USER_NAME;
+
+public class SetInitialPasswordCommand implements AdminCommand
 {
     public static class Provider extends AdminCommand.Provider
     {
 
         public Provider()
         {
-            super( "users" );
+            super( "set-initial-password" );
         }
 
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "<subcommand> [<username>] [<password>] [--requires-password-change]" );
+            return Optional.of( "<password>" );
         }
 
         @Override
         public String description()
         {
-            return "Sets the initial (admin) user.";
+            return "Sets the initial password of the initial admin user ('" + INITIAL_USER_NAME + "').";
         }
 
         @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
-            return new UsersCommand( homeDir, configDir, outsideWorld );
+            return new SetInitialPasswordCommand( homeDir, configDir, outsideWorld );
         }
     }
 
-    final Path homeDir;
-    final Path configDir;
-    OutsideWorld outsideWorld;
+    private final Path homeDir;
+    private final Path configDir;
+    private OutsideWorld outsideWorld;
 
-    public UsersCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    SetInitialPasswordCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
@@ -83,77 +85,54 @@ public class UsersCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Args parsedArgs = Args.withFlags( "force", "requires-password-change" ).parse( args );
-        if ( parsedArgs.orphans().size() < 1 )
-        {
-            throw new IncorrectUsage(
-                    "Missing arguments: expected sub-command argument 'set-password'" );
-        }
-
-        String command = parsedArgs.orphans().size() > 0 ? parsedArgs.orphans().get( 0 ) : null;
-        String username = parsedArgs.orphans().size() > 1 ? parsedArgs.orphans().get( 1 ) : null;
-        String password = parsedArgs.orphans().size() > 2 ? parsedArgs.orphans().get( 2 ) : null;
-        boolean requiresPasswordChange = parsedArgs.getBoolean( "requires-password-change", true );
-        boolean force = parsedArgs.getBoolean( "force" );
+        Args parsedArgs = validateArgs(args);
 
         try
         {
-            switch ( command.trim().toLowerCase() )
-            {
-            case "set-password":
-                if ( username == null || password == null )
-                {
-                    throw new IncorrectUsage(
-                            "Missing arguments: 'users set-password' expects username and password arguments" );
-                }
-                setPassword( username, password, requiresPasswordChange, force );
-                break;
-            default:
-                throw new IncorrectUsage( "Unknown users command: " + command );
-            }
+            setPassword( parsedArgs.orphans().get( 0 ) );
         }
         catch ( IncorrectUsage e )
         {
             throw e;
         }
-        catch ( Exception e )
+        catch ( Throwable throwable )
         {
-            throw new CommandFailed( "Failed run 'users " + command + "' on '" + username + "': " + e.getMessage(), e );
-        }
-        catch ( Throwable t )
-        {
-            throw new CommandFailed( "Failed run 'users " + command + "' on '" + username + "': " + t.getMessage(),
-                    new RuntimeException( t.getMessage() ) );
+            throw new CommandFailed( "Failed to execute 'set-initial-password' command: " + throwable.getMessage(),
+                    new RuntimeException( throwable ) );
         }
     }
 
-    private void setPassword( String username, String password, boolean requirePasswordChange, boolean force )
-            throws Throwable
+    private Args validateArgs( String[] args ) throws IncorrectUsage
+    {
+        Args parsedArgs = Args.parse( args );
+        if ( parsedArgs.orphans().size() < 1 )
+        {
+            throw new IncorrectUsage( "No password specified." );
+        }
+        if ( parsedArgs.orphans().size() > 1 )
+        {
+            throw new IncorrectUsage( "Too many arguments." );
+        }
+        return parsedArgs;
+    }
+
+    private void setPassword( String password ) throws Throwable
     {
         Config config = loadNeo4jConfig();
         File file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
         if ( outsideWorld.fileSystem().fileExists( file ) )
         {
-            if ( force )
-            {
-                outsideWorld.fileSystem().deleteFile( file );
-            }
-            else
-            {
-                throw new IncorrectUsage( "Initial user already set. Overwrite this user with --force" );
-            }
+            outsideWorld.fileSystem().deleteFile( file );
         }
 
         FileUserRepository userRepository =
                 new FileUserRepository( outsideWorld.fileSystem(), file, NullLogProvider.getInstance() );
         userRepository.start();
-        userRepository.create(
-                new User.Builder( username, Credential.forPassword( password ) )
-                        .withRequiredPasswordChange( requirePasswordChange )
-                        .build()
-            );
+        userRepository.create( new User.Builder( INITIAL_USER_NAME, Credential.forPassword( password ) )
+                        .withRequiredPasswordChange( false )
+                        .build() );
         userRepository.shutdown();
-        outsideWorld.stdOutLine( "Changed password for user '" + username + "'" );
+        outsideWorld.stdOutLine( "Changed password for user '" + INITIAL_USER_NAME + "'." );
     }
 
     Config loadNeo4jConfig()

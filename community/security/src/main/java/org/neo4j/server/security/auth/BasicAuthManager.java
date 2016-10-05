@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
+import static org.neo4j.server.security.auth.UserManager.INITIAL_USER_NAME;
+
 /**
  * Manages server authentication and authorization.
  * <p>
@@ -79,22 +81,14 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
 
         if ( userRepository.numberOfUsers() == 0 )
         {
-            if ( initialUserRepository.numberOfUsers() == 0 )
+            User neo4j = newUser( INITIAL_USER_NAME, "neo4j", true );
+            if ( initialUserRepository.numberOfUsers() > 0 )
             {
-                newUser( "neo4j", "neo4j", true );
-            }
-        }
-        for ( String username : initialUserRepository.getAllUsernames() )
-        {
-            User oldUser = userRepository.getUserByName( username );
-            User newUser = initialUserRepository.getUserByName( username );
-            if ( oldUser == null )
-            {
-                userRepository.create( newUser );
-            }
-            else
-            {
-                userRepository.update( oldUser, newUser );
+                User user = initialUserRepository.getUserByName( INITIAL_USER_NAME );
+                if ( user != null )
+                {
+                    userRepository.update( neo4j, user );
+                }
             }
         }
     }
