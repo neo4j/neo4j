@@ -27,7 +27,9 @@ class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with NewPl
   test("check for contents of collection that contains only a single null") {
     createNode()
 
-    val result = executeWithAllPlanners("MATCH (a) WHERE 42 IN [a.prop] RETURN *", "param" -> null)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (a) WHERE 42 IN [a.prop] RETURN *", "param" -> null
+    )
 
     result shouldBe empty
   }
