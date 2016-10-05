@@ -70,14 +70,6 @@ public class CoreEdgeClusterSettings
     public static final Setting<Integer> raft_in_queue_max_batch =
             setting( "core_edge.raft_in_queue_max_batch", INTEGER, "64" );
 
-    @Description("Time out for a token to be replicated")
-    public static final Setting<Long> token_creation_timeout =
-            setting( "core_edge.token_creation_timeout", DURATION, "1s" );
-
-    @Description("Time out waiting for the leader locking token")
-    public static final Setting<Long> leader_lock_token_timeout =
-            setting( "core_edge.leader_lock_token_timeout", DURATION, "1s" );
-
     @Description("Expected number of Core machines in the cluster")
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );

@@ -37,8 +37,6 @@ import static org.neo4j.coreedge.identity.RaftTestMember.member;
 @SuppressWarnings("unchecked")
 public class LeaderOnlyLockManagerTest
 {
-    private long LEADER_LOCK_TOKEN_TIMEOUT = 1000;
-
     @Test
     public void shouldIssueLocksOnLeader() throws Exception
     {
@@ -55,8 +53,8 @@ public class LeaderOnlyLockManagerTest
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
-        LeaderOnlyLockManager lockManager = new LeaderOnlyLockManager( me, replicator, leaderLocator,
-                locks, LEADER_LOCK_TOKEN_TIMEOUT, replicatedLockStateMachine );
+        LeaderOnlyLockManager lockManager =
+                new LeaderOnlyLockManager( me, replicator, leaderLocator, locks, replicatedLockStateMachine );
 
         // when
         lockManager.newClient().acquireExclusive( ResourceTypes.NODE, 0L );
@@ -80,8 +78,8 @@ public class LeaderOnlyLockManagerTest
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
-        LeaderOnlyLockManager lockManager = new LeaderOnlyLockManager( me, replicator, leaderLocator,
-                locks, LEADER_LOCK_TOKEN_TIMEOUT, replicatedLockStateMachine );
+        LeaderOnlyLockManager lockManager =
+                new LeaderOnlyLockManager( me, replicator, leaderLocator, locks, replicatedLockStateMachine );
 
         // when
         Locks.Client lockClient = lockManager.newClient();

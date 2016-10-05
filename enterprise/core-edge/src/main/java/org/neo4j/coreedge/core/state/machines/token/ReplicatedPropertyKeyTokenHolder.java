@@ -30,13 +30,10 @@ import org.neo4j.storageengine.api.Token;
 public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Token> implements
         PropertyKeyTokenHolder
 {
-    public ReplicatedPropertyKeyTokenHolder(
-            TokenRegistry<Token> registry,
-            RaftReplicator replicator,
-            IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, Long timeoutMillis )
+    public ReplicatedPropertyKeyTokenHolder( TokenRegistry<Token> registry, RaftReplicator replicator,
+            IdGeneratorFactory idGeneratorFactory, Dependencies dependencies )
     {
-        super( registry, replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN, dependencies, TokenType.PROPERTY,
-                timeoutMillis );
+        super( registry, replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN, dependencies, TokenType.PROPERTY );
     }
 
     @Override

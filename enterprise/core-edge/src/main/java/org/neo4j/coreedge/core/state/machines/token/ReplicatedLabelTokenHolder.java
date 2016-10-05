@@ -29,13 +29,10 @@ import org.neo4j.storageengine.api.Token;
 
 public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token> implements LabelTokenHolder
 {
-    public ReplicatedLabelTokenHolder(
-            TokenRegistry<Token> registry,
-            Replicator replicator,
-            IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, Long timeoutMillis )
+    public ReplicatedLabelTokenHolder( TokenRegistry<Token> registry, Replicator replicator,
+            IdGeneratorFactory idGeneratorFactory, Dependencies dependencies )
     {
-        super( registry, replicator, idGeneratorFactory, IdType.LABEL_TOKEN, dependencies, TokenType.LABEL,
-                timeoutMillis );
+        super( registry, replicator, idGeneratorFactory, IdType.LABEL_TOKEN, dependencies, TokenType.LABEL );
     }
 
     @Override
