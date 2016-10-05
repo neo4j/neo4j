@@ -55,6 +55,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -305,19 +306,101 @@ public class BoltCoreEdgeIT
                 AuthTokens.basic( "neo4j", "neo4j" ) );
 
         String bookmark;
-        try ( Session session = driver.session(); Transaction tx = session.beginTransaction() )
+        try ( Session session = driver.session() )
         {
-            tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
-            tx.success();
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+                tx.success();
+            }
 
             bookmark = session.lastBookmark();
         }
+
+        assertNotNull( bookmark );
 
         try ( Session session = driver.session(); Transaction tx = session.beginTransaction( bookmark ) )
         {
             Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
             assertEquals( 1, record.get( "count" ).asInt() );
             tx.success();
+        }
+    }
+
+    @Test
+    public void shouldUseBookmarkFromAReadSessionInAWriteSession() throws Exception
+    {
+        // given
+        cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
+        CoreClusterMember leader = cluster.awaitLeader(  );
+
+        Driver driver = GraphDatabase.driver( "bolt://" + leader.boltAdvertisedAddress(),
+                AuthTokens.basic( "neo4j", "neo4j" ) );
+
+        try ( Session session = driver.session(AccessMode.WRITE) )
+        {
+            session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+        }
+
+        String bookmark;
+        try ( Session session = driver.session(AccessMode.READ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                tx.success();
+            }
+
+            bookmark = session.lastBookmark();
+        }
+
+        assertNotNull( bookmark );
+
+        try ( Session session = driver.session( AccessMode.WRITE );
+              Transaction tx = session.beginTransaction( bookmark ) )
+        {
+            tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
+            tx.success();
+        }
+
+        try ( Session session = driver.session() )
+        {
+            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+            assertEquals( 2, record.get( "count" ).asInt() );
+        }
+    }
+
+    @Test
+    public void shouldUseBookmarkFromAWriteSessionInAReadSession() throws Exception
+    {
+        // given
+        cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
+        CoreClusterMember leader = cluster.awaitLeader(  );
+
+        Driver driver = GraphDatabase.driver( "bolt://" + leader.boltAdvertisedAddress(),
+                AuthTokens.basic( "neo4j", "neo4j" ) );
+
+        String bookmark;
+        try ( Session session = driver.session(AccessMode.WRITE) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+                tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
+                tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Mark" ) );
+                tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Chris" ) );
+                tx.success();
+            }
+
+            bookmark = session.lastBookmark();
+        }
+
+        assertNotNull( bookmark );
+
+        try ( Session session = driver.session(AccessMode.READ) )
+        {
+            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+            assertEquals( 4, record.get( "count" ).asInt() );
         }
     }
 
