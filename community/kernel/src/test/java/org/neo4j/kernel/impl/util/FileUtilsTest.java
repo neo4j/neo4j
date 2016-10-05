@@ -145,7 +145,7 @@ public class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/c/f" ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/c/f" ) ) );
     }
 
     @Test
@@ -155,7 +155,7 @@ public class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/c/d/f" ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/c/d/f" ) ) );
     }
 
     // DEEPER
@@ -166,7 +166,7 @@ public class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/b/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/b/c/f" ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/c/f" ) ) );
     }
 
     @Test
@@ -176,7 +176,7 @@ public class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/b/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/b/c/d/f" ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/c/d/f" ) ) );
     }
 
     @Test
@@ -186,7 +186,7 @@ public class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/c/f" ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/c/f" ) ) );
     }
 
     @Test
@@ -196,7 +196,7 @@ public class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/c" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/c/d/f" ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/c/d/f" ) ) );
     }
 
     @Test
@@ -206,7 +206,7 @@ public class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/b" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/b/f" ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/f" ) ) );
     }
 
     @Test
@@ -216,10 +216,10 @@ public class FileUtilsTest
         File from = new File( "/a/b" );
         File to   = new File( "/a/b" );
 
-        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( "/a/b/d/f" ) );
+        assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/d/f" ) ) );
     }
 
-    private File directory( String name ) throws IOException
+    private File directory( String name )
     {
         File dir = new File( path, name );
         dir.mkdirs();
@@ -231,5 +231,10 @@ public class FileUtilsTest
         File file = new File( path, name );
         file.createNewFile();
         return file;
+    }
+
+    private String path( String path )
+    {
+        return new File( path ).getPath();
     }
 }
