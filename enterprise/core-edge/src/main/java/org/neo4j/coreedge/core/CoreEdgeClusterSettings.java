@@ -48,9 +48,9 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> join_catch_up_timeout =
             setting( "core_edge.join_catch_up_timeout", DURATION, "10m" );
 
-    @Description("The time limit which a new leader election will occur if no messages are received.")
+    @Description("The time limit within which a new leader election will occur if no messages are received.")
     public static final Setting<Long> leader_election_timeout =
-            setting( "core_edge.leader_election_timeout", DURATION, "500ms" );
+            setting( "core_edge.leader_election_timeout", DURATION, "7s" );
 
     @Description("The maximum batch size when catching up (in unit of entries)")
     public static final Setting<Integer> catchup_batch_size =
