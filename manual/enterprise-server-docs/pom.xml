@@ -9,10 +9,10 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.doc</groupId>
-  <artifactId>neo4j-server-docs</artifactId>
+  <artifactId>neo4j-server-enterprise-docs</artifactId>
   <version>3.0.7-SNAPSHOT</version>
-  <name>Neo4j - Server Docs</name>
-  <description>Documentation for the Neo4j server</description>
+  <name>Neo4j - Enterprise Server Docs</name>
+  <description>Documentation for the Neo4j Enterprise server</description>
 
   <properties>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
@@ -72,6 +72,21 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-server-docs</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server-enterprise</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
