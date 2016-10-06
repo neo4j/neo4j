@@ -36,11 +36,6 @@ import org.neo4j.index.Modifier;
 import org.neo4j.index.ValueAmender;
 import org.neo4j.index.bptree.MutableHit;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanKey;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanLayout;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanValue;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIterator;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanWriter;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertArrayEquals;

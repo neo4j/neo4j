@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.index.labelscan.PhysicalToLogicalLabelChanges;
 
 import static org.junit.Assert.assertArrayEquals;
 

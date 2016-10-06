@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.index.labelscan;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.index.labelscan.LabelScanValue;
-
 import static org.junit.Assert.assertEquals;
 
 public class LabelScanValueTest

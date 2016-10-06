@@ -28,9 +28,6 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
 import org.neo4j.index.bptree.MutableHit;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanKey;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanValue;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanReader;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.any;
