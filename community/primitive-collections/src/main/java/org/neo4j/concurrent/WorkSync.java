@@ -45,7 +45,7 @@ import java.util.concurrent.locks.LockSupport;
  *
  * @see Work
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings( {"unchecked", "NumberEquality"} )
 public class WorkSync<Material, W extends Work<Material,W>>
 {
     private final Material material;
@@ -96,7 +96,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
     private WorkUnit<Material,W> enqueueWork( W work )
     {
         WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread() );
-        unit.next = stack.getAndSet( unit ); // benign race, see reverse()
+        unit.next = stack.getAndSet( unit ); // benign race, see the batch.next read-loop in combine()
         return unit;
     }
 
@@ -169,7 +169,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
     private WorkUnit<Material,W> grabBatch()
     {
-        return reverse( stack.getAndSet( (WorkUnit<Material,W>) stackEnd ) );
+        return stack.getAndSet( (WorkUnit<Material,W>) stackEnd );
     }
 
     private Throwable doSynchronizedWork( WorkUnit<Material,W> batch )
@@ -191,28 +191,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
         return failure;
     }
 
-    private WorkUnit<Material,W> reverse( WorkUnit<Material,W> batch )
-    {
-        WorkUnit<Material,W> result = (WorkUnit<Material,W>) stackEnd;
-        while ( batch != stackEnd )
-        {
-            WorkUnit<Material,W> tmp = batch.next;
-            while ( tmp == null )
-            {
-                // We may see 'null' via race, as work units are put on the
-                // stack before their 'next' pointers are updated. We just spin
-                // until we observe their volatile write to 'next'.
-                // todo Java9: Thread.onSpinWait() ?
-                Thread.yield();
-                tmp = batch.next;
-            }
-            batch.next = result;
-            result = batch;
-            batch = tmp;
-        }
-        return result;
-    }
-
     private W combine( WorkUnit<Material,W> batch )
     {
         W result = null;
@@ -227,7 +205,17 @@ public class WorkSync<Material, W extends Work<Material,W>>
                 result = result.combine( batch.work );
             }
 
-            batch = batch.next;
+            WorkUnit<Material,W> tmp = batch.next;
+            while ( tmp == null )
+            {
+                // We may see 'null' via race, as work units are put on the
+                // stack before their 'next' pointers are updated. We just spin
+                // until we observe their volatile write to 'next'.
+                // todo Java9: Thread.onSpinWait() ?
+                Thread.yield();
+                tmp = batch.next;
+            }
+            batch = tmp;
         }
         return result;
     }
