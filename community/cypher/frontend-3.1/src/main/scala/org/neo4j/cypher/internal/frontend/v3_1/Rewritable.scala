@@ -88,7 +88,15 @@ object Rewritable {
 
     def copyConstructor: Method = {
       val productClass = product.getClass
-      productCopyConstructors.get.getOrElseUpdate(productClass, productClass.getMethods.find(_.getName == "copy").get)
+      productCopyConstructors.get.getOrElseUpdate(productClass, getCopyMethod(productClass))
+    }
+
+    def getCopyMethod(productClass: Class[_ <: Product]): Method = {
+      try {
+        productClass.getMethods.find(_.getName == "copy").get
+      } catch {
+        case e: NoSuchElementException => throw new InternalException(s"Failed trying to rewrite ${product.getClass()} - this class does not have a `copy` method")
+      }
     }
   }
 

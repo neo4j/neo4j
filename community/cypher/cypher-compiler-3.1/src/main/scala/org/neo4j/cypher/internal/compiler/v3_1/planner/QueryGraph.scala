@@ -36,6 +36,66 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       mutatingPatterns: Seq[MutatingPattern] = Seq.empty)
   extends UpdateGraph {
 
+  def smallestGraphIncluding(mustInclude: Set[IdName]): Set[IdName] = {
+    if (mustInclude.size < 2)
+      mustInclude
+    else {
+      var accumulatedElements = Set.empty[IdName]
+      for {
+        lhs <- mustInclude
+        rhs <- mustInclude
+        if lhs.name < rhs.name
+      } {
+        accumulatedElements ++= findPathBetween(lhs, rhs)
+      }
+      accumulatedElements
+    }
+  }
+
+  private def findPathBetween(startFromL: IdName, startFromR: IdName): Set[IdName] = {
+    var l = Seq(PathSoFar(startFromL, Set.empty))
+    var r = Seq(PathSoFar(startFromR, Set.empty))
+    (0 to patternRelationships.size) foreach { i =>
+      if (i % 2 == 0) {
+        l = expand(l)
+        val matches = hasExpandedInto(l, r)
+        if (matches.nonEmpty)
+          return matches.head
+      }
+      else {
+        r = expand(r)
+        val matches = hasExpandedInto(r, l)
+        if (matches.nonEmpty)
+          return matches.head
+      }
+    }
+
+    // Did not find shortest path. Let's do the safe thing and return everything
+    patternRelationships.flatMap(_.coveredIds)
+  }
+
+  private def hasExpandedInto(from: Seq[PathSoFar], into: Seq[PathSoFar]): Seq[Set[IdName]] =
+    for {lhs <- from
+         rhs <- into
+         if rhs.alreadyVisited.exists(p => p.coveredIds.contains(lhs.end))}
+      yield {
+        (lhs.alreadyVisited ++ rhs.alreadyVisited).flatMap(_.coveredIds)
+      }
+
+  private case class PathSoFar(end: IdName, alreadyVisited: Set[PatternRelationship]) {
+    def coveredIds: Set[IdName] = alreadyVisited.flatMap(_.coveredIds) + end
+  }
+
+  private def expand(from: Seq[PathSoFar]): Seq[PathSoFar] = {
+    from.flatMap {
+      case PathSoFar(end, alreadyVisited) =>
+        patternRelationships.collect {
+          case pr if !alreadyVisited(pr) && pr.coveredIds(end) =>
+            PathSoFar(pr.otherSide(end), alreadyVisited + pr)
+        }
+    }
+  }
+
   def size = patternRelationships.size
 
   def isEmpty: Boolean = this == QueryGraph.empty
@@ -270,8 +330,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   private def relationshipPullsInArguments(coveredIds: Set[IdName]) = (argumentIds intersect coveredIds).nonEmpty
 
-  private def predicatePullsInArguments(node: IdName) = selections.flatPredicates.exists {
-    case p =>
+  private def predicatePullsInArguments(node: IdName) = selections.flatPredicates.exists { p =>
       val deps = p.dependencies.map(IdName.fromVariable)
       deps(node) && (deps intersect argumentIds).nonEmpty
   }
@@ -289,17 +348,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
     copy(mutatingPatterns = mutatingPatterns ++ patterns)
-
-  // This is here to stop usage of copy from the outside
-  private def copy(patternRelationships: Set[PatternRelationship] = patternRelationships,
-                   patternNodes: Set[IdName] = patternNodes,
-                   argumentIds: Set[IdName] = argumentIds,
-                   selections: Selections = selections,
-                   optionalMatches: IndexedSeq[QueryGraph] = optionalMatches,
-                   hints: Set[Hint] = hints,
-                   shortestPathPatterns: Set[ShortestPathPattern] = shortestPathPatterns,
-                   mutatingPatterns: Seq[MutatingPattern] = mutatingPatterns) =
-  QueryGraph(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints, shortestPathPatterns, mutatingPatterns)
 }
 
 object QueryGraph {

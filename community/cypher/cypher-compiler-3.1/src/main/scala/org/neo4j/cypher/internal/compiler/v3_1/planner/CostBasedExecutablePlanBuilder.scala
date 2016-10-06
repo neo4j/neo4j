@@ -32,9 +32,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStep, RewriterStepSequencer}
+import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, Scope, SemanticTable}
-
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           metricsFactory: MetricsFactory,
@@ -83,7 +83,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
   (Option[PeriodicCommit], LogicalPlan, PipeExecutionBuilderContext) = {
 
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val unionQuery = toUnionQuery(ast, semanticTable)
+    val unionQuery = toUnionQuery(ast, semanticTable).endoRewrite(PlannerQueryRewriter)
     val metrics = metricsFactory.newMetrics(planContext.statistics)
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
 
