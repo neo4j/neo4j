@@ -183,7 +183,7 @@ public class SecuritySettings
     @Description( "The name of the base object or named context to search for user objects when LDAP authorization is " +
                   "enabled." )
     public static Setting<String> ldap_authorization_user_search_base =
-            setting( "dbms.security.ldap.authorization.user_search_base", STRING, NO_DEFAULT );
+            setting( "dbms.security.ldap.authorization.user_search_base", STRING, "ou=users,dc=example,dc=com" );
 
     @Description( "The LDAP search filter to search for a user principal when LDAP authorization is " +
                   "enabled. The filter should contain the placeholder token {0} which will be substituted for the " +
