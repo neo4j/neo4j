@@ -20,34 +20,101 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class QueryGraphTest extends CypherFunSuite {
+  val x = IdName("x")
+  val n = IdName("a")
+  val m = IdName("b")
+  val c = IdName("c")
+  val r1 = IdName("r1")
+  val r2 = IdName("r2")
+
   test("returns no pattern relationships when the query graph doesn't contain any") {
     val rels: Set[PatternRelationship] = Set.empty
     val qg = QueryGraph(patternRelationships = rels)
 
-    qg.findRelationshipsEndingOn(IdName("x")) shouldBe empty
+    qg.findRelationshipsEndingOn(x) shouldBe empty
   }
 
   test("finds single pattern relationship") {
-    val r = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(patternRelationships = Set(r))
 
-    qg.findRelationshipsEndingOn(IdName("x")) shouldBe empty
-    qg.findRelationshipsEndingOn(IdName("a")) should equal(Set(r))
-    qg.findRelationshipsEndingOn(IdName("b")) should equal(Set(r))
+    qg.findRelationshipsEndingOn(x) shouldBe empty
+    qg.findRelationshipsEndingOn(n) should equal(Set(r))
+    qg.findRelationshipsEndingOn(m) should equal(Set(r))
   }
 
   test("finds multiple pattern relationship") {
-    val r = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
-    val r2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(r, r2))
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2))
 
-    qg.findRelationshipsEndingOn(IdName("x")) shouldBe empty
-    qg.findRelationshipsEndingOn(IdName("a")) should equal(Set(r))
-    qg.findRelationshipsEndingOn(IdName("b")) should equal(Set(r, r2))
-    qg.findRelationshipsEndingOn(IdName("c")) should equal(Set(r2))
+    qg.findRelationshipsEndingOn(x) shouldBe empty
+    qg.findRelationshipsEndingOn(n) should equal(Set(pattRel1))
+    qg.findRelationshipsEndingOn(m) should equal(Set(pattRel1, pattRel2))
+    qg.findRelationshipsEndingOn(c) should equal(Set(pattRel2))
+  }
+
+  test("finds shortest path starting from a single element with a single node in the QG") {
+    val qg = QueryGraph(patternNodes = Set(n))
+
+    qg.smallestGraphIncluding(Set(n)) should equal(Set(n))
+  }
+
+  test("finds shortest path starting from a single element with a single relationship in the QG") {
+    val r = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(r), patternNodes = Set(n, m))
+
+    qg.smallestGraphIncluding(Set(n)) should equal(Set(n))
+  }
+
+  test("finds shortest path starting from two nodes with a single relationship in the QG") {
+    val r = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(r), patternNodes = Set(n, m))
+
+    qg.smallestGraphIncluding(Set(n, m)) should equal(Set(n, m, r1))
+  }
+
+  test("finds shortest path starting from two nodes with a two relationships in the QG") {
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m, c))
+
+    qg.smallestGraphIncluding(Set(n, m)) should equal(Set(n, m, r1))
+  }
+
+  test("finds shortest path starting from two nodes with a two relationships between the same nodes in the QG") {
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m))
+
+    val result = qg.smallestGraphIncluding(Set(n, m))
+    result should contain(n)
+    result should contain(m)
+    result should contain oneOf (r1, r2)
+  }
+
+  test("finds shortest path starting from two nodes with an intermediate relationship in the QG") {
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m, c))
+
+    qg.smallestGraphIncluding(Set(n, c)) should equal(
+      Set(n, m, c, r1, r2))
+  }
+
+  test("find smallest graph that connect three nodes") { // MATCH (x)<--(a)-->(b), (a)-->(c) RETURN DISTINCT a,b,c
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (n, c), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel3 = PatternRelationship(IdName("r3"), (n, x), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(
+      patternRelationships = Set(pattRel1, pattRel2, pattRel3),
+      patternNodes = Set(n, m, c, x))
+
+    qg.smallestGraphIncluding(Set(n, m, c)) should equal(
+      Set(n, m, c, r1, r2))
   }
 }
