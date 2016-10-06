@@ -46,6 +46,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptySet;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
@@ -171,7 +172,8 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
             servers.add( map );
         }
 
-        Object[] row = new Object[] { config.get( CoreEdgeClusterSettings.cluster_routing_ttl ), servers };
+        long ttl = MILLISECONDS.toSeconds( config.get( CoreEdgeClusterSettings.cluster_routing_ttl ) );
+        Object[] row = new Object[] {ttl, servers };
         return RawIterator.<Object[], ProcedureException>of(row);
     }
 
