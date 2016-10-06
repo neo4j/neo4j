@@ -40,8 +40,6 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Level;
 
-import static java.util.Collections.singletonList;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
@@ -554,7 +552,7 @@ public abstract class GraphDatabaseSettings
         protected Connector( String key, @SuppressWarnings("UnusedParameters") String typeDefault )
         {
             group = new GroupSettingSupport( Connector.class, key );
-            enabled = group.scope( setting( "enabled", BOOLEAN, "true" ) );
+            enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
             type = group.scope( setting( "type", options( ConnectorType.class ), NO_DEFAULT ) );
         }
 
@@ -635,10 +633,6 @@ public abstract class GraphDatabaseSettings
                         config.get( connConfig.type ) == BOLT )
                 .collect( Collectors.toList() );
 
-        if ( boltConnectors.isEmpty() )
-        {
-            boltConnectors = singletonList( new BoltConnector() );
-        }
         return boltConnectors.stream()
                 .filter( connConfig -> config.get( connConfig.enabled ) )
                 .collect( Collectors.toList() );
