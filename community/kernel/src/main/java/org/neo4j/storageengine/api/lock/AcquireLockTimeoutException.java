@@ -19,19 +19,31 @@
  */
 package org.neo4j.storageengine.api.lock;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 /**
  * Acquiring a lock failed. This is a runtime exception now to ease the transition from the old lock interface, but
  * it should be made into a {@link org.neo4j.kernel.api.exceptions.KernelException} asap.
  */
-public class AcquireLockTimeoutException extends RuntimeException
+public class AcquireLockTimeoutException extends RuntimeException implements Status.HasStatus
 {
-    public AcquireLockTimeoutException( Throwable cause, String message, Object... parameters )
+    private final Status statusCode;
+
+    public AcquireLockTimeoutException( Throwable cause, String message, Status statusCode )
     {
-        super( String.format(message, parameters), cause );
+        super( message, cause );
+        this.statusCode = statusCode;
     }
 
-    public AcquireLockTimeoutException( String message )
+    public AcquireLockTimeoutException( String message, Status statusCode )
     {
         super( message );
+        this.statusCode = statusCode;
+    }
+
+    @Override
+    public Status status()
+    {
+        return statusCode;
     }
 }
