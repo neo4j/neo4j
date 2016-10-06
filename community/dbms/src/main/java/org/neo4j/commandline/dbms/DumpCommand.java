@@ -129,7 +129,7 @@ public class DumpCommand implements AdminCommand
     {
         //noinspection unchecked
         return new ConfigLoader( asList( DatabaseManagementSystemSettings.class, GraphDatabaseSettings.class ) )
-                .loadConfig(
+                .loadOfflineConfig(
                         Optional.of( homeDir.toFile() ),
                         Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) )
                 .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) )

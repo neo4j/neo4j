@@ -166,7 +166,7 @@ public class OnlineBackupCommand implements AdminCommand
         //noinspection unchecked
         return withAdditionalConfig( additionalConfig,
                 new ConfigLoader( asList( GraphDatabaseSettings.class, ConsistencyCheckSettings.class ) )
-                        .loadConfig(
+                        .loadOfflineConfig(
                                 Optional.of( homeDir.toFile() ),
                                 Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) ) );
     }

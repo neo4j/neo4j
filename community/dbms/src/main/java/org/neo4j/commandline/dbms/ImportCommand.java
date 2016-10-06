@@ -157,7 +157,7 @@ public class ImportCommand implements AdminCommand
             Map<String,String> additionalConfig )
     {
         ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadConfig( Optional.of( homeDir.toFile() ),
+        Config config = configLoader.loadOfflineConfig( Optional.of( homeDir.toFile() ),
                 Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
         additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
         return config.with( additionalConfig );
