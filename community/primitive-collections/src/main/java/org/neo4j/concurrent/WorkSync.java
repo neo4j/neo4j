@@ -45,11 +45,12 @@ import java.util.concurrent.locks.LockSupport;
  *
  * @see Work
  */
+@SuppressWarnings( "unchecked" )
 public class WorkSync<Material, W extends Work<Material,W>>
 {
     private final Material material;
     private final AtomicReference<WorkUnit<Material,W>> stack;
-    private final WorkUnit<Material,W> stackEnd;
+    private static final WorkUnit<?,?> stackEnd = new WorkUnit<>( null, null );
     private final AtomicReference<Thread> lock;
 
     /**
@@ -62,8 +63,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
     public WorkSync( Material material )
     {
         this.material = material;
-        this.stackEnd = new WorkUnit<>( null, null, null );
-        this.stack = new AtomicReference<>( stackEnd );
+        this.stack = new AtomicReference<>( (WorkUnit<Material,W>) stackEnd );
         this.lock = new AtomicReference<>();
     }
 
@@ -95,7 +95,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
     private WorkUnit<Material,W> enqueueWork( W work )
     {
-        WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread(), stackEnd );
+        WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread() );
         unit.next = stack.getAndSet( unit ); // benign race, see reverse()
         return unit;
     }
@@ -169,7 +169,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
     private WorkUnit<Material,W> grabBatch()
     {
-        return reverse( stack.getAndSet( stackEnd ) );
+        return reverse( stack.getAndSet( (WorkUnit<Material,W>) stackEnd ) );
     }
 
     private Throwable doSynchronizedWork( WorkUnit<Material,W> batch )
@@ -193,7 +193,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
     private WorkUnit<Material,W> reverse( WorkUnit<Material,W> batch )
     {
-        WorkUnit<Material,W> result = stackEnd;
+        WorkUnit<Material,W> result = (WorkUnit<Material,W>) stackEnd;
         while ( batch != stackEnd )
         {
             WorkUnit<Material,W> tmp = batch.next;
@@ -248,15 +248,13 @@ public class WorkSync<Material, W extends Work<Material,W>>
         static final int STATE_DONE = 2;
 
         final W work;
-        final WorkUnit<Material,W> stackEnd;
         final Thread owner;
         volatile WorkUnit<Material,W> next;
 
-        private WorkUnit( W work, Thread owner, WorkUnit<Material,W> stackEnd )
+        private WorkUnit( W work, Thread owner )
         {
             this.work = work;
             this.owner = owner;
-            this.stackEnd = stackEnd;
         }
 
         void park( long time, TimeUnit unit )
