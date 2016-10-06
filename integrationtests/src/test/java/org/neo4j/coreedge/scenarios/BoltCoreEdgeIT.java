@@ -21,20 +21,27 @@ package org.neo4j.coreedge.scenarios;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
@@ -59,6 +66,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class BoltCoreEdgeIT
@@ -418,6 +426,100 @@ public class BoltCoreEdgeIT
                 tx.success();
                 assertEquals( 4, record.get( "count" ).asInt() );
             }
+        }
+    }
+
+    @Test
+    public void shouldSendRequestsToNewlyAddedServers() throws Throwable
+    {
+        // given
+        cluster = clusterRule
+                .withNumberOfEdgeMembers( 1 )
+                .withSharedCoreParams( stringMap( CoreEdgeClusterSettings.cluster_routing_ttl.name(), "1s") )
+                .startCluster();
+
+        CoreClusterMember leader = cluster.awaitLeader(  );
+        Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
+
+        String bookmark = inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+                tx.success();
+            }
+
+            return session.lastBookmark();
+        } );
+
+        // when
+        Set<String> unusedServers = new HashSet<>();
+
+        for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
+        {
+            unusedServers.add( coreClusterMember.boltAdvertisedAddress() );
+        }
+        for ( EdgeClusterMember edgeClusterMember : cluster.edgeMembers() )
+        {
+            unusedServers.add(edgeClusterMember.boltAdvertisedAddress());
+        }
+
+        for ( int i = 1; i <= 3; i++ )
+        {
+            EdgeClusterMember newEdge = cluster.addEdgeMemberWithId( i );
+            unusedServers.add( newEdge.boltAdvertisedAddress() );
+            newEdge.start();
+        }
+
+        assertEventually( "Failed to send requests to all servers", () ->
+        {
+            for ( int i = 0; i < cluster.coreMembers().size() + cluster.edgeMembers().size(); i++ )
+            {
+                try ( Session session = driver.session( AccessMode.READ ) )
+                {
+                    BoltServerAddress boltServerAddress = ((Connection) getAddress.invoke( session )).address();
+                    executeReadQuery( bookmark, session );
+                    unusedServers.remove( boltServerAddress.toString() );
+                }
+                catch ( Throwable throwable )
+                {
+                    return false;
+                }
+            }
+
+            return unusedServers.size() == 0;
+        }, is( true ), 30, SECONDS );
+    }
+
+    private void executeReadQuery( String bookmark, Session session )
+    {
+        try ( Transaction tx = session.beginTransaction( bookmark ) )
+        {
+            Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+            assertEquals( 1, record.get( "count" ).asInt() );
+        }
+    }
+
+    private static MethodHandle getAddress = connectionGetter();
+
+    private static MethodHandle connectionGetter()
+    {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        try
+        {
+            Field value = NetworkSession.class.getDeclaredField( "connection" );
+            if ( value.getType() != Connection.class )
+            {
+                throw new AssertionError(
+                        "Oh no it's a" +
+                                value.getType().getCanonicalName() );
+            }
+            value.setAccessible( true );
+            return lookup.unreflectGetter( value );
+        }
+        catch ( Throwable e )
+        {
+            throw new AssertionError( e.getMessage(), e );
         }
     }
 
