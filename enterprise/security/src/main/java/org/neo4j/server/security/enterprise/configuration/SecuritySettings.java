@@ -117,7 +117,7 @@ public class SecuritySettings
                   "If no protocol is specified the default will be `ldap://`. To use LDAPS, " +
                   "set the protocol and port, e.g. `ldaps://ldap.example.com:636`" )
     public static final Setting<String> ldap_server =
-            setting( "dbms.security.ldap.host", STRING, "0.0.0.0:389" );
+            setting( "dbms.security.ldap.host", STRING, "localhost:389" );
 
     @Description( "Use secure communication with the LDAP server using opportunistic TLS. " +
             "First an initial insecure connection will be made with the LDAP server and a STARTTLS command will be " +
