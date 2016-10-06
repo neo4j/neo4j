@@ -33,6 +33,7 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -87,7 +88,7 @@ public abstract class IndexType
                     return;
                 }
             }
-            document.removeFields( key );
+            removeFieldFromDocument( document, key );
             if ( value != null )
             {
                 for ( String existingValue : values )
@@ -97,6 +98,12 @@ public abstract class IndexType
             }
 
             restoreNumericFields( document );
+        }
+
+        @Override
+        void removeFieldFromDocument( Document document, String name )
+        {
+            document.removeFields( name );
         }
 
         @Override
@@ -146,6 +153,13 @@ public abstract class IndexType
         }
 
         @Override
+        void removeFieldFromDocument( Document document, String name )
+        {
+            document.removeFields( exactKey( name ) );
+            document.removeFields( name );
+        }
+
+        @Override
         void removeFieldsFromDocument( Document document, String key, Object value )
         {
             String exactKey = exactKey( key );
@@ -160,7 +174,7 @@ public abstract class IndexType
                 }
             }
             document.removeFields( exactKey );
-            document.removeFields( key );
+            removeFieldFromDocument( document, key );
             if ( value != null )
             {
                 for ( String existingValue : values )
@@ -373,9 +387,11 @@ public abstract class IndexType
 
     abstract void removeFieldsFromDocument( Document document, String key, Object value );
 
+    abstract void removeFieldFromDocument( Document document, String name );
+
     private void clearDocument( Document document )
     {
-        Set<String> names = new HashSet<String>();
+        Set<String> names = new HashSet<>();
         for ( IndexableField field : document.getFields() )
         {
             names.add( field.name() );
@@ -393,14 +409,15 @@ public abstract class IndexType
         List<IndexableField> numericFields = new ArrayList<>();
         for ( IndexableField field : document.getFields() )
         {
-            if ( field.numericValue() != null && !field.name().equals( LuceneLegacyIndex.KEY_DOC_ID ) )
+            if ( field.numericValue() != null && !field.name().equals( LuceneLegacyIndex.KEY_DOC_ID ) &&
+                    DocValuesType.NONE.equals( field.fieldType().docValuesType() ) )
             {
                 numericFields.add( field );
             }
         }
         for ( IndexableField field : numericFields )
         {
-            document.removeField( field.name() );
+            removeFieldFromDocument( document, field.name() );
             addToDocument( document, field.name(), field.numericValue() );
         }
     }
