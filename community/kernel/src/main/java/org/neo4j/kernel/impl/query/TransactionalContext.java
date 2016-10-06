@@ -27,7 +27,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 
 public interface TransactionalContext
@@ -75,7 +76,7 @@ public interface TransactionalContext
 
     Lock acquireWriteLock( PropertyContainer p );
 
-    AccessMode accessMode();
+    SecurityContext securityContext();
 
-    KernelTransaction.Revertable restrictCurrentTransaction( AccessMode accessMode );
+    KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context );
 }

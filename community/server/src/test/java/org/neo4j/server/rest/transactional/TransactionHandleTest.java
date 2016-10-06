@@ -38,7 +38,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -67,7 +67,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
-import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
 
 public class TransactionHandleTest
@@ -307,7 +307,7 @@ public class TransactionHandleTest
                 mock( HttpServletRequest.class ) );
 
         // then
-        verify( kernel ).newTransaction( any( Type.class ), any( AccessMode.class ), anyLong() );
+        verify( kernel ).newTransaction( any( Type.class ), any( SecurityContext.class ), anyLong() );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
@@ -458,7 +458,7 @@ public class TransactionHandleTest
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         TransitionalTxManagementKernelTransaction tx = mock( TransitionalTxManagementKernelTransaction.class );
-        when( kernel.newTransaction( any( Type.class ), any( AccessMode.class ), anyLong() ) ).thenReturn( tx );
+        when( kernel.newTransaction( any( Type.class ), any( SecurityContext.class ), anyLong() ) ).thenReturn( tx );
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
@@ -544,7 +544,7 @@ public class TransactionHandleTest
     {
         TransitionalTxManagementKernelTransaction context = mock( TransitionalTxManagementKernelTransaction.class );
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
-        when( kernel.newTransaction( any( Type.class ), any( AccessMode.class ), anyLong() ) ).thenReturn( context );
+        when( kernel.newTransaction( any( Type.class ), any( SecurityContext.class ), anyLong() ) ).thenReturn( context );
         return kernel;
     }
 
@@ -586,7 +586,7 @@ public class TransactionHandleTest
                         any( HttpServletRequest.class ),
                         any( GraphDatabaseQueryService.class ),
                         any( Type.class ),
-                        any( AccessMode.class ),
+                        any( SecurityContext.class ),
                         any( String.class ),
                         any( Map.class ) ) ).
                 thenReturn( tc );

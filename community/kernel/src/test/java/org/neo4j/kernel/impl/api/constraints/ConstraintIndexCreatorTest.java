@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -38,7 +37,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -164,13 +164,13 @@ public class ConstraintIndexCreatorTest
         private final List<KernelStatement> statements = new ArrayList<>();
 
         @Override
-        public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode )
+        public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext )
         {
             return new StubKernelTransaction();
         }
 
         @Override
-        public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout )
+        public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
                 throws TransactionFailureException
         {
             return new StubKernelTransaction( timeout );
@@ -248,7 +248,7 @@ public class ConstraintIndexCreatorTest
             }
 
             @Override
-            public AccessMode mode()
+            public SecurityContext securityContext()
             {
                 throw new UnsupportedOperationException();
             }
@@ -294,7 +294,7 @@ public class ConstraintIndexCreatorTest
             }
 
             @Override
-            public Revertable overrideWith( AccessMode read )
+            public Revertable overrideWith( SecurityContext context )
             {
                 return null;
             }

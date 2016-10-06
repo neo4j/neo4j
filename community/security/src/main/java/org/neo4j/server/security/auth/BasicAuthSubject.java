@@ -22,7 +22,7 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -36,7 +36,7 @@ public class BasicAuthSubject implements AuthSubject
     private final BasicAuthManager authManager;
     private User user;
     private AuthenticationResult authenticationResult;
-    private AccessMode.Static accessMode;
+    private Allowance allowance;
 
     public static BasicAuthSubject castOrFail( AuthSubject authSubject )
     {
@@ -56,13 +56,13 @@ public class BasicAuthSubject implements AuthSubject
         switch ( authenticationResult )
         {
         case SUCCESS:
-            accessMode = Static.FULL;
+            allowance = Allowance.Static.FULL;
             break;
         case PASSWORD_CHANGE_REQUIRED:
-            accessMode = Static.CREDENTIALS_EXPIRED;
+            allowance = Allowance.Static.CREDENTIALS_EXPIRED;
             break;
         default:
-            accessMode = Static.NONE;
+            allowance = Allowance.Static.NONE;
         }
     }
 
@@ -103,7 +103,7 @@ public class BasicAuthSubject implements AuthSubject
         if ( authenticationResult == PASSWORD_CHANGE_REQUIRED )
         {
             authenticationResult = SUCCESS;
-            accessMode = AccessMode.Static.FULL;
+            allowance = Allowance.Static.FULL;
         }
     }
 
@@ -125,27 +125,9 @@ public class BasicAuthSubject implements AuthSubject
     }
 
     @Override
-    public boolean allowsReads()
+    public Allowance allows()
     {
-        return accessMode.allowsReads();
-    }
-
-    @Override
-    public boolean allowsWrites()
-    {
-        return accessMode.allowsWrites();
-    }
-
-    @Override
-    public boolean allowsSchemaWrites()
-    {
-        return accessMode.allowsSchemaWrites();
-    }
-
-    @Override
-    public AuthorizationViolationException onViolation( String msg )
-    {
-        return accessMode.onViolation( msg );
+        return allowance;
     }
 
     @Override

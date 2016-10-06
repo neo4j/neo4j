@@ -19,40 +19,33 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.security.Allowance;
 
 /**
- * Access mode that restricts the original access mode with the restricting mode. Allows things that both the
- * original and the restricting mode allows, while retaining the meta data of the original mode only.
+ * Access mode that wraps an access mode with a wrapping access mode. The resulting access mode allows things based
+ * on both the original and the wrapping mode, while retaining the meta data of the original mode only.
  */
-public class RestrictedAccessMode extends WrappedAccessMode
+abstract class WrappedAllowance implements Allowance
 {
-    public RestrictedAccessMode( AccessMode original, AccessMode restricting )
+    protected final Allowance original;
+    protected final Allowance wrapping;
+
+    WrappedAllowance( Allowance original, Allowance wrapping )
     {
-        super( original, restricting );
+        this.original = original;
+        this.wrapping = wrapping;
     }
 
     @Override
-    public boolean allowsReads()
+    public AuthorizationViolationException onViolation( String msg )
     {
-        return original.allowsReads() && wrapping.allowsReads();
+        return wrapping.onViolation( msg );
     }
 
     @Override
-    public boolean allowsWrites()
+    public boolean isOverridden()
     {
-        return original.allowsWrites() && wrapping.allowsWrites();
-    }
-
-    @Override
-    public boolean allowsSchemaWrites()
-    {
-        return original.allowsSchemaWrites() && wrapping.allowsSchemaWrites();
-    }
-
-    @Override
-    public String name()
-    {
-        return original.name() + " restricted to " + wrapping.name();
+        return true;
     }
 }

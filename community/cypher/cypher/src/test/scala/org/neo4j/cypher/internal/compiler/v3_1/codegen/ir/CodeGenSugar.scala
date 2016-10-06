@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSear
 import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.{KernelTransaction, Statement}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
@@ -64,7 +64,7 @@ trait CodeGenSugar extends MockitoSugar {
   def executeCompiled(plan: CompiledPlan,
                       graphDb: GraphDatabaseQueryService,
                       mode: ExecutionMode = NormalMode): InternalExecutionResult = {
-    val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
+    val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.Static.READ)
     try {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
       val contextFactory = new Neo4jTransactionalContextFactory(graphDb, locker)

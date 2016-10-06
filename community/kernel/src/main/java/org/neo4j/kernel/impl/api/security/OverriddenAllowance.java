@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
 
 /**
  * Access mode that overrides the original access mode with the overriding mode. Allows exactly what the overriding
  * mode allows, while retaining the meta data of the original mode only.
  */
-public class OverriddenAccessMode extends WrappedAccessMode
+public class OverriddenAllowance extends WrappedAllowance
 {
-    public OverriddenAccessMode( AccessMode original, AccessMode overriding )
+    public OverriddenAllowance( Allowance original, Allowance overriding )
     {
         super( original, overriding );
     }

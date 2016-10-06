@@ -499,9 +499,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         subject = manager.login( authToken( "neo4j", "1234" ) );
 
         // Then
-        assertTrue( subject.allowsReads() );
-        assertTrue( subject.allowsWrites() );
-        assertTrue( subject.allowsSchemaWrites() );
+        assertTrue( subject.allows().allowsReads() );
+        assertTrue( subject.allows().allowsWrites() );
+        assertTrue( subject.allows().allowsSchemaWrites() );
     }
 
     @Test
@@ -515,9 +515,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         AuthSubject subject = manager.login( authToken( "morpheus", "abc123" ) );
 
         // Then
-        assertTrue( subject.allowsReads() );
-        assertTrue( subject.allowsWrites() );
-        assertTrue( subject.allowsSchemaWrites() );
+        assertTrue( subject.allows().allowsReads() );
+        assertTrue( subject.allows().allowsWrites() );
+        assertTrue( subject.allows().allowsSchemaWrites() );
     }
 
     @Test
@@ -531,9 +531,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         AuthSubject subject = manager.login( authToken( "trinity", "abc123" ) );
 
         // Then
-        assertTrue( subject.allowsReads() );
-        assertTrue( subject.allowsWrites() );
-        assertTrue( subject.allowsSchemaWrites() );
+        assertTrue( subject.allows().allowsReads() );
+        assertTrue( subject.allows().allowsWrites() );
+        assertTrue( subject.allows().allowsSchemaWrites() );
     }
 
     @Test
@@ -547,9 +547,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         AuthSubject subject = manager.login( authToken( "tank", "abc123" ) );
 
         // Then
-        assertTrue( "should allow reads", subject.allowsReads() );
-        assertTrue( "should allow writes", subject.allowsWrites() );
-        assertFalse( "should _not_ allow schema writes", subject.allowsSchemaWrites() );
+        assertTrue( "should allow reads", subject.allows().allowsReads() );
+        assertTrue( "should allow writes", subject.allows().allowsWrites() );
+        assertFalse( "should _not_ allow schema writes", subject.allows().allowsSchemaWrites() );
     }
 
     @Test
@@ -563,9 +563,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         AuthSubject subject = manager.login( authToken( "neo", "abc123" ) );
 
         // Then
-        assertTrue( subject.allowsReads() );
-        assertFalse( subject.allowsWrites() );
-        assertFalse( subject.allowsSchemaWrites() );
+        assertTrue( subject.allows().allowsReads() );
+        assertFalse( subject.allows().allowsWrites() );
+        assertFalse( subject.allows().allowsSchemaWrites() );
     }
 
     @Test
@@ -579,9 +579,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         AuthSubject subject = manager.login( authToken( "smith", "abc123" ) );
 
         // Then
-        assertFalse( subject.allowsReads() );
-        assertFalse( subject.allowsWrites() );
-        assertFalse( subject.allowsSchemaWrites() );
+        assertFalse( subject.allows().allowsReads() );
+        assertFalse( subject.allows().allowsWrites() );
+        assertFalse( subject.allows().allowsSchemaWrites() );
     }
 
     @Test
@@ -593,16 +593,16 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
 
         // When
         AuthSubject subject = manager.login( authToken( "morpheus", "abc123" ) );
-        assertTrue( subject.allowsReads() );
-        assertTrue( subject.allowsWrites() );
-        assertTrue( subject.allowsSchemaWrites() );
+        assertTrue( subject.allows().allowsReads() );
+        assertTrue( subject.allows().allowsWrites() );
+        assertTrue( subject.allows().allowsSchemaWrites() );
 
         subject.logout();
 
         // Then
-        assertFalse( subject.allowsReads() );
-        assertFalse( subject.allowsWrites() );
-        assertFalse( subject.allowsSchemaWrites() );
+        assertFalse( subject.allows().allowsReads() );
+        assertFalse( subject.allows().allowsWrites() );
+        assertFalse( subject.allows().allowsSchemaWrites() );
     }
 
     private AssertableLogProvider.LogMatcher info( String message )

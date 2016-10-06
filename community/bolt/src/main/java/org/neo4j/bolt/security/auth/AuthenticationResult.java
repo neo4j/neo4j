@@ -32,7 +32,7 @@ public interface AuthenticationResult
         @Override
         public AuthSubject getAuthSubject()
         {
-            return AuthSubject.AUTH_DISABLED;
+            return null;
         }
 
         @Override

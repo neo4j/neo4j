@@ -28,7 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.AuthSubject;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
@@ -47,7 +47,7 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
         try
         {
             filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, "neo4j", request,
-                    getAuthDisabledAccessMode() ), servletResponse );
+                    getAuthDisabledSecurityContext() ), servletResponse );
         }
         catch ( AuthorizationViolationException e )
         {
@@ -55,7 +55,7 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
         }
     }
 
-    protected AccessMode getAuthDisabledAccessMode()
+    protected SecurityContext getAuthDisabledSecurityContext()
     {
         return AuthSubject.AUTH_DISABLED;
     }

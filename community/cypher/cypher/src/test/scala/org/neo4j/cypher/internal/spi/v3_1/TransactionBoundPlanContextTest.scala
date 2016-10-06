@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api.KernelTransaction.Type._
-import org.neo4j.kernel.api.security.AccessMode.Static.FULL
+import org.neo4j.kernel.api.security.SecurityContext.Static.FULL
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
 import org.neo4j.test.TestGraphDatabaseFactory

@@ -21,7 +21,8 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.Kernel;
 
 /**
@@ -141,9 +142,9 @@ public interface KernelTransaction extends AutoCloseable
     boolean isOpen();
 
     /**
-     * @return the mode this transaction is currently executing in.
+     * @return the security context this transaction is currently executing in.
      */
-    AccessMode mode();
+    SecurityContext securityContext();
 
     /**
      * @return {@code true} if {@link #markForTermination(Status)} has been invoked, otherwise {@code false}.
@@ -169,7 +170,7 @@ public interface KernelTransaction extends AutoCloseable
 
     /**
      * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
-     * {@link Kernel#newTransaction(Type, AccessMode)}.
+     * {@link Kernel#newTransaction(Type, SecurityContext)}.
      */
     long startTime();
 
@@ -212,7 +213,7 @@ public interface KernelTransaction extends AutoCloseable
      */
     long getCommitTime();
 
-    Revertable overrideWith( AccessMode mode );
+    Revertable overrideWith( SecurityContext context );
 
     @FunctionalInterface
     interface Revertable extends AutoCloseable

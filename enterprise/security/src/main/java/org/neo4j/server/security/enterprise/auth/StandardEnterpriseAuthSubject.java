@@ -26,11 +26,10 @@ import java.util.Collection;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
-import org.neo4j.kernel.impl.api.security.AccessModeSnapshot;
 
 class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 {
@@ -128,34 +127,14 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     }
 
     @Override
-    public boolean allowsReads()
+    public Allowance allows()
     {
-        return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ );
-    }
-
-    @Override
-    public boolean allowsWrites()
-    {
-        return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ_WRITE );
-    }
-
-    @Override
-    public boolean allowsSchemaWrites()
-    {
-        return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( SCHEMA_READ_WRITE );
-    }
-
-    @Override
-    public AuthorizationViolationException onViolation( String msg )
-    {
-        if ( shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
-        {
-            return AccessMode.Static.CREDENTIALS_EXPIRED.onViolation( msg );
-        }
-        else
-        {
-            return new AuthorizationViolationException( msg );
-        }
+        return new StandardAllowance(
+                shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ ),
+                shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ_WRITE ),
+                shiroSubject.isAuthenticated() && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
+                shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED
+            );
     }
 
     @Override
@@ -183,12 +162,57 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
         }
     }
 
-    @Override
-    public AccessMode getSnapshot()
+    private static class StandardAllowance implements Allowance
     {
-        // NOTE: allowsProcedureWith() is delegated to the original access mode (=this)
-        //       so we just need to store the authorization info, and create a normal access mode snapshot
-        authorizationInfoSnapshot = authManager.getAuthorizationInfo( shiroSubject.getPrincipals() );
-        return AccessModeSnapshot.create( this );
+        private final boolean allowsReads;
+        private final boolean allowsWrites;
+        private final boolean allowsSchemaWrites;
+        private final boolean passwordChangeRequired;
+
+        StandardAllowance( boolean allowsReads, boolean allowsWrites, boolean allowsSchemaWrites, boolean
+                passwordChangeRequired )
+        {
+            this.allowsReads = allowsReads;
+            this.allowsWrites = allowsWrites;
+            this.allowsSchemaWrites = allowsSchemaWrites;
+            this.passwordChangeRequired = passwordChangeRequired;
+        }
+
+        @Override
+        public boolean allowsReads()
+        {
+            return allowsReads;
+        }
+
+        @Override
+        public boolean allowsWrites()
+        {
+            return allowsWrites;
+        }
+
+        @Override
+        public boolean allowsSchemaWrites()
+        {
+            return allowsSchemaWrites;
+        }
+
+        @Override
+        public AuthorizationViolationException onViolation( String msg )
+        {
+            if ( passwordChangeRequired )
+            {
+                return Allowance.Static.CREDENTIALS_EXPIRED.onViolation( msg );
+            }
+            else
+            {
+                return new AuthorizationViolationException( msg );
+            }
+        }
+
+        @Override
+        public String name()
+        {
+            return "";
+        }
     }
 }

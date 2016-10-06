@@ -35,7 +35,8 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 public class TopLevelTransaction implements InternalTransaction
 {
@@ -132,14 +133,14 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
-    public AccessMode mode()
+    public SecurityContext securityContext()
     {
-        return transaction.mode();
+        return transaction.securityContext();
     }
 
     @Override
-    public KernelTransaction.Revertable overrideWith( AccessMode mode )
+    public KernelTransaction.Revertable overrideWith( SecurityContext context )
     {
-        return transaction.overrideWith( mode );
+        return transaction.overrideWith( context );
     }
 }

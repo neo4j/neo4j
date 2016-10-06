@@ -22,6 +22,8 @@ package org.neo4j.kernel.api;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 /**
  * Specifies procedure call operations for the three types of procedure calls that can be made.
@@ -40,7 +42,7 @@ public interface ProcedureCallOperations
 
     /**
      * Invoke a read-only procedure by name, and set the transaction's access mode to
-     * {@link org.neo4j.kernel.api.security.AccessMode.Static#READ READ} for the duration of the procedure execution.
+     * {@link org.neo4j.kernel.api.security.Allowance.Static#READ READ} for the duration of the procedure execution.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
      * @return an iterator containing the procedure results.
@@ -60,7 +62,7 @@ public interface ProcedureCallOperations
             throws ProcedureException;
     /**
      * Invoke a read-only procedure by name, and set the transaction's access mode to
-     * {@link org.neo4j.kernel.api.security.AccessMode.Static#WRITE WRITE} for the duration of the procedure execution.
+     * {@link org.neo4j.kernel.api.security.Allowance.Static#WRITE WRITE} for the duration of the procedure execution.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
      * @return an iterator containing the procedure results.
@@ -80,7 +82,7 @@ public interface ProcedureCallOperations
             throws ProcedureException;
     /**
      * Invoke a read-only procedure by name, and set the transaction's access mode to
-     * {@link org.neo4j.kernel.api.security.AccessMode.Static#FULL FULL} for the duration of the procedure execution.
+     * {@link org.neo4j.kernel.api.security.Allowance.Static#FULL FULL} for the duration of the procedure execution.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
      * @return an iterator containing the procedure results.
@@ -97,7 +99,7 @@ public interface ProcedureCallOperations
     Object functionCall( QualifiedName name, Object[] arguments ) throws ProcedureException;
 
     /** Invoke a read-only function by name, and set the transaction's access mode to
-     * {@link org.neo4j.kernel.api.security.AccessMode.Static#READ READ} for the duration of the function execution.
+     * {@link org.neo4j.kernel.api.security.Allowance.Static#READ READ} for the duration of the function execution.
      * @param name the name of the function.
      * @param arguments the function arguments.
      * @throws ProcedureException if there was an exception thrown during function execution.

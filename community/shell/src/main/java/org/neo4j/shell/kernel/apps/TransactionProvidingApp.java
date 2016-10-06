@@ -59,7 +59,7 @@ import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
-import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
 import static org.neo4j.shell.ShellException.stackTraceAsString;
 
 /**

@@ -32,7 +32,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
@@ -154,7 +154,7 @@ public class KernelTransactions extends LifecycleAdapter
         }
     };
 
-    public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode, long timeout )
+    public KernelTransaction newInstance( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
         newTransactionsLock.readLock().lock();
@@ -165,7 +165,7 @@ public class KernelTransactions extends LifecycleAdapter
             KernelTransactionImplementation tx = localTxPool.acquire();
             StatementLocks statementLocks = statementLocksFactory.newInstance();
             tx.initialize( lastCommittedTransaction.transactionId(),
-                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, accessMode, timeout );
+                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, securityContext, timeout );
             return tx;
         }
         finally

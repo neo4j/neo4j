@@ -23,9 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.api.security.AccessModeSnapshot;
 
-public interface AuthSubject extends AccessMode
+public interface AuthSubject extends SecurityContext
 {
     void logout();
 
@@ -63,62 +62,10 @@ public interface AuthSubject extends AccessMode
         throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
     }
 
-    @Override
-    default AccessMode getSnapshot()
-    {
-        return AccessModeSnapshot.create( this );
-    }
-
-    abstract class StaticAccessModeAdapter implements AuthSubject
-    {
-        private final AccessMode accessMode;
-
-        public StaticAccessModeAdapter( AccessMode.Static accessMode )
-        {
-            this.accessMode = accessMode;
-        }
-
-        @Override
-        public boolean allowsReads()
-        {
-            return accessMode.allowsReads();
-        }
-
-        @Override
-        public boolean allowsWrites()
-        {
-            return accessMode.allowsWrites();
-        }
-
-        @Override
-        public boolean allowsSchemaWrites()
-        {
-            return accessMode.allowsSchemaWrites();
-        }
-
-        @Override
-        public boolean isOverridden()
-        {
-            return accessMode.isOverridden();
-        }
-
-        @Override
-        public AuthorizationViolationException onViolation( String msg )
-        {
-            return accessMode.onViolation( msg );
-        }
-
-        @Override
-        public String name()
-        {
-            return accessMode.name();
-        }
-    }
-
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
-    AuthSubject ANONYMOUS = new StaticAccessModeAdapter( Static.NONE )
+    AuthSubject ANONYMOUS = new AuthSubject()
     {
         @Override
         public void logout()
@@ -150,61 +97,15 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public boolean allowsProcedureWith( String[] roleNames )
+        public Allowance allows()
         {
-            return false;
+            return null;
         }
 
         @Override
         public String name()
         {
             return "<anonymous>";
-        }
-    };
-
-    /**
-     * Implementation to use when authentication is disabled. Allows everything.
-     */
-    AuthSubject AUTH_DISABLED = new StaticAccessModeAdapter( Static.FULL )
-    {
-        @Override
-        public String name()
-        {
-            return "<auth disabled>";
-        }
-
-        @Override
-        public void logout()
-        {
-        }
-
-        @Override
-        public AuthenticationResult getAuthenticationResult()
-        {
-            return AuthenticationResult.SUCCESS;
-        }
-
-        @Override
-        public void setPassword( String password, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
-        {
-        }
-
-        @Override
-        public void setPasswordChangeNoLongerRequired()
-        {
-        }
-
-        @Override
-        public boolean hasUsername( String username )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean allowsProcedureWith( String[] roleNames )
-        {
-            return true;
         }
     };
 }

@@ -44,12 +44,15 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.server.database.Database;
 
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.READ;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.WRITE;
 
 public class GraphDbHelper
 {
@@ -63,7 +66,7 @@ public class GraphDbHelper
     public int getNumberOfNodes()
     {
         KernelAPI kernelAPI = database.getGraph().getDependencyResolver().resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ);
+        try ( KernelTransaction tx = kernelAPI.newTransaction( implicit, READ);
               Statement statement = tx.acquireStatement() )
         {
             return Math.toIntExact( statement.readOperations().nodesGetCount() );
@@ -77,7 +80,7 @@ public class GraphDbHelper
     public int getNumberOfRelationships()
     {
         KernelAPI kernelAPI = database.getGraph().getDependencyResolver().resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ);
+        try ( KernelTransaction tx = kernelAPI.newTransaction( implicit, READ);
               Statement statement = tx.acquireStatement() )
         {
             return Math.toIntExact( statement.readOperations().relationshipsGetCount() );
@@ -90,7 +93,7 @@ public class GraphDbHelper
 
     public Map<String, Object> getNodeProperties( long nodeId )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ))
+        try (Transaction tx = database.getGraph().beginTransaction( implicit, READ))
         {
             Node node = database.getGraph().getNodeById( nodeId );
             Map<String, Object> allProperties = node.getAllProperties();
@@ -101,7 +104,7 @@ public class GraphDbHelper
 
     public void setNodeProperties( long nodeId, Map<String, Object> properties )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, WRITE) )
         {
             Node node = database.getGraph().getNodeById( nodeId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
@@ -114,7 +117,7 @@ public class GraphDbHelper
 
     public long createNode( Label... labels )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, WRITE) )
         {
             Node node = database.getGraph().createNode( labels );
             tx.success();
@@ -124,7 +127,7 @@ public class GraphDbHelper
 
     public long createNode( Map<String, Object> properties, Label... labels )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, WRITE) )
         {
             Node node = database.getGraph().createNode( labels );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
@@ -138,7 +141,7 @@ public class GraphDbHelper
 
     public void deleteNode( long id )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE))
+        try (Transaction tx = database.getGraph().beginTransaction( implicit, WRITE))
         {
             Node node = database.getGraph().getNodeById( id );
             node.delete();
@@ -148,7 +151,7 @@ public class GraphDbHelper
 
     public long createRelationship( String type, long startNodeId, long endNodeId )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE))
+        try (Transaction tx = database.getGraph().beginTransaction( implicit, WRITE))
         {
             Node startNode = database.getGraph().getNodeById( startNodeId );
             Node endNode = database.getGraph().getNodeById( endNodeId );
@@ -161,7 +164,7 @@ public class GraphDbHelper
 
     public long createRelationship( String type )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, WRITE) )
         {
             Node startNode = database.getGraph().createNode();
             Node endNode = database.getGraph().createNode();
@@ -175,7 +178,7 @@ public class GraphDbHelper
     public void setRelationshipProperties( long relationshipId, Map<String, Object> properties )
 
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, WRITE) )
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
@@ -188,7 +191,7 @@ public class GraphDbHelper
 
     public Map<String, Object> getRelationshipProperties( long relationshipId )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, READ) )
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
             Map<String, Object> allProperties = relationship.getAllProperties();
@@ -199,7 +202,7 @@ public class GraphDbHelper
 
     public Relationship getRelationship( long relationshipId )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ))
+        try (Transaction tx = database.getGraph().beginTransaction( implicit, READ))
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
             tx.success();
@@ -209,7 +212,7 @@ public class GraphDbHelper
 
     public void addNodeToIndex( String indexName, String key, Object value, long id )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL))
+        try (Transaction tx = database.getGraph().beginTransaction( implicit, FULL))
         {
             database.getGraph().index().forNodes( indexName ).add( database.getGraph().getNodeById( id ), key, value );
             tx.success();
@@ -218,7 +221,7 @@ public class GraphDbHelper
 
     public Collection<Long> queryIndexedNodes( String indexName, String key, Object value )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, WRITE) )
         {
             Collection<Long> result = new ArrayList<>();
             for ( Node node : database.getGraph().index().forNodes( indexName ).query( key, value ) )
@@ -232,7 +235,7 @@ public class GraphDbHelper
 
     public Collection<Long> getIndexedNodes( String indexName, String key, Object value )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, WRITE) )
         {
             Collection<Long> result = new ArrayList<>();
             for ( Node node : database.getGraph().index().forNodes( indexName ).get( key, value ) )
@@ -246,7 +249,7 @@ public class GraphDbHelper
 
     public Collection<Long> getIndexedRelationships( String indexName, String key, Object value )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, WRITE) )
         {
             Collection<Long> result = new ArrayList<>();
             for ( Relationship relationship : database.getGraph().index().forRelationships( indexName ).get( key, value ) )
@@ -260,7 +263,7 @@ public class GraphDbHelper
 
     public void addRelationshipToIndex( String indexName, String key, String value, long relationshipId )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, FULL) )
         {
             Index<Relationship> index = database.getGraph().index().forRelationships( indexName );
             index.add( database.getGraph().getRelationshipById( relationshipId ), key, value );
@@ -271,7 +274,7 @@ public class GraphDbHelper
 
     public String[] getNodeIndexes()
     {
-        try (Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ))
+        try (Transaction transaction = database.getGraph().beginTransaction( implicit, READ))
         {
             return database.getGraph().index().nodeIndexNames();
         }
@@ -279,7 +282,7 @@ public class GraphDbHelper
 
     public Index<Node> createNodeFullTextIndex( String named )
     {
-        try ( Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL) )
+        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, FULL) )
         {
             Index<Node> index = database.getGraph().index().forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
             transaction.success();
@@ -289,7 +292,7 @@ public class GraphDbHelper
 
     public Index<Node> createNodeIndex( String named )
     {
-        try ( Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL) )
+        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, FULL) )
         {
             Index<Node> nodeIndex = database.getGraph().index()
                     .forNodes( named );
@@ -300,7 +303,7 @@ public class GraphDbHelper
 
     public String[] getRelationshipIndexes()
     {
-        try (Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ))
+        try (Transaction transaction = database.getGraph().beginTransaction( implicit, READ))
         {
             return database.getGraph().index()
                     .relationshipIndexNames();
@@ -309,7 +312,7 @@ public class GraphDbHelper
 
     public long getFirstNode()
     {
-        try (Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE))
+        try (Transaction tx = database.getGraph().beginTransaction( implicit, WRITE))
         {
             try
             {
@@ -329,7 +332,7 @@ public class GraphDbHelper
 
     public Index<Relationship> createRelationshipIndex( String named )
     {
-        try (Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL))
+        try (Transaction transaction = database.getGraph().beginTransaction( implicit, FULL))
         {
             RelationshipIndex relationshipIndex = database.getGraph().index()
                     .forRelationships( named );
@@ -352,7 +355,7 @@ public class GraphDbHelper
 
     public void addLabelToNode( long node, String labelName )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.WRITE) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, WRITE) )
         {
             database.getGraph().getNodeById( node ).addLabel( label( labelName ) );
             tx.success();
@@ -366,7 +369,7 @@ public class GraphDbHelper
 
     public IndexDefinition createSchemaIndex( String labelName, String propertyKey )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, FULL) )
         {
             IndexDefinition index = database.getGraph().schema().indexFor( label( labelName ) ).on( propertyKey ).create();
             tx.success();
@@ -376,7 +379,7 @@ public class GraphDbHelper
 
     public Iterable<ConstraintDefinition> getPropertyUniquenessConstraints( String labelName, final String propertyKey )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, READ) )
         {
             Iterable<ConstraintDefinition> definitions = Iterables.filter( item -> {
                 if ( item.isConstraintType( ConstraintType.UNIQUENESS ) )
@@ -397,7 +400,7 @@ public class GraphDbHelper
 
     public ConstraintDefinition createPropertyUniquenessConstraint( String labelName, List<String> propertyKeys )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, FULL) )
         {
             ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) );
             for ( String propertyKey : propertyKeys )
@@ -412,10 +415,9 @@ public class GraphDbHelper
 
     public long getLabelCount( long nodeId )
     {
-        try (Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ))
+        try (Transaction transaction = database.getGraph().beginTransaction( implicit, READ))
         {
             return count( database.getGraph().getNodeById( nodeId ).getLabels());
         }
     }
-
 }

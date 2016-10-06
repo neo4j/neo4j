@@ -31,7 +31,8 @@ import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -44,7 +45,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final GraphDatabaseQueryService graph;
     private final ThreadToStatementContextBridge txBridge;
     private final KernelTransaction.Type transactionType;
-    private final AccessMode mode;
+    private final SecurityContext securityContext;
     private final Supplier<Statement> statementSupplier;
     private final DbmsOperations dbmsOperations;
     private final Guard guard;
@@ -59,7 +60,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
             GraphDatabaseQueryService graph,
             InternalTransaction initialTransaction,
             KernelTransaction.Type transactionType,
-            AccessMode transactionMode,
+            SecurityContext securityContext,
             Supplier<Statement> statementSupplier,
             ExecutingQuery executingQuery,
             PropertyContainerLocker locker,
@@ -70,7 +71,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.graph = graph;
         this.transaction = initialTransaction;
         this.transactionType = transactionType;
-        this.mode = transactionMode;
+        this.securityContext = securityContext;
         this.statementSupplier = statementSupplier;
         this.statement = statementSupplier.get();
         this.executingQuery = executingQuery;
@@ -172,7 +173,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         txBridge.unbindTransactionFromCurrentThread();
 
         // (2) Create, bind, register, and unbind new transaction
-        transaction = graph.beginTransaction( transactionType, mode );
+        transaction = graph.beginTransaction( transactionType, securityContext );
         statement = txBridge.get();
         statement.queryRegistration().registerExecutingQuery( executingQuery );
         KernelTransaction kernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
@@ -218,7 +219,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     {
         if ( !isOpen )
         {
-            transaction = graph.beginTransaction( transactionType, mode );
+            transaction = graph.beginTransaction( transactionType, securityContext );
             statement = statementSupplier.get();
             statement.queryRegistration().registerExecutingQuery( executingQuery );
             isOpen = true;
@@ -263,14 +264,14 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public KernelTransaction.Revertable restrictCurrentTransaction( AccessMode accessMode )
+    public KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context )
     {
-        return transaction.overrideWith( accessMode );
+        return transaction.overrideWith( context );
     }
 
     @Override
-    public AccessMode accessMode()
+    public SecurityContext securityContext()
     {
-        return mode;
+        return securityContext;
     }
 }

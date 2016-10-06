@@ -66,6 +66,7 @@ import static org.neo4j.function.ThrowingFunction.throwIfPresent;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.fromExternalString;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
+import static org.neo4j.kernel.impl.api.security.OverriddenSecurityContext.getUsernameFromSecurityContext;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( "unused" )
@@ -122,7 +123,7 @@ public class BuiltInProcedures
             getActiveTransactions( graph.getDependencyResolver() )
                 .stream()
                 .filter( tx -> !tx.terminationReason().isPresent() )
-                .map( tx -> tx.mode().username() )
+                .map( tx -> getUsernameFromSecurityContext( tx.securityContext() ) )
         );
     }
 
@@ -279,7 +280,7 @@ public class BuiltInProcedures
     {
         long terminatedCount = getActiveTransactions( dependencyResolver )
             .stream()
-            .filter( tx -> tx.mode().username().equals( username ) &&
+            .filter( tx -> getUsernameFromSecurityContext( tx.securityContext() ).equals( username ) &&
                             !tx.isUnderlyingTransaction( currentTx ) )
             .map( tx -> tx.markForTermination( Status.Transaction.Terminated ) )
             .filter( marked -> marked )

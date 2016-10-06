@@ -61,7 +61,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
 
 public class QueryLoggerIT
 {

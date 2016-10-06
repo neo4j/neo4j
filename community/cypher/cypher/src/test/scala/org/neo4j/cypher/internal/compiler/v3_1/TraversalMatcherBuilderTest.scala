@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.security.SecurityContext
 
 class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest {
 
@@ -42,7 +42,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
   override def beforeEach() {
     super.beforeEach()
     builder = new TraversalMatcherBuilder
-    tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
+    tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.Static.READ)
   }
 
   override def afterEach() {

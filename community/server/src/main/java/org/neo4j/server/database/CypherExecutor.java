@@ -28,7 +28,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -39,6 +38,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.ServerQuerySession;
 
 import org.neo4j.logging.Log;
+
+import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 public class CypherExecutor extends LifecycleAdapter
@@ -97,12 +98,12 @@ public class CypherExecutor extends LifecycleAdapter
 
     private InternalTransaction beginCustomTransaction( long customTimeout )
     {
-        return service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
+        return service.beginTransaction( KernelTransaction.Type.implicit, FULL,
                 customTimeout, TimeUnit.MILLISECONDS );
     }
 
     private InternalTransaction beginDefaultTransaction()
     {
-        return service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        return service.beginTransaction( KernelTransaction.Type.implicit, FULL );
     }
 }

@@ -21,17 +21,17 @@ package org.neo4j.server.rest.dbms;
 
 import java.security.Principal;
 
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 public class DelegatingPrincipal implements Principal
 {
     private String username;
-    private final AccessMode accessMode;
+    private final SecurityContext securityContext;
 
-    DelegatingPrincipal( String username, AccessMode accessMode )
+    DelegatingPrincipal( String username, SecurityContext securityContext )
     {
         this.username = username;
-        this.accessMode = accessMode;
+        this.securityContext = securityContext;
     }
 
     @Override
@@ -40,7 +40,7 @@ public class DelegatingPrincipal implements Principal
         return username;
     }
 
-    public AccessMode getAccessMode() { return accessMode; }
+    public SecurityContext getSecurityContext() { return securityContext; }
 
     @Override
     public boolean equals( Object o )

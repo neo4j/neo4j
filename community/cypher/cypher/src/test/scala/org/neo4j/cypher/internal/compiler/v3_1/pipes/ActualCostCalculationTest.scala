@@ -40,7 +40,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
@@ -349,7 +349,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     val gds = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def withTx[T](f: InternalTransaction => T): T = {
-      val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.FULL)
+      val tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.Static.FULL)
       try {
         val result = f(tx)
         tx.success()

@@ -65,7 +65,7 @@ public interface AuthManager extends Lifecycle
         @Override
         public AuthSubject login( Map<String,Object> authToken )
         {
-            return AuthSubject.AUTH_DISABLED;
+            return null;
         }
     };
 }

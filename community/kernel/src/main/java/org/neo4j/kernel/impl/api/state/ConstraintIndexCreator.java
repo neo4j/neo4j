@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -98,7 +98,7 @@ public class ConstraintIndexCreator
             throws TransactionFailureException, DropIndexFailureException
     {
         try ( KernelTransaction transaction =
-                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL );
               Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
@@ -143,7 +143,7 @@ public class ConstraintIndexCreator
     public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
     {
         try ( KernelTransaction transaction =
-                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL );
               Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema

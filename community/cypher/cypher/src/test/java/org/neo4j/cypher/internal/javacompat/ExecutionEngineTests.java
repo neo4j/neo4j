@@ -30,7 +30,7 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -58,7 +58,7 @@ public class ExecutionEngineTests
 
         Result result;
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL ) )
+                .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL ) )
         {
             String query = "RETURN { key : 'Value' , collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}";
             TransactionalContext tc = createTransactionContext( graph, tx, query );

@@ -22,7 +22,7 @@ package org.neo4j.kernel.api;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StatementOperationContainer;
@@ -65,7 +65,7 @@ public class KernelTransactionFactory
         }
     }
 
-    static Instances kernelTransactionWithInternals( AccessMode accessMode )
+    static Instances kernelTransactionWithInternals( SecurityContext securityContext )
     {
         TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
         TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
@@ -91,13 +91,13 @@ public class KernelTransactionFactory
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
-        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, accessMode, 0L );
+        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, securityContext, 0L );
 
         return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
     }
 
-    static KernelTransaction kernelTransaction( AccessMode accessMode )
+    static KernelTransaction kernelTransaction( SecurityContext securityContext )
     {
-        return kernelTransactionWithInternals( accessMode ).transaction;
+        return kernelTransactionWithInternals( securityContext ).transaction;
     }
 }

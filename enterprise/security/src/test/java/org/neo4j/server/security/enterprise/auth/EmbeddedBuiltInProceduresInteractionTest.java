@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
@@ -42,6 +42,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
 
 public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<EnterpriseAuthSubject>
 {
@@ -57,7 +58,7 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
         GraphDatabaseFacade graph = neo.getLocalGraph();
 
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL ) )
+                .beginTransaction( KernelTransaction.Type.explicit, FULL ) )
         {
             Result result = graph.execute( tx, "CALL dbms.listQueries", Collections.emptyMap() );
             assertFalse( result.hasNext() );
@@ -99,33 +100,9 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
         return new EnterpriseAuthSubject()
         {
             @Override
-            public boolean allowsReads()
+            public Allowance allows()
             {
-                return ANONYMOUS.allowsReads();
-            }
-
-            @Override
-            public boolean allowsWrites()
-            {
-                return ANONYMOUS.allowsWrites();
-            }
-
-            @Override
-            public boolean allowsSchemaWrites()
-            {
-                return ANONYMOUS.allowsSchemaWrites();
-            }
-
-            @Override
-            public boolean isOverridden()
-            {
-                return ANONYMOUS.isOverridden();
-            }
-
-            @Override
-            public AuthorizationViolationException onViolation( String msg )
-            {
-                return ANONYMOUS.onViolation( msg );
+                return ANONYMOUS.allows();
             }
 
             @Override

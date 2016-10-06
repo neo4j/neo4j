@@ -39,7 +39,7 @@ public interface EnterpriseAuthManager extends AuthManager
         @Override
         public EnterpriseAuthSubject login( Map<String,Object> authToken )
         {
-            return EnterpriseAuthSubject.AUTH_DISABLED;
+            return null;
         }
 
         @Override

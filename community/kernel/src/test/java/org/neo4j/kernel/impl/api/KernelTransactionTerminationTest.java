@@ -33,7 +33,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -58,6 +57,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 
 import static java.lang.System.currentTimeMillis;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
 
 public class KernelTransactionTerminationTest
 {
@@ -346,8 +346,7 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit,
-                    AccessMode.Static.FULL, 0L );
+            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, FULL, 0L );
             monitor.reset();
             return this;
         }

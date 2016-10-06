@@ -24,7 +24,8 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 public class StubKernelTransaction implements KernelTransaction
 {
@@ -66,7 +67,7 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public AccessMode mode()
+    public SecurityContext securityContext()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -132,7 +133,7 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public Revertable overrideWith( AccessMode mode )
+    public Revertable overrideWith( SecurityContext context )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

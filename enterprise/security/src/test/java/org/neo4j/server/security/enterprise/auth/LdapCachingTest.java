@@ -120,11 +120,11 @@ public class LdapCachingTest
     {
         // Given
         EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
-        mike.allowsReads();
+        mike.allows().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
-        mike.allowsWrites();
+        mike.allows().allowsWrites();
 
         // Then
         assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
@@ -135,19 +135,19 @@ public class LdapCachingTest
     {
         // Given
         EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
-        mike.allowsReads();
+        mike.allows().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
         fakeTicker.advance( 99, TimeUnit.MILLISECONDS );
-        mike.allowsWrites();
+        mike.allows().allowsWrites();
 
         // Then
         assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
 
         // When
         fakeTicker.advance( 2, TimeUnit.MILLISECONDS );
-        mike.allowsWrites();
+        mike.allows().allowsWrites();
 
         // Then
         assertThat( "Test realm did not received a call", testRealm.takeAuthorizationFlag(), is( true ) );

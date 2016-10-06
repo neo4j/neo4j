@@ -66,7 +66,7 @@ import static org.neo4j.causalclustering.discovery.procedures.Role.LEADER;
 import static org.neo4j.causalclustering.discovery.procedures.Role.READ_REPLICA;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
-import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.READ;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )

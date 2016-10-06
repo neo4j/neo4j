@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -85,7 +85,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * This enum tracks the current write state of the transaction, allowing it to transition from
      * no writes (NONE) to data writes (DATA) or schema writes (SCHEMA), but it cannot transition between
      * DATA and SCHEMA without throwing an InvalidTransactionTypeKernelException. Note that this behavior
-     * is orthogonal to the AccessMode which manages what the transaction or statement is allowed to do
+     * is orthogonal to the SecurityContext which manages what the transaction or statement is allowed to do
      * based on authorization.
      */
     private enum TransactionWriteState
@@ -152,7 +152,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final KernelStatement currentStatement;
     private final StorageStatement storageStatement;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
-    private AccessMode accessMode;
+    private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private boolean beforeHookInvoked;
     private volatile boolean closing, closed;
@@ -215,7 +215,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
     public KernelTransactionImplementation initialize(
-            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, AccessMode accessMode,
+            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, SecurityContext securityContext,
             long transactionTimeout )
     {
         this.type = type;
@@ -229,7 +229,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
-        this.accessMode = accessMode.getSnapshot();
+        this.securityContext = securityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.currentTransactionOperations = timeoutMillis > 0 ? operationContainer.guardedParts() : operationContainer.nonGuarderParts();
@@ -334,9 +334,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public AccessMode mode()
+    public SecurityContext securityContext()
     {
-        return accessMode;
+        return securityContext;
     }
 
     public void setMetaData( Map<String, Object> data )
@@ -723,7 +723,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             statementLocks = null;
             terminationReason = null;
             type = null;
-            accessMode = null;
+            securityContext = null;
             transactionEvent = null;
             legacyIndexTransactionState = null;
             txState = null;
@@ -796,11 +796,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Revertable overrideWith( AccessMode mode )
+    public Revertable overrideWith( SecurityContext context )
     {
-        AccessMode oldMode = this.accessMode;
-        this.accessMode = mode;
-        return () -> this.accessMode = oldMode;
+        SecurityContext oldContext = this.securityContext;
+        this.securityContext = context;
+        return () -> this.securityContext = oldContext;
     }
 
     @Override

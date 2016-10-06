@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -96,7 +96,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
   test("should profile hash join") {
     //given
     val graphDb = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
-    val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.WRITE)
+    val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.Static.WRITE)
     graphDb.createNode()
     graphDb.createNode()
     tx.success()

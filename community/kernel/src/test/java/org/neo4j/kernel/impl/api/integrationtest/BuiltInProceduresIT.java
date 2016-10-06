@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.security.AccessMode.Static;
+import org.neo4j.kernel.api.security.SecurityContext.Static;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;

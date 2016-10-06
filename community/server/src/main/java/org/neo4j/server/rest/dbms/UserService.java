@@ -32,8 +32,8 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExceptionRepresentation;
@@ -150,10 +150,10 @@ public class UserService
     {
         if ( principal instanceof DelegatingPrincipal )
         {
-            AccessMode mode = ((DelegatingPrincipal) principal).getAccessMode();
-            if ( mode instanceof AuthSubject )
+            SecurityContext securityContext = ((DelegatingPrincipal) principal).getSecurityContext();
+            if ( securityContext instanceof AuthSubject )
             {
-                return (AuthSubject) mode;
+                return (AuthSubject) securityContext;
             }
         }
         return null;

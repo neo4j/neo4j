@@ -57,7 +57,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -126,7 +126,7 @@ public class IndexPopulationJobTest
         stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
 
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL );
               Statement statement = tx.acquireStatement() )
         {
             labelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
@@ -674,7 +674,7 @@ public class IndexPopulationJobTest
     private IndexDescriptor indexDescriptor( Label label, String propertyKey ) throws TransactionFailureException
     {
         IndexDescriptor descriptor;
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.READ );
               Statement statement = tx.acquireStatement() )
         {
             descriptor = new IndexDescriptor( statement.readOperations().labelGetForName( label.name() ),
@@ -686,7 +686,7 @@ public class IndexPopulationJobTest
 
     private DoubleLongRegister indexUpdatesAndSize( Label label, String propertyKey ) throws KernelException
     {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.READ );
               Statement statement = tx.acquireStatement() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
@@ -701,7 +701,7 @@ public class IndexPopulationJobTest
 
     private DoubleLongRegister indexSample( Label label, String propertyKey ) throws KernelException
     {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.READ );
               Statement statement = tx.acquireStatement() )
         {
             DoubleLongRegister result = Registers.newDoubleLongRegister();
@@ -736,7 +736,7 @@ public class IndexPopulationJobTest
 
     private int getPropertyKeyForName( String name ) throws TransactionFailureException
     {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.READ );
               Statement statement = tx.acquireStatement() )
         {
             int result = statement.readOperations().propertyKeyGetForName( name );

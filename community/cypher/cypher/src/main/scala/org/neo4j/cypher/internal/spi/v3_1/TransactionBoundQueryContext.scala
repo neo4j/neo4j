@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
-import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection, spi => frontend}
+import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapperv3_1}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -590,8 +590,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   private def shouldElevate(allowed: Array[String]): Boolean = {
     // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
     // above the original allowed procedure mode. We enforce this by checking if mode is already an overridden mode.
-    val mode = transactionalContext.accessMode
-    allowed.nonEmpty && !mode.isOverridden && mode.getOriginalAccessMode.allowsProcedureWith(allowed)
+    val allowance = transactionalContext.securityContext.allows()
+    allowed.nonEmpty && !allowance.isOverridden && transactionalContext.securityContext.allowsProcedureWith(allowed)
   }
 
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
@@ -622,7 +622,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.accessMode))
+    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.securityContext))
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {

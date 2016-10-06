@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 
 /**
@@ -51,7 +51,7 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized int getOrCreate( String name ) throws org.neo4j.kernel.api.exceptions.KernelException
     {
         KernelAPI kernel = kernelSupplier.get();
-        try ( KernelTransaction transaction = kernel.newTransaction( Type.implicit, AccessMode.Static.FULL ) )
+        try ( KernelTransaction transaction = kernel.newTransaction( Type.implicit, SecurityContext.Static.FULL ) )
         {
             try ( Statement statement = transaction.acquireStatement() )
             {

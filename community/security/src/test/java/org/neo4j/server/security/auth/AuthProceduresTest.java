@@ -25,11 +25,11 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.test.TestGraphDatabaseBuilder;
 
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.NONE;
 
 public class AuthProceduresTest extends KernelIntegrationTest
 {
@@ -49,7 +49,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
 
         // When
         dbmsOperations()
-                .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray, AccessMode.Static.NONE );
+                .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray, NONE );
     }
 
     @Test
@@ -64,8 +64,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
         exception.expectMessage( "Anonymous cannot change password" );
 
         // When
-        dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ), inputArray,
-                AccessMode.Static.NONE );
+        dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ), inputArray, NONE );
     }
 
     @Override

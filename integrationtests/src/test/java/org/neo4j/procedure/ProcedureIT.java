@@ -58,7 +58,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -551,7 +551,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE_ONLY ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.WRITE_ONLY ) )
         {
             db.execute( "CALL org.neo4j.procedure.writeProcedureCallingReadProcedure" ).next();
         }
@@ -585,7 +585,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.WRITE ) )
         {
             db.execute( "CALL org.neo4j.procedure.writeProcedureCallingSchemaProcedure" ).next();
         }
@@ -1012,7 +1012,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.NONE ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.NONE ) )
         {
             db.execute( "CALL org.neo4j.procedure.integrationTestMe()" );
             tx.success();
@@ -1029,7 +1029,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.READ ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.READ ) )
         {
             db.execute( "CALL org.neo4j.procedure.writingProcedure()" );
             tx.success();
@@ -1046,7 +1046,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.WRITE ) )
         {
             db.execute( "CALL org.neo4j.procedure.schemaProcedure()" );
             tx.success();

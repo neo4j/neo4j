@@ -34,8 +34,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.BasicAuthManager;
@@ -53,6 +51,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
@@ -207,8 +206,8 @@ public class AuthorizationFilterTest
         filter.doFilter( servletRequest, servletResponse, filterChain );
 
         // Then
-        verify( filterChain ).doFilter( eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest,
-                AccessMode.Static.FULL ) ), same( servletResponse ) );
+        verify( filterChain ).doFilter(
+                eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest, FULL ) ), same( servletResponse ) );
     }
 
     @Test
@@ -279,8 +278,8 @@ public class AuthorizationFilterTest
         filter.doFilter( servletRequest, servletResponse, filterChain );
 
         // Then
-        verify( filterChain ).doFilter( eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest,
-                AccessMode.Static.FULL ) ), same( servletResponse ) );
+        verify( filterChain ).doFilter(
+                eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest, FULL ) ), same( servletResponse ) );
     }
 
     @Test

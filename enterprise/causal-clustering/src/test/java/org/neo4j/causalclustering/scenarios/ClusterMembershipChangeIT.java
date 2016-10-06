@@ -43,7 +43,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
-import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.READ;
 
 public class ClusterMembershipChangeIT
 {

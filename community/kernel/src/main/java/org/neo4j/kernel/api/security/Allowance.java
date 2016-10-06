@@ -24,9 +24,9 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /** Controls the capabilities of a KernelTransaction. */
-public interface AccessMode
+public interface Allowance
 {
-    enum Static implements AccessMode
+    enum Static implements Allowance
     {
         /** No reading or writing allowed. */
         NONE
@@ -182,12 +182,6 @@ public interface AccessMode
         {
             return new AuthorizationViolationException( msg );
         }
-
-        @Override
-        public AccessMode getSnapshot()
-        {
-            return this;
-        }
     }
 
     boolean allowsReads();
@@ -197,34 +191,8 @@ public interface AccessMode
     AuthorizationViolationException onViolation( String msg );
     String name();
 
-    default String username()
-    {
-        return ""; // Should never clash with a valid username
-    }
-
-    default AccessMode getOriginalAccessMode()
-    {
-        return this;
-    }
-
     default boolean isOverridden()
     {
         return false;
     }
-
-    /**
-     * Determines whether this mode allows execution of a procedure with the parameter string array in its
-     * procedure annotation.
-     *
-     * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
-     * @return <tt>true</tt> if this mode allows the execution of a procedure with the given parameter string array
-     * encoding permission
-     * @throws InvalidArgumentsException
-     */
-    default boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException
-    {
-        return false;
-    }
-
-    AccessMode getSnapshot();
 }

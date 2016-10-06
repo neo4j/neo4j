@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTr
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.security.{Allowance, SecurityContext}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api, monitoring}
@@ -150,8 +150,12 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
         val tc = externalTransactionalContext.getOrBeginNewIfClosed()
 
         // Temporarily change access mode during query planning
-        // NOTE: This will force read access even if the current transaction did not have it
-        val revertable = tc.restrictCurrentTransaction(AccessMode.Static.READ)
+        // NOTE: This will force read allowance if the current transaction did not have it
+        val revertable = tc.restrictCurrentTransaction(new SecurityContext {
+          override def name(): String = ""
+
+          override def allows(): Allowance = Allowance.Static.READ
+        })
 
         val ((plan: ExecutionPlan, extractedParameters), touched) = try {
           // fetch plan cache

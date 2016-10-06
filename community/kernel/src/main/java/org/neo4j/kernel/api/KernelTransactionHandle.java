@@ -23,7 +23,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.Kernel;
 
 /**
@@ -47,7 +47,7 @@ public interface KernelTransactionHandle
 
     /**
      * The start time of the underlying transaction. I.e. basically {@link System#currentTimeMillis()} when user
-     * called {@link Kernel#newTransaction(KernelTransaction.Type, AccessMode)}.
+     * called {@link Kernel#newTransaction(KernelTransaction.Type, SecurityContext)}.
      *
      * @return the transaction start time.
      */
@@ -71,11 +71,11 @@ public interface KernelTransactionHandle
     boolean markForTermination( Status reason );
 
     /**
-     * Access mode of underlying transaction that transaction has when handle was created.
+     * Security context of underlying transaction that transaction has when handle was created.
      *
-     * @return underlying transaction access mode
+     * @return underlying transaction security context
      */
-    AccessMode mode();
+    SecurityContext securityContext();
 
     /**
      * Transaction termination reason that transaction had when handle was created.

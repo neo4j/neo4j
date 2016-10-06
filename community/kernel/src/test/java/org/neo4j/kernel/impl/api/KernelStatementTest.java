@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -31,6 +30,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
 
 public class KernelStatementTest
 {
@@ -39,7 +39,7 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.getReasonIfTerminated() ).thenReturn( Status.Transaction.Terminated );
-        when( transaction.mode() ).thenReturn( AccessMode.Static.FULL );
+        when( transaction.securityContext() ).thenReturn( FULL );
 
         KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null, new CanWrite() );
         statement.acquire();
