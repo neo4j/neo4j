@@ -49,7 +49,7 @@ public class HighLimit extends BaseRecordFormats
      */
     static final int DEFAULT_MAXIMUM_BITS_PER_ID = 50;
 
-    public static final String STORE_VERSION = StoreVersion.HIGH_LIMIT_V3_1.versionString();
+    public static final String STORE_VERSION = StoreVersion.HIGH_LIMIT_V3_1_0.versionString();
 
     public static final RecordFormats RECORD_FORMATS = new HighLimit();
     public static final String NAME = "high_limit";
