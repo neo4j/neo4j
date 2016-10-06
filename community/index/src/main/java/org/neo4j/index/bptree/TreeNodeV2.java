@@ -258,7 +258,7 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
         {
             // TODO ASSUMPTION: about keyCount being physical pos
             int keyCount = physicalPos;
-            cursor.setOffset( jumpOffset( pos ) );;
+            cursor.setOffset( jumpOffset( pos ) );
             int length = (keyCount - pos) * SIZE_JUMP_ITEM;
             cursor.getBytes( tmp, 0, length );
             cursor.setOffset( jumpOffset( pos + 1 ) );
@@ -322,6 +322,7 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
     @Override
     public void removeValueAt( PageCursor cursor, int pos, Object order, byte[] tmp )
     {
+        throw new UnsupportedOperationException( "Unsupported a.t.m." );
     }
 
     @Override

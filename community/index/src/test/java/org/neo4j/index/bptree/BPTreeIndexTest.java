@@ -43,8 +43,6 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
-import org.neo4j.index.bptree.BPTreeIndex;
-import org.neo4j.index.bptree.Layout;
 import org.neo4j.index.bptree.path.PathIndexLayout;
 import org.neo4j.index.bptree.path.SCIndexDescription;
 import org.neo4j.index.bptree.path.TwoLongs;
