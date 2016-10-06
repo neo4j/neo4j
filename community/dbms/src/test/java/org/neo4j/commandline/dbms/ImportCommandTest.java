@@ -22,8 +22,14 @@ package org.neo4j.commandline.dbms;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.nio.file.Path;
+
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.NullOutsideWorld;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
@@ -90,5 +96,48 @@ public class ImportCommandTest
         {
             assertThat( e.getMessage(), containsString( "foo" ) );
         }
+    }
+
+    @Test
+    public void failIfDestinationDatabaseAlreadyExists() throws Exception
+    {
+        Path homeDir = testDir.directory( "home" ).toPath();
+        ImportCommand importCommand =
+                new ImportCommand( homeDir, testDir.directory( "conf" ).toPath(), new NullOutsideWorld() );
+
+        putStoreInDirectory( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "existing.db" ).toFile() );
+        String[] arguments = {"--mode=csv", "--database=existing.db"};
+        try
+        {
+            importCommand.execute( arguments );
+            fail( "Should have thrown an exception." );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getMessage(), containsString( "already contains a database" ) );
+        }
+    }
+
+    private File putStoreInDirectory( File storeDir )
+    {
+        GraphDatabaseService db = null;
+        try
+        {
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+            try ( Transaction transaction = db.beginTx() )
+            {
+                db.createNode();
+                transaction.success();
+            }
+        }
+        finally
+        {
+            if ( db != null )
+            {
+                db.shutdown();
+            }
+        }
+
+        return storeDir;
     }
 }

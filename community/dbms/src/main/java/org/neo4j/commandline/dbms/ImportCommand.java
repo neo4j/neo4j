@@ -113,6 +113,9 @@ public class ImportCommand implements AdminCommand
         {
             Config config =
                     loadNeo4jConfig( homeDir, configDir, this.database, loadAdditionalConfig( additionalConfigFile ) );
+            Validators.CONTAINS_NO_EXISTING_DATABASE
+                    .validate( config.get( DatabaseManagementSystemSettings.database_path ) );
+
             Importer importer;
 
             switch ( mode )
@@ -128,6 +131,10 @@ public class ImportCommand implements AdminCommand
             }
 
             importer.doImport();
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IncorrectUsage( e.getMessage() );
         }
         catch ( IOException e )
         {
