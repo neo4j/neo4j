@@ -30,8 +30,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
-
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
+import org.neo4j.kernel.configuration.Settings;
 
 public class ConfigLoader
 {
@@ -62,6 +61,12 @@ public class ConfigLoader
                 settingsClassesSupplier );
     }
 
+    public Config loadOfflineConfig( Optional<File> homeDir, Optional<File> configFile,
+            Pair<String,String>... configOverrides )
+    {
+        return overrideBoltSettings( loadConfig( homeDir, configFile, configOverrides ) );
+    }
+
     private Map<String, String> calculateSettings( Optional<File> homeDir,
             Pair<String, String>[] configOverrides )
     {
@@ -80,6 +85,17 @@ public class ConfigLoader
             overrides.put( configOverride.first(), configOverride.other() );
         }
         return overrides;
+    }
+
+    private static Config overrideBoltSettings( Config config )
+    {
+        Map<String,String> overrides = new HashMap<>();
+        for ( GraphDatabaseSettings.BoltConnector bolt : GraphDatabaseSettings.boltConnectors( config ) )
+        {
+            overrides.put( bolt.enabled.name(), Settings.FALSE );
+        }
+        overrides.put( new GraphDatabaseSettings.BoltConnector().enabled.name(), Settings.FALSE );
+        return config.with( overrides );
     }
 
     /*

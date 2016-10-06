@@ -41,6 +41,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.Collections.singletonMap;
@@ -118,6 +119,8 @@ public class ConnectionInfoIT
                 defaults().with( singletonMap( discovery_listen_address.name(), ":" + testSocket.getLocalPort() ) );
         config.augment( singletonMap( CoreEdgeClusterSettings.initial_discovery_members.name(),
                 "localhost:" + testSocket.getLocalPort() ) );
+        config.augment( singletonMap( GraphDatabaseSettings.boltConnector( "bolt" ).enabled.name(), "true" ) );
+        config.augment( singletonMap( ClientConnectorSettings.httpConnector( "http" ).enabled.name(), "true" ) );
 
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();

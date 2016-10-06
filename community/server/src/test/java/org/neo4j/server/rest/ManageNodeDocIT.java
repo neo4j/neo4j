@@ -94,7 +94,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
@@ -637,8 +636,8 @@ public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
             when( uriInfo.getBaseUri() ).thenReturn( uri );
 
             RootService svc = new RootService( new CommunityNeoServer( new Config( stringMap(
-                    ClientConnectorSettings.httpConnector( "1" ).type.name(), "HTTP",
-                    ClientConnectorSettings.httpConnector( "1" ).enabled.name(), "true"
+                    ClientConnectorSettings.httpConnector( "http" ).type.name(), "HTTP",
+                    ClientConnectorSettings.httpConnector( "http" ).enabled.name(), "true"
             ) ),
                     GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() )
                             .monitors( new Monitors() ),

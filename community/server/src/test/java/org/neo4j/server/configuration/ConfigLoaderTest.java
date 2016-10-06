@@ -33,6 +33,7 @@ import java.util.Optional;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.rule.SuppressOutput;
@@ -130,6 +131,38 @@ public class ConfigLoaderTest
         assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.get( setting( "foo", STRING, NO_DEFAULT ) ) );
+    }
+
+    @Test
+    public void loadOfflineConfigShouldDisableBolt() throws IOException
+    {
+        // given
+        GraphDatabaseSettings.BoltConnector defaultBoltConf = GraphDatabaseSettings.boltConnector( "bolt" );
+        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+                .withNameValue( defaultBoltConf.enabled.name(), Settings.TRUE )
+                .build();
+
+        // when
+        Config testConf = configLoader.loadOfflineConfig( Optional.of( folder.getRoot() ), configFile );
+
+        // then
+        assertNotNull( testConf );
+        assertEquals( false, testConf.get( defaultBoltConf.enabled ) );
+        assertEquals( false, testConf.get( new GraphDatabaseSettings.BoltConnector().enabled ) );
+    }
+
+    @Test
+    public void loadOfflineConfigAddDisabledBoltConnector() throws IOException
+    {
+        // given
+        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
+
+        // when
+        Config testConf = configLoader.loadOfflineConfig( Optional.of( folder.getRoot() ), configFile );
+
+        // then
+        assertNotNull( testConf );
+        assertEquals( false, testConf.get( new GraphDatabaseSettings.BoltConnector().enabled ) );
     }
 
     @Test

@@ -88,7 +88,6 @@ import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 
 @RunWith( Enclosed.class )
 public class StoreUpgradeIntegrationTest
@@ -220,8 +219,8 @@ public class StoreUpgradeIntegrationTest
             props.setProperty( GraphDatabaseSettings.logs_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-            props.setProperty( ClientConnectorSettings.httpConnector( "1" ).type.name(), "HTTP" );
-            props.setProperty( ClientConnectorSettings.httpConnector( "1" ).enabled.name(), "true" );
+            props.setProperty( ClientConnectorSettings.httpConnector( "http" ).type.name(), "HTTP" );
+            props.setProperty( ClientConnectorSettings.httpConnector( "http" ).enabled.name(), "true" );
             try ( FileWriter writer = new FileWriter( configFile ) )
             {
                 props.store( writer, "" );

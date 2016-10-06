@@ -83,7 +83,7 @@ public class RestoreDatabaseCli implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
         ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadConfig(
+        Config config = configLoader.loadOfflineConfig(
                 Optional.of( homeDir.toFile() ),
                 Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ));
 

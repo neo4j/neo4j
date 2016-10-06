@@ -86,8 +86,8 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
                 "-c", configOption( tls_certificate_file,
                         new File( tempDir.getRoot(), "cert.cert" ).getAbsolutePath() ),
                 "-c", configOption( tls_key_file, new File( tempDir.getRoot(), "key.key" ).getAbsolutePath() ),
-                "-c", "dbms.connector.1.type=HTTP",
-                "-c", "dbms.connector.1.enabled=true"
+                "-c", "dbms.connector.http.type=HTTP",
+                "-c", "dbms.connector.http.enabled=true"
         );
 
         // Then
@@ -103,8 +103,8 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
-        properties.put( "dbms.connector.1.type", "HTTP" );
-        properties.put( "dbms.connector.1.enabled", "true" );
+        properties.put( "dbms.connector.http.type", "HTTP" );
+        properties.put( "dbms.connector.http.enabled", "true" );
         store( properties, configFile );
 
         // When
@@ -124,8 +124,8 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
-        properties.put( "dbms.connector.1.type", "HTTP" );
-        properties.put( "dbms.connector.1.enabled", "true" );
+        properties.put( "dbms.connector.http.type", "HTTP" );
+        properties.put( "dbms.connector.http.enabled", "true" );
         store( properties, configFile );
 
         // When
