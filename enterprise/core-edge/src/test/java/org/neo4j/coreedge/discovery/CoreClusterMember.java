@@ -81,6 +81,7 @@ public class CoreClusterMember implements ClusterMember
         config.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
         config.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
         config.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
+        config.put( CoreEdgeClusterSettings.leader_election_timeout.name(), "500ms" );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
