@@ -38,7 +38,7 @@ public class Knobs
      * WAL log records.
      */
     public static final boolean PHYSICALLY_SORTED_ENTRIES =
-            FeatureToggles.flag( Knobs.class, "PHYSICALLY_SORTED_ENTRIES", true );
+            FeatureToggles.flag( Knobs.class, "PHYSICALLY_SORTED_ENTRIES", false );
 
     /**
      * If {@code true} then jump list is [logicalPos] = physicalPos
