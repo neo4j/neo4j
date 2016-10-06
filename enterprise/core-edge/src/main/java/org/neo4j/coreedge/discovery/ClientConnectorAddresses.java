@@ -54,9 +54,9 @@ public class ClientConnectorAddresses
                 .map( boltConnector -> config.get( boltConnector.advertised_address ) ).orElseThrow( () ->
                         new IllegalArgumentException( "A Bolt connector must be configured to run a cluster" ) ) ) );
 
-        connectorUris.add( new ConnectorUri( http, config.get( httpConnector( config, Encryption.NONE ).orElseThrow(
-                () -> new IllegalArgumentException( "An HTTP connector must be configured to run the server" ) )
-                .advertised_address ) ) );
+        httpConnector( config, Encryption.NONE )
+                .map( ( connector ) -> config.get( connector.advertised_address ) )
+                .ifPresent( httpsAddress -> connectorUris.add( new ConnectorUri( http, httpsAddress ) ) );
 
         httpConnector( config, Encryption.TLS )
                 .map( ( connector ) -> config.get( connector.advertised_address ) )
