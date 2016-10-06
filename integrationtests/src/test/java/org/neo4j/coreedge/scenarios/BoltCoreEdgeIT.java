@@ -26,8 +26,13 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
@@ -40,11 +45,15 @@ import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
+import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.RoutingNetworkSession;
+import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
@@ -196,6 +205,69 @@ public class BoltCoreEdgeIT
         finally
         {
             driver.close();
+        }
+    }
+
+    @Test
+    public void shouldPickANewServerToWriteToOnLeaderSwitch() throws Throwable
+    {
+        // given
+        cluster = clusterRule.startCluster();
+
+        CoreClusterMember leader = cluster.awaitLeader();
+
+        CountDownLatch startTheLeaderSwitching = new CountDownLatch( 1 );
+
+        Thread thread = new Thread( () ->
+        {
+            try
+            {
+                startTheLeaderSwitching.await();
+                CoreClusterMember theLeader = cluster.awaitLeader();
+                switchLeader( theLeader );
+            }
+            catch ( TimeoutException | InterruptedException e )
+            {
+                // ignore
+            }
+        } );
+
+        thread.start();
+
+        Config config = Config.build().withLogging( new JULogging( Level.OFF ) ).toConfig();
+        try ( Driver driver = GraphDatabase.driver( leader.routingURI(),
+                AuthTokens.basic( "neo4j", "neo4j" ), config ) )
+        {
+            boolean success = false;
+            Set<BoltServerAddress> seenAddresses = new HashSet<>();
+
+            long deadline = System.currentTimeMillis() + (30 * 1000);
+
+            while ( !success )
+            {
+                if ( System.currentTimeMillis() > deadline )
+                {
+                    fail( "Failed to write to the new leader in time" );
+                }
+
+                try ( Session session = driver.session( AccessMode.WRITE ) )
+                {
+                    startTheLeaderSwitching.countDown();
+                    BoltServerAddress boltServerAddress = ((RoutingNetworkSession) session).address();
+
+                    seenAddresses.add( boltServerAddress );
+                    session.run( "CREATE (p:Person)" );
+                    success = seenAddresses.size() >= 2;
+                }
+                catch ( Exception e )
+                {
+                    Thread.sleep( 100 );
+                }
+            }
+        }
+        finally
+        {
+            thread.join();
         }
     }
 
@@ -477,7 +549,7 @@ public class BoltCoreEdgeIT
             {
                 try ( Session session = driver.session( AccessMode.READ ) )
                 {
-                    BoltServerAddress boltServerAddress = ((Connection) getAddress.invoke( session )).address();
+                    BoltServerAddress boltServerAddress = ((RoutingNetworkSession) session).address();
                     executeReadQuery( bookmark, session );
                     unusedServers.remove( boltServerAddress.toString() );
                 }
@@ -497,29 +569,6 @@ public class BoltCoreEdgeIT
         {
             Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
             assertEquals( 1, record.get( "count" ).asInt() );
-        }
-    }
-
-    private static MethodHandle getAddress = connectionGetter();
-
-    private static MethodHandle connectionGetter()
-    {
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        try
-        {
-            Field value = NetworkSession.class.getDeclaredField( "connection" );
-            if ( value.getType() != Connection.class )
-            {
-                throw new AssertionError(
-                        "Oh no it's a" +
-                                value.getType().getCanonicalName() );
-            }
-            value.setAccessible( true );
-            return lookup.unreflectGetter( value );
-        }
-        catch ( Throwable e )
-        {
-            throw new AssertionError( e.getMessage(), e );
         }
     }
 
@@ -558,15 +607,22 @@ public class BoltCoreEdgeIT
 
     private void switchLeader( CoreClusterMember initialLeader )
     {
+        long deadline = System.currentTimeMillis() + (30 * 1000);
+
         while ( initialLeader.database().getRole() != Role.FOLLOWER )
         {
+            if ( System.currentTimeMillis() > deadline )
+            {
+                throw new RuntimeException( "Failed to switch leader in time" );
+            }
+
             try
             {
                 triggerElection();
             }
             catch ( IOException | TimeoutException e )
             {
-                fail(e.getMessage());
+                // keep trying
             }
         }
     }
