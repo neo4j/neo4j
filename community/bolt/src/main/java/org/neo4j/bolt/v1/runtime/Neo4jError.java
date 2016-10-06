@@ -33,23 +33,25 @@ public class Neo4jError
     private final String message;
     private final Throwable cause;
     private final UUID reference;
+    private final boolean fatal;
 
-    public Neo4jError( Status status, String message, Throwable cause )
+    private Neo4jError( Status status, String message, Throwable cause, boolean fatal )
     {
         this.status = status;
         this.message = message;
         this.cause = cause;
+        this.fatal = fatal;
         this.reference = UUID.randomUUID();
     }
 
-    public Neo4jError( Status status, String message )
+    private Neo4jError( Status status, String message, boolean fatal )
     {
-        this(status, message, null);
+        this(status, message, null, fatal );
     }
 
-    public Neo4jError( Status status, Throwable cause )
+    private Neo4jError( Status status, Throwable cause, boolean fatal )
     {
-        this(status, status.code().description(), cause);
+        this(status, status.code().description(), cause, fatal );
     }
 
     public Status status()
@@ -148,29 +150,53 @@ public class Neo4jError
         }
     }
 
-    public static Neo4jError from( Throwable any )
+    private static Neo4jError fromThrowable( Throwable any, boolean isFatal )
     {
         for( Throwable cause = any; cause != null; cause = cause.getCause() )
         {
             if ( cause instanceof Status.HasStatus )
             {
-                return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage(), any );
+                return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage(), any, isFatal );
             }
 
             if (cause instanceof OutOfMemoryError)
             {
-                return new Neo4jError( Status.General.OutOfMemoryError, cause );
+                return new Neo4jError( Status.General.OutOfMemoryError, cause, isFatal );
             }
             if (cause instanceof StackOverflowError)
             {
-                return new Neo4jError( Status.General.StackOverFlowError, cause );
+                return new Neo4jError( Status.General.StackOverFlowError, cause, isFatal );
             }
         }
 
         // In this case, an error has "slipped out", and we don't have a good way to handle it. This indicates
         // a buggy code path, and we need to try to convince whoever ends up here to tell us about it.
 
-        return new Neo4jError( Status.General.UnknownError, any.getMessage(), any );
+        return new Neo4jError( Status.General.UnknownError, any.getMessage(), any, isFatal );
     }
 
+    public static Neo4jError from( Status status, String message )
+    {
+        return new Neo4jError( status, message, false );
+    }
+
+    public static Neo4jError from( Throwable any )
+    {
+        return fromThrowable( any, false );
+    }
+
+    public static Neo4jError fatalFrom( Throwable any )
+    {
+        return fromThrowable( any, true );
+    }
+
+    public static Neo4jError fatalFrom( Status status, String message )
+    {
+        return new Neo4jError( status, message, true );
+    }
+
+    public boolean isFatal()
+    {
+        return fatal;
+    }
 }

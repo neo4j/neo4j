@@ -48,7 +48,14 @@ class MessageProcessingHandler implements BoltResponseHandler
         else
         {
             // If intended for client, we forward the message as-is.
-            out.onFailure( error.status(), error.message() );
+            if ( error.isFatal() )
+            {
+                out.onFatal( error.status(), error.message() );
+            }
+            else
+            {
+                out.onFailure( error.status(), error.message() );
+            }
         }
     }
 

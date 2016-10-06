@@ -40,7 +40,7 @@ public class ErrorReporterTest
                 new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
 
         Status.Code code = mock( Status.Code.class );
-        Neo4jError error = new Neo4jError( () -> code, "Should not be logged" );
+        Neo4jError error = Neo4jError.from( () -> code, "Should not be logged" );
         when( code.classification() ).thenReturn( Status.Classification.ClientError );
 
         // when
@@ -62,7 +62,7 @@ public class ErrorReporterTest
                 new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
 
         Status.Code code = mock( Status.Code.class );
-        Neo4jError error = new Neo4jError( () -> code, "Should not be logged" );
+        Neo4jError error = Neo4jError.from( () -> code, "Should not be logged" );
         when( code.classification() ).thenReturn( Status.Classification.ClientNotification );
 
         // when
@@ -84,7 +84,7 @@ public class ErrorReporterTest
                 new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
 
         Status.Code code = mock( Status.Code.class );
-        Neo4jError error = new Neo4jError( () -> code, "Database error" );
+        Neo4jError error = Neo4jError.from( () -> code, "Database error" );
         when( code.classification() ).thenReturn( Status.Classification.DatabaseError );
         UUID reference = error.reference();
 
@@ -110,7 +110,7 @@ public class ErrorReporterTest
                 new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
 
         Status.Code code = mock( Status.Code.class );
-        Neo4jError error = new Neo4jError( () -> code, "Transient error" );
+        Neo4jError error = Neo4jError.from( () -> code, "Transient error" );
         when( code.classification() ).thenReturn( Status.Classification.TransientError );
         UUID reference = error.reference();
 
