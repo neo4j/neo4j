@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.catchup.tx;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchUpResponseAdaptor;
@@ -35,6 +36,7 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -113,6 +115,7 @@ public class TxPollingClient extends LifecycleAdapter
             pullRequestMonitor.txPullRequest( lastAppliedTxId );
             StoreId localStoreId = localDatabase.storeId();
             TxPullRequest txPullRequest = new TxPullRequest( lastAppliedTxId, localStoreId );
+            log.info( "Starting transaction pull from " + lastAppliedTxId );
             CatchupResult catchupResult = catchUpClient.makeBlockingRequest( core, txPullRequest,
                     new CatchUpResponseAdaptor<CatchupResult>()
                     {
@@ -130,6 +133,11 @@ public class TxPollingClient extends LifecycleAdapter
                             signal.complete( response.status() );
                         }
                     } );
+
+            if ( catchupResult == CatchupResult.SUCCESS )
+            {
+                log.info( "Successfully completed transaction pull from " + lastAppliedTxId );
+            }
 
             if ( catchupResult == CatchupResult.E_TRANSACTION_PRUNED )
             {

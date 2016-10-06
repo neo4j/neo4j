@@ -50,6 +50,7 @@ import static org.neo4j.StressTestingHelper.prettyPrintStackTrace;
 import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureBackup;
 import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureRaftLogRotationAndPruning;
 import static org.neo4j.coreedge.stresstests.ClusterConfiguration.configureTxLogRotationAndPruning;
+import static org.neo4j.coreedge.stresstests.ClusterConfiguration.enableRaftMessageLogging;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 
 public class BackupStoreCopyInteractionStressTesting
@@ -83,8 +84,8 @@ public class BackupStoreCopyInteractionStressTesting
         BiFunction<Boolean,Integer,SocketAddress> backupAddress = ( isCore, id ) ->
                 new AdvertisedSocketAddress( "localhost", (isCore ? baseCoreBackupPort : baseEdgeBackupPort) + id );
 
-        Map<String,String> coreParams =
-                configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>() ) );
+        Map<String,String> coreParams = enableRaftMessageLogging(
+                configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>() ) ) );
         Map<String,String> edgeParams = configureTxLogRotationAndPruning( new HashMap<>() );
 
         Map<String,IntFunction<String>> instanceCoreParams =
