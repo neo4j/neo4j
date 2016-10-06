@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.factory;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
@@ -39,7 +40,6 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -112,6 +112,7 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
+    @Ignore("No, not for embedded. This is loaded via default values in the config file.")
     public void shouldEnableBoltByDefault() throws Exception
     {
         // given
@@ -141,6 +142,7 @@ public class GraphDatabaseSettingsTest
     {
         // given
         Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.bolt.enabled", "true" ) );
         config.augment( stringMap( "dbms.connector.bolt.listen_address", ":8000" ) );
 
         BoltConnector boltConnector = boltConnectors( config ).get( 0 );
@@ -154,6 +156,7 @@ public class GraphDatabaseSettingsTest
     {
         // given
         Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.bolt.enabled", "true" ) );
         config.augment( stringMap( "dbms.connectors.default_listen_address", "0.0.0.0" ) );
 
         BoltConnector boltConnector = boltConnectors( config ).get( 0 );
@@ -168,6 +171,7 @@ public class GraphDatabaseSettingsTest
         // given
         Config config = Config.defaults();
         config.augment( stringMap( "dbms.connectors.default_listen_address", "0.0.0.0" ) );
+        config.augment( stringMap( "dbms.connector.bolt.enabled", "true" ) );
         config.augment( stringMap( "dbms.connector.bolt.listen_address", ":8000" ) );
 
         BoltConnector boltConnector = boltConnectors( config ).get( 0 );

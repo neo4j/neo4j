@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.configuration;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.helpers.ListenSocketAddress;
@@ -27,7 +28,6 @@ import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encr
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 
@@ -35,6 +35,7 @@ import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnect
 public class ClientConnectorSettingsTest
 {
     @Test
+    @Ignore("This is loaded via the default values in the config file. Embedded should NOT get these defaults.")
     public void shouldHaveHttpAndHttpsEnabledByDefault() throws Exception
     {
         // given
@@ -76,6 +77,7 @@ public class ClientConnectorSettingsTest
     {
         // given
         Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.http.enabled", "true" ) );
         config.augment( stringMap( "dbms.connector.http.listen_address", ":8000" ) );
 
         ClientConnectorSettings.HttpConnector httpConnector = httpConnector( config, Encryption.NONE ).get();
@@ -89,6 +91,7 @@ public class ClientConnectorSettingsTest
     {
         // given
         Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.https.enabled", "true" ) );
         config.augment( stringMap( "dbms.connector.https.listen_address", ":9000" ) );
 
         ClientConnectorSettings.HttpConnector httpsConnector = httpConnector( config, Encryption.TLS ).get();
@@ -102,6 +105,8 @@ public class ClientConnectorSettingsTest
     {
         // given
         Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.https.enabled", "true" ) );
+        config.augment( stringMap( "dbms.connector.http.enabled", "true" ) );
         config.augment( stringMap( "dbms.connectors.default_listen_address", "0.0.0.0" ) );
 
         // when
@@ -118,6 +123,8 @@ public class ClientConnectorSettingsTest
     {
         // given
         Config config = Config.defaults();
+        config.augment( stringMap( "dbms.connector.https.enabled", "true" ) );
+        config.augment( stringMap( "dbms.connector.http.enabled", "true" ) );
         config.augment( stringMap( "dbms.connectors.default_listen_address", "0.0.0.0" ) );
         config.augment( stringMap( "dbms.connector.http.listen_address", ":8000" ) );
         config.augment( stringMap( "dbms.connector.https.listen_address", ":9000" ) );
