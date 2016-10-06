@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
-import org.neo4j.kernel.impl.api.security.AccessModeSnapshot;
 
 class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 {
@@ -164,12 +163,6 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
             return "<missing_principal>";
         }
         return username;
-    }
-
-    @Override
-    public AccessMode getSnapshot()
-    {
-        return AccessModeSnapshot.createAccessModeSnapshot( this );
     }
 
     @Override

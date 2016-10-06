@@ -83,12 +83,6 @@ public class AccessModeSnapshot implements AccessMode
         return accessMode.name();
     }
 
-    @Override
-    public AccessMode getSnapshot()
-    {
-        return this;
-    }
-
     public AccessMode getOriginalAccessMode()
     {
         return accessMode;

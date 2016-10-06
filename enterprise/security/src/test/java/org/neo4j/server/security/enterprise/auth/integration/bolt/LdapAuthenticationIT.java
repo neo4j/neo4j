@@ -321,16 +321,19 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
         } );
 
-        // Then
+        // Given
         assertAuth( "neo4j", "abc123" );
+        assertReadSucceeds();
 
-        // TODO: FIXME This will not fail now, but the the next transaction should fail.
-        // We need to replace this with a two thread test.
+        // When
         client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
+                run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(),
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ), pullAll() ) );
+        assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired, "LDAP authorization info expired." ) ) );
     }
 

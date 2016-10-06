@@ -80,12 +80,6 @@ public class OverriddenAccessMode implements AccessMode
         }
     }
 
-    @Override
-    public AccessMode getSnapshot()
-    {
-        return null;
-    }
-
     public String username()
     {
         return getUsernameFromAccessMode( originalMode );

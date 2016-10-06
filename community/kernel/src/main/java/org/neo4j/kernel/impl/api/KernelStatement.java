@@ -34,8 +34,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -43,6 +41,8 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
+
+import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 
 /**
  * A resource efficient implementation of {@link Statement}. Designed to be reused within a
@@ -216,8 +216,8 @@ public class KernelStatement implements TxStateHolder, Statement
 
     final Optional<String> username()
     {
-        AccessMode mode = transaction.mode();
-        return ( mode instanceof AuthSubject ) ? Optional.of( ((AuthSubject) mode).username() ) : Optional.empty();
+        String username = getUsernameFromAccessMode( transaction.mode() );
+        return Optional.of( username );
     }
 
     final ExecutingQueryList executingQueryList()

@@ -59,12 +59,6 @@ public interface AccessMode
                     {
                         return new AuthorizationViolationException( msg );
                     }
-
-                    @Override
-                    public AccessMode getSnapshot()
-                    {
-                        return NONE;
-                    }
                 },
 
         /** No reading or writing allowed because of expired credentials. */
@@ -110,12 +104,6 @@ public interface AccessMode
                                         "session, and then restart your driver with the new password configured." ),
                                 Status.Security.CredentialsExpired );
                     }
-
-                    @Override
-                    public AccessMode getSnapshot()
-                    {
-                        return CREDENTIALS_EXPIRED;
-                    }
                 },
 
         /** Allows reading data and schema, but not writing. */
@@ -149,12 +137,6 @@ public interface AccessMode
                     public AuthorizationViolationException onViolation( String msg )
                     {
                         return new AuthorizationViolationException( msg );
-                    }
-
-                    @Override
-                    public AccessMode getSnapshot()
-                    {
-                        return READ;
                     }
                 },
 
@@ -190,12 +172,6 @@ public interface AccessMode
                     {
                         return new AuthorizationViolationException( msg );
                     }
-
-                    @Override
-                    public AccessMode getSnapshot()
-                    {
-                        return WRITE_ONLY;
-                    }
                 },
 
         /** Allows reading and writing data, but not schema. */
@@ -230,12 +206,6 @@ public interface AccessMode
                     {
                         return new AuthorizationViolationException( msg );
                     }
-
-                    @Override
-                    public AccessMode getSnapshot()
-                    {
-                        return WRITE;
-                    }
                 },
 
         /** Allows all operations. */
@@ -269,12 +239,6 @@ public interface AccessMode
                     public AuthorizationViolationException onViolation( String msg )
                     {
                         return new AuthorizationViolationException( msg );
-                    }
-
-                    @Override
-                    public AccessMode getSnapshot()
-                    {
-                        return FULL;
                     }
                 },
 
@@ -313,12 +277,6 @@ public interface AccessMode
             public AuthorizationViolationException onViolation( String msg )
             {
                 return new AuthorizationViolationException( msg );
-            }
-
-            @Override
-            public AccessMode getSnapshot()
-            {
-                return OVERRIDE_READ;
             }
         },
 
@@ -359,12 +317,6 @@ public interface AccessMode
             {
                 return new AuthorizationViolationException( msg );
             }
-
-            @Override
-            public AccessMode getSnapshot()
-            {
-                return OVERRIDE_WRITE;
-            }
         },
 
         /**
@@ -404,12 +356,6 @@ public interface AccessMode
             {
                 return new AuthorizationViolationException( msg );
             }
-
-            @Override
-            public AccessMode getSnapshot()
-            {
-                return OVERRIDE_SCHEMA;
-            }
         },
 
         }
@@ -420,6 +366,4 @@ public interface AccessMode
     boolean overrideOriginalMode();
     AuthorizationViolationException onViolation( String msg );
     String name();
-
-    AccessMode getSnapshot();
 }

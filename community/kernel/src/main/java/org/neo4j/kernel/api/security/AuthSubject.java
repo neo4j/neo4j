@@ -119,12 +119,6 @@ public interface AuthSubject extends AccessMode
         {
             return accessMode.name();
         }
-
-        @Override
-        public AccessMode getSnapshot()
-        {
-            return accessMode;
-        }
     }
 
     /**

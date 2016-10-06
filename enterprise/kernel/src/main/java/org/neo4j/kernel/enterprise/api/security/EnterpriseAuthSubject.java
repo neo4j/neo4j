@@ -90,12 +90,6 @@ public interface EnterpriseAuthSubject extends AuthSubject
         }
 
         @Override
-        public AccessMode getSnapshot()
-        {
-            return AuthSubject.AUTH_DISABLED.getSnapshot();
-        }
-
-        @Override
         public boolean isAdmin()
         {
             return true;
