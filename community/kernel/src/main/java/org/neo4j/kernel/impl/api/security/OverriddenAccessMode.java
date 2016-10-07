@@ -85,6 +85,13 @@ public class OverriddenAccessMode implements AccessMode
         return getUsernameFromAccessMode( originalMode );
     }
 
+    // TODO: Move this to AccessMode interface with default implementation to support recursive case
+    //       OR move allowsProcedureWith() to AccessMode and override that here with recursive implementation
+    public AccessMode getOriginalAccessMode()
+    {
+        return originalMode;
+    }
+
     public static String getUsernameFromAccessMode( AccessMode accessMode )
     {
         if ( accessMode instanceof AuthSubject )

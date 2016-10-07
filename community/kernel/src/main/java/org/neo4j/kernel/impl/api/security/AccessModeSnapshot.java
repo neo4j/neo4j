@@ -83,6 +83,7 @@ public class AccessModeSnapshot implements AccessMode
         return accessMode.name();
     }
 
+    // TODO: Move this to AccessMode interface with default implementation to support recursive case
     public AccessMode getOriginalAccessMode()
     {
         return accessMode;
