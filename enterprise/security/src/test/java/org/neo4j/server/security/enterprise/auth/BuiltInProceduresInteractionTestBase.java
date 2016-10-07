@@ -19,18 +19,14 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,9 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -69,6 +62,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.neo4j.bolt.v1.runtime.integration.TransactionIT.createHttpServer;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -256,7 +250,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             final Barrier.Control barrier = new Barrier.Control();
 
             // Serve CSV via local web server, let Jetty find a random port for us
-            Server server = createHttpServer( latch, barrier, i, 50-i );
+            Server server = createHttpServer( latch, barrier, i, 50 - i );
             server.start();
             int localPort = getLocalPort( server );
 
@@ -488,7 +482,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             final Barrier.Control barrier = new Barrier.Control();
 
             // Serve CSV via local web server, let Jetty find a random port for us
-            Server server = createHttpServer( latch, barrier, i, 50-i );
+            Server server = createHttpServer( latch, barrier, i, 50 - i );
             server.start();
             int localPort = getLocalPort( server );
 
@@ -932,48 +926,6 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     }
 
-    private Server createHttpServer(
-            DoubleLatch outerLatch, Barrier.Control innerBarrier,
-            int firstBatchSize, int otherBatchSize )
-    {
-        Server server = new Server( 0 );
-        server.setHandler( new AbstractHandler()
-        {
-            @Override
-            public void handle(
-                    String target,
-                    Request baseRequest,
-                    HttpServletRequest request,
-                    HttpServletResponse response
-            ) throws IOException, ServletException
-            {
-                response.setContentType( "text/plain; charset=utf-8" );
-                response.setStatus( HttpServletResponse.SC_OK );
-                PrintWriter out = response.getWriter();
-
-                writeBatch( out, firstBatchSize );
-                out.flush();
-                outerLatch.start();
-
-                innerBarrier.reached();
-
-                outerLatch.finish();
-                writeBatch( out, otherBatchSize );
-                baseRequest.setHandled(true);
-            }
-
-            private void writeBatch( PrintWriter out, int batchSize )
-            {
-                for ( int i = 0; i < batchSize; i++ )
-                {
-                    out.write( format( "%d %d\n", i, i*i ) );
-                    i++;
-                }
-            }
-        } );
-        return server;
-    }
-
     //---------- matchers-----------
 
     private Matcher<Map<String,Object>> listedQuery( OffsetDateTime startTime, String username, String query )
@@ -1090,6 +1042,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         return threading;
     }
 
+    @SuppressWarnings( {"WeakerAccess", "unused"} )
     public static class NeverEndingProcedure
     {
         public static volatile DoubleLatch testLatch = null;
@@ -1108,6 +1061,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             }
             try
             {
+                //noinspection InfiniteLoopStatement
                 while ( true )
                 {
                     try
