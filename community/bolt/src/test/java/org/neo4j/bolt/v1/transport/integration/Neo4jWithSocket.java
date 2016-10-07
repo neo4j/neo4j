@@ -147,7 +147,9 @@ public class Neo4jWithSocket extends ExternalResource
 
     private String tempPath( String filename ) throws IOException
     {
-        return new File( new File( workingDirectory, "security" ), filename ).getAbsolutePath();
+        File file = new File( new File( workingDirectory, "security" ), filename );
+        file.deleteOnExit();
+        return file.getAbsolutePath();
     }
 
     public GraphDatabaseService graphDatabaseService()
