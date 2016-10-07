@@ -38,7 +38,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def smallestGraphIncluding(mustInclude: Set[IdName]): Set[IdName] = {
     if (mustInclude.size < 2)
-      mustInclude
+      mustInclude intersect allCoveredIds
     else {
       var accumulatedElements = Set.empty[IdName]
       for {

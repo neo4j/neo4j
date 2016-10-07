@@ -47,6 +47,21 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     is_not_rewritten()
 
   assert_that(
+    """MATCH (a)
+        OPTIONAL MATCH (a)-[r]->(b)
+        OPTIONAL MATCH (b)-[r2]->(c)
+        RETURN DISTINCT c as c""").
+    is_not_rewritten()
+
+  assert_that(
+    """MATCH (a)
+        OPTIONAL MATCH (a)-[r]->(b)
+        OPTIONAL MATCH (b)-[r2]->(c)
+        OPTIONAL MATCH (c)-[r3]->(d)
+        RETURN DISTINCT d as d""").
+    is_not_rewritten()
+
+  assert_that(
     """MATCH (a), (b)
        OPTIONAL MATCH (a)-[r]->(b)
        RETURN DISTINCT a as a, b as b""").
