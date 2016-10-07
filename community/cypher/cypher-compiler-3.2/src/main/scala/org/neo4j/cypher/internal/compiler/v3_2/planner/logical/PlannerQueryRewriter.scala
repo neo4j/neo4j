@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{AggregatingQueryProjection, QueryGraph, RegularPlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, FunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, topDown}
 
 import scala.annotation.tailrec
@@ -30,12 +31,12 @@ import scala.collection.{TraversableOnce, mutable}
 case object PlannerQueryRewriter extends Rewriter {
 
   private val instance: Rewriter = topDown(Rewriter.lift {
-    case RegularPlannerQuery(graph, proj: AggregatingQueryProjection, tail) if proj.aggregationExpressions.isEmpty =>
-      val distinctExpressions = proj.groupingKeys
+    case RegularPlannerQuery(graph, AggregatingQueryProjection(distinctExpressions, aggregations, shuffle), tail)
+      if validAggregations(aggregations) =>
 
       // The variables that are needed by the return clause
-      val expressionDeps =
-        distinctExpressions.values
+      val expressionDeps: Set[IdName] =
+        (distinctExpressions.values ++ aggregations.values)
           .flatMap(_.dependencies)
           .map(IdName.fromVariable)
           .toSet
@@ -51,10 +52,17 @@ case object PlannerQueryRewriter extends Rewriter {
             Some(optionalGraph)
       }
 
-      val projection = AggregatingQueryProjection(distinctExpressions, Map.empty, proj.shuffle)
+      val projection = AggregatingQueryProjection(distinctExpressions, aggregations, shuffle)
       val matches = graph.withOptionalMatches(optionalMatches)
       RegularPlannerQuery(matches, horizon = projection, tail = tail)
   })
+
+  private def validAggregations(aggregations: Map[String, Expression]) =
+    aggregations.isEmpty ||
+      aggregations.values.forall {
+        case func: FunctionInvocation => func.distinct
+        case _ => false
+      }
 
   override def apply(input: AnyRef) = instance.apply(input)
 
