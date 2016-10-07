@@ -19,130 +19,176 @@
  */
 package org.neo4j.concurrent;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Turns multi-threaded unary work into single-threaded stack work.
  * <p>
- *     The technique used here is inspired in part both by the Flat Combining
- *     concept from Hendler, Incze, Shavit &amp; Tzafrir, and in part by the
- *     wait-free linked queue design by Vyukov.
+ * The technique used here is inspired in part both by the Flat Combining
+ * concept from Hendler, Incze, Shavit &amp; Tzafrir, and in part by the
+ * wait-free linked queue design by Vyukov.
  * </p>
  * <p>
- *     In a sense, this turns many small, presumably concurrent, pieces of work
- *     into fewer, larger batches of work, that is then applied to the material
- *     under synchronisation.
+ * In a sense, this turns many small, presumably concurrent, pieces of work
+ * into fewer, larger batches of work, that is then applied to the material
+ * under synchronisation.
  * </p>
  * <p>
- *     Obviously this only makes sense for work that a) can be combined, and b)
- *     where the performance improvements from batching effects is large enough
- *     to overcome the overhead of collecting and batching up the work units.
+ * Obviously this only makes sense for work that a) can be combined, and b)
+ * where the performance improvements from batching effects is large enough
+ * to overcome the overhead of collecting and batching up the work units.
  * </p>
+ *
  * @see Work
  */
+@SuppressWarnings( {"unchecked", "NumberEquality"} )
 public class WorkSync<Material, W extends Work<Material,W>>
 {
     private final Material material;
     private final AtomicReference<WorkUnit<Material,W>> stack;
-    private final WorkUnit<Material,W> stackEnd;
-    private final ReentrantLock lock;
+    private static final WorkUnit<?,?> stackEnd = new WorkUnit<>( null, null );
+    private final AtomicReference<Thread> lock;
 
     /**
      * Create a new WorkSync that will synchronize the application of work to
      * the given material.
+     *
      * @param material The material we want to apply work to, in a thread-safe
      * way.
      */
     public WorkSync( Material material )
     {
         this.material = material;
-        this.stackEnd = new WorkUnit<>( null );
-        this.stack = new AtomicReference<>( stackEnd );
-        this.lock = new ReentrantLock();
+        this.stack = new AtomicReference<>( (WorkUnit<Material,W>) stackEnd );
+        this.lock = new AtomicReference<>();
     }
 
     /**
      * Apply the given work to the material in a thread-safe way, possibly by
      * combining it with other work.
+     *
      * @param work The work to be done.
+     * @throws ExecutionException if this thread ends up performing the piled up work,
+     * and any work unit in the pile throws an exception. Thus the current thread is not
+     * guaranteed to observe any exception its unit of work might throw, since the
+     * exception will be thrown in whichever thread that ends up actually performing the work.
      */
-    public void apply( W work )
+    public void apply( W work ) throws ExecutionException
     {
         // Schedule our work on the stack.
-        WorkUnit<Material,W> unit = new WorkUnit<>( work );
-        unit.next = stack.getAndSet( unit ); // benign race, see reverse()
+        WorkUnit<Material,W> unit = enqueueWork( work );
 
         // Try grabbing the lock to do all the work, until our work unit
         // has been completed.
-        boolean wasInterrupted = false;
         int tryCount = 0;
         do
         {
             tryCount++;
+            checkFailure( tryDoWork( unit, tryCount ) );
+        }
+        while ( !unit.isDone() );
+    }
+
+    private WorkUnit<Material,W> enqueueWork( W work )
+    {
+        WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread() );
+        unit.next = stack.getAndSet( unit ); // benign race, see the batch.next read-loop in combine()
+        return unit;
+    }
+
+    private Throwable tryDoWork( WorkUnit<Material,W> unit, int tryCount )
+    {
+        if ( tryLock( tryCount, unit ) )
+        {
+            WorkUnit<Material,W> batch = grabBatch();
             try
             {
-                if ( lock.tryLock( tryCount < 10? 0 : 10, TimeUnit.MILLISECONDS ) )
-                {
-                    try
-                    {
-                        doSynchronizedWork();
-                    }
-                    finally
-                    {
-                        lock.unlock();
-                    }
-                }
+                return doSynchronizedWork( batch );
             }
-            catch ( InterruptedException e )
+            finally
             {
-                // We can't stop now, because our work has already been
-                // scheduled. So instead we're just going to reset the
-                // interruption status when we're done.
-                wasInterrupted = true;
+                unlock();
+                unparkAnyWaiters();
+                markAsDone( batch );
             }
         }
-        while ( !unit.done );
+        return null;
+    }
 
-        if ( wasInterrupted )
+    private void unparkAnyWaiters()
+    {
+        WorkUnit<Material,W> waiter = stack.get();
+        if ( waiter != stackEnd )
         {
-            Thread.currentThread().interrupt();
+            waiter.unpark();
         }
     }
 
-    private void doSynchronizedWork()
+    private void checkFailure( Throwable failure ) throws ExecutionException
     {
-        WorkUnit<Material,W> batch = reverse( stack.getAndSet( stackEnd ) );
+        if ( failure != null )
+        {
+            throw new ExecutionException( failure );
+        }
+    }
+
+    private boolean tryLock( int tryCount, WorkUnit<Material,W> unit )
+    {
+        if ( lock.compareAndSet( null, Thread.currentThread() ) )
+        {
+            // Got the lock!
+            return true;
+        }
+
+        // Did not get the lock, spend some time until our work has either been completed,
+        // or we get the lock.
+        if ( tryCount < 10 )
+        {
+            // todo Java9: Thread.onSpinWait() ?
+            Thread.yield();
+        }
+        else
+        {
+            unit.park( 10, TimeUnit.MILLISECONDS );
+        }
+        return false;
+    }
+
+    private void unlock()
+    {
+        if ( lock.getAndSet( null ) != Thread.currentThread() )
+        {
+            throw new IllegalMonitorStateException(
+                    "WorkSync accidentally released a lock not owned by the current thread" );
+        }
+    }
+
+    private WorkUnit<Material,W> grabBatch()
+    {
+        return stack.getAndSet( (WorkUnit<Material,W>) stackEnd );
+    }
+
+    private Throwable doSynchronizedWork( WorkUnit<Material,W> batch )
+    {
         W combinedWork = combine( batch );
+        Throwable failure = null;
 
         if ( combinedWork != null )
         {
-            combinedWork.apply( material );
-        }
-
-        markAsDone( batch );
-    }
-
-    private WorkUnit<Material,W> reverse( WorkUnit<Material,W> batch )
-    {
-        WorkUnit<Material,W> result = stackEnd;
-        while ( batch != stackEnd )
-        {
-            WorkUnit<Material,W> tmp = batch.next;
-            while ( tmp == null )
+            try
             {
-                // We may see 'null' via race, as work units are put on the
-                // stack before their 'next' pointers are updated. We just spin
-                // until we observe their volatile write to 'next'.
-                Thread.yield();
-                tmp = batch.next;
+                combinedWork.apply( material );
             }
-            batch.next = result;
-            result = batch;
-            batch = tmp;
+            catch ( Throwable throwable )
+            {
+                failure = throwable;
+            }
         }
-        return result;
+        return failure;
     }
 
     private W combine( WorkUnit<Material,W> batch )
@@ -158,7 +204,18 @@ public class WorkSync<Material, W extends Work<Material,W>>
             {
                 result = result.combine( batch.work );
             }
-            batch = batch.next;
+
+            WorkUnit<Material,W> tmp = batch.next;
+            while ( tmp == null )
+            {
+                // We may see 'null' via race, as work units are put on the
+                // stack before their 'next' pointers are updated. We just spin
+                // until we observe their volatile write to 'next'.
+                // todo Java9: Thread.onSpinWait() ?
+                Thread.yield();
+                tmp = batch.next;
+            }
+            batch = tmp;
         }
         return result;
     }
@@ -167,20 +224,53 @@ public class WorkSync<Material, W extends Work<Material,W>>
     {
         while ( batch != stackEnd )
         {
-            batch.done = true;
+            batch.complete();
             batch = batch.next;
         }
     }
 
-    private static class WorkUnit<Material, W extends Work<Material,W>>
+    private static class WorkUnit<Material, W extends Work<Material,W>> extends AtomicInteger
     {
-        final W work;
-        volatile WorkUnit<Material,W> next;
-        volatile boolean done;
+        static final int STATE_QUEUED = 0;
+        static final int STATE_PARKED = 1;
+        static final int STATE_DONE = 2;
 
-        private WorkUnit( W work )
+        final W work;
+        final Thread owner;
+        volatile WorkUnit<Material,W> next;
+
+        private WorkUnit( W work, Thread owner )
         {
             this.work = work;
+            this.owner = owner;
+        }
+
+        void park( long time, TimeUnit unit )
+        {
+            if ( compareAndSet( STATE_QUEUED, STATE_PARKED ) )
+            {
+                LockSupport.parkNanos( unit.toNanos( time ) );
+                compareAndSet( STATE_PARKED, STATE_QUEUED );
+            }
+        }
+
+        boolean isDone()
+        {
+            return get() == STATE_DONE;
+        }
+
+        void complete()
+        {
+            int previousState = getAndSet( STATE_DONE );
+            if ( previousState == STATE_PARKED )
+            {
+                unpark();
+            }
+        }
+
+        void unpark()
+        {
+            LockSupport.unpark( owner );
         }
     }
 }
