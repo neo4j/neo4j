@@ -35,11 +35,15 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = mapExpr(ctx) match {
     case null => null
     case n: Node =>
-      val propId = propertyKey.getOrCreateId(state.query)
-      state.query.nodeOps.getProperty(n.getId, propId)
+      propertyKey.getOptId(state.query) match {
+        case None => null
+        case Some(propId) => state.query.nodeOps.getProperty(n.getId, propId)
+      }
     case r: Relationship =>
-      val propId = propertyKey.getOrCreateId(state.query)
-      state.query.relationshipOps.getProperty(r.getId, propId)
+      propertyKey.getOptId(state.query) match {
+        case None => null
+        case Some(propId) => state.query.relationshipOps.getProperty(r.getId, propId)
+      }
     case IsMap(mapFunc) => try {
       mapFunc(state.query).getOrElse(propertyKey.name, null)
     } catch {
