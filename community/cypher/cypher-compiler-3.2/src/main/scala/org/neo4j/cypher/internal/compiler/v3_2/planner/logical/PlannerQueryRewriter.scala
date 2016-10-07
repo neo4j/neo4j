@@ -20,8 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{AggregatingQueryProjection, RegularPlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{AggregatingQueryProjection, QueryGraph, RegularPlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, topDown}
+
+import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
 
 case object PlannerQueryRewriter extends Rewriter {
 
@@ -29,16 +32,22 @@ case object PlannerQueryRewriter extends Rewriter {
     case RegularPlannerQuery(graph, proj: AggregatingQueryProjection, tail) if proj.aggregationExpressions.isEmpty =>
       val distinctExpressions = proj.groupingKeys
 
+      val expressionDeps =
       // The variables that are needed by the return clause
-      val variableDeps = distinctExpressions.values.flatMap(_.dependencies).map(IdName.fromVariable).toSet
+        distinctExpressions.values
+          .flatMap(_.dependencies)
+          .map(IdName.fromVariable)
+          .toSet
 
-      val optionalMatches = graph.optionalMatches.flatMap { optionalGraph =>
-        val mustKeep = graph.smallestGraphIncluding(variableDeps -- optionalGraph.argumentIds)
-        if (mustKeep.isEmpty)
-          None
-        else
-          Some(optionalGraph)
-      }
+      val optionalMatches = flatMapWithTail(graph.optionalMatches, {
+        (optionalGraph: QueryGraph, rest: Seq[QueryGraph]) =>
+          val allDeps = rest.flatMap(_.argumentIds).toSet ++ expressionDeps
+          val mustKeep = optionalGraph.smallestGraphIncluding(allDeps -- optionalGraph.argumentIds)
+          if (mustKeep.isEmpty)
+            None
+          else
+            Some(optionalGraph)
+      })
 
       val projection = AggregatingQueryProjection(distinctExpressions, Map.empty, proj.shuffle)
       val matches = graph.withOptionalMatches(optionalMatches)
@@ -46,5 +55,18 @@ case object PlannerQueryRewriter extends Rewriter {
   })
 
   override def apply(input: AnyRef) = instance.apply(input)
+
+  private def flatMapWithTail(in: IndexedSeq[QueryGraph], f: (QueryGraph, Seq[QueryGraph]) => Traversable[QueryGraph]): IndexedSeq[QueryGraph] = {
+    val builder = ListBuffer.newBuilder[QueryGraph]
+
+    @tailrec
+    def recurse(that: QueryGraph, rest: Seq[QueryGraph]): Unit = {
+      builder ++= f(that, rest)
+      if (rest.nonEmpty)
+        recurse(rest.head, rest.tail)
+    }
+    recurse(in.head, in.tail)
+    builder.result().toIndexedSeq
+  }
 
 }
