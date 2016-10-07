@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_1.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.StatementConverters.toUnionQuery
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_1.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, SemanticTable}
+
 class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val rewriter = PlannerQueryRewriter
@@ -62,6 +62,26 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     is_not_rewritten()
 
   assert_that(
+    """MATCH (a)
+        OPTIONAL MATCH (a)-[r1]->(b)
+        OPTIONAL MATCH (b)-[r2]->(c)
+        OPTIONAL MATCH (a)-[r3]->(d)
+        RETURN DISTINCT d as d""").
+    is_rewritten_to(
+      """MATCH (a)
+        OPTIONAL MATCH (a)-[r3]->(d)
+        RETURN DISTINCT d as d"""
+    )
+
+  assert_that(
+    """MATCH (a)
+        OPTIONAL MATCH (a)-[r1]->(b)
+        OPTIONAL MATCH (b)-[r2]->(c)
+        OPTIONAL MATCH (a)-[r3]->(d) WHERE c.prop = d.prop
+        RETURN DISTINCT d as d""").
+    is_not_rewritten()
+
+  assert_that(
     """MATCH (a), (b)
        OPTIONAL MATCH (a)-[r]->(b)
        RETURN DISTINCT a as a, b as b""").
@@ -75,7 +95,8 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
         RETURN DISTINCT a as a, r as r""").
     is_not_rewritten()
 
-  ignore("unused optional relationship moved to predicate") { // not done
+  ignore("unused optional relationship moved to predicate") {
+    // not done
     /*
         MATCH (a)
         OPTIONAL MATCH (a)-->(b)-->(c)
@@ -87,33 +108,6 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
         OPTIONAL MATCH (a)-->(b) WHERE (b)-->(c)
         RETURN DISTINCT a, b
     */
-
-    val original = {
-      val optionalGraph = QueryGraph(
-        patternNodes = Set(IdName("a")),
-        patternRelationships = Set(
-          PatternRelationship(IdName("r1"), nodes = (IdName("a"), IdName("b")), dir = OUTGOING, types = Seq.empty, length = SimplePatternLength),
-          PatternRelationship(IdName("r2"), nodes = (IdName("b"), IdName("c")), dir = OUTGOING, types = Seq.empty, length = SimplePatternLength)
-        ))
-      val qg = QueryGraph(patternNodes = Set(IdName("a")))
-      val projection = AggregatingQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("r")), aggregationExpressions = Map.empty)
-      RegularPlannerQuery(queryGraph = qg.withAddedOptionalMatch(optionalGraph), horizon = projection)
-    }
-
-//    val expected = {
-//      val optionalGraph = QueryGraph(
-//        patternNodes = Set(IdName("a")),
-//        patternRelationships = Set(
-//          PatternRelationship(IdName("r1"), nodes = (IdName("a"), IdName("b")), dir = OUTGOING, types = Seq.empty, length = SimplePatternLength)
-//        ),
-//        selections = Selections.from(PatternExpression())
-//      )
-//      val qg = QueryGraph(patternNodes = Set(IdName("a")))
-//      val projection = AggregatingQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("r")), aggregationExpressions = Map.empty)
-//      RegularPlannerQuery(queryGraph = qg.withAddedOptionalMatch(optionalGraph), horizon = projection)
-//    }
-
-    original.endoRewrite(rewriter) should equal(original)
   }
 
   case class rewriteTester(originalQuery: String) {
@@ -122,7 +116,7 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
         val expected = getUnionQueryFrom(newQuery.stripMargin)
         val original = getUnionQueryFrom(originalQuery.stripMargin)
 
-        val result = original.endoRewrite(rewriter)
+        val result = original.endoRewrite(fixedPoint(rewriter))
         assert(result === expected, "\n" + originalQuery)
       }
 
