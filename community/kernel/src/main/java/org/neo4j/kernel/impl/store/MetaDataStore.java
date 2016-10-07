@@ -291,6 +291,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                             {
                                 value = record.getValue();
                             }
+                            else
+                            {
+                                value = FIELD_NOT_PRESENT;
+                            }
                         }
                         while ( cursor.shouldRetry() );
                         if ( cursor.checkAndClearBoundsFlag() )
