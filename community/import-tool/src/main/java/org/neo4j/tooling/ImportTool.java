@@ -78,6 +78,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
@@ -326,6 +327,7 @@ public class ImportTool
             return;
         }
 
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir;
         Collection<Option<File[]>> nodesFiles, relationshipsFiles;
         boolean enableStacktrace;
@@ -340,15 +342,21 @@ public class ImportTool
         int pageSize = UNSPECIFIED;
         Collector badCollector;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
+        File logsDir;
+        File badFile;
 
         boolean success = false;
         try
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+            Config config = Config.defaults();
+            config.augment( stringMap( GraphDatabaseSettings.neo4j_home.name(), storeDir.getAbsolutePath() ) );
+            logsDir = config.get( GraphDatabaseSettings.logs_directory );
+            fs.mkdirs( logsDir );
 
-            File badFile = new File( storeDir, BAD_FILE_NAME );
-            badOutput = new BufferedOutputStream( new DefaultFileSystemAbstraction().openAsOutputStream( badFile, false ) );
+            badFile = new File( logsDir, BAD_FILE_NAME );
+            badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
             nodesFiles = extractInputFiles( args, Options.NODE_DATA.key(), err );
             relationshipsFiles = extractInputFiles( args, Options.RELATIONSHIP_DATA.key(), err );
             validateInputFiles( nodesFiles, relationshipsFiles );
@@ -382,7 +390,7 @@ public class ImportTool
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
                     configuration.maxNumberOfProcessors() );
 
-            doImport( out, err, storeDir, nodesFiles, relationshipsFiles,
+            doImport( out, err, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badOutput, configuration );
 
             success = true;
@@ -404,15 +412,16 @@ public class ImportTool
         }
     }
 
-    public static void doImport( PrintStream out, PrintStream err, File storeDir, Collection<Option<File[]>> nodesFiles,
-            Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input, Config dbConfig,
-            OutputStream badOutput, org.neo4j.unsafe.impl.batchimport.Configuration configuration ) throws IOException
+    public static void doImport( PrintStream out, PrintStream err, File storeDir, File logsDir, File badFile,
+                                 FileSystemAbstraction fs, Collection<Option<File[]>> nodesFiles,
+                                 Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input,
+                                 Config dbConfig, OutputStream badOutput,
+                                 org.neo4j.unsafe.impl.batchimport.Configuration configuration ) throws IOException
     {
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         boolean success;
         LifeSupport life = new LifeSupport();
 
-        LogService logService = life.add( StoreLogService.inLogsDirectory( fs, storeDir ) );
+        LogService logService = life.add( StoreLogService.inLogsDirectory( fs, logsDir ) );
 
         life.start();
         BatchImporter importer = new ParallelBatchImporter( storeDir,
@@ -433,17 +442,15 @@ public class ImportTool
         }
         finally
         {
-            input.badCollector().close();
+            Collector collector = input.badCollector();
+            int numberOfBadEntries = collector.badEntries();
+            collector.close();
             badOutput.close();
 
-            if ( input.badCollector().badEntries() > 0 )
+            if ( numberOfBadEntries > 0 )
             {
-                File badFile = new File( storeDir, BAD_FILE_NAME );
-                if ( badFile.exists() )
-                {
-                    out.println(
-                            "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
-                }
+                out.println(
+                        "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
             }
 
             life.shutdown();

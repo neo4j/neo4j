@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,7 +29,9 @@ import java.util.Collection;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.tooling.ImportTool;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -46,6 +49,7 @@ import static org.neo4j.tooling.ImportTool.importConfiguration;
 import static org.neo4j.tooling.ImportTool.nodeData;
 import static org.neo4j.tooling.ImportTool.relationshipData;
 import static org.neo4j.tooling.ImportTool.validateInputFiles;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
@@ -121,7 +125,11 @@ class CsvImporter implements Importer
     @Override
     public void doImport() throws IOException
     {
-        OutputStream badOutput = outsideWorld.errorStream();
+        FileSystemAbstraction fs = outsideWorld.fileSystem();
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
+        File logsDir = config.get( GraphDatabaseSettings.logs_directory );
+        File badFile = new File( logsDir, BAD_FILE_NAME );
+        OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
         Collector badCollector = badCollector( badOutput, 1000, collect( true, false, false ) );
 
         Configuration configuration = importConfiguration( null, false, config, pageSize );
@@ -130,7 +138,7 @@ class CsvImporter implements Importer
                 csvConfiguration( args, false ), badCollector, configuration.maxNumberOfProcessors() );
 
         ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(),
-                config.get( DatabaseManagementSystemSettings.database_path ), nodesFiles, relationshipsFiles, false,
+                storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles, false,
                 input, config, badOutput, configuration );
     }
 }
