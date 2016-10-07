@@ -64,6 +64,14 @@ public interface AdminCommand
         public abstract Optional<String> arguments();
 
         /**
+         * @return A single-line summary for the command. Should be 70 characters or less.
+         */
+        public String summary()
+        {
+            return description();
+        }
+
+        /**
          * @return A description for the command's help text.
          */
         public abstract String description();
