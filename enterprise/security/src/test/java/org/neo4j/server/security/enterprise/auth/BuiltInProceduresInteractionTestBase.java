@@ -333,6 +333,49 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     //---------- terminate query -----------
 
+    /*
+     * User starts query1 that takes a lock and runs for a long time.
+     * User starts query2 that needs to wait for that lock.
+     * query2 is blocked waiting for lock to be released.
+     * Admin terminates query2.
+     * query2 is immediately terminated, even though locks have not been released.
+     */
+    @Test
+    public void queryWaitingForLocksShouldBeKilledBeforeLocksAreReleased() throws Throwable
+    {
+        assertEmpty( adminSubject, "CREATE (:MyNode {prop: 2})" );
+
+        // create new latch
+        ClassWithProcedures.doubleLatch = new DoubleLatch( 2 );
+
+        // start never-ending query
+        String query1 = "MATCH (n:MyNode) SET n.prop = 5 WITH * CALL test.neverEnding() RETURN 1";
+        ThreadedTransaction<S> tx1 = new ThreadedTransaction<>( neo, new DoubleLatch() );
+        tx1.executeEarly( threading, writeSubject, KernelTransaction.Type.explicit, query1 );
+
+        // wait for query1 to be stuck in procedure with its write lock
+        ClassWithProcedures.doubleLatch.startAndWaitForAllToStart();
+
+        // start query2
+        ThreadedTransaction<S> tx2 = new ThreadedTransaction<>( neo, new DoubleLatch() );
+        String query2 = "MATCH (n:MyNode) SET n.prop = 10 RETURN 1";
+        tx2.executeEarly( threading, writeSubject, KernelTransaction.Type.explicit, query2 );
+
+        // get the query id of query2 and kill it
+        assertSuccess( adminSubject,
+                "CALL dbms.listQueries() YIELD query, queryId " +
+                "WITH query, queryId WHERE query = '" + query2 + "'" +
+                "CALL dbms.killQuery(queryId) YIELD queryId AS killedId " +
+                "RETURN 1",
+                itr -> assertThat( itr.hasNext(), equalTo( true ) ) );
+
+        tx2.closeAndAssertQueryKilled();
+
+        // allow query1 to exit procedure and finish
+        ClassWithProcedures.doubleLatch.finish();
+        tx1.closeAndAssertSuccess();
+    }
+
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldKillQueryAsAdmin() throws Throwable

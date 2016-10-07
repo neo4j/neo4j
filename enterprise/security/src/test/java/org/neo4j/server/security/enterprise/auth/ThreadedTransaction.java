@@ -137,12 +137,24 @@ public class ThreadedTransaction<S>
 
     void closeAndAssertTransactionTermination() throws Throwable
     {
+        //noinspection ThrowableResultOfMethodCallIgnored
         Throwable exceptionInOtherThread = join();
         if ( exceptionInOtherThread == null )
         {
             fail( "Expected BridgeTransactionTerminatedException in ThreadedCreate, but no exception was raised" );
         }
         assertThat( exceptionInOtherThread.getMessage(), containsString( "Explicitly terminated by the user.") );
+    }
+
+    void closeAndAssertQueryKilled() throws Throwable
+    {
+        //noinspection ThrowableResultOfMethodCallIgnored
+        Throwable exceptionInOtherThread = join();
+        if ( exceptionInOtherThread == null )
+        {
+            fail( "Expected a exception from the query having been killed, but no exception was raised" );
+        }
+        assertThat( exceptionInOtherThread.getMessage(), containsString( "The transaction has been terminated.") );
     }
 
     private Throwable join() throws ExecutionException, InterruptedException
