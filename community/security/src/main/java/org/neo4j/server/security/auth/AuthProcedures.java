@@ -84,7 +84,7 @@ public class AuthProcedures
             throw new AuthorizationViolationException( "Anonymous cannot change password" );
         }
         userManager.setUserPassword( authSubject.username(), password, false );
-        authSubject.passwordChangeNoLongerRequired();
+        authSubject.setPasswordChangeNoLongerRequired();
     }
 
     @Description( "Show the current user." )

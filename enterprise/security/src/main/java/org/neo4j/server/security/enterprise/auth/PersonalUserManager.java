@@ -32,13 +32,13 @@ import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 
-public class PersonalUserManager implements EnterpriseUserManager
+class PersonalUserManager implements EnterpriseUserManager
 {
-    private EnterpriseUserManager userManager;
-    private AuthSubject authSubject;
-    private SecurityLog securityLog;
+    private final EnterpriseUserManager userManager;
+    private final AuthSubject authSubject;
+    private final SecurityLog securityLog;
 
-    public PersonalUserManager( EnterpriseUserManager userManager, AuthSubject authSubject, SecurityLog securityLog )
+    PersonalUserManager( EnterpriseUserManager userManager, AuthSubject authSubject, SecurityLog securityLog )
     {
         this.userManager = userManager;
         this.authSubject = authSubject;

@@ -29,21 +29,21 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 
-public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
+class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 {
-    static final String SCHEMA_READ_WRITE = "schema:read,write";
-    static final String READ_WRITE = "data:read,write";
-    static final String READ = "data:read";
+    private static final String SCHEMA_READ_WRITE = "schema:read,write";
+    private static final String READ_WRITE = "data:read,write";
+    private static final String READ = "data:read";
 
     private final EnterpriseAuthAndUserManager authManager;
     private final ShiroSubject shiroSubject;
 
-    public static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
+    static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
     {
         return EnterpriseAuthSubject.castOrFail( StandardEnterpriseAuthSubject.class, authSubject );
     }
 
-    public StandardEnterpriseAuthSubject( EnterpriseAuthAndUserManager authManager, ShiroSubject shiroSubject )
+    StandardEnterpriseAuthSubject( EnterpriseAuthAndUserManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;
@@ -71,13 +71,13 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     public void setPassword( String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        getUserManager().setUserPassword( (String) shiroSubject.getPrincipal(), password, requirePasswordChange );
+        getUserManager().setUserPassword( shiroSubject.getPrincipal().toString(), password, requirePasswordChange );
         // Make user authenticated if successful
-        passwordChangeNoLongerRequired();
+        setPasswordChangeNoLongerRequired();
     }
 
     @Override
-    public void passwordChangeNoLongerRequired()
+    public void setPasswordChangeNoLongerRequired()
     {
         if ( getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
         {
@@ -177,10 +177,5 @@ public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
         {
             return ""; // Should never clash with a valid username
         }
-    }
-
-    ShiroSubject getShiroSubject()
-    {
-        return shiroSubject;
     }
 }

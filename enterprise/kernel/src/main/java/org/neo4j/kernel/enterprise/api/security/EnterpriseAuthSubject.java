@@ -114,7 +114,7 @@ public interface EnterpriseAuthSubject extends AuthSubject
         }
 
         @Override
-        public void passwordChangeNoLongerRequired()
+        public void setPasswordChangeNoLongerRequired()
         {
         }
 
