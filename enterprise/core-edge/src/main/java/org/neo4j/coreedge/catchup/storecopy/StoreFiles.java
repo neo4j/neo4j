@@ -24,25 +24,15 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 
 public class StoreFiles
 {
-    private static final FilenameFilter STORE_FILE_FILTER = new FilenameFilter()
+    private static final FilenameFilter STORE_FILE_FILTER = ( dir, name ) ->
     {
-        @Override
-        public boolean accept( File dir, String name )
-        {
-            // Skip log files and tx files from temporary database
-            return !(
-                    name.startsWith( "metrics" ) ||
-                            name.startsWith( "temp-copy" ) ||
-                            name.startsWith( "raft-messages." ) ||
-                            name.startsWith( "debug." ) ||
-                            name.startsWith( "cluster-state" ) ||
-                            name.startsWith( "store_lock" )
-            );
-        }
+        // Skip log files and tx files from temporary database
+        return !name.startsWith( "metrics" ) && !name.startsWith( "temp-copy" ) &&
+                !name.startsWith( "raft-messages." ) && !name.startsWith( "debug." ) &&
+                !name.startsWith( "cluster-state" ) && !name.startsWith( "store_lock" );
     };
     private FileSystemAbstraction fs;
 
@@ -55,16 +45,16 @@ public class StoreFiles
     {
         for ( File file : fs.listFiles( storeDir, STORE_FILE_FILTER ) )
         {
-            FileUtils.deleteRecursively( file );
+            fs.deleteRecursively( file );
         }
 
     }
 
-    public void moveTo( File source, File target ) throws IOException
+    void moveTo( File source, File target ) throws IOException
     {
         for ( File candidate : fs.listFiles( source, STORE_FILE_FILTER ) )
         {
-            FileUtils.moveFileToDirectory( candidate, target );
+            fs.moveToDirectory( candidate, target );
         }
     }
 }
