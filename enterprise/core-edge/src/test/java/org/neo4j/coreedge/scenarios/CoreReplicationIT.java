@@ -23,6 +23,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -38,6 +41,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.coreedge.discovery.Cluster.dataMatchesEventually;
+import static org.neo4j.function.Predicates.await;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 
@@ -125,6 +129,7 @@ public class CoreReplicationIT
             tx.success();
         } );
 
+        awaitForDataToBeApplied( leader );
         dataMatchesEventually( leader, cluster.coreMembers() );
 
         CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
@@ -141,6 +146,11 @@ public class CoreReplicationIT
             // expected
             assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
         }
+    }
+
+    private void awaitForDataToBeApplied( CoreClusterMember leader ) throws InterruptedException, TimeoutException
+    {
+        await( () -> countNodes(leader) > 0, 10, TimeUnit.SECONDS);
     }
 
     @Test
