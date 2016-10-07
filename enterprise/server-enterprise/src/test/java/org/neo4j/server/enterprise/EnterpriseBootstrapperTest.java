@@ -93,6 +93,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
                 "-c", "dbms.connector.1.type=HTTP",
+                "-c", "dbms.connector.1.encryption=NONE",
                 "-c", "dbms.connector.1.enabled=true" );
 
         // Then
@@ -113,6 +114,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
                 "-c", "dbms.connector.1.type=HTTP",
+                "-c", "dbms.connector.1.encryption=NONE",
                 "-c", "dbms.connector.1.enabled=true" );
 
         // Then
@@ -129,6 +131,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         Map<String, String> properties = stringMap();
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
         properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.encryption", "NONE" );
         properties.put( "dbms.connector.1.enabled", "true" );
         store( properties, configFile );
 
@@ -154,6 +157,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         Map<String, String> properties = stringMap( store_internal_log_level.name(), "DEBUG");
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
         properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.encryption", "NONE" );
         properties.put( "dbms.connector.1.enabled", "true" );
         store( properties, configFile );
 

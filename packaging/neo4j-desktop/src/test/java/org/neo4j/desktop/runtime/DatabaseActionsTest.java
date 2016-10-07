@@ -83,6 +83,7 @@ public class DatabaseActionsTest
         configFile = new File( testDirectory.directory(), "neo4j.conf" );
         Properties props = new Properties();
         props.setProperty( ClientConnectorSettings.httpConnector( "1" ).type.name(), "HTTP" );
+        props.setProperty( ClientConnectorSettings.httpConnector( "1" ).encryption.name(), "NONE" );
         props.setProperty( ClientConnectorSettings.httpConnector( "1" ).enabled.name(), "true" );
         try ( FileWriter writer = new FileWriter( configFile ) )
         {
