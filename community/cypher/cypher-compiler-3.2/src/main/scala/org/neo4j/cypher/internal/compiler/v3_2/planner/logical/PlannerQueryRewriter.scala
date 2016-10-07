@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, topDown}
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.collection.{TraversableOnce, mutable}
 
 case object PlannerQueryRewriter extends Rewriter {
 
@@ -32,22 +33,23 @@ case object PlannerQueryRewriter extends Rewriter {
     case RegularPlannerQuery(graph, proj: AggregatingQueryProjection, tail) if proj.aggregationExpressions.isEmpty =>
       val distinctExpressions = proj.groupingKeys
 
-      val expressionDeps =
       // The variables that are needed by the return clause
+      val expressionDeps =
         distinctExpressions.values
           .flatMap(_.dependencies)
           .map(IdName.fromVariable)
           .toSet
 
-      val optionalMatches = flatMapWithTail(graph.optionalMatches, {
-        (optionalGraph: QueryGraph, rest: Seq[QueryGraph]) =>
-          val allDeps = rest.flatMap(_.argumentIds).toSet ++ expressionDeps
-          val mustKeep = optionalGraph.smallestGraphIncluding(allDeps -- optionalGraph.argumentIds)
+      val optionalMatches = graph.optionalMatches.flatMapWithTail {
+        (optionalGraph: QueryGraph, tail: Seq[QueryGraph]) =>
+          val allDeps = tail.flatMap(_.argumentIds).toSet ++ expressionDeps -- graph.coveredIds
+          val mustInclude = allDeps -- optionalGraph.argumentIds
+          val mustKeep = optionalGraph.smallestGraphIncluding(mustInclude)
           if (mustKeep.isEmpty)
             None
           else
             Some(optionalGraph)
-      })
+      }
 
       val projection = AggregatingQueryProjection(distinctExpressions, Map.empty, proj.shuffle)
       val matches = graph.withOptionalMatches(optionalMatches)
@@ -56,17 +58,22 @@ case object PlannerQueryRewriter extends Rewriter {
 
   override def apply(input: AnyRef) = instance.apply(input)
 
-  private def flatMapWithTail(in: IndexedSeq[QueryGraph], f: (QueryGraph, Seq[QueryGraph]) => Traversable[QueryGraph]): IndexedSeq[QueryGraph] = {
-    val builder = ListBuffer.newBuilder[QueryGraph]
+  implicit class FlatMapWithTailable(in: IndexedSeq[QueryGraph]) {
+    def flatMapWithTail(f: (QueryGraph, Seq[QueryGraph]) => TraversableOnce[QueryGraph]): IndexedSeq[QueryGraph] = {
 
-    @tailrec
-    def recurse(that: QueryGraph, rest: Seq[QueryGraph]): Unit = {
-      builder ++= f(that, rest)
-      if (rest.nonEmpty)
-        recurse(rest.head, rest.tail)
+      @tailrec
+      def recurse(that: QueryGraph, rest: Seq[QueryGraph], builder: mutable.Builder[QueryGraph, ListBuffer[QueryGraph]]): Unit = {
+        builder ++= f(that, rest)
+        if (rest.nonEmpty)
+          recurse(rest.head, rest.tail, builder)
+      }
+      if (in.isEmpty)
+        IndexedSeq.empty
+      else {
+        val builder = ListBuffer.newBuilder[QueryGraph]
+        recurse(in.head, in.tail, builder)
+        builder.result().toIndexedSeq
+      }
     }
-    recurse(in.head, in.tail)
-    builder.result().toIndexedSeq
   }
-
 }
