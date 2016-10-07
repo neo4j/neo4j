@@ -73,6 +73,12 @@ public class LoadCommand implements AdminCommand
         }
 
         @Override
+        public String summary()
+        {
+            return "Load a database from an archive created with the dump command.";
+        }
+
+        @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new LoadCommand( homeDir, configDir, new Loader() );

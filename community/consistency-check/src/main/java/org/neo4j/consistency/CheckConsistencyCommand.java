@@ -73,6 +73,12 @@ public class CheckConsistencyCommand implements AdminCommand
         }
 
         @Override
+        public String summary()
+        {
+            return description();
+        }
+
+        @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new CheckConsistencyCommand( homeDir, configDir, outsideWorld );

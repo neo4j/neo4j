@@ -184,6 +184,12 @@ public class AdminToolTest
             }
 
             @Override
+            public String summary()
+            {
+                return "";
+            }
+
+            @Override
             public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
             {
                 return command;
@@ -221,6 +227,12 @@ public class AdminToolTest
 
         @Override
         public String description()
+        {
+            return "";
+        }
+
+        @Override
+        public String summary()
         {
             return "";
         }

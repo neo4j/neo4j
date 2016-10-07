@@ -48,6 +48,12 @@ public class HelpCommand implements AdminCommand
         }
 
         @Override
+        public String summary()
+        {
+            return description();
+        }
+
+        @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new HelpCommand( usage, outsideWorld::stdOutLine );

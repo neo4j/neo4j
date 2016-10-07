@@ -83,6 +83,12 @@ public class OnlineBackupCommand implements AdminCommand
         }
 
         @Override
+        public String summary()
+        {
+            return "Perform a backup, over the network, from a running Neo4j server.";
+        }
+
+        @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new OnlineBackupCommand(

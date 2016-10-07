@@ -94,6 +94,12 @@ public class UsageTest
         }
 
         @Override
+        public String summary()
+        {
+            return description;
+        }
+
+        @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             throw new UnsupportedOperationException( "not implemented" );

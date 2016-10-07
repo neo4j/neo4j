@@ -66,10 +66,7 @@ public interface AdminCommand
         /**
          * @return A single-line summary for the command. Should be 70 characters or less.
          */
-        public String summary()
-        {
-            return description();
-        }
+        public abstract String summary();
 
         /**
          * @return A description for the command's help text.
