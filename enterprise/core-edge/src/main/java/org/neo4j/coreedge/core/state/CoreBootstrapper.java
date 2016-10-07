@@ -33,11 +33,9 @@ import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateType;
 import org.neo4j.coreedge.core.state.snapshot.RaftCoreState;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -53,11 +51,11 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.LABEL_TOKEN_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.NODE_LABELS_STORE_NAME;
@@ -98,7 +96,7 @@ public class CoreBootstrapper
     private final FileSystemAbstraction fs;
     private final Config config;
 
-    public CoreBootstrapper( File storeDir, PageCache pageCache, FileSystemAbstraction fs, Config config )
+    CoreBootstrapper( File storeDir, PageCache pageCache, FileSystemAbstraction fs, Config config )
     {
         this.storeDir = storeDir;
         this.pageCache = pageCache;
@@ -130,25 +128,25 @@ public class CoreBootstrapper
         ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDir );
         ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
         PhysicalLogFile logFile = new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                () -> readOnlyTransactionIdStore.getLastCommittedTransactionId() - 1, logVersionRepository,
+                () -> readOnlyTransactionIdStore.getLastClosedTransactionId() - 1, logVersionRepository,
                 new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
                 new LogHeaderCache( 10 ) );
-        logFile.init();
-        logFile.start();
 
-        FlushableChannel channel = logFile.getWriter();
-        TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
+        long dummyTransactionId;
+        try ( Lifespan lifespan = new Lifespan( logFile ) )
+        {
+            FlushableChannel channel = logFile.getWriter();
+            TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
 
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptyList() );
-        byte[] txHeaderBytes = LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader( -1 );
-        tx.setHeader( txHeaderBytes, -1, -1, -1, -1, -1, -1 );
+            long lastCommittedTransactionId = readOnlyTransactionIdStore.getLastCommittedTransactionId();
+            PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptyList() );
+            byte[] txHeaderBytes = LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader( -1 );
+            tx.setHeader( txHeaderBytes, -1, -1, -1, lastCommittedTransactionId, -1, -1 );
 
-        long dummyTransactionId = readOnlyTransactionIdStore.getLastCommittedTransactionId() + 1;
-        writer.append( tx, dummyTransactionId );
-        channel.prepareForFlush().flush();
-
-        logFile.stop();
-        logFile.shutdown();
+            dummyTransactionId = lastCommittedTransactionId + 1;
+            writer.append( tx, dummyTransactionId );
+            channel.prepareForFlush().flush();
+        }
 
         File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         MetaDataStore.setRecord( pageCache, neoStoreFile, LAST_TRANSACTION_ID, dummyTransactionId );
