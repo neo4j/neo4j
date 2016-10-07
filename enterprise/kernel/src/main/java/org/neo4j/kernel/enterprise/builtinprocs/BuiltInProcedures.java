@@ -84,6 +84,8 @@ public class BuiltInProcedures
     @Context
     public AuthSubject authSubject;
 
+    @Description( "Attaches a map of data to the transaction. The data will be printed when listing queries, and " +
+                  "inserted into the query log." )
     @Procedure( name = "dbms.setTXMetaData", mode = DBMS )
     public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
     {
