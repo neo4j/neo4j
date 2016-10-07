@@ -79,6 +79,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
@@ -331,14 +332,20 @@ public class ImportTool
         OutputStream badOutput = null;
         int pageSize = UNSPECIFIED;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
+        File logsDir;
+        File badFile;
 
         boolean success = false;
         try
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+            Config config = Config.defaults();
+            config.augment( stringMap( GraphDatabaseSettings.neo4j_home.name(), storeDir.getAbsolutePath() ) );
+            logsDir = config.get( GraphDatabaseSettings.logs_directory );
+            fs.mkdirs( logsDir );
 
-            File badFile = new File( storeDir, BAD_FILE_NAME );
+            badFile = new File( logsDir, BAD_FILE_NAME );
             badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
             nodesFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.NODE_DATA.key() );
             relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
@@ -392,7 +399,7 @@ public class ImportTool
 
         LifeSupport life = new LifeSupport();
 
-        LogService logService = life.add( StoreLogService.inLogsDirectory( fs, storeDir ) );
+        LogService logService = life.add( StoreLogService.inLogsDirectory( fs, logsDir ) );
 
         life.start();
         BatchImporter importer = new ParallelBatchImporter( storeDir,
@@ -413,17 +420,18 @@ public class ImportTool
         }
         finally
         {
+            int numberOfBadEntries = input.badCollector().badEntries();
             input.badCollector().close();
             badOutput.close();
 
-            if ( input.badCollector().badEntries() > 0 )
+            if ( numberOfBadEntries > 0 )
             {
-                File badFile = new File( storeDir, BAD_FILE_NAME );
-                if ( badFile.exists() )
-                {
-                    System.out.println(
-                            "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
-                }
+                System.out.println(
+                        "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
+            }
+            else
+            {
+                fs.deleteFile( badFile );
             }
 
             life.shutdown();

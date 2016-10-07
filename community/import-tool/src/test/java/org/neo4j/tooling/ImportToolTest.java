@@ -52,6 +52,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -86,6 +87,7 @@ import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 
 public class ImportToolTest
 {
@@ -598,7 +600,7 @@ public class ImportToolTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.TABS;
-        File bad = file( "bad.log" );
+        File bad = badFile();
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
@@ -890,7 +892,7 @@ public class ImportToolTest
                 relationship( "missing", "a", "KNOWS", "ee" ) ); // line 3 of file2
         File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
         File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
-        File bad = file( "bad.log" );
+        File bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
         importTool(
@@ -926,7 +928,7 @@ public class ImportToolTest
                 relationship( "missing", "a", "KNOWS" ) ); // line 3 of file2
         File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
         File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
-        File bad = file( "bad.log" );
+        File bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
         try
@@ -961,7 +963,7 @@ public class ImportToolTest
 
         File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
         File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
-        File bad = file( "bad.log" );
+        File bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
         try
@@ -1935,6 +1937,14 @@ public class ImportToolTest
     private File file( String localname )
     {
         return new File( dbRule.getStoreDir(), localname );
+    }
+
+    private File badFile()
+    {
+        Config config = Config.defaults();
+        config.augment( stringMap( GraphDatabaseSettings.neo4j_home.name(), dbRule.getStoreDirAbsolutePath() ) );
+        File logsDir = config.get( GraphDatabaseSettings.logs_directory );
+        return new File( logsDir, BAD_FILE_NAME );
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,
