@@ -117,7 +117,7 @@ public class SecuritySettings
                   "If no protocol is specified the default will be `ldap://`. To use LDAPS, " +
                   "set the protocol and port, e.g. `ldaps://ldap.example.com:636`" )
     public static final Setting<String> ldap_server =
-            setting( "dbms.security.ldap.host", STRING, "0.0.0.0:389" );
+            setting( "dbms.security.ldap.host", STRING, "localhost:389" );
 
     @Description( "Use secure communication with the LDAP server using opportunistic TLS. " +
             "First an initial insecure connection will be made with the LDAP server and a STARTTLS command will be " +
@@ -183,7 +183,7 @@ public class SecuritySettings
     @Description( "The name of the base object or named context to search for user objects when LDAP authorization is " +
                   "enabled." )
     public static Setting<String> ldap_authorization_user_search_base =
-            setting( "dbms.security.ldap.authorization.user_search_base", STRING, NO_DEFAULT );
+            setting( "dbms.security.ldap.authorization.user_search_base", STRING, "ou=users,dc=example,dc=com" );
 
     @Description( "The LDAP search filter to search for a user principal when LDAP authorization is " +
                   "enabled. The filter should contain the placeholder token {0} which will be substituted for the " +
