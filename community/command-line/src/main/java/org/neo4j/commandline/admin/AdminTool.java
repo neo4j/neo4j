@@ -31,8 +31,8 @@ public class AdminTool
 {
     public static void main( String[] args )
     {
-        Path homeDir = Paths.get( System.getenv( "NEO4J_HOME" ) );
-        Path configDir = Paths.get( System.getenv( "NEO4J_CONF" ) );
+        Path homeDir = Paths.get( System.getenv().getOrDefault( "NEO4J_HOME", "" ) );
+        Path configDir = Paths.get( System.getenv().getOrDefault( "NEO4J_CONF", "" ) );
         boolean debug = System.getenv( "NEO4J_DEBUG" ) != null;
 
         new AdminTool( CommandLocator.fromServiceLocator(), new RealOutsideWorld(), debug )

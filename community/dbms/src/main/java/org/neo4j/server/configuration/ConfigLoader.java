@@ -61,10 +61,10 @@ public class ConfigLoader
                 settingsClassesSupplier );
     }
 
-    public Config loadOfflineConfig( Optional<File> homeDir, Optional<File> configFile,
-            Pair<String,String>... configOverrides )
+    public Config loadOfflineConfig( Optional<File> homeDir, Optional<File> configFile )
     {
-        return overrideBoltSettings( loadConfig( homeDir, configFile, configOverrides ) );
+        return overrideBoltSettings( loadConfig( homeDir, configFile,
+                Pair.of( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE ) ) );
     }
 
     private Map<String, String> calculateSettings( Optional<File> homeDir,
