@@ -19,135 +19,46 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_1.SyntaxExceptionCreator
+import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.StatementConverters.toUnionQuery
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-
+import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, SemanticTable}
 class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val rewriter = PlannerQueryRewriter
 
-  test("empty query stays empty") {
-    val empty = RegularPlannerQuery()
-    empty.endoRewrite(rewriter) should equal(empty)
-  }
+  assert_that(
+    """MATCH (a)
+       OPTIONAL MATCH (a)-[r]->(b)
+       RETURN distinct a as a""").
+    is_rewritten_to(
+      """MATCH (a)
+         RETURN distinct a as a""")
 
-  test("unused optional match is removed") {
-    /*
-        MATCH (a)
-        OPTIONAL MATCH (a)-->(b)
-        RETURN distinct a
+  assert_that(
+    """MATCH (a)
+        OPTIONAL MATCH (a)-[r]->(b)
+        RETURN DISTINCT a as a, b as b""").
+    is_not_rewritten()
 
-        is equivalent to:
+  assert_that(
+    """MATCH (a), (b)
+       OPTIONAL MATCH (a)-[r]->(b)
+       RETURN DISTINCT a as a, b as b""").
+    is_rewritten_to(
+      """MATCH (a), (b)
+         RETURN DISTINCT a as a, b as b""")
 
-        MATCH (a)
-        RETURN distinct a
-    */
-
-    val original = {
-      val optionalGraph = QueryGraph(
-        patternNodes = Set(IdName("a"), IdName("b")),
-        patternRelationships = Set(
-          PatternRelationship(IdName("r"), nodes = (IdName("a"), IdName("b")), dir = OUTGOING,
-            types = Seq.empty, length = SimplePatternLength)))
-      val qg = QueryGraph(patternNodes = Set(IdName("a")))
-      val projection = AggregatingQueryProjection(Map("a" -> varFor("a")), aggregationExpressions = Map.empty)
-      RegularPlannerQuery(queryGraph = qg.withAddedOptionalMatch(optionalGraph), horizon = projection)
-    }
-
-    val expected = {
-      val qg = QueryGraph(patternNodes = Set(IdName("a")), optionalMatches = Vector.empty)
-      val projection = AggregatingQueryProjection(Map("a" -> varFor("a")))
-      RegularPlannerQuery(queryGraph = qg, horizon = projection)
-    }
-
-    original.endoRewrite(rewriter) should equal(expected)
-  }
-
-  test("used optional match is not removed") {
-    /*
-        MATCH (a)
-        OPTIONAL MATCH (a)-->(b)
-        RETURN DISTINCT a, b
-
-        is equivalent to:
-
-        MATCH (a)
-        OPTIONAL MATCH (b) WHERE (a)-->(b)
-        RETURN DISTINCT a, b
-    */
-
-    val original = {
-      val optionalGraph = QueryGraph(
-        patternNodes = Set(IdName("a"), IdName("b")),
-        patternRelationships = Set(
-          PatternRelationship(IdName("r"), nodes = (IdName("a"), IdName("b")), dir = OUTGOING,
-            types = Seq.empty, length = SimplePatternLength)))
-      val qg = QueryGraph(patternNodes = Set(IdName("a")))
-      val projection = AggregatingQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("b")), aggregationExpressions = Map.empty)
-      RegularPlannerQuery(queryGraph = qg.withAddedOptionalMatch(optionalGraph), horizon = projection)
-    }
-
-    original.endoRewrite(rewriter) should equal(original)
-  }
-
-  test("unused optional pattern relationship not kept around") {
-    /*
-        MATCH (a), (b)
-        OPTIONAL MATCH (a)-->(b)
-        RETURN DISTINCT a, b
-
-        is equivalent to:
-
-        MATCH (a), (b)
-        RETURN DISTINCT a, b
-    */
-
-    val original = {
-      val optionalGraph = QueryGraph(
-        patternNodes = Set(IdName("a"), IdName("b")),
-        patternRelationships = Set(
-          PatternRelationship(IdName("r"), nodes = (IdName("a"), IdName("b")), dir = OUTGOING,
-            types = Seq.empty, length = SimplePatternLength)))
-      val qg = QueryGraph(patternNodes = Set(IdName("a"), IdName("b")))
-      val projection = AggregatingQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("b")), aggregationExpressions = Map.empty)
-      RegularPlannerQuery(queryGraph = qg.withAddedOptionalMatch(optionalGraph), horizon = projection)
-    }
-
-    val expected = {
-      val qg = QueryGraph(patternNodes = Set(IdName("a"), IdName("b")), optionalMatches = Vector.empty)
-      val projection = AggregatingQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("b")))
-      RegularPlannerQuery(queryGraph = qg, horizon = projection)
-    }
-
-
-    original.endoRewrite(rewriter) should equal(expected)
-  }
-
-  test("returning a relationship introduced in an optional match") {
-    /*
-        MATCH (a)
-        OPTIONAL MATCH (a)-[r1]->(b)
-        RETURN DISTINCT a, r1
-
-        cannot be simplified
-    */
-
-    val original = {
-      val optionalGraph = QueryGraph(
-        patternNodes = Set(IdName("a")),
-        patternRelationships = Set(
-          PatternRelationship(IdName("r"), nodes = (IdName("a"), IdName("b")), dir = OUTGOING,
-            types = Seq.empty, length = SimplePatternLength)))
-      val qg = QueryGraph(patternNodes = Set(IdName("a")))
-      val projection = AggregatingQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("r")), aggregationExpressions = Map.empty)
-      RegularPlannerQuery(queryGraph = qg.withAddedOptionalMatch(optionalGraph), horizon = projection)
-    }
-
-    original.endoRewrite(rewriter) should equal(original)
-  }
+  assert_that(
+    """MATCH (a)
+        OPTIONAL MATCH (a)-[r]->(b)
+        RETURN DISTINCT a as a, r as r""").
+    is_not_rewritten()
 
   ignore("unused optional relationship moved to predicate") { // not done
     /*
@@ -189,5 +100,34 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
 
     original.endoRewrite(rewriter) should equal(original)
   }
+
+  case class rewriteTester(originalQuery: String) {
+    def is_rewritten_to(newQuery: String): Unit =
+      test(originalQuery) {
+        val expected = getUnionQueryFrom(newQuery.stripMargin)
+        val original = getUnionQueryFrom(originalQuery.stripMargin)
+
+        val result = original.endoRewrite(rewriter)
+        assert(result === expected, "\n" + originalQuery)
+      }
+
+
+    def is_not_rewritten(): Unit = test(originalQuery) {
+      val query = getUnionQueryFrom(originalQuery.stripMargin)
+      query.endoRewrite(rewriter) should equal(query)
+    }
+  }
+
+  private def assert_that(originalQuery: String): rewriteTester = rewriteTester(originalQuery)
+
+  private def getUnionQueryFrom(query: String): UnionQuery = {
+    val ast = parseForRewriting(query)
+    val mkException = new SyntaxExceptionCreator(query, Some(DummyPosition(0)))
+    val semanticState = semanticChecker.check(query, ast, mkException)
+    val table = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
+    toUnionQuery(ast.asInstanceOf[Query], table)
+  }
+
+  private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"))
 
 }
