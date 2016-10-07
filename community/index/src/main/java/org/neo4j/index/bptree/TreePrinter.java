@@ -48,9 +48,7 @@ public class TreePrinter
             out.println();
             cursor.next( id );
 
-            Object order = treeNode.newOrder();
-            treeNode.getOrder( cursor, order );
-            cursor.next( treeNode.childAt( cursor, 0, order ) );
+            cursor.next( treeNode.childAt( cursor, 0 ) );
         }
 
         out.println( "Level " + level );
@@ -76,8 +74,6 @@ public class TreePrinter
     private static <KEY,VALUE> void printKeys( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode,
             Layout<KEY,VALUE> layout, PrintStream out )
     {
-        Object order = bTreeNode.newOrder();
-        bTreeNode.getOrder( cursor, order );
         boolean isLeaf = bTreeNode.isLeaf( cursor );
         int keyCount = bTreeNode.keyCount( cursor );
         out.print( (isLeaf ? "[" : "|") + "{" + cursor.getCurrentPageId() + "}" );
@@ -93,20 +89,20 @@ public class TreePrinter
             if ( isLeaf )
             {
                 out.print( "#" + i + ":" +
-                        bTreeNode.keyAt( cursor, key, i, order ) + "=" +
-                        bTreeNode.valueAt( cursor, value, i, order ) );
+                        bTreeNode.keyAt( cursor, key, i ) + "=" +
+                        bTreeNode.valueAt( cursor, value, i ) );
             }
             else
             {
                 out.print( "#" + i + ":" +
-                        "|" + bTreeNode.childAt( cursor, i, order ) + "|" +
-                        bTreeNode.keyAt( cursor, key, i, order ) + "|" );
+                        "|" + bTreeNode.childAt( cursor, i ) + "|" +
+                        bTreeNode.keyAt( cursor, key, i ) + "|" );
 
             }
         }
         if ( !isLeaf )
         {
-            out.print( "#" + keyCount + ":|" + bTreeNode.childAt( cursor, keyCount, order ) + "|" );
+            out.print( "#" + keyCount + ":|" + bTreeNode.childAt( cursor, keyCount ) + "|" );
         }
         out.println( (isLeaf ? "]" : "|") );
     }

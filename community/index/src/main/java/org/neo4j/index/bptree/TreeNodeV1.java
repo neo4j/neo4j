@@ -176,18 +176,7 @@ public class TreeNodeV1<KEY,VALUE> implements TreeNode<KEY,VALUE>
     // BODY METHODS
 
     @Override
-    public Void newOrder()
-    {
-        return null;
-    }
-
-    @Override
-    public void getOrder( PageCursor cursor, Object into )
-    {   // Order is implicit from physical order
-    }
-
-    @Override
-    public KEY keyAt( PageCursor cursor, KEY into, int pos, Object order )
+    public KEY keyAt( PageCursor cursor, KEY into, int pos )
     {
         cursor.setOffset( keyOffset( pos ) );
         layout.readKey( cursor, into );
@@ -195,7 +184,7 @@ public class TreeNodeV1<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Object order, byte[] tmp )
+    public void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, byte[] tmp )
     {
         insertSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize, tmp );
         cursor.setOffset( keyOffset( pos ) );
@@ -203,7 +192,7 @@ public class TreeNodeV1<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void removeKeyAt( PageCursor cursor, int pos, Object order, byte[] tmp )
+    public void removeKeyAt( PageCursor cursor, int pos, byte[] tmp )
     {
         removeSlotAt( cursor, pos, keyOffset( 0 ), keySize, tmp );
     }
@@ -244,7 +233,7 @@ public class TreeNodeV1<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public VALUE valueAt( PageCursor cursor, VALUE value, int pos, Object order )
+    public VALUE valueAt( PageCursor cursor, VALUE value, int pos )
     {
         cursor.setOffset( valueOffset( pos ) );
         layout.readValue( cursor, value );
@@ -252,40 +241,40 @@ public class TreeNodeV1<KEY,VALUE> implements TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, Object order, byte[] tmp )
+    public void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, byte[] tmp )
     {
         insertSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize, tmp );
-        setValueAt( cursor, value, pos, order );
+        setValueAt( cursor, value, pos );
     }
 
     @Override
-    public void removeValueAt( PageCursor cursor, int pos, Object order, byte[] tmp )
+    public void removeValueAt( PageCursor cursor, int pos, byte[] tmp )
     {
         removeSlotAt( cursor, pos, valueOffset( 0 ), valueSize, tmp );
     }
 
     @Override
-    public void setValueAt( PageCursor cursor, VALUE value, int pos, Object order )
+    public void setValueAt( PageCursor cursor, VALUE value, int pos )
     {
         cursor.setOffset( valueOffset( pos ) );
         layout.writeValue( cursor, value );
     }
 
     @Override
-    public long childAt( PageCursor cursor, int pos, Object order )
+    public long childAt( PageCursor cursor, int pos )
     {
         return cursor.getLong( childOffset( pos ) );
     }
 
     @Override
-    public void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, Object order, byte[] tmp )
+    public void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, byte[] tmp )
     {
         insertSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), SIZE_CHILD, tmp );
-        setChildAt( cursor, child, pos, order );
+        setChildAt( cursor, child, pos );
     }
 
     @Override
-    public void setChildAt( PageCursor cursor, long child, int pos, Object order )
+    public void setChildAt( PageCursor cursor, long child, int pos )
     {
         cursor.putLong( childOffset( pos ), child );
     }

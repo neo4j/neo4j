@@ -41,13 +41,6 @@ public class Knobs
             FeatureToggles.flag( Knobs.class, "PHYSICALLY_SORTED_ENTRIES", false );
 
     /**
-     * If {@code true} then jump list is [logicalPos] = physicalPos
-     * Else jump list is [physicalPos] = logicalPos
-     */
-    public static final boolean PHYSICALLY_SORTED_JUMP_LIST =
-            FeatureToggles.flag( Knobs.class, "PHYSICALLY_SORTED_JUMP_LIST", true );
-
-    /**
      * TRUE: when splitting a tree node two new nodes are created, leaving the old node intact
      * and simply re-links parent and sibling links to the two new nodes.
      * FALSE: when splitting a tree node only one new node will be created and the current node

@@ -50,31 +50,27 @@ public interface TreeNode<KEY,VALUE>
 
     void setLeftSibling( PageCursor cursor, long leftSiblingId );
 
-    Object newOrder();
+    KEY keyAt( PageCursor cursor, KEY into, int pos );
 
-    void getOrder( PageCursor cursor, Object into );
+    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, byte[] tmp );
 
-    KEY keyAt( PageCursor cursor, KEY into, int pos, Object order );
-
-    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Object order, byte[] tmp );
-
-    void removeKeyAt( PageCursor cursor, int pos, Object order, byte[] tmp );
+    void removeKeyAt( PageCursor cursor, int pos, byte[] tmp );
 
     // no setKeyAt since we only insert or remove keys, when they're there they're not changed
 
-    VALUE valueAt( PageCursor cursor, VALUE value, int pos, Object order );
+    VALUE valueAt( PageCursor cursor, VALUE value, int pos );
 
-    void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, Object order, byte[] tmp );
+    void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, byte[] tmp );
 
-    void removeValueAt( PageCursor cursor, int pos, Object order, byte[] tmp );
+    void removeValueAt( PageCursor cursor, int pos, byte[] tmp );
 
-    void setValueAt( PageCursor cursor, VALUE value, int pos, Object order );
+    void setValueAt( PageCursor cursor, VALUE value, int pos );
 
-    long childAt( PageCursor cursor, int pos, Object order );
+    long childAt( PageCursor cursor, int pos );
 
-    void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, Object order, byte[] tmp );
+    void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, byte[] tmp );
 
-    void setChildAt( PageCursor cursor, long child, int pos, Object order );
+    void setChildAt( PageCursor cursor, long child, int pos );
 
     // no removeChildAt since we don't do merge and stuff yet
 

@@ -87,8 +87,6 @@ public class IndexModifier<KEY,VALUE>
     private final Layout<KEY,VALUE> layout;
     private final KEY readKey;
     private final VALUE readValue;
-    // Cache during current modifications for order of items in tree nodes
-    private final Object[] orders = new Object[20];
 
     public IndexModifier( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
     {
@@ -103,10 +101,6 @@ public class IndexModifier<KEY,VALUE>
         this.leafSplitResult.primKey = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
-        for ( int i = 0; i < orders.length; i++ )
-        {
-            orders[i] = bTreeNode.newOrder();
-        }
     }
 
     /**
@@ -134,11 +128,10 @@ public class IndexModifier<KEY,VALUE>
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
-        bTreeNode.getOrder( cursor, orders[level] );
-        int pos = positionOf( search( cursor, bTreeNode, key, orders[level], readKey, keyCount ) );
+        int pos = positionOf( search( cursor, bTreeNode, key, readKey, keyCount ) );
 
         long currentId = cursor.getCurrentPageId();
-        cursor.next( bTreeNode.childAt( cursor, pos, orders[level] ) );
+        cursor.next( bTreeNode.childAt( cursor, pos ) );
 
         SplitResult<KEY> split = insert( cursor, key, value, amender, options, level + 1 );
 
@@ -149,7 +142,7 @@ public class IndexModifier<KEY,VALUE>
             // update left child (key remains and pos is known by this very method)
             if ( Knobs.SPLIT_KEEPS_SOURCE_INTACT )
             {
-                bTreeNode.setChildAt( cursor, split.left, pos, orders[level] );
+                bTreeNode.setChildAt( cursor, split.left, pos );
             }
             return insertInInternal( cursor, currentId, keyCount, split.primKey, split.right, options, level );
         }
@@ -177,12 +170,12 @@ public class IndexModifier<KEY,VALUE>
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
         {
             // No overflow
-            int pos = positionOf( search( cursor, bTreeNode, primKey, orders[level], readKey, keyCount ) );
+            int pos = positionOf( search( cursor, bTreeNode, primKey, readKey, keyCount ) );
 
-            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, orders[level], tmp );
+            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, tmp );
             // NOTE pos+1 since we never insert a new child before child(0) because its key is really
             // the one from the parent.
-            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, orders[level], tmp );
+            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, tmp );
 
             // Increase key count
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
@@ -218,7 +211,7 @@ public class IndexModifier<KEY,VALUE>
         long newRight = idProvider.acquireNewId();
 
         // Find position to insert new key
-        int pos = positionOf( search( cursor, bTreeNode, primKey, orders[level], readKey, keyCount ) );
+        int pos = positionOf( search( cursor, bTreeNode, primKey, readKey, keyCount ) );
 
         // Arrays to temporarily store keys and children in sorted order.
         bTreeNode.readKeysWithInsertRecordInPosition( cursor,
@@ -327,18 +320,17 @@ public class IndexModifier<KEY,VALUE>
             Modifier.Options options, int level ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
-        bTreeNode.getOrder( cursor, orders[level] );
-        int search = search( cursor, bTreeNode, key, orders[level], readKey, keyCount );
+        int search = search( cursor, bTreeNode, key, readKey, keyCount );
         int pos = positionOf( search );
         if ( isHit( search ) )
         {
             // this key already exists, what shall we do? ask the amender
-            bTreeNode.valueAt( cursor, readValue, pos-1, orders[level] );
+            bTreeNode.valueAt( cursor, readValue, pos-1 );
             VALUE amendedValue = amender.amend( readValue, value );
             if ( amendedValue != null )
             {
                 // simple, just write the amended value right in there
-                bTreeNode.setValueAt( cursor, amendedValue, pos-1, orders[level] );
+                bTreeNode.setValueAt( cursor, amendedValue, pos-1 );
                 return null; // No split has occurred
             }
             // else fall-through to normal insert
@@ -347,8 +339,8 @@ public class IndexModifier<KEY,VALUE>
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
             // No overflow, insert key and value
-            bTreeNode.insertKeyAt( cursor, key, pos, keyCount, orders[level], tmp );
-            bTreeNode.insertValueAt( cursor, value, pos, keyCount, orders[level], tmp );
+            bTreeNode.insertKeyAt( cursor, key, pos, keyCount, tmp );
+            bTreeNode.insertValueAt( cursor, value, pos, keyCount, tmp );
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
 
             return null; // No split has occurred
@@ -434,7 +426,7 @@ public class IndexModifier<KEY,VALUE>
         // 5. Write new key/values into L
 
         // Position where newKey / newValue is to be inserted
-        int pos = positionOf( search( cursor, bTreeNode, newKey, orders[level], readKey, keyCount ) );
+        int pos = positionOf( search( cursor, bTreeNode, newKey, readKey, keyCount ) );
 
         // arrays to temporarily store all keys and values
         bTreeNode.readKeysWithInsertRecordInPosition( cursor,
@@ -462,7 +454,7 @@ public class IndexModifier<KEY,VALUE>
         }
         else
         {
-            bTreeNode.keyAt( cursor, split.primKey, pos < middle ? middle - 1 : middle, orders[level] );
+            bTreeNode.keyAt( cursor, split.primKey, pos < middle ? middle - 1 : middle );
         }
 
         {   // Update new right
@@ -527,21 +519,19 @@ public class IndexModifier<KEY,VALUE>
             return removeFromLeaf( cursor, key, level + 1 );
         }
 
-        bTreeNode.getOrder( cursor, orders[level] );
         int keyCount = bTreeNode.keyCount( cursor );
-        int search = search( cursor, bTreeNode, key, orders[level], readKey, keyCount );
+        int search = search( cursor, bTreeNode, key, readKey, keyCount );
         int pos = positionOf( search );
-        cursor.next( bTreeNode.childAt( cursor, pos, orders[level] ) );
+        cursor.next( bTreeNode.childAt( cursor, pos ) );
         return remove( cursor, key, level + 1 );
     }
 
     private VALUE removeFromLeaf( PageCursor cursor, KEY key, int level )
     {
         int keyCount = bTreeNode.keyCount( cursor );
-        bTreeNode.getOrder( cursor, orders[level] );
 
         // No overflow, insert key and value
-        int search = search( cursor, bTreeNode, key, orders[level], readKey, keyCount );
+        int search = search( cursor, bTreeNode, key, readKey, keyCount );
         int pos = positionOf( search );
         boolean hit = isHit( search );
         if ( !hit )
@@ -551,9 +541,9 @@ public class IndexModifier<KEY,VALUE>
         pos--;
 
         // Remove key/value
-        bTreeNode.removeKeyAt( cursor, pos, orders[level], tmp );
-        bTreeNode.valueAt( cursor, readValue, pos, orders[level] );
-        bTreeNode.removeValueAt( cursor, pos, orders[level], tmp );
+        bTreeNode.removeKeyAt( cursor, pos, tmp );
+        bTreeNode.valueAt( cursor, readValue, pos );
+        bTreeNode.removeValueAt( cursor, pos, tmp );
 
         // Decrease key count
         bTreeNode.setKeyCount( cursor, keyCount - 1 );

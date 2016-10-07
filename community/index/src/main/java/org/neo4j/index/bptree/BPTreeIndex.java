@@ -224,7 +224,6 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         int pos;
         int level = 0;
         long rightSibling;
-        Object order = bTreeNode.newOrder();
         do
         {
             do
@@ -232,10 +231,9 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 isInternal = bTreeNode.isInternal( cursor );
                 // Find the left-most key within from-range
                 keyCount = bTreeNode.keyCount( cursor );
-                bTreeNode.getOrder( cursor, order );
                 pos = 0;
                 rightSibling = bTreeNode.rightSibling( cursor );
-                int search = IndexSearch.search( cursor, bTreeNode, fromInclusive, order, key, keyCount );
+                int search = IndexSearch.search( cursor, bTreeNode, fromInclusive, key, keyCount );
                 pos = IndexSearch.positionOf( search );
                 if ( IndexSearch.isHit( search ) )
                 {
@@ -243,7 +241,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 }
                 if ( isInternal )
                 {
-                    childId = bTreeNode.childAt( cursor, pos, order );
+                    childId = bTreeNode.childAt( cursor, pos );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -299,8 +297,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
-        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout, pos - 1,
-                order, keyCount );
+        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout, pos - 1, keyCount );
     }
 
     @Override
@@ -387,12 +384,10 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 cursor.next( newRootId );
 
                 bTreeNode.initializeInternal( cursor );
-                Object order = bTreeNode.newOrder();
-                bTreeNode.getOrder( cursor, order );
-                bTreeNode.insertKeyAt( cursor, split.primKey, 0, 0, order, tmp );
+                bTreeNode.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
                 bTreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, split.left, 0, order );
-                bTreeNode.setChildAt( cursor, split.right, 1, order );
+                bTreeNode.setChildAt( cursor, split.left, 0 );
+                bTreeNode.setChildAt( cursor, split.right, 1 );
                 rootId = newRootId;
             }
         }

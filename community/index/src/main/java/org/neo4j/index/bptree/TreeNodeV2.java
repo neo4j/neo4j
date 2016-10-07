@@ -172,30 +172,9 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
     // BODY METHODS
 
     @Override
-    public Object newOrder()
+    public KEY keyAt( PageCursor cursor, KEY into, int pos )
     {
-        return new ItemOrder( max( internalMaxKeyCount, leafMaxKeyCount ) );
-    }
-
-    @Override
-    public void getOrder( PageCursor cursor, Object into )
-    {
-        if ( Knobs.PHYSICALLY_SORTED_JUMP_LIST )
-        {
-            // We don't need to interpret the order
-        }
-        else
-        {
-            ItemOrder order = (ItemOrder) into;
-            cursor.setOffset( jumpOffset( 0 ) );
-            order.read( cursor, keyCount( cursor ) );
-        }
-    }
-
-    @Override
-    public KEY keyAt( PageCursor cursor, KEY into, int pos, Object order )
-    {
-        int physicalPos = getPhysicalPos( cursor, pos, order );
+        int physicalPos = getPhysicalPos( cursor, pos );
         cursor.setOffset( keyOffset( physicalPos ) );
         layout.readKey( cursor, into );
         return into;
@@ -214,19 +193,12 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
      * @param pos logical pos.
      * @return pos translated into physical pos in this tree node-
      */
-    private int getPhysicalPos( PageCursor cursor, int pos, Object theOrder )
+    private int getPhysicalPos( PageCursor cursor, int pos )
     {
-        ItemOrder order = (ItemOrder) theOrder;
-
-        if ( Knobs.PHYSICALLY_SORTED_JUMP_LIST )
-        {
-            return cursor.getByte( jumpOffset( pos ) ) & 0xFF;
-        }
-
-        return order.physicalPosition( pos );
+        return cursor.getByte( jumpOffset( pos ) ) & 0xFF;
     }
 
-    private int getPhysicalChildPos( PageCursor cursor, int pos, Object order )
+    private int getPhysicalChildPos( PageCursor cursor, int pos )
     {
         int physicalPos;
         if ( pos == 0 )
@@ -240,7 +212,7 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
             // For all other children we use the jump list (although using the key to the left
             // the pos will then be one bigger than the one for the key, so use pos - 1 and then
             // the physical pos you get back we add + 1 to, then we're good, right?
-            physicalPos = getPhysicalPos( cursor, pos - 1, order ) + 1;
+            physicalPos = getPhysicalPos( cursor, pos - 1 ) + 1;
         }
         return physicalPos;
     }
@@ -250,100 +222,91 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
         return STATIC_HEADER_SIZE + pos * SIZE_JUMP_ITEM;
     }
 
-    private void setPhysicalPos( PageCursor cursor, int pos, int physicalPos, Object theOrder, byte[] tmp )
+    private void setPhysicalPos( PageCursor cursor, int pos, int physicalPos, byte[] tmp )
     {
         assert physicalPos <= 0xFF;
 
-        if ( Knobs.PHYSICALLY_SORTED_JUMP_LIST )
-        {
-            // TODO ASSUMPTION: about keyCount being physical pos
-            int keyCount = physicalPos;
-            cursor.setOffset( jumpOffset( pos ) );
-            int length = (keyCount - pos) * SIZE_JUMP_ITEM;
-            cursor.getBytes( tmp, 0, length );
-            cursor.setOffset( jumpOffset( pos + 1 ) );
-            cursor.putBytes( tmp, 0, length );
-            cursor.putByte( jumpOffset( pos ), (byte) physicalPos );
-        }
-        else
-        {
-            cursor.putByte( jumpOffset( physicalPos ), (byte) pos );
-            ItemOrder order = (ItemOrder) theOrder;
-            order.add( physicalPos, pos );
-        }
+        // TODO ASSUMPTION: about keyCount being physical pos
+        int keyCount = physicalPos;
+        cursor.setOffset( jumpOffset( pos ) );
+        int length = (keyCount - pos) * SIZE_JUMP_ITEM;
+        cursor.getBytes( tmp, 0, length );
+        cursor.setOffset( jumpOffset( pos + 1 ) );
+        cursor.putBytes( tmp, 0, length );
+        cursor.putByte( jumpOffset( pos ), (byte) physicalPos );
     }
 
     @Override
-    public void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Object theOrder, byte[] tmp )
+    public void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, byte[] tmp )
     {
         // TODO dangerous assumption in here: we call this BEFORE incrementing keyCount and only
         // when inserting a new key/value entry. We'll use keyCount as the physical position
         // FIXME this doesn't work for internal nodes since it'll have a the extra child to the right
 
         int physicalPos = keyCount;
-        setPhysicalPos( cursor, pos, physicalPos, theOrder, tmp );
+        setPhysicalPos( cursor, pos, physicalPos, tmp );
         cursor.setOffset( keyOffset( physicalPos ) );
         layout.writeKey( cursor, key );
     }
 
     @Override
-    public void removeKeyAt( PageCursor cursor, int pos, Object order, byte[] tmp )
+    public void removeKeyAt( PageCursor cursor, int pos, byte[] tmp )
     {
         // TODO Simply mark it as not in use here
     }
 
     @Override
-    public VALUE valueAt( PageCursor cursor, VALUE value, int pos, Object order )
+    public VALUE valueAt( PageCursor cursor, VALUE value, int pos )
     {
-        int physicalPos = getPhysicalPos( cursor, pos, order );
+        int physicalPos = getPhysicalPos( cursor, pos );
         cursor.setOffset( valueOffset( physicalPos ) );
         layout.readValue( cursor, value );
         return value;
     }
 
     @Override
-    public void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, Object order, byte[] tmp )
+    public void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, byte[] tmp )
     {
         // TODO we'd really like to set key/value and key/child pairs together in this TreeNode implementation,
         // because they live together anyway.
         // TODO ASSUMPTION: physical position have already been assigned and now exists in the order
         // i.e. insertKeyAt has already been called, i.e. this is exactly like setValueAt
-        setValueAt( cursor, value, pos, order );
+        setValueAt( cursor, value, pos );
     }
 
     @Override
-    public void setValueAt( PageCursor cursor, VALUE value, int pos, Object order )
+    public void setValueAt( PageCursor cursor, VALUE value, int pos )
     {
-        int physicalPos = getPhysicalPos( cursor, pos, order );
+        int physicalPos = getPhysicalPos( cursor, pos );
         cursor.setOffset( valueOffset( physicalPos ) );
         layout.writeValue( cursor, value );
     }
 
     @Override
-    public void removeValueAt( PageCursor cursor, int pos, Object order, byte[] tmp )
+    public void removeValueAt( PageCursor cursor, int pos, byte[] tmp )
     {
         throw new UnsupportedOperationException( "Unsupported a.t.m." );
     }
 
     @Override
-    public long childAt( PageCursor cursor, int pos, Object order )
+    public long childAt( PageCursor cursor, int pos )
     {
-        int physicalPos = getPhysicalChildPos( cursor, pos, order );
+        int physicalPos = getPhysicalChildPos( cursor, pos );
         return get5ByteLong( cursor, childOffset( physicalPos ) );
     }
 
     @Override
-    public void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, Object order, byte[] tmp )
+    public void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, byte[] tmp )
     {
-        int physicalPos = getPhysicalChildPos( cursor, pos, order );
+        int physicalPos = getPhysicalChildPos( cursor, pos );
         cursor.setOffset( childOffset( physicalPos ) );
         writeChild( cursor, child );
     }
 
     @Override
-    public void setChildAt( PageCursor cursor, long child, int pos, Object order )
+    public void setChildAt( PageCursor cursor, long child, int pos )
     {
-        int physicalPos = getPhysicalChildPos( cursor, pos, order );
+        int physicalPos = getPhysicalChildPos( cursor, pos );
         put5ByteLong( cursor, childOffset( physicalPos ), child );
     }
 
@@ -439,15 +402,13 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
             int insertPosition, int totalNumberOfRecords, int recordSize, int baseRecordOffset, byte[] into,
             boolean childPos /*TODO remove this silly thing*/ )
     {
-        Object order = newOrder();
-        getOrder( cursor, order );
         for ( int i = 0, pos = 0, intoOffset = 0; i < totalNumberOfRecords; i++ )
         {
             if ( i != insertPosition )
             {
                 int physicalPos = childPos
-                        ? getPhysicalChildPos( cursor, pos, order )
-                        : getPhysicalPos( cursor, pos, order );
+                        ? getPhysicalChildPos( cursor, pos )
+                        : getPhysicalPos( cursor, pos );
                 cursor.setOffset( baseRecordOffset + physicalPos * recordSize );
                 cursor.getBytes( into, intoOffset, recordSize );
                 pos++;
@@ -501,10 +462,9 @@ public class TreeNodeV2<KEY,VALUE> implements TreeNode<KEY,VALUE>
         // Write the keys + jump list items
         writeAll( cursor, source, sourcePos, targetPos, count, keyOffset( 0 ), keySize );
         // TODO ASSUMPTION: coming in here, the keys are ordered
-        ItemOrder order = (ItemOrder) newOrder();
         for ( int i = 0; i < count; i++ )
         {
-            setPhysicalPos( cursor, i, i, order, source );
+            setPhysicalPos( cursor, i, i, source );
         }
     }
 

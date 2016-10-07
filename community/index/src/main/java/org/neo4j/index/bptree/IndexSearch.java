@@ -43,7 +43,7 @@ public class IndexSearch
      * @param key       long[] of length 2 where key[0] is id and key[1] is property value
      * @return          first position i for which Node.KEY_COMPARATOR.compare( key, Node.keyAt( i ) <= 0;
      */
-    public static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY key, Object order,
+    public static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY key,
             KEY readKey, int keyCount )
     {
         if ( keyCount == 0 )
@@ -58,7 +58,7 @@ public class IndexSearch
 
         // Compare key with lower and higher and sort out special cases
         Comparator<KEY> comparator = bTreeNode.keyComparator();
-        int comparedHigher = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher, order ) );
+        int comparedHigher = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) );
         if ( comparedHigher >= 0 )
         {
             pos = keyCount;
@@ -67,7 +67,7 @@ public class IndexSearch
                 hit = true;
             }
         }
-        else if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower, order ) ) < 0 )
+        else if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower ) ) < 0 )
         {
             pos = 0;
         }
@@ -80,7 +80,7 @@ public class IndexSearch
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                switch ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, order ) ) )
+                switch ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) )
                 {
                 case -1:
                     higher = pos;
