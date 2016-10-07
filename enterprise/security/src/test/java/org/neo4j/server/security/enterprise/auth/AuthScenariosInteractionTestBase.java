@@ -300,7 +300,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         S henrik = neo.login( "Henrik", "bar" );
         neo.assertAuthenticated( henrik );
         assertEmpty( adminSubject, "CALL dbms.security.deleteUser('Henrik')" );
-        testSessionKilled( henrik );
+        neo.assertSessionKilled( henrik );
         henrik = neo.login( "Henrik", "bar" );
         neo.assertInitFailed( henrik );
     }
@@ -534,7 +534,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         testSuccessfulRead( subject, 3 );
         assertEmpty( adminSubject, "CALL dbms.security.suspendUser('Henrik')" );
 
-        testSessionKilled( subject );
+        neo.assertSessionKilled( subject );
 
         subject = neo.login( "Henrik", "bar" );
         neo.assertInitFailed( subject );

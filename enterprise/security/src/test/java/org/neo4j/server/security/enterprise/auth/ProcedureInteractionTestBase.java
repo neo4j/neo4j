@@ -309,28 +309,6 @@ public abstract class ProcedureInteractionTestBase<S>
                 r -> assertKeyIs( r, "value", "OK" ) );
     }
 
-    void testSessionKilled( S subject )
-    {
-        if ( IS_BOLT )
-        {
-            // After the connection has been terminated, attempts to receive
-            // data will result in an IOException with the message below...
-            String unixErrorMessage = "Failed to read 2 bytes, missing 2 bytes. Buffer: 00 00";
-            // ...but only on Unix. If we're on Windows, we get...
-            String windowsErrorMessage = "Software caused connection abort: recv failed";
-            // TODO: This whole method is probably ripe for a bit of refactoring.
-            assertFail( subject, "MATCH (n:Node) RETURN count(n)", unixErrorMessage, windowsErrorMessage );
-        }
-        else if ( IS_EMBEDDED )
-        {
-            assertFail( subject, "MATCH (n:Node) RETURN count(n)", "Read operations are not allowed" );
-        }
-        else
-        {
-            assertFail( subject, "MATCH (n:Node) RETURN count(n)", "Invalid username or password" );
-        }
-    }
-
     void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )
     {
         StringBuilder builder = new StringBuilder(128);

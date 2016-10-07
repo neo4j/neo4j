@@ -216,14 +216,18 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.active_realms, "plugin-TestCacheableAdminAuthPlugin" );
         });
 
-        // Then
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
+        assertReadSucceeds();
 
+        // When
         client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
+                run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(),
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ), pullAll() ) );
+        assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
     }
