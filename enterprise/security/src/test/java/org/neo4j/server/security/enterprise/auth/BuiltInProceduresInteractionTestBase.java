@@ -376,76 +376,50 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         tx1.closeAndAssertSuccess();
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldKillQueryAsAdmin() throws Throwable
     {
-        DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
-        ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
-        String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
-        String q2 = read2.execute( threading, readSubject, "UNWIND [4,5,6] AS y RETURN y" );
-        latch.startAndWaitForAllToStart();
-
-        String id1 = extractQueryId( q1 );
-
-        assertSuccess(
-                adminSubject,
-                "CALL dbms.killQuery('" + id1 + "') YIELD username " +
-                "RETURN count(username) AS count, username", r ->
-                {
-                    List<Map<String,Object>> actual = r.stream().collect( toList() );
-                    Matcher<Map<String,Object>> mapMatcher = allOf(
-                            (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
-                            (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
-                    );
-                    assertThat( actual, matchesOneToOneInAnyOrder( mapMatcher ) );
-                }
-            );
-
-        latch.finishAndWaitForAllToFinish();
-        read1.closeAndAssertTransactionTermination();
-        read2.closeAndAssertSuccess();
-
-        assertEmpty(
-            adminSubject,
-            "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
+        executeTwoQueriesAndKillTheFirst( readSubject, readSubject, adminSubject );
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldKillQueryAsUser() throws Throwable
     {
+        executeTwoQueriesAndKillTheFirst( readSubject, writeSubject, readSubject );
+    }
+
+    private void executeTwoQueriesAndKillTheFirst( S executor1, S executor2, S killer ) throws Throwable
+    {
         DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransaction<S> read = new ThreadedTransaction<>( neo, latch );
-        ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
-        String q1 = read.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
-        String q2 = write.execute( threading, writeSubject, "UNWIND [4,5,6] AS y RETURN y" );
+        ThreadedTransaction<S> tx1 = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<S> tx2 = new ThreadedTransaction<>( neo, latch );
+        String q1 = tx1.execute( threading, executor1, "UNWIND [1,2,3] AS x RETURN x" );
+        tx2.execute( threading, executor2, "UNWIND [4,5,6] AS y RETURN y" );
         latch.startAndWaitForAllToStart();
 
         String id1 = extractQueryId( q1 );
 
         assertSuccess(
-                readSubject,
+                killer,
                 "CALL dbms.killQuery('" + id1 + "') YIELD username " +
                 "RETURN count(username) AS count, username", r ->
                 {
                     List<Map<String,Object>> actual = r.stream().collect( toList() );
+                    @SuppressWarnings( "unchecked" )
                     Matcher<Map<String,Object>> mapMatcher = allOf(
                             (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
                             (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
                     );
                     assertThat( actual, matchesOneToOneInAnyOrder( mapMatcher ) );
                 }
-            );
+        );
 
         latch.finishAndWaitForAllToFinish();
-        read.closeAndAssertTransactionTermination();
-        write.closeAndAssertSuccess();
+        tx1.closeAndAssertTransactionTermination();
+        tx2.closeAndAssertSuccess();
 
-        assertEmpty(
-            adminSubject,
-            "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
+        assertEmpty( adminSubject,
+                "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
     }
 
     @Test
