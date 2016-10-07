@@ -832,6 +832,25 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertFail( subject, "CALL dbms.security.changeUserPassword('Craig', '123')", PERMISSION_DENIED );
     }
 
+    // OTHER TESTS
+
+    @Test
+    public void shouldNotTryToCreateTokensWhenReading()
+    {
+        assertEmpty( adminSubject, "CREATE (:MyNode)" );
+
+        assertSuccess( readSubject, "MATCH (n:MyNode) WHERE n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
+                r -> assertKeyIs( r, "c", "0" ) );
+        assertFail( readSubject, "MATCH (n:MyNode) SET n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
+                WRITE_OPS_NOT_ALLOWED );
+        assertFail( readSubject, "MATCH (n:MyNode) SET n:Foo RETURN toString(count(*)) AS c",
+                WRITE_OPS_NOT_ALLOWED );
+        assertSuccess( writeSubject, "MATCH (n:MyNode) SET n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
+                r -> assertKeyIs( r, "c", "1" ) );
+        assertSuccess( readSubject, "MATCH (n:MyNode) WHERE n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
+                r -> assertKeyIs( r, "c", "1" ) );
+    }
+
     @Override
     protected ThreadingRule threading()
     {

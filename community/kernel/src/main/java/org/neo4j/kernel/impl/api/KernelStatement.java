@@ -108,6 +108,12 @@ public class KernelStatement implements TxStateHolder, Statement
     public TokenWriteOperations tokenWriteOperations()
     {
         accessCapability.assertCanWrite();
+
+        if ( !transaction.mode().allowsWrites() )
+        {
+            throw transaction.mode().onViolation(
+                    String.format( "Write operations are not allowed for '%s'.", transaction.mode().name() ) );
+        }
         return facade;
     }
 
