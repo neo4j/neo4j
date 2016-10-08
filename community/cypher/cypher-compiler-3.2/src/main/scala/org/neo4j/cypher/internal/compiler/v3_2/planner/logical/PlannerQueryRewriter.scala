@@ -43,9 +43,21 @@ case object PlannerQueryRewriter extends Rewriter {
 
       val optionalMatches = graph.optionalMatches.flatMapWithTail {
         (optionalGraph: QueryGraph, tail: Seq[QueryGraph]) =>
-          val allDeps = tail.flatMap(_.argumentIds).toSet ++ expressionDeps -- graph.coveredIds
+
+          //The dependencies of an optional match are:
+          val allDeps =
+          // dependencies from optional matches listed later in the query
+            tail.flatMap(g => g.argumentIds ++ g.selections.variableDependencies).toSet ++
+              // any dependencies from the next horizon
+              expressionDeps ++
+              // dependencies of predicates used in the optional match
+              optionalGraph.selections.variableDependencies --
+              // But we don't need to solve variables already present
+              graph.coveredIds
+
           val mustInclude = allDeps -- optionalGraph.argumentIds
           val mustKeep = optionalGraph.smallestGraphIncluding(mustInclude)
+
           if (mustKeep.isEmpty)
             None
           else

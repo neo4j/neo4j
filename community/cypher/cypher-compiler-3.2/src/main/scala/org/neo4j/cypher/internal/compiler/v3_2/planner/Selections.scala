@@ -97,6 +97,8 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
     }
   }
 
+  def variableDependencies: Set[IdName] = predicates.flatMap(_.dependencies)
+
   def labelsOnNode(id: IdName): Set[LabelName] = labelInfo.getOrElse(id, Set.empty)
 
   lazy val labelInfo: Map[IdName, Set[LabelName]] =
