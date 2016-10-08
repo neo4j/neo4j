@@ -73,7 +73,6 @@ import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
@@ -459,7 +458,7 @@ public abstract class ProcedureInteractionTestBase<S>
                             neo.getLocalGraph().getDependencyResolver()
                     ).stream()
                             .filter( tx -> !tx.terminationReason().isPresent() )
-                            .map( tx -> getUsernameFromAccessMode( tx.mode() ) )
+                            .map( tx -> tx.mode().username() )
                 ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
     }
 

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.security;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
 
 public class OverriddenAccessMode implements AccessMode
 {
@@ -80,35 +79,16 @@ public class OverriddenAccessMode implements AccessMode
         }
     }
 
+    @Override
     public String username()
     {
-        return getUsernameFromAccessMode( originalMode );
+        return originalMode.username();
     }
 
-    // TODO: Move this to AccessMode interface with default implementation to support recursive case
-    //       OR move allowsProcedureWith() to AccessMode and override that here with recursive implementation
+    @Override
     public AccessMode getOriginalAccessMode()
     {
-        return originalMode;
+        return originalMode.getOriginalAccessMode();
     }
 
-    public static String getUsernameFromAccessMode( AccessMode accessMode )
-    {
-        if ( accessMode instanceof AuthSubject )
-        {
-            return ((AuthSubject) accessMode).username();
-        }
-        else if ( accessMode instanceof OverriddenAccessMode )
-        {
-            return ((OverriddenAccessMode) accessMode).username();
-        }
-        else if ( accessMode instanceof AccessModeSnapshot )
-        {
-            return getUsernameFromAccessMode( ((AccessModeSnapshot) accessMode).getOriginalAccessMode() );
-        }
-        else
-        {
-            return ""; // Should never clash with a valid username
-        }
-    }
 }

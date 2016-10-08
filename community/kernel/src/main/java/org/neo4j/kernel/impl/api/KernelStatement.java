@@ -42,8 +42,6 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
-import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
-
 /**
  * A resource efficient implementation of {@link Statement}. Designed to be reused within a
  * {@link KernelTransactionImplementation} instance, even across transactions since this instances itself
@@ -216,7 +214,7 @@ public class KernelStatement implements TxStateHolder, Statement
 
     final Optional<String> username()
     {
-        String username = getUsernameFromAccessMode( transaction.mode() );
+        String username = transaction.mode().username();
         return Optional.of( username );
     }
 

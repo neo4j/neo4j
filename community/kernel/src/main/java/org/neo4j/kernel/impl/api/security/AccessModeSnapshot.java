@@ -29,10 +29,12 @@ public class AccessModeSnapshot implements AccessMode
     private final boolean allowsSchemaWrites;
     private final boolean overrideOriginalMode;
 
-    private final AccessMode accessMode;
+    private final AccessMode originalMode;
 
     public static AccessMode createAccessModeSnapshot( AccessMode accessMode )
     {
+        // TODO: Use flyweight pattern instead of always creating new objects, when we have a proper
+        //       security context and do not need to obtain the original mode through this object
         return new AccessModeSnapshot( accessMode );
     }
 
@@ -43,9 +45,12 @@ public class AccessModeSnapshot implements AccessMode
         allowsSchemaWrites = accessMode.allowsSchemaWrites();
         overrideOriginalMode = accessMode.overrideOriginalMode();
 
-        // We use this for onViolation() and name()
-        this.accessMode = accessMode;
+        // We use this for delegation of all the remaining methods
+        this.originalMode = accessMode;
     }
+
+    //---------------------------------------
+    // Snapshot permissions
 
     @Override
     public boolean allowsReads()
@@ -71,21 +76,30 @@ public class AccessModeSnapshot implements AccessMode
         return overrideOriginalMode;
     }
 
+    //---------------------------------------
+    // Delegate remaining methods to original
+
     @Override
     public AuthorizationViolationException onViolation( String msg )
     {
-        return accessMode.onViolation( msg );
+        return originalMode.onViolation( msg );
     }
 
     @Override
     public String name()
     {
-        return accessMode.name();
+        return originalMode.name();
     }
 
-    // TODO: Move this to AccessMode interface with default implementation to support recursive case
+    @Override
+    public String username()
+    {
+        return originalMode.username();
+    }
+
+    @Override
     public AccessMode getOriginalAccessMode()
     {
-        return accessMode;
+        return originalMode.getOriginalAccessMode();
     }
 }

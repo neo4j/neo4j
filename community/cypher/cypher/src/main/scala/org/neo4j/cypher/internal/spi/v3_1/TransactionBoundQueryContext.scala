@@ -53,7 +53,6 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.security.{AccessMode, AuthSubject}
-import org.neo4j.kernel.impl.api.security.{AccessModeSnapshot, OverriddenAccessMode}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -588,17 +587,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
 
-  private def originalAccessMode: Object = {
-    // TODO: Write a test for recursive procedure calls with allowed annotation
-    transactionalContext.accessMode match {
-      case a: AccessModeSnapshot => a.getOriginalAccessMode
-      case a: OverriddenAccessMode => a.getOriginalAccessMode
-      case a => a
-    }
-  }
-
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall = originalAccessMode match {
+    val call: KernelProcedureCall = transactionalContext.accessMode.getOriginalAccessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         transactionalContext.statement.procedureCallOperations.procedureCallRead(_, _, AccessMode.Static.OVERRIDE_READ)
       case _ =>
@@ -608,7 +598,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall = originalAccessMode match {
+    val call: KernelProcedureCall = transactionalContext.accessMode.getOriginalAccessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         transactionalContext.statement.procedureCallOperations.procedureCallWrite(_, _, AccessMode.Static.OVERRIDE_WRITE)
       case _ =>
@@ -618,7 +608,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall = originalAccessMode match {
+    val call: KernelProcedureCall = transactionalContext.accessMode.getOriginalAccessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         transactionalContext.statement.procedureCallOperations.procedureCallSchema(_, _, AccessMode.Static.OVERRIDE_SCHEMA)
       case _ =>

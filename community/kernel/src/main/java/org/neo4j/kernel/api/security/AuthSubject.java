@@ -57,6 +57,7 @@ public interface AuthSubject extends AccessMode
     /**
      * @return A string representing the primary principal of this subject
      */
+    @Override
     String username();
 
     /**

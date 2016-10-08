@@ -366,4 +366,14 @@ public interface AccessMode
     boolean overrideOriginalMode();
     AuthorizationViolationException onViolation( String msg );
     String name();
+
+    default String username()
+    {
+        return ""; // Should never clash with a valid username
+    }
+
+    default AccessMode getOriginalAccessMode()
+    {
+        return this;
+    }
 }
