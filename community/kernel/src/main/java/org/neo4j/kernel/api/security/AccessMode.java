@@ -53,12 +53,6 @@ public interface AccessMode
                     {
                         return false;
                     }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
-                    }
                 },
 
         /** No reading or writing allowed because of expired credentials. */
@@ -132,12 +126,6 @@ public interface AccessMode
                     {
                         return false;
                     }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
-                    }
                 },
 
         /** Allows writing data */
@@ -165,12 +153,6 @@ public interface AccessMode
                     public boolean overrideOriginalMode()
                     {
                         return false;
-                    }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
                     }
                 },
 
@@ -200,12 +182,6 @@ public interface AccessMode
                     {
                         return false;
                     }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
-                    }
                 },
 
         /** Allows all operations. */
@@ -233,12 +209,6 @@ public interface AccessMode
                     public boolean overrideOriginalMode()
                     {
                         return false;
-                    }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
                     }
                 },
 
@@ -271,12 +241,6 @@ public interface AccessMode
             public boolean overrideOriginalMode()
             {
                 return true;
-            }
-
-            @Override
-            public AuthorizationViolationException onViolation( String msg )
-            {
-                return new AuthorizationViolationException( msg );
             }
         },
 
@@ -311,12 +275,6 @@ public interface AccessMode
             {
                 return true;
             }
-
-            @Override
-            public AuthorizationViolationException onViolation( String msg )
-            {
-                return new AuthorizationViolationException( msg );
-            }
         },
 
         /**
@@ -350,15 +308,20 @@ public interface AccessMode
             {
                 return true;
             }
+        };
 
-            @Override
-            public AuthorizationViolationException onViolation( String msg )
-            {
-                return new AuthorizationViolationException( msg );
-            }
-        },
-
+        @Override
+        public AuthorizationViolationException onViolation( String msg )
+        {
+            return new AuthorizationViolationException( msg );
         }
+
+        @Override
+        public AccessMode getSnapshot()
+        {
+            return this;
+        }
+    }
 
     boolean allowsReads();
     boolean allowsWrites();
@@ -376,4 +339,6 @@ public interface AccessMode
     {
         return this;
     }
+
+    AccessMode getSnapshot();
 }

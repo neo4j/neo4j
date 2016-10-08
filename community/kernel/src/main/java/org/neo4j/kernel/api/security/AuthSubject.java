@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.api.security.AccessModeSnapshot;
 
 public interface AuthSubject extends AccessMode
 {
@@ -55,12 +56,6 @@ public interface AuthSubject extends AccessMode
     boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException;
 
     /**
-     * @return A string representing the primary principal of this subject
-     */
-    @Override
-    String username();
-
-    /**
      * @param username a username
      * @return true if the provided username is the underlying user name of this subject
      */
@@ -76,11 +71,17 @@ public interface AuthSubject extends AccessMode
         throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
     }
 
-    abstract class AccessModeAdapter implements AuthSubject
+    @Override
+    default AccessMode getSnapshot()
+    {
+        return AccessModeSnapshot.createAccessModeSnapshot( this );
+    }
+
+    abstract class StaticAccessModeAdapter implements AuthSubject
     {
         private final AccessMode accessMode;
 
-        public AccessModeAdapter( AccessMode accessMode )
+        public StaticAccessModeAdapter( AccessMode.Static accessMode )
         {
             this.accessMode = accessMode;
         }
@@ -125,7 +126,7 @@ public interface AuthSubject extends AccessMode
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
-    AuthSubject ANONYMOUS = new AuthSubject.AccessModeAdapter( Static.NONE )
+    AuthSubject ANONYMOUS = new StaticAccessModeAdapter( Static.NONE )
     {
         @Override
         public void logout()
@@ -167,29 +168,17 @@ public interface AuthSubject extends AccessMode
         {
             return "<anonymous>";
         }
-
-        @Override
-        public String username()
-        {
-            return ""; // Should never clash with a valid username
-        }
     };
 
     /**
      * Implementation to use when authentication is disabled. Allows everything.
      */
-    AuthSubject AUTH_DISABLED = new AuthSubject.AccessModeAdapter( Static.FULL )
+    AuthSubject AUTH_DISABLED = new StaticAccessModeAdapter( Static.FULL )
     {
         @Override
         public String name()
         {
             return "<auth disabled>";
-        }
-
-        @Override
-        public String username()
-        {
-            return ""; // Should never clash with a valid username
         }
 
         @Override
