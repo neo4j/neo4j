@@ -128,6 +128,13 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
       """MATCH (a)
          RETURN count(distinct a) as x""")
 
+  assert_that(
+    """MATCH (a)
+        OPTIONAL MATCH (a)-[r]->(b)-[r2]->(c) WHERE c.prop = b.prop
+        RETURN DISTINCT b as b""").
+    is_not_rewritten()
+
+
   ignore("unused optional relationship moved to predicate") {
     // not done
     /*
@@ -150,13 +157,13 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
         val original = getUnionQueryFrom(originalQuery.stripMargin)
 
         val result = original.endoRewrite(fixedPoint(rewriter))
-        assert(result === expected, "\n" + originalQuery)
+        assert(result === expected, "\nShould have been rewritten\n" + originalQuery)
       }
-
 
     def is_not_rewritten(): Unit = test(originalQuery) {
       val query = getUnionQueryFrom(originalQuery.stripMargin)
-      query.endoRewrite(rewriter) should equal(query)
+      val result = query.endoRewrite(fixedPoint(rewriter))
+      assert(result === query, "\nShould not have been rewritten\n" + originalQuery)
     }
   }
 
@@ -171,5 +178,4 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"))
-
 }
