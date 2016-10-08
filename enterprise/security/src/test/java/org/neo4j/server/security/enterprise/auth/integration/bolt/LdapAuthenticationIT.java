@@ -338,6 +338,24 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
+    public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithUserLdapContext() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+        } );
+
+        // Then
+        assertAuth( "neo4j", "abc123" );
+
+        // We need to replace this with a two thread test.
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+    }
+
+    @Test
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContext() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings -> {

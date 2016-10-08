@@ -233,6 +233,23 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
+    public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithAuthPlugin() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.active_realms, "plugin-TestCacheableAdminAuthPlugin" );
+        });
+
+        // Then
+        assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
+
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+    }
+
+    @Test
     public void shouldAuthenticateWithTestCustomParametersAuthenticationPlugin() throws Throwable
     {
         assertConnectionSucceeds( map(
