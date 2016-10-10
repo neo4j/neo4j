@@ -186,7 +186,7 @@ public class AwaitIndexProcedureTest
 
         state.set( ONLINE );
         assertEventually( "Procedure did not return after index was online",
-                done::get, is( true ), 5, TimeUnit.MILLISECONDS );
+                done::get, is( true ), 10, TimeUnit.SECONDS );
     }
 
     @Test
@@ -212,7 +212,7 @@ public class AwaitIndexProcedureTest
             }
         } ).start();
 
-        assertEventually( "Procedure did not time out", exception::get, not( nullValue() ), timeout * 2, timeoutUnits );
+        assertEventually( "Procedure did not time out", exception::get, not( nullValue() ), 10, TimeUnit.SECONDS );
         //noinspection ThrowableResultOfMethodCallIgnored
         assertThat( exception.get().status(), is( Status.Procedure.ProcedureTimedOut ) );
     }
