@@ -1,0 +1,12 @@
+[[operations-security]]
+Security
+========
+
+Neo4j in itself does not enforce security on the data level.
+However, there are different aspects that should be considered when using Neo4j in different scenarios.
+See <<security-server>> for details.
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-server-docs-jar/ops/security.asciidoc[]
+

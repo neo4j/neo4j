@@ -61,6 +61,11 @@
       </listitem>
       <listitem>
         <para>
+          <link linkend="operations-security">Security</link>
+        </para>
+      </listitem>
+      <listitem>
+        <para>
           <link linkend="resources">Resources</link>
         </para>
       </listitem>

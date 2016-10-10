@@ -77,13 +77,12 @@
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-server-docs</artifactId>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
       <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
