@@ -50,7 +50,7 @@ include::execution-plan-groups/expand.asciidoc[leveloffset=+1]
 
 ifndef::asciidoctor[:leveloffset: 2]
 
-include::execution-plan-groups/combining-operators.adoc[]
+include::execution-plan-groups/combining-operators.adoc[leveloffset=+1]
 
 ifndef::asciidoctor[:leveloffset: 1]
 
@@ -62,5 +62,5 @@ include::execution-plan-groups/update.asciidoc[leveloffset=+1]
 
 ifndef::asciidoctor[:leveloffset: 2]
 
-include::execution-plan-groups/query-shortestpath-planning.adoc[]
+include::execution-plan-groups/query-shortestpath-planning.adoc[leveloffset=+1]
 
