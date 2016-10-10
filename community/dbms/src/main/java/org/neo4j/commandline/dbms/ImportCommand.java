@@ -53,19 +53,16 @@ public class ImportCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of(
-                    "--mode={database|csv} --database=<database-name> [--additional-config=<config-file-path>] " +
-                            DatabaseImporter.arguments() + " " + CsvImporter.arguments() );
+            return Optional
+                    .of( "--database=<database-name> [--mode={csv|database}] [--additional-config=<config-file-path>]" +
+                            " " + DatabaseImporter.arguments() + " " + CsvImporter.arguments() );
         }
 
         @Override
         public String description()
         {
-            return "Import a collection of CSV files with --mode=csv, or a database from a\n" +
-                    "pre-3.0 installation with --mode=database." +
-                    "\n" +
-                    DatabaseImporter.description() +
-                    "\n\n" +
+            return "Import a collection of CSV files with --mode=csv (default), or a database from a " +
+                    "pre-3.0 installation with --mode=database." + "\n" + DatabaseImporter.description() + "\n\n" +
                     CsvImporter.description();
         }
 
@@ -79,14 +76,20 @@ public class ImportCommand implements AdminCommand
     private final Path homeDir;
     private final Path configDir;
     private final OutsideWorld outsideWorld;
+    private final ImporterFactory importerFactory;
     private final String[] allowedModes = {"database", "csv"};
-    private String database;
 
     ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    {
+        this( homeDir, configDir, outsideWorld, new ImporterFactory() );
+    }
+
+    ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld, ImporterFactory importerFactory )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.outsideWorld = outsideWorld;
+        this.importerFactory = importerFactory;
     }
 
     @Override
@@ -95,12 +98,13 @@ public class ImportCommand implements AdminCommand
         Args parsedArgs = Args.parse( args );
         String mode;
         File additionalConfigFile;
+        String database;
 
         try
         {
-            mode = parsedArgs
-                    .interpretOption( "mode", Converters.mandatory(), s -> s, Validators.inList( allowedModes ) );
-            this.database = parsedArgs.interpretOption( "database", Converters.mandatory(), s -> s );
+            mode = parsedArgs.interpretOption( "mode", Converters.withDefault( "csv" ), s -> s,
+                    Validators.inList( allowedModes ) );
+            database = parsedArgs.interpretOption( "database", Converters.mandatory(), s -> s );
             additionalConfigFile =
                     parsedArgs.interpretOption( "additional-config", Converters.optional(), Converters.toFile() );
         }
@@ -112,24 +116,11 @@ public class ImportCommand implements AdminCommand
         try
         {
             Config config =
-                    loadNeo4jConfig( homeDir, configDir, this.database, loadAdditionalConfig( additionalConfigFile ) );
+                    loadNeo4jConfig( homeDir, configDir, database, loadAdditionalConfig( additionalConfigFile ) );
             Validators.CONTAINS_NO_EXISTING_DATABASE
                     .validate( config.get( DatabaseManagementSystemSettings.database_path ) );
 
-            Importer importer;
-
-            switch ( mode )
-            {
-            case "database":
-                importer = new DatabaseImporter( parsedArgs, config, outsideWorld );
-                break;
-            case "csv":
-                importer = new CsvImporter( parsedArgs, config, outsideWorld );
-                break;
-            default:
-                throw new CommandFailed( "Invalid mode specified." ); // This won't happen because mode is mandatory.
-            }
-
+            Importer importer = importerFactory.getImporterForMode( mode, parsedArgs, config, outsideWorld );
             importer.doImport();
         }
         catch ( IllegalArgumentException e )
