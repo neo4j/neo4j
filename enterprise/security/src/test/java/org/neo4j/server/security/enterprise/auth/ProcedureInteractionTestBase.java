@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.directory.api.util.Strings;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -335,8 +336,14 @@ public abstract class ProcedureInteractionTestBase<S>
     void assertFail( S subject, String call, String partOfErrorMsg )
     {
         String err = assertCallEmpty( subject, call );
-        assertThat( err, not( equalTo( "" ) ) );
-        assertThat( err, containsString( partOfErrorMsg ) );
+        if ( Strings.isEmpty( partOfErrorMsg ) )
+        {
+            assertThat( err, not( equalTo( "" ) ) );
+        }
+        else
+        {
+            assertThat( err, containsString( partOfErrorMsg ) );
+        }
     }
 
     private void assertFail( S subject, String call, String partOfErrorMsg1, String partOfErrorMsg2 )

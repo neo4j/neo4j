@@ -42,7 +42,7 @@ public class AccessModeSnapshotTest
 
     private void testAccessMode( AccessMode originalAccessMode )
     {
-        AccessMode accessModeSnapshot = AccessModeSnapshot.createAccessModeSnapshot( originalAccessMode );
+        AccessMode accessModeSnapshot = AccessModeSnapshot.create( originalAccessMode );
         assertEquals( accessModeSnapshot.allowsReads(), originalAccessMode.allowsReads() );
         assertEquals( accessModeSnapshot.allowsWrites(), originalAccessMode.allowsWrites() );
         assertEquals( accessModeSnapshot.allowsSchemaWrites(), originalAccessMode.allowsSchemaWrites() );

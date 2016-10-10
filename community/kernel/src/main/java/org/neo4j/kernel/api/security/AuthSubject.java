@@ -48,14 +48,6 @@ public interface AuthSubject extends AccessMode
     void setPasswordChangeNoLongerRequired();
 
     /**
-     * Determines whether this subject is allowed to execute a procedure with the parameter string in its procedure annotation.
-     * @param roleNames
-     * @return
-     * @throws InvalidArgumentsException
-     */
-    boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException;
-
-    /**
      * @param username a username
      * @return true if the provided username is the underlying user name of this subject
      */
@@ -74,7 +66,7 @@ public interface AuthSubject extends AccessMode
     @Override
     default AccessMode getSnapshot()
     {
-        return AccessModeSnapshot.createAccessModeSnapshot( this );
+        return AccessModeSnapshot.create( this );
     }
 
     abstract class StaticAccessModeAdapter implements AuthSubject

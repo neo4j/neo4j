@@ -588,32 +588,29 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
 
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall = transactionalContext.accessMode.getOriginalAccessMode match {
-      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
+    val call: KernelProcedureCall =
+      if (allowed.nonEmpty && transactionalContext.accessMode.getOriginalAccessMode.allowsProcedureWith(allowed))
         transactionalContext.statement.procedureCallOperations.procedureCallRead(_, _, AccessMode.Static.OVERRIDE_READ)
-      case _ =>
+      else
         transactionalContext.statement.procedureCallOperations.procedureCallRead(_, _)
-    }
     callProcedure(name, args, call)
   }
 
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall = transactionalContext.accessMode.getOriginalAccessMode match {
-      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
+    val call: KernelProcedureCall =
+      if (allowed.nonEmpty && transactionalContext.accessMode.getOriginalAccessMode.allowsProcedureWith(allowed))
         transactionalContext.statement.procedureCallOperations.procedureCallWrite(_, _, AccessMode.Static.OVERRIDE_WRITE)
-      case _ =>
+      else
         transactionalContext.statement.procedureCallOperations.procedureCallWrite(_, _)
-    }
     callProcedure(name, args, call)
   }
 
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall = transactionalContext.accessMode.getOriginalAccessMode match {
-      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
+    val call: KernelProcedureCall =
+      if (allowed.nonEmpty && transactionalContext.accessMode.getOriginalAccessMode.allowsProcedureWith(allowed))
         transactionalContext.statement.procedureCallOperations.procedureCallSchema(_, _, AccessMode.Static.OVERRIDE_SCHEMA)
-      case _ =>
+      else
         transactionalContext.statement.procedureCallOperations.procedureCallSchema(_, _)
-    }
     callProcedure(name, args, call)
   }
 

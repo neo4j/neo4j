@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.security;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /** Controls the capabilities of a KernelTransaction. */
@@ -338,6 +339,19 @@ public interface AccessMode
     default AccessMode getOriginalAccessMode()
     {
         return this;
+    }
+
+    /**
+     * Determines whether this subject is allowed to execute a procedure with the parameter string in its
+     * procedure annotation.
+     *
+     * @param roleNames
+     * @return
+     * @throws InvalidArgumentsException
+     */
+    default boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
+    {
+        return false;
     }
 
     AccessMode getSnapshot();

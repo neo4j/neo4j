@@ -31,7 +31,7 @@ public class AccessModeSnapshot implements AccessMode
 
     private final AccessMode originalMode;
 
-    public static AccessMode createAccessModeSnapshot( AccessMode accessMode )
+    public static AccessMode create( AccessMode accessMode )
     {
         // TODO: Use flyweight pattern instead of always creating new objects, when we have a proper
         //       security context and do not need to obtain the original mode through this object

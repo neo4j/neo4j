@@ -193,8 +193,8 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     public AccessMode getSnapshot()
     {
         // NOTE: allowsProcedureWith() is delegated to the original access mode (=this)
-        //       so we just need to store the authorization info, and call the default
+        //       so we just need to store the authorization info, and create a normal access mode snapshot
         authorizationInfoSnapshot = authManager.getAuthorizationInfo( shiroSubject.getPrincipals() );
-        return AccessModeSnapshot.createAccessModeSnapshot( this );
+        return AccessModeSnapshot.create( this );
     }
 }

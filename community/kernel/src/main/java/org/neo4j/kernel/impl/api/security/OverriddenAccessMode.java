@@ -94,6 +94,6 @@ public class OverriddenAccessMode implements AccessMode
     @Override
     public AccessMode getSnapshot()
     {
-        return AccessModeSnapshot.createAccessModeSnapshot( this );
+        return AccessModeSnapshot.create( this );
     }
 }
