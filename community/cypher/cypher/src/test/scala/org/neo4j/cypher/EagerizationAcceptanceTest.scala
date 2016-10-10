@@ -160,7 +160,6 @@ class EagerizationAcceptanceTest
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
-            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
             val idX = input(0).asInstanceOf[Node].getId
             val idY = input(1).asInstanceOf[Node].getId
             val nodeCursor = statement.readOperations().nodeCursor(idX)
@@ -209,11 +208,9 @@ class EagerizationAcceptanceTest
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
-            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
             val idX = input(0).asInstanceOf[Node].getId
             val idY = input(1).asInstanceOf[Node].getId
             val nodeCursor = statement.readOperations().nodeCursor(idX)
-            val result = Array.newBuilder[Array[AnyRef]]
             while (nodeCursor.next()) {
               val relCursor = nodeCursor.get().relationships( Direction.OUTGOING )
               while (relCursor.next()) {
