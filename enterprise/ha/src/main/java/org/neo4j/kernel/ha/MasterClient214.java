@@ -193,7 +193,7 @@ public class MasterClient214 extends Client<Master> implements MasterClient
     @Override
     public Response<Void> pullUpdates( RequestContext context )
     {
-        return pullUpdates( context, ResponseUnpacker.NO_OP_TX_HANDLER );
+        return pullUpdates( context, ResponseUnpacker.TxHandler.NO_OP_TX_HANDLER );
     }
 
     @Override
@@ -210,7 +210,7 @@ public class MasterClient214 extends Client<Master> implements MasterClient
         Deserializer<HandshakeResult> deserializer =
                 ( buffer, temporaryBuffer ) -> new HandshakeResult( buffer.readLong(), buffer.readLong() );
         return sendRequest( requestTypes.type( HaRequestTypes.Type.HANDSHAKE ), RequestContext.EMPTY,
-                serializer, deserializer, storeId, ResponseUnpacker.NO_OP_TX_HANDLER );
+                serializer, deserializer, storeId, ResponseUnpacker.TxHandler.NO_OP_TX_HANDLER );
     }
 
     @Override

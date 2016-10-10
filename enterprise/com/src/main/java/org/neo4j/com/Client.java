@@ -56,7 +56,7 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.ResourcePool.DEFAULT_CHECK_INTERVAL;
-import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
+import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler.NO_OP_TX_HANDLER;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
 /**

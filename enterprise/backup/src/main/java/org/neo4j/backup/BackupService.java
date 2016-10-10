@@ -42,7 +42,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -61,6 +60,7 @@ import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
@@ -88,7 +88,7 @@ class BackupService
             this.consistent = consistent;
         }
 
-        public long getLastCommittedTx()
+        long getLastCommittedTx()
         {
             return lastCommittedTx;
         }
@@ -110,7 +110,6 @@ class BackupService
     private final LogProvider logProvider;
     private final Log log;
     private final Monitors monitors;
-    private final VersionAwareLogEntryReader entryReader;
 
     BackupService()
     {
@@ -123,7 +122,6 @@ class BackupService
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
-        this.entryReader = new VersionAwareLogEntryReader<>();
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, File targetDirectory,
@@ -142,7 +140,7 @@ class BackupService
                     loadKernelExtensions(), logProvider, new DefaultFileSystemAbstraction(), pageCache,
                     monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ), forensics );
             FullBackupStoreCopyRequester storeCopyRequester =
-                    new FullBackupStoreCopyRequester( sourceHostNameOrIp, sourcePort, timeout, forensics );
+                    new FullBackupStoreCopyRequester( sourceHostNameOrIp, sourcePort, timeout, forensics, monitors );
             storeCopier.copyStore( storeCopyRequester, CancellationRequest.NEVER_CANCELLED );
 
             bumpDebugDotLogFileVersion( targetDirectory, timestamp );
@@ -257,12 +255,13 @@ class BackupService
         return fileSystem.fileExists( new File( targetDirectory, MetaDataStore.DEFAULT_NAME ) );
     }
 
-    boolean directoryIsEmpty( File targetDirectory )
+    private boolean directoryIsEmpty( File targetDirectory )
     {
         return !fileSystem.isDirectory( targetDirectory ) || 0 == fileSystem.listFiles( targetDirectory ).length;
     }
 
-    static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache, Map<String,String> config )
+    private static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache,
+            Map<String,String> config )
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
         return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory ).setConfig( config )
@@ -292,20 +291,14 @@ class BackupService
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, null, logProvider, targetDb.storeId(),
                 timeout, unpacker, monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
-                monitors.newMonitor( RequestMonitor.class, BackupClient.class ), entryReader );
+                monitors.newMonitor( RequestMonitor.class, BackupClient.class ), new VersionAwareLogEntryReader<>() );
 
-        boolean consistent = false;
-        try
+        try ( Lifespan lifespan = new Lifespan( unpacker, client ) )
         {
-            client.start();
-            unpacker.start();
-
             try ( Response<Void> response = client.incrementalBackup( context ) )
             {
                 unpacker.unpackResponse( response, handler );
             }
-
-            consistent = true;
         }
         catch ( MismatchingStoreIdException e )
         {
@@ -327,19 +320,8 @@ class BackupService
         {
             throw new RuntimeException( "Unexpected error", throwable );
         }
-        finally
-        {
-            try
-            {
-                client.stop();
-                unpacker.stop();
-            }
-            catch ( Throwable throwable )
-            {
-                log.warn( "Unable to stop backup client", throwable );
-            }
-        }
-        return new BackupOutcome( handler.getLastSeenTransactionId(), consistent );
+
+        return new BackupOutcome( handler.getLastSeenTransactionId(), true );
     }
 
     private static boolean bumpDebugDotLogFileVersion( File dbDirectory, long toTimestamp )
@@ -381,44 +363,38 @@ class BackupService
 
     private static class ProgressTxHandler implements TxHandler
     {
-        private final ProgressListener progress = ProgressMonitorFactory.textual( System.out ).openEnded(
-                "Transactions applied", 1000 );
         private long lastSeenTransactionId;
 
         @Override
         public void accept( long transactionId )
         {
-            progress.add( 1 );
             lastSeenTransactionId = transactionId;
         }
 
-        @Override
-        public void done()
-        {
-            progress.done();
-        }
-
-        public long getLastSeenTransactionId()
+        long getLastSeenTransactionId()
         {
             return lastSeenTransactionId;
         }
     }
 
-    private class FullBackupStoreCopyRequester implements StoreCopyClient.StoreCopyRequester
+    private static class FullBackupStoreCopyRequester implements StoreCopyClient.StoreCopyRequester
     {
         private final String sourceHostNameOrIp;
         private final int sourcePort;
         private final long timeout;
         private final boolean forensics;
+        private final Monitors monitors;
+
         private BackupClient client;
 
         private FullBackupStoreCopyRequester( String sourceHostNameOrIp, int sourcePort, long timeout,
-                                             boolean forensics )
+                                             boolean forensics, Monitors monitors )
         {
             this.sourceHostNameOrIp = sourceHostNameOrIp;
             this.sourcePort = sourcePort;
             this.timeout = timeout;
             this.forensics = forensics;
+            this.monitors = monitors;
         }
 
         @Override
@@ -426,7 +402,8 @@ class BackupService
         {
             client = new BackupClient( sourceHostNameOrIp, sourcePort, null, NullLogProvider.getInstance(),
                     StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, monitors.newMonitor(
-                    ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ), entryReader );
+                    ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ),
+                    new VersionAwareLogEntryReader<>() );
             client.start();
             return client.fullBackup( writer, forensics );
         }
