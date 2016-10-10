@@ -1,5 +1,5 @@
 [[query-create]]
-= Create
+= CREATE
 
 [abstract]
 The `CREATE` clause is used to create graph elements -- nodes and relationships.
@@ -10,41 +10,41 @@ Read <<introduction-pattern>> for an introduction.
 
 == Create nodes ==
 
-:leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
-include::create-single-node.asciidoc[]
+include::create-single-node.asciidoc[leveloffset=+1]
 
-include::create-multiple-nodes.asciidoc[]
+include::create-multiple-nodes.asciidoc[leveloffset=+1]
 
-include::create-a-node-with-a-label.asciidoc[]
+include::create-a-node-with-a-label.asciidoc[leveloffset=+1]
 
-include::create-a-node-with-multiple-labels.asciidoc[]
+include::create-a-node-with-multiple-labels.asciidoc[leveloffset=+1]
 
-include::create-node-and-add-labels-and-properties.asciidoc[]
+include::create-node-and-add-labels-and-properties.asciidoc[leveloffset=+1]
 
-include::return-created-node.asciidoc[]
+include::return-created-node.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 == Create relationships ==
 
-:leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
-include::create-a-relationship-between-two-nodes.asciidoc[]
+include::create-a-relationship-between-two-nodes.asciidoc[leveloffset=+1]
 
-include::create-a-relationship-and-set-properties.asciidoc[]
+include::create-a-relationship-and-set-properties.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::create-a-full-path.asciidoc[]
 
 == Use parameters with CREATE ==
 
-:leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
-include::create-node-with-a-parameter-for-the-properties.asciidoc[]
+include::create-node-with-a-parameter-for-the-properties.asciidoc[leveloffset=+1]
 
-include::create-multiple-nodes-with-a-parameter-for-their-properties.asciidoc[]
+include::create-multiple-nodes-with-a-parameter-for-their-properties.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 

@@ -12,7 +12,7 @@
 Below are some starting points within this manual:
 
 * <<graphdb-neo4j>>
-* <<cypher-query-lang>>
+* <<cypher>>
 * <<cypher-getting-started>>
 * <<rest-api>>
 * <<deployment>>

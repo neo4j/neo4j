@@ -273,7 +273,7 @@ Traversing a graph means visiting its nodes, following relationships according t
 In most cases only a subgraph is visited, as you already know where in the graph the interesting nodes and relationships are found.
 
 Cypher provides a declarative way to query the graph powered by traversals and other techniques.
-See <<cypher-query-lang>> for more information.
+See <<cypher>> for more information.
 
 When writing server plugins or using Neo4j embedded, Neo4j provides a callback based traversal API which lets you specify the traversal rules.
 At a basic level there's a choice between traversing breadth- or depth-first.

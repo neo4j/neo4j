@@ -1,5 +1,5 @@
 [[query-call]]
-= Call
+= CALL
 
 [abstract]
 --
@@ -19,11 +19,11 @@ tag=indexingProcedure
 [NOTE]
 This clause cannot be combined with other clauses.
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::call-a-procedure.asciidoc[]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::call-a-procedure-using-a-quoted-namespace-and-name.asciidoc[]
 
@@ -31,15 +31,15 @@ include::call-a-procedure-using-a-quoted-namespace-and-name.asciidoc[]
 
 include::call-a-procedure-with-literal-arguments.asciidoc[]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::call-a-procedure-with-parameter-arguments.asciidoc[]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::call-a-procedure-with-mixed-literal-and-parameter-arguments.asciidoc[]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::call-a-procedure-with-literal-and-default-arguments.asciidoc[]
 
@@ -47,7 +47,7 @@ include::call-a-procedure-with-literal-and-default-arguments.asciidoc[]
 
 include::call-a-procedure-within-a-complex-query.asciidoc[]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::call-a-procedure-within-a-complex-query-and-rename-its-outputs.asciidoc[]
 

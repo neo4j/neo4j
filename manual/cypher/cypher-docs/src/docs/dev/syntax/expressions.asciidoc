@@ -44,5 +44,5 @@ String literals can contain these escape sequences.
 |`\Uxxxxxxxx`|Unicode UTF-32 code point (8 hex digits must follow the `\U`)
 |===================
 
-include::../ql/syntax/index.asciidoc[]
+include::../ql/syntax/index.asciidoc[leveloffset=+1]
 

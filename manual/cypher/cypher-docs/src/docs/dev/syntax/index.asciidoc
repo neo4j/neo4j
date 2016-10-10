@@ -1,41 +1,58 @@
 [[query-syntax]]
 = Syntax =
 
-The nitty-gritty details of Cypher syntax.
+[abstract]
+--
+This section describes the syntax of the Cypher query language.
+--
 
-:leveloffset: 2
+* <<cypher-values,Values>>
+* <<cypher-expressions,Expressions>>
+* <<cypher-variables,Variables>>
+* <<cypher-parameters,Parameters>>
+* <<query-operators,Operators>>
+* <<cypher-comments,Comments>>
+* <<introduction-pattern,Patterns>>
+* <<syntax-lists,Lists>>
+* <<cypher-working-with-null,Working with NULL>>
 
-include::values.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 2]
 
-:leveloffset: 2
+include::values.asciidoc[leveloffset=+1]
 
-include::expressions.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 2]
 
-:leveloffset: 2
+include::expressions.asciidoc[leveloffset=+1]
 
-include::variables.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 2]
 
-:leveloffset: 2
+include::variables.asciidoc[leveloffset=+1]
 
-include::operators.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 2]
 
-:leveloffset: 2
+include::parameters.asciidoc[leveloffset=+1]
 
-include::comparison.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 2]
 
-:leveloffset: 2
+include::operators.asciidoc[leveloffset=+1]
 
-include::comments.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 2]
 
-:leveloffset: 2
+include::comparison.asciidoc[leveloffset=+1]
 
-include::../ql/introduction/pattern.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 2]
 
-:leveloffset: 2
+include::comments.asciidoc[leveloffset=+1]
 
-include::../ql/syntax/lists.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 2]
 
-:leveloffset: 2
+include::../ql/introduction/pattern.asciidoc[leveloffset=+1]
 
-include::working-with-null.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 2]
+
+include::../ql/syntax/lists.asciidoc[leveloffset=+1]
+
+ifndef::asciidoctor[:leveloffset: 2]
+
+include::working-with-null.asciidoc[leveloffset=+1]
 

@@ -31,7 +31,7 @@ NOTE: If you get any other response than +200 OK+ (particularly +4xx+ or +5xx+ r
 
 == Sending Cypher ==
 
-Using the REST API, we can send <<cypher-query-lang,Cypher>> queries to the server.
+Using the REST API, we can send <<cypher,Cypher>> queries to the server.
 This is the main way to use Neo4j.
 It allows control of the transactional boundaries as needed.
 

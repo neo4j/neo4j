@@ -1,5 +1,5 @@
 [[query-start]]
-= Start
+= START
 
 [abstract]
 Find starting points through legacy indexes.
@@ -20,13 +20,13 @@ include::includes/cypher-start-graph.asciidoc[]
 
 == Get node or relationship from index ==
 
-:leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
-include::node-by-index-seek.asciidoc[]
+include::node-by-index-seek.asciidoc[leveloffset=+1]
 
-include::relationship-by-index-seek.asciidoc[]
+include::relationship-by-index-seek.asciidoc[leveloffset=+1]
 
-include::node-by-index-query.asciidoc[]
+include::node-by-index-query.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 

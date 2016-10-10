@@ -1,5 +1,5 @@
 [[query-foreach]]
-= Foreach =
+= FOREACH =
 
 [abstract]
 The `FOREACH` clause is used to update data within a list, whether components of a path, or result of aggregation.

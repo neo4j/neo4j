@@ -1,7 +1,8 @@
-[[cypher-query-lang]]
+[[cypher]]
 Cypher Query Language
 =====================
 
+ifndef::asciidoctor[]
 [partintro]
 --
 The Cypher part is the authoritative source for details on the Cypher Query Language.
@@ -9,39 +10,50 @@ For a short introduction, see <<cypher-introduction>>.
 To take your first steps with Cypher, see <<cypher-getting-started>>.
 For the terminology used, see <<terminology>>.
 --
+endif::[]
 
-:leveloffset: 1
+ifdef::asciidoctor[]
+[abstract]
+--
+This chapter contains the complete and authoritative documentation for the Cypher query language.
+--
+endif::[]
 
-include::general/index.asciidoc[]
 
-:leveloffset: 1
+ifndef::asciidoctor[:leveloffset: 1]
 
-include::syntax/index.asciidoc[]
+include::general/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+ifndef::asciidoctor[:leveloffset: 1]
 
-include::general.asciidoc[]
+include::syntax/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+ifndef::asciidoctor[:leveloffset: 1]
 
-include::read.asciidoc[]
+//xxinclude::general.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+//:leveloffset: 1
 
-include::write.asciidoc[]
+//xxinclude::read.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+ifndef::asciidoctor[:leveloffset: 1]
 
-include::ql/functions/index.asciidoc[]
+//xxinclude::write.asciidoc[leveloffset=+1]
 
-:leveloffset: 1
+include::clause.asciidoc[leveloffset=+1]
 
-include::schema.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 1]
 
-:leveloffset: 1
+include::ql/functions/index.asciidoc[leveloffset=+1]
 
-include::query-tuning.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 1]
 
-:leveloffset: 1
+include::schema.asciidoc[leveloffset=+1]
 
-include::execution-plans.asciidoc[]
+ifndef::asciidoctor[:leveloffset: 1]
+
+include::query-tuning.asciidoc[leveloffset=+1]
+
+ifndef::asciidoctor[:leveloffset: 1]
+
+include::execution-plans.asciidoc[leveloffset=+1]

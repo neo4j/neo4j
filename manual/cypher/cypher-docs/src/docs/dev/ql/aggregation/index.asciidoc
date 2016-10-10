@@ -15,39 +15,39 @@ include::includes/cypher-aggregation-graph.asciidoc[]
 
 `COUNT` can be used in two forms -- `COUNT(*)` which just counts the number of matching rows, and `COUNT(<expression>)`, which counts the number of non-`NULL` values in `<expression>`.
 
-:leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
-include::count-nodes.asciidoc[]
+include::count-nodes.asciidoc[leveloffset=+1]
 
-include::group-count-relationship-types.asciidoc[]
+include::group-count-relationship-types.asciidoc[leveloffset=+1]
 
-include::count-entities.asciidoc[]
+include::count-entities.asciidoc[leveloffset=+1]
 
-include::count-non-null-values.asciidoc[]
+include::count-non-null-values.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 == Statistics ==
 
-:leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
-include::sum.asciidoc[]
+include::sum.asciidoc[leveloffset=+1]
 
-include::avg.asciidoc[]
+include::avg.asciidoc[leveloffset=+1]
 
-include::percentiledisc.asciidoc[]
+include::percentiledisc.asciidoc[leveloffset=+1]
 
-include::percentilecont.asciidoc[]
+include::percentilecont.asciidoc[leveloffset=+1]
 
-include::stdev.asciidoc[]
+include::stdev.asciidoc[leveloffset=+1]
 
-include::stdevp.asciidoc[]
+include::stdevp.asciidoc[leveloffset=+1]
 
-include::max.asciidoc[]
+include::max.asciidoc[leveloffset=+1]
 
-include::min.asciidoc[]
+include::min.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 include::collect.asciidoc[]
 

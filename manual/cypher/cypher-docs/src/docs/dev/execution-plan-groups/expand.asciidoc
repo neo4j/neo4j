@@ -1,10 +1,9 @@
 [[execution-plan-expand]]
+= Expand operators
 
-== Expand operators ==
+These operators explore the graph by expanding graph patterns.
 
-Thes operators explore the graph by expanding graph patterns.
-
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 1]
 
 include::../ql/query-plan/expand-all.asciidoc[]
 include::../ql/query-plan/expand-into.asciidoc[]

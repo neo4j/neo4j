@@ -1,5 +1,5 @@
 [[query-unwind]]
-= Unwind
+= UNWIND
 
 [abstract]
 `UNWIND` expands a list into a sequence of rows.

@@ -26,7 +26,7 @@ class MathFunctionsTest extends DocumentingTest {
   override def outputPath = "target/docs/dev/ql/functions"
 
   override def doc = new DocBuilder {
-    doc("Math functions", "query-functions-mathematical")
+    doc("Mathematical functions", "query-functions-mathematical")
     initQueries(
       """CREATE (alice:A {name:'Alice', age: 38, eyes: 'brown'}),
         |       (bob:B {name: 'Bob', age: 25, eyes: 'blue'}),

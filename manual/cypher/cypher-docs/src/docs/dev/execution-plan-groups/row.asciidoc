@@ -1,10 +1,9 @@
 [[execution-plans-row-operators]]
-
-== Row operators  ==
+= Row operators
 
 These operators take rows produced by another operator and transform them to a different set of rows
 
-:leveloffset: 2
+ifndef::asciidoctor[ :leveloffset: 2]
 
 include::../ql/query-plan/eager.asciidoc[]
 include::../ql/query-plan/distinct.asciidoc[]
