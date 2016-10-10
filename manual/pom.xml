@@ -32,6 +32,7 @@
     <module>kernel</module>
     <module>lucene</module>
     <module>backup</module>
+    <module>ha-docs</module>
   </modules>
 
   <scm>

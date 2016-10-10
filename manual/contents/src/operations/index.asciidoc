@@ -17,7 +17,7 @@ include::configuration.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-ha-docs-jar/dev/index.asciidoc[]
+include::{importdir}/neo4j-ha-docs-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 
