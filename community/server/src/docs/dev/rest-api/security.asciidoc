@@ -1,0 +1,60 @@
+[[rest-api-security]]
+== REST API Authentication and Authorization ==
+
+In order to prevent unauthorized access to Neo4j, the REST API supports authorization and authentication.
+When enabled, requests to the REST API must be authorized using the username and password of a valid user.
+Authorization is enabled by default, see <<security-server-auth>> for how to disable it.
+
+When Neo4j is first installed you can authenticate with the default user `neo4j` and the default password `neo4j`.
+However, the default password must be changed (see <<rest-api-security-user-status-and-password-changing>>) before access to resources will be permitted.
+This can easily be done via the Neo4j Browser, or via direct HTTP calls.
+
+The username and password combination is local to each Neo4j instance.
+If you wish to have multiple instances in a cluster, you should ensure that all instances share the same credential.
+For automated deployments, you may also copy security configuration from another Neo4j instance (see <<rest-api-security-copy-config>>).
+
+[[rest-api-security-authenticating]]
+=== Authenticating
+
+:leveloffset: 2
+
+include::missing-authorization.asciidoc[]
+
+include::authenticate-to-access-the-server.asciidoc[]
+
+include::incorrect-authentication.asciidoc[]
+
+include::required-password-changes.asciidoc[]
+
+:leveloffset: 1
+
+[[rest-api-security-user-status-and-password-changing]]
+=== User status and password changing
+
+:leveloffset: 2
+
+include::user-status.asciidoc[]
+
+include::user-status-on-first-access.asciidoc[]
+
+include::changing-the-user-password.asciidoc[]
+
+:leveloffset: 1
+
+[[rest-api-security-auth-disabled]]
+=== Access when auth is disabled
+
+:leveloffset: 2
+
+include::when-auth-is-disabled.asciidoc[]
+
+:leveloffset: 1
+
+[[rest-api-security-copy-config]]
+=== Copying security configuration from one instance to another ===
+
+In many cases, such as automated deployments, you may want to start a Neo4j instance with pre-configured authentication and authorization.
+This is possible by copying the auth database file from a pre-existing Neo4j instance to your new instance.
+
+This file is located at _data/dbms/auth_, and simply copying that file into a new Neo4j instance will transfer your password and authorization token.
+
