@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -90,11 +91,7 @@ public class KernelStatement implements TxStateHolder, Statement
     @Override
     public ReadOperations readOperations()
     {
-        if( !transaction.mode().allowsReads() )
-        {
-            throw transaction.mode().onViolation(
-                    String.format( "Read operations are not allowed for '%s'.", transaction.mode().name() ) );
-        }
+        assertAllows( () -> transaction.mode().allowsReads(), "Read" );
         return facade;
     }
 
@@ -109,11 +106,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        if ( !transaction.mode().allowsWrites() )
-        {
-            throw transaction.mode().onViolation(
-                    String.format( "Write operations are not allowed for '%s'.", transaction.mode().name() ) );
-        }
+        assertAllows( () -> transaction.mode().allowsWrites(), "Write" );
         return facade;
     }
 
@@ -123,11 +116,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        if( !transaction.mode().allowsWrites() )
-        {
-            throw transaction.mode().onViolation(
-                    String.format( "Write operations are not allowed for '%s'.", transaction.mode().name() ) );
-        }
+        assertAllows( () -> transaction.mode().allowsWrites(), "Write" );
         transaction.upgradeToDataWrites();
         return facade;
     }
@@ -138,11 +127,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        if( !transaction.mode().allowsSchemaWrites() )
-        {
-            throw transaction.mode().onViolation(
-                    String.format( "Schema operations are not allowed for '%s'.", transaction.mode().name() ) );
-        }
+        assertAllows( () -> transaction.mode().allowsSchemaWrites(), "Schema" );
         transaction.upgradeToSchemaWrites();
         return facade;
     }
@@ -265,5 +250,14 @@ public class KernelStatement implements TxStateHolder, Statement
     public KernelTransactionImplementation getTransaction()
     {
         return transaction;
+    }
+
+    private void assertAllows( Supplier<Boolean> allows, String mode )
+    {
+        if ( !allows.get() )
+        {
+            throw transaction.mode().onViolation(
+                    String.format( "%s operations are not allowed for '%s'.", mode, transaction.mode().name() ) );
+        }
     }
 }
