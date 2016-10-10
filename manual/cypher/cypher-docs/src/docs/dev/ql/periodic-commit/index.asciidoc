@@ -1,5 +1,5 @@
 [[query-periodic-commit]]
-= Using PERIODIC COMMIT
+= USING PERIODIC COMMIT
 
 NOTE: See <<cypherdoc-importing-csv-files-with-cypher>> on how to import data from CSV files.
 
