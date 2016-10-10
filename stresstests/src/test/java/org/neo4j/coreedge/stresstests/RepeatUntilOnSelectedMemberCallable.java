@@ -30,22 +30,25 @@ abstract class RepeatUntilOnSelectedMemberCallable extends RepeatUntilCallable
 {
     private final Random random = new Random();
     final Cluster cluster;
-    private final boolean onlyCores;
+    private final int numberOfCores;
+    private final int numberOfEdges;
 
-    RepeatUntilOnSelectedMemberCallable( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster, boolean onlyCores )
+    RepeatUntilOnSelectedMemberCallable( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster,
+            int numberOfCores, int numberOfEdges )
     {
         super( keepGoing , onFailure );
         this.cluster = cluster;
-        this.onlyCores = onlyCores;
+        this.numberOfCores = numberOfCores;
+        this.numberOfEdges = numberOfEdges;
     }
 
     @Override
     protected final void doWork()
     {
-        boolean isCore = onlyCores || random.nextBoolean();
+        boolean isCore = numberOfEdges == 0 || random.nextBoolean();
         Collection<? extends ClusterMember> members = isCore ? cluster.coreMembers() : cluster.edgeMembers();
         assert !members.isEmpty();
-        int id = random.nextInt( members.size() );
+        int id = random.nextInt( isCore ? numberOfCores : numberOfEdges );
         doWorkOnMember( isCore, id );
     }
 

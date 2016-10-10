@@ -32,6 +32,12 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 class ClusterConfiguration
 {
+    static Map<String,String> enableRaftMessageLogging( Map<String,String> settings )
+    {
+        settings.put( CoreEdgeClusterSettings.raft_messages_log_enable.name(), Settings.TRUE );
+        return settings;
+    }
+
     static Map<String,String> configureRaftLogRotationAndPruning( Map<String,String> settings )
     {
         settings.put( CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );

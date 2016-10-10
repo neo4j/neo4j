@@ -28,32 +28,12 @@ public interface ResponseUnpacker
      */
     void unpackResponse( Response<?> response, TxHandler txHandler ) throws Exception;
 
-    public static final ResponseUnpacker NO_OP_RESPONSE_UNPACKER = new ResponseUnpacker()
-    {
-        @Override
-        public void unpackResponse( Response<?> response, TxHandler txHandler )
-        {
-            txHandler.done();
-        }
-    };
+    ResponseUnpacker NO_OP_RESPONSE_UNPACKER = ( response, txHandler ) -> { /* Do nothing */ };
 
-    public interface TxHandler
+    interface TxHandler
     {
+        TxHandler NO_OP_TX_HANDLER = transactionId -> { /* Do nothing */ };
+
         void accept( long transactionId );
-
-        void done();
     }
-
-    public static final TxHandler NO_OP_TX_HANDLER = new TxHandler()
-    {
-        @Override
-        public void accept( long transactionId )
-        { // Do nothing
-        }
-
-        @Override
-        public void done()
-        { // Do nothing
-        }
-    };
 }

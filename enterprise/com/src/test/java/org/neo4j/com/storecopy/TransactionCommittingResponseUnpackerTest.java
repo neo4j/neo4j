@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
@@ -56,7 +55,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
+import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler.NO_OP_TX_HANDLER;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
