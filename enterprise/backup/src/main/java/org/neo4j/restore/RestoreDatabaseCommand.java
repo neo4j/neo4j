@@ -22,11 +22,12 @@ package org.neo4j.restore;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.lang.String.format;
-
+import static org.neo4j.commandline.dbms.Util.checkLock;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 
 public class RestoreDatabaseCommand
@@ -47,7 +48,7 @@ public class RestoreDatabaseCommand
         this.databaseDir = config.get( database_path ).getAbsoluteFile();
     }
 
-    public void execute() throws IOException
+    public void execute() throws IOException, CommandFailed
     {
         if ( !fs.fileExists( fromPath ) )
         {
@@ -59,6 +60,8 @@ public class RestoreDatabaseCommand
             throw new IllegalArgumentException( format( "Database with name [%s] already exists at %s",
                     databaseName, databaseDir ) );
         }
+
+        checkLock( databaseDir.toPath() );
 
         fs.deleteRecursively( databaseDir );
         fs.copyRecursively( fromPath, databaseDir );
