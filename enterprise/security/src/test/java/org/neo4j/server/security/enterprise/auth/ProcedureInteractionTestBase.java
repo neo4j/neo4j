@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -565,6 +566,14 @@ public abstract class ProcedureInteractionTestBase<S>
         {
             db.execute( "CREATE INDEX ON :VeryUniqueLabel(prop)" );
             return Stream.of( new AuthProceduresBase.StringResult( "OK" ) );
+        }
+
+        @Procedure( name = "test.nestedAllowedProcedure", allowed = {"role1"}, mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> nestedAllowedProcedure(
+                @Name( "nestedProcedure" ) String nestedProcedure
+        ) {
+            Result result = db.execute( "CALL "+nestedProcedure );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "value" ).toString() ) );
         }
 
         @Procedure( name = "test.createNode", mode = WRITE )

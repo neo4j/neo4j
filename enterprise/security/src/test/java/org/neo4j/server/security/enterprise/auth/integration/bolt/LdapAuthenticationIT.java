@@ -449,6 +449,56 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
+    public void shouldKeepAuthorizationForLifetimeOfTransactionWithProcedureAllowed() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "503=admin;504=role1" );
+        } );
+
+        GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) server.graphDatabaseService();
+        graphDatabaseAPI.getDependencyResolver().resolveDependency( Procedures.class )
+                .registerProcedure( ProcedureInteractionTestBase.ClassWithProcedures.class );
+
+        DoubleLatch latch = new DoubleLatch( 2 );
+        final Throwable[] threadFail = {null};
+
+        Thread readerThread = new Thread( () -> {
+            try
+            {
+                assertAuth( "smith", "abc123" );
+                assertBeginTransactionSucceeds();
+                assertAllowedProcedure1();
+
+                latch.startAndWaitForAllToStart();
+                latch.finishAndWaitForAllToFinish();
+
+                assertAllowedProcedure1();
+            }
+            catch ( Throwable t )
+            {
+                threadFail[0] = t;
+                // Always release the latch so we get the failure in the main thread
+                latch.start();
+                latch.finish();
+            }
+        } );
+
+        readerThread.start();
+        latch.startAndWaitForAllToStart();
+
+        clearAuthCacheFromDifferentConnection();
+
+        latch.finishAndWaitForAllToFinish();
+
+        readerThread.join();
+        if ( threadFail[0] != null )
+        {
+            throw threadFail[0];
+        }
+    }
+
+    @Test
     public void shouldBeAbleToUseProcedureAllowedAnnotationWithLdapGroupToRoleMapping() throws Throwable
     {
         // When
@@ -461,6 +511,11 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
                 .registerProcedure( ProcedureInteractionTestBase.ClassWithProcedures.class );
 
         assertAuth( "neo", "abc123" );
+        assertAllowedProcedure1();
+    }
+
+    private void assertAllowedProcedure1() throws IOException
+    {
         client.send( TransportTestUtil.chunk( run( "CALL test.allowedProcedure1()" ), pullAll() ) );
 
         // Then

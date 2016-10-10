@@ -44,6 +44,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder;
 import org.neo4j.server.security.enterprise.auth.SecureHasher;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
+import org.neo4j.server.security.enterprise.auth.ShiroAuthorizationInfoProvider;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
@@ -55,7 +56,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 
 import static org.neo4j.server.security.enterprise.configuration.SecuritySettings.PLUGIN_REALM_NAME_PREFIX;
 
-public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
+public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, ShiroAuthorizationInfoProvider
 {
     private AuthenticationPlugin authenticationPlugin;
     private AuthorizationPlugin authorizationPlugin;
@@ -319,6 +320,12 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
             return ((CustomCredentialsMatcherSupplier) info).getCredentialsMatcher();
         }
         return null;
+    }
+
+    @Override
+    public AuthorizationInfo getAuthorizationInfoSnapshot( PrincipalCollection principalCollection )
+    {
+        return getAuthorizationInfo( principalCollection );
     }
 
     private class CredentialsMatcher implements org.apache.shiro.authc.credential.CredentialsMatcher

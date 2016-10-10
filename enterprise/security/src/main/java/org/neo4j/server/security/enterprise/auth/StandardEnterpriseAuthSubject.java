@@ -19,8 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.shiro.authz.AuthorizationInfo;
+
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -28,6 +30,7 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.impl.api.security.AccessModeSnapshot;
 
 class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 {
@@ -35,15 +38,16 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     private static final String READ_WRITE = "data:read,write";
     private static final String READ = "data:read";
 
-    private final EnterpriseAuthAndUserManager authManager;
+    private final MultiRealmAuthManager authManager;
     private final ShiroSubject shiroSubject;
+    private Collection<AuthorizationInfo> authorizationInfoSnapshot;
 
     static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
     {
         return EnterpriseAuthSubject.castOrFail( StandardEnterpriseAuthSubject.class, authSubject );
     }
 
-    StandardEnterpriseAuthSubject( EnterpriseAuthAndUserManager authManager, ShiroSubject shiroSubject )
+    StandardEnterpriseAuthSubject( MultiRealmAuthManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;
@@ -88,12 +92,18 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     @Override
     public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
     {
-        boolean[] hasRoles = shiroSubject.hasRoles( Arrays.asList( roleNames ) );
-        for ( boolean hasRole : hasRoles )
+        for ( AuthorizationInfo info : authorizationInfoSnapshot )
         {
-            if ( hasRole )
+            Collection<String> roles = info.getRoles();
+            if ( roles != null )
             {
-                return true;
+                for ( int i = 0; i < roleNames.length; i++ )
+                {
+                    if ( roles.contains( roleNames[i] ) )
+                    {
+                        return true;
+                    }
+                }
             }
         }
         return false;
@@ -177,5 +187,14 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
         {
             return ""; // Should never clash with a valid username
         }
+    }
+
+    @Override
+    public AccessMode getSnapshot()
+    {
+        // NOTE: allowsProcedureWith() is delegated to the original access mode (=this)
+        //       so we just need to store the authorization info, and call the default
+        authorizationInfoSnapshot = authManager.getAuthorizationInfo( shiroSubject.getPrincipals() );
+        return AccessModeSnapshot.createAccessModeSnapshot( this );
     }
 }

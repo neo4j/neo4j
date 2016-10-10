@@ -741,6 +741,42 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 "CALL test.allowedProcedure1() YIELD value MATCH (n:Secret) RETURN n.pass", READ_OPS_NOT_ALLOWED);
     }
 
+    @Test
+    public void shouldHandleNestedReadProcedures() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        assertSuccess( neo.login( "role1Subject", "abc" ),
+                "CALL test.nestedAllowedProcedure('test.allowedProcedure1') YIELD value",
+                r -> assertKeyIs( r, "value", "foo" ) );
+    }
+
+    @Test
+    public void shouldHandleDoubleNestedReadProcedures() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        assertSuccess( neo.login( "role1Subject", "abc" ),
+                "CALL test.nestedAllowedProcedure(\"test.nestedAllowedProcedure('test.allowedProcedure1')\") YIELD value",
+                r -> assertKeyIs( r, "value", "foo" ) );
+    }
+
+    @Test
+    public void shouldFailNestedWriteProcedureFromReadProcedure() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        assertFail( neo.login( "role1Subject", "abc" ),
+                "CALL test.nestedAllowedProcedure('test.allowedProcedure2') YIELD value",
+                WRITE_OPS_NOT_ALLOWED );
+    }
+
     /*
     This surface is hidden in 3.1, to possibly be completely removed or reworked later
     ==================================================================================
