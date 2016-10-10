@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.security.SecurityContext
+import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 
 trait QueryStateTestSupport {
   self: GraphDatabaseTestSupport =>
 
   def withQueryState[T](f: QueryState => T) = {
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.Static.FULL)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AUTH_DISABLED)
     try {
       val queryState = QueryStateHelper.queryStateFrom(graph, tx)
       f(queryState)
@@ -38,7 +38,7 @@ trait QueryStateTestSupport {
   }
 
   def withCountsQueryState[T](f: QueryState => T) = {
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.Static.FULL)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AUTH_DISABLED)
     try {
       val queryState = QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
       f(queryState)

@@ -57,7 +57,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelTransactionTerminationTest
 {
@@ -346,7 +346,7 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, FULL, 0L );
+            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, AUTH_DISABLED, 0L );
             monitor.reset();
             return this;
         }

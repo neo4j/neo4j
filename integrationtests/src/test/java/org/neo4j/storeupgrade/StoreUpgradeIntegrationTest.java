@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -449,7 +450,7 @@ public class StoreUpgradeIntegrationTest
     private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws KernelException
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.READ );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
             Iterator<IndexDescriptor> indexes = getAllIndexes( db );

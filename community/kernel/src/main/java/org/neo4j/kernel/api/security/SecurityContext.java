@@ -24,69 +24,6 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 /** Controls the capabilities of a KernelTransaction. */
 public interface SecurityContext
 {
-    enum Static implements SecurityContext
-    {
-        /** No reading or writing allowed. */
-        NONE
-                {
-                    @Override
-                    public Allowance allows()
-                    {
-                        return Allowance.Static.NONE;
-                    }
-                },
-
-        /** No reading or writing allowed because of expired credentials. */
-        CREDENTIALS_EXPIRED
-                {
-                    @Override
-                    public Allowance allows()
-                    {
-                        return Allowance.Static.CREDENTIALS_EXPIRED;
-                    }
-                },
-
-        /** Allows reading data and schema, but not writing. */
-        READ
-                {
-                    @Override
-                    public Allowance allows()
-                    {
-                        return Allowance.Static.READ;
-                    }
-                },
-
-        /** Allows writing data */
-        WRITE_ONLY
-                {
-                    @Override
-                    public Allowance allows()
-                    {
-                        return Allowance.Static.WRITE_ONLY;
-                    }
-                },
-
-        /** Allows reading and writing data, but not schema. */
-        WRITE
-                {
-                    @Override
-                    public Allowance allows()
-                    {
-                        return Allowance.Static.WRITE;
-                    }
-                },
-
-        /** Allows all operations. */
-        FULL
-                {
-                    @Override
-                    public Allowance allows()
-                    {
-                        return Allowance.Static.FULL;
-                    }
-                }
-        }
-
     Allowance allows();
     String name();
 
@@ -109,6 +46,7 @@ public interface SecurityContext
         return ""; // Should never clash with a valid username
     }
 
+    /** Allows all operations. */
     SecurityContext AUTH_DISABLED = new SecurityContext() {
 
         @Override

@@ -40,7 +40,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelSchemaStateFlushingTest
 {
@@ -136,7 +136,7 @@ public class KernelSchemaStateFlushingTest
     private UniquenessConstraint createConstraint() throws KernelException
     {
 
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, FULL );
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
             UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate( 1, 1 );
@@ -147,7 +147,7 @@ public class KernelSchemaStateFlushingTest
 
     private void dropConstraint( UniquenessConstraint descriptor ) throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, FULL );
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
             statement.schemaWriteOperations().constraintDrop( descriptor );
@@ -157,7 +157,7 @@ public class KernelSchemaStateFlushingTest
 
     private IndexDescriptor createIndex() throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, FULL );
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
             IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( 1, 1 );
@@ -168,7 +168,7 @@ public class KernelSchemaStateFlushingTest
 
     private void dropIndex( IndexDescriptor descriptor ) throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, FULL );
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
             statement.schemaWriteOperations().indexDrop( descriptor );
@@ -179,7 +179,7 @@ public class KernelSchemaStateFlushingTest
     private void awaitIndexOnline( IndexDescriptor descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, FULL );
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
             SchemaIndexTestHelper.awaitIndexOnline( statement.readOperations(), descriptor );
@@ -190,7 +190,7 @@ public class KernelSchemaStateFlushingTest
 
     private void awaitSchemaStateCleared( String keyForProbing ) throws TransactionFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, FULL );
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
             while ( statement.readOperations().schemaStateGetOrCreate( keyForProbing, (ignored) -> null ) != null )
@@ -203,7 +203,7 @@ public class KernelSchemaStateFlushingTest
 
     private String commitToSchemaState( String key, String value ) throws TransactionFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, FULL ) )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
         {
             String result = getOrCreateFromState( transaction, key, value );
             transaction.success();

@@ -30,7 +30,7 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.security.SecurityContext
+import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
@@ -103,7 +103,7 @@ trait GraphIcing {
     private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
 
     private def createTransactionalContext(txType: Type, queryText: String, params: Map[String, Any] = Map.empty): (InternalTransaction, TransactionalContext) = {
-      val tx = graph.beginTransaction(txType, SecurityContext.Static.FULL)
+      val tx = graph.beginTransaction(txType, AUTH_DISABLED)
       val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
       val contextFactory: Neo4jTransactionalContextFactory = new Neo4jTransactionalContextFactory(graphService, locker)
       val transactionalContext = contextFactory.newContext(QuerySource.UNKNOWN, tx, queryText, javaParams)
@@ -118,7 +118,7 @@ trait GraphIcing {
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
     def withTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T = {
-      val tx = graph.beginTransaction(txType, SecurityContext.Static.FULL)
+      val tx = graph.beginTransaction(txType, AUTH_DISABLED)
       try {
         val result = f(tx)
         tx.success()
@@ -130,7 +130,7 @@ trait GraphIcing {
     }
 
     def rollback[T](f: => T): T = {
-      val tx = graph.beginTransaction(Type.`implicit`, SecurityContext.Static.FULL)
+      val tx = graph.beginTransaction(Type.`implicit`, AUTH_DISABLED)
       try {
         val result = f
         tx.failure()

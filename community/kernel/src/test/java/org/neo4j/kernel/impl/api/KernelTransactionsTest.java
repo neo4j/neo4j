@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -87,9 +88,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.NONE;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.WRITE;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
 
 public class KernelTransactionsTest
@@ -321,7 +320,7 @@ public class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
         try
         {
-            kernelTransactions.newInstance( KernelTransaction.Type.implicit, WRITE, 0L );
+            kernelTransactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.write(), 0L );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -337,7 +336,7 @@ public class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
 
         Future<KernelTransaction> txOpener =
-                t2.execute( state -> kernelTransactions.newInstance( explicit, WRITE, 0L ) );
+                t2.execute( state -> kernelTransactions.newInstance( explicit, AnonymousContext.write(), 0L ) );
         t2.get().waitUntilWaiting( location -> location.isAt( KernelTransactions.class, "newInstance" ) );
 
         assertNotDone( txOpener );
@@ -353,7 +352,7 @@ public class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
 
         Future<KernelTransaction> txOpener =
-                t2.execute( state -> kernelTransactions.newInstance( explicit, WRITE, 0L ) );
+                t2.execute( state -> kernelTransactions.newInstance( explicit, AnonymousContext.write(), 0L ) );
         t2.get().waitUntilWaiting( location -> location.isAt( KernelTransactions.class, "newInstance" ) );
 
         assertNotDone( txOpener );
@@ -379,7 +378,7 @@ public class KernelTransactionsTest
     {
         try
         {
-            kernelTransactions.newInstance( KernelTransaction.Type.explicit, FULL, 0L ).close();
+            kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, 0L ).close();
         }
         catch ( TransactionFailureException e )
         {
@@ -493,7 +492,7 @@ public class KernelTransactionsTest
 
     protected KernelTransaction getKernelTransaction( KernelTransactions transactions )
     {
-        return transactions.newInstance( KernelTransaction.Type.implicit, NONE, 0L );
+        return transactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.none(), 0L );
     }
 
     private static class TestKernelTransactions extends KernelTransactions

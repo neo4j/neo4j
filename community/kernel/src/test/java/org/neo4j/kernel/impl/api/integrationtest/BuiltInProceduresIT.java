@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.security.SecurityContext.Static;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
@@ -138,7 +138,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         try
         {
             // When
-            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0], Static.NONE );
+            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0],
+                    AnonymousContext.none() );
             fail( "This should never get here" );
         }
         catch ( Exception e )

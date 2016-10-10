@@ -93,7 +93,7 @@ public class ManyMergesStressTest
             String query =
                 format( "MERGE (%s:Person {id: %s}) ON CREATE SET %s.name = \"%s\";", ident, id, ident, name );
 
-            try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL ) )
+            try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED ) )
             {
                 Result result = db.execute( query );
                 result.close();

@@ -35,6 +35,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -67,6 +68,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -139,7 +141,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
     private SecurityContext securityContext()
     {
-        return isWriteTx ? SecurityContext.Static.WRITE : SecurityContext.Static.READ;
+        return isWriteTx ? AnonymousContext.write() : AnonymousContext.read();
     }
 
     @Test
@@ -400,7 +402,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
             transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
-                    SecurityContext.Static.FULL, 0L );
+                    AUTH_DISABLED, 0L );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
                 statement.legacyIndexTxState(); // which will pull it from the supplier and the mocking above
@@ -666,7 +668,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void transactionStartTime()
     {
         long startTime = clock.forward( 5, TimeUnit.MINUTES ).millis();
-        KernelTransactionImplementation transaction = newTransaction( SecurityContext.Static.FULL );
+        KernelTransactionImplementation transaction = newTransaction( AUTH_DISABLED );
         assertEquals( "Transaction start time should be the same as clock time.", startTime, transaction.startTime() );
     }
 

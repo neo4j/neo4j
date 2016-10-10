@@ -41,7 +41,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class GraphDatabaseFacadeTest
 {
@@ -75,7 +75,7 @@ public class GraphDatabaseFacadeTest
     {
         graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 
-        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, FULL, 10L );
+        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, 10L );
     }
 
     @Test
@@ -84,18 +84,18 @@ public class GraphDatabaseFacadeTest
         graphDatabaseFacade.beginTx();
 
         long timeout = defaultConfig.get( GraphDatabaseSettings.transaction_timeout );
-        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, FULL, timeout );
+        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, timeout );
     }
 
     @Test
     public void executeQueryWithCustomTimeoutShouldStartTransactionWithRequestedTimeout()
     {
         graphDatabaseFacade.execute( "create (n)", 157L, TimeUnit.SECONDS );
-        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, FULL,
+        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
                 TimeUnit.SECONDS.toMillis( 157L ) );
 
         graphDatabaseFacade.execute( "create (n)", new HashMap<>(), 247L, TimeUnit.MINUTES );
-        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, FULL,
+        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
                 TimeUnit.MINUTES.toMillis( 247L ) );
     }
 
@@ -105,13 +105,13 @@ public class GraphDatabaseFacadeTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, null );
 
-        when( queryService.beginTransaction( KernelTransaction.Type.implicit, FULL ) )
+        when( queryService.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
                 .thenReturn( transaction );
 
         graphDatabaseFacade.execute( "create (n)" );
         graphDatabaseFacade.execute( "create (n)", new HashMap<>() );
 
         long timeout = defaultConfig.get( GraphDatabaseSettings.transaction_timeout );
-        verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, FULL, timeout );
+        verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout );
     }
 }

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api.KernelTransaction.Type._
-import org.neo4j.kernel.api.security.SecurityContext.Static.FULL
+import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -43,7 +43,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
   test("statistics should default to single cardinality on empty db") {
     val graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
-    val transaction = graph.beginTransaction(explicit, FULL)
+    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, transaction)
     val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext), devNullLogger)
     val statistics = planContext.statistics
@@ -67,7 +67,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     val graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     graph.getGraphDatabaseService.execute("UNWIND range(1, 100) AS i CREATE (:L1)-[:T]->()")
 
-    val transaction = graph.beginTransaction(explicit, FULL)
+    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, transaction)
     val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext), devNullLogger)
     val statistics = planContext.statistics

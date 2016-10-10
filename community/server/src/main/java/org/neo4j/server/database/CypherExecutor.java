@@ -39,7 +39,7 @@ import org.neo4j.server.rest.web.ServerQuerySession;
 
 import org.neo4j.logging.Log;
 
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 public class CypherExecutor extends LifecycleAdapter
@@ -98,12 +98,12 @@ public class CypherExecutor extends LifecycleAdapter
 
     private InternalTransaction beginCustomTransaction( long customTimeout )
     {
-        return service.beginTransaction( KernelTransaction.Type.implicit, FULL,
+        return service.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
                 customTimeout, TimeUnit.MILLISECONDS );
     }
 
     private InternalTransaction beginDefaultTransaction()
     {
-        return service.beginTransaction( KernelTransaction.Type.implicit, FULL );
+        return service.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
     }
 }

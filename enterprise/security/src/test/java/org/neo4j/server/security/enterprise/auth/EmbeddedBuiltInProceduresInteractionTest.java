@@ -27,7 +27,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.Allowance;
@@ -42,7 +41,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<EnterpriseAuthSubject>
 {
@@ -58,7 +57,7 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
         GraphDatabaseFacade graph = neo.getLocalGraph();
 
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.explicit, FULL ) )
+                .beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED ) )
         {
             Result result = graph.execute( tx, "CALL dbms.listQueries", Collections.emptyMap() );
             assertFalse( result.hasNext() );

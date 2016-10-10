@@ -61,7 +61,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class QueryLoggerIT
 {
@@ -192,7 +192,7 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s - {}", querySource(), QUERY ) ) );
-        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
+        assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.name() ) );
     }
 
     @Test
@@ -220,12 +220,12 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ), endsWith( String.format(
                 " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: [Jake, Eddie, Susannah]}} - {}",
                 querySource, query) ) );
-        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
+        assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.name() ) );
     }
 
     private QuerySource querySource()
     {
-        return QueryEngineProvider.describe().append( FULL.name() );
+        return QueryEngineProvider.describe().append( AUTH_DISABLED.name() );
     }
 
     @Test
@@ -246,7 +246,7 @@ public class QueryLoggerIT
                 endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]} - {}",
                         querySource(), query) ) );
-        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
+        assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.name() ) );
     }
 
     @Test

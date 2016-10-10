@@ -91,7 +91,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -781,7 +781,7 @@ public class NeoStoresTest
 
     private void startTx() throws TransactionFailureException
     {
-        tx = ds.getKernel().newTransaction( KernelTransaction.Type.implicit, FULL );
+        tx = ds.getKernel().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         transaction = ((KernelTransactionImplementation) tx).txState();
     }
 

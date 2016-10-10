@@ -44,7 +44,7 @@ import org.neo4j.server.web.HttpHeaderUtils;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class CypherExecutorTest
 {
@@ -78,7 +78,7 @@ public class CypherExecutorTest
 
         cypherExecutor.createTransactionContext( QUERY, Collections.emptyMap(), request );
 
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, FULL );
+        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -93,7 +93,7 @@ public class CypherExecutorTest
 
         cypherExecutor.createTransactionContext( QUERY, Collections.emptyMap(), request );
 
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, FULL,
+        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
                 CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS );
         logProvider.assertNoLoggingOccurred();
     }
@@ -109,7 +109,7 @@ public class CypherExecutorTest
 
         cypherExecutor.createTransactionContext( QUERY, Collections.emptyMap(), request );
 
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, FULL );
+        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         logProvider.assertContainsMessageContaining( "Fail to parse `max-execution-time` header with value: 'not a " +
                                                      "number'. Should be a positive number." );
     }
@@ -125,7 +125,7 @@ public class CypherExecutorTest
 
         cypherExecutor.createTransactionContext( QUERY, Collections.emptyMap(), request );
 
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, FULL );
+        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -148,7 +148,7 @@ public class CypherExecutorTest
 
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, () -> statement );
 
-        SecurityContext securityContext = FULL;
+        SecurityContext securityContext = AUTH_DISABLED;
         KernelTransaction.Type type = KernelTransaction.Type.implicit;
         QueryRegistryOperations registryOperations = mock( QueryRegistryOperations.class );
         when( statement.queryRegistration() ).thenReturn( registryOperations );

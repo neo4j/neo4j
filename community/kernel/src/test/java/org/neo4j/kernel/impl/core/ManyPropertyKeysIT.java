@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
@@ -160,7 +161,7 @@ public class ManyPropertyKeysIT
     private int propertyKeyCount( GraphDatabaseAPI db ) throws TransactionFailureException
     {
         KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.READ );
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
             return statement.readOperations().propertyKeyCount();

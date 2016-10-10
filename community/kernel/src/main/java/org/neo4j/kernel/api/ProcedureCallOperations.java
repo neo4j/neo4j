@@ -37,7 +37,8 @@ public interface ProcedureCallOperations
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallRead(
+            QualifiedName name, Object[] arguments )
             throws ProcedureException;
 
     /**
@@ -58,7 +59,8 @@ public interface ProcedureCallOperations
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallWrite(
+            QualifiedName name, Object[] arguments )
             throws ProcedureException;
     /**
      * Invoke a read-only procedure by name, and set the transaction's access mode to
@@ -78,7 +80,8 @@ public interface ProcedureCallOperations
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallSchema(
+            QualifiedName name, Object[] arguments )
             throws ProcedureException;
     /**
      * Invoke a read-only procedure by name, and set the transaction's access mode to

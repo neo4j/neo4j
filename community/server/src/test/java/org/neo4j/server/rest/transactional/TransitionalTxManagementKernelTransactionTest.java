@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -37,7 +38,7 @@ public class TransitionalTxManagementKernelTransactionTest
 
     private GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
     private ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
-    private SecurityContext securityContext = SecurityContext.Static.READ;
+    private SecurityContext securityContext = AnonymousContext.read();
     private KernelTransaction.Type type = KernelTransaction.Type.implicit;
 
     @Test

@@ -58,6 +58,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -551,7 +552,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.WRITE_ONLY ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.writeOnly() ) )
         {
             db.execute( "CALL org.neo4j.procedure.writeProcedureCallingReadProcedure" ).next();
         }
@@ -585,7 +586,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.WRITE ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() ) )
         {
             db.execute( "CALL org.neo4j.procedure.writeProcedureCallingSchemaProcedure" ).next();
         }
@@ -611,7 +612,7 @@ public class ProcedureIT
     {
         // Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Schema operations are not allowed for 'FULL restricted to WRITE'." );
+        exception.expectMessage( "Schema operations are not allowed for 'AUTH_DISABLED restricted to WRITE'." );
 
         // Give
         try ( Transaction ignore = db.beginTx() )
@@ -1012,7 +1013,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.NONE ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.none() ) )
         {
             db.execute( "CALL org.neo4j.procedure.integrationTestMe()" );
             tx.success();
@@ -1029,7 +1030,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.READ ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() ) )
         {
             db.execute( "CALL org.neo4j.procedure.writingProcedure()" );
             tx.success();
@@ -1046,7 +1047,7 @@ public class ProcedureIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.WRITE ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() ) )
         {
             db.execute( "CALL org.neo4j.procedure.schemaProcedure()" );
             tx.success();

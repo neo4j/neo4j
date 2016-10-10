@@ -34,11 +34,11 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 /**
  * Uses an {@link IndexConfigStore} and puts logic around providers and configuration comparison.
@@ -185,7 +185,7 @@ public class LegacyIndexStore
 
                 // We were the first one here, let's create this config
                 try ( KernelTransaction transaction =
-                              kernel.get().newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL );
+                              kernel.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
                       Statement statement = transaction.acquireStatement() )
                 {
                     switch ( entityType )

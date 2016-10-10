@@ -197,7 +197,7 @@ public class Start extends TransactionProvidingApp
         TransactionalContextFactory contextFactory =
                 new Neo4jTransactionalContextFactory( graph, new PropertyContainerLocker() );
         InternalTransaction transaction =
-                graph.beginTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL );
+                graph.beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
         return contextFactory.newContext( ShellQuerySession.describe( session ),
                 transaction,
                 queryText,

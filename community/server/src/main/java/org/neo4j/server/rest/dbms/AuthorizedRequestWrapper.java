@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import java.security.Principal;
 
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
 
 public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
@@ -51,7 +52,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         }
         // If whitelisted uris can start transactions we cannot throw exception here
         //throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
-        return SecurityContext.Static.NONE;
+        return AnonymousContext.none();
     }
 
     private final String authType;

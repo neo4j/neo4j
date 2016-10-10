@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -44,7 +45,6 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.READ;
 
 public class ClusterDiscoveryIT
 {
@@ -100,7 +100,7 @@ public class ClusterDiscoveryIT
             .neo4j.kernel.api.exceptions.ProcedureException
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        KernelTransaction transaction = kernel.newTransaction( Type.implicit, READ );
+        KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );
         try ( Statement statement = transaction.acquireStatement() )
         {
             // when

@@ -51,7 +51,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
@@ -207,7 +207,7 @@ public class AuthorizationFilterTest
 
         // Then
         verify( filterChain ).doFilter(
-                eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest, FULL ) ), same( servletResponse ) );
+                eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest, AUTH_DISABLED ) ), same( servletResponse ) );
     }
 
     @Test
@@ -279,7 +279,7 @@ public class AuthorizationFilterTest
 
         // Then
         verify( filterChain ).doFilter(
-                eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest, FULL ) ), same( servletResponse ) );
+                eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest, AUTH_DISABLED ) ), same( servletResponse ) );
     }
 
     @Test

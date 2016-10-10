@@ -58,7 +58,7 @@ public class ExecutionEngineTests
 
         Result result;
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL ) )
+                .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED ) )
         {
             String query = "RETURN { key : 'Value' , collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}";
             TransactionalContext tc = createTransactionContext( graph, tx, query );

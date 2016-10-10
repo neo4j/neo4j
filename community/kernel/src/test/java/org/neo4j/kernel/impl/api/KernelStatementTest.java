@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.security.SecurityContext.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelStatementTest
 {
@@ -39,7 +39,7 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.getReasonIfTerminated() ).thenReturn( Status.Transaction.Terminated );
-        when( transaction.securityContext() ).thenReturn( FULL );
+        when( transaction.securityContext() ).thenReturn( AUTH_DISABLED );
 
         KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null, new CanWrite() );
         statement.acquire();

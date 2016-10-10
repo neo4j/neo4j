@@ -99,6 +99,7 @@ import org.neo4j.storageengine.api.EntityType;
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
@@ -337,13 +338,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Transaction beginTx()
     {
-        return beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.FULL );
+        return beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
     }
 
     @Override
     public Transaction beginTx( long timeout, TimeUnit unit )
     {
-        return beginTransaction( KernelTransaction.Type.explicit, SecurityContext.Static.FULL, timeout, unit );
+        return beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, timeout, unit );
     }
 
     @Override
@@ -375,7 +376,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
         // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
-        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL );
+        InternalTransaction transaction =
+                beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
 
         return execute( transaction, query, parameters );
     }
@@ -384,8 +386,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws
             QueryExecutionException
     {
-        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL,
-                timeout, unit );
+        InternalTransaction transaction =
+                beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout, unit );
         return execute( transaction, query, parameters );
     }
 

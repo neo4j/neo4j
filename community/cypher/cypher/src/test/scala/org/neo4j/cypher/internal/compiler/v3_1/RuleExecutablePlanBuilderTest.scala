@@ -50,7 +50,7 @@ import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.Label.label
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.security.SecurityContext
+import org.neo4j.kernel.api.security.{AnonymousContext, SecurityContext}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
 import org.scalatest.mock.MockitoSugar
@@ -107,7 +107,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve property keys") {
     // given
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.Static.WRITE)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write() )
     try {
       val node = graph.createNode()
       node.setProperty("foo", 12l)
@@ -139,7 +139,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve label ids") {
     // given
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.Static.WRITE)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write() )
     try {
       val node = graph.createNode(label("Person"))
 
@@ -253,7 +253,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should set the periodic commit flag") {
     // given
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.Static.READ)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
     try {
       val q = PeriodicCommitQuery(
         Query.

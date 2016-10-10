@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -29,6 +28,8 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 /**
  * Used to assert that Indexes required by Uniqueness Constraints don't remain if the constraint never got created.
@@ -48,7 +49,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
 
     public void perform()
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.Static.FULL );
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
             for ( Iterator<IndexDescriptor> indexes = statement.readOperations().uniqueIndexesGetAll();

@@ -55,7 +55,7 @@ public class ConcurrentTransactionAccessTest
         TransactionFacade actions = new TransactionFacade( kernel, null, queryService, registry, NullLogProvider.getInstance() );
 
         final TransactionHandle transactionHandle =
-                actions.newTransactionHandle( new DisgustingUriScheme(), true, SecurityContext.Static.FULL, -1 );
+                actions.newTransactionHandle( new DisgustingUriScheme(), true, SecurityContext.AUTH_DISABLED, -1 );
 
         final DoubleLatch latch = new DoubleLatch();
 
