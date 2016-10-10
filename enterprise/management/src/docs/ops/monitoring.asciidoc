@@ -79,7 +79,7 @@ include::{importdir}/neo4j-ha-docs-docs-jar/ops/jmx.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-metrics-docs-docs-jar/ops/metrics.asciidoc[]
+include::{importdir}/neo4j-metrics-docs-jar/ops/metrics.asciidoc[]
 
 :leveloffset: 1
 

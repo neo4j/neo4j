@@ -35,7 +35,6 @@
     <module>lucene</module>
     <module>backup</module>
     <module>ha-docs</module>
-    <module>metrics-docs</module>
   </modules>
 
   <scm>
