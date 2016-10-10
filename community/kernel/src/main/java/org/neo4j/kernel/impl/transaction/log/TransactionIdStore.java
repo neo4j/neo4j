@@ -53,6 +53,11 @@ public interface TransactionIdStore
     long BASE_TX_COMMIT_TIMESTAMP = 0;
 
     /**
+     * CONSTANT FOR UNKNOWN TX CHECKSUM
+     */
+    long UNKNOWN_TX_CHECKSUM = 1;
+
+    /**
      * Timestamp value used when record in the metadata store is not present and there are no transactions in logs.
      */
     long UNKNOWN_TX_COMMIT_TIMESTAMP = 1;
