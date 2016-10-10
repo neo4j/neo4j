@@ -25,7 +25,7 @@ public class GuardTimeoutException extends GuardException
 {
     private final long overtime;
 
-    public GuardTimeoutException(String message, final long overtime )
+    public GuardTimeoutException( String message, final long overtime )
     {
         super( message );
         this.overtime = overtime;

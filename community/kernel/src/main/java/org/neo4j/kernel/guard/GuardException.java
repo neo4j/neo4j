@@ -28,4 +28,5 @@ public abstract class GuardException extends RuntimeException implements Status.
     {
         super( message );
     }
+
 }
