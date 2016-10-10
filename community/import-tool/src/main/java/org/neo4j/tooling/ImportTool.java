@@ -603,7 +603,7 @@ public class ImportTool
         versionParts[0] = versionParts[0].substring(0, 3);
         String docsVersion = String.join("-", versionParts);
 
-        return " http://neo4j.com/docs/operations-manual/" + docsVersion + "/" +
+        return " https://neo4j.com/docs/operations-manual/" + docsVersion + "/" +
                page.getReference( anchor );
     }
 
@@ -825,7 +825,7 @@ public class ImportTool
 
     private enum ManualPage
     {
-        IMPORT_TOOL_FORMAT( "import-tool-header-format.html" );
+        IMPORT_TOOL_FORMAT( "tools/import/import-tool-header-format/" );
 
         private final String page;
 
@@ -837,7 +837,7 @@ public class ImportTool
         public String getReference( Anchor anchor )
         {
             // As long as the the operations manual is single-page we only use the anchor.
-            return "#" + anchor.anchor;
+            return page + "#" + anchor.anchor;
         }
     }
 

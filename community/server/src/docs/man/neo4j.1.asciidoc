@@ -17,7 +17,7 @@ The `neo4j` command is used to control the Neo4j Server.
 
 The preferred way to install Neo4j on Linux systems is by using prebuilt installation packages.
 
-For information regarding Windows, see http://neo4j.com/docs/operations-manual/current/#windows-installation.
+For information regarding Windows, see https://neo4j.com/docs/operations-manual/current/deployment/single-instance/windows/.
 
 [[neo4j-manpage-commands]]
 == COMMANDS

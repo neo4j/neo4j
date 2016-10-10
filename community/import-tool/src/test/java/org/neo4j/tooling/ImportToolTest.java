@@ -1172,27 +1172,27 @@ public class ImportToolTest
         shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
                 Iterators.iterator( new RelationshipDataLine( "1", "", "type", "name" ) ),
                 "Relationship missing mandatory field 'END_ID', read more about relationship " +
-                "format in the manual:  http://neo4j.com/docs/operations-manual/" +
+                "format in the manual:  https://neo4j.com/docs/operations-manual/" +
                 docsVersion +
-                "/#import-tool-header-format-rels" );
+                "/tools/import/import-tool-header-format/#import-tool-header-format-rels" );
         shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
                 Iterators.iterator( new RelationshipDataLine( "", "1", "type", "name" ) ),
                 "Relationship missing mandatory field 'START_ID', read more about relationship " +
-                "format in the manual:  http://neo4j.com/docs/operations-manual/" +
+                "format in the manual:  https://neo4j.com/docs/operations-manual/" +
                 docsVersion +
-                "/#import-tool-header-format-rels" );
+                "/tools/import/import-tool-header-format/#import-tool-header-format-rels" );
         shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
                 Iterators.iterator( new RelationshipDataLine( "1", "2", "", "name" ) ),
                 "Relationship missing mandatory field 'TYPE', read more about relationship " +
-                "format in the manual:  http://neo4j.com/docs/operations-manual/" +
-                docsVersion +
-                "/#import-tool-header-format-rels" );
+                "format in the manual:  https://neo4j.com/docs/operations-manual/" +
+                 docsVersion +
+                "/tools/import/import-tool-header-format/#import-tool-header-format-rels" );
         shouldPrintReferenceLinkAsPartOfErrorMessage( Arrays.asList( "1", "1" ),
                 Iterators.iterator( new RelationshipDataLine( "1", "2", "type", "name" ) ),
                 "Duplicate input ids that would otherwise clash can be put into separate id space, read more " +
-                "about how to use id spaces in the manual: http://neo4j.com/docs/operations-manual/" +
+                "about how to use id spaces in the manual: https://neo4j.com/docs/operations-manual/" +
                 docsVersion +
-                "/#import-tool-id-spaces" );
+                "/tools/import/import-tool-header-format/#import-tool-id-spaces" );
     }
 
     private void shouldPrintReferenceLinkAsPartOfErrorMessage( List<String> nodeIds,
