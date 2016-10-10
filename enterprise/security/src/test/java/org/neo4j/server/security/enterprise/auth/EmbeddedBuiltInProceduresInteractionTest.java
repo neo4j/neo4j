@@ -117,9 +117,9 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
             }
 
             @Override
-            public boolean overrideOriginalMode()
+            public boolean isElevated()
             {
-                return ANONYMOUS.overrideOriginalMode();
+                return ANONYMOUS.isElevated();
             }
 
             @Override

@@ -91,6 +91,8 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.impl.api.security.ElevatedAccessMode;
+import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QuerySource;
@@ -567,12 +569,6 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return procedures.getAllFunctions();
-    }
-
-    @Override
-    public Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException
-    {
-        return callFunction( name, input );
     }
 
     @Override
@@ -1502,13 +1498,13 @@ public class OperationsFacade
         {
             throw tx.mode().onViolation( format( "Read operations are not allowed for '%s'.", tx.mode().name() ) );
         }
-        return callProcedure( name, input, AccessMode.Static.READ );
+        return callProcedure( name, input, new RestrictedAccessMode( tx.mode(), AccessMode.Static.READ ) );
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> procedureCallReadElevated( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, override );
+        return callProcedure( name, input, new ElevatedAccessMode( tx.mode(), AccessMode.Static.READ ) );
     }
 
     @Override
@@ -1518,13 +1514,13 @@ public class OperationsFacade
         {
             throw tx.mode().onViolation( format( "Write operations are not allowed for '%s'.", tx.mode().name() ) );
         }
-        return callProcedure( name, input, AccessMode.Static.WRITE );
+        return callProcedure( name, input, new RestrictedAccessMode( tx.mode(), AccessMode.Static.WRITE ) );
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> procedureCallWriteElevated( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, override );
+        return callProcedure( name, input, new ElevatedAccessMode( tx.mode(), AccessMode.Static.WRITE ) );
     }
 
     @Override
@@ -1534,13 +1530,13 @@ public class OperationsFacade
         {
             throw tx.mode().onViolation( format( "Schema operations are not allowed for '%s'.", tx.mode().name() ) );
         }
-        return callProcedure( name, input, AccessMode.Static.FULL );
+        return callProcedure( name, input, new RestrictedAccessMode( tx.mode(), AccessMode.Static.FULL ) );
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input, AccessMode override ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> procedureCallSchemaElevated( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, override );
+        return callProcedure( name, input, new ElevatedAccessMode( tx.mode(), AccessMode.Static.FULL ) );
     }
 
     private RawIterator<Object[],ProcedureException> callProcedure(
@@ -1579,13 +1575,25 @@ public class OperationsFacade
         };
     }
 
+    @Override
+    public Object functionCall( QualifiedName name, Object[] arguments ) throws ProcedureException
+    {
+        return callFunction( name, arguments, new RestrictedAccessMode( tx.mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
+    public Object functionCallElevated( QualifiedName name, Object[] arguments ) throws ProcedureException
+    {
+        return callFunction( name, arguments, new ElevatedAccessMode( tx.mode(), AccessMode.Static.READ ) );
+    }
+
     private Object callFunction(
-            QualifiedName name, Object[] input )
+            QualifiedName name, Object[] input, final AccessMode mode )
             throws ProcedureException
     {
         statement.assertOpen();
 
-        try ( KernelTransaction.Revertable ignore = tx.overrideWith( AccessMode.Static.READ ) )
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );

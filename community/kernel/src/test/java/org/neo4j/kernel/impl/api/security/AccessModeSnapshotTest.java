@@ -34,9 +34,6 @@ public class AccessModeSnapshotTest
         testAccessMode( AccessMode.Static.WRITE );
         testAccessMode( AccessMode.Static.WRITE_ONLY );
         testAccessMode( AccessMode.Static.FULL );
-        testAccessMode( AccessMode.Static.OVERRIDE_READ );
-        testAccessMode( AccessMode.Static.OVERRIDE_WRITE );
-        testAccessMode( AccessMode.Static.OVERRIDE_SCHEMA );
         testAccessMode( AccessMode.Static.CREDENTIALS_EXPIRED );
     }
 
@@ -46,7 +43,6 @@ public class AccessModeSnapshotTest
         assertEquals( accessModeSnapshot.allowsReads(), originalAccessMode.allowsReads() );
         assertEquals( accessModeSnapshot.allowsWrites(), originalAccessMode.allowsWrites() );
         assertEquals( accessModeSnapshot.allowsSchemaWrites(), originalAccessMode.allowsSchemaWrites() );
-        assertEquals( accessModeSnapshot.overrideOriginalMode(), originalAccessMode.overrideOriginalMode() );
         assertEquals( accessModeSnapshot.name(), originalAccessMode.name() );
     }
 }

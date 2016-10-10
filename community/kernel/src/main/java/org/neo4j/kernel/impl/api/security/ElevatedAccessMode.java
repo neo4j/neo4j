@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.api.security;
+
+import org.neo4j.kernel.api.security.AccessMode;
+
+public class ElevatedAccessMode extends LayeredAccessMode
+{
+    public ElevatedAccessMode( AccessMode originalMode,
+            AccessMode overriddenAccessMode )
+    {
+        super( originalMode, overriddenAccessMode );
+    }
+
+    @Override
+    public boolean allowsReads()
+    {
+        return overriddenMode.allowsReads() || originalMode.allowsReads();
+    }
+
+    @Override
+    public boolean allowsWrites()
+    {
+        return overriddenMode.allowsWrites() || originalMode.allowsWrites();
+    }
+
+    @Override
+    public boolean allowsSchemaWrites()
+    {
+        return overriddenMode.allowsSchemaWrites() || originalMode.allowsSchemaWrites();
+    }
+
+    @Override
+    public boolean isElevated()
+    {
+        return true;
+    }
+
+    @Override
+    public String name()
+    {
+        return originalMode.name() + " elevated to " + overriddenMode.name();
+    }
+}

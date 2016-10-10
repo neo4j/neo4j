@@ -97,9 +97,9 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public boolean overrideOriginalMode()
+        public boolean isElevated()
         {
-            return accessMode.overrideOriginalMode();
+            return accessMode.isElevated();
         }
 
         @Override

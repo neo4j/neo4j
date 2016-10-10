@@ -27,7 +27,6 @@ public class AccessModeSnapshot implements AccessMode
     private final boolean allowsReads;
     private final boolean allowsWrites;
     private final boolean allowsSchemaWrites;
-    private final boolean overrideOriginalMode;
 
     private final AccessMode originalMode;
 
@@ -43,7 +42,6 @@ public class AccessModeSnapshot implements AccessMode
         allowsReads = accessMode.allowsReads();
         allowsWrites = accessMode.allowsWrites();
         allowsSchemaWrites = accessMode.allowsSchemaWrites();
-        overrideOriginalMode = accessMode.overrideOriginalMode();
 
         // We use this for delegation of all the remaining methods
         this.originalMode = accessMode;
@@ -68,12 +66,6 @@ public class AccessModeSnapshot implements AccessMode
     public boolean allowsSchemaWrites()
     {
         return allowsSchemaWrites;
-    }
-
-    @Override
-    public boolean overrideOriginalMode()
-    {
-        return overrideOriginalMode;
     }
 
     //---------------------------------------

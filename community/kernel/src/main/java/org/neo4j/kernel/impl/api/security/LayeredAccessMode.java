@@ -22,61 +22,21 @@ package org.neo4j.kernel.impl.api.security;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
 
-public class OverriddenAccessMode implements AccessMode
+abstract public class LayeredAccessMode implements AccessMode
 {
-    private final AccessMode originalMode;
-    private final AccessMode overriddenMode;
+    protected final AccessMode originalMode;
+    protected final AccessMode overriddenMode;
 
-    public OverriddenAccessMode( AccessMode originalMode, AccessMode overriddenMode )
+    public LayeredAccessMode( AccessMode originalMode, AccessMode overriddenMode )
     {
         this.originalMode = originalMode;
         this.overriddenMode = overriddenMode;
     }
 
     @Override
-    public boolean allowsReads()
-    {
-        return overriddenMode.allowsReads() &&
-               (overriddenMode.overrideOriginalMode() || originalMode.allowsReads());
-    }
-
-    @Override
-    public boolean allowsWrites()
-    {
-        return overriddenMode.allowsWrites() &&
-               (overriddenMode.overrideOriginalMode() || originalMode.allowsWrites());
-    }
-
-    @Override
-    public boolean allowsSchemaWrites()
-    {
-        return overriddenMode.allowsSchemaWrites() &&
-               (overriddenMode.overrideOriginalMode() || originalMode.allowsSchemaWrites());
-    }
-
-    @Override
-    public boolean overrideOriginalMode()
-    {
-        return overriddenMode.overrideOriginalMode();
-    }
-
-    @Override
     public AuthorizationViolationException onViolation( String msg )
     {
         return overriddenMode.onViolation( msg );
-    }
-
-    @Override
-    public String name()
-    {
-        if ( overriddenMode.overrideOriginalMode() )
-        {
-            return originalMode.name() + " overridden by " + overriddenMode.name();
-        }
-        else
-        {
-            return originalMode.name() + " restricted to " + overriddenMode.name();
-        }
     }
 
     @Override

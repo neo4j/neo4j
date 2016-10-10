@@ -48,12 +48,6 @@ public interface AccessMode
                     {
                         return false;
                     }
-
-                    @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
                 },
 
         /** No reading or writing allowed because of expired credentials. */
@@ -78,25 +72,19 @@ public interface AccessMode
                     }
 
                     @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
-
-                    @Override
                     public AuthorizationViolationException onViolation( String msg )
                     {
                         return new AuthorizationViolationException( String.format(
                                 msg + "%n%nThe credentials you provided were valid, but must be " +
-                                        "changed before you can " +
-                                        "use this instance. If this is the first time you are using Neo4j, this is to " +
-                                        "ensure you are not using the default credentials in production. If you are not " +
-                                        "using default credentials, you are getting this message because an administrator " +
-                                        "requires a password change.%n" +
-                                        "Changing your password is easy to do via the Neo4j Browser.%n" +
-                                        "If you are connecting via a shell or programmatically via a driver, " +
-                                        "just issue a `CALL dbms.changePassword('new password')` statement in the current " +
-                                        "session, and then restart your driver with the new password configured." ),
+                                "changed before you can " +
+                                "use this instance. If this is the first time you are using Neo4j, this is to " +
+                                "ensure you are not using the default credentials in production. If you are not " +
+                                "using default credentials, you are getting this message because an administrator " +
+                                "requires a password change.%n" +
+                                "Changing your password is easy to do via the Neo4j Browser.%n" +
+                                "If you are connecting via a shell or programmatically via a driver, " +
+                                "just issue a `CALL dbms.changePassword('new password')` statement in the current " +
+                                "session, and then restart your driver with the new password configured." ),
                                 Status.Security.CredentialsExpired );
                     }
                 },
@@ -118,12 +106,6 @@ public interface AccessMode
 
                     @Override
                     public boolean allowsSchemaWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean overrideOriginalMode()
                     {
                         return false;
                     }
@@ -149,12 +131,6 @@ public interface AccessMode
                     {
                         return false;
                     }
-
-                    @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
                 },
 
         /** Allows reading and writing data, but not schema. */
@@ -174,12 +150,6 @@ public interface AccessMode
 
                     @Override
                     public boolean allowsSchemaWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean overrideOriginalMode()
                     {
                         return false;
                     }
@@ -205,111 +175,7 @@ public interface AccessMode
                     {
                         return true;
                     }
-
-                    @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
-                },
-
-        /** Allows reading data and schema, but not writing.
-         * NOTE: This is a special mode that will override the original access mode when put as a temporary restriction
-         * on a transaction, potentially elevating the access mode to give read access to a transaction that did not
-         * have read access before.
-         */
-        OVERRIDE_READ
-        {
-            @Override
-            public boolean allowsReads()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsWrites()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean allowsSchemaWrites()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean overrideOriginalMode()
-            {
-                return true;
-            }
-        },
-
-        /**
-         * Allows writing data, as well as reading data and schema.
-         * NOTE: This is a special mode that will override the original access mode when put as a temporary restriction
-         * on a transaction, potentially elevating the access mode to give write access to a transaction that did not
-         * have write access before.
-         */
-        OVERRIDE_WRITE
-        {
-            @Override
-            public boolean allowsReads()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsWrites()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsSchemaWrites()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean overrideOriginalMode()
-            {
-                return true;
-            }
-        },
-
-        /**
-         * Allows writing and reading data and schema.
-         * NOTE: This is a special mode that will override the original access mode when put as a temporary restriction
-         * on a transaction, potentially elevating the access mode to give schema access to a transaction that did not
-         * have schema access before.
-         */
-        OVERRIDE_SCHEMA
-        {
-            @Override
-            public boolean allowsReads()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsWrites()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsSchemaWrites()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean overrideOriginalMode()
-            {
-                return true;
-            }
-        };
+                };
 
         @Override
         public AuthorizationViolationException onViolation( String msg )
@@ -327,7 +193,7 @@ public interface AccessMode
     boolean allowsReads();
     boolean allowsWrites();
     boolean allowsSchemaWrites();
-    boolean overrideOriginalMode();
+
     AuthorizationViolationException onViolation( String msg );
     String name();
 
@@ -339,6 +205,11 @@ public interface AccessMode
     default AccessMode getOriginalAccessMode()
     {
         return this;
+    }
+
+    default boolean isElevated()
+    {
+        return false;
     }
 
     /**

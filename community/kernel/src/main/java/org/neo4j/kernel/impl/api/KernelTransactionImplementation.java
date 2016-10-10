@@ -46,8 +46,6 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.api.security.AccessModeSnapshot;
-import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -801,7 +799,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Revertable overrideWith( AccessMode mode )
     {
         AccessMode oldMode = this.accessMode;
-        this.accessMode = new OverriddenAccessMode( oldMode, mode );
+        this.accessMode = mode;
         return () -> this.accessMode = oldMode;
     }
 

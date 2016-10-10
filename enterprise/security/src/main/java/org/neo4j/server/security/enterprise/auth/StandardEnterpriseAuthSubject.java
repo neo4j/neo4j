@@ -146,12 +146,6 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     }
 
     @Override
-    public boolean overrideOriginalMode()
-    {
-        return false;
-    }
-
-    @Override
     public AuthorizationViolationException onViolation( String msg )
     {
         if ( shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
