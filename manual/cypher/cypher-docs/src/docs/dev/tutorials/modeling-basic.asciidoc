@@ -4,7 +4,7 @@
 The following chapters contain simple examples to get you started thinking about data modeling with graphs. 
 If you are looking for more advanced examples you can head straight to <<data-modeling-examples-advanced>>.
 
-The examples use Cypher queries a lot, read <<cypher-query-lang>> for more information.
+The examples use Cypher queries a lot, read <<cypher>> for more information.
 
 :leveloffset: 2
 

@@ -1,5 +1,5 @@
 [[query-order]]
-= Order by
+= ORDER BY
 
 [abstract]
 `ORDER BY` is a sub-clause following `RETURN` or `WITH`, and it specifies that the output should be sorted and how.

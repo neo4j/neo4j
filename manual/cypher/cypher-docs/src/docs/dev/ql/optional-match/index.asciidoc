@@ -1,5 +1,5 @@
 [[query-optional-match]]
-= Optional Match
+= OPTIONAL MATCH
 
 [abstract]
 The +OPTIONAL MATCH+ clause is used to search for the pattern described in it, while using ++NULL++s for missing parts of the pattern.

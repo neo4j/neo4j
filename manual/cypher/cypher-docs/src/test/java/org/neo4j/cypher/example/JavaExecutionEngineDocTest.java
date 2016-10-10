@@ -63,7 +63,7 @@ public class JavaExecutionEngineDocTest
 {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final ObjectWriter WRITER = MAPPER.writerWithDefaultPrettyPrinter();
-    private static final File docsTargetDir = new File( "target/docs/dev/general" );
+    private static final File docsTargetDir = new File( "target/docs/dev/syntax" );
     private GraphDatabaseService db;
     private Node andreasNode;
     private Node johanNode;

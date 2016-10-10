@@ -29,56 +29,56 @@ The existing constraints can be listed using the REST API, see <<rest-api-schema
 [[query-constraints-unique-nodes]]
 == Unique node property constraints
 
-:leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
-include::create-uniqueness-constraint.asciidoc[]
+include::create-uniqueness-constraint.asciidoc[leveloffset=+1]
 
-include::drop-uniqueness-constraint.asciidoc[]
+include::drop-uniqueness-constraint.asciidoc[leveloffset=+1]
 
-include::create-a-node-that-complies-with-unique-property-constraints.asciidoc[]
+include::create-a-node-that-complies-with-unique-property-constraints.asciidoc[leveloffset=+1]
 
-include::create-a-node-that-breaks-a-unique-property-constraint.asciidoc[]
+include::create-a-node-that-breaks-a-unique-property-constraint.asciidoc[leveloffset=+1]
 
-include::failure-to-create-a-unique-property-constraint-due-to-conflicting-nodes.asciidoc[]
+include::failure-to-create-a-unique-property-constraint-due-to-conflicting-nodes.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 [[query-constraints-prop-exist-nodes]]
 == Node property existence constraints
 
-:leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
-include::create-node-property-existence-constraint.asciidoc[]
+include::create-node-property-existence-constraint.asciidoc[leveloffset=+1]
 
-include::drop-node-property-existence-constraint.asciidoc[]
+include::drop-node-property-existence-constraint.asciidoc[leveloffset=+1]
 
-include::create-a-node-that-complies-with-property-existence-constraints.asciidoc[]
+include::create-a-node-that-complies-with-property-existence-constraints.asciidoc[leveloffset=+1]
 
-include::create-a-node-that-breaks-a-property-existence-constraint.asciidoc[]
+include::create-a-node-that-breaks-a-property-existence-constraint.asciidoc[leveloffset=+1]
 
-include::removing-an-existence-constrained-node-property.asciidoc[]
+include::removing-an-existence-constrained-node-property.asciidoc[leveloffset=+1]
 
-include::failure-to-create-a-node-property-existence-constraint-due-to-existing-node.asciidoc[]
+include::failure-to-create-a-node-property-existence-constraint-due-to-existing-node.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 [[query-constraints-prop-exist-rels]]
 == Relationship property existence constraints
 
-:leveloffset: 3
+ifndef::asciidoctor[:leveloffset: 3]
 
-include::create-relationship-property-existence-constraint.asciidoc[]
+include::create-relationship-property-existence-constraint.asciidoc[leveloffset=+1]
 
-include::drop-relationship-property-existence-constraint.asciidoc[]
+include::drop-relationship-property-existence-constraint.asciidoc[leveloffset=+1]
 
-include::create-a-relationship-that-complies-with-property-existence-constraints.asciidoc[]
+include::create-a-relationship-that-complies-with-property-existence-constraints.asciidoc[leveloffset=+1]
 
-include::create-a-relationship-that-breaks-a-property-existence-constraint.asciidoc[]
+include::create-a-relationship-that-breaks-a-property-existence-constraint.asciidoc[leveloffset=+1]
 
-include::removing-an-existence-constrained-relationship-property.asciidoc[]
+include::removing-an-existence-constrained-relationship-property.asciidoc[leveloffset=+1]
 
-include::failure-to-create-a-relationship-property-existence-constraint-due-to-existing-relationship.asciidoc[]
+include::failure-to-create-a-relationship-property-existence-constraint-due-to-existing-relationship.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
 

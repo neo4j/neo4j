@@ -5,7 +5,7 @@
 The full source code of the example:
 https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/cypher/docs/cypher-docs/src/test/java/org/neo4j/cypher/example/JavaQuery.java[JavaQuery.java]
 
-In Java, you can use the <<cypher-query-lang,Cypher query language>> as per the example below.
+In Java, you can use the <<cypher,Cypher query language>> as per the example below.
 First, let's add some data.
 
 [snippet,java]
@@ -81,6 +81,6 @@ You should instead use only one and if you need the facilities of the other meth
 For more information on the Java interface to Cypher, see the 
 link:javadocs/index.html[Java API].
 
-For more information and examples for Cypher, see <<cypher-query-lang>> and <<data-modeling-examples>>.
+For more information and examples for Cypher, see <<cypher>> and <<data-modeling-examples>>.
 
 

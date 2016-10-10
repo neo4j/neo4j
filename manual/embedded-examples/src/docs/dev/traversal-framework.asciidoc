@@ -6,7 +6,7 @@ The Traversal Framework
 The link:javadocs/org/neo4j/graphdb/traversal/package-summary.html[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java.
 Some traversal examples are collected under <<tutorials-java-embedded-traversal>>. 
 
-You can also use <<cypher-query-lang, The Cypher Query Language>> as a powerful declarative way to query the graph.
+You can also use <<cypher, The Cypher Query Language>> as a powerful declarative way to query the graph.
 
 [[tutorial-traversal-concepts]]
 == Main concepts ==

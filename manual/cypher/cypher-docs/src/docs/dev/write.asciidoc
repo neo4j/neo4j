@@ -1,44 +1,47 @@
 [[query-write]]
-= Writing Clauses =
+= Write Clauses =
 
-Write data to the database.
+[abstract]
+--
+These comprise clauses that write the date to the database.
+--
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::ql/create/index.asciidoc[]
+include::ql/create/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::ql/merge/index.asciidoc[]
+include::ql/merge/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::ql/set/index.asciidoc[]
+include::ql/set/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::ql/delete/index.asciidoc[]
+include::ql/delete/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::ql/remove/index.asciidoc[]
+include::ql/remove/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::ql/foreach/index.asciidoc[]
+include::ql/foreach/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::ql/create-unique/index.asciidoc[]
+include::ql/create-unique/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::../parsed-graphgists/import/import-csv-with-cypher.asciidoc[]
+include::../parsed-graphgists/import/import-csv-with-cypher.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::ql/periodic-commit/index.asciidoc[]
+include::ql/periodic-commit/index.asciidoc[leveloffset=+1]
 
-:leveloffset: 0
+ifndef::asciidoctor[:leveloffset: 0]
 
 

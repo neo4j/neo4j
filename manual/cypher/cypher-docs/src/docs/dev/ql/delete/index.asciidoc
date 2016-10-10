@@ -1,5 +1,5 @@
 [[query-delete]]
-= Delete
+= DELETE
 
 [abstract]
 The `DELETE` clause is used to delete graph elements -- nodes, relationships or paths.

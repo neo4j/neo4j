@@ -1,6 +1,11 @@
 [[query-tuning]]
 = Query Tuning
 
+[abstract]
+--
+This section describes query tuning for the Cypher query language.
+--
+
 Neo4j works very hard to execute queries as fast as possible.
 
 However, when optimizing for maximum query execution performance, it may be helpful to rephrase queries using knowledge about the domain and the application.
@@ -15,6 +20,11 @@ To minimize the resources used for this, make sure to use parameters instead of 
 This allows Cypher to re-use your queries instead of having to parse and build new execution plans.
 
 To read more about the execution plan operators mentioned in this chapter, see <<execution-plans>>.
+
+* <<how-are-queries-executed,How are queries executed?>>
+* <<how-do-i-profile-a-query,Profiling a query>>
+* <<cypherdoc-basic-query-tuning-example,Basic query tuning example>>
+* <<query-using,USING>>
 
 [[how-are-queries-executed]]
 == How are queries executed?
@@ -42,7 +52,7 @@ When Cypher is building execution plans, it looks at the schema to see if it can
 These index decisions are only valid until the schema changes, so adding or removing indexes leads to the execution plan cache being flushed.
 
 [[how-do-i-profile-a-query]]
-== How do I profile a query?
+== Profiling a query
 
 There are two options to choose from when you want to analyze a query by looking at its execution plan:
 
@@ -62,11 +72,11 @@ Being explicit about what types and labels you expect relationships and nodes to
 This means that when you know that a relationship can only be of a certain type, you should add that to the query.
 The same goes for labels, where declaring labels on both the start and end nodes of a relationship helps Neo4j find the best way to execute the statement.
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 3]
 
 
-include::../parsed-graphgists/query-tuning/basic-query-tuning-example.asciidoc[]
+include::../parsed-graphgists/query-tuning/basic-query-tuning-example.asciidoc[leveloffset=+1]
 
-:leveloffset: 2
+ifndef::asciidoctor[:leveloffset: 2]
 
-include::ql/query-using.adoc[]
+include::ql/query-using.adoc[leveloffset=+1]

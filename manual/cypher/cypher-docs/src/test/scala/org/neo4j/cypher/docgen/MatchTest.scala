@@ -29,7 +29,7 @@ import scala.collection.JavaConverters._
 class MatchTest extends DocumentingTest {
   override def outputPath = "target/docs/dev/ql/"
   override def doc = new DocBuilder {
-    doc("Match", "query-match")
+    doc("MATCH", "query-match")
     initQueries(
       """CREATE (charlie:Person {name:'Charlie Sheen'}),
         |       (martin:Person {name: 'Martin Sheen'}),
