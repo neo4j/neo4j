@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.guard;
 
-public class GuardException extends RuntimeException
+import org.neo4j.kernel.api.exceptions.Status;
+
+public abstract class GuardException extends RuntimeException implements Status.HasStatus
 {
 
     protected GuardException( final String message )
     {
         super( message );
     }
+
 }
