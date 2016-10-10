@@ -1,4 +1,4 @@
-[[execution-plan-expand]]
+[[execution-plans-expand-operators]]
 = Expand operators
 
 These operators explore the graph by expanding graph patterns.

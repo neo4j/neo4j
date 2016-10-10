@@ -28,11 +28,11 @@ Operators are grouped into high-level categories.
 Please remember that the statistics of the actual database where the queries run on will decide the plan used.
 There is no guarantee that a specific query will always be solved with the same plan.
 
-* <<execution-plans-starting-query,Starting point operators>>
-* <<execution-plan-expand,Expand operators>>
+* <<execution-plans-starting-operators,Starting point operators>>
+* <<execution-plans-expand-operators,Expand operators>>
 * <<combining-operators,Combining operators>>
 * <<execution-plans-row-operators,Row operators>>
-* <<execution-plans-update,Update operators>>
+* <<execution-plans-update-operators,Update operators>>
 * <<query-shortestpath-planning,Shortest path planning>>
 
 // The conditional leveloffsets below are "wrong" for the neo4j/neo4j
