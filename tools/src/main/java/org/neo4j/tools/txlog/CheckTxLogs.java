@@ -47,6 +47,8 @@ import org.neo4j.test.LogTestUtils;
 import org.neo4j.tools.txlog.checktypes.CheckType;
 import org.neo4j.tools.txlog.checktypes.CheckTypes;
 
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+
 /**
  * Tool that verifies consistency of transaction logs.
  *
@@ -155,9 +157,11 @@ public class CheckTxLogs
             throws IOException
     {
         boolean success = true;
+        boolean checkTxIds = true;
         for ( CheckType<?,?> checkType : checkTypes )
         {
-            success &= scan( logFiles, handler, checkType );
+            success &= scan( logFiles, handler, checkType, checkTxIds );
+            checkTxIds = false;
         }
         return success;
     }
@@ -175,7 +179,7 @@ public class CheckTxLogs
     }
 
     private <C extends Command, R extends AbstractBaseRecord> boolean scan( PhysicalLogFiles logFiles,
-            InconsistenciesHandler handler, CheckType<C,R> check ) throws IOException
+            InconsistenciesHandler handler, CheckType<C,R> check, boolean checkTxIds ) throws IOException
     {
         out.println( "Checking logs for " + check.name() + " inconsistencies" );
         CommittedRecords<R> state = new CommittedRecords<>( check );
@@ -183,6 +187,7 @@ public class CheckTxLogs
         List<CommandAndLogVersion> txCommands = new ArrayList<>();
         boolean validLogs = true;
         long commandsRead = 0;
+        long lastSeenTxId = BASE_TX_ID;
         try ( LogEntryCursor logEntryCursor = LogTestUtils.openLogs( fs, logFiles ) )
         {
             while ( logEntryCursor.next() )
@@ -200,6 +205,11 @@ public class CheckTxLogs
                 else if ( entry instanceof LogEntryCommit )
                 {
                     long txId = ((LogEntryCommit) entry).getTxId();
+                    if ( checkTxIds )
+                    {
+                        validLogs &= checkNoDuplicatedTxsInTheLog( lastSeenTxId, txId, handler );
+                        lastSeenTxId = txId;
+                    }
                     for ( CommandAndLogVersion txCommand : txCommands )
                     {
                         validLogs &= checkAndHandleInconsistencies( txCommand, check, state, txId, handler );
@@ -223,6 +233,16 @@ public class CheckTxLogs
         }
 
         return validLogs;
+    }
+
+    private boolean checkNoDuplicatedTxsInTheLog( long lastTxId, long currentTxId, InconsistenciesHandler handler )
+    {
+        boolean isValid = lastTxId <= BASE_TX_ID || lastTxId + 1 == currentTxId;
+        if ( !isValid )
+        {
+            handler.reportInconsistentTxIdSequence( lastTxId, currentTxId );
+        }
+        return isValid;
     }
 
     private <C extends Command, R extends AbstractBaseRecord> boolean checkAndHandleInconsistencies(
