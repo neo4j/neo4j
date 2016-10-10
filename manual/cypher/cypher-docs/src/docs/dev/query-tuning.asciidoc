@@ -41,9 +41,8 @@ Cost::
 This planner uses the statistics service in Neo4j to assign cost to alternative plans and picks the cheapest one.
 While this should lead to superior execution plans in most cases, it is still under development.
 
-By default, Neo4j {neo4j-version} will use the cost planner for some queries, but not all.
-You can force it to use a specific planner by using the `cypher.planner` configuration setting (see <<config_cypher.planner>>), or by prepending your query with `CYPHER planner=cost` or `CYPHER planner=rule`.
-Neo4j might still not use the planner you selected -- not all queries are solvable by the cost planner at this point.
+By default, Neo4j {neo4j-version} will use the cost planner for all queries.
+You can force it to use a specific planner by using the `cypher.planner` configuration setting (see link:{operations-manual-base-uri}/reference/#config_cypher.planner[Operations Manual -> Configuration Settings]), or by prepending your query with `CYPHER planner=cost` or `CYPHER planner=rule`.
 
 You can see which planner was used by looking at the execution plan.
 
@@ -73,7 +72,6 @@ This means that when you know that a relationship can only be of a certain type,
 The same goes for labels, where declaring labels on both the start and end nodes of a relationship helps Neo4j find the best way to execute the statement.
 
 ifndef::asciidoctor[:leveloffset: 3]
-
 
 include::../parsed-graphgists/query-tuning/basic-query-tuning-example.asciidoc[leveloffset=+1]
 

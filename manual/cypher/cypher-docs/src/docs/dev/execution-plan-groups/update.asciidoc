@@ -1,4 +1,4 @@
-[[execution-plans-update]]
+[[execution-plans-update-operators]]
 = Update operators
 
 These operators are used in queries that update the graph.

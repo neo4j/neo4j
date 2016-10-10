@@ -1,5 +1,7 @@
 [[query-load-csv]]
 = LOAD CSV
+:dbms-allow-csv-import-from-file-urls-uri: {operations-manual-base-uri}/reference/#config_dbms.security.allow_csv_import_from_file_urls
+:dbms-directories-import-uri: {operations-manual-base-uri}/reference/#config_dbms.directories.import
 
 [abstract]
 --
@@ -16,11 +18,10 @@
 [NOTE]
 .Configuration settings for file URLs
 ====
-<<config_dbms.security.allow_csv_import_from_file_urls>>::
+link:{dbms-allow-csv-import-from-file-urls-uri}[dbms.security.allow_csv_import_from_file_urls]::
 This setting determines if Cypher will allow the use of `file:///` URLs when loading data using `LOAD CSV`.
 Such URLs identify files on the filesystem of the database server. Default is _true_.
-
-<<config_dbms.directories.import>>::
+link:{dbms-directories-import-uri}[dbms.directories.import]::
 Sets the root directory for `file:///` URLs used with the Cypher `LOAD CSV` clause.
 This must be set to a single directory on the filesystem of the database server, and will make all requests to load from `file:///` URLs relative to the specified directory (similar to how a unix chroot operates).
 The default value is _import_.

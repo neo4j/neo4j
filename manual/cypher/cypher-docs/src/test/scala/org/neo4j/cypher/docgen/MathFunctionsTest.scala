@@ -44,8 +44,8 @@ class MathFunctionsTest extends DocumentingTest {
       "These functions all operate on numerical expressions only, and will return an error if used on any other values. See also <<query-operators-mathematical>>..")
     p("The following graph is used for the examples below:")
     graphViz()
-    section("Number functions") {
-      section("abs()") {
+    section("Number functions", "query-functions-numeric") {
+      section("abs()", "functions-abs") {
         p("`abs()` returns the absolute value for a number.")
         function("`abs( expression )`", ("expression", "A numeric expression."))
         query("MATCH (a), (e) WHERE a.name = 'Alice' AND e.name = 'Eskil' RETURN a.age, e.age, abs(a.age - e.age)",
@@ -56,7 +56,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("ceil()") {
+      section("ceil()", "functions-ceil") {
         p("`ceil()` returns the smallest integer greater than or equal to the argument.")
         function("`ceil( expression )`", ("expression", "A numeric expression."))
         query("RETURN ceil(0.1)", ResultAssertions((r) => {
@@ -66,7 +66,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("floor()") {
+      section("floor()", "functions-floor") {
         p("`floor()` returns the greatest integer less than or equal to the expression.")
         function("`floor( expression )`", ("expression", "A numeric expression."))
         query("RETURN floor(0.9)", ResultAssertions((r) => {
@@ -76,7 +76,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("round()") {
+      section("round()", "functions-round") {
         p("`round()` returns the numerical expression, rounded to the nearest integer.")
         function("`round( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
         query("RETURN round(3.141592)", ResultAssertions((r) => {
@@ -86,7 +86,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("sign()") {
+      section("sign()", "functions-sign") {
         p("`sign()` returns the signum of a number -- zero if the expression is zero, `-1` for any negative number, and `1` for any positive number.")
         function("`sign( expression )`", ("expression", "A numeric expression."))
         query("RETURN sign(-17), sign(0.1)", ResultAssertions((r) => {
@@ -97,7 +97,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("rand()") {
+      section("rand()", "functions-rand") {
         p("`rand()` returns a random number in the range from 0 (inclusive) to 1 (exclusive), [0,1). The numbers returned follow an approximate uniform distribution.")
         function("`rand()`")
         query("RETURN rand()", ResultAssertions((r) => {
@@ -109,8 +109,8 @@ class MathFunctionsTest extends DocumentingTest {
         }
       }
     }
-    section("Logarithmic functions") {
-      section("log()") {
+    section("Logarithmic functions", "query-functions-logarithmic") {
+      section("log()", "functions-log") {
         p("`log()` returns the natural logarithm of the expression.")
         function("`log( expression )`", ("expression", "A numeric expression."))
         query("RETURN log(27)", ResultAssertions((r) => {
@@ -120,7 +120,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("log10()") {
+      section("log10()", "functions-log10") {
         p("`log10()` returns the common logarithm (base 10) of the expression.")
         function("`log10( expression )`", ("expression", "A numeric expression."))
         query("RETURN log10(27)", ResultAssertions((r) => {
@@ -130,7 +130,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("exp()") {
+      section("exp()", "functions-exp") {
         p("`exp()` returns `e^n`, where `e` is the base of the natural logarithm, and `n` is the value of the argument expression.")
         function("`e( expression )`", ("expression", "A numeric expression."))
         query("RETURN exp(2)", ResultAssertions((r) => {
@@ -140,7 +140,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("e()") {
+      section("e()", "functions-e") {
         p("`e()` returns the base of the natural logarithm, `e`.")
         function("`e()`")
         query("RETURN e()", ResultAssertions((r) => {
@@ -150,7 +150,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("sqrt()") {
+      section("sqrt()", "functions-sqrt") {
         p("`sqrt()` returns the square root of a number.")
         function("`sqrt( expression )`", ("expression", "A numeric expression."))
         query("RETURN sqrt(256)", ResultAssertions((r) => {
@@ -161,9 +161,9 @@ class MathFunctionsTest extends DocumentingTest {
         }
       }
     }
-    section("Trigonometric functions") {
+    section("Trigonometric functions", "query-functions-trigonometric") {
       p("All trigonometric functions operate on radians, unless otherwise specified.")
-      section("sin()") {
+      section("sin()", "functions-sin") {
         p("`sin()` returns the sine of the expression.")
         function("`sin( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
         query("RETURN sin(0.5)", ResultAssertions((r) => {
@@ -173,7 +173,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("cos()") {
+      section("cos()", "functions-cos") {
         p("`cos()` returns the cosine of the expression.")
         function("`cos( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
         query("RETURN cos(0.5)", ResultAssertions((r) => {
@@ -183,7 +183,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("tan()") {
+      section("tan()", "functions-tan") {
         p("`tan()` returns the tangent of the expression.")
         function("`tan( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
         query("RETURN tan(0.5)", ResultAssertions((r) => {
@@ -193,7 +193,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("cot()") {
+      section("cot()", "functions-cot") {
         p("`cot()` returns the cotangent of the expression.")
         function("`cot( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
         query("RETURN cot(0.5)", ResultAssertions((r) => {
@@ -203,7 +203,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("asin()") {
+      section("asin()", "functions-asin") {
         p("`asin()` returns the arcsine of the expression, in radians.")
         function("`asin( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
         query("RETURN asin(0.5)", ResultAssertions((r) => {
@@ -213,7 +213,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("acos()") {
+      section("acos()", "functions-acos") {
         p("`acos()` returns the arccosine of the expression, in radians.")
         function("`abs( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
         query("RETURN acos(0.5)", ResultAssertions((r) => {
@@ -223,7 +223,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("atan()") {
+      section("atan()", "functions-atan") {
         p("`atan()` returns the arctangent of the expression, in radians.")
         function("`atan( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
         query("RETURN atan(0.5)", ResultAssertions((r) => {
@@ -233,7 +233,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("atan2()") {
+      section("atan2()", "functions-atan2") {
         p("`atan2()` returns the arctangent2 of a set of coordinates, in radians.")
         function("`atan2( expression1, expression2 )`",
                  ("expression1", "A numeric expression for y that represents the angle in radians."),
@@ -245,7 +245,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("pi()") {
+      section("pi()", "functions-pi") {
         p("`pi()` returns the mathematical constant pi.")
         function("`pi()`")
         query("RETURN pi()", ResultAssertions((r) => {
@@ -255,7 +255,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("degrees()") {
+      section("degrees()", "functions-degrees") {
         p("`degrees()` converts radians to degrees.")
         function("`degrees( expression )`",
                  ("expression", "A numeric expression that represents the angle in radians."))
@@ -266,7 +266,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("radians()") {
+      section("radians()", "functions-radians") {
         p("`radians()` returns the common logarithm (base 10) of the expression.")
         function("`radians( expression )`",
                  ("expression", "A numeric expression that represents the angle in degrees."))
@@ -277,7 +277,7 @@ class MathFunctionsTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("haversin()") {
+      section("haversin()", "functions-haversin") {
         p("`haversin()` returns half the versine of the expression.")
         function("`haversin( expression )`",
                  ("expression", "A numeric expression that represents the angle in radians."))

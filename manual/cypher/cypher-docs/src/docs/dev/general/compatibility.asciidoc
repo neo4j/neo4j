@@ -5,11 +5,11 @@ Cypher is not a static language. New versions introduce new features and sometim
 Older versions of the language can still be accessed if required.
 There are two ways to select which version to use in queries.
 
-1 - Setting a version for all queries
+. Setting a version for all queries
 You can configure your database with the configuration parameter `cypher.default_language_version`, and enter which version you'd like to use (see <<cypher-versions>>).
 Every Cypher query will use this version, provided the query hasn't explicitly been configured as described in the next item below.
 
-2 - Setting a version on a query by query basis
+. Setting a version on a query by query basis
 The other way is on a query by query basis.
 By simply putting `CYPHER 2.3` at the beginning, that particular query will be executed with the version of Cypher included in Neo4j 2.3.
 

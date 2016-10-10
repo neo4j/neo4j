@@ -71,50 +71,50 @@ These functions return lists of other values.
 
 These functions all operate on numerical expressions only, and will return an error if used on any other values.
 
-**1. Numeric functions**
+**1. <<query-functions-numeric, Numeric functions>>**
 
 [options="header"]
 |===
-|Function                     |   Description
-|abs()      | Returns the absolute value of a number.
-|ceil()     | Returns the smallest integer greater than or equal to the argument.
-|floor()    | Returns the greatest integer less than or equal to the expression.
-|rand()     | Returns a random number in the range from 0 (inclusive) to 1 (exclusive), `[0,1)`.
-|round()    | Returns the numerical expression, rounded to the nearest integer.
-|sign()     | Returns the signum of a number -- zero if the expression is zero, `-1` for any negative number, and `1` for any positive number.
+| Function                     | Description
+| <<functions-abs, abs()>>     | Returns the absolute value of a number.
+| <<functions-ceil, ceil()>>   | Returns the smallest integer greater than or equal to the argument.
+| <<functions-floor, floor()>> | Returns the greatest integer less than or equal to the expression.
+| <<functions-rand, rand()>>   | Returns a random number in the range from 0 (inclusive) to 1 (exclusive), `[0,1)`.
+| <<functions-round, round()>> | Returns the numerical expression, rounded to the nearest integer.
+| <<functions-sign, sign()>>   | Returns the signum of a number -- zero if the expression is zero, `-1` for any negative number, and `1` for any positive number.
 |===
 
-**2. Logarithmic functions**
+**2. <<query-functions-logarithmic, Logarithmic functions>>**
 
 [options="header"]
 |===
-|Function   |   Description
-|e()        | Returns the base of the natural logarithm, `e`.
-|exp()      | Returns `e^n`, where `e` is the base of the natural logarithm, and `n` is the value of the argument expression.
-|log()      | Returns the natural logarithm of the expression.
-|log10()    | Returns the common logarithm (base 10) of the expression.
-|sqrt()     | Returns the square root of a number.
+| Function                     | Description
+| <<functions-e, e()>>         | Returns the base of the natural logarithm, `e`.
+| <<functions-exp, exp()>>     | Returns `e^n`, where `e` is the base of the natural logarithm, and `n` is the value of the argument expression.
+| <<functions-log, log()>>     | Returns the natural logarithm of the expression.
+| <<functions-log10, log10()>> | Returns the common logarithm (base 10) of the expression.
+| <<functions-sqrt, sqrt()>>   | Returns the square root of a number.
 |===
 
-**3. Trigonometric functions**
+**3. <<query-functions-trigonometric, Trigonometric functions>>**
 
 All trigonometric functions operate on radians, unless otherwise specified.
 
 [options="header"]
 |===
-|Function       |   Description
-|acos()         | Returns the arccosine of the expression.
-|asin()         | Returns the arcsine of the expression.
-|atan()         | Returns the arctangent of the expression.
-|atan2()        | Returns the arctangent2 of a set of coordinates.
-|cos()          | Returns the cosine of the expression.
-|cot()          | Returns the cotangent of the expression.
-|degrees()      | Converts radians to degrees.
-|haversin()     | Returns half the versine of the expression.
-|pi()           | Returns the mathematical constant pi.
-|radians()      | Converts degrees to radians.
-|sin()          | Returns the sine of the expression.
-|tan()          | Returns the tangent of the expression.
+| Function                           | Description
+| <<functions-acos, acos()>>         | Returns the arccosine of the expression.
+| <<functions-asin, asin()>>         | Returns the arcsine of the expression.
+| <<functions-atan, atan()>>         | Returns the arctangent of the expression.
+| <<functions-atan2, atan2()>>       | Returns the arctangent2 of a set of coordinates.
+| <<functions-cos, cos()>>           | Returns the cosine of the expression.
+| <<functions-cot, cot()>>           | Returns the cotangent of the expression.
+| <<functions-degrees, degrees()>>   | Converts radians to degrees.
+| <<functions-haversin, haversin()>> | Returns half the versine of the expression.
+| <<functions-pi, pi()>>             | Returns the mathematical constant pi.
+| <<functions-radians, radians()>>   | Converts degrees to radians.
+| <<functions-sin, sin()>>           | Returns the sine of the expression.
+| <<functions-tan, tan()>>           | Returns the tangent of the expression.
 |===
 
 **<<query-functions-string,String functions>>**
