@@ -1,4 +1,4 @@
-[[execution-plans-starting-query]]
+[[execution-plans-starting-operators]]
 = Starting point operators
 
 These operators find parts of the graph from which to start.

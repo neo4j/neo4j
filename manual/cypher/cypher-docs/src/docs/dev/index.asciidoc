@@ -1,6 +1,5 @@
 [[cypher]]
-Cypher Query Language
-=====================
+= Cypher
 
 ifndef::asciidoctor[]
 [partintro]

@@ -5,7 +5,7 @@
 Find starting points through legacy indexes.
 
 [IMPORTANT]
-The `START` clause should only be used when accessing legacy indexes (see <<indexing>>).
+The `START` clause should only be used when accessing legacy indexes.
 In all other cases, use `MATCH` instead (see <<query-match>>).
 
 In Cypher, every query describes a pattern, and in that pattern one can have multiple starting points.
