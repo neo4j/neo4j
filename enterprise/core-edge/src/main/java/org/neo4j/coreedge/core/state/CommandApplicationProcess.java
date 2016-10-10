@@ -141,6 +141,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
                     else
                     {
                         batcher.flush();
+                        // since this last entry didn't get in the batcher we need to update the lastApplied:
                         lastApplied = logIndex;
                     }
                 }
@@ -217,7 +218,8 @@ public class CommandApplicationProcess extends LifecycleAdapter
             batchStat.collect( batch.size() );
 
             long startIndex = lastIndex - batch.size() + 1;
-            handleOperations( startIndex, batch );
+            long lastHandledIndex = handleOperations( startIndex, batch );
+            assert lastHandledIndex == lastIndex;
             lastApplied = lastIndex;
 
             batch.clear();
@@ -230,7 +232,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
         raftLog.prune( lastFlushed );
     }
 
-    private void handleOperations( long commandIndex, List<DistributedOperation> operations )
+    private long handleOperations( long commandIndex, List<DistributedOperation> operations )
     {
         try ( CommandDispatcher dispatcher = coreStateMachines.commandDispatcher() )
         {
@@ -251,6 +253,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
                 commandIndex++;
             }
         }
+        return commandIndex - 1;
     }
 
     private void maybeFlush() throws IOException

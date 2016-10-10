@@ -66,7 +66,7 @@ public class StoreFetcher
     {
         ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
         long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId - 1 );
+        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId );
     }
 
     private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId ) throws IOException, StoreCopyFailedException
@@ -88,7 +88,8 @@ public class StoreFetcher
         try
         {
             log.info( "Copying store from %s", from );
-            long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, expectedStoreId, new StreamToDisk( destDir, fs ) );
+            long lastFlushedTxId =
+                    storeCopyClient.copyStoreFiles( from, expectedStoreId, new StreamToDisk( destDir, fs ) );
 
             // We require at least one transaction for extracting the log index of the consensus log.
             // Given there might not have been any activity on the source server we need to ask for the

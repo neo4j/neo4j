@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
@@ -34,33 +35,37 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
+
 public class TransactionLogCatchUpWriter implements TxPullResponseListener, AutoCloseable
 {
-    private final LifeSupport life;
-    private final TransactionLogWriter writer;
+    private final Lifespan lifespan = new Lifespan();
+    private final File neoStoreFile;    ;
+    private final PageCache pageCache;
     private final Log log;
+    private final TransactionLogWriter writer;
+
+    private long txId = -1;
 
     TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
             throws IOException
     {
+        this.neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );
-        this.life = new LifeSupport();
 
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
         ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDir );
         ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
+        LogFile logFile = lifespan.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
                 () -> readOnlyTransactionIdStore.getLastCommittedTransactionId() - 1, logVersionRepository,
                 new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), new LogHeaderCache( 10 ) ) );
-        life.start();
-
-        FlushableChannel channel = logFile.getWriter();
-        this.writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
+        this.writer = new TransactionLogWriter( new LogEntryWriter( logFile.getWriter() ) );
     }
 
     @Override
@@ -69,7 +74,8 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         CommittedTransactionRepresentation tx = txPullResponse.tx();
         try
         {
-            writer.append( tx.getTransactionRepresentation(), tx.getCommitEntry().getTxId() );
+            txId = tx.getCommitEntry().getTxId();
+            writer.append( tx.getTransactionRepresentation(), txId );
         }
         catch ( IOException e )
         {
@@ -78,8 +84,12 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
-        life.shutdown();
+        lifespan.close();
+        if ( txId != -1 )
+        {
+            MetaDataStore.setRecord( pageCache, neoStoreFile, LAST_TRANSACTION_ID, txId );
+        }
     }
 }

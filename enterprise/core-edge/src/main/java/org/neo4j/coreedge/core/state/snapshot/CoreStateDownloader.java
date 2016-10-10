@@ -108,7 +108,8 @@ public class CoreStateDownloader
             }
             else
             {
-                CatchupResult catchupResult = storeFetcher.tryCatchingUp( source, localStoreId, localDatabase.storeDir() );
+                CatchupResult catchupResult =
+                        storeFetcher.tryCatchingUp( source, localStoreId, localDatabase.storeDir() );
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {
