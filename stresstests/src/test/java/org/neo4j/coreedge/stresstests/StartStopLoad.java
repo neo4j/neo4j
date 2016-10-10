@@ -27,9 +27,10 @@ import org.neo4j.coreedge.discovery.ClusterMember;
 
 class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
 {
-    StartStopLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
+    StartStopLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster, int numberOfCores,
+            int numberOfEdges )
     {
-        super( keepGoing, onFailure, cluster, cluster.edgeMembers().isEmpty() );
+        super( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges );
     }
 
     @Override

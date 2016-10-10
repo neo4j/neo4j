@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.StressTestingHelper.fromEnv;
@@ -99,7 +100,7 @@ public class BackupStoreCopyInteractionStressTesting
                         instanceCoreParams, edgeParams, instanceEdgeParams, StandardV3_0.NAME );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
-        BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, TimeUnit.MINUTES );
+        BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, MINUTES );
         BooleanSupplier keepGoing = () ->!stopTheWorld.get() && notExpired.getAsBoolean();
         Runnable onFailure = () -> stopTheWorld.set( true );
 
@@ -108,13 +109,16 @@ public class BackupStoreCopyInteractionStressTesting
         {
             cluster.start();
             Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
-            Future<Throwable> startStopWorker = service.submit( new StartStopLoad( keepGoing, onFailure, cluster ) );
-            Future<Throwable> backupWorker =
-                    service.submit( new BackupLoad( keepGoing, onFailure, cluster, backupDirectory, backupAddress ) );
+            Future<Throwable> startStopWorker =
+                    service.submit( new StartStopLoad( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
+            Future<Throwable> backupWorker = service.submit(
+                    new BackupLoad( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges, backupDirectory,
+                            backupAddress ) );
 
-            assertNull( prettyPrintStackTrace( workload.get() ), workload.get() );
-            assertNull( prettyPrintStackTrace( startStopWorker.get() ), startStopWorker.get() );
-            assertNull( prettyPrintStackTrace( backupWorker.get() ), backupWorker.get() );
+            long timeout = durationInMinutes + 5;
+            assertNull( prettyPrintStackTrace( workload.get() ), workload.get( timeout, MINUTES ) );
+            assertNull( prettyPrintStackTrace( startStopWorker.get() ), startStopWorker.get( timeout, MINUTES  ) );
+            assertNull( prettyPrintStackTrace( backupWorker.get() ), backupWorker.get( timeout, MINUTES ) );
         }
         finally
         {
