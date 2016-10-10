@@ -57,7 +57,7 @@ public class OverriddenAccessMode implements AccessMode
     @Override
     public boolean overrideOriginalMode()
     {
-        return false;
+        return overriddenMode.overrideOriginalMode();
     }
 
     @Override
