@@ -23,10 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -153,4 +156,24 @@ public class BatchInsertionIT
         }
     }
 
+    @Test( expected = ReservedIdException.class )
+    public void makeSureCantCreateNodeWithMagicNumber() throws IOException
+    {
+        // given
+        File path = new File( dbRule.getStoreDirAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( path );
+
+        try
+        {
+            // when
+            long id = IdGeneratorImpl.INTEGER_MINUS_ONE;
+            inserter.createNode( id, null );
+
+            // then throws
+        }
+        finally
+        {
+            inserter.shutdown();
+        }
+    }
 }
