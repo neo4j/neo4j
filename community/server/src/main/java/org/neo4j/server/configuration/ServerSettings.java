@@ -215,7 +215,9 @@ public interface ServerSettings
     Setting<Long> gc_logging_rotation_size = setting("dbms.logs.gc.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
     @SuppressWarnings("unused") // used only in the startup scripts
-    @Description("Path of the run directory")
+    @Description("Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it is" +
+            " running in the background. The pidfile is created when starting neo4j and removed when stopping it." +
+            " It may be placed on an in-memory filesystem such as tmpfs.")
     Setting<File> run_directory = pathSetting( "dbms.directories.run", "run" );
 
     @SuppressWarnings("unused") // used only in the startup scripts
