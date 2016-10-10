@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.catchup.tx;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchUpResponseAdaptor;
@@ -36,7 +35,6 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -105,6 +103,8 @@ public class TxPollingClient extends LifecycleAdapter
         timeout.renew();
         if ( applier.workPending() )
         {
+            log.info( "Still applying old batch, delay pulling to the next interval. Up to tx %d",
+                    applier.lastAppliedTxId() );
             return;
         }
 
@@ -116,8 +116,8 @@ public class TxPollingClient extends LifecycleAdapter
             StoreId localStoreId = localDatabase.storeId();
             TxPullRequest txPullRequest = new TxPullRequest( lastAppliedTxId, localStoreId );
             log.info( "Starting transaction pull from " + lastAppliedTxId );
-            CatchupResult catchupResult = catchUpClient.makeBlockingRequest( core, txPullRequest,
-                    new CatchUpResponseAdaptor<CatchupResult>()
+            CatchupResult catchupResult =
+                    catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
                     {
                         @Override
                         public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
@@ -134,26 +134,41 @@ public class TxPollingClient extends LifecycleAdapter
                         }
                     } );
 
-            if ( catchupResult == CatchupResult.SUCCESS )
+            switch ( catchupResult )
             {
+            case SUCCESS:
                 log.info( "Successfully completed transaction pull from " + lastAppliedTxId );
-            }
-
-            if ( catchupResult == CatchupResult.E_TRANSACTION_PRUNED )
-            {
-                pause();
+                break;
+            case E_TRANSACTION_PRUNED:
+                log.info( "Tx pull unable to get transactions starting from " + lastAppliedTxId +
+                        " such transaction have been pruned. Attempting a store copy." );
+                downloadDatabase( core, localStoreId );
+                break;
+            default:
                 log.info( "Tx pull unable to get transactions starting from " + lastAppliedTxId );
-                localDatabase.stop();
-                new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery , log ).
-                        copyWholeStoreFrom( core, localStoreId, storeFetcher );
-                localDatabase.start();
-                applier.refreshLastAppliedTx();
-                resume();
+                break;
             }
         }
         catch ( Throwable e )
         {
             log.warn( "Tx pull attempt failed, will retry at the next regularly scheduled polling attempt.", e );
+        }
+    }
+
+    private void downloadDatabase( MemberId core, StoreId localStoreId ) throws Throwable
+    {
+        pause();
+        try
+        {
+            localDatabase.stop();
+            new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
+                    copyWholeStoreFrom( core, localStoreId, storeFetcher );
+            localDatabase.start();
+            applier.refreshFromNewStore();
+        }
+        finally
+        {
+            resume();
         }
     }
 

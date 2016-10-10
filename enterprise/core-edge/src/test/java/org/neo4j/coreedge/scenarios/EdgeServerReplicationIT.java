@@ -261,7 +261,7 @@ public class EdgeServerReplicationIT
     }
 
     @Test
-    public void shouldBeAbleToDownloadToANewStoreAfterPruning() throws Exception
+    public void shouldBeAbleToDownloadANewStoreAfterPruning() throws Exception
     {
         // given
         Map<String,String> params = stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "keep_none",
@@ -301,6 +301,56 @@ public class EdgeServerReplicationIT
         // then
         awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeMembers() ), 1, TimeUnit.MINUTES );
 
+        assertEventually( "The edge member has the same data as the core members",
+                () -> DbRepresentation.of( edgeClusterMember.database() ),
+                equalTo( DbRepresentation.of( cluster.awaitLeader().database() ) ), 10, TimeUnit.SECONDS );
+    }
+    @Test
+    public void shouldBeAbleToPullTxAfterHavingDownloadedANewStoreAfterPruning() throws Exception
+    {
+        // given
+        Map<String,String> params = stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "keep_none",
+                GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M",
+                GraphDatabaseSettings.check_point_interval_time.name(), "100ms" );
+
+        Cluster cluster = clusterRule.withSharedCoreParams( params ).startCluster();
+
+        cluster.coreTx( ( db, tx ) ->
+        {
+            createData( db, 10 );
+            tx.success();
+        } );
+
+        awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeMembers() ), 1, TimeUnit.MINUTES );
+
+        EdgeClusterMember edgeClusterMember = cluster.getEdgeMemberById( 0 );
+        long highestEdgeLogVersion = physicalLogFiles( edgeClusterMember ).getHighestLogVersion();
+
+        edgeClusterMember.shutdown();
+
+        CoreClusterMember core;
+        do
+        {
+            core = cluster.coreTx( ( db, tx ) ->
+            {
+                createData( db, 1_000 );
+                tx.success();
+            } );
+
+        }
+        while ( physicalLogFiles( core ).getLowestLogVersion() <= highestEdgeLogVersion );
+
+        edgeClusterMember.start();
+
+        awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeMembers() ), 1, TimeUnit.MINUTES );
+
+        // when
+        cluster.coreTx( (db, tx) -> {
+            createData( db );
+            tx.success();
+        } );
+
+        // then
         assertEventually( "The edge member has the same data as the core members",
                 () -> DbRepresentation.of( edgeClusterMember.database() ),
                 equalTo( DbRepresentation.of( cluster.awaitLeader().database() ) ), 10, TimeUnit.SECONDS );

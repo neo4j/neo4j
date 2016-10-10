@@ -183,8 +183,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         LifeSupport txPulling = new LifeSupport();
         int maxBatchSize = config.get( CoreEdgeClusterSettings.edge_transaction_applier_batch_size );
-        BatchingTxApplier batchingTxApplier = new BatchingTxApplier( maxBatchSize, dependencies.provideDependency(
-                TransactionIdStore.class ),
+        BatchingTxApplier batchingTxApplier = new BatchingTxApplier( maxBatchSize,
+                dependencies.provideDependency( TransactionIdStore.class ),
                 writableCommitProcess, databaseHealthSupplier, platformModule.monitors, logProvider );
         ContinuousJob txApplyJob = new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group(
                 "tx-applier", NEW_THREAD ), batchingTxApplier, logProvider );
