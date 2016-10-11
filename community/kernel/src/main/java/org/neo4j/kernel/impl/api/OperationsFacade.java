@@ -1578,6 +1578,10 @@ public class OperationsFacade
     @Override
     public Object functionCall( QualifiedName name, Object[] arguments ) throws ProcedureException
     {
+        if ( !tx.mode().allowsReads() )
+        {
+            throw tx.mode().onViolation( format( "Read operations are not allowed for '%s'.", tx.mode().name() ) );
+        }
         return callFunction( name, arguments, new RestrictedAccessMode( tx.mode(), AccessMode.Static.READ ) );
     }
 
