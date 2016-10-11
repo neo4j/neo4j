@@ -318,22 +318,16 @@ public class TransactionIT
         }
     }
 
-    // TODO: This code is duplicated from BuiltInProceduresInteractionTestBase.
-    // Should probably be extracted to a common place
-    private Server createHttpServer(
-            DoubleLatch latch, Barrier.Control innerBarrier,
-            int firstBatchSize, int otherBatchSize )
+    public static Server createHttpServer(
+            DoubleLatch latch, Barrier.Control innerBarrier, int firstBatchSize, int otherBatchSize )
     {
         Server server = new Server( 0 );
         server.setHandler( new AbstractHandler()
         {
             @Override
             public void handle(
-                    String target,
-                    Request baseRequest,
-                    HttpServletRequest request,
-                    HttpServletResponse response
-            ) throws IOException, ServletException
+                    String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response )
+                    throws IOException, ServletException
             {
                 response.setContentType( "text/plain; charset=utf-8" );
                 response.setStatus( HttpServletResponse.SC_OK );

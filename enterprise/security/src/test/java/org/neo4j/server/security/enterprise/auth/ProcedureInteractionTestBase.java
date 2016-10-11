@@ -534,6 +534,15 @@ public abstract class ProcedureInteractionTestBase<S>
 
         private static final AtomicReference<LatchedRunnables> testLatch = new AtomicReference<>();
 
+        static DoubleLatch doubleLatch = null;
+
+        @Procedure( name = "test.neverEnding" )
+        public void neverEndingWithLock()
+        {
+            doubleLatch.start();
+            doubleLatch.finishAndWaitForAllToFinish();
+        }
+
         @Procedure( name = "test.numNodes" )
         public Stream<CountResult> numNodes()
         {
