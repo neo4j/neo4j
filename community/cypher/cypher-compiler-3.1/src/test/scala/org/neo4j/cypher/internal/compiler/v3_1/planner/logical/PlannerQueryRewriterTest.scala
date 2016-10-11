@@ -130,10 +130,15 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
 
   assert_that(
     """MATCH (a)
-        OPTIONAL MATCH (a)-[r]->(b)-[r2]->(c) WHERE c.prop = b.prop
-        RETURN DISTINCT b as b""").
+       OPTIONAL MATCH (a)-[r]->(b)-[r2]->(c) WHERE c.prop = b.prop
+       RETURN DISTINCT b as b""").
     is_not_rewritten()
 
+  assert_that(
+    """OPTIONAL MATCH (f:DoesExist)
+       OPTIONAL MATCH (n:DoesNotExist)
+       RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b """).
+    is_not_rewritten()
 
   ignore("unused optional relationship moved to predicate") {
     // not done
