@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.security;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
 
-abstract public class LayeredAccessMode implements AccessMode
+abstract class LayeredAccessMode implements AccessMode
 {
     protected final AccessMode originalMode;
     protected final AccessMode overriddenMode;
