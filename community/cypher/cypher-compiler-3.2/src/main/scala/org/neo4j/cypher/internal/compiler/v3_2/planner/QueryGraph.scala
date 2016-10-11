@@ -40,7 +40,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     if (mustInclude.size < 2)
       mustInclude intersect allCoveredIds
     else {
-      var accumulatedElements = Set.empty[IdName]
+      var accumulatedElements = mustInclude
       for {
         lhs <- mustInclude
         rhs <- mustInclude

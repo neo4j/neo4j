@@ -117,4 +117,10 @@ class QueryGraphTest extends CypherFunSuite {
     qg.smallestGraphIncluding(Set(n, m, c)) should equal(
       Set(n, m, c, r1, r2))
   }
+
+  test("querygraphs containing only nodes") {
+    val qg = QueryGraph(patternNodes = Set(n, m))
+
+    qg.smallestGraphIncluding(Set(n, m)) should equal(Set(n, m))
+  }
 }
