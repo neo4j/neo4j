@@ -1152,7 +1152,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         synchronized DynamicByteBuffer copy()
         {
-            return new DynamicByteBuffer( buf ); // invoke "copy constructor"
+            return new DynamicByteBuffer( buf() ); // invoke "copy constructor"
         }
 
         static
@@ -1207,7 +1207,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         void free()
         {
             assertNotFreed();
-
             try
             {
                 clear();
@@ -1215,14 +1214,16 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             finally
             {
                 buf = null;
-                freeCall = new Exception();
+                freeCall = new Exception(
+                        "You're most likely seeing this exception because there was an attempt to use this buffer " +
+                        "after it was freed. This stack trace may help you figure out where and why it was freed" );
             }
         }
 
         synchronized void put( int pos, byte[] bytes, int offset, int length )
         {
-            assertNotFreed();
             verifySize( pos + length );
+            ByteBuffer buf = buf();
             try
             {
                 buf.position( pos );
@@ -1236,14 +1237,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         synchronized void get( int pos, byte[] scratchPad, int i, int howMuchToReadThisTime )
         {
-            assertNotFreed();
+            ByteBuffer buf = buf();
             buf.position( pos );
             buf.get( scratchPad, i, howMuchToReadThisTime );
         }
 
         synchronized void fillWithZeros( int pos, int bytes )
         {
-            assertNotFreed();
+            ByteBuffer buf = buf();
             buf.position( pos );
             while ( bytes > 0 )
             {
@@ -1259,7 +1260,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
          */
         private void verifySize( int totalAmount )
         {
-            assertNotFreed();
+            ByteBuffer buf = buf();
             if ( buf.capacity() >= totalAmount )
             {
                 return;
@@ -1273,34 +1274,36 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 newSize += Math.min( newSize, 1024 * 1024 );
                 sizeIndex++;
             }
-            int oldPosition = this.buf.position();
-            ByteBuffer buf = allocate( sizeIndex );
-            this.buf.position( 0 );
-            buf.put( this.buf );
-            this.buf = buf;
-            this.buf.position( oldPosition );
+            int oldPosition = buf.position();
+
+            // allocate new buffer
+            ByteBuffer newBuf = allocate( sizeIndex );
+
+            // copy contents of current buffer into new buffer
+            buf.position( 0 );
+            newBuf.put( buf );
+
+            // re-assign buffer to new buffer
+            newBuf.position( oldPosition );
+            this.buf = newBuf;
         }
 
         public void clear()
         {
-            assertNotFreed();
-            this.buf.clear();
+            buf().clear();
         }
 
         private void assertNotFreed()
         {
             if ( this.buf == null )
             {
-                String message = "This buffer have been freed";
-                throw this.freeCall != null
-                        ? new IllegalStateException( message, freeCall )
-                        : new IllegalStateException( message );
+                throw new IllegalStateException( "This buffer have been freed", freeCall );
             }
         }
 
         void dump( OutputStream target, byte[] scratchPad, int size ) throws IOException
         {
-            assertNotFreed();
+            ByteBuffer buf = buf();
             buf.position( 0 );
             while ( size > 0 )
             {
