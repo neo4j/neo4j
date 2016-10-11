@@ -41,9 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -52,7 +50,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
@@ -761,10 +758,6 @@ public class ImportToolDocIT
 
     private File badFile()
     {
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.neo4j_home.name(),
-                directory.absolutePath().getAbsolutePath() ) );
-        File logsDir = config.get( GraphDatabaseSettings.logs_directory );
-        return new File( logsDir, BAD_FILE_NAME );
+        return new File( directory.absolutePath(), BAD_FILE_NAME );
     }
 }
