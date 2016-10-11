@@ -151,17 +151,17 @@ class CatchUpLoad extends RepeatUntilCallable
             return database.getDependencyResolver().resolveDependency( TransactionIdStore.class )
                     .getLastClosedTransactionId();
         }
-        catch ( IllegalStateException | UnsatisfiedDependencyException ex )
+        catch ( Throwable ex )
         {
             return errorValueOrThrow( !isStoreClosed( ex ) || fail, ex );
         }
     }
 
-    private long errorValueOrThrow( boolean fail, RuntimeException error )
+    private long errorValueOrThrow( boolean fail, Throwable error )
     {
         if ( fail )
         {
-            throw error;
+            throw new RuntimeException( error );
         }
         else
         {
@@ -169,20 +169,25 @@ class CatchUpLoad extends RepeatUntilCallable
         }
     }
 
-    private boolean isStoreClosed( RuntimeException ex )
+    private boolean isStoreClosed( Throwable ex )
     {
+        if ( ex == null )
+        {
+            return false;
+        }
+
         if ( ex instanceof UnsatisfiedDependencyException )
         {
             return true;
         }
 
-        if ( !(ex instanceof IllegalStateException) )
+        if ( ex instanceof IllegalStateException )
         {
-            return false;
+            String message = ex.getMessage();
+            return message.startsWith( "MetaDataStore for file " ) && message.endsWith( " is closed" );
         }
 
-        String message = ex.getMessage();
-        return message.startsWith( "MetaDataStore for file " ) && message.endsWith( " is closed" );
+        return isStoreClosed( ex.getCause() );
     }
 
     private static class ConnectionResetFilter implements Predicate<Throwable>
