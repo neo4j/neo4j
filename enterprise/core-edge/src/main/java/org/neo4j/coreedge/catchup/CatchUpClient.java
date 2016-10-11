@@ -72,9 +72,8 @@ public class CatchUpClient extends LifecycleAdapter
         return makeBlockingRequest( target, request, DEFAULT_INACTIVITY_TIMEOUT, TimeUnit.SECONDS, responseHandler );
     }
 
-    public <T> T makeBlockingRequest( MemberId target, CatchUpRequest request,
-                                      long inactivityTimeout, TimeUnit timeUnit,
-                                      CatchUpResponseCallback<T> responseHandler )
+    private <T> T makeBlockingRequest( MemberId target, CatchUpRequest request, long inactivityTimeout,
+            TimeUnit timeUnit, CatchUpResponseCallback<T> responseHandler )
             throws CatchUpClientException, NoKnownAddressesException
     {
         CompletableFuture<T> future = new CompletableFuture<>();

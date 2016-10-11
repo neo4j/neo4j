@@ -115,7 +115,7 @@ public class TxPollingClient extends LifecycleAdapter
             pullRequestMonitor.txPullRequest( lastAppliedTxId );
             StoreId localStoreId = localDatabase.storeId();
             TxPullRequest txPullRequest = new TxPullRequest( lastAppliedTxId, localStoreId );
-            log.info( "Starting transaction pull from " + lastAppliedTxId );
+            log.info( "[" + Thread.currentThread() + "] Starting transaction pull from " + lastAppliedTxId );
             CatchupResult catchupResult =
                     catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
                     {
@@ -137,15 +137,15 @@ public class TxPollingClient extends LifecycleAdapter
             switch ( catchupResult )
             {
             case SUCCESS:
-                log.info( "Successfully completed transaction pull from " + lastAppliedTxId );
+                log.info( "[" + Thread.currentThread() + "] Successfully completed transaction pull from " + lastAppliedTxId );
                 break;
             case E_TRANSACTION_PRUNED:
-                log.info( "Tx pull unable to get transactions starting from " + lastAppliedTxId +
+                log.info( "[" + Thread.currentThread() + "] Tx pull unable to get transactions starting from " + lastAppliedTxId +
                         " such transaction have been pruned. Attempting a store copy." );
                 downloadDatabase( core, localStoreId );
                 break;
             default:
-                log.info( "Tx pull unable to get transactions starting from " + lastAppliedTxId );
+                log.info( "[" + Thread.currentThread() + "] Tx pull unable to get transactions starting from " + lastAppliedTxId );
                 break;
             }
         }

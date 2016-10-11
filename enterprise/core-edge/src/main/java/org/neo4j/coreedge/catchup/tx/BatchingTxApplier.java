@@ -99,7 +99,8 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
 
         if ( receivedTxId != expectedTxId )
         {
-            log.warn( "Out of order transaction. Received: " + receivedTxId + " Expected: " + expectedTxId );
+            log.warn( "[" + Thread.currentThread() + "] Out of order transaction. Received: " + receivedTxId +
+                    " Expected: " + expectedTxId );
             return;
         }
 
