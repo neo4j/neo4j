@@ -126,7 +126,7 @@ public class CoreServerModule
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
-        StartStopLife servicesToStopOnStoreCopy = new StartStopLife();
+        LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
         CoreStateDownloader downloader =
                 new CoreStateDownloader( platformModule.fileSystem, localDatabase, servicesToStopOnStoreCopy,
                         storeFetcher, catchUpClient, logProvider, copiedStoreRecovery );
@@ -138,13 +138,13 @@ public class CoreServerModule
                 @Override
                 public void registered( NeoStoreDataSource dataSource )
                 {
-                    servicesToStopOnStoreCopy.register( pickBackupExtension( dataSource ) );
+                    servicesToStopOnStoreCopy.add( pickBackupExtension( dataSource ) );
                 }
 
                 @Override
                 public void unregistered( NeoStoreDataSource dataSource )
                 {
-                    servicesToStopOnStoreCopy.unregister( pickBackupExtension( dataSource ) );
+                    servicesToStopOnStoreCopy.remove( pickBackupExtension( dataSource ) );
                 }
 
                 private OnlineBackupKernelExtension pickBackupExtension( NeoStoreDataSource dataSource )
@@ -193,7 +193,7 @@ public class CoreServerModule
                 localDatabase::dataSource, localDatabase::isAvailable, coreState, config,
                 platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ) );
 
-        servicesToStopOnStoreCopy.register( catchupServer );
+        servicesToStopOnStoreCopy.add( catchupServer );
 
         life.add( raftServer );
         life.add( catchupServer );

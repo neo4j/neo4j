@@ -30,11 +30,11 @@ import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
-import org.neo4j.coreedge.core.server.StartStopLife;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.fail;
@@ -50,7 +50,7 @@ public class CoreStateDownloaderTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
-    private final StartStopLife startStopLife = mock( StartStopLife.class );
+    private final Lifecycle startStopLife = mock( Lifecycle.class );
     private final StoreFetcher storeFetcher = mock( StoreFetcher.class );
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final CopiedStoreRecovery recovery = mock( CopiedStoreRecovery.class );
