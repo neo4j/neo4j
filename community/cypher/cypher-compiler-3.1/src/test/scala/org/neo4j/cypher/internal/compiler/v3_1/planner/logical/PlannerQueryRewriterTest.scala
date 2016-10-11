@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.StatementConverters.toUnionQuery
+import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.flattenBooleanOperators
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Query
@@ -140,20 +141,38 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
        RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b """).
     is_not_rewritten()
 
-  ignore("unused optional relationship moved to predicate") {
-    // not done
-    /*
-        MATCH (a)
-        OPTIONAL MATCH (a)-->(b)-->(c)
-        RETURN DISTINCT a, b
+  assert_that(
+    """MATCH (a)
+          OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c)
+          RETURN DISTINCT b as b""").
+    is_rewritten_to(
+      """MATCH (a)
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->()
+          RETURN DISTINCT b as b""")
 
-        is equivalent to:
+  assert_that(
+    """MATCH (a)
+          OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE b:B
+          RETURN DISTINCT b as b""").
+    is_rewritten_to(
+      """MATCH (a)
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B and (b)-[:T2]->()
+          RETURN DISTINCT b as b""")
 
-        MATCH (a)
-        OPTIONAL MATCH (a)-->(b) WHERE (b)-->(c)
-        RETURN DISTINCT a, b
-    */
-  }
+  assert_that(
+    """MATCH (a)
+            OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c.age <> 42
+            RETURN DISTINCT b as b""").
+    is_not_rewritten()
+
+  assert_that(
+    """MATCH (a)
+          OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c:A:B and c.id = 42 and c.foo = 'apa'
+          RETURN DISTINCT b as b""").
+    is_rewritten_to(
+      """MATCH (a)
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->(:A:B {foo: 'apa', id: 42})
+          RETURN DISTINCT b as b""")
 
   case class rewriteTester(originalQuery: String) {
     def is_rewritten_to(newQuery: String): Unit =
@@ -162,7 +181,7 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
         val original = getUnionQueryFrom(originalQuery.stripMargin)
 
         val result = original.endoRewrite(fixedPoint(rewriter))
-        assert(result === expected, "\nShould have been rewritten\n" + originalQuery)
+        assert(result === expected, "\nWas not rewritten correctly\n" + originalQuery)
       }
 
     def is_not_rewritten(): Unit = test(originalQuery) {
@@ -175,7 +194,7 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
   private def assert_that(originalQuery: String): rewriteTester = rewriteTester(originalQuery)
 
   private def getUnionQueryFrom(query: String): UnionQuery = {
-    val ast = parseForRewriting(query)
+    val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
     val mkException = new SyntaxExceptionCreator(query, Some(DummyPosition(0)))
     val semanticState = semanticChecker.check(query, ast, mkException)
     val table = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
