@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.TerminationGuard;
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -687,7 +688,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 .registerProcedure( ClassWithProcedures.class );
 
         S subject = neo.login( "no_auth", "" );
-        assertEmpty( subject, "CALL test.allowedProcedure1() YIELD value CREATE (:NEWNODE {name:value})" );
+        assertEmpty( subject, "CALL test.allowedReadProcedure() YIELD value CREATE (:NEWNODE {name:value})" );
     }
 
     @Test
@@ -698,7 +699,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         userManager.addRoleToUser( PUBLISHER, "role1Subject" );
-        assertEmpty( neo.login( "role1Subject", "abc" ), "CALL test.allowedProcedure1() YIELD value CREATE (:NEWNODE {name:value})" );
+        assertEmpty( neo.login( "role1Subject", "abc" ), "CALL test.allowedReadProcedure() YIELD value CREATE (:NEWNODE {name:value})" );
     }
 
     @Test
@@ -709,11 +710,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "nopermission" );
         // should be able to invoke allowed procedure
-        assertSuccess( neo.login( "nopermission", "abc" ), "CALL test.allowedProcedure2()",
+        assertSuccess( neo.login( "nopermission", "abc" ), "CALL test.allowedWriteProcedure()",
                 itr -> assertEquals( itr.stream().collect( toList() ).size(), 2 ) );
         // should not be able to do writes
         assertFail( neo.login( "nopermission", "abc" ),
-                "CALL test.allowedProcedure2() YIELD value CREATE (:NEWNODE {name:value})", WRITE_OPS_NOT_ALLOWED );
+                "CALL test.allowedWriteProcedure() YIELD value CREATE (:NEWNODE {name:value})", WRITE_OPS_NOT_ALLOWED );
     }
 
     @Test
@@ -735,10 +736,10 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "nopermission" );
         // should not be able to invoke any procedure
-        assertSuccess( neo.login( "nopermission", "abc" ), "CALL test.allowedProcedure1()",
+        assertSuccess( neo.login( "nopermission", "abc" ), "CALL test.allowedReadProcedure()",
                 itr -> assertEquals( itr.stream().collect( toList() ).size(), 1 ));
         assertFail( neo.login( "nopermission", "abc" ),
-                "CALL test.allowedProcedure1() YIELD value MATCH (n:Secret) RETURN n.pass", READ_OPS_NOT_ALLOWED);
+                "CALL test.allowedReadProcedure() YIELD value MATCH (n:Secret) RETURN n.pass", READ_OPS_NOT_ALLOWED);
     }
 
     @Test
@@ -749,7 +750,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertSuccess( neo.login( "role1Subject", "abc" ),
-                "CALL test.nestedAllowedProcedure('test.allowedProcedure1') YIELD value",
+                "CALL test.nestedAllowedProcedure('test.allowedReadProcedure') YIELD value",
                 r -> assertKeyIs( r, "value", "foo" ) );
     }
 
@@ -761,20 +762,99 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertSuccess( neo.login( "role1Subject", "abc" ),
-                "CALL test.nestedAllowedProcedure(\"test.nestedAllowedProcedure('test.allowedProcedure1')\") YIELD value",
+                "CALL test.doubleNestedAllowedProcedure YIELD value",
                 r -> assertKeyIs( r, "value", "foo" ) );
     }
 
     @Test
-    public void shouldFailNestedWriteProcedureFromReadProcedure() throws Throwable
+    public void shouldFailNestedAllowedWriteProcedureFromAllowedReadProcedure() throws Throwable
     {
         userManager = neo.getLocalUserManager();
         userManager.newUser( "role1Subject", "abc", false );
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         assertFail( neo.login( "role1Subject", "abc" ),
-                "CALL test.nestedAllowedProcedure('test.allowedProcedure2') YIELD value",
+                "CALL test.nestedAllowedProcedure('test.allowedWriteProcedure') YIELD value",
                 WRITE_OPS_NOT_ALLOWED );
+    }
+
+    @Test
+    public void shouldRestrictNestedReadProcedureFromAllowedWriteProcedures() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        assertFail( neo.login( "role1Subject", "abc" ),
+                "CALL test.failingNestedAllowedWriteProcedure YIELD value",
+                WRITE_OPS_NOT_ALLOWED );
+    }
+
+    @Test
+    public void shouldHandleNestedReadProcedureWithDifferentAllowedRole() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        assertSuccess( neo.login( "role1Subject", "abc" ),
+                "CALL test.nestedAllowedProcedure('test.otherAllowedReadProcedure') YIELD value",
+                r -> assertKeyIs( r, "value", "foo" )
+        );
+    }
+
+    @Test
+    public void shouldFailNestedAllowedWriteProcedureFromNormalReadProcedure() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        userManager.addRoleToUser( PredefinedRoles.PUBLISHER, "role1Subject" ); // Even if subject has WRITE permission
+                                                                                // the procedure should restrict to READ
+        assertFail( neo.login( "role1Subject", "abc" ),
+                "CALL test.nestedReadProcedure('test.allowedWriteProcedure') YIELD value",
+                WRITE_OPS_NOT_ALLOWED );
+    }
+
+    @Test
+    public void shouldHandleFunctionWithAllowed() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        assertSuccess( neo.login( "role1Subject", "abc" ),
+                "RETURN test.allowedFunction1() AS value",
+                r -> assertKeyIs( r, "value", "foo" ) );
+    }
+
+    @Test
+    public void shouldHandleNestedFunctionsWithAllowed() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        assertSuccess( neo.login( "role1Subject", "abc" ),
+                "RETURN test.nestedAllowedFunction('test.allowedFunction1()') AS value",
+                r -> assertKeyIs( r, "value", "foo" ) );
+    }
+
+    @Test
+    public void shouldHandleNestedFunctionWithDifferentAllowedRole() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        assertSuccess( neo.login( "role1Subject", "abc" ),
+                "RETURN test.nestedAllowedFunction('test.allowedFunction2()') AS value",
+                r -> assertKeyIs( r, "value", "foo" )
+        );
     }
 
     /*

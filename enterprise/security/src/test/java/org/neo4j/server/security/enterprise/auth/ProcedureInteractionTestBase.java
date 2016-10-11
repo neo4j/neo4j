@@ -56,6 +56,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserFunction;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
@@ -136,11 +137,9 @@ public abstract class ProcedureInteractionTestBase<S>
 
     protected void reSetUp() throws Exception
     {
-        neo
-            .getLocalGraph()
-            .getDependencyResolver()
-            .resolveDependency( Procedures.class )
-            .registerProcedure( ClassWithProcedures.class );
+        Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
+        procedures.registerProcedure( ClassWithProcedures.class );
+        procedures.registerFunction( ClassWithFunctions.class );
         userManager = neo.getLocalUserManager();
         userManager.newUser( "noneSubject", "abc", false );
         userManager.newUser( "pwdSubject", "abc", true );
@@ -295,18 +294,18 @@ public abstract class ProcedureInteractionTestBase<S>
 
     void testFailTestProcs( S subject )
     {
-        assertFail( subject, "CALL test.allowedProcedure1()", READ_OPS_NOT_ALLOWED );
-        assertFail( subject, "CALL test.allowedProcedure2()", WRITE_OPS_NOT_ALLOWED );
-        assertFail( subject, "CALL test.allowedProcedure3()", SCHEMA_OPS_NOT_ALLOWED );
+        assertFail( subject, "CALL test.allowedReadProcedure()", READ_OPS_NOT_ALLOWED );
+        assertFail( subject, "CALL test.allowedWriteProcedure()", WRITE_OPS_NOT_ALLOWED );
+        assertFail( subject, "CALL test.allowedSchemaProcedure()", SCHEMA_OPS_NOT_ALLOWED );
     }
 
     void testSuccessfulTestProcs( S subject )
     {
-        assertSuccess( subject, "CALL test.allowedProcedure1()",
+        assertSuccess( subject, "CALL test.allowedReadProcedure()",
                 r -> assertKeyIs( r, "value", "foo" ) );
-        assertSuccess( subject, "CALL test.allowedProcedure2()",
+        assertSuccess( subject, "CALL test.allowedWriteProcedure()",
                 r -> assertKeyIs( r, "value", "a", "a" ) );
-        assertSuccess( subject, "CALL test.allowedProcedure3()",
+        assertSuccess( subject, "CALL test.allowedSchemaProcedure()",
                 r -> assertKeyIs( r, "value", "OK" ) );
     }
 
@@ -336,7 +335,7 @@ public abstract class ProcedureInteractionTestBase<S>
     void assertFail( S subject, String call, String partOfErrorMsg )
     {
         String err = assertCallEmpty( subject, call );
-        if ( Strings.isEmpty( partOfErrorMsg ) )
+        if ( partOfErrorMsg == null || partOfErrorMsg == "" )
         {
             assertThat( err, not( equalTo( "" ) ) );
         }
@@ -553,14 +552,21 @@ public abstract class ProcedureInteractionTestBase<S>
             return Stream.of( new AuthProceduresBase.StringResult( "static" ) );
         }
 
-        @Procedure( name = "test.allowedProcedure1", allowed = {"role1"}, mode = Mode.READ )
+        @Procedure( name = "test.allowedReadProcedure", allowed = {"role1"}, mode = Mode.READ )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure1()
         {
             Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
             return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "foo" ).toString() ) );
         }
 
-        @Procedure( name = "test.allowedProcedure2", allowed = {"otherRole", "role1"}, mode = Mode.WRITE )
+        @Procedure( name = "test.otherAllowedReadProcedure", allowed = {"otherRole"}, mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> otherAllowedProcedure()
+        {
+            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "foo" ).toString() ) );
+        }
+
+        @Procedure( name = "test.allowedWriteProcedure", allowed = {"otherRole", "role1"}, mode = Mode.WRITE )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure2()
         {
             db.execute( "UNWIND [1, 2] AS i CREATE (:VeryUniqueLabel {prop: 'a'})" );
@@ -568,7 +574,7 @@ public abstract class ProcedureInteractionTestBase<S>
             return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "a" ).toString() ) );
         }
 
-        @Procedure( name = "test.allowedProcedure3", allowed = {"role1"}, mode = Mode.SCHEMA )
+        @Procedure( name = "test.allowedSchemaProcedure", allowed = {"role1"}, mode = Mode.SCHEMA )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure3()
         {
             db.execute( "CREATE INDEX ON :VeryUniqueLabel(prop)" );
@@ -578,8 +584,32 @@ public abstract class ProcedureInteractionTestBase<S>
         @Procedure( name = "test.nestedAllowedProcedure", allowed = {"role1"}, mode = Mode.READ )
         public Stream<AuthProceduresBase.StringResult> nestedAllowedProcedure(
                 @Name( "nestedProcedure" ) String nestedProcedure
-        ) {
-            Result result = db.execute( "CALL "+nestedProcedure );
+        )
+        {
+            Result result = db.execute( "CALL " + nestedProcedure );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "value" ).toString() ) );
+        }
+
+        @Procedure( name = "test.doubleNestedAllowedProcedure", allowed = {"role1"}, mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> doubleNestedAllowedProcedure()
+        {
+            Result result = db.execute( "CALL test.nestedAllowedProcedure('test.allowedReadProcedure') YIELD value" );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "value" ).toString() ) );
+        }
+
+        @Procedure( name = "test.failingNestedAllowedWriteProcedure", allowed = {"role1"}, mode = Mode.WRITE )
+        public Stream<AuthProceduresBase.StringResult> failingNestedAllowedWriteProcedure()
+        {
+            Result result = db.execute( "CALL test.nestedReadProcedure('test.allowedWriteProcedure') YIELD value" );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "value" ).toString() ) );
+        }
+
+        @Procedure( name = "test.nestedReadProcedure", mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> nestedReadProcedure(
+                @Name( "nestedProcedure" ) String nestedProcedure
+        )
+        {
+            Result result = db.execute( "CALL " + nestedProcedure );
             return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "value" ).toString() ) );
         }
 
@@ -633,6 +663,36 @@ public abstract class ProcedureInteractionTestBase<S>
         static void setTestLatch( LatchedRunnables testLatch )
         {
             ClassWithProcedures.testLatch.set( testLatch );
+        }
+    }
+
+    @SuppressWarnings( "unused" )
+    public static class ClassWithFunctions
+    {
+        @Context
+        public GraphDatabaseService db;
+
+        @UserFunction( name = "test.allowedFunction1", allowed = {"role1"} )
+        public String allowedFunction1()
+        {
+            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
+            return result.next().get( "foo" ).toString();
+        }
+
+        @UserFunction( name = "test.allowedFunction2", allowed = {"role2"} )
+        public String allowedFunction2()
+        {
+            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
+            return result.next().get( "foo" ).toString();
+        }
+
+        @UserFunction( name = "test.nestedAllowedFunction", allowed = {"role1"} )
+        public String nestedAllowedFunction(
+                @Name( "nestedFunction" ) String nestedFunction
+        )
+        {
+            Result result = db.execute( "RETURN " + nestedFunction + " AS value");
+            return result.next().get( "value" ).toString();
         }
     }
 }

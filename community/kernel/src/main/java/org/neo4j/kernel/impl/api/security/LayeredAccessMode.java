@@ -56,4 +56,10 @@ abstract public class LayeredAccessMode implements AccessMode
     {
         return AccessModeSnapshot.create( this );
     }
+
+    @Override
+    public boolean isOverridden()
+    {
+        return true;
+    }
 }

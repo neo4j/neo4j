@@ -48,12 +48,6 @@ public class ElevatedAccessMode extends LayeredAccessMode
     }
 
     @Override
-    public boolean isElevated()
-    {
-        return true;
-    }
-
-    @Override
     public String name()
     {
         return originalMode.name() + " elevated to " + overriddenMode.name();

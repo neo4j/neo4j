@@ -454,10 +454,9 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
     }
 
     /*
-     * Procedure 'test.allowedProcedure1' with READ mode and 'allowed = role1' is loaded.
-     * Procedure 'test.allowedProcedure2' with WRITE mode and 'allowed = role1' is loaded.
-     * Procedure 'test.allowedProcedure3' with SCHEMA mode and 'allowed = role1' is loaded.
-     * Procedure 'test.allowedProcedure4' with DBMS mode and 'allowed = role1' is loaded.
+     * Procedure 'test.allowedReadProcedure' with READ mode and 'allowed = role1' is loaded.
+     * Procedure 'test.allowedWriteProcedure' with WRITE mode and 'allowed = role1' is loaded.
+     * Procedure 'test.allowedSchemaProcedure' with SCHEMA mode and 'allowed = role1' is loaded.
      * Admin creates a new user 'mats'.
      * 'mats' logs in.
      * 'mats' executes the procedures, access denied.

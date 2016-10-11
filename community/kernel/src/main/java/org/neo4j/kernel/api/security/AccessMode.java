@@ -207,7 +207,7 @@ public interface AccessMode
         return this;
     }
 
-    default boolean isElevated()
+    default boolean isOverridden()
     {
         return false;
     }

@@ -468,12 +468,12 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
             {
                 assertAuth( "smith", "abc123" );
                 assertBeginTransactionSucceeds();
-                assertAllowedProcedure1();
+                assertAllowedReadProcedure();
 
                 latch.startAndWaitForAllToStart();
                 latch.finishAndWaitForAllToFinish();
 
-                assertAllowedProcedure1();
+                assertAllowedReadProcedure();
             }
             catch ( Throwable t )
             {
@@ -511,12 +511,12 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
                 .registerProcedure( ProcedureInteractionTestBase.ClassWithProcedures.class );
 
         assertAuth( "neo", "abc123" );
-        assertAllowedProcedure1();
+        assertAllowedReadProcedure();
     }
 
-    private void assertAllowedProcedure1() throws IOException
+    private void assertAllowedReadProcedure() throws IOException
     {
-        client.send( TransportTestUtil.chunk( run( "CALL test.allowedProcedure1()" ), pullAll() ) );
+        client.send( TransportTestUtil.chunk( run( "CALL test.allowedReadProcedure()" ), pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives(

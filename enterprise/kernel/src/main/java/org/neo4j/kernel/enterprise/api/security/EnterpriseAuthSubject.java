@@ -71,9 +71,9 @@ public interface EnterpriseAuthSubject extends AuthSubject
         }
 
         @Override
-        public boolean isElevated()
+        public boolean isOverridden()
         {
-            return AuthSubject.AUTH_DISABLED.isElevated();
+            return AuthSubject.AUTH_DISABLED.isOverridden();
         }
 
         @Override
