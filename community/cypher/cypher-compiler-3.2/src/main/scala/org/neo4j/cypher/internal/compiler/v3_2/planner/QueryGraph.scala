@@ -183,6 +183,12 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
+  def withPatternRelationships(patterns: Set[PatternRelationship]) =
+   copy(patternRelationships = patterns)
+
+  def withPatternNodes(nodes: Set[IdName]) =
+    copy(patternNodes = nodes)
+
   def knownProperties(idName: IdName): Set[Property] =
     selections.propertyPredicatesForSet.getOrElse(idName, Set.empty)
 

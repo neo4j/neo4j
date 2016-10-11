@@ -131,7 +131,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
          r.dependencies != l.dependencies => e
   }.toSet
 
-  def ++(expressions: Expression*): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
+  def ++(expressions: Traversable[Expression]): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
 
   def nonEmpty: Boolean = !isEmpty
 }
