@@ -489,17 +489,18 @@ public class Cluster
 
     /**
      * Waits for {@link #DEFAULT_TIMEOUT_MS} for the <code>memberThatChanges</code> to match the contents of
-     * <code>memberToLookLike</code>. After calling this method, only changes in <code>memberThatChanges</code> get
-     * picked up.
+     * <code>memberToLookLike</code>. After calling this method, changes both in <code>memberThatChanges</code> and
+     * <code>memberToLookLike</code> are picked up.
      */
     public static void dataOnMemberEventuallyLooksLike( CoreClusterMember memberThatChanges,
                                                         CoreClusterMember memberToLookLike )
             throws TimeoutException, InterruptedException
     {
-        DbRepresentation representationToLookLike = DbRepresentation.of( memberToLookLike.database() );
         Predicates.await( () -> {
                 try
                 {
+                    // We recalculate the DbRepresentation of both source and target, so changes can be picked up
+                    DbRepresentation representationToLookLike = DbRepresentation.of( memberToLookLike.database() );
                     DbRepresentation representationThatChanges = DbRepresentation.of( memberThatChanges.database() );
                     return representationToLookLike.equals( representationThatChanges );
                 }
