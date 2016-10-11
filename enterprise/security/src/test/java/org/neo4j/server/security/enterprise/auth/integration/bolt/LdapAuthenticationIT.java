@@ -347,7 +347,6 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         // Then
         assertAuth( "neo4j", "abc123" );
 
-        // We need to replace this with a two thread test.
         client.send( TransportTestUtil.chunk(
                 run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
 

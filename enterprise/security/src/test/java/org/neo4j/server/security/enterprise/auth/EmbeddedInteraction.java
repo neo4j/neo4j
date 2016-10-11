@@ -173,8 +173,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     @Override
     public void assertSessionKilled( EnterpriseAuthSubject subject )
     {
-        assertThat( executeQuery( subject, "MATCH (n:Node) RETURN count(n)", null, r -> {} ),
-                containsString( "Read operations are not allowed" ) );
+        // There is no session that could have been killed
     }
 
     @Override

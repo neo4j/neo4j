@@ -24,9 +24,9 @@ import org.neo4j.kernel.api.security.AccessMode;
 public class RestrictedAccessMode extends LayeredAccessMode
 {
     public RestrictedAccessMode( AccessMode originalMode,
-            AccessMode overriddenAccessMode )
+            AccessMode restrictedTo )
     {
-        super( originalMode, overriddenAccessMode );
+        super( originalMode, restrictedTo );
     }
 
     @Override

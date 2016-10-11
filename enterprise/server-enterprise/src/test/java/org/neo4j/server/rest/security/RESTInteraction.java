@@ -213,8 +213,7 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
     @Override
     public void assertSessionKilled( RESTSubject subject )
     {
-        assertThat( executeQuery( subject, "MATCH (n:Node) RETURN count(n)", null, r -> {} ),
-                containsString( "Invalid username or password" ) );
+        // There is no session that could have been killed
     }
 
     @Override

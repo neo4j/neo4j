@@ -213,14 +213,15 @@ public interface AccessMode
     }
 
     /**
-     * Determines whether this subject is allowed to execute a procedure with the parameter string in its
+     * Determines whether this mode allows execution of a procedure with the parameter string array in its
      * procedure annotation.
      *
-     * @param roleNames
-     * @return
+     * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
+     * @return <tt>true</tt> if this mode allows the execution of a procedure with the given parameter string array
+     * encoding permission
      * @throws InvalidArgumentsException
      */
-    default boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
+    default boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException
     {
         return false;
     }
