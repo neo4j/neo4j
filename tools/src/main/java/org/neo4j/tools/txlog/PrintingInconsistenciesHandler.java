@@ -66,6 +66,13 @@ class PrintingInconsistenciesHandler implements InconsistenciesHandler
         incrementAndPerhapsThrow();
     }
 
+    @Override
+    public void reportInconsistentTxIdSequence( long lastSeenTxId, long currentTxId )
+    {
+        out.printf( "Inconsistent in tx id sequence between transactions %d and %d %n", lastSeenTxId, currentTxId );
+        incrementAndPerhapsThrow();
+    }
+
     private void incrementAndPerhapsThrow()
     {
         seenInconsistencies++;

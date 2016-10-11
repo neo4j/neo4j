@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -52,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.tools.txlog.checktypes.CheckTypes;
 
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
@@ -59,6 +61,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.tools.txlog.checktypes.CheckTypes.CHECK_TYPES;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.NEO_STORE;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.NODE;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.PROPERTY;
@@ -76,7 +79,6 @@ public class CheckTxLogsTest
     @Test
     public void shouldReportNoInconsistenciesFromValidLog() throws Exception
     {
-
         // Given
         File log = logFile( 1 );
 
@@ -828,6 +830,82 @@ public class CheckTxLogsTest
         assertTrue( handler.checkPointInconsistencies.isEmpty() );
     }
 
+    @Test
+    public void shouldReportAnInconsistencyIfTxIdSequenceIsNotStrictlyIncreasing() throws Exception
+    {
+        // given
+        Function<Long, Command.NodeCommand> newNodeCommandFunction =
+                ( i ) -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
+                        new NodeRecord( i, true, false, -1, -1, -1 ) );
+        writeTxContent( logFile( 1 ), 40L, newNodeCommandFunction.apply( 1L ) );
+        writeTxContent( logFile( 1 ), 41L, newNodeCommandFunction.apply( 2L ) );
+        writeTxContent( logFile( 1 ), 42L, newNodeCommandFunction.apply( 3L ) );
+        writeTxContent( logFile( 2 ), 42L, newNodeCommandFunction.apply( 4L ) );
+        writeTxContent( logFile( 2 ), 43L, newNodeCommandFunction.apply( 5L ) );
+
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
+
+        // when
+        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, CHECK_TYPES );
+
+        // then
+        assertEquals( 1, handler.txIdSequenceInconsistencies.size() );
+        assertEquals( 42, handler.txIdSequenceInconsistencies.get( 0 ).lastSeenTxId );
+        assertEquals( 42, handler.txIdSequenceInconsistencies.get( 0 ).currentTxId );
+    }
+
+    @Test
+    public void shouldReportAnInconsistencyIfTxIdSequenceHasGaps() throws Exception
+    {
+        // given
+        Function<Long, Command.NodeCommand> newNodeCommandFunction =
+                ( i ) -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
+                        new NodeRecord( i, true, false, -1, -1, -1 ) );
+        writeTxContent( logFile( 1 ), 40L, newNodeCommandFunction.apply( 1L ) );
+        writeTxContent( logFile( 1 ), 41L, newNodeCommandFunction.apply( 2L ) );
+        writeTxContent( logFile( 1 ), 42L, newNodeCommandFunction.apply( 3L ) );
+        writeTxContent( logFile( 2 ), 44L, newNodeCommandFunction.apply( 4L ) );
+        writeTxContent( logFile( 2 ), 45L, newNodeCommandFunction.apply( 5L ) );
+
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
+
+        // when
+        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, CHECK_TYPES );
+
+        // then
+        System.out.println( handler.txIdSequenceInconsistencies );
+        assertEquals( 1, handler.txIdSequenceInconsistencies.size() );
+        assertEquals( 42, handler.txIdSequenceInconsistencies.get( 0 ).lastSeenTxId );
+        assertEquals( 44, handler.txIdSequenceInconsistencies.get( 0 ).currentTxId );
+    }
+
+    @Test
+    public void shouldReportNoInconsistenciesIfTxIdSequenceIsStriclyIncreasingAndHasNoGaps() throws Exception
+    {
+        // given
+
+        Function<Long, Command.NodeCommand> newNodeCommandFunction =
+                ( i ) -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
+                        new NodeRecord( i, true, false, -1, -1, -1 ) );
+        writeTxContent( logFile( 1 ), 40L, newNodeCommandFunction.apply( 1L ) );
+        writeTxContent( logFile( 1 ), 41L, newNodeCommandFunction.apply( 2L ) );
+        writeTxContent( logFile( 1 ), 42L, newNodeCommandFunction.apply( 3L ) );
+        writeTxContent( logFile( 2 ), 43L, newNodeCommandFunction.apply( 4L ) );
+        writeTxContent( logFile( 2 ), 44L, newNodeCommandFunction.apply( 5L ) );
+        writeTxContent( logFile( 2 ), 45L, newNodeCommandFunction.apply( 6L ) );
+
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
+
+        // when
+        checker.scan( new PhysicalLogFiles( storeDirectory, fsRule.get() ), handler, CHECK_TYPES );
+
+        // then
+        assertTrue( handler.txIdSequenceInconsistencies.isEmpty() );
+    }
+
     private File logFile( long version )
     {
         fsRule.get().mkdirs( storeDirectory );
@@ -900,6 +978,7 @@ public class CheckTxLogsTest
 
     private static class CapturingInconsistenciesHandler implements InconsistenciesHandler
     {
+        List<TxIdSequenceInconsistency> txIdSequenceInconsistencies = new ArrayList<>();
         List<CheckPointInconsistency> checkPointInconsistencies = new ArrayList<>();
         List<RecordInconsistency> recordInconsistencies = new ArrayList<>();
 
@@ -913,6 +992,30 @@ public class CheckTxLogsTest
         public void reportInconsistentCommand( RecordInfo<?> committed, RecordInfo<?> current )
         {
             recordInconsistencies.add( new RecordInconsistency( committed, current ) );
+        }
+
+        @Override
+        public void reportInconsistentTxIdSequence( long lastSeenTxId, long currentTxId )
+        {
+            txIdSequenceInconsistencies.add( new TxIdSequenceInconsistency( lastSeenTxId, currentTxId ) );
+        }
+    }
+
+    private static class TxIdSequenceInconsistency
+    {
+        final long lastSeenTxId;
+        final long currentTxId;
+
+        private TxIdSequenceInconsistency( long lastSeenTxId, long currentTxId )
+        {
+            this.lastSeenTxId = lastSeenTxId;
+            this.currentTxId = currentTxId;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "TxIdSequenceInconsistency{" + "lastSeenTxId=" + lastSeenTxId + ", currentTxId=" + currentTxId + '}';
         }
     }
 

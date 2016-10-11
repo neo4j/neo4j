@@ -40,4 +40,11 @@ interface InconsistenciesHandler
      * @param current the record met during transaction log scan and considered inconsistent with committed
      */
     void reportInconsistentCommand( RecordInfo<?> committed, RecordInfo<?> current );
+
+    /**
+     * For reporting of inconsistencies found about tx id sequences
+     * @param lastSeenTxId last seen tx id before processing the current commit
+     * @param currentTxId the transaction id of the process commit entry
+     */
+    void reportInconsistentTxIdSequence( long lastSeenTxId, long currentTxId );
 }
