@@ -482,7 +482,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
         testFailTestProcs( mats );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('role1', 'mats')" );
-        //testSuccessfulTestProcs( mats ); // TODO: FIXME
+        testSuccessfulTestProcs( mats );
         assertEmpty( adminSubject, "CALL dbms.security.deleteRole('role1')" );
         testFailTestProcs( mats );
         assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
