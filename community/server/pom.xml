@@ -46,7 +46,7 @@
     <docs-plugin.filter>true</docs-plugin.filter>
 
     <neo4j.version>${project.version}</neo4j.version>
-    <neo4j-browser.version>1.1.8</neo4j-browser.version>
+    <neo4j-browser.version>1.1.9</neo4j-browser.version>
 
     <neo4j-server.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
