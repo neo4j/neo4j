@@ -171,6 +171,9 @@ trait QueryContext extends TokenContext {
   def isGraphKernelResultValue(v: Any): Boolean
 
   def detachDeleteNode(node: Node): Int
+
+  def assertSchemaWritesAllowed(): Unit
+
 }
 
 trait Operations[T <: PropertyContainer] {

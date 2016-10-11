@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan.procs
 
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan, InternalExecutionResult, InternalQueryType}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan, InternalExecutionResult, InternalQueryType, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, PlanContext, QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, ExplainExecutionResult, ExplainMode, PlannerName, ProcedurePlannerName, ProcedureRuntimeName, RuntimeName}
@@ -37,12 +37,14 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
 
   override def run(ctx: QueryContext, planType: ExecutionMode,
                    params: Map[String, Any]): InternalExecutionResult = {
-    val countingCtx = new UpdateCountingQueryContext(ctx)
     if (planType == ExplainMode) {
       //close all statements
       ctx.transactionalContext.close(success = true)
-      new ExplainExecutionResult(List.empty, description, queryType, Set.empty)
+      ExplainExecutionResult(List.empty, description, queryType, Set.empty)
     } else {
+      if (queryType == SCHEMA_WRITE) ctx.assertSchemaWritesAllowed()
+
+      val countingCtx = new UpdateCountingQueryContext(ctx)
       sideEffect(countingCtx)
       ctx.transactionalContext.close(success = true)
       PureSideEffectInternalExecutionResult(countingCtx, description, queryType, planType)
