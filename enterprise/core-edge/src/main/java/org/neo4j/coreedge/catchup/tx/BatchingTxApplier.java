@@ -53,6 +53,7 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
     private final ArrayBlockingQueue<CommittedTransactionRepresentation> txQueue;
 
     private TransactionQueue txBatcher;
+    private TransactionCommitProcess commitProcess;
 
     private volatile long lastQueuedTxId;
     private volatile long lastAppliedTxId;
@@ -65,20 +66,25 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
         this.txIdStoreSupplier = txIdStoreSupplier;
         this.commitProcessSupplier = commitProcessSupplier;
         this.healthSupplier = healthSupplier;
-
         this.log = logProvider.getLog( getClass() );
         this.monitor = monitors.newMonitor( PullRequestMonitor.class );
-
         this.txQueue = new ArrayBlockingQueue<>( maxBatchSize );
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
-        TransactionCommitProcess commitProcess = commitProcessSupplier.get();
+        refreshFromNewStore();
         txBatcher =
                 new TransactionQueue( maxBatchSize, ( first, last ) -> commitProcess.commit( first, NULL, EXTERNAL ) );
+    }
+
+    void refreshFromNewStore()
+    {
+        assert txQueue.isEmpty();
+        assert txBatcher == null || txBatcher.isEmpty();
         lastQueuedTxId = lastAppliedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
+        commitProcess = commitProcessSupplier.get();
     }
 
     /**
@@ -159,10 +165,5 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
     long lastAppliedTxId()
     {
         return lastAppliedTxId;
-    }
-
-    void refreshLastAppliedTx()
-    {
-        lastAppliedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
     }
 }

@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchUpResponseCallback;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -157,7 +155,7 @@ public class TxPollingClientTest
         verify( localDatabase ).stop();
         verify( storeFetcher ).copyStore( any( MemberId.class ), eq( storeId ), any( File.class ) );
         verify( localDatabase ).start();
-        verify( txApplier ).refreshLastAppliedTx();
+        verify( txApplier ).refreshFromNewStore();
         verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ),
                 times( 2 ) /* at the beginning and after store copy */ ).renew();
     }
