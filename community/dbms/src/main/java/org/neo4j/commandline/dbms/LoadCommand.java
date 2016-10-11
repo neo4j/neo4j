@@ -37,15 +37,12 @@ import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.StoreLockException;
-import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.server.configuration.ConfigLoader;
 
-import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
+import static org.neo4j.commandline.dbms.Util.checkLock;
+import static org.neo4j.commandline.dbms.Util.wrapIOException;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.identity;
@@ -85,7 +82,6 @@ public class LoadCommand implements AdminCommand
     private final Path homeDir;
     private final Path configDir;
     private final Loader loader;
-
     public LoadCommand( Path homeDir, Path configDir, Loader loader )
     {
         this.homeDir = homeDir;
@@ -145,24 +141,6 @@ public class LoadCommand implements AdminCommand
         }
     }
 
-    private void checkLock( Path databaseDirectory ) throws CommandFailed
-    {
-        try
-        {
-            StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
-            storeLocker.checkLock( databaseDirectory.toFile() );
-            storeLocker.release();
-        }
-        catch ( StoreLockException e )
-        {
-            throw new CommandFailed( "the database is in use -- stop Neo4j and try again", e );
-        }
-        catch ( IOException e )
-        {
-            wrapIOException( e );
-        }
-    }
-
     private void load( Path archive, String database, Path databaseDirectory ) throws CommandFailed
     {
         try
@@ -183,8 +161,8 @@ public class LoadCommand implements AdminCommand
         }
         catch ( AccessDeniedException e )
         {
-            throw new CommandFailed( "you do not have permission to load a database -- is Neo4j running as a " +
-                    "different user?", e );
+            throw new CommandFailed(
+                    "you do not have permission to load a database -- is Neo4j running as a " + "different user?", e );
         }
         catch ( IOException e )
         {
@@ -194,11 +172,5 @@ public class LoadCommand implements AdminCommand
         {
             throw new CommandFailed( "Not a valid Neo4j archive: " + archive, incorrectFormat );
         }
-    }
-
-    private void wrapIOException( IOException e ) throws CommandFailed
-    {
-        throw new CommandFailed( format( "unable to load database: %s: %s",
-                e.getClass().getSimpleName(), e.getMessage() ), e );
     }
 }

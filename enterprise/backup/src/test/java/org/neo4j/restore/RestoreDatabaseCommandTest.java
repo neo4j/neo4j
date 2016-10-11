@@ -19,10 +19,10 @@
  */
 package org.neo4j.restore;
 
+import java.io.File;
+
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,9 +32,12 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -43,6 +46,39 @@ public class RestoreDatabaseCommandTest
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
+
+    @Test
+    public void forceShouldRespectStoreLock() throws Exception
+    {
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        String databaseName = "to";
+        Config config = configWith(  Config.empty(), databaseName);
+
+        File fromPath = new File( directory.absolutePath(), "from" );
+        File toPath = config.get( DatabaseManagementSystemSettings.database_path );
+        int fromNodeCount = 10;
+        int toNodeCount = 20;
+
+        createDbAt( fromPath, fromNodeCount );
+        createDbAt( toPath, toNodeCount );
+
+        StoreLocker storeLocker = new StoreLocker( fs );
+        storeLocker.checkLock( toPath );
+
+        try
+        {
+            new RestoreDatabaseCommand( fs, fromPath, config, databaseName, true ).execute();
+            fail( "expected exception" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getMessage(), equalTo( "the database is in use -- stop Neo4j and try again" ) );
+        }
+        finally
+        {
+            storeLocker.release();
+        }
+    }
 
     @Test
     public void shouldNotCopyOverAndExistingDatabase() throws Exception
