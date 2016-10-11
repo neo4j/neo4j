@@ -116,7 +116,7 @@ public class CsvInput implements Input
                                 deserialization, decorator, validator, badCollector );
                 };
                 return new InputGroupsDeserializer<>( nodeDataFactory.iterator(), nodeHeaderFactory, config,
-                        idType, maxProcessors, factory, Validators.<InputNode>emptyValidator(), InputNode.class );
+                        idType, maxProcessors, 1, factory, Validators.<InputNode>emptyValidator(), InputNode.class );
             }
 
             @Override
@@ -143,7 +143,7 @@ public class CsvInput implements Input
                                 deserialization, decorator, validator, badCollector );
                 };
                 return new InputGroupsDeserializer<>( relationshipDataFactory.iterator(), relationshipHeaderFactory,
-                        config, idType, maxProcessors, factory, new InputRelationshipValidator(),
+                        config, idType, maxProcessors, 1, factory, new InputRelationshipValidator(),
                         InputRelationship.class );
             }
 

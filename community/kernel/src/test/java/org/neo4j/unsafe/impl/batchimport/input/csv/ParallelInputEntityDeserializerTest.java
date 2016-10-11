@@ -47,7 +47,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.IdType.ACTUAL;
 public class ParallelInputEntityDeserializerTest
 {
     @Rule
-    public final RandomRule random = new RandomRule().withSeed( 1468928804595L );
+    public final RandomRule random = new RandomRule();
 
     @Test
     public void shouldParseDataInParallel() throws Exception
@@ -78,11 +78,9 @@ public class ParallelInputEntityDeserializerTest
                     validator, badCollector );
         };
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,
-                defaultFormatNodeFileHeader(), config, idType, threads, deserializerFactory,
+                defaultFormatNodeFileHeader(), config, idType, threads, threads, deserializerFactory,
                 Validators.<InputNode>emptyValidator(), InputNode.class ) )
         {
-            deserializer.processors( threads );
-
             // WHEN/THEN
             long previousLineNumber = -1;
             long previousPosition = -1;
