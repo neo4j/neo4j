@@ -165,12 +165,21 @@ Function Get-Java
                     ,'-Dorg.neo4j.cluster.logdirectory=data/log' `
       )
 
-      # Parse Java config settings - Heap
+      # Parse Java config settings - Heap initial size
       $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.initial_size' -Neo4jServer $Neo4jServer)
-      if ($option -ne $null) { $ShellArgs += "-Xms$($option.Value)m" }
+      if ($option -ne $null) {
+        $mem="$($option.Value)"
+        if ($mem -notmatch '[\d]+[gGmMkK]') { $mem += "m" }
+        $ShellArgs += "-Xms$mem"
+      }
 
+      # Parse Java config settings - Heap max size
       $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.max_size' -Neo4jServer $Neo4jServer)
-      if ($option -ne $null) { $ShellArgs += "-Xmx$($option.Value)m" }
+      if ($option -ne $null) {
+        $mem="$($option.Value)"
+        if ($mem -notmatch '[\d]+[gGmMkK]') { $mem += "m" }
+        $ShellArgs += "-Xmx$mem"
+      }
 
       # Parse Java config settings - Explicit
       $option = (Get-Neo4jSetting -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)

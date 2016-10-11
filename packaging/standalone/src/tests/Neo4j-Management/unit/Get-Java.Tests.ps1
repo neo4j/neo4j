@@ -180,6 +180,38 @@ InModuleScope Neo4j-Management {
       }
     }
 
+    Context "Server Invoke - Should set heap size" {
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+        -NeoConfSettings 'dbms.memory.heap.initial_size=123k','dbms.memory.heap.max_size=234g'
+
+      $result = Get-Java -ForServer -Neo4jServer $serverObject
+      $resultArgs = ($result.args -join ' ')
+
+      It "should set initial heap size" {
+        $resultArgs | Should Match ([regex]::Escape(' -Xms123k '))
+      }
+
+      It "should set max heap size" {
+        $resultArgs | Should Match ([regex]::Escape(' -Xmx234g '))
+      }
+    }
+
+    Context "Server Invoke - Should default heap size unit to megabytes" {
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+        -NeoConfSettings 'dbms.memory.heap.initial_size=123','dbms.memory.heap.max_size=234'
+
+      $result = Get-Java -ForServer -Neo4jServer $serverObject
+      $resultArgs = ($result.args -join ' ')
+
+      It "should set initial heap size" {
+        $resultArgs | Should Match ([regex]::Escape(' -Xms123m '))
+      }
+
+      It "should set max heap size" {
+        $resultArgs | Should Match ([regex]::Escape(' -Xmx234m '))
+      }
+    }
+
     Context "Server Invoke - Enable Default GC Logs" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
         -NeoConfSettings 'dbms.logs.gc.enabled=true'
