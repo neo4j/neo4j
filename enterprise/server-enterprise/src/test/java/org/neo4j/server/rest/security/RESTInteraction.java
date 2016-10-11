@@ -64,10 +64,14 @@ import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 class RESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
 {
-    private String COMMIT_PATH = "db/data/transaction/commit";
-    private String POST = "POST";
+    String commitPath()
+    {
+        return "db/data/transaction/commit";
+    }
 
-    EnterpriseAuthManager authManager;
+    static final String POST = "POST";
+
+    private EnterpriseAuthManager authManager;
 
     RESTInteraction( Map<String,String> config ) throws IOException
     {
@@ -161,7 +165,7 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
         return new RESTSubject( username, password, principalCredentials );
     }
 
-    private HTTP.Response authenticate( String principalCredentials )
+    protected HTTP.Response authenticate( String principalCredentials )
     {
         return HTTP.withHeaders( HttpHeaders.AUTHORIZATION, principalCredentials ).request( POST, commitURL() );
     }
@@ -222,7 +226,7 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
         return "server-session";
     }
 
-    private String parseErrorMessage( HTTP.Response response )
+    String parseErrorMessage( HTTP.Response response )
     {
         try
         {
@@ -243,12 +247,12 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
         return "";
     }
 
-    private String commitURL()
+    String commitURL()
     {
-        return server.baseUri().resolve( COMMIT_PATH ).toString();
+        return server.baseUri().resolve( commitPath() ).toString();
     }
 
-    private class RESTResult implements ResourceIterator<Map<String,Object>>
+    class RESTResult implements ResourceIterator<Map<String,Object>>
     {
         private JsonNode data;
         private JsonNode columns;
@@ -275,7 +279,7 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
         @Override
         public Map<String,Object> next()
         {
-            JsonNode row = data.get( index++ ).get( "row" );
+            JsonNode row = getRow( data, index++ );
             TreeMap<String,Object> map = new TreeMap<>();
             for ( int i = 0; i < columns.size(); i++ )
             {
@@ -284,6 +288,11 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
                 map.put( key, value );
             }
             return map;
+        }
+
+        JsonNode getRow( JsonNode data, int i )
+        {
+            return data.get( i ).get( "row" );
         }
     }
 
