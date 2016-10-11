@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -26,9 +27,8 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -43,6 +43,9 @@ import static org.neo4j.kernel.impl.store.id.FreeIdKeeper.NO_RESULT;
 
 public class FreeIdKeeperTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
     @Test
     public void newlyConstructedInstanceShouldReportProperDefaultValues() throws Exception
     {
@@ -100,7 +103,6 @@ public class FreeIdKeeperTest
     public void shouldOnlyOverflowWhenThresholdIsReached() throws Exception
     {
         // Given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = spy( fs.open( new File( "id.file" ), "rw" ) );
 
         int threshold = 10;
@@ -128,7 +130,6 @@ public class FreeIdKeeperTest
     public void shouldReadBackPersistedIdsWhenAggressiveReuseIsSet() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = fs.open( new File( "id.file" ), "rw" );
 
         int threshold = 10;
@@ -153,7 +154,6 @@ public class FreeIdKeeperTest
     public void shouldReadBackManyPersistedIdBatchesWhenAggressiveReuseIsSet() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = fs.open( new File( "id.file" ), "rw" );
 
         int threshold = 10;
@@ -182,7 +182,6 @@ public class FreeIdKeeperTest
     {
         // this is testing the stack property, but from the viewpoint of avoiding unnecessary disk reads
         // given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = fs.open( new File( "id.file" ), "rw" );
 
         int threshold = 10;
@@ -219,7 +218,6 @@ public class FreeIdKeeperTest
     public void persistedIdsShouldStillBeCounted() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = fs.open( new File( "id.file" ), "rw" );
 
         int threshold = 10;
@@ -247,7 +245,6 @@ public class FreeIdKeeperTest
     public void shouldStoreAndRestoreIds() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = fs.open( new File( "id.file" ), "rw" );
 
         int threshold = 10;
@@ -291,7 +288,6 @@ public class FreeIdKeeperTest
     public void shouldNotReturnNewlyReleasedIdsIfAggressiveIsFalse() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = fs.open( new File( "id.file" ), "rw" );
 
         int threshold = 10;
@@ -309,7 +305,6 @@ public class FreeIdKeeperTest
     public void shouldNotReturnIdsPersistedDuringThisRunIfAggressiveIsFalse() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = spy( fs.open( new File( "id.file" ), "rw" ) );
 
         int threshold = 10;
@@ -333,7 +328,6 @@ public class FreeIdKeeperTest
     public void shouldReturnIdsRestoredAndIgnoreNewlyReleasedIfAggressiveReuseIsFalse() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = fs.open( new File("id.file" ), "rw" );
 
         int threshold = 10;
@@ -374,7 +368,6 @@ public class FreeIdKeeperTest
             throws Exception
     {
         // given
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = fs.open( new File("id.file" ), "rw" );
 
         int threshold = 10;
