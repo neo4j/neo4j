@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, Equals}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
@@ -104,7 +104,7 @@ class CartesianProductsOrValueJoinsTest
     testThis(
       graph = QueryGraph(
         patternNodes = Set("a", "b", "c"),
-        selections = Selections.from(eq1, eq2, eq3)),
+        selections = Selections.from(Seq(eq1, eq2, eq3))),
       input = Set(
         PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
         PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),

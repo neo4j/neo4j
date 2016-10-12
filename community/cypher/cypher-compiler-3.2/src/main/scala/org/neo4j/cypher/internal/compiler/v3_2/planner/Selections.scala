@@ -38,7 +38,8 @@ object Predicate {
 }
 
 object Selections {
-  def from(expressions: Expression*): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
+  def from(expressions: Traversable[Expression]): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
+  def from(expressions: Expression): Selections = new Selections(expressions.asPredicates)
 }
 
 case class Selections(predicates: Set[Predicate] = Set.empty) {

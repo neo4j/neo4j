@@ -78,8 +78,8 @@ case object PlannerQueryRewriter extends Rewriter {
 
             val newOptionalGraph = original.
               withPatternRelationships(patternsToKeep).
-              withPatternNodes(patternNodes). // TODO! fix the varargs below
-              withSelections(Selections.from(remaining.toSeq:_*) ++ patternPredicates)
+              withPatternNodes(patternNodes).
+              withSelections(Selections.from(remaining) ++ patternPredicates)
 
             Some(newOptionalGraph)
           }
