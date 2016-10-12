@@ -19,6 +19,11 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Before;
@@ -31,11 +36,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
+import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -105,15 +106,14 @@ public class BackupEmbeddedIT
         startDb( null );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-from",
-                        BackupTool.DEFAULT_SCHEME + "://" + ip, "-to",
-                        backupPath.getPath() ) );
+                runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
+                        "--to", backupPath.getPath() ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip,
-                        "-to", backupPath.getPath() ) );
+                runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
+                        "--to", backupPath.getPath() ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
@@ -125,20 +125,19 @@ public class BackupEmbeddedIT
         startDb( "" + port );
         assertEquals(
                 1,
-                runBackupToolFromOtherJvmToGetExitCode( "-from",
-                        BackupTool.DEFAULT_SCHEME + "://" + ip, "-to",
-                        backupPath.getPath() ) );
+                runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
+                        "--to", backupPath.getPath() ) );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-from",
-                        BackupTool.DEFAULT_SCHEME + "://" + ip + ":" + port,
-                        "-to", backupPath.getPath() ) );
+                runBackupToolFromOtherJvmToGetExitCode( "--from",
+                        ip + ":" + port,
+                        "--to", backupPath.getPath() ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip +":"
-                                 + port, "-to",
+                runBackupToolFromOtherJvmToGetExitCode( "--from", ip +":"
+                                 + port, "--to",
                         backupPath.getPath() ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
@@ -159,7 +158,9 @@ public class BackupEmbeddedIT
             throws Exception
     {
         List<String> allArgs = new ArrayList<>( Arrays.asList(
-                ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(), BackupTool.class.getName() ) );
+                ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
+                AdminTool.class.getName() ) );
+        allArgs.add("backup");
         allArgs.addAll( Arrays.asList( args ) );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));
