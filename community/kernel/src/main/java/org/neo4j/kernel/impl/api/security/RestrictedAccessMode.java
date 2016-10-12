@@ -21,6 +21,10 @@ package org.neo4j.kernel.impl.api.security;
 
 import org.neo4j.kernel.api.security.AccessMode;
 
+/**
+ * Access mode that restricts the original access mode with the restricting mode. Allows things that both the
+ * original and the restricting mode allows, while retaining the meta data of the original mode only.
+ */
 public class RestrictedAccessMode extends WrappedAccessMode
 {
     public RestrictedAccessMode( AccessMode original, AccessMode restricting )

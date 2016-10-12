@@ -21,6 +21,10 @@ package org.neo4j.kernel.impl.api.security;
 
 import org.neo4j.kernel.api.security.AccessMode;
 
+/**
+ * Access mode that overrides the original access mode with the overriding mode. Allows exactly what the overriding
+ * mode allows, while retaining the meta data of the original mode only.
+ */
 public class OverriddenAccessMode extends WrappedAccessMode
 {
     public OverriddenAccessMode( AccessMode original, AccessMode overriding )
