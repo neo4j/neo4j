@@ -115,7 +115,7 @@ public class PageOfRangesIteratorTest
                 longs );
 
         verify( searcher, times( 1 ) ).search( same( query ), any( DocValuesCollector.class ) );
-        verify( rangeNDV, times( 3 ) ).get( anyInt() );
+        verify( rangeNDV, times( 6 ) ).get( anyInt() );
         verify( labelNDV, times( 3 ) ).get( anyInt() );
 
         verifyNoMoreInteractions( searcher );

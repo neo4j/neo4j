@@ -93,19 +93,9 @@ public enum BitmapDocumentFormat
         return format;
     }
 
-    public long rangeOf( Document doc )
-    {
-        return Long.parseLong( doc.get( RANGE ) );
-    }
-
     public long rangeOf( IndexableField field )
     {
         return Long.parseLong( field.stringValue() );
-    }
-
-    public long mapOf( Document doc, long labelId )
-    {
-        return bitmap( doc.getField( label( labelId ) ) );
     }
 
     public Query labelQuery( int labelId )
@@ -171,11 +161,6 @@ public enum BitmapDocumentFormat
     public IndexableField labelSearchField( long label )
     {
         return new StringField( LABEL, Long.toString( label ), Field.Store.YES );
-    }
-
-    public IndexableField labelField( long key, Bitmap value )
-    {
-        return labelField( key, value.bitmap() );
     }
 
     String label( long key )

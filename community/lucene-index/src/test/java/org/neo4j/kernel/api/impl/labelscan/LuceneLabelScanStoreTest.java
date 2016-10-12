@@ -454,14 +454,14 @@ public class LuceneLabelScanStoreTest
 
         // WHEN
         write( iterator(
-                labelChanges( 1, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
                 labelChanges( 2, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2} ),
-                labelChanges( 3, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
+                labelChanges( 1, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
                 labelChanges( 4, EMPTY_LONG_ARRAY, new long[] {labelId1,           labelId3} ),
                 labelChanges( 5, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2, labelId3} ),
-                labelChanges( 6, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
+                labelChanges( 3, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
                 labelChanges( 7, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
                 labelChanges( 8, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ),
+                labelChanges( 6, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
                 labelChanges( 9, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ) ) );
 
         // THEN
@@ -488,14 +488,14 @@ public class LuceneLabelScanStoreTest
 
         // WHEN
         write( iterator(
-                labelChanges( 1, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
-                labelChanges( 2, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2} ),
-                labelChanges( 3, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
-                labelChanges( 4, EMPTY_LONG_ARRAY, new long[] {labelId1,           labelId3} ),
                 labelChanges( 5, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2, labelId3} ),
-                labelChanges( 6, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
-                labelChanges( 7, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
                 labelChanges( 8, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ),
+                labelChanges( 3, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
+                labelChanges( 6, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
+                labelChanges( 1, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
+                labelChanges( 7, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
+                labelChanges( 4, EMPTY_LONG_ARRAY, new long[] {labelId1,           labelId3} ),
+                labelChanges( 2, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2} ),
                 labelChanges( 9, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ) ) );
 
         // THEN

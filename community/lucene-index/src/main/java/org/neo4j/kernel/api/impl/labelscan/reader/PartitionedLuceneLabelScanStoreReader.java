@@ -95,7 +95,7 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
 
     private PrimitiveLongIterator partitionedOperation( Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
     {
-        return PrimitiveLongCollections.concat( storeReaders.parallelStream()
+        return PrimitiveLongCollections.concat( storeReaders.stream()
                 .map( readerFunction )
                 .iterator() );
     }
