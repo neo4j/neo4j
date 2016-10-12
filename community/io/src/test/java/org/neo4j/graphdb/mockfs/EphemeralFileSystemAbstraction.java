@@ -75,7 +75,7 @@ import static java.util.Arrays.asList;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
-    private Clock clock;
+    private final Clock clock;
 
     interface Positionable
     {
@@ -551,7 +551,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         for ( File name : names )
         {
             EphemeralFileData file = files.get( name );
-            ByteBuffer buf = file.fileAsBuffer.buf;
+            ByteBuffer buf = file.fileAsBuffer.buf();
             buf.position( 0 );
             while ( buf.position() < buf.limit() )
             {
@@ -902,7 +902,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         private int size;
         private int forcedSize;
         private int locked;
-        private Clock clock;
+        private final Clock clock;
         private long lastModified;
 
         public EphemeralFileData( Clock clock )
@@ -1108,10 +1108,17 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         private static final int[] SIZES;
         private static final byte[] zeroBuffer = new byte[1024];
         private ByteBuffer buf;
+        private Exception freeCall;
 
         public DynamicByteBuffer()
         {
             buf = allocate( 0 );
+        }
+
+        public ByteBuffer buf()
+        {
+            assertNotFreed();
+            return buf;
         }
 
         /** This is a copying constructor, the input buffer is just read from, never stored in 'this'. */
@@ -1145,7 +1152,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         synchronized DynamicByteBuffer copy()
         {
-            return new DynamicByteBuffer( buf ); // invoke "copy constructor"
+            return new DynamicByteBuffer( buf() ); // invoke "copy constructor"
         }
 
         static
@@ -1199,6 +1206,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         void free()
         {
+            assertNotFreed();
             try
             {
                 clear();
@@ -1206,12 +1214,16 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             finally
             {
                 buf = null;
+                freeCall = new Exception(
+                        "You're most likely seeing this exception because there was an attempt to use this buffer " +
+                        "after it was freed. This stack trace may help you figure out where and why it was freed" );
             }
         }
 
         synchronized void put( int pos, byte[] bytes, int offset, int length )
         {
             verifySize( pos + length );
+            ByteBuffer buf = buf();
             try
             {
                 buf.position( pos );
@@ -1225,12 +1237,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         synchronized void get( int pos, byte[] scratchPad, int i, int howMuchToReadThisTime )
         {
+            ByteBuffer buf = buf();
             buf.position( pos );
             buf.get( scratchPad, i, howMuchToReadThisTime );
         }
 
         synchronized void fillWithZeros( int pos, int bytes )
         {
+            ByteBuffer buf = buf();
             buf.position( pos );
             while ( bytes > 0 )
             {
@@ -1246,6 +1260,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
          */
         private void verifySize( int totalAmount )
         {
+            ByteBuffer buf = buf();
             if ( buf.capacity() >= totalAmount )
             {
                 return;
@@ -1259,21 +1274,36 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 newSize += Math.min( newSize, 1024 * 1024 );
                 sizeIndex++;
             }
-            int oldPosition = this.buf.position();
-            ByteBuffer buf = allocate( sizeIndex );
-            this.buf.position( 0 );
-            buf.put( this.buf );
-            this.buf = buf;
-            this.buf.position( oldPosition );
+            int oldPosition = buf.position();
+
+            // allocate new buffer
+            ByteBuffer newBuf = allocate( sizeIndex );
+
+            // copy contents of current buffer into new buffer
+            buf.position( 0 );
+            newBuf.put( buf );
+
+            // re-assign buffer to new buffer
+            newBuf.position( oldPosition );
+            this.buf = newBuf;
         }
 
         public void clear()
         {
-            this.buf.clear();
+            buf().clear();
+        }
+
+        private void assertNotFreed()
+        {
+            if ( this.buf == null )
+            {
+                throw new IllegalStateException( "This buffer have been freed", freeCall );
+            }
         }
 
         void dump( OutputStream target, byte[] scratchPad, int size ) throws IOException
         {
+            ByteBuffer buf = buf();
             buf.position( 0 );
             while ( size > 0 )
             {
