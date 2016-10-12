@@ -31,50 +31,47 @@ import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static org.neo4j.coreedge.catchup.TimeoutLoop.waitForCompletion;
 
 public class CatchUpClient extends LifecycleAdapter
 {
-    private static final int DEFAULT_INACTIVITY_TIMEOUT = 5; // seconds
-
     private final LogProvider logProvider;
     private final TopologyService discoveryService;
     private final Log log;
     private final Clock clock;
     private final Monitors monitors;
+    private final long inactivityTimeoutMillis;
     private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
 
     private NioEventLoopGroup eventLoopGroup;
 
-    public CatchUpClient( TopologyService discoveryService, LogProvider logProvider, Clock clock, Monitors monitors )
+    public CatchUpClient( TopologyService discoveryService, LogProvider logProvider, Clock clock,
+            long inactivityTimeoutMillis, Monitors monitors )
     {
         this.logProvider = logProvider;
         this.discoveryService = discoveryService;
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
+        this.inactivityTimeoutMillis = inactivityTimeoutMillis;
         this.monitors = monitors;
     }
 
     public <T> T makeBlockingRequest( MemberId target, CatchUpRequest request,
             CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException, NoKnownAddressesException
-    {
-        return makeBlockingRequest( target, request, DEFAULT_INACTIVITY_TIMEOUT, TimeUnit.SECONDS, responseHandler );
-    }
-
-    private <T> T makeBlockingRequest( MemberId target, CatchUpRequest request, long inactivityTimeout,
-            TimeUnit timeUnit, CatchUpResponseCallback<T> responseHandler )
-            throws CatchUpClientException, NoKnownAddressesException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
         AdvertisedSocketAddress catchUpAddress =
@@ -97,8 +94,7 @@ public class CatchUpClient extends LifecycleAdapter
 
         String operation = String.format( "Timed out executing operation %s on %s", request, target );
 
-        return TimeoutLoop.waitForCompletion( future, operation,
-                channel::millisSinceLastResponse, inactivityTimeout, timeUnit );
+        return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis );
     }
 
     private class CatchUpChannel implements CatchUpChannelPool.Channel

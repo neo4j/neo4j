@@ -114,8 +114,9 @@ public class CoreServerModule
         LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound =
                 new LoggingInbound<>( raftServer, messageLogger, identityModule.myself() );
 
+        long inactivityTimeoutMillis = config.get( CoreEdgeClusterSettings.catch_up_client_inactivity_timeout );
         CatchUpClient catchUpClient = life.add( new CatchUpClient( clusteringModule.topologyService(), logProvider,
-                Clocks.systemClock(), monitors ) );
+                Clocks.systemClock(), inactivityTimeoutMillis, monitors ) );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
