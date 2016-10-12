@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.core.server;
 
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -34,6 +35,7 @@ import org.neo4j.coreedge.identity.ClusterIdentity;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.DoubleLatch;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -182,5 +184,40 @@ public class BatchingMessageHandlerTest
         verifyZeroInteractions( raftStateMachine );
         logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( BatchingMessageHandler.class )
                 .warn( "This handler has been stopped, dropping the message: %s", message ) );
+    }
+
+    @Test( timeout = 5_000 /* 5 seconds */)
+    public void shouldGiveUpAddingMessagesInTheQueueIfTheHandlerHasBeenStopped() throws Exception
+    {
+        // given
+        int queueSize = 1;
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
+                raftStateMachine, queueSize, MAX_BATCH, NullLogProvider.getInstance() );
+        RaftMessages.ClusterIdAwareMessage message = new RaftMessages.ClusterIdAwareMessage( localClusterId,
+                new RaftMessages.NewEntry.Request( null, null ) );
+        batchHandler.handle( message ); // fill the queue
+
+        CountDownLatch latch = new CountDownLatch( 1 );
+
+        // when
+        Thread thread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                latch.countDown();
+                batchHandler.handle( message );
+            }
+        };
+
+        thread.start();
+
+        latch.await();
+
+        batchHandler.stop();
+
+        thread.join();
+
+        // then we are not stuck and we terminate
     }
 }

@@ -23,18 +23,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
+import org.neo4j.function.Predicates;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.function.Predicates.awaitForever;
 
-public class BatchingMessageHandler extends LifecycleAdapter
+class BatchingMessageHandler extends LifecycleAdapter
         implements Runnable, MessageHandler<RaftMessages.ClusterIdAwareMessage>
 {
     private final MessageHandler<RaftMessages.ClusterIdAwareMessage> handler;
@@ -72,7 +75,8 @@ public class BatchingMessageHandler extends LifecycleAdapter
 
         try
         {
-            messageQueue.put( message );
+            // keep trying to add the message into the queue, give up only if this component has been stopped
+            awaitForever( () -> stopped || messageQueue.offer( message ), 100, TimeUnit.MILLISECONDS );
         }
         catch ( InterruptedException e )
         {
