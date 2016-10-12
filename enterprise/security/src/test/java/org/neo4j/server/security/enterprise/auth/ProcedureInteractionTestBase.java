@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.directory.api.util.Strings;
 import org.junit.After;
 import org.junit.Assert;
@@ -135,7 +136,7 @@ public abstract class ProcedureInteractionTestBase<S>
         reSetUp();
     }
 
-    protected void reSetUp() throws Exception
+    void reSetUp() throws Exception
     {
         Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
         procedures.registerProcedure( ClassWithProcedures.class );
@@ -335,7 +336,7 @@ public abstract class ProcedureInteractionTestBase<S>
     void assertFail( S subject, String call, String partOfErrorMsg )
     {
         String err = assertCallEmpty( subject, call );
-        if ( partOfErrorMsg == null || partOfErrorMsg == "" )
+        if ( StringUtils.isEmpty( partOfErrorMsg ) )
         {
             assertThat( err, not( equalTo( "" ) ) );
         }
@@ -343,13 +344,6 @@ public abstract class ProcedureInteractionTestBase<S>
         {
             assertThat( err, containsString( partOfErrorMsg ) );
         }
-    }
-
-    private void assertFail( S subject, String call, String partOfErrorMsg1, String partOfErrorMsg2 )
-    {
-        String err = assertCallEmpty( subject, call );
-        assertThat( err, not( equalTo( "" ) ) );
-        assertThat( err, either( containsString( partOfErrorMsg1 ) ).or( containsString( partOfErrorMsg2 ) ) );
     }
 
     void assertEmpty( S subject, String call )
@@ -406,7 +400,8 @@ public abstract class ProcedureInteractionTestBase<S>
     }
 
     @SuppressWarnings( "unchecked" )
-    public static void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
+    static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
+            Map<String,Object> expected )
     {
         List<Map<String, Object>> result = r.stream().collect( toList() );
 
@@ -469,7 +464,7 @@ public abstract class ProcedureInteractionTestBase<S>
                 ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
     }
 
-    protected Map<String,Long> countBoltConnectionsByUsername()
+    Map<String,Long> countBoltConnectionsByUsername()
     {
         BoltConnectionTracker boltConnectionTracker = BuiltInProcedures.getBoltConnectionTracker(
                 neo.getLocalGraph().getDependencyResolver() );
@@ -497,6 +492,7 @@ public abstract class ProcedureInteractionTestBase<S>
         return connection;
     }
 
+    @SuppressWarnings( "WeakerAccess" )
     public static class CountResult
     {
         public final String count;
