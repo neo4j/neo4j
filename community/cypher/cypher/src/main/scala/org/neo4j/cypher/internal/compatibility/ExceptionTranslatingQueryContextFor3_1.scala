@@ -225,6 +225,8 @@ class ExceptionTranslatingQueryContextFor3_1(val inner: QueryContext) extends Qu
   override def detachDeleteNode(node: Node): Int =
     translateException(inner.detachDeleteNode(node))
 
+  override def assertSchemaWritesAllowed(): Unit = translateException(inner.assertSchemaWritesAllowed())
+
   class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
     extends DelegatingOperations[T](inner) {
     override def delete(obj: T) =
