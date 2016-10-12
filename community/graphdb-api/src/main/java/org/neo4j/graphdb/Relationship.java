@@ -67,7 +67,7 @@ package org.neo4j.graphdb;
  * when nodes and relationships are deleted, which means it's bad practice to
  * refer to them this way. Instead, use application generated ids.
  */
-public interface Relationship extends IdentifiablePropertyContainer
+public interface Relationship extends Entity
 {
     /**
      * Returns the unique id of this relationship. Ids are garbage collected

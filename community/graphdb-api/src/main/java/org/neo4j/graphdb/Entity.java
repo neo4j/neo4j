@@ -20,21 +20,21 @@
 package org.neo4j.graphdb;
 
 /**
- * Provides the ability to obtain the unique id of the implementing
- * {@link PropertyContainer}.
+ * An Entity is a {@link PropertyContainer} that is persisted in the database, and identified by an {@link #getId() id}.
+ * <p>
+ * {@link Node Nodes} and {@link Relationship Relationships} are Entities.
  */
-public interface IdentifiablePropertyContainer extends PropertyContainer
+public interface Entity extends PropertyContainer
 {
     /**
-     * Returns the unique id of this {@link PropertyContainer}. Id's are garbage
+     * Returns the unique id of this Entity. Id's are garbage
      * collected over time so they are only guaranteed to be unique during a
-     * specific time span: if the {@link PropertyContainer} is deleted, it's
-     * likely that a new {@link PropertyContainer} at some point will get the old
-     * id. <b>Note</b>: this makes {@link PropertyContainer} id's brittle as
+     * specific time span: if the Entity is deleted, it's
+     * likely that a new Entity at some point will get the old
+     * id. <b>Note</b>: this makes Entity id's brittle as
      * public APIs.
      *
-     * @return The id of this {@link PropertyContainer}
+     * @return The id of this Entity.
      */
-     long getId();
-
+    long getId();
 }
