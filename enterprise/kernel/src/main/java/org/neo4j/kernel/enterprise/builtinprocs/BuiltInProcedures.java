@@ -172,7 +172,7 @@ public class BuiltInProcedures
             return getKernelTransactions().activeTransactions().stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
                 .filter( query -> isAdminEnterpriseAuthSubject() ||
-                        query.username().map( authSubject::hasUsername ).orElse( false ) )
+                                  authSubject.hasUsername( query.username() ) )
                 .map( catchThrown( InvalidArgumentsException.class, this::queryStatusResult ) );
         }
         catch ( UncaughtCheckedException uncaught )
@@ -256,10 +256,10 @@ public class BuiltInProcedures
             throws InvalidArgumentsException
     {
         ExecutingQuery query = pair.other();
-        if ( isAdminEnterpriseAuthSubject() || query.username().map( authSubject::hasUsername ).orElse( false ) )
+        if ( isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.username() ) )
         {
             pair.first().markForTermination( Status.Transaction.Terminated );
-            return new QueryTerminationResult( ofInternalId( query.internalQueryId() ), query.usernameAsString() );
+            return new QueryTerminationResult( ofInternalId( query.internalQueryId() ), query.username() );
         }
         else
         {
@@ -370,7 +370,7 @@ public class BuiltInProcedures
     {
         return new QueryStatusResult(
                 ofInternalId( q.internalQueryId() ),
-                q.usernameAsString(),
+                q.username(),
                 q.queryText(),
                 q.queryParameters(),
                 q.startTime(),

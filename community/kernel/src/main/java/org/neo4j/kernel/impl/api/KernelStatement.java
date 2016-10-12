@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -212,10 +211,9 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    final Optional<String> username()
+    final String username()
     {
-        String username = transaction.mode().username();
-        return Optional.of( username );
+        return transaction.mode().username();
     }
 
     final ExecutingQueryList executingQueryList()
