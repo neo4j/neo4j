@@ -43,6 +43,8 @@ import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.logging.async.AsyncLogEvent;
 import org.neo4j.logging.async.AsyncLogProvider;
 
+import static org.apache.commons.lang.StringUtils.defaultString;
+
 public class AsyncRequestLog
         extends AbstractLifeCycle
         implements RequestLog, Consumer<AsyncLogEvent>, AsyncEvents.Monitor
@@ -83,7 +85,15 @@ public class AsyncRequestLog
         long serviceTime = requestTimeStamp < 0 ? -1 : now - requestTimeStamp;
 
         log.info( "%s - %s [%tc] \"%s\" %s %s \"%s\" \"%s\" %s",
-                remoteHost, user, now, requestURL, statusCode, length, referer, userAgent, serviceTime );
+                defaultString( remoteHost ),
+                defaultString( user ),
+                now,
+                defaultString( requestURL ),
+                statusCode,
+                length,
+                defaultString( referer ),
+                defaultString( userAgent ),
+                serviceTime );
     }
 
     private <T> T swallowExceptions( HttpServletRequest outerRequest, Function<HttpServletRequest, T> function )
