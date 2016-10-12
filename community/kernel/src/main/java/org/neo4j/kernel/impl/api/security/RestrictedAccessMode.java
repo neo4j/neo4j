@@ -21,35 +21,34 @@ package org.neo4j.kernel.impl.api.security;
 
 import org.neo4j.kernel.api.security.AccessMode;
 
-public class RestrictedAccessMode extends LayeredAccessMode
+public class RestrictedAccessMode extends WrappedAccessMode
 {
-    public RestrictedAccessMode( AccessMode originalMode,
-            AccessMode restrictedTo )
+    public RestrictedAccessMode( AccessMode original, AccessMode restricting )
     {
-        super( originalMode, restrictedTo );
+        super( original, restricting );
     }
 
     @Override
     public boolean allowsReads()
     {
-        return overriddenMode.allowsReads() && originalMode.allowsReads();
+        return original.allowsReads() && wrapping.allowsReads();
     }
 
     @Override
     public boolean allowsWrites()
     {
-        return overriddenMode.allowsWrites() && originalMode.allowsWrites();
+        return original.allowsWrites() && wrapping.allowsWrites();
     }
 
     @Override
     public boolean allowsSchemaWrites()
     {
-        return overriddenMode.allowsSchemaWrites() && originalMode.allowsSchemaWrites();
+        return original.allowsSchemaWrites() && wrapping.allowsSchemaWrites();
     }
 
     @Override
     public String name()
     {
-        return originalMode.name() + " restricted to " + overriddenMode.name();
+        return original.name() + " restricted to " + wrapping.name();
     }
 }

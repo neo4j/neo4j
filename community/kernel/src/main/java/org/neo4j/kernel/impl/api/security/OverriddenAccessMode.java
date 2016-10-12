@@ -21,35 +21,34 @@ package org.neo4j.kernel.impl.api.security;
 
 import org.neo4j.kernel.api.security.AccessMode;
 
-public class ElevatedAccessMode extends LayeredAccessMode
+public class OverriddenAccessMode extends WrappedAccessMode
 {
-    public ElevatedAccessMode( AccessMode originalMode,
-            AccessMode elevatedTo )
+    public OverriddenAccessMode( AccessMode original, AccessMode overriding )
     {
-        super( originalMode, elevatedTo );
+        super( original, overriding );
     }
 
     @Override
     public boolean allowsReads()
     {
-        return overriddenMode.allowsReads() || originalMode.allowsReads();
+        return wrapping.allowsReads();
     }
 
     @Override
     public boolean allowsWrites()
     {
-        return overriddenMode.allowsWrites() || originalMode.allowsWrites();
+        return wrapping.allowsWrites();
     }
 
     @Override
     public boolean allowsSchemaWrites()
     {
-        return overriddenMode.allowsSchemaWrites() || originalMode.allowsSchemaWrites();
+        return wrapping.allowsSchemaWrites();
     }
 
     @Override
     public String name()
     {
-        return originalMode.name() + " elevated to " + overriddenMode.name();
+        return original.name() + " overridden by " + wrapping.name();
     }
 }

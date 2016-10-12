@@ -91,7 +91,7 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
-import org.neo4j.kernel.impl.api.security.ElevatedAccessMode;
+import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -1502,9 +1502,9 @@ public class OperationsFacade
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> procedureCallReadElevated( QualifiedName name, Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, new ElevatedAccessMode( tx.mode(), AccessMode.Static.READ ) );
+        return callProcedure( name, input, new OverriddenAccessMode( tx.mode(), AccessMode.Static.READ ) );
     }
 
     @Override
@@ -1518,9 +1518,9 @@ public class OperationsFacade
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> procedureCallWriteElevated( QualifiedName name, Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, new ElevatedAccessMode( tx.mode(), AccessMode.Static.WRITE ) );
+        return callProcedure( name, input, new OverriddenAccessMode( tx.mode(), AccessMode.Static.WRITE ) );
     }
 
     @Override
@@ -1534,9 +1534,9 @@ public class OperationsFacade
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> procedureCallSchemaElevated( QualifiedName name, Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, new ElevatedAccessMode( tx.mode(), AccessMode.Static.FULL ) );
+        return callProcedure( name, input, new OverriddenAccessMode( tx.mode(), AccessMode.Static.FULL ) );
     }
 
     private RawIterator<Object[],ProcedureException> callProcedure(
@@ -1586,9 +1586,9 @@ public class OperationsFacade
     }
 
     @Override
-    public Object functionCallElevated( QualifiedName name, Object[] arguments ) throws ProcedureException
+    public Object functionCallOverride( QualifiedName name, Object[] arguments ) throws ProcedureException
     {
-        return callFunction( name, arguments, new ElevatedAccessMode( tx.mode(), AccessMode.Static.READ ) );
+        return callFunction( name, arguments, new OverriddenAccessMode( tx.mode(), AccessMode.Static.READ ) );
     }
 
     private Object callFunction(

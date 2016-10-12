@@ -597,7 +597,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        transactionalContext.statement.procedureCallOperations.procedureCallReadElevated(_, _)
+        transactionalContext.statement.procedureCallOperations.procedureCallReadOverride(_, _)
       else
         transactionalContext.statement.procedureCallOperations.procedureCallRead(_, _)
     callProcedure(name, args, call)
@@ -606,7 +606,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        transactionalContext.statement.procedureCallOperations.procedureCallWriteElevated(_, _)
+        transactionalContext.statement.procedureCallOperations.procedureCallWriteOverride(_, _)
       else
         transactionalContext.statement.procedureCallOperations.procedureCallWrite(_, _)
     callProcedure(name, args, call)
@@ -615,7 +615,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        transactionalContext.statement.procedureCallOperations.procedureCallSchemaElevated(_, _)
+        transactionalContext.statement.procedureCallOperations.procedureCallSchemaOverride(_, _)
       else
         transactionalContext.statement.procedureCallOperations.procedureCallSchema(_, _)
     callProcedure(name, args, call)
@@ -638,7 +638,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelFunctionCall =
       if (shouldElevate(allowed))
-        transactionalContext.statement.procedureCallOperations.functionCallElevated(_, _)
+        transactionalContext.statement.procedureCallOperations.functionCallOverride(_, _)
       else
         transactionalContext.statement.procedureCallOperations.functionCall(_, _)
     callFunction(name, args, call)

@@ -779,6 +779,19 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @Test
+    public void shouldFailNestedAllowedWriteProcedureFromAllowedReadProcedureEvenIfAdmin() throws Throwable
+    {
+        userManager = neo.getLocalUserManager();
+        userManager.newUser( "role1Subject", "abc", false );
+        userManager.newRole( "role1" );
+        userManager.addRoleToUser( "role1", "role1Subject" );
+        userManager.addRoleToUser( PredefinedRoles.ADMIN, "role1Subject" );
+        assertFail( neo.login( "role1Subject", "abc" ),
+                "CALL test.nestedAllowedProcedure('test.allowedWriteProcedure') YIELD value",
+                WRITE_OPS_NOT_ALLOWED );
+    }
+
+    @Test
     public void shouldRestrictNestedReadProcedureFromAllowedWriteProcedures() throws Throwable
     {
         userManager = neo.getLocalUserManager();

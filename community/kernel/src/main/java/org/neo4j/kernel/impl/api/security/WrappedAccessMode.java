@@ -22,33 +22,33 @@ package org.neo4j.kernel.impl.api.security;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
 
-abstract class LayeredAccessMode implements AccessMode
+abstract class WrappedAccessMode implements AccessMode
 {
-    protected final AccessMode originalMode;
-    protected final AccessMode overriddenMode;
+    protected final AccessMode original;
+    protected final AccessMode wrapping;
 
-    public LayeredAccessMode( AccessMode originalMode, AccessMode overriddenMode )
+    WrappedAccessMode( AccessMode original, AccessMode wrapping )
     {
-        this.originalMode = originalMode;
-        this.overriddenMode = overriddenMode;
+        this.original = original;
+        this.wrapping = wrapping;
     }
 
     @Override
     public AuthorizationViolationException onViolation( String msg )
     {
-        return overriddenMode.onViolation( msg );
+        return wrapping.onViolation( msg );
     }
 
     @Override
     public String username()
     {
-        return originalMode.username();
+        return original.username();
     }
 
     @Override
     public AccessMode getOriginalAccessMode()
     {
-        return originalMode.getOriginalAccessMode();
+        return original.getOriginalAccessMode();
     }
 
     @Override
