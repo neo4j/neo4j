@@ -52,7 +52,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -1997,10 +1996,7 @@ public class ImportToolTest
 
     private File badFile()
     {
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.neo4j_home.name(), dbRule.getStoreDirAbsolutePath() ) );
-        File logsDir = config.get( GraphDatabaseSettings.logs_directory );
-        return new File( logsDir, BAD_FILE_NAME );
+        return new File( dbRule.getStoreDirFile(), BAD_FILE_NAME );
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,
