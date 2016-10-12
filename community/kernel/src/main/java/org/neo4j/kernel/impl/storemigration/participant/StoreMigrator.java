@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import java.util.function.BiConsumer;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -79,6 +78,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -108,6 +108,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_C
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
@@ -135,6 +136,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final SchemaIndexProvider schemaIndexProvider;
+    private final Log log;
 
     public StoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
             LogService logService, SchemaIndexProvider schemaIndexProvider )
@@ -152,6 +154,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         this.logService = logService;
         this.schemaIndexProvider = schemaIndexProvider;
         this.legacyLogs = legacyLogs;
+        this.log = logService.getInternalLog( StoreMigrator.class );
     }
 
     @Override
@@ -293,14 +296,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
         catch ( IOException ioe )
         {
+            log.error( "Extraction of transaction " + txId + " from legacy logs failed.", ioe );
             // OK, so we could not get the transaction information from the legacy store logs,
             // so just generate a random new one. I don't think it matters since we know that in a
             // multi-database scenario there can only be one of them upgrading, the other ones will have to
             // copy that database.
             return txId == TransactionIdStore.BASE_TX_ID
                    ? new TransactionId( txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP )
-                   : new TransactionId( txId, Math.abs( new Random().nextLong() ),
-                           UNKNOWN_TX_COMMIT_TIMESTAMP );
+                   : new TransactionId( txId, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP );
         }
     }
 

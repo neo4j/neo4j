@@ -34,10 +34,14 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.TargetDirectory;
@@ -151,7 +155,8 @@ public class StoreMigratorTest
 
         // ... and mocks
         Config config = mock( Config.class );
-        LogService logService = mock( LogService.class );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        LogService logService = new SimpleLogService( NullLogProvider.getInstance(), logProvider );
         LegacyLogs legacyLogs = mock( LegacyLogs.class );
 
         // when
@@ -166,7 +171,9 @@ public class StoreMigratorTest
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
 
         // then
+        logProvider.assertContainsMessageContaining( "Extraction of transaction " + txId + " from legacy logs failed.");
         assertEquals( expected.transactionId(), actual.transactionId() );
+        assertEquals( TransactionIdStore.UNKNOWN_TX_CHECKSUM, actual.checksum() );
         assertEquals( expected.commitTimestamp(), actual.commitTimestamp() );
         // We do not expect checksum to be equal as it is randomly generated
     }
