@@ -171,7 +171,7 @@ public class ClusterManager
     private ManagedCluster managedCluster;
     private final boolean consistencyCheck;
     private final int firstInstanceId;
-    LifeSupport life;
+    private LifeSupport life;
 
     private ClusterManager( Builder builder )
     {
@@ -1217,7 +1217,6 @@ public class ClusterManager
             InstanceId serverId =
                     db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
             members.remove( serverId );
-            life.remove( db );
             db.shutdown();
             await( entireClusterSeesMemberAsNotAvailable( db ) );
             return wrap( new StartDatabaseAgainKit( this, serverId ) );

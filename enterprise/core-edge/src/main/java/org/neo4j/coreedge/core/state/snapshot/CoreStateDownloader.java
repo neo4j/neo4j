@@ -63,8 +63,7 @@ public class CoreStateDownloader
         this.copiedStoreRecovery = copiedStoreRecovery;
     }
 
-    public synchronized void downloadSnapshot( MemberId source, CoreState coreState )
-            throws StoreCopyFailedException
+    public synchronized void downloadSnapshot( MemberId source, CoreState coreState ) throws StoreCopyFailedException
     {
         // TODO: Think about recovery scenarios.
         try
@@ -135,9 +134,12 @@ public class CoreStateDownloader
             startStopOnStoreCopy.start();
             log.info( "Local database started", source );
         }
+        catch ( StoreCopyFailedException e )
+        {
+            throw e;
+        }
         catch ( Throwable e )
         {
-            localDatabase.panic( e );
             throw new StoreCopyFailedException( e );
         }
     }
