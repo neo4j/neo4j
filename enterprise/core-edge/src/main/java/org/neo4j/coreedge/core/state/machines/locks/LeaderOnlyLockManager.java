@@ -21,18 +21,20 @@ package org.neo4j.coreedge.core.state.machines.locks;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.core.replication.Replicator;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.kernel.api.exceptions.Status.Cluster.NoLeaderAvailable;
+import static org.neo4j.kernel.api.exceptions.Status.Cluster.NotALeader;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
 
 /**
  * Each member of the cluster uses its own {@link LeaderOnlyLockManager} which wraps a local {@link Locks} manager.
@@ -109,7 +111,7 @@ public class LeaderOnlyLockManager implements Locks
         }
         catch ( InterruptedException e )
         {
-            throw new AcquireLockTimeoutException( e, "Interrupted acquiring token." );
+            throw new AcquireLockTimeoutException( e, "Interrupted acquiring token.", Interrupted );
         }
 
         try
@@ -121,17 +123,18 @@ public class LeaderOnlyLockManager implements Locks
             }
             else
             {
-                throw new AcquireLockTimeoutException( "Failed to acquire lock token. Was taken by another candidate." );
+                throw new AcquireLockTimeoutException( "Failed to acquire lock token. Was taken by another candidate.",
+                        NotALeader);
             }
         }
         catch ( ExecutionException e )
         {
-            throw new AcquireLockTimeoutException( e, "Failed to acquire lock token." );
+            throw new AcquireLockTimeoutException( e, "Failed to acquire lock token.", NotALeader );
         }
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
-            throw new AcquireLockTimeoutException( e, "Failed to acquire lock token." );
+            throw new AcquireLockTimeoutException( e, "Failed to acquire lock token.", Interrupted );
         }
     }
 
@@ -145,12 +148,12 @@ public class LeaderOnlyLockManager implements Locks
         }
         catch ( NoLeaderFoundException e )
         {
-            throw new AcquireLockTimeoutException( e, "Could not acquire lock token." );
+            throw new AcquireLockTimeoutException( e, "Could not acquire lock token.", NoLeaderAvailable );
         }
 
         if ( !leader.equals( myself ) )
         {
-            throw new AcquireLockTimeoutException( LOCK_NOT_ON_LEADER_ERROR_MESSAGE );
+            throw new AcquireLockTimeoutException( LOCK_NOT_ON_LEADER_ERROR_MESSAGE, NotALeader );
         }
     }
 
@@ -195,7 +198,7 @@ public class LeaderOnlyLockManager implements Locks
             }
             else if ( lockTokenId != lockTokenStateMachine.currentToken().id() )
             {
-                throw new AcquireLockTimeoutException( "Local instance lost lock token." );
+                throw new AcquireLockTimeoutException( "Local instance lost lock token.", NotALeader );
             }
         }
 

@@ -185,7 +185,9 @@ public interface Status
         LockClientStopped( TransientError,
                 "Transaction terminated, no more locks can be acquired." ),
         Terminated( TransientError,
-                "Explicitly terminated by the user." );
+                "Explicitly terminated by the user." ),
+        Interrupted( TransientError,
+                "Interrupted while waiting." );
 
         private final Code code;
 
