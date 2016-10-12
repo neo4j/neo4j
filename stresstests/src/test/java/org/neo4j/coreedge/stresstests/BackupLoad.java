@@ -88,7 +88,8 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
             return false;
         }
 
-        return e instanceof ComException && "Channel has been closed".equals( e.getMessage() ) ||
-                isChannelClosedException( e.getCause() );
+        boolean match = e instanceof ComException && e.getMessage() != null &&
+                e.getMessage().startsWith( "Channel has been closed" );
+        return match || isChannelClosedException( e.getCause() );
     }
 }
