@@ -28,6 +28,8 @@
     <module>server-examples</module>
     <module>bolt</module>
     <module>import-tool</module>
+    <module>server-docs</module>
+    <module>enterprise-server-docs</module>
     <module>shell</module>
     <module>kernel</module>
     <module>management-docs</module>
