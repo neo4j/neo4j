@@ -289,7 +289,7 @@ object ClauseConverters {
 
         val matchGraph = QueryGraph(
           patternNodes = Set(IdName.fromVariable(id)),
-          selections = Selections.from(labelPredicates ++ propertyPredicates: _*),
+          selections = Selections.from(labelPredicates ++ propertyPredicates),
           argumentIds = currentlyAvailableVariables
         )
 
@@ -336,7 +336,7 @@ object ClauseConverters {
           patternNodes = nodes.map(_.nodeName).toSet,
           patternRelationships = rels.map(r => PatternRelationship(r.relName, (r.leftNode, r.rightNode),
             r.direction, Seq(r.relType), SimplePatternLength)).toSet,
-          selections = Selections.from(hasLabels ++ hasProps:_*),
+          selections = Selections.from(hasLabels ++ hasProps),
           argumentIds = builder.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.nodeName)
         )
 

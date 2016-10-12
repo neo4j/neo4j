@@ -137,9 +137,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
-        selections = Selections.from(
+        selections = Selections.from(Seq(
           HasLabels(varFor("a"), Seq(LabelName("A")(pos)))(pos),
-          labelBPredicate)
+          labelBPredicate))
       )
 
       labelCardinality = immutable.Map(
@@ -180,10 +180,10 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           PatternRelationship("r1", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
           PatternRelationship("r2", ("c", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
         ),
-        selections = Selections.from(
+        selections = Selections.from(Seq(
           HasLabels(varFor("a"), Seq(LabelName("A")(pos)))(pos),
           HasLabels(varFor("b"), Seq(LabelName("B")(pos)))(pos))
-      )
+      ))
 
       labelCardinality = immutable.Map(
         "A" -> Cardinality(10),
@@ -228,11 +228,11 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           PatternRelationship("r1", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
           PatternRelationship("r2", ("c", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
         ),
-        selections = Selections.from(
+        selections = Selections.from(Seq(
           predicate,
           HasLabels(varFor("a"), Seq(LabelName("A")(pos)))(pos),
           HasLabels(varFor("b"), Seq(LabelName("B")(pos)))(pos))
-      )
+      ))
 
       labelCardinality = immutable.Map(
         "A" -> Cardinality(10),
