@@ -70,5 +70,7 @@ public interface NeoInteractionLevel<S>
 
     void assertInitFailed( S subject );
 
+    void assertSessionKilled( S subject );
+
     String getConnectionDetails();
 }

@@ -35,9 +35,12 @@ import org.apache.shiro.realm.AuthenticatingRealm;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.realm.CachingRealm;
 import org.apache.shiro.realm.Realm;
+import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.util.Initializable;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -45,8 +48,8 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.neo4j.helpers.Strings.escape;
 
@@ -220,5 +223,23 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
                 }
             }
         }
+    }
+
+    public Collection<AuthorizationInfo> getAuthorizationInfo( PrincipalCollection principalCollection )
+    {
+        List<AuthorizationInfo> infoList = new ArrayList<>( 1 );
+        for ( Realm realm : realms )
+        {
+            if ( realm instanceof ShiroAuthorizationInfoProvider )
+            {
+                AuthorizationInfo info = ((ShiroAuthorizationInfoProvider) realm)
+                        .getAuthorizationInfoSnapshot( principalCollection );
+                if ( info != null )
+                {
+                    infoList.add( info );
+                }
+            }
+        }
+        return infoList;
     }
 }

@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
@@ -167,6 +168,12 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     public void assertInitFailed( EnterpriseAuthSubject subject )
     {
         assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+    }
+
+    @Override
+    public void assertSessionKilled( EnterpriseAuthSubject subject )
+    {
+        // There is no session that could have been killed
     }
 
     @Override

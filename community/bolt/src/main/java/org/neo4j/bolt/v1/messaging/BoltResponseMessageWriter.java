@@ -97,6 +97,13 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
         onMessageComplete.onMessageComplete();
     }
 
+    @Override
+    public void onFatal( Status status, String message ) throws IOException
+    {
+        onFailure( status, message );
+        flush();
+    }
+
     public void flush() throws IOException
     {
         packer.flush();

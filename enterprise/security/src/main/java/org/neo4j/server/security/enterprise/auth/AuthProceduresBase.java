@@ -39,7 +39,6 @@ import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 
 @SuppressWarnings( "WeakerAccess" )
 public class AuthProceduresBase
@@ -79,7 +78,7 @@ public class AuthProceduresBase
         getActiveTransactions()
                 .stream()
                 .filter( tx ->
-                    getUsernameFromAccessMode( tx.mode() ).equals( username ) &&
+                    tx.mode().username().equals( username ) &&
                     !tx.isUnderlyingTransaction( currentTx )
                 ).forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
     }

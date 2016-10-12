@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.security;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /** Controls the capabilities of a KernelTransaction. */
@@ -47,18 +48,6 @@ public interface AccessMode
                     {
                         return false;
                     }
-
-                    @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
-                    }
                 },
 
         /** No reading or writing allowed because of expired credentials. */
@@ -83,25 +72,19 @@ public interface AccessMode
                     }
 
                     @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
-
-                    @Override
                     public AuthorizationViolationException onViolation( String msg )
                     {
                         return new AuthorizationViolationException( String.format(
                                 msg + "%n%nThe credentials you provided were valid, but must be " +
-                                        "changed before you can " +
-                                        "use this instance. If this is the first time you are using Neo4j, this is to " +
-                                        "ensure you are not using the default credentials in production. If you are not " +
-                                        "using default credentials, you are getting this message because an administrator " +
-                                        "requires a password change.%n" +
-                                        "Changing your password is easy to do via the Neo4j Browser.%n" +
-                                        "If you are connecting via a shell or programmatically via a driver, " +
-                                        "just issue a `CALL dbms.changePassword('new password')` statement in the current " +
-                                        "session, and then restart your driver with the new password configured." ),
+                                "changed before you can " +
+                                "use this instance. If this is the first time you are using Neo4j, this is to " +
+                                "ensure you are not using the default credentials in production. If you are not " +
+                                "using default credentials, you are getting this message because an administrator " +
+                                "requires a password change.%n" +
+                                "Changing your password is easy to do via the Neo4j Browser.%n" +
+                                "If you are connecting via a shell or programmatically via a driver, " +
+                                "just issue a `CALL dbms.changePassword('new password')` statement in the current " +
+                                "session, and then restart your driver with the new password configured." ),
                                 Status.Security.CredentialsExpired );
                     }
                 },
@@ -126,18 +109,6 @@ public interface AccessMode
                     {
                         return false;
                     }
-
-                    @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
-                    }
                 },
 
         /** Allows writing data */
@@ -159,18 +130,6 @@ public interface AccessMode
                     public boolean allowsSchemaWrites()
                     {
                         return false;
-                    }
-
-                    @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
                     }
                 },
 
@@ -194,18 +153,6 @@ public interface AccessMode
                     {
                         return false;
                     }
-
-                    @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
-                    }
                 },
 
         /** Allows all operations. */
@@ -228,142 +175,56 @@ public interface AccessMode
                     {
                         return true;
                     }
+                };
 
-                    @Override
-                    public boolean overrideOriginalMode()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( msg );
-                    }
-                },
-
-        /** Allows reading data and schema, but not writing.
-         * NOTE: This is a special mode that will override the original access mode when put as a temporary restriction
-         * on a transaction, potentially elevating the access mode to give read access to a transaction that did not
-         * have read access before.
-         */
-        OVERRIDE_READ
+        @Override
+        public AuthorizationViolationException onViolation( String msg )
         {
-            @Override
-            public boolean allowsReads()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsWrites()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean allowsSchemaWrites()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean overrideOriginalMode()
-            {
-                return true;
-            }
-
-            @Override
-            public AuthorizationViolationException onViolation( String msg )
-            {
-                return new AuthorizationViolationException( msg );
-            }
-        },
-
-        /**
-         * Allows writing data, as well as reading data and schema.
-         * NOTE: This is a special mode that will override the original access mode when put as a temporary restriction
-         * on a transaction, potentially elevating the access mode to give write access to a transaction that did not
-         * have write access before.
-         */
-        OVERRIDE_WRITE
-        {
-            @Override
-            public boolean allowsReads()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsWrites()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsSchemaWrites()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean overrideOriginalMode()
-            {
-                return true;
-            }
-
-            @Override
-            public AuthorizationViolationException onViolation( String msg )
-            {
-                return new AuthorizationViolationException( msg );
-            }
-        },
-
-        /**
-         * Allows writing and reading data and schema.
-         * NOTE: This is a special mode that will override the original access mode when put as a temporary restriction
-         * on a transaction, potentially elevating the access mode to give schema access to a transaction that did not
-         * have schema access before.
-         */
-        OVERRIDE_SCHEMA
-        {
-            @Override
-            public boolean allowsReads()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsWrites()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean allowsSchemaWrites()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean overrideOriginalMode()
-            {
-                return true;
-            }
-
-            @Override
-            public AuthorizationViolationException onViolation( String msg )
-            {
-                return new AuthorizationViolationException( msg );
-            }
-        },
-
+            return new AuthorizationViolationException( msg );
         }
+
+        @Override
+        public AccessMode getSnapshot()
+        {
+            return this;
+        }
+    }
 
     boolean allowsReads();
     boolean allowsWrites();
     boolean allowsSchemaWrites();
-    boolean overrideOriginalMode();
+
     AuthorizationViolationException onViolation( String msg );
     String name();
+
+    default String username()
+    {
+        return ""; // Should never clash with a valid username
+    }
+
+    default AccessMode getOriginalAccessMode()
+    {
+        return this;
+    }
+
+    default boolean isOverridden()
+    {
+        return false;
+    }
+
+    /**
+     * Determines whether this mode allows execution of a procedure with the parameter string array in its
+     * procedure annotation.
+     *
+     * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
+     * @return <tt>true</tt> if this mode allows the execution of a procedure with the given parameter string array
+     * encoding permission
+     * @throws InvalidArgumentsException
+     */
+    default boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException
+    {
+        return false;
+    }
+
+    AccessMode getSnapshot();
 }

@@ -52,7 +52,6 @@ import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.security.{AccessMode, AuthSubject}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -586,34 +585,39 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
+  type KernelFunctionCall = (KernelQualifiedName, Array[AnyRef]) => AnyRef
+
+  private def shouldElevate(allowed: Array[String]): Boolean = {
+    // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
+    // above the original allowed procedure mode. We enforce this by checking if mode is already an overridden mode.
+    val mode = transactionalContext.accessMode
+    allowed.nonEmpty && !mode.isOverridden && mode.getOriginalAccessMode.allowsProcedureWith(allowed)
+  }
 
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall = transactionalContext.accessMode match {
-      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
-        transactionalContext.statement.procedureCallOperations.procedureCallRead(_, _, AccessMode.Static.OVERRIDE_READ)
-      case _ =>
+    val call: KernelProcedureCall =
+      if (shouldElevate(allowed))
+        transactionalContext.statement.procedureCallOperations.procedureCallReadOverride(_, _)
+      else
         transactionalContext.statement.procedureCallOperations.procedureCallRead(_, _)
-    }
     callProcedure(name, args, call)
   }
 
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall = transactionalContext.accessMode match {
-      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
-        transactionalContext.statement.procedureCallOperations.procedureCallWrite(_, _, AccessMode.Static.OVERRIDE_WRITE)
-      case _ =>
+    val call: KernelProcedureCall =
+      if (shouldElevate(allowed))
+        transactionalContext.statement.procedureCallOperations.procedureCallWriteOverride(_, _)
+      else
         transactionalContext.statement.procedureCallOperations.procedureCallWrite(_, _)
-    }
     callProcedure(name, args, call)
   }
 
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall = transactionalContext.accessMode match {
-      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
-        transactionalContext.statement.procedureCallOperations.procedureCallSchema(_, _, AccessMode.Static.OVERRIDE_SCHEMA)
-      case _ =>
+    val call: KernelProcedureCall =
+      if (shouldElevate(allowed))
+        transactionalContext.statement.procedureCallOperations.procedureCallSchemaOverride(_, _)
+      else
         transactionalContext.statement.procedureCallOperations.procedureCallSchema(_, _)
-    }
     callProcedure(name, args, call)
   }
 
@@ -632,17 +636,16 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val revertable = transactionalContext.accessMode match {
-      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
-        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_READ))
-      case _ => None
-    }
-    callFunction(name, args, transactionalContext.statement.readOperations().functionCall, revertable.foreach(_.close))
+    val call: KernelFunctionCall =
+      if (shouldElevate(allowed))
+        transactionalContext.statement.procedureCallOperations.functionCallOverride(_, _)
+      else
+        transactionalContext.statement.procedureCallOperations.functionCall(_, _)
+    callFunction(name, args, call)
   }
 
   private def callFunction(name: QualifiedName, args: Seq[Any],
-                           call: (KernelQualifiedName, Array[AnyRef]) => AnyRef,
-                           onClose: => Unit) = {
+                           call: KernelFunctionCall) = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     call(kn, toArray)

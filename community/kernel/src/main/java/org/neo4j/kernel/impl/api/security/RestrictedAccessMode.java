@@ -22,37 +22,37 @@ package org.neo4j.kernel.impl.api.security;
 import org.neo4j.kernel.api.security.AccessMode;
 
 /**
- * Access mode that overrides the original access mode with the overriding mode. Allows exactly what the overriding
- * mode allows, while retaining the meta data of the original mode only.
+ * Access mode that restricts the original access mode with the restricting mode. Allows things that both the
+ * original and the restricting mode allows, while retaining the meta data of the original mode only.
  */
-public class OverriddenAccessMode extends WrappedAccessMode
+public class RestrictedAccessMode extends WrappedAccessMode
 {
-    public OverriddenAccessMode( AccessMode original, AccessMode overriding )
+    public RestrictedAccessMode( AccessMode original, AccessMode restricting )
     {
-        super( original, overriding );
+        super( original, restricting );
     }
 
     @Override
     public boolean allowsReads()
     {
-        return wrapping.allowsReads();
+        return original.allowsReads() && wrapping.allowsReads();
     }
 
     @Override
     public boolean allowsWrites()
     {
-        return wrapping.allowsWrites();
+        return original.allowsWrites() && wrapping.allowsWrites();
     }
 
     @Override
     public boolean allowsSchemaWrites()
     {
-        return wrapping.allowsSchemaWrites();
+        return original.allowsSchemaWrites() && wrapping.allowsSchemaWrites();
     }
 
     @Override
     public String name()
     {
-        return original.name() + " overridden by " + wrapping.name();
+        return original.name() + " restricted to " + wrapping.name();
     }
 }

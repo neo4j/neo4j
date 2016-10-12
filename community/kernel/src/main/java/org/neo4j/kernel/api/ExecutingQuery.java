@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api;
 
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.kernel.impl.query.QuerySource;
 
@@ -31,11 +30,9 @@ import static java.lang.String.format;
  */
 public class ExecutingQuery
 {
-    public static String UNAVAILABLE_USERNAME = "<unavailable>";
-
     private final long queryId;
 
-    private final Optional<String> username;
+    private final String username;
     private final QuerySource querySource;
     private final String queryText;
     private final Map<String, Object> queryParameters;
@@ -45,7 +42,7 @@ public class ExecutingQuery
     public ExecutingQuery(
             long queryId,
             QuerySource querySource,
-            Optional<String> username,
+            String username,
             String queryText,
             Map<String,Object> queryParameters,
             long startTime,
@@ -89,7 +86,7 @@ public class ExecutingQuery
         return queryId;
     }
 
-    public Optional<String> username()
+    public String username()
     {
         return username;
     }
@@ -99,11 +96,6 @@ public class ExecutingQuery
         return querySource;
     }
 
-    public String usernameAsString()
-    {
-        return username().orElse( UNAVAILABLE_USERNAME );
-
-    }
     public String queryText()
     {
         return queryText;
@@ -125,7 +117,7 @@ public class ExecutingQuery
         return format(
             "ExecutingQuery{queryId=%d, querySource='%s', username='%s', queryText='%s', queryParameters=%s, " +
             "startTime=%d}",
-            queryId, querySource.toString( ":" ), usernameAsString(), queryText, queryParameters, startTime );
+            queryId, querySource.toString( ":" ), username, queryText, queryParameters, startTime );
     }
 
     public Map<String,Object> metaData()

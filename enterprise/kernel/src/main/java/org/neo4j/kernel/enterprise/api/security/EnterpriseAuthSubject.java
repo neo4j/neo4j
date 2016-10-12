@@ -71,9 +71,9 @@ public interface EnterpriseAuthSubject extends AuthSubject
         }
 
         @Override
-        public boolean overrideOriginalMode()
+        public boolean isOverridden()
         {
-            return AuthSubject.AUTH_DISABLED.overrideOriginalMode();
+            return AuthSubject.AUTH_DISABLED.isOverridden();
         }
 
         @Override

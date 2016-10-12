@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.directory.api.util.Strings;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,7 +55,9 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserFunction;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
@@ -73,7 +77,6 @@ import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
@@ -133,13 +136,11 @@ public abstract class ProcedureInteractionTestBase<S>
         reSetUp();
     }
 
-    protected void reSetUp() throws Exception
+    void reSetUp() throws Exception
     {
-        neo
-            .getLocalGraph()
-            .getDependencyResolver()
-            .resolveDependency( Procedures.class )
-            .registerProcedure( ClassWithProcedures.class );
+        Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
+        procedures.registerProcedure( ClassWithProcedures.class );
+        procedures.registerFunction( ClassWithFunctions.class );
         userManager = neo.getLocalUserManager();
         userManager.newUser( "noneSubject", "abc", false );
         userManager.newUser( "pwdSubject", "abc", true );
@@ -294,41 +295,19 @@ public abstract class ProcedureInteractionTestBase<S>
 
     void testFailTestProcs( S subject )
     {
-        assertFail( subject, "CALL test.allowedProcedure1()", READ_OPS_NOT_ALLOWED );
-        assertFail( subject, "CALL test.allowedProcedure2()", WRITE_OPS_NOT_ALLOWED );
-        assertFail( subject, "CALL test.allowedProcedure3()", SCHEMA_OPS_NOT_ALLOWED );
+        assertFail( subject, "CALL test.allowedReadProcedure()", READ_OPS_NOT_ALLOWED );
+        assertFail( subject, "CALL test.allowedWriteProcedure()", WRITE_OPS_NOT_ALLOWED );
+        assertFail( subject, "CALL test.allowedSchemaProcedure()", SCHEMA_OPS_NOT_ALLOWED );
     }
 
     void testSuccessfulTestProcs( S subject )
     {
-        assertSuccess( subject, "CALL test.allowedProcedure1()",
+        assertSuccess( subject, "CALL test.allowedReadProcedure()",
                 r -> assertKeyIs( r, "value", "foo" ) );
-        assertSuccess( subject, "CALL test.allowedProcedure2()",
+        assertSuccess( subject, "CALL test.allowedWriteProcedure()",
                 r -> assertKeyIs( r, "value", "a", "a" ) );
-        assertSuccess( subject, "CALL test.allowedProcedure3()",
+        assertSuccess( subject, "CALL test.allowedSchemaProcedure()",
                 r -> assertKeyIs( r, "value", "OK" ) );
-    }
-
-    void testSessionKilled( S subject )
-    {
-        if ( IS_BOLT )
-        {
-            // After the connection has been terminated, attempts to receive
-            // data will result in an IOException with the message below...
-            String unixErrorMessage = "Failed to read 2 bytes, missing 2 bytes. Buffer: 00 00";
-            // ...but only on Unix. If we're on Windows, we get...
-            String windowsErrorMessage = "Software caused connection abort: recv failed";
-            // TODO: This whole method is probably ripe for a bit of refactoring.
-            assertFail( subject, "MATCH (n:Node) RETURN count(n)", unixErrorMessage, windowsErrorMessage );
-        }
-        else if ( IS_EMBEDDED )
-        {
-            assertFail( subject, "MATCH (n:Node) RETURN count(n)", "Read operations are not allowed" );
-        }
-        else
-        {
-            assertFail( subject, "MATCH (n:Node) RETURN count(n)", "Invalid username or password" );
-        }
     }
 
     void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )
@@ -357,15 +336,14 @@ public abstract class ProcedureInteractionTestBase<S>
     void assertFail( S subject, String call, String partOfErrorMsg )
     {
         String err = assertCallEmpty( subject, call );
-        assertThat( err, not( equalTo( "" ) ) );
-        assertThat( err, containsString( partOfErrorMsg ) );
-    }
-
-    private void assertFail( S subject, String call, String partOfErrorMsg1, String partOfErrorMsg2 )
-    {
-        String err = assertCallEmpty( subject, call );
-        assertThat( err, not( equalTo( "" ) ) );
-        assertThat( err, either( containsString( partOfErrorMsg1 ) ).or( containsString( partOfErrorMsg2 ) ) );
+        if ( StringUtils.isEmpty( partOfErrorMsg ) )
+        {
+            assertThat( err, not( equalTo( "" ) ) );
+        }
+        else
+        {
+            assertThat( err, containsString( partOfErrorMsg ) );
+        }
     }
 
     void assertEmpty( S subject, String call )
@@ -422,7 +400,8 @@ public abstract class ProcedureInteractionTestBase<S>
     }
 
     @SuppressWarnings( "unchecked" )
-    public static void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
+    static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
+            Map<String,Object> expected )
     {
         List<Map<String, Object>> result = r.stream().collect( toList() );
 
@@ -481,11 +460,11 @@ public abstract class ProcedureInteractionTestBase<S>
                             neo.getLocalGraph().getDependencyResolver()
                     ).stream()
                             .filter( tx -> !tx.terminationReason().isPresent() )
-                            .map( tx -> getUsernameFromAccessMode( tx.mode() ) )
+                            .map( tx -> tx.mode().username() )
                 ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
     }
 
-    protected Map<String,Long> countBoltConnectionsByUsername()
+    Map<String,Long> countBoltConnectionsByUsername()
     {
         BoltConnectionTracker boltConnectionTracker = BuiltInProcedures.getBoltConnectionTracker(
                 neo.getLocalGraph().getDependencyResolver() );
@@ -513,6 +492,7 @@ public abstract class ProcedureInteractionTestBase<S>
         return connection;
     }
 
+    @SuppressWarnings( "WeakerAccess" )
     public static class CountResult
     {
         public final String count;
@@ -568,14 +548,21 @@ public abstract class ProcedureInteractionTestBase<S>
             return Stream.of( new AuthProceduresBase.StringResult( "static" ) );
         }
 
-        @Procedure( name = "test.allowedProcedure1", allowed = {"role1"}, mode = Mode.READ )
+        @Procedure( name = "test.allowedReadProcedure", allowed = {"role1"}, mode = Mode.READ )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure1()
         {
             Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
             return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "foo" ).toString() ) );
         }
 
-        @Procedure( name = "test.allowedProcedure2", allowed = {"otherRole", "role1"}, mode = Mode.WRITE )
+        @Procedure( name = "test.otherAllowedReadProcedure", allowed = {"otherRole"}, mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> otherAllowedProcedure()
+        {
+            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "foo" ).toString() ) );
+        }
+
+        @Procedure( name = "test.allowedWriteProcedure", allowed = {"otherRole", "role1"}, mode = Mode.WRITE )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure2()
         {
             db.execute( "UNWIND [1, 2] AS i CREATE (:VeryUniqueLabel {prop: 'a'})" );
@@ -583,11 +570,43 @@ public abstract class ProcedureInteractionTestBase<S>
             return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "a" ).toString() ) );
         }
 
-        @Procedure( name = "test.allowedProcedure3", allowed = {"role1"}, mode = Mode.SCHEMA )
+        @Procedure( name = "test.allowedSchemaProcedure", allowed = {"role1"}, mode = Mode.SCHEMA )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure3()
         {
             db.execute( "CREATE INDEX ON :VeryUniqueLabel(prop)" );
             return Stream.of( new AuthProceduresBase.StringResult( "OK" ) );
+        }
+
+        @Procedure( name = "test.nestedAllowedProcedure", allowed = {"role1"}, mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> nestedAllowedProcedure(
+                @Name( "nestedProcedure" ) String nestedProcedure
+        )
+        {
+            Result result = db.execute( "CALL " + nestedProcedure );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "value" ).toString() ) );
+        }
+
+        @Procedure( name = "test.doubleNestedAllowedProcedure", allowed = {"role1"}, mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> doubleNestedAllowedProcedure()
+        {
+            Result result = db.execute( "CALL test.nestedAllowedProcedure('test.allowedReadProcedure') YIELD value" );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "value" ).toString() ) );
+        }
+
+        @Procedure( name = "test.failingNestedAllowedWriteProcedure", allowed = {"role1"}, mode = Mode.WRITE )
+        public Stream<AuthProceduresBase.StringResult> failingNestedAllowedWriteProcedure()
+        {
+            Result result = db.execute( "CALL test.nestedReadProcedure('test.allowedWriteProcedure') YIELD value" );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "value" ).toString() ) );
+        }
+
+        @Procedure( name = "test.nestedReadProcedure", mode = Mode.READ )
+        public Stream<AuthProceduresBase.StringResult> nestedReadProcedure(
+                @Name( "nestedProcedure" ) String nestedProcedure
+        )
+        {
+            Result result = db.execute( "CALL " + nestedProcedure );
+            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "value" ).toString() ) );
         }
 
         @Procedure( name = "test.createNode", mode = WRITE )
@@ -640,6 +659,36 @@ public abstract class ProcedureInteractionTestBase<S>
         static void setTestLatch( LatchedRunnables testLatch )
         {
             ClassWithProcedures.testLatch.set( testLatch );
+        }
+    }
+
+    @SuppressWarnings( "unused" )
+    public static class ClassWithFunctions
+    {
+        @Context
+        public GraphDatabaseService db;
+
+        @UserFunction( name = "test.allowedFunction1", allowed = {"role1"} )
+        public String allowedFunction1()
+        {
+            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
+            return result.next().get( "foo" ).toString();
+        }
+
+        @UserFunction( name = "test.allowedFunction2", allowed = {"role2"} )
+        public String allowedFunction2()
+        {
+            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
+            return result.next().get( "foo" ).toString();
+        }
+
+        @UserFunction( name = "test.nestedAllowedFunction", allowed = {"role1"} )
+        public String nestedAllowedFunction(
+                @Name( "nestedFunction" ) String nestedFunction
+        )
+        {
+            Result result = db.execute( "RETURN " + nestedFunction + " AS value");
+            return result.next().get( "value" ).toString();
         }
     }
 }

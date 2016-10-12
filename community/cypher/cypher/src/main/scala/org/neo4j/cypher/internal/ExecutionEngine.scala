@@ -150,8 +150,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
         val tc = externalTransactionalContext.getOrBeginNewIfClosed()
 
         // Temporarily change access mode during query planning
-        // NOTE: The OVERRIDE_READ mode will force read access even if the current transaction did not have it
-        val revertable = tc.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_READ)
+        // NOTE: This will force read access even if the current transaction did not have it
+        val revertable = tc.restrictCurrentTransaction(AccessMode.Static.READ)
 
         val ((plan: ExecutionPlan, extractedParameters), touched) = try {
           // fetch plan cache

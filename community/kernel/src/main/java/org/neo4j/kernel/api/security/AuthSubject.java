@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.api.security.AccessModeSnapshot;
 
 public interface AuthSubject extends AccessMode
 {
@@ -47,19 +48,6 @@ public interface AuthSubject extends AccessMode
     void setPasswordChangeNoLongerRequired();
 
     /**
-     * Determines whether this subject is allowed to execute a procedure with the parameter string in its procedure annotation.
-     * @param roleNames
-     * @return
-     * @throws InvalidArgumentsException
-     */
-    boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException;
-
-    /**
-     * @return A string representing the primary principal of this subject
-     */
-    String username();
-
-    /**
      * @param username a username
      * @return true if the provided username is the underlying user name of this subject
      */
@@ -75,10 +63,62 @@ public interface AuthSubject extends AccessMode
         throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
     }
 
+    @Override
+    default AccessMode getSnapshot()
+    {
+        return AccessModeSnapshot.create( this );
+    }
+
+    abstract class StaticAccessModeAdapter implements AuthSubject
+    {
+        private final AccessMode accessMode;
+
+        public StaticAccessModeAdapter( AccessMode.Static accessMode )
+        {
+            this.accessMode = accessMode;
+        }
+
+        @Override
+        public boolean allowsReads()
+        {
+            return accessMode.allowsReads();
+        }
+
+        @Override
+        public boolean allowsWrites()
+        {
+            return accessMode.allowsWrites();
+        }
+
+        @Override
+        public boolean allowsSchemaWrites()
+        {
+            return accessMode.allowsSchemaWrites();
+        }
+
+        @Override
+        public boolean isOverridden()
+        {
+            return accessMode.isOverridden();
+        }
+
+        @Override
+        public AuthorizationViolationException onViolation( String msg )
+        {
+            return accessMode.onViolation( msg );
+        }
+
+        @Override
+        public String name()
+        {
+            return accessMode.name();
+        }
+    }
+
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
-    AuthSubject ANONYMOUS = new AuthSubject()
+    AuthSubject ANONYMOUS = new StaticAccessModeAdapter( Static.NONE )
     {
         @Override
         public void logout()
@@ -116,93 +156,21 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public boolean allowsReads()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean allowsWrites()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean allowsSchemaWrites()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean overrideOriginalMode()
-        {
-            return false;
-        }
-
-        @Override
-        public AuthorizationViolationException onViolation( String msg )
-        {
-            return new AuthorizationViolationException( msg );
-        }
-
-        @Override
         public String name()
         {
             return "<anonymous>";
-        }
-
-        @Override
-        public String username()
-        {
-            return ""; // Should never clash with a valid username
         }
     };
 
     /**
      * Implementation to use when authentication is disabled. Allows everything.
      */
-    AuthSubject AUTH_DISABLED = new AuthSubject()
+    AuthSubject AUTH_DISABLED = new StaticAccessModeAdapter( Static.FULL )
     {
-        @Override
-        public boolean allowsReads()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean allowsWrites()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean allowsSchemaWrites()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean overrideOriginalMode()
-        {
-            return false;
-        }
-
-        @Override
-        public AuthorizationViolationException onViolation( String msg )
-        {
-            return new AuthorizationViolationException( msg );
-        }
-
         @Override
         public String name()
         {
             return "<auth disabled>";
-        }
-
-        @Override
-        public String username()
-        {
-            return ""; // Should never clash with a valid username
         }
 
         @Override

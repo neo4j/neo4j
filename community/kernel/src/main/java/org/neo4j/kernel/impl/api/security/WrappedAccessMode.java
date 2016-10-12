@@ -19,40 +19,51 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
 
 /**
- * Access mode that overrides the original access mode with the overriding mode. Allows exactly what the overriding
- * mode allows, while retaining the meta data of the original mode only.
+ * Access mode that wraps an access mode with a wrapping access mode. The resulting access mode allows things based
+ * on both the original and the wrapping mode, while retaining the meta data of the original mode only.
  */
-public class OverriddenAccessMode extends WrappedAccessMode
+abstract class WrappedAccessMode implements AccessMode
 {
-    public OverriddenAccessMode( AccessMode original, AccessMode overriding )
+    protected final AccessMode original;
+    protected final AccessMode wrapping;
+
+    WrappedAccessMode( AccessMode original, AccessMode wrapping )
     {
-        super( original, overriding );
+        this.original = original;
+        this.wrapping = wrapping;
     }
 
     @Override
-    public boolean allowsReads()
+    public AuthorizationViolationException onViolation( String msg )
     {
-        return wrapping.allowsReads();
+        return wrapping.onViolation( msg );
     }
 
     @Override
-    public boolean allowsWrites()
+    public String username()
     {
-        return wrapping.allowsWrites();
+        return original.username();
     }
 
     @Override
-    public boolean allowsSchemaWrites()
+    public AccessMode getOriginalAccessMode()
     {
-        return wrapping.allowsSchemaWrites();
+        return original.getOriginalAccessMode();
     }
 
     @Override
-    public String name()
+    public AccessMode getSnapshot()
     {
-        return original.name() + " overridden by " + wrapping.name();
+        return AccessModeSnapshot.create( this );
+    }
+
+    @Override
+    public boolean isOverridden()
+    {
+        return true;
     }
 }

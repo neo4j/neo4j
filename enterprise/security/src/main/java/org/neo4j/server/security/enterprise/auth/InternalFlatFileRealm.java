@@ -66,7 +66,8 @@ import static java.util.Collections.emptySet;
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
  */
-public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager
+public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager,
+        ShiroAuthorizationInfoProvider
 {
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
@@ -374,6 +375,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         // Hence the credentials matcher is set to AllowAllCredentialsMatcher,
         // and we do not need to store hashed credentials in the AuthenticationInfo.
         return new ShiroAuthenticationInfo( user.name(), null, getName(), result );
+    }
+
+    @Override
+    public AuthorizationInfo getAuthorizationInfoSnapshot( PrincipalCollection principalCollection )
+    {
+        return getAuthorizationInfo( principalCollection );
     }
 
     private int numberOfUsers()

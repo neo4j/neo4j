@@ -47,9 +47,11 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     ) throws ProcedureException
     {
         BasicContext ctx = new BasicContext();
-        if ( mode instanceof AuthSubject )
+
+        AccessMode originalMode = mode.getOriginalAccessMode();
+        if ( originalMode instanceof AuthSubject )
         {
-            ctx.put( Context.AUTH_SUBJECT, (AuthSubject) mode );
+            ctx.put( Context.AUTH_SUBJECT, (AuthSubject) originalMode );
         }
         return procedures.callProcedure( ctx, name, input );
     }

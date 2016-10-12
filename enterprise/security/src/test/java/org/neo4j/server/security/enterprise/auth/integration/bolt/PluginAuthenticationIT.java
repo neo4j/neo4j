@@ -216,6 +216,29 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.active_realms, "plugin-TestCacheableAdminAuthPlugin" );
         });
 
+        assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
+        assertReadSucceeds();
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+
+        // Then
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ), pullAll() ) );
+        assertThat( client, eventuallyReceives(
+                msgFailure( Status.Security.AuthorizationExpired,
+                        "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
+    }
+
+    @Test
+    public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithAuthPlugin() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.active_realms, "plugin-TestCacheableAdminAuthPlugin" );
+        });
+
         // Then
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
 
@@ -223,9 +246,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
                 run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(),
-                msgFailure( Status.Security.AuthorizationExpired,
-                        "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     @Test

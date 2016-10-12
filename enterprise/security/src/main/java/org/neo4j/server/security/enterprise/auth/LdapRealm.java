@@ -73,7 +73,7 @@ import org.neo4j.server.security.auth.Credential;
 /**
  * Shiro realm for LDAP based on configuration settings
  */
-public class LdapRealm extends JndiLdapRealm implements RealmLifecycle
+public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAuthorizationInfoProvider
 {
     private static final String GROUP_DELIMITER = ";";
     private static final String KEY_VALUE_DELIMITER = "=";
@@ -541,5 +541,11 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle
     @Override
     public void shutdown() throws Throwable
     {
+    }
+
+    @Override
+    public AuthorizationInfo getAuthorizationInfoSnapshot( PrincipalCollection principalCollection )
+    {
+        return getAuthorizationInfo( principalCollection );
     }
 }

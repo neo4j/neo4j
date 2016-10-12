@@ -143,12 +143,6 @@ public class BasicAuthSubject implements AuthSubject
     }
 
     @Override
-    public boolean overrideOriginalMode()
-    {
-        return false;
-    }
-
-    @Override
     public AuthorizationViolationException onViolation( String msg )
     {
         return accessMode.onViolation( msg );

@@ -41,4 +41,5 @@ public interface BoltResponseMessageHandler<E extends Exception>
 
     void onFailure( Status status, String message ) throws E;
 
+    default void onFatal( Status status, String message ) throws E { onFailure( status, message ); }
 }

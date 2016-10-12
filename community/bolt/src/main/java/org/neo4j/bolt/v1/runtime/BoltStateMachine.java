@@ -340,12 +340,12 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         }
                         catch ( AuthenticationException e )
                         {
-                            fail( machine, new Neo4jError( e.status(), e.getMessage() ) );
+                            fail( machine, Neo4jError.fatalFrom( e.status(), e.getMessage() ) );
                             throw new BoltConnectionAuthFatality( e.getMessage() );
                         }
                         catch ( Throwable t )
                         {
-                            fail( machine, new Neo4jError( Status.General.UnknownError, t.getMessage() ) );
+                            fail( machine, Neo4jError.fatalFrom( Status.General.UnknownError, t.getMessage() ) );
                             throw new BoltConnectionFatality( t.getMessage() );
                         }
                     }
@@ -373,7 +373,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         }
                         catch ( AuthExpirationException e )
                         {
-                            fail( machine, Neo4jError.from( e ) );
+                            fail( machine, Neo4jError.fatalFrom( e ) );
                             throw new BoltConnectionAuthFatality( e.getMessage() );
                         }
                         catch ( Throwable e )
@@ -427,7 +427,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         }
                         catch ( AuthExpirationException e )
                         {
-                            fail( machine, Neo4jError.from( e ) );
+                            fail( machine, Neo4jError.fatalFrom( e ) );
                             throw new BoltConnectionAuthFatality( e.getMessage() );
                         }
                         catch ( Throwable e )
@@ -449,7 +449,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         }
                         catch ( AuthExpirationException e )
                         {
-                            fail( machine, Neo4jError.from( e ) );
+                            fail( machine, Neo4jError.fatalFrom( e ) );
                             throw new BoltConnectionAuthFatality( e.getMessage() );
                         }
                         catch ( Throwable e )
@@ -569,14 +569,14 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                 throws BoltConnectionFatality
         {
             String msg = "INIT cannot be handled by a session in the " + name() + " state.";
-            fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
+            fail( machine, Neo4jError.fatalFrom( Status.Request.Invalid, msg ) );
             throw new BoltProtocolBreachFatality( msg );
         }
 
         public State ackFailure( BoltStateMachine machine ) throws BoltConnectionFatality
         {
             String msg = "ACK_FAILURE cannot be handled by a session in the " + name() + " state.";
-            fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
+            fail( machine, Neo4jError.fatalFrom( Status.Request.Invalid, msg ) );
             throw new BoltProtocolBreachFatality( msg );
         }
 
@@ -585,14 +585,14 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             // The message below is correct, not a copy-paste error. Interrupts are triggered by
             // a RESET message.
             String msg = "RESET cannot be handled by a session in the " + name() + " state.";
-            fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
+            fail( machine, Neo4jError.fatalFrom( Status.Request.Invalid, msg ) );
             throw new BoltProtocolBreachFatality( msg );
         }
 
         public State reset( BoltStateMachine machine ) throws BoltConnectionFatality
         {
             String msg = "RESET cannot be handled by a session in the " + name() + " state.";
-            fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
+            fail( machine, Neo4jError.fatalFrom( Status.Request.Invalid, msg ) );
             throw new BoltProtocolBreachFatality( msg );
         }
 
@@ -600,21 +600,21 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                 BoltConnectionFatality
         {
             String msg = "RUN cannot be handled by a session in the " + name() + " state.";
-            fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
+            fail( machine, Neo4jError.fatalFrom( Status.Request.Invalid, msg ) );
             throw new BoltProtocolBreachFatality( msg );
         }
 
         public State discardAll( BoltStateMachine machine ) throws BoltConnectionFatality
         {
             String msg = "DISCARD_ALL cannot be handled by a session in the " + name() + " state.";
-            fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
+            fail( machine, Neo4jError.fatalFrom( Status.Request.Invalid, msg ) );
             throw new BoltProtocolBreachFatality( msg );
         }
 
         public State pullAll( BoltStateMachine machine ) throws BoltConnectionFatality
         {
             String msg = "PULL_ALL cannot be handled by a session in the " + name() + " state.";
-            fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
+            fail( machine, Neo4jError.fatalFrom( Status.Request.Invalid, msg ) );
             throw new BoltProtocolBreachFatality( msg );
         }
 
@@ -627,7 +627,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             }
             catch ( Throwable e )
             {
-                fail( machine, Neo4jError.from( e ) );
+                fail( machine, Neo4jError.fatalFrom( e ) );
                 throw new BoltConnectionFatality( e.getMessage() );
             }
         }

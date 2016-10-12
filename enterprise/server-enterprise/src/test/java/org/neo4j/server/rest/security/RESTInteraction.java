@@ -211,6 +211,12 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
     }
 
     @Override
+    public void assertSessionKilled( RESTSubject subject )
+    {
+        // There is no session that could have been killed
+    }
+
+    @Override
     public String getConnectionDetails()
     {
         return "server-session";

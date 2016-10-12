@@ -45,21 +45,20 @@ import javax.naming.directory.ModificationItem;
 import javax.naming.ldap.LdapContext;
 
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.test.DoubleLatch;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasEntry;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
@@ -67,7 +66,6 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.helpers.collection.MapUtil.map;
 
 @RunWith( FrameworkRunner.class )
 @CreateDS(
@@ -323,6 +321,29 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
         } );
 
+        // Given
+        assertAuth( "neo4j", "abc123" );
+        assertReadSucceeds();
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+
+        // Then
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ), pullAll() ) );
+        assertThat( client, eventuallyReceives(
+                msgFailure( Status.Security.AuthorizationExpired, "LDAP authorization info expired." ) ) );
+    }
+
+    @Test
+    public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithUserLdapContext() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+        } );
+
         // Then
         assertAuth( "neo4j", "abc123" );
 
@@ -330,8 +351,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
                 run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(),
-                msgFailure( Status.Security.AuthorizationExpired, "LDAP authorization info expired." ) ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -380,6 +400,128 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         reconnect();
 
         testAuthWithReaderUser();
+    }
+
+    @Test
+    public void shouldKeepAuthorizationForLifetimeOfTransaction() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+        } );
+
+        DoubleLatch latch = new DoubleLatch( 2 );
+        final Throwable[] threadFail = {null};
+
+        Thread readerThread = new Thread( () -> {
+            try
+            {
+                assertAuth( "neo", "abc123" );
+                assertBeginTransactionSucceeds();
+                assertReadSucceeds();
+
+                latch.startAndWaitForAllToStart();
+                latch.finishAndWaitForAllToFinish();
+
+                assertReadSucceeds();
+            }
+            catch ( Throwable t )
+            {
+                threadFail[0] = t;
+                // Always release the latch so we get the failure in the main thread
+                latch.start();
+                latch.finish();
+            }
+        } );
+
+        readerThread.start();
+        latch.startAndWaitForAllToStart();
+
+        clearAuthCacheFromDifferentConnection();
+
+        latch.finishAndWaitForAllToFinish();
+
+        readerThread.join();
+        if ( threadFail[0] != null )
+        {
+            throw threadFail[0];
+        }
+    }
+
+    @Test
+    public void shouldKeepAuthorizationForLifetimeOfTransactionWithProcedureAllowed() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "503=admin;504=role1" );
+        } );
+
+        GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) server.graphDatabaseService();
+        graphDatabaseAPI.getDependencyResolver().resolveDependency( Procedures.class )
+                .registerProcedure( ProcedureInteractionTestBase.ClassWithProcedures.class );
+
+        DoubleLatch latch = new DoubleLatch( 2 );
+        final Throwable[] threadFail = {null};
+
+        Thread readerThread = new Thread( () -> {
+            try
+            {
+                assertAuth( "smith", "abc123" );
+                assertBeginTransactionSucceeds();
+                assertAllowedReadProcedure();
+
+                latch.startAndWaitForAllToStart();
+                latch.finishAndWaitForAllToFinish();
+
+                assertAllowedReadProcedure();
+            }
+            catch ( Throwable t )
+            {
+                threadFail[0] = t;
+                // Always release the latch so we get the failure in the main thread
+                latch.start();
+                latch.finish();
+            }
+        } );
+
+        readerThread.start();
+        latch.startAndWaitForAllToStart();
+
+        clearAuthCacheFromDifferentConnection();
+
+        latch.finishAndWaitForAllToFinish();
+
+        readerThread.join();
+        if ( threadFail[0] != null )
+        {
+            throw threadFail[0];
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToUseProcedureAllowedAnnotationWithLdapGroupToRoleMapping() throws Throwable
+    {
+        // When
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=role1" );
+        } ) );
+
+        GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) server.graphDatabaseService();
+        graphDatabaseAPI.getDependencyResolver().resolveDependency( Procedures.class )
+                .registerProcedure( ProcedureInteractionTestBase.ClassWithProcedures.class );
+
+        assertAuth( "neo", "abc123" );
+        assertAllowedReadProcedure();
+    }
+
+    private void assertAllowedReadProcedure() throws IOException
+    {
+        client.send( TransportTestUtil.chunk( run( "CALL test.allowedReadProcedure()" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgRecord( eqRecord( equalTo( "foo" ) ) ),
+                msgSuccess() ) );
     }
 
     //------------------------------------------------------------------
@@ -457,28 +599,6 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
             // Then
             testAuthWithReaderUser();
         }
-    }
-
-    @Test
-    public void shouldBeAbleToUseProcedureAllowedAnnotationWithLdapGroupToRoleMapping() throws Throwable
-    {
-        // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=role1" );
-        } ) );
-
-        GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) server.graphDatabaseService();
-        graphDatabaseAPI.getDependencyResolver().resolveDependency( Procedures.class )
-                .registerProcedure( ProcedureInteractionTestBase.ClassWithProcedures.class );
-
-        assertAuth( "neo", "abc123" );
-        client.send( TransportTestUtil.chunk( run( "CALL test.allowedProcedure1()" ), pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives(
-                msgSuccess(),
-                msgRecord( eqRecord( equalTo( "foo" ) ) ),
-                msgSuccess() ) );
     }
 
     //------------------------------------------------------------------
@@ -709,6 +829,24 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         }
     }
 
+    private void clearAuthCacheFromDifferentConnection() throws Exception
+    {
+        TransportConnection adminClient = cf.newInstance();
+
+        // Login as admin
+        Map<String,Object> authToken = authToken( "neo4j", "abc123", null );
+        adminClient.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", authToken ) ) );
+        assertThat( adminClient, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( adminClient, eventuallyReceives( msgSuccess() ) );
+
+        // Clear auth cache
+        adminClient.send( TransportTestUtil.chunk( run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
+        assertThat( adminClient, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+    }
+
     protected void assertReadSucceeds() throws Exception
     {
         // When
@@ -759,13 +897,24 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
                         String.format( "Write operations are not allowed for '%s'.", username ) ) ) );
     }
 
+    protected void assertBeginTransactionSucceeds() throws Exception
+    {
+        // When
+        client.send( TransportTestUtil.chunk( run( "BEGIN" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgSuccess(), msgSuccess() ) );
+    }
+
     private void testClearAuthCache() throws Exception
     {
         assertAuth( "neo4j", "abc123" );
 
         client.send( TransportTestUtil.chunk( run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
 
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     private void modifyLDAPAttribute( String username, Object credentials, String attribute, Object value )

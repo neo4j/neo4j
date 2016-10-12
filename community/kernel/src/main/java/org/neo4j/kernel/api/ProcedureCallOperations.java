@@ -22,7 +22,6 @@ package org.neo4j.kernel.api;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.security.AccessMode;
 
 /**
  * Specifies procedure call operations for the three types of procedure calls that can be made.
@@ -40,15 +39,14 @@ public interface ProcedureCallOperations
             throws ProcedureException;
 
     /**
-     * Invoke a read-only procedure by name, and override the transaction's access mode with
-     * the given access mode for the duration of the procedure execution.
+     * Invoke a read-only procedure by name, and set the transaction's access mode to
+     * {@link org.neo4j.kernel.api.security.AccessMode.Static#READ READ} for the duration of the procedure execution.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
-     * @param override the access mode to be used for the execution of the procedure.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments, AccessMode override )
+    RawIterator<Object[], ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments )
             throws ProcedureException;
 
     /**
@@ -61,15 +59,14 @@ public interface ProcedureCallOperations
     RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
             throws ProcedureException;
     /**
-     * Invoke a read/write procedure by name, and override the transaction's access mode with
-     * the given access mode for the duration of the procedure execution.
+     * Invoke a read-only procedure by name, and set the transaction's access mode to
+     * {@link org.neo4j.kernel.api.security.AccessMode.Static#WRITE WRITE} for the duration of the procedure execution.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
-     * @param override the access mode to be used for the execution of the procedure.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments, AccessMode override )
+    RawIterator<Object[], ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
             throws ProcedureException;
 
     /**
@@ -82,14 +79,28 @@ public interface ProcedureCallOperations
     RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
             throws ProcedureException;
     /**
-     * Invoke a schema write procedure by name, and override the transaction's access mode with
-     * the given access mode for the duration of the procedure execution.
+     * Invoke a read-only procedure by name, and set the transaction's access mode to
+     * {@link org.neo4j.kernel.api.security.AccessMode.Static#FULL FULL} for the duration of the procedure execution.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
-     * @param override the access mode to be used for the execution of the procedure.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments, AccessMode override )
+    RawIterator<Object[], ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments )
             throws ProcedureException;
+
+    /** Invoke a read-only function by name
+     * @param name the name of the function.
+     * @param arguments the function arguments.
+     * @throws ProcedureException if there was an exception thrown during function execution.
+     */
+    Object functionCall( QualifiedName name, Object[] arguments ) throws ProcedureException;
+
+    /** Invoke a read-only function by name, and set the transaction's access mode to
+     * {@link org.neo4j.kernel.api.security.AccessMode.Static#READ READ} for the duration of the function execution.
+     * @param name the name of the function.
+     * @param arguments the function arguments.
+     * @throws ProcedureException if there was an exception thrown during function execution.
+     */
+    Object functionCallOverride( QualifiedName name, Object[] arguments ) throws ProcedureException;
 }

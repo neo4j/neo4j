@@ -216,6 +216,12 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     }
 
     @Override
+    public void assertSessionKilled( BoltSubject subject )
+    {
+        assertThat( subject.client, TransportTestUtil.eventuallyDisconnects() );
+    }
+
+    @Override
     public String getConnectionDetails()
     {
         return "bolt-session";

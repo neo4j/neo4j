@@ -566,7 +566,4 @@ public interface ReadOperations
 
     /** Fetch all registered procedures */
     Set<ProcedureSignature> proceduresGetAll();
-
-    /** Invoke a read-only procedure by name */
-   Object functionCall( QualifiedName name, Object[] input ) throws ProcedureException;
 }
