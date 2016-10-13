@@ -37,6 +37,7 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -60,13 +61,16 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.com.storecopy.StoreCopyClient.TEMP_COPY_DIRECTORY_NAME;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -90,8 +94,6 @@ public class StoreCopyClientTest
         final File originalDir = new File( testDir.directory(), "original" );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
-        CancellationRequest cancellationRequest = () -> cancelStoreCopy.get();
-
         StoreCopyClient.Monitor storeCopyMonitor = new StoreCopyClient.Monitor.Adapter()
         {
             @Override
@@ -104,8 +106,8 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( copyDir, Config.empty(), loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor,
-                        false );
+                new StoreCopyClient( copyDir, Config.empty(), loadKernelExtensions(), NullLogProvider.getInstance(), fs,
+                        pageCache, storeCopyMonitor, false );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );
@@ -116,10 +118,11 @@ public class StoreCopyClientTest
             tx.success();
         }
 
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( originalDir, original );
+        StoreCopyClient.StoreCopyRequester storeCopyRequest =
+                spy( new LocalStoreCopyRequester( original, originalDir, fs ) );
 
         // when
-        copier.copyStore( storeCopyRequest, cancellationRequest );
+        copier.copyStore( storeCopyRequest, cancelStoreCopy::get );
 
         // Then
         GraphDatabaseService copy = startDatabase( copyDir );
@@ -136,6 +139,7 @@ public class StoreCopyClientTest
         }
 
         verify( storeCopyRequest, times( 1 ) ).done();
+        assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
     }
 
     @Test
@@ -161,9 +165,11 @@ public class StoreCopyClientTest
                 new StoreCopyClient.Monitor.Adapter(), false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, recordFormatsName );
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( originalDir, original );
+        StoreCopyClient.StoreCopyRequester storeCopyRequest = new LocalStoreCopyRequester( original, originalDir, fs );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED );
+
+        assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
 
         // Must not throw
         startDatabase( copyDir, recordFormatsName ).shutdown();
@@ -178,8 +184,6 @@ public class StoreCopyClientTest
         final File originalDir = new File( testDir.directory(), "original" );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
-        CancellationRequest cancellationRequest = () -> cancelStoreCopy.get();
-
         StoreCopyClient.Monitor storeCopyMonitor = new StoreCopyClient.Monitor.Adapter()
         {
             @Override
@@ -203,10 +207,11 @@ public class StoreCopyClientTest
             tx.success();
         }
 
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( originalDir, original );
+        StoreCopyClient.StoreCopyRequester storeCopyRequest =
+                spy( new LocalStoreCopyRequester( original, originalDir, fs ) );
 
         // when
-        copier.copyStore( storeCopyRequest, cancellationRequest );
+        copier.copyStore( storeCopyRequest, cancelStoreCopy::get );
 
         // Then
         GraphDatabaseService copy = startDatabase( copyDir );
@@ -220,6 +225,7 @@ public class StoreCopyClientTest
         }
 
         verify( storeCopyRequest, times( 1 ) ).done();
+        assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
     }
 
     @Test
@@ -230,17 +236,7 @@ public class StoreCopyClientTest
         File backupStore = testDir.directory( "backupStore" );
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        GraphDatabaseService initialDatabase = startDatabase( initialStore );
-        for ( int i = 0; i < 10; i++ )
-        {
-            try ( Transaction tx = initialDatabase.beginTx() )
-            {
-                initialDatabase.createNode( label( "Neo" + i ) );
-                tx.success();
-            }
-        }
-        initialDatabase.shutdown();
-
+        GraphDatabaseService initialDatabase = createInitialDatabase( initialStore );
         long originalTransactionOffset =
                 MetaDataStore.getRecord( pageCache, new File( initialStore, MetaDataStore.DEFAULT_NAME ),
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
@@ -250,8 +246,8 @@ public class StoreCopyClientTest
                 new StoreCopyClient( backupStore, Config.empty(), loadKernelExtensions(), NullLogProvider
                         .getInstance(), fs, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( initialStore, (GraphDatabaseAPI)
-                initialDatabase );
+        StoreCopyClient.StoreCopyRequester storeCopyRequest =
+                new LocalStoreCopyRequester( (GraphDatabaseAPI) initialDatabase, initialStore, fs );
 
         // WHEN
         copier.copyStore( storeCopyRequest, falseCancellationRequest );
@@ -262,6 +258,62 @@ public class StoreCopyClientTest
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
         assertNotEquals( originalTransactionOffset, updatedTransactionOffset );
         assertEquals( LogHeader.LOG_HEADER_SIZE, updatedTransactionOffset );
+        assertFalse( new File( backupStore, TEMP_COPY_DIRECTORY_NAME ).exists() );
+    }
+
+    @Test
+    public void shouldDeleteTempCopyFolderOnFailures() throws Exception
+    {
+        // GIVEN
+        File initialStore = testDir.directory( "initialStore" );
+        File backupStore = testDir.directory( "backupStore" );
+
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        GraphDatabaseService initialDatabase = createInitialDatabase( initialStore );
+        StoreCopyClient copier =
+                new StoreCopyClient( backupStore, Config.empty(), loadKernelExtensions(), NullLogProvider
+                        .getInstance(), fs, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
+        CancellationRequest falseCancellationRequest = () -> false;
+
+        RuntimeException exception = new RuntimeException( "Boom!" );
+        StoreCopyClient.StoreCopyRequester storeCopyRequest =
+                new LocalStoreCopyRequester( (GraphDatabaseAPI) initialDatabase, initialStore, fs )
+                {
+                    @Override
+                    public void done()
+                    {
+                        throw exception;
+                    }
+                };
+
+        // WHEN
+        try
+        {
+            copier.copyStore( storeCopyRequest, falseCancellationRequest );
+            fail( "should have thrown " );
+        }
+        catch ( RuntimeException ex )
+        {
+            assertEquals( exception, ex );
+        }
+
+        // THEN
+        assertFalse( new File( backupStore, TEMP_COPY_DIRECTORY_NAME ).exists() );
+    }
+
+    private GraphDatabaseService createInitialDatabase( File initialStore )
+    {
+        GraphDatabaseService initialDatabase = startDatabase( initialStore );
+        for ( int i = 0; i < 10; i++ )
+        {
+            try ( Transaction tx = initialDatabase.beginTx() )
+            {
+                initialDatabase.createNode( label( "Neo" + i ) );
+                tx.success();
+            }
+        }
+        initialDatabase.shutdown();
+        return initialDatabase;
     }
 
     private GraphDatabaseService startDatabase( File storeDir )
@@ -278,57 +330,6 @@ public class StoreCopyClientTest
         return cleanup.add( database );
     }
 
-    private StoreCopyClient.StoreCopyRequester storeCopyRequest( final File originalDir,
-            final GraphDatabaseAPI original )
-    {
-        return spy( new StoreCopyClient.StoreCopyRequester()
-            {
-                public Response<?> response;
-
-                @Override
-                public Response<?> copyStore( StoreWriter writer )
-                {
-                    NeoStoreDataSource neoStoreDataSource =
-                            original.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-
-                    TransactionIdStore transactionIdStore =
-                            original.getDependencyResolver().resolveDependency( TransactionIdStore.class );
-
-                    LogicalTransactionStore logicalTransactionStore  =
-                            original.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
-
-                    CheckPointer checkPointer =
-                            original.getDependencyResolver().resolveDependency( CheckPointer.class );
-
-                    PageCache pageCache =
-                            original.getDependencyResolver().resolveDependency( PageCache.class );
-
-                    RequestContext requestContext = new StoreCopyServer( neoStoreDataSource, checkPointer, fs,
-                            originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ), pageCache )
-                            .flushStoresAndStreamStoreFiles( "test", writer, false );
-
-                    final StoreId storeId =
-                            original.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                                    .testAccessNeoStores().getMetaDataStore().getStoreId();
-
-                    ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
-                            transactionIdStore, () -> storeId );
-
-                    response = spy(responsePacker.packTransactionStreamResponse( requestContext, null ));
-                    return response;
-
-                }
-
-                @Override
-                public void done()
-                {
-                    // Ensure response is closed before this method is called
-                    assertNotNull( response );
-                    verify( response, times( 1 ) ).close();
-                }
-            } );
-    }
-
     private static List<KernelExtensionFactory<?>> loadKernelExtensions()
     {
         List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
@@ -337,5 +338,63 @@ public class StoreCopyClientTest
             kernelExtensions.add( factory );
         }
         return kernelExtensions;
+    }
+
+    private static class LocalStoreCopyRequester implements StoreCopyClient.StoreCopyRequester
+    {
+        private final GraphDatabaseAPI original;
+        private final File originalDir;
+        private final FileSystemAbstraction fs;
+
+        private Response<?> response;
+
+        LocalStoreCopyRequester( GraphDatabaseAPI original, File originalDir, FileSystemAbstraction fs )
+        {
+            this.original = original;
+            this.originalDir = originalDir;
+            this.fs = fs;
+        }
+
+        @Override
+        public Response<?> copyStore( StoreWriter writer )
+        {
+            NeoStoreDataSource neoStoreDataSource =
+                    original.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
+
+            TransactionIdStore transactionIdStore =
+                    original.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+
+            LogicalTransactionStore logicalTransactionStore  =
+                    original.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
+
+            CheckPointer checkPointer =
+                    original.getDependencyResolver().resolveDependency( CheckPointer.class );
+
+            PageCache pageCache =
+                    original.getDependencyResolver().resolveDependency( PageCache.class );
+
+            RequestContext requestContext = new StoreCopyServer( neoStoreDataSource, checkPointer, fs,
+                    originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ), pageCache )
+                    .flushStoresAndStreamStoreFiles( "test", writer, false );
+
+            final StoreId storeId =
+                    original.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                            .testAccessNeoStores().getMetaDataStore().getStoreId();
+
+            ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
+                    transactionIdStore, () -> storeId );
+
+            response = spy( responsePacker.packTransactionStreamResponse( requestContext, null ) );
+            return response;
+
+        }
+
+        @Override
+        public void done()
+        {
+            // Ensure response is closed before this method is called
+            assertNotNull( response );
+            verify( response, times( 1 ) ).close();
+        }
     }
 }
