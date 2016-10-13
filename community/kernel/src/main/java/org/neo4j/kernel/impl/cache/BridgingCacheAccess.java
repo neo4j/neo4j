@@ -93,9 +93,9 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     }
 
     @Override
-    public void removeSchemaRuleFromCache( long id )
+    public void removeSchemaRuleFromCache( long schemaRuleId )
     {
-        schemaCache.removeSchemaRule( id );
+        schemaCache.removeSchemaRule( schemaRuleId );
         schemaState.clear();
     }
 

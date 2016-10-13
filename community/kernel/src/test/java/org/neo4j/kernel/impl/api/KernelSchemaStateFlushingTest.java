@@ -24,6 +24,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -124,6 +127,25 @@ public class KernelSchemaStateFlushingTest
         commitToSchemaState( "test", "before" );
 
         dropConstraint( descriptor );
+
+        // when
+        String after = commitToSchemaState( "test", "after" );
+
+        // then
+        assertEquals( "after", after );
+    }
+
+    @Test
+    public void shouldInvalidateSchemaStateWhenIndexComesOnline() throws Exception
+    {
+        // given
+        commitToSchemaState( "test", "before" );
+
+        IndexDescriptor descriptor = createIndex();
+
+        commitToSchemaState( "test", "between" );
+
+        awaitIndexOnline( descriptor );
 
         // when
         String after = commitToSchemaState( "test", "after" );
@@ -233,6 +255,20 @@ public class KernelSchemaStateFlushingTest
     public void setup()
     {
         db = dbRule.getGraphDatabaseAPI();
+
+        Label labelA = DynamicLabel.label( "A" );
+        Label labelB = DynamicLabel.label( "B" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < 10000; i++ )
+            {
+                Node node = db.createNode( labelA, labelB );
+                node.setProperty( "a", i );
+                node.setProperty( "b", i );
+            }
+            tx.success();
+        }
+
         persistenceManager = db.getDependencyResolver().resolveDependency( PersistenceManager.class );
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }

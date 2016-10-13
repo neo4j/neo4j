@@ -40,7 +40,7 @@ public interface CacheAccessBackDoor
 
     void addSchemaRule( SchemaRule schemaRule );
 
-    void removeSchemaRuleFromCache( long id );
+    void removeSchemaRuleFromCache( long schemaRuleId );
 
     void addRelationshipTypeToken( Token type );
 
