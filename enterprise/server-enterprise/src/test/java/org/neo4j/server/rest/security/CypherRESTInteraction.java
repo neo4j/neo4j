@@ -31,10 +31,10 @@ import org.neo4j.test.server.HTTP;
 
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-class RESTInteraction extends AbstractRESTInteraction
+class CypherRESTInteraction extends AbstractRESTInteraction
 {
 
-    RESTInteraction( Map<String,String> config ) throws IOException
+    CypherRESTInteraction( Map<String,String> config ) throws IOException
     {
         super( config );
     }
@@ -42,35 +42,34 @@ class RESTInteraction extends AbstractRESTInteraction
     @Override
     String commitPath()
     {
-        return "db/data/transaction/commit";
+        return "db/data/cypher";
     }
 
     @Override
     HTTP.RawPayload constructQuery( String query )
     {
-        return quotedJson( "{'statements':[{'statement':'" +
-                           query.replace( "'", "\\'" ).replace( "\"", "\\\"" )
-                           + "'}]}" );
+        return quotedJson( " { 'query': '" + query.replace( "'", "\\'" ).replace( "\"", "\\\"" ) + "' }" );
     }
 
     @Override
     void consume( Consumer<ResourceIterator<Map<String,Object>>> resultConsumer, JsonNode data )
     {
-        if ( data.has( "results" ) && data.get( "results" ).has( 0 ) )
+        if ( data.has( "data" ) && data.get( "data" ).has( 0 ) )
         {
-            resultConsumer.accept( new RESTResult( data.get( "results" ).get( 0 ) ) );
+            resultConsumer.accept( new CypherRESTResult( data ) );
         }
     }
 
     @Override
     protected HTTP.Response authenticate( String principalCredentials )
     {
-        return HTTP.withHeaders( HttpHeaders.AUTHORIZATION, principalCredentials ).request( POST, commitURL() );
+        return HTTP.withHeaders( HttpHeaders.AUTHORIZATION, principalCredentials )
+                .request( POST, commitURL(), constructQuery( "RETURN 1" ) );
     }
 
-    private class RESTResult extends AbstractRESTResult
+    private class CypherRESTResult extends AbstractRESTResult
     {
-        RESTResult( JsonNode fullResult )
+        CypherRESTResult( JsonNode fullResult )
         {
             super( fullResult );
         }
@@ -78,7 +77,7 @@ class RESTInteraction extends AbstractRESTInteraction
         @Override
         protected JsonNode getRow( JsonNode data, int i )
         {
-            return data.get( i ).get( "row" );
+            return data.get( i );
         }
     }
 }
