@@ -69,7 +69,6 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static java.lang.String.format;
-import org.neo4j.server.security.auth.Credential;
 
 /**
  * Shiro realm for LDAP based on configuration settings
@@ -297,7 +296,7 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
         }
         else
         {
-            return new ShiroAuthenticationInfo( token.getPrincipal(), null, getName(), AuthenticationResult.SUCCESS );
+            return new ShiroAuthenticationInfo( token.getPrincipal(), getName(), AuthenticationResult.SUCCESS );
         }
     }
 
