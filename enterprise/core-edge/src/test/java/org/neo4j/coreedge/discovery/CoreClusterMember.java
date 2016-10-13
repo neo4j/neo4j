@@ -36,6 +36,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.Level;
 import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
@@ -82,6 +83,7 @@ public class CoreClusterMember implements ClusterMember
         config.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
         config.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         config.put( CoreEdgeClusterSettings.leader_election_timeout.name(), "500ms" );
+        config.put( CoreEdgeClusterSettings.raft_messages_log_enable.name(), Settings.TRUE );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
