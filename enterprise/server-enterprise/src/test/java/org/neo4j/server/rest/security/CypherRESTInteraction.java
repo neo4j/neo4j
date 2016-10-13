@@ -27,11 +27,8 @@ import java.util.function.Consumer;
 import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
-import static org.junit.Assert.fail;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 class CypherRESTInteraction extends RESTInteraction
@@ -49,35 +46,16 @@ class CypherRESTInteraction extends RESTInteraction
     }
 
     @Override
-    public String executeQuery( RESTSubject subject, String call, Map<String,Object> params,
-            Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
+    void consume( Consumer<ResourceIterator<Map<String,Object>>> resultConsumer, JsonNode data )
     {
-        HTTP.RawPayload payload = constructQuery( call );
-        HTTP.Response response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, subject.principalCredentials )
-                .request( POST, commitURL(), payload );
-
-        try
+        if ( data.has( "data" ) && data.get( "data" ).has( 0 ) )
         {
-            String error = parseErrorMessage( response );
-            if ( !error.isEmpty() )
-            {
-                return error;
-            }
-            JsonNode data = JsonHelper.jsonNode( response.rawContent() );
-            if ( data.has( "data" ) && data.get( "data" ).has( 0 ) )
-            {
-                resultConsumer.accept( new CypherRESTResult( data ) );
-            }
+            resultConsumer.accept( new CypherRESTResult( data ) );
         }
-        catch ( JsonParseException e )
-        {
-            fail( "Unexpected error parsing Json!" );
-        }
-
-        return "";
     }
 
-    private HTTP.RawPayload constructQuery( String query )
+    @Override
+    HTTP.RawPayload constructQuery( String query )
     {
         return quotedJson( " { 'query': '" + query.replace( "'", "\\'" ).replace( "\"", "\\\"" ) + "' }" );
     }

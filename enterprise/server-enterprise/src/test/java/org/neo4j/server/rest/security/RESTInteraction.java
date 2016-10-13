@@ -129,33 +129,42 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
     public String executeQuery( RESTSubject subject, String call, Map<String,Object> params,
             Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
     {
-        String escapedCall = call.replace( "'", "\\'" ).replace( "\"", "\\\"" );
-        HTTP.RawPayload payload = HTTP.RawPayload.quotedJson(
-                "{'statements':[{'statement':'" + escapedCall + "'}]}" );
+        HTTP.RawPayload payload = constructQuery( call );
         HTTP.Response response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, subject.principalCredentials )
                 .request( POST, commitURL(), payload );
 
         try
         {
             String error = parseErrorMessage( response );
-            if (!error.isEmpty())
+            if ( !error.isEmpty() )
             {
                 return error;
             }
-            JsonNode data = JsonHelper.jsonNode( response.rawContent() );
-            if ( data.has( "results" ) && data.get( "results" ).has( 0 ) )
-            {
-                JsonNode firstResult = data.get( "results" ).get( 0 );
-                RESTResult result = new RESTResult( firstResult );
-                resultConsumer.accept( result );
-            }
+            consume( resultConsumer, JsonHelper.jsonNode( response.rawContent() ) );
         }
         catch ( JsonParseException e )
         {
-            fail("Unexpected error parsing Json!");
+            fail( "Unexpected error parsing Json!" );
         }
 
         return "";
+    }
+
+    void consume( Consumer<ResourceIterator<Map<String,Object>>> resultConsumer, JsonNode data )
+    {
+        if ( data.has( "results" ) && data.get( "results" ).has( 0 ) )
+        {
+            JsonNode firstResult = data.get( "results" ).get( 0 );
+            RESTResult result = new RESTResult( firstResult );
+            resultConsumer.accept( result );
+        }
+    }
+
+    HTTP.RawPayload constructQuery( String query )
+    {
+        return HTTP.RawPayload.quotedJson( "{'statements':[{'statement':'" +
+                                           query.replace( "'", "\\'" ).replace( "\"", "\\\"" )
+                                           + "'}]}" );
     }
 
     @Override
