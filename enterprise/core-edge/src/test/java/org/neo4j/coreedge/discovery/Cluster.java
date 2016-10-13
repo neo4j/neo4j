@@ -336,17 +336,18 @@ public class Cluster
                 throw new DatabaseShutdownException();
             }
 
-            try
+            try ( Transaction tx = db.beginTx() )
             {
-                Transaction tx = db.beginTx();
                 op.accept( db, tx );
-                tx.close();
                 return member;
             }
             catch ( Throwable e )
             {
                 if ( isTransientFailure( e ) )
                 {
+                    // this is not the best, but it helps in debugging
+                    System.err.println( "Transient failure in leader transaction, trying again." );
+                    e.printStackTrace();
                     // sleep and retry
                     Thread.sleep( DEFAULT_BACKOFF_MS );
                 }
