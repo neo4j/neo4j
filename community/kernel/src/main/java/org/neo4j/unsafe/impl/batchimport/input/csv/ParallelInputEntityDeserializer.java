@@ -65,6 +65,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     private final TicketedProcessing<CharSeeker,Header,ENTITY[]> processing;
     private final ContinuableArrayCursor<ENTITY> cursor;
     private SourceTraceability last = SourceTraceability.EMPTY;
+    private Decorator<ENTITY> decorator;
 
     @SuppressWarnings( "unchecked" )
     public ParallelInputEntityDeserializer( Data<ENTITY> data, Header.Factory headerFactory, Configuration config,
@@ -84,11 +85,11 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             CharSeeker firstSeeker = new BufferedCharSeeker( singleChunk( firstChunk ), config );
             Header dataHeader = headerFactory.create( firstSeeker, config, idType );
 
-            // Initialize the processing logic for parsing the data in the first chunk, as well as in all other chunk
-            Decorator<ENTITY> decorator = data.decorator();
+            // Initialize the processing logic for parsing the data in the first chunk, as well as in all other chunks
+            decorator = data.decorator();
 
             // Check if each individual processor can decorate-and-validate themselves or we have to
-            // defer that to the batch supplier below. We have to defer is decorator is mutable.
+            // defer that to the batch supplier below. We have to defer if decorator is mutable.
             boolean deferredValidation = decorator.isMutable();
             Decorator<ENTITY> batchDecorator = deferredValidation ? noDecorator() : decorator;
             Validator<ENTITY> batchValidator = deferredValidation ? emptyValidator() : validator;
@@ -262,6 +263,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
         processing.shutdown( true );
         try
         {
+            decorator.close();
             source.close();
         }
         catch ( IOException e )
