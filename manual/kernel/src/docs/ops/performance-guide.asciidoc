@@ -51,9 +51,9 @@ For this reason, the heap should ideally be sized and tuned such that transactio
 When using Neo4j Server, JVM configuration goes into the _conf/neo4j.conf_ file.
 --
 
-In server deployments, the heap size is configured with the `dbms.memory.heap.max_size` (in MBs) setting in the _neo4j.conf_ file.
-For embedded, the heap size is specified by giving the `-Xmx???m` command line flag to the `java` process, where the `???` is the maximum heap size in MBs.
-The initial size of the heap is specified by the `dbms.memory.heap.initial_size` setting, or with the `-Xms???m` flag, or chosen heuristically by the JVM itself if left unspecified.
+In server deployments, the heap size is configured with the `dbms.memory.heap.max_size` setting in the _neo4j.conf_ file.
+For embedded, the heap size is specified by giving the `-Xmx???` command line flag to the `java` process, where the `???` is the maximum heap sizes.
+The initial size of the heap is specified by the `dbms.memory.heap.initial_size` setting, or with the `-Xms???` flag, or chosen heuristically by the JVM itself if left unspecified.
 The JVM will automatically grow the heap as needed, up to the maximum size.
 The growing of the heap requires a full GC cycle.
 If you know that you will need all the heap memory, you can set the initial heap size and the maximum heap size to the same value.

@@ -22,8 +22,8 @@ Edit the following properties:
 [options="header", cols="<m,<"]
 |====================
 | Property Name                 | Meaning
-| dbms.memory.heap.initial_size | initial heap size (in MB)
-| dbms.memory.heap.max_size     | maximum heap size (in MB)
+| dbms.memory.heap.initial_size | initial heap size
+| dbms.memory.heap.max_size     | maximum heap size
 | dbms.jvm.additional           | additional literal JVM parameter
 |====================
 

@@ -55,7 +55,7 @@ Function Get-Java
     [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
     [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
     [PSCustomObject]$Neo4jServer
-        
+
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
     [switch]$ForServer
 
@@ -63,21 +63,21 @@ Function Get-Java
     [switch]$ForUtility
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
-    [string]$StartingClass    
+    [string]$StartingClass
   )
-  
+
   Begin
   {
   }
-  
+
   Process
   {
     $javaPath = ''
     $javaCMD = ''
-    
+
     $EnvJavaHome = Get-Neo4jEnv 'JAVA_HOME'
     $EnvClassPrefix = Get-Neo4jEnv 'CLASSPATH_PREFIX'
-    
+
     # Is JAVA specified in an environment variable
     if (($javaPath -eq '') -and ($EnvJavaHome -ne $null))
     {
@@ -87,7 +87,7 @@ Function Get-Java
     }
 
     # Attempt to find Java in registry
-    $regKey = 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment'    
+    $regKey = 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment'
     if (($javaPath -eq '') -and (Test-Path -Path $regKey))
     {
       $regJavaVersion = ''
@@ -107,7 +107,7 @@ Function Get-Java
     }
 
     # Attempt to find Java in registry (32bit Java on 64bit OS)
-    $regKey = 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment'    
+    $regKey = 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment'
     if (($javaPath -eq '') -and (Test-Path -Path $regKey))
     {
       $regJavaVersion = ''
@@ -125,7 +125,7 @@ Function Get-Java
         $javaPath = ''
       }
     }
-    
+
     # Attempt to find Java in the search path
     if ($javaPath -eq '')
     {
@@ -165,12 +165,21 @@ Function Get-Java
                     ,'-Dorg.neo4j.cluster.logdirectory=data/log' `
       )
 
-      # Parse Java config settings - Heap
+      # Parse Java config settings - Heap initial size
       $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.initial_size' -Neo4jServer $Neo4jServer)
-      if ($option -ne $null) { $ShellArgs += "-Xms$($option.Value)m" }
+      if ($option -ne $null) {
+        $mem="$($option.Value)"
+        if ($mem -notmatch '[\d]+[gGmMkK]') { $mem += "m" }
+        $ShellArgs += "-Xms$mem"
+      }
 
+      # Parse Java config settings - Heap max size
       $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.max_size' -Neo4jServer $Neo4jServer)
-      if ($option -ne $null) { $ShellArgs += "-Xmx$($option.Value)m" }
+      if ($option -ne $null) {
+        $mem="$($option.Value)"
+        if ($mem -notmatch '[\d]+[gGmMkK]') { $mem += "m" }
+        $ShellArgs += "-Xmx$mem"
+      }
 
       # Parse Java config settings - Explicit
       $option = (Get-Neo4jSetting -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
@@ -210,7 +219,7 @@ Function Get-Java
       }
       $ShellArgs += @("-Dfile.encoding=UTF-8",$serverMainClass,"--config-dir=$($Neo4jServer.ConfDir)","--home-dir=$($Neo4jServer.Home)")
     }
-    
+
     # Shell arguments for the utility classes e.g. Import, Shell
     if ($PsCmdlet.ParameterSetName -eq 'UtilityInvoke')
     {
@@ -230,14 +239,14 @@ Function Get-Java
       $ShellArgs += @("-classpath $($EnvClassPrefix);$ClassPath",
                       "-Dbasedir=`"$($Neo4jServer.Home)`"", `
                       '-Dfile.encoding=UTF-8')
-            
+
       # Add the starting class
       $ShellArgs += @($StartingClass)
     }
 
     Write-Output @{'java' = $javaCMD; 'args' = $ShellArgs}
   }
-  
+
   End
   {
   }

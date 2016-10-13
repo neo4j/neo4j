@@ -87,8 +87,16 @@ check_limits() {
 setup_java_opts() {
   JAVA_OPTS=("-server")
 
-  [[ -n "${dbms_memory_heap_initial_size:-}" ]] && JAVA_MEMORY_OPTS+=("-Xms${dbms_memory_heap_initial_size}m")
-  [[ -n "${dbms_memory_heap_max_size:-}" ]] && JAVA_MEMORY_OPTS+=("-Xmx${dbms_memory_heap_max_size}m")
+  if [[ -n "${dbms_memory_heap_initial_size:-}" ]]; then
+    local mem="${dbms_memory_heap_initial_size}"
+    [[ ${mem} =~ .*[gGmMkK] ]] || mem="${mem}m"
+    JAVA_MEMORY_OPTS+=("-Xms${mem}")
+  fi
+  if [[ -n "${dbms_memory_heap_max_size:-}" ]]; then
+    local mem="${dbms_memory_heap_max_size}"
+    [[ ${mem} =~ .*[gGmMkK] ]] || mem="${mem}m"
+    JAVA_MEMORY_OPTS+=("-Xmx${mem}")
+  fi
   [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && JAVA_OPTS+=("${JAVA_MEMORY_OPTS[@]}")
 
   if [[ "${dbms_logs_gc_enabled:-}" = "true" ]]; then

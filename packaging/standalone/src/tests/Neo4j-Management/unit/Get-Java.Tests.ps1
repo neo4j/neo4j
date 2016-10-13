@@ -11,7 +11,7 @@ InModuleScope Neo4j-Management {
     # Setup mocking environment
     #  Mock Java environment
     $javaHome = global:New-MockJavaHome
-    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' }
     Mock Test-Path { $false } -ParameterFilter {
       $Path -like 'Registry::*\JavaSoft\Java Runtime Environment'
     }
@@ -35,7 +35,7 @@ InModuleScope Neo4j-Management {
 
     Context "Legacy Java install in JAVA_HOME environment variable" {
       Mock Confirm-JavaVersion -Verifiable { $false }
-      
+
       It "should throw if java is not supported" {
         { Get-Java -ErrorAction Stop } | Should Throw
       }
@@ -47,24 +47,24 @@ InModuleScope Neo4j-Management {
 
     Context "Invalid Java install in JAVA_HOME environment variable" {
       Mock Test-Path { $false } -ParameterFile { $Path -like "$javaHome\bin\java.exe" }
-      
+
       It "should throw if java missing" {
         { Get-Java -ErrorAction Stop } | Should Throw
       }
     }
 
     Context "Valid Java install in Registry (32bit Java on 64bit OS)" {
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment')
-      }      
+      }
       Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9'} } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment')
       }
       Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome} } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment\9.9')
       }
-            
+
       $result = Get-Java
 
       It "should return java location from registry" {
@@ -77,17 +77,17 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Valid Java install in Registry" {
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
-      }      
+      }
       Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9'} } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
       }
       Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome} } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\9.9')
       }
-            
+
       $result = Get-Java
 
       It "should return java location from registry" {
@@ -101,17 +101,17 @@ InModuleScope Neo4j-Management {
 
     Context "Invalid Java install in Registry" {
       Mock Test-Path { $false } -ParameterFile { $Path -like "$javaHome\bin\java.exe" }
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
-      }      
+      }
       Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9'} } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
       }
       Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome} } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\9.9')
       }
-            
+
       It "should throw if java missing" {
         { Get-Java -ErrorAction Stop } | Should Throw
       }
@@ -122,10 +122,10 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Valid Java install in search path" {
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
 
       Mock Get-Command -Verifiable { return @{ 'Path' = "$javaHome\bin\java.exe" } }
-            
+
       $result = Get-Java
 
       It "should return java location from search path" {
@@ -138,14 +138,14 @@ InModuleScope Neo4j-Management {
     }
 
     Context "No Java install at all" {
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Get-Command { $null }
-      
+
       It "should throw if java not detected" {
         { Get-Java -ErrorAction Stop } | Should Throw
       }
     }
-    
+
     # ForServer tests
     Context "Server Invoke - Community v3.0" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community'
@@ -177,6 +177,38 @@ InModuleScope Neo4j-Management {
 
       It "should have main class of org.neo4j.server.enterprise.EnterpriseEntryPoint" {
         $resultArgs | Should Match ([regex]::Escape(' org.neo4j.server.enterprise.ArbiterEntryPoint'))
+      }
+    }
+
+    Context "Server Invoke - Should set heap size" {
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+        -NeoConfSettings 'dbms.memory.heap.initial_size=123k','dbms.memory.heap.max_size=234g'
+
+      $result = Get-Java -ForServer -Neo4jServer $serverObject
+      $resultArgs = ($result.args -join ' ')
+
+      It "should set initial heap size" {
+        $resultArgs | Should Match ([regex]::Escape(' -Xms123k '))
+      }
+
+      It "should set max heap size" {
+        $resultArgs | Should Match ([regex]::Escape(' -Xmx234g '))
+      }
+    }
+
+    Context "Server Invoke - Should default heap size unit to megabytes" {
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+        -NeoConfSettings 'dbms.memory.heap.initial_size=123','dbms.memory.heap.max_size=234'
+
+      $result = Get-Java -ForServer -Neo4jServer $serverObject
+      $resultArgs = ($result.args -join ' ')
+
+      It "should set initial heap size" {
+        $resultArgs | Should Match ([regex]::Escape(' -Xms123m '))
+      }
+
+      It "should set max heap size" {
+        $resultArgs | Should Match ([regex]::Escape(' -Xmx234m '))
       }
     }
 
@@ -253,15 +285,15 @@ InModuleScope Neo4j-Management {
       $resultArgs = ($result.args -join ' ')
 
       It "should have jars from bin" {
-        $resultArgs | Should Match ([regex]::Escape('\bin\bin1.jar"'))
+        $resultArgs | Should Match ([regex]::Escape('bin1.jar"'))
       }
       It "should have jars from lib" {
-        $resultArgs | Should Match ([regex]::Escape('\lib\lib1.jar"'))
+        $resultArgs | Should Match ([regex]::Escape('lib1.jar"'))
       }
       It "should have correct Starting Class" {
         $resultArgs | Should Match ([regex]::Escape(' someclass'))
       }
-    }    
+    }
 
   }
 }

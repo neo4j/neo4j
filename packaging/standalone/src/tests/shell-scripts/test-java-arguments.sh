@@ -27,20 +27,37 @@ for run_command in run_console run_daemon; do
 
   test_expect_success "should set heap size constraints from wrapper conf" "
     clear_config &&
-    set_config 'dbms.memory.heap.initial_size' '512' neo4j-wrapper.conf &&
-    set_config 'dbms.memory.heap.max_size' '1024' neo4j-wrapper.conf &&
+    set_config 'dbms.memory.heap.initial_size' '1g' neo4j-wrapper.conf &&
+    set_config 'dbms.memory.heap.max_size' '2g' neo4j-wrapper.conf &&
     ${run_command} &&
-    test_expect_java_arg '-Xms512m' &&
-    test_expect_java_arg '-Xmx1024m'
+    test_expect_java_arg '-Xms1g' &&
+    test_expect_java_arg '-Xmx2g'
+  "
+  test_expect_success "should default heap size unit to megabytes" "
+    clear_config &&
+    set_config 'dbms.memory.heap.initial_size' '333' neo4j-wrapper.conf &&
+    set_config 'dbms.memory.heap.max_size' '666' neo4j-wrapper.conf &&
+    ${run_command} &&
+    test_expect_java_arg '-Xms333m' &&
+    test_expect_java_arg '-Xmx666m'
   "
 
   test_expect_success "should set heap size constraints" "
     clear_config &&
-    set_config 'dbms.memory.heap.initial_size' '512' neo4j.conf &&
-    set_config 'dbms.memory.heap.max_size' '1024' neo4j.conf &&
+    set_config 'dbms.memory.heap.initial_size' '123k' neo4j.conf &&
+    set_config 'dbms.memory.heap.max_size' '678g' neo4j.conf &&
     ${run_command} &&
-    test_expect_java_arg '-Xms512m' &&
-    test_expect_java_arg '-Xmx1024m'
+    test_expect_java_arg '-Xms123k' &&
+    test_expect_java_arg '-Xmx678g'
+  "
+
+  test_expect_success "should set heap size default unit" "
+    clear_config &&
+    set_config 'dbms.memory.heap.initial_size' '123' neo4j.conf &&
+    set_config 'dbms.memory.heap.max_size' '678' neo4j.conf &&
+    ${run_command} &&
+    test_expect_java_arg '-Xms123m' &&
+    test_expect_java_arg '-Xmx678m'
   "
 
   test_expect_success "should invoke main class" "
@@ -129,8 +146,8 @@ done
 
 test_expect_success "should set heap size constraints when checking version from wrapper conf" "
   clear_config &&
-  set_config 'dbms.memory.heap.initial_size' '512' neo4j-wrapper.conf &&
-  set_config 'dbms.memory.heap.max_size' '1024' neo4j-wrapper.conf &&
+  set_config 'dbms.memory.heap.initial_size' '512m' neo4j-wrapper.conf &&
+  set_config 'dbms.memory.heap.max_size' '1024m' neo4j-wrapper.conf &&
   neo4j-home/bin/neo4j status || true &&
   test_expect_java_arg '-Xms512m' &&
   test_expect_java_arg '-Xmx1024m'
@@ -138,8 +155,8 @@ test_expect_success "should set heap size constraints when checking version from
 
 test_expect_success "should set heap size constraints when checking version" "
   clear_config &&
-  set_config 'dbms.memory.heap.initial_size' '512' neo4j.conf &&
-  set_config 'dbms.memory.heap.max_size' '1024' neo4j.conf &&
+  set_config 'dbms.memory.heap.initial_size' '512m' neo4j.conf &&
+  set_config 'dbms.memory.heap.max_size' '1024m' neo4j.conf &&
   neo4j-home/bin/neo4j status || true &&
   test_expect_java_arg '-Xms512m' &&
   test_expect_java_arg '-Xmx1024m'
