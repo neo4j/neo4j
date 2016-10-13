@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -36,9 +37,10 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class RecoveryIT
 {
@@ -57,11 +59,15 @@ public class RecoveryIT
 
         Set<File> storeDirs = cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toSet() );
 
+        assertEventually( "All cores have the same data",
+                () -> cluster.coreMembers().stream().map( this::dbRepresentation ).collect( toSet() ).size(),
+                equalTo( 1 ), 10, TimeUnit.SECONDS );
+
         // when
         cluster.shutdown();
 
+        // then
         storeDirs.forEach( this::assertConsistent );
-        assertEquals( 1, storeDirs.stream().map( DbRepresentation::of ).collect( toSet() ).size() );
     }
 
     @Test
@@ -83,10 +89,19 @@ public class RecoveryIT
             cluster.addCoreMemberWithId( i ).start();
         }
 
+        // then
+        assertEventually( "All cores have the same data",
+                () -> cluster.coreMembers().stream().map( this::dbRepresentation ).collect( toSet() ).size(),
+                equalTo( 1 ), 10, TimeUnit.SECONDS );
+
         cluster.shutdown();
 
         storeDirs.forEach( this::assertConsistent );
-        assertEquals( 1, storeDirs.stream().map( DbRepresentation::of ).collect( toSet() ).size() );
+    }
+
+    private DbRepresentation dbRepresentation( CoreClusterMember member )
+    {
+        return  DbRepresentation.of( member.database() );
     }
 
     private void assertConsistent( File storeDir )
