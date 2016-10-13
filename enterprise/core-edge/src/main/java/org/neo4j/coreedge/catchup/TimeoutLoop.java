@@ -28,9 +28,9 @@ import java.util.function.Supplier;
 class TimeoutLoop
 {
     static <T> T waitForCompletion( Future<T> future, String operation, Supplier<Long> millisSinceLastResponseSupplier,
-                                    long inactivityTimeout, TimeUnit timeUnit ) throws CatchUpClientException
+            long inactivityTimeoutMillis ) throws CatchUpClientException
     {
-        long remainingTimeoutMillis = timeUnit.toMillis( inactivityTimeout );
+        long remainingTimeoutMillis = inactivityTimeoutMillis;
         while ( true )
         {
             try
@@ -49,9 +49,9 @@ class TimeoutLoop
             catch ( TimeoutException e )
             {
                 long millisSinceLastResponse = millisSinceLastResponseSupplier.get();
-                if ( millisSinceLastResponse < timeUnit.toMillis( inactivityTimeout ) )
+                if ( millisSinceLastResponse < inactivityTimeoutMillis )
                 {
-                    remainingTimeoutMillis = timeUnit.toMillis( inactivityTimeout ) - millisSinceLastResponse;
+                    remainingTimeoutMillis = inactivityTimeoutMillis - millisSinceLastResponse;
                 }
                 else
                 {

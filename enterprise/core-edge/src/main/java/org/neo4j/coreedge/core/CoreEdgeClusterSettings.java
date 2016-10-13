@@ -171,6 +171,12 @@ public class CoreEdgeClusterSettings
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Long> pull_interval = setting( "core_edge.pull_interval", DURATION, "1s" );
 
+    @Description( "The catch up protocol times out if the given duration elapses with not network activity. " +
+            "Every message received by the client from the server extends the time out duration." )
+    @Internal
+    public static final Setting<Long> catch_up_client_inactivity_timeout =
+            setting( "core_edge.catch_up_client_inactivity_timeout", DURATION, "5s" );
+
     @Description("Throttle limit for logging unknown cluster member address")
     public static final Setting<Long> unknown_address_logging_throttle =
             setting( "core_edge.unknown_address_logging_throttle", DURATION, "10000ms" );

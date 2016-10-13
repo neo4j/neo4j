@@ -172,8 +172,9 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 logProvider, refreshEdgeTimeoutService, edgeTimeToLiveTimeout, edgeRefreshRate );
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
-        Clock clock = Clocks.systemClock();
-        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, clock, monitors ) );
+        long inactivityTimeoutMillis = config.get( CoreEdgeClusterSettings.catch_up_client_inactivity_timeout );
+        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, Clocks.systemClock(),
+                inactivityTimeoutMillis, monitors ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -189,8 +190,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         ContinuousJob txApplyJob = new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group(
                 "tx-applier", NEW_THREAD ), batchingTxApplier, logProvider );
 
-        DelayedRenewableTimeoutService txPullerTimeoutService = new DelayedRenewableTimeoutService( clock
-                , logProvider );
+        DelayedRenewableTimeoutService txPullerTimeoutService =
+                new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
                 new StoreFiles( fileSystem ),
