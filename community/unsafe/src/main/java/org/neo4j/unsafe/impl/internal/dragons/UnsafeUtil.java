@@ -58,6 +58,8 @@ public final class UnsafeUtil
      */
     private static final boolean DIRTY_MEMORY = flag( UnsafeUtil.class, "DIRTY_MEMORY", false );
     private static final boolean CHECK_NATIVE_ACCESS = flag( UnsafeUtil.class, "CHECK_NATIVE_ACCESS", false );
+    // this allows us to temporarily disable the checking, for performance:
+    private static boolean nativeAccessCheckEnabled = true;
 
     private static final Unsafe unsafe;
     private static final MethodHandle sharedStringConstructor;
@@ -409,7 +411,7 @@ public final class UnsafeUtil
 
     private static void checkAccess( long pointer, int size )
     {
-        if ( CHECK_NATIVE_ACCESS )
+        if ( CHECK_NATIVE_ACCESS && nativeAccessCheckEnabled )
         {
             doCheckAccess( pointer, size );
         }
@@ -871,5 +873,27 @@ public final class UnsafeUtil
         unsafe.putInt( dbb, directByteBufferLimitOffset, cap );
         unsafe.putInt( dbb, directByteBufferCapacityOffset, cap );
         unsafe.putLong( dbb, directByteBufferAddressOffset, addr );
+    }
+
+    /**
+     * Change if native access checking is enabled by setting it to the given new setting, and returning the old
+     * setting.
+     * <p>
+     * This is only useful for speeding up tests when you have a lot of them, and they access native memory a lot.
+     * This does not disable the recording of memory allocations or frees.
+     * <p>
+     * Remember to restore the old value so other tests in the same JVM get the benefit of native access checks.
+     * <p>
+     * The changing of this setting is completely unsynchronised, so you have to order this modification before and
+     * after the tests that you want to run without native access checks.
+     *
+     * @param newSetting The new setting.
+     * @return the previous value of this setting.
+     */
+    public static boolean exchangeNativeAccessCheckEnabled( boolean newSetting )
+    {
+        boolean previousSetting = nativeAccessCheckEnabled;
+        nativeAccessCheckEnabled = newSetting;
+        return previousSetting;
     }
 }
