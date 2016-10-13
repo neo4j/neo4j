@@ -120,11 +120,6 @@ public class IndexProcedures implements AutoCloseable
             throw new ProcedureException( Status.Procedure.ProcedureTimedOut,
                     "Index on %s did not come online within %s %s", indexDescription, timeout, timeoutUnits );
         }
-        catch ( InterruptedException e )
-        {
-            throw new ProcedureException( Status.General.DatabaseUnavailable,
-                    "Interrupted waiting for index on %s to come online", indexDescription );
-        }
     }
 
     private boolean isOnline( IndexSpecifier indexDescription, IndexDescriptor index ) throws ProcedureException

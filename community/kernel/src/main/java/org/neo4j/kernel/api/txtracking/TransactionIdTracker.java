@@ -74,20 +74,12 @@ public class TransactionIdTracker
             return;
         }
 
-        try
+        if ( !tryAwait( () -> oldestAcceptableTxId <= transactionIdStore.getLastClosedTransactionId(),
+                timeout.toMillis(), TimeUnit.MILLISECONDS, POLL_INTERVAL, POLL_UNIT ) )
         {
-            if ( !tryAwait( () -> oldestAcceptableTxId <= transactionIdStore.getLastClosedTransactionId(),
-                    timeout.toMillis(), TimeUnit.MILLISECONDS, POLL_INTERVAL, POLL_UNIT ) )
-            {
-                throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
-                        "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
-                        transactionIdStore.getLastClosedTransactionId() );
-            }
-        }
-        catch ( InterruptedException e )
-        {
-            throw new TransactionFailureException( Status.Transaction.TransactionStartFailed, e,
-                    "Thread interrupted when starting transaction" );
+            throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
+                    "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
+                    transactionIdStore.getLastClosedTransactionId() );
         }
     }
 

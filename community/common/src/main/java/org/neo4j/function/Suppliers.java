@@ -118,14 +118,40 @@ public final class Suppliers
         };
     }
 
-    public static <T> Supplier<Boolean> compose( final Supplier<T> input, final Predicate<T> predicate )
+    public static <T> CapturingSupplier<T> compose( final Supplier<T> input, final Predicate<T> predicate )
     {
-        return () -> predicate.test( input.get() );
+        return new CapturingSupplier<T>( input, predicate );
     }
 
     public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
     {
         final long endTimeInMilliseconds = currentTimeMillis() + unit.toMillis( duration );
         return () -> currentTimeMillis() <= endTimeInMilliseconds;
+    }
+
+    static class CapturingSupplier<T> implements Supplier<Boolean>
+    {
+        private final Supplier<T> input;
+        private final Predicate<T> predicate;
+
+        private T current;
+
+        CapturingSupplier( Supplier<T> input, Predicate<T> predicate )
+        {
+            this.input = input;
+            this.predicate = predicate;
+        }
+
+        T lastInput()
+        {
+            return current;
+        }
+
+        @Override
+        public Boolean get()
+        {
+            current = input.get();
+            return predicate.test( current );
+        }
     }
 }

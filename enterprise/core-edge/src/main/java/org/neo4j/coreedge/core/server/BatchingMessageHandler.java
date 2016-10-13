@@ -29,7 +29,6 @@ import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
-import org.neo4j.function.Predicates;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -73,15 +72,8 @@ class BatchingMessageHandler extends LifecycleAdapter
             return;
         }
 
-        try
-        {
-            // keep trying to add the message into the queue, give up only if this component has been stopped
-            awaitForever( () -> stopped || messageQueue.offer( message ), 100, TimeUnit.MILLISECONDS );
-        }
-        catch ( InterruptedException e )
-        {
-            log.warn( "Not expecting to be interrupted.", e );
-        }
+        // keep trying to add the message into the queue, give up only if this component has been stopped
+        awaitForever( () -> stopped || messageQueue.offer( message ), 100, TimeUnit.MILLISECONDS );
     }
 
     @Override
