@@ -144,12 +144,6 @@ public class InMemoryCountsStore implements CountsStore
             awaitForever( () -> lastTxId.getHighestGapFreeNumber() >= snapshot.getTxId(), 100, MILLISECONDS );
             return snapshot;
         }
-        catch ( InterruptedException ex )
-        {
-            Thread.currentThread().interrupt();
-            throw Exceptions
-                    .withCause( new UnderlyingStorageException( "Construction of snapshot was interrupted." ), ex );
-        }
         finally
         {
             snapshot = null;

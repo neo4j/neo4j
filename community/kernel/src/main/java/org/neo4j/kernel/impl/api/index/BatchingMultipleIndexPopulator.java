@@ -173,10 +173,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         {
             handleTimeout();
         }
-        catch ( InterruptedException e )
-        {
-            handleInterrupt();
-        }
     }
 
     /**

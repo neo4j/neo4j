@@ -47,7 +47,6 @@ import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
 import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -60,15 +59,17 @@ import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.DbRepresentation;
 
 import static java.util.Collections.emptyMap;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.concurrent.Futures.combine;
+import static org.neo4j.function.Predicates.await;
+import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 
 public class Cluster
 {
-    private static final int DEFAULT_TIMEOUT_MS = 15_000;
+    private static final int DEFAULT_TIMEOUT_MS = 25_000;
     private static final int DEFAULT_BACKOFF_MS = 100;
     private static final int DEFAULT_CLUSTER_SIZE = 3;
 
@@ -275,19 +276,7 @@ public class Cluster
 
     public CoreClusterMember awaitCoreMemberWithRole( long timeoutMillis, Role role ) throws TimeoutException
     {
-        long endTimeMillis = timeoutMillis + System.currentTimeMillis();
-
-        CoreClusterMember db;
-        while ( (db = getDbWithRole( role )) == null && (System.currentTimeMillis() < endTimeMillis) )
-        {
-            LockSupport.parkNanos( MILLISECONDS.toNanos( 100 ) );
-        }
-
-        if ( db == null )
-        {
-            throw new TimeoutException();
-        }
-        return db;
+        return await( () -> getDbWithRole( role ), notNull(), timeoutMillis, TimeUnit.MILLISECONDS );
     }
 
     public int numberOfCoreMembersReportedByTopology()
@@ -336,17 +325,18 @@ public class Cluster
                 throw new DatabaseShutdownException();
             }
 
-            try
+            try ( Transaction tx = db.beginTx() )
             {
-                Transaction tx = db.beginTx();
                 op.accept( db, tx );
-                tx.close();
                 return member;
             }
             catch ( Throwable e )
             {
                 if ( isTransientFailure( e ) )
                 {
+                    // this is not the best, but it helps in debugging
+                    System.err.println( "Transient failure in leader transaction, trying again." );
+                    e.printStackTrace();
                     // sleep and retry
                     Thread.sleep( DEFAULT_BACKOFF_MS );
                 }
@@ -393,12 +383,7 @@ public class Cluster
 
     public static List<AdvertisedSocketAddress> buildAddresses( Set<Integer> coreServerIds )
     {
-        List<AdvertisedSocketAddress> addresses = new ArrayList<>();
-        for ( Integer i : coreServerIds )
-        {
-            addresses.add( socketAddressForServer( i ) );
-        }
-        return addresses;
+        return coreServerIds.stream().map( Cluster::socketAddressForServer ).collect( toList() );
     }
 
     public static AdvertisedSocketAddress socketAddressForServer( int id )
@@ -496,7 +481,7 @@ public class Cluster
                                                         CoreClusterMember memberToLookLike )
             throws TimeoutException, InterruptedException
     {
-        Predicates.await( () -> {
+        await( () -> {
                 try
                 {
                     // We recalculate the DbRepresentation of both source and target, so changes can be picked up
@@ -523,11 +508,10 @@ public class Cluster
     {
         for ( CoreClusterMember targetDB : targetDBs )
         {
-            Predicates.await( () -> {
+            await( () -> {
                 DbRepresentation representation = DbRepresentation.of( targetDB.database() );
                 return sourceRepresentation.equals( representation );
-            },
-                    DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+            }, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
         }
     }
 
