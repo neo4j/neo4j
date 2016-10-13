@@ -83,6 +83,18 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         return defaultString( "enterprise-security-context" );
     }
 
+    @Override
+    public EnterpriseSecurityContext freeze()
+    {
+        return new Frozen( neoShiroSubject, mode(), isAdmin() );
+    }
+
+    @Override
+    public EnterpriseSecurityContext freeze( AccessMode mode )
+    {
+        return new Frozen( neoShiroSubject, mode, isAdmin() );
+    }
+
     private static class StandardAccessMode implements AccessMode
     {
         private final boolean allowsReads;

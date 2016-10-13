@@ -28,8 +28,26 @@ import org.neo4j.kernel.api.security.SecurityContext;
  */
 public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
 {
+    @Override
+    EnterpriseSecurityContext freeze();
+
+    @Override
+    EnterpriseSecurityContext freeze( AccessMode mode );
+
     EnterpriseSecurityContext AUTH_DISABLED = new EnterpriseSecurityContext()
     {
+        @Override
+        public EnterpriseSecurityContext freeze()
+        {
+            return this;
+        }
+
+        @Override
+        public EnterpriseSecurityContext freeze( AccessMode mode )
+        {
+            return new Frozen( subject(), mode, isAdmin() );
+        }
+
         @Override
         public AuthSubject subject()
         {
@@ -54,4 +72,48 @@ public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
             return true;
         }
     };
+
+    class Frozen implements EnterpriseSecurityContext
+    {
+        private final AuthSubject subject;
+        private final AccessMode mode;
+        private final boolean isAdmin;
+
+        public Frozen( AuthSubject subject, AccessMode mode, boolean isAdmin )
+        {
+            this.subject = subject;
+            this.mode = mode;
+            this.isAdmin = isAdmin;
+        }
+
+        @Override
+        public boolean isAdmin()
+        {
+            return isAdmin;
+        }
+
+        @Override
+        public AccessMode mode()
+        {
+            return mode;
+        }
+
+        @Override
+        public AuthSubject subject()
+        {
+            return subject;
+        }
+
+        @Override
+        public EnterpriseSecurityContext freeze()
+        {
+            return this;
+        }
+
+        @Override
+        public EnterpriseSecurityContext freeze( AccessMode mode )
+        {
+            return new EnterpriseSecurityContext.Frozen( subject, mode, isAdmin );
+        }
+    }
 }

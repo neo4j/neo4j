@@ -1553,7 +1553,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
 
-        final SecurityContext procedureSecurityContext = SecurityContext.frozen( tx.securityContext(), override );
+        final SecurityContext procedureSecurityContext = tx.securityContext().freeze( override );
         final RawIterator<Object[],ProcedureException> procedureCall;
         try ( KernelTransaction.Revertable ignore = tx.overrideWith( procedureSecurityContext ) )
         {
@@ -1609,7 +1609,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
 
-        try ( KernelTransaction.Revertable ignore = tx.overrideWith( SecurityContext.frozen( tx.securityContext(), mode )) )
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( tx.securityContext().freeze( mode ) ) )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );

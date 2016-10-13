@@ -25,6 +25,9 @@ public interface SecurityContext
     AccessMode mode();
     AuthSubject subject();
 
+    SecurityContext freeze();
+    SecurityContext freeze( AccessMode mode );
+
     default String defaultString( String name )
     {
         return String.format( "%s{ securityContext=%s, allowance=%s }", name, subject().username(), mode() );
@@ -50,34 +53,53 @@ public interface SecurityContext
         {
             return AuthSubject.AUTH_DISABLED;
         }
+
+        @Override
+        public SecurityContext freeze()
+        {
+            return this;
+        }
+
+        @Override
+        public SecurityContext freeze( AccessMode mode )
+        {
+            return new Frozen( subject(), mode );
+        }
     };
 
-    static SecurityContext frozen( SecurityContext context, AccessMode accessMode )
+    class Frozen implements SecurityContext
     {
-        return frozen( context.subject(), accessMode );
-    }
+        private final AuthSubject subject;
+        private final AccessMode mode;
 
-    static SecurityContext frozen( AuthSubject subject, AccessMode accessMode )
-    {
-        return new SecurityContext()
+        public Frozen( AuthSubject subject, AccessMode mode )
         {
-            @Override
-            public AccessMode mode()
-            {
-                return accessMode;
-            }
+            this.subject = subject;
+            this.mode = mode;
+        }
 
-            @Override
-            public AuthSubject subject()
-            {
-                return subject;
-            }
+        @Override
+        public AccessMode mode()
+        {
+            return mode;
+        }
 
-            @Override
-            public String toString()
-            {
-                return defaultString( "frozen-security-context" );
-            }
-        };
+        @Override
+        public AuthSubject subject()
+        {
+            return subject;
+        }
+
+        @Override
+        public SecurityContext freeze()
+        {
+            return this;
+        }
+
+        @Override
+        public SecurityContext freeze( AccessMode mode )
+        {
+            return new Frozen( subject, mode );
+        }
     }
 }

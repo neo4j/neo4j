@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
@@ -38,7 +37,6 @@ import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 
 @SuppressWarnings( "WeakerAccess" )
 public class AuthProceduresBase

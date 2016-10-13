@@ -96,6 +96,18 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
     {
         return new EnterpriseSecurityContext()
         {
+            @Override
+            public EnterpriseSecurityContext freeze()
+            {
+                return this;
+            }
+
+            @Override
+            public EnterpriseSecurityContext freeze( AccessMode mode )
+            {
+                return new EnterpriseSecurityContext.Frozen( subject(), mode, isAdmin() );
+            }
+
             AnonymousContext inner = AnonymousContext.none();
 
             @Override

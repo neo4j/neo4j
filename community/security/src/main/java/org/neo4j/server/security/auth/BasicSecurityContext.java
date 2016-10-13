@@ -119,6 +119,18 @@ public class BasicSecurityContext implements SecurityContext
     }
 
     @Override
+    public SecurityContext freeze()
+    {
+        return this;
+    }
+
+    @Override
+    public SecurityContext freeze( AccessMode mode )
+    {
+        return new Frozen( authSubject, mode );
+    }
+
+    @Override
     public AccessMode mode()
     {
         return accessMode;
