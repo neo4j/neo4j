@@ -22,21 +22,21 @@ package org.neo4j.kernel.api.security;
 /** Controls the capabilities of a KernelTransaction. */
 public interface SecurityContext
 {
-    Allowance allows();
+    AccessMode mode();
     AuthSubject subject();
 
     default String defaultString( String name )
     {
-        return String.format( "%s{ securityContext=%s, allowance=%s }", name, subject().username(), allows() );
+        return String.format( "%s{ securityContext=%s, allowance=%s }", name, subject().username(), mode() );
     }
 
     /** Allows all operations. */
     SecurityContext AUTH_DISABLED = new SecurityContext()
     {
         @Override
-        public Allowance allows()
+        public AccessMode mode()
         {
-            return Allowance.Static.FULL;
+            return AccessMode.Static.FULL;
         }
 
         @Override
@@ -52,19 +52,19 @@ public interface SecurityContext
         }
     };
 
-    static SecurityContext frozen( SecurityContext context, Allowance allowance )
+    static SecurityContext frozen( SecurityContext context, AccessMode accessMode )
     {
-        return frozen( context.subject(), allowance );
+        return frozen( context.subject(), accessMode );
     }
 
-    static SecurityContext frozen( AuthSubject subject, Allowance allowance )
+    static SecurityContext frozen( AuthSubject subject, AccessMode accessMode )
     {
         return new SecurityContext()
         {
             @Override
-            public Allowance allows()
+            public AccessMode mode()
             {
-                return allowance;
+                return accessMode;
             }
 
             @Override

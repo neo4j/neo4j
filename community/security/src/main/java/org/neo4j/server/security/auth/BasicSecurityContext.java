@@ -21,7 +21,7 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -35,7 +35,7 @@ public class BasicSecurityContext implements SecurityContext
 {
     private final BasicAuthManager authManager;
     private final BasicAuthSubject authSubject;
-    private Allowance allowance;
+    private AccessMode accessMode;
 
     public BasicSecurityContext( BasicAuthManager authManager, User user, AuthenticationResult authenticationResult )
     {
@@ -45,13 +45,13 @@ public class BasicSecurityContext implements SecurityContext
         switch ( authenticationResult )
         {
         case SUCCESS:
-            allowance = Allowance.Static.FULL;
+            accessMode = AccessMode.Static.FULL;
             break;
         case PASSWORD_CHANGE_REQUIRED:
-            allowance = Allowance.Static.CREDENTIALS_EXPIRED;
+            accessMode = AccessMode.Static.CREDENTIALS_EXPIRED;
             break;
         default:
-            allowance = Allowance.Static.NONE;
+            accessMode = AccessMode.Static.NONE;
         }
     }
 
@@ -95,7 +95,7 @@ public class BasicSecurityContext implements SecurityContext
             if ( authenticationResult == PASSWORD_CHANGE_REQUIRED )
             {
                 authenticationResult = SUCCESS;
-                allowance = Allowance.Static.FULL;
+                accessMode = AccessMode.Static.FULL;
             }
         }
 
@@ -119,14 +119,15 @@ public class BasicSecurityContext implements SecurityContext
     }
 
     @Override
-    public Allowance allows()
+    public AccessMode mode()
     {
-        return allowance;
+        return accessMode;
     }
 
     @Override
     public String toString()
     {
-        return String.format( "BasicSecurityContext{ securityContext=%s, allowance=%s }", authSubject.username(), allowance );
+        return String.format( "BasicSecurityContext{ securityContext=%s, accessMode=%s }", authSubject.username(),
+                accessMode );
     }
 }

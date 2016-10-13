@@ -20,18 +20,18 @@
 package org.neo4j.kernel.impl.api.security;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.AccessMode;
 
 /**
  * Access mode that wraps an access mode with a wrapping access mode. The resulting access mode allows things based
  * on both the original and the wrapping mode, while retaining the meta data of the original mode only.
  */
-abstract class WrappedAllowance implements Allowance
+abstract class WrappedAccessMode implements AccessMode
 {
-    protected final Allowance original;
-    protected final Allowance wrapping;
+    protected final AccessMode original;
+    protected final AccessMode wrapping;
 
-    WrappedAllowance( Allowance original, Allowance wrapping )
+    WrappedAccessMode( AccessMode original, AccessMode wrapping )
     {
         this.original = original;
         this.wrapping = wrapping;

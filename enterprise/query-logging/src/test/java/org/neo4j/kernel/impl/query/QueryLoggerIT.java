@@ -164,8 +164,6 @@ public class QueryLoggerIT
         // THEN
         List<String> logLines = readAllLines( logFilename );
 
-        System.out.println( String.join( "\n", logLines ) );
-
         assertThat( logLines, hasSize( 7 ) );
         assertThat( logLines.get( 0 ), not( containsString( "User: 'Johan'" ) ) );
         // we don't care if setTXMetaData contains the meta data

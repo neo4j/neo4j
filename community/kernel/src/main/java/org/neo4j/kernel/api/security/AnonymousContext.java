@@ -22,31 +22,31 @@ package org.neo4j.kernel.api.security;
 /** Controls the capabilities of a KernelTransaction. */
 public class AnonymousContext implements SecurityContext
 {
-    private final Allowance allowance;
+    private final AccessMode accessMode;
 
-    private AnonymousContext( Allowance allowance )
+    private AnonymousContext( AccessMode accessMode )
     {
-        this.allowance = allowance;
+        this.accessMode = accessMode;
     }
 
     public static AnonymousContext none()
     {
-        return new AnonymousContext( Allowance.Static.NONE );
+        return new AnonymousContext( AccessMode.Static.NONE );
     }
 
     public static AnonymousContext read()
     {
-        return new AnonymousContext( Allowance.Static.READ );
+        return new AnonymousContext( AccessMode.Static.READ );
     }
 
     public static AnonymousContext write()
     {
-        return new AnonymousContext( Allowance.Static.WRITE );
+        return new AnonymousContext( AccessMode.Static.WRITE );
     }
 
     public static AnonymousContext writeOnly()
     {
-        return new AnonymousContext( Allowance.Static.WRITE_ONLY );
+        return new AnonymousContext( AccessMode.Static.WRITE_ONLY );
     }
 
     @Override
@@ -56,9 +56,9 @@ public class AnonymousContext implements SecurityContext
     }
 
     @Override
-    public Allowance allows()
+    public AccessMode mode()
     {
-        return allowance;
+        return accessMode;
     }
 
     @Override

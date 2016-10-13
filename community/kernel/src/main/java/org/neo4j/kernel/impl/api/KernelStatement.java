@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -89,7 +89,7 @@ public class KernelStatement implements TxStateHolder, Statement
     @Override
     public ReadOperations readOperations()
     {
-        assertAllows( Allowance::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return facade;
     }
 
@@ -104,7 +104,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        assertAllows( Allowance::allowsWrites, "Write" );
+        assertAllows( AccessMode::allowsWrites, "Write" );
         return facade;
     }
 
@@ -114,7 +114,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        assertAllows( Allowance::allowsWrites, "Write" );
+        assertAllows( AccessMode::allowsWrites, "Write" );
         transaction.upgradeToDataWrites();
         return facade;
     }
@@ -125,7 +125,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        assertAllows( Allowance::allowsSchemaWrites, "Schema" );
+        assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
         transaction.upgradeToSchemaWrites();
         return facade;
     }
@@ -249,12 +249,12 @@ public class KernelStatement implements TxStateHolder, Statement
         return transaction;
     }
 
-    private void assertAllows( Function<Allowance,Boolean> allows, String mode )
+    private void assertAllows( Function<AccessMode,Boolean> allows, String mode )
     {
-        Allowance allowance = transaction.securityContext().allows();
-        if ( !allows.apply( allowance ) )
+        AccessMode accessMode = transaction.securityContext().mode();
+        if ( !allows.apply( accessMode ) )
         {
-            throw allowance.onViolation(
+            throw accessMode.onViolation(
                     String.format( "%s operations are not allowed for '%s'.", mode, transaction.securityContext()
                             .subject().username() ) );
         }

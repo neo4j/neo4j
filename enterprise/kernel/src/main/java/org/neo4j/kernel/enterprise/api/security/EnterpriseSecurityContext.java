@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.enterprise.api.security;
 
-import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
 
@@ -37,9 +37,9 @@ public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
         }
 
         @Override
-        public Allowance allows()
+        public AccessMode mode()
         {
-            return Allowance.Static.FULL;
+            return AccessMode.Static.FULL;
         }
 
         @Override

@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
@@ -105,9 +105,9 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
             }
 
             @Override
-            public Allowance allows()
+            public AccessMode mode()
             {
-                return inner.allows();
+                return inner.mode();
             }
 
             @Override

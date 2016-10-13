@@ -501,9 +501,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         securityContext = manager.login( authToken( "neo4j", "1234" ) );
 
         // Then
-        assertTrue( securityContext.allows().allowsReads() );
-        assertTrue( securityContext.allows().allowsWrites() );
-        assertTrue( securityContext.allows().allowsSchemaWrites() );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertTrue( securityContext.mode().allowsWrites() );
+        assertTrue( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -517,9 +517,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) );
 
         // Then
-        assertTrue( securityContext.allows().allowsReads() );
-        assertTrue( securityContext.allows().allowsWrites() );
-        assertTrue( securityContext.allows().allowsSchemaWrites() );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertTrue( securityContext.mode().allowsWrites() );
+        assertTrue( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -533,9 +533,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) );
 
         // Then
-        assertTrue( securityContext.allows().allowsReads() );
-        assertTrue( securityContext.allows().allowsWrites() );
-        assertTrue( securityContext.allows().allowsSchemaWrites() );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertTrue( securityContext.mode().allowsWrites() );
+        assertTrue( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -549,9 +549,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) );
 
         // Then
-        assertTrue( "should allow reads", securityContext.allows().allowsReads() );
-        assertTrue( "should allow writes", securityContext.allows().allowsWrites() );
-        assertFalse( "should _not_ allow schema writes", securityContext.allows().allowsSchemaWrites() );
+        assertTrue( "should allow reads", securityContext.mode().allowsReads() );
+        assertTrue( "should allow writes", securityContext.mode().allowsWrites() );
+        assertFalse( "should _not_ allow schema writes", securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -565,9 +565,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) );
 
         // Then
-        assertTrue( securityContext.allows().allowsReads() );
-        assertFalse( securityContext.allows().allowsWrites() );
-        assertFalse( securityContext.allows().allowsSchemaWrites() );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertFalse( securityContext.mode().allowsWrites() );
+        assertFalse( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -581,9 +581,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) );
 
         // Then
-        assertFalse( securityContext.allows().allowsReads() );
-        assertFalse( securityContext.allows().allowsWrites() );
-        assertFalse( securityContext.allows().allowsSchemaWrites() );
+        assertFalse( securityContext.mode().allowsReads() );
+        assertFalse( securityContext.mode().allowsWrites() );
+        assertFalse( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -595,16 +595,16 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
 
         // When
         SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) );
-        assertTrue( securityContext.allows().allowsReads() );
-        assertTrue( securityContext.allows().allowsWrites() );
-        assertTrue( securityContext.allows().allowsSchemaWrites() );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertTrue( securityContext.mode().allowsWrites() );
+        assertTrue( securityContext.mode().allowsSchemaWrites() );
 
         securityContext.subject().logout();
 
         // Then
-        assertFalse( securityContext.allows().allowsReads() );
-        assertFalse( securityContext.allows().allowsWrites() );
-        assertFalse( securityContext.allows().allowsSchemaWrites() );
+        assertFalse( securityContext.mode().allowsReads() );
+        assertFalse( securityContext.mode().allowsWrites() );
+        assertFalse( securityContext.mode().allowsSchemaWrites() );
     }
 
     private AssertableLogProvider.LogMatcher info( String message )

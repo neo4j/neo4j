@@ -111,11 +111,11 @@ public class InternalFlatFileRealmTest
         EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
         assertThat( mike.subject().getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
 
-        mike.allows().allowsReads();
+        mike.mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
-        mike.allows().allowsWrites();
+        mike.mode().allowsWrites();
 
         // Then
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );

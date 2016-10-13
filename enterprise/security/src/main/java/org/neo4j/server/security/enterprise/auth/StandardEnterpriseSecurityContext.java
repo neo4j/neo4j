@@ -26,7 +26,7 @@ import java.util.Collection;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
@@ -66,9 +66,9 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
     }
 
     @Override
-    public Allowance allows()
+    public AccessMode mode()
     {
-        return new StandardAllowance(
+        return new StandardAccessMode(
                 shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ ),
                 shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ_WRITE ),
                 shiroSubject.isAuthenticated() && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
@@ -83,7 +83,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         return defaultString( "enterprise-security-context" );
     }
 
-    private static class StandardAllowance implements Allowance
+    private static class StandardAccessMode implements AccessMode
     {
         private final boolean allowsReads;
         private final boolean allowsWrites;
@@ -91,7 +91,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         private final boolean passwordChangeRequired;
         private Collection<AuthorizationInfo> authorizationInfoSnapshot;
 
-        StandardAllowance( boolean allowsReads, boolean allowsWrites, boolean allowsSchemaWrites,
+        StandardAccessMode( boolean allowsReads, boolean allowsWrites, boolean allowsSchemaWrites,
                 boolean passwordChangeRequired, Collection<AuthorizationInfo> authorizationInfo )
         {
             this.allowsReads = allowsReads;
@@ -144,7 +144,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         {
             if ( passwordChangeRequired )
             {
-                return Allowance.Static.CREDENTIALS_EXPIRED.onViolation( msg );
+                return AccessMode.Static.CREDENTIALS_EXPIRED.onViolation( msg );
             }
             else
             {

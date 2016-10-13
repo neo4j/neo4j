@@ -24,9 +24,9 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /** Controls the capabilities of a KernelTransaction. */
-public interface Allowance
+public interface AccessMode
 {
-    enum Static implements Allowance
+    enum Static implements AccessMode
     {
         /** No reading or writing allowed. */
         NONE

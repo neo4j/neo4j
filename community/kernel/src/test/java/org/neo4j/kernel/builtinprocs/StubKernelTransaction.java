@@ -24,7 +24,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.Allowance;
 import org.neo4j.kernel.api.security.SecurityContext;
 
 public class StubKernelTransaction implements KernelTransaction
