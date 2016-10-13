@@ -56,50 +56,72 @@ class TrackingResponseHandler implements CatchUpResponseHandler
     @Override
     public void onFileHeader( FileHeader fileHeader )
     {
-        recordLastResponse();
-        delegate.onFileHeader( requestOutcomeSignal, fileHeader );
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            recordLastResponse();
+            delegate.onFileHeader( requestOutcomeSignal, fileHeader );
+        }
     }
 
     @Override
     public boolean onFileContent( FileContent fileContent ) throws IOException
     {
-        recordLastResponse();
-        return delegate.onFileContent( requestOutcomeSignal, fileContent );
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            recordLastResponse();
+            return delegate.onFileContent( requestOutcomeSignal, fileContent );
+        }
+        return false;
     }
 
     @Override
     public void onFileStreamingComplete( StoreCopyFinishedResponse response )
     {
-        recordLastResponse();
-        delegate.onFileStreamingComplete( requestOutcomeSignal, response );
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            recordLastResponse();
+            delegate.onFileStreamingComplete( requestOutcomeSignal, response );
+        }
     }
 
     @Override
     public void onTxPullResponse( TxPullResponse tx )
     {
-        recordLastResponse();
-        delegate.onTxPullResponse( requestOutcomeSignal, tx );
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            recordLastResponse();
+            delegate.onTxPullResponse( requestOutcomeSignal, tx );
+        }
     }
 
     @Override
     public void onTxStreamFinishedResponse( TxStreamFinishedResponse response )
     {
-        recordLastResponse();
-        delegate.onTxStreamFinishedResponse( requestOutcomeSignal, response );
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            recordLastResponse();
+            delegate.onTxStreamFinishedResponse( requestOutcomeSignal, response );
+        }
     }
 
     @Override
     public void onGetStoreIdResponse( GetStoreIdResponse response )
     {
-        recordLastResponse();
-        delegate.onGetStoreIdResponse( requestOutcomeSignal, response );
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            recordLastResponse();
+            delegate.onGetStoreIdResponse( requestOutcomeSignal, response );
+        }
     }
 
     @Override
     public void onCoreSnapshot( CoreSnapshot coreSnapshot )
     {
-        recordLastResponse();
-        delegate.onCoreSnapshot( requestOutcomeSignal, coreSnapshot );
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            recordLastResponse();
+            delegate.onCoreSnapshot( requestOutcomeSignal, coreSnapshot );
+        }
     }
 
     long lastResponseTime()

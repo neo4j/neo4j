@@ -40,11 +40,11 @@ class TimeoutLoop
             catch ( InterruptedException e )
             {
                 Thread.interrupted();
-                throw new CatchUpClientException( e );
+                throw exception( future, operation, e );
             }
             catch ( ExecutionException e )
             {
-                throw new CatchUpClientException( e );
+                throw exception( future, operation, e );
             }
             catch ( TimeoutException e )
             {
@@ -55,9 +55,15 @@ class TimeoutLoop
                 }
                 else
                 {
-                    throw new CatchUpClientException( operation, e );
+                    throw exception( future, operation, e );
                 }
             }
         }
+    }
+
+    private static CatchUpClientException exception( Future<?> future, String operation, Exception e )
+    {
+        future.cancel( true );
+        return new CatchUpClientException( operation, e );
     }
 }
