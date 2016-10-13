@@ -75,6 +75,7 @@ public class PerTypeRelationshipSplitterTest
         }
 
         assertEquals( nodesOf( expected.iterator() ), all );
+        inputCache.close();
     }
 
     /**

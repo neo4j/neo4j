@@ -178,6 +178,8 @@ public class CountsRotationTest
 
         assertEquals( "Should perform at least 100 rotations.", rotations, Math.min( rotations, countStore.txId() - startTxId) );
         assertTrue( "Should perform more then 0 lookups without exceptions.", lookupsCounter.get() > 0 );
+
+        db.shutdown();
     }
 
     private static ThrowingFunction<CountsTracker,Void,RuntimeException> countStoreLookup(

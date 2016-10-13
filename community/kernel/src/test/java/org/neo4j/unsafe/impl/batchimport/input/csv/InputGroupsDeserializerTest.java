@@ -20,6 +20,8 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.StringReader;
 import java.util.List;
@@ -32,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.csv.reader.Readables.wrap;
@@ -69,6 +72,15 @@ public class InputGroupsDeserializerTest
                     @SuppressWarnings( "unchecked" )
                     InputEntityDeserializer<InputNode> result = mock( InputEntityDeserializer.class );
                     when( result.sourceDescription() ).thenReturn( String.valueOf( flips.get() ) );
+                    doAnswer( new Answer<Void>()
+                    {
+                        @Override
+                        public Void answer( InvocationOnMock invocation ) throws Throwable
+                        {
+                            stream.close();
+                            return null;
+                        }
+                    } ).when( result ).close();
                     return result;
                 }, Validators.<InputNode>emptyValidator(), InputNode.class );
         deserializerTestHack.set( deserializer );
@@ -78,6 +90,7 @@ public class InputGroupsDeserializerTest
 
         // THEN there should have been two data source flips
         assertEquals( 2, flips.get() );
+        deserializer.close();
     }
 
     private Configuration lowBufferSize( Configuration conf )

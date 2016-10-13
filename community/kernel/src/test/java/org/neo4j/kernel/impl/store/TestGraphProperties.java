@@ -262,7 +262,7 @@ public class TestGraphProperties
     @Test
     public void shouldBeAbleToCreateLongGraphPropertyChainsAndReadTheCorrectNextPointerFromTheStore()
     {
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabaseService database = factory.newImpermanentDatabase();
 
         PropertyContainer graphProperties = properties( (GraphDatabaseAPI) database );
 
@@ -305,6 +305,7 @@ public class TestGraphProperties
             assertEquals( "I", graphProperties.getProperty( "i" ) );
             tx.success();
         }
+        database.shutdown();
     }
 
     private static class State

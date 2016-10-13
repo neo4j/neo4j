@@ -47,5 +47,6 @@ public class GitHub1304Test
         }
 
         batchInserter.getNodeProperties( nodeId );   //fails here
+        batchInserter.shutdown();
     }
 }

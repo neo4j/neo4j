@@ -111,9 +111,26 @@ public class DebugUtil
 
     public static void dumpThreads( PrintStream out )
     {
+        dumpThreads( out, true, true );
+    }
+
+    public static void dumpThreads( PrintStream out, boolean excludeSystemThreads, boolean excludeCallingThread )
+    {
         for ( Map.Entry<Thread,StackTraceElement[]> stack : Thread.getAllStackTraces().entrySet() )
         {
-            out.println( new DebugUtil.CallStack( stack.getValue(), "Thread: " + stack.getKey() ) );
+            Thread thread = stack.getKey();
+            ThreadGroup group = thread.getThreadGroup();
+            if ( excludeSystemThreads && group != null && "system".equals( thread.getThreadGroup().getName() ) )
+            {
+                continue;
+            }
+            if ( excludeCallingThread && thread == Thread.currentThread() )
+            {
+                continue;
+            }
+
+            out.println( new CallStack( stack.getValue(), "Thread: " + stack.getKey() ) );
+            out.println();
         }
     }
 
