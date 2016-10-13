@@ -153,7 +153,7 @@ class CatchUpLoad extends RepeatUntilCallable
         }
         catch ( Throwable ex )
         {
-            return errorValueOrThrow( !isStoreClosed( ex ) || fail, ex );
+            return errorValueOrThrow( fail && !isStoreClosed( ex ), ex );
         }
     }
 
