@@ -42,8 +42,8 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.enterprise.api.security.CouldBeAdmin;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QuerySource;
@@ -66,7 +66,6 @@ import static org.neo4j.function.ThrowingFunction.throwIfPresent;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.fromExternalString;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
-import static org.neo4j.kernel.impl.api.security.OverriddenSecurityContext.getUsernameFromSecurityContext;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( "unused" )
@@ -82,7 +81,7 @@ public class BuiltInProcedures
     public GraphDatabaseAPI graph;
 
     @Context
-    public AuthSubject authSubject;
+    public SecurityContext securityContext;
 
     @Description( "Attaches a map of data to the transaction. The data will be printed when listing queries, and " +
                   "inserted into the query log." )
@@ -117,13 +116,13 @@ public class BuiltInProcedures
     public Stream<TransactionResult> listTransactions()
             throws InvalidArgumentsException, IOException
     {
-        ensureAdminEnterpriseAuthSubject();
+        assertAdmin();
 
         return countTransactionByUsername(
             getActiveTransactions( graph.getDependencyResolver() )
                 .stream()
                 .filter( tx -> !tx.terminationReason().isPresent() )
-                .map( tx -> getUsernameFromSecurityContext( tx.securityContext() ) )
+                .map( tx -> tx.securityContext().subject().username() )
         );
     }
 
@@ -131,7 +130,7 @@ public class BuiltInProcedures
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
-        ensureSelfOrAdminEnterpriseAuthSubject( username );
+        assertAdminOrSelf( username );
 
         return terminateTransactionsForValidUser( graph.getDependencyResolver(), username, getCurrentTx() );
     }
@@ -139,7 +138,7 @@ public class BuiltInProcedures
     //@Procedure( name = "dbms.listConnections", mode = DBMS )
     public Stream<ConnectionResult> listConnections()
     {
-        ensureAdminEnterpriseAuthSubject();
+        assertAdmin();
 
         BoltConnectionTracker boltConnectionTracker = getBoltConnectionTracker( graph.getDependencyResolver() );
         return countConnectionsByUsername(
@@ -155,7 +154,7 @@ public class BuiltInProcedures
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException
     {
-        ensureSelfOrAdminEnterpriseAuthSubject( username );
+        assertAdminOrSelf( username );
 
         return terminateConnectionsForValidUser( graph.getDependencyResolver(), username );
     }
@@ -172,8 +171,7 @@ public class BuiltInProcedures
         {
             return getKernelTransactions().activeTransactions().stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
-                .filter( query -> isAdminEnterpriseAuthSubject() ||
-                                  authSubject.hasUsername( query.username() ) )
+                .filter( query -> isAdminOrSelf( query.username() ) )
                 .map( catchThrown( InvalidArgumentsException.class, this::queryStatusResult ) );
         }
         catch ( UncaughtCheckedException uncaught )
@@ -257,7 +255,7 @@ public class BuiltInProcedures
             throws InvalidArgumentsException
     {
         ExecutingQuery query = pair.other();
-        if ( isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.username() ) )
+        if ( isAdminOrSelf( query.username() ) )
         {
             pair.first().markForTermination( Status.Transaction.Terminated );
             return new QueryTerminationResult( ofInternalId( query.internalQueryId() ), query.username() );
@@ -280,7 +278,7 @@ public class BuiltInProcedures
     {
         long terminatedCount = getActiveTransactions( dependencyResolver )
             .stream()
-            .filter( tx -> getUsernameFromSecurityContext( tx.securityContext() ).equals( username ) &&
+            .filter( tx -> tx.securityContext().subject().hasUsername( username ) &&
                             !tx.isUnderlyingTransaction( currentTx ) )
             .map( tx -> tx.markForTermination( Status.Transaction.Terminated ) )
             .filter( marked -> marked )
@@ -325,45 +323,38 @@ public class BuiltInProcedures
             .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
             .entrySet()
             .stream()
-            .map( entry -> new ConnectionResult( entry.getKey(), entry.getValue() )
-        );
+            .map( entry -> new ConnectionResult( entry.getKey(), entry.getValue() ) );
     }
 
-    private boolean isAdminEnterpriseAuthSubject()
+    private boolean isAdmin()
     {
-        if ( authSubject instanceof EnterpriseAuthSubject )
+        if ( securityContext instanceof CouldBeAdmin )
         {
-            EnterpriseAuthSubject enterpriseAuthSubject = (EnterpriseAuthSubject) authSubject;
-            return enterpriseAuthSubject.isAdmin();
+            return ((CouldBeAdmin) securityContext).isAdmin();
         }
-        else
-        {
-            return false;
-        }
+        return false;
     }
 
-    private EnterpriseAuthSubject ensureAdminEnterpriseAuthSubject()
+    private void assertAdmin()
     {
-        EnterpriseAuthSubject enterpriseAuthSubject = EnterpriseAuthSubject.castOrFail( authSubject );
-        if ( !enterpriseAuthSubject.isAdmin() )
+        if ( !isAdmin() )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
-        return enterpriseAuthSubject;
     }
 
-    private EnterpriseAuthSubject ensureSelfOrAdminEnterpriseAuthSubject( String username )
+    private boolean isAdminOrSelf( String username )
+    {
+        return isAdmin() || securityContext.subject().hasUsername( username );
+    }
+
+    private void assertAdminOrSelf( String username )
             throws InvalidArgumentsException
     {
-        EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
-
-        if ( subject.isAdmin() || subject.hasUsername( username ) )
+        if ( !isAdminOrSelf( username ) )
         {
-            subject.ensureUserExistsWithName( username );
-            return subject;
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
-
-        throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 
     private QueryStatusResult queryStatusResult( ExecutingQuery q )

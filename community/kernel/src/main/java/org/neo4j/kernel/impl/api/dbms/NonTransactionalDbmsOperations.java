@@ -47,10 +47,7 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     ) throws ProcedureException
     {
         BasicContext ctx = new BasicContext();
-        if ( securityContext instanceof AuthSubject )
-        {
-            ctx.put( Context.AUTH_SUBJECT, (AuthSubject) securityContext );
-        }
+        ctx.put( Context.SECURITY_CONTEXT, securityContext );
         return procedures.callProcedure( ctx, name, input );
     }
 
@@ -62,11 +59,7 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     ) throws ProcedureException
     {
         BasicContext ctx = new BasicContext();
-        if ( securityContext instanceof AuthSubject )
-        {
-            AuthSubject subject = (AuthSubject) securityContext;
-            ctx.put( Context.AUTH_SUBJECT, subject );
-        }
+        ctx.put( Context.SECURITY_CONTEXT, securityContext );
         return procedures.callFunction( ctx, name, input );
     }
 }

@@ -591,7 +591,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
     // above the original allowed procedure mode. We enforce this by checking if mode is already an overridden mode.
     val allowance = transactionalContext.securityContext.allows()
-    allowed.nonEmpty && !allowance.isOverridden && transactionalContext.securityContext.allowsProcedureWith(allowed)
+    allowed.nonEmpty && !allowance.isOverridden && allowance.allowsProcedureWith(allowed)
   }
 
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {

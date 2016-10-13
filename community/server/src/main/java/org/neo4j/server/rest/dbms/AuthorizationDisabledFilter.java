@@ -57,6 +57,6 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
 
     protected SecurityContext getAuthDisabledSecurityContext()
     {
-        return AuthSubject.AUTH_DISABLED;
+        return SecurityContext.AUTH_DISABLED;
     }
 }

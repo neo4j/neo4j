@@ -74,8 +74,8 @@ public class UserService
             return output.notFound();
         }
 
-        AuthSubject authSubject = getSubjectFromPrincipal( principal );
-        UserManager userManager = userManagerSupplier.getUserManager( authSubject );
+        SecurityContext securityContext = getSecurityContextFromPrincipal( principal );
+        UserManager userManager = userManagerSupplier.getUserManager( securityContext );
 
         try
         {
@@ -123,14 +123,14 @@ public class UserService
 
         try
         {
-            AuthSubject subject = getSubjectFromPrincipal( principal );
-            if ( subject == null )
+            SecurityContext securityContext = getSecurityContextFromPrincipal( principal );
+            if ( securityContext == null )
             {
                 return output.notFound();
             }
             else
             {
-                UserManager userManager = userManagerSupplier.getUserManager( subject );
+                UserManager userManager = userManagerSupplier.getUserManager( securityContext );
                 userManager.setUserPassword( username, newPassword, false );
             }
         }
@@ -146,15 +146,11 @@ public class UserService
         return output.ok();
     }
 
-    private AuthSubject getSubjectFromPrincipal( Principal principal )
+    private SecurityContext getSecurityContextFromPrincipal( Principal principal )
     {
         if ( principal instanceof DelegatingPrincipal )
         {
-            SecurityContext securityContext = ((DelegatingPrincipal) principal).getSecurityContext();
-            if ( securityContext instanceof AuthSubject )
-            {
-                return (AuthSubject) securityContext;
-            }
+            return ((DelegatingPrincipal) principal).getSecurityContext();
         }
         return null;
     }

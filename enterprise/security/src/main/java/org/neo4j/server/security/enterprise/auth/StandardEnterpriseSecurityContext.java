@@ -29,9 +29,9 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.Allowance;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 
-class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
+class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
 {
     private static final String SCHEMA_READ_WRITE = "schema:read,write";
     private static final String READ_WRITE = "data:read,write";
@@ -39,73 +39,13 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 
     private final MultiRealmAuthManager authManager;
     private final ShiroSubject shiroSubject;
-    private Collection<AuthorizationInfo> authorizationInfoSnapshot;
+    private final NeoShiroSubject neoShiroSubject;
 
-    static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
-    {
-        return EnterpriseAuthSubject.castOrFail( StandardEnterpriseAuthSubject.class, authSubject );
-    }
-
-    StandardEnterpriseAuthSubject( MultiRealmAuthManager authManager, ShiroSubject shiroSubject )
+    StandardEnterpriseSecurityContext( MultiRealmAuthManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;
-    }
-
-    @Override
-    public void ensureUserExistsWithName( String username ) throws InvalidArgumentsException
-    {
-        getUserManager().getUser( username );
-    }
-
-    @Override
-    public void logout()
-    {
-        shiroSubject.logout();
-    }
-
-    @Override
-    public AuthenticationResult getAuthenticationResult()
-    {
-        return shiroSubject.getAuthenticationResult();
-    }
-
-    @Override
-    public void setPassword( String password, boolean requirePasswordChange )
-            throws IOException, InvalidArgumentsException
-    {
-        getUserManager().setUserPassword( shiroSubject.getPrincipal().toString(), password, requirePasswordChange );
-        // Make user authenticated if successful
-        setPasswordChangeNoLongerRequired();
-    }
-
-    @Override
-    public void setPasswordChangeNoLongerRequired()
-    {
-        if ( getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
-        {
-            shiroSubject.setAuthenticationResult( AuthenticationResult.SUCCESS );
-        }
-    }
-
-    @Override
-    public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
-    {
-        for ( AuthorizationInfo info : authorizationInfoSnapshot )
-        {
-            Collection<String> roles = info.getRoles();
-            if ( roles != null )
-            {
-                for ( int i = 0; i < roleNames.length; i++ )
-                {
-                    if ( roles.contains( roleNames[i] ) )
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        this.neoShiroSubject = new NeoShiroSubject();
     }
 
     public EnterpriseUserManager getUserManager()
@@ -120,10 +60,9 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
     }
 
     @Override
-    public boolean hasUsername( String username )
+    public AuthSubject subject()
     {
-        Object principal = shiroSubject.getPrincipal();
-        return principal != null && username != null && username.equals( principal );
+        return neoShiroSubject;
     }
 
     @Override
@@ -133,33 +72,15 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
                 shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ ),
                 shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ_WRITE ),
                 shiroSubject.isAuthenticated() && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
-                shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED
+                shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED,
+                authManager.getAuthorizationInfo( shiroSubject.getPrincipals() )
             );
     }
 
     @Override
-    public String name()
+    public String toString()
     {
-        String username = username();
-        if ( username.isEmpty() )
-        {
-            return "<missing_principal>";
-        }
-        return username;
-    }
-
-    @Override
-    public String username()
-    {
-        Object principal = shiroSubject.getPrincipal();
-        if ( principal != null )
-        {
-            return principal.toString();
-        }
-        else
-        {
-            return ""; // Should never clash with a valid username
-        }
+        return defaultString( "enterprise-security-context" );
     }
 
     private static class StandardAllowance implements Allowance
@@ -168,14 +89,16 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
         private final boolean allowsWrites;
         private final boolean allowsSchemaWrites;
         private final boolean passwordChangeRequired;
+        private Collection<AuthorizationInfo> authorizationInfoSnapshot;
 
-        StandardAllowance( boolean allowsReads, boolean allowsWrites, boolean allowsSchemaWrites, boolean
-                passwordChangeRequired )
+        StandardAllowance( boolean allowsReads, boolean allowsWrites, boolean allowsSchemaWrites,
+                boolean passwordChangeRequired, Collection<AuthorizationInfo> authorizationInfo )
         {
             this.allowsReads = allowsReads;
             this.allowsWrites = allowsWrites;
             this.allowsSchemaWrites = allowsSchemaWrites;
             this.passwordChangeRequired = passwordChangeRequired;
+            authorizationInfoSnapshot = authorizationInfo;
         }
 
         @Override
@@ -197,6 +120,26 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
         }
 
         @Override
+        public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
+        {
+            for ( AuthorizationInfo info : authorizationInfoSnapshot )
+            {
+                Collection<String> roles = info.getRoles();
+                if ( roles != null )
+                {
+                    for ( int i = 0; i < roleNames.length; i++ )
+                    {
+                        if ( roles.contains( roleNames[i] ) )
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
         public AuthorizationViolationException onViolation( String msg )
         {
             if ( passwordChangeRequired )
@@ -213,6 +156,61 @@ class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
         public String name()
         {
             return "";
+        }
+    }
+
+    private class NeoShiroSubject implements AuthSubject
+    {
+
+        @Override
+        public String username()
+        {
+            Object principal = shiroSubject.getPrincipal();
+            if ( principal != null )
+            {
+                return principal.toString();
+            }
+            else
+            {
+                return ""; // Should never clash with a valid username
+            }
+        }
+
+        @Override
+        public void logout()
+        {
+            shiroSubject.logout();
+        }
+
+        @Override
+        public AuthenticationResult getAuthenticationResult()
+        {
+            return shiroSubject.getAuthenticationResult();
+        }
+
+        @Override
+        public void setPassword( String password, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
+        {
+            getUserManager().setUserPassword( (String) shiroSubject.getPrincipal(), password, requirePasswordChange );
+            // Make user authenticated if successful
+            setPasswordChangeNoLongerRequired();
+        }
+
+        @Override
+        public void setPasswordChangeNoLongerRequired()
+        {
+            if ( getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
+            {
+                shiroSubject.setAuthenticationResult( AuthenticationResult.SUCCESS );
+            }
+        }
+
+        @Override
+        public boolean hasUsername( String username )
+        {
+            Object principal = shiroSubject.getPrincipal();
+            return principal != null && username != null && username.equals( principal );
         }
     }
 }

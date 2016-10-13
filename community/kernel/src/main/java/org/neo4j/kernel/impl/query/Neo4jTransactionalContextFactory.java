@@ -106,7 +106,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     {
         Statement statement = statementSupplier.get();
         GraphDatabaseQueryService queryService = queryServiceSupplier.get();
-        QuerySource querySourceWithUserName = querySource.append( tx.securityContext().name() );
+        QuerySource querySourceWithUserName = querySource.append( tx.securityContext().subject().username() );
         ExecutingQuery executingQuery = statement.queryRegistration().startQueryExecution(
             querySourceWithUserName, queryText, queryParameters
         );

@@ -21,18 +21,16 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.DoubleLatch;
@@ -43,10 +41,10 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
-public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<EnterpriseAuthSubject>
+public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<EnterpriseSecurityContext>
 {
     @Override
-    protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer( Map<String, String> config ) throws Throwable
+    protected NeoInteractionLevel<EnterpriseSecurityContext> setUpNeoServer( Map<String, String> config ) throws Throwable
     {
         return new EmbeddedInteraction( config );
     }
@@ -68,11 +66,11 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
     @Test
     public void shouldNotKillQueryIfNotAuthenticated() throws Throwable
     {
-        EnterpriseAuthSubject authy = createFakeAnonymousEnterpriseAuthSubject();
+        EnterpriseSecurityContext authy = createFakeAnonymousEnterpriseSecurityContext();
 
         GraphDatabaseFacade graph = neo.getLocalGraph();
         DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransaction<EnterpriseAuthSubject> read = new ThreadedTransaction<>( neo, latch );
+        ThreadedTransaction<EnterpriseSecurityContext> read = new ThreadedTransaction<>( neo, latch );
         String query = read.execute( threading, authy, "UNWIND [1,2,3] AS x RETURN x" );
 
         latch.startAndWaitForAllToStart();
@@ -80,7 +78,7 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
         String id = extractQueryId( query );
 
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.explicit, AuthSubject.ANONYMOUS ) )
+                .beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.none() ) )
         {
             graph.execute( tx, "CALL dbms.killQuery('" + id + "')", Collections.emptyMap() );
             throw new AssertionError( "Expected exception to be thrown" );
@@ -94,75 +92,28 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
         read.closeAndAssertSuccess();
     }
 
-    private EnterpriseAuthSubject createFakeAnonymousEnterpriseAuthSubject()
+    private EnterpriseSecurityContext createFakeAnonymousEnterpriseSecurityContext()
     {
-        return new EnterpriseAuthSubject()
+        return new EnterpriseSecurityContext()
         {
+            AnonymousContext inner = AnonymousContext.none();
+
             @Override
-            public Allowance allows()
+            public AuthSubject subject()
             {
-                return ANONYMOUS.allows();
+                return inner.subject();
             }
 
             @Override
-            public String name()
+            public Allowance allows()
             {
-                return ANONYMOUS.name();
+                return inner.allows();
             }
 
             @Override
             public boolean isAdmin()
             {
                 return false;
-            }
-
-            @Override
-            public void logout()
-            {
-                ANONYMOUS.logout();
-            }
-
-            @Override
-            public AuthenticationResult getAuthenticationResult()
-            {
-                return ANONYMOUS.getAuthenticationResult();
-            }
-
-            @Override
-            public void setPassword( String password, boolean requirePasswordChange )
-                    throws IOException, InvalidArgumentsException
-            {
-                ANONYMOUS.setPassword( password, requirePasswordChange );
-
-            }
-
-            @Override
-            public void setPasswordChangeNoLongerRequired()
-            {
-            }
-
-            @Override
-            public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
-            {
-                return ANONYMOUS.allowsProcedureWith( roleNames );
-            }
-
-            @Override
-            public String username()
-            {
-                return ANONYMOUS.username();
-            }
-
-            @Override
-            public boolean hasUsername( String username )
-            {
-                return ANONYMOUS.hasUsername( username );
-            }
-
-            @Override
-            public void ensureUserExistsWithName( String username ) throws InvalidArgumentsException
-            {
-                ANONYMOUS.ensureUserExistsWithName( username );
             }
         };
     }

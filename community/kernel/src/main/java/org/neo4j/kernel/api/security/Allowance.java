@@ -48,6 +48,12 @@ public interface Allowance
                     {
                         return false;
                     }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
+                    {
+                        return false;
+                    }
                 },
 
         /** No reading or writing allowed because of expired credentials. */
@@ -67,6 +73,12 @@ public interface Allowance
 
                     @Override
                     public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
                     {
                         return false;
                     }
@@ -109,6 +121,12 @@ public interface Allowance
                     {
                         return false;
                     }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
+                    {
+                        return false;
+                    }
                 },
 
         /** Allows writing data */
@@ -128,6 +146,12 @@ public interface Allowance
 
                     @Override
                     public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
                     {
                         return false;
                     }
@@ -153,6 +177,12 @@ public interface Allowance
                     {
                         return false;
                     }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
+                    {
+                        return false;
+                    }
                 },
 
         /** Allows all operations. */
@@ -175,6 +205,12 @@ public interface Allowance
                     {
                         return true;
                     }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
+                    {
+                        return true;
+                    }
                 };
 
         @Override
@@ -187,6 +223,17 @@ public interface Allowance
     boolean allowsReads();
     boolean allowsWrites();
     boolean allowsSchemaWrites();
+
+    /**
+     * Determines whether this mode allows execution of a procedure with the parameter string array in its
+     * procedure annotation.
+     *
+     * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
+     * @return <tt>true</tt> if this mode allows the execution of a procedure with the given parameter string array
+     * encoding permission
+     * @throws InvalidArgumentsException
+     */
+    boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException;
 
     AuthorizationViolationException onViolation( String msg );
     String name();

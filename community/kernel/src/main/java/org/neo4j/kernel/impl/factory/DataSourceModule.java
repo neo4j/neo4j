@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
 import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.kernel.api.KernelAPI;
@@ -83,7 +84,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.kernel.api.proc.Context.AUTH_SUBJECT;
+import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
@@ -386,7 +387,7 @@ public class DataSourceModule
         procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
 
         // Security procedures
-        procedures.registerComponent( AuthSubject.class, ctx -> ctx.getOrElse( AUTH_SUBJECT, AuthSubject.ANONYMOUS ) );
+        procedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ) );
 
         // Edition procedures
         try

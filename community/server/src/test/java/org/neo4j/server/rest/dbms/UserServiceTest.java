@@ -30,13 +30,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.BasicAuthSubject;
+import org.neo4j.server.security.auth.BasicSecurityContext;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -64,7 +64,7 @@ public class UserServiceTest
     protected final UserRepository userRepository = new InMemoryUserRepository();
 
     protected UserManagerSupplier userManagerSupplier;
-    protected AuthSubject neo4jSubject;
+    protected SecurityContext neo4jContext;
     protected Principal neo4jPrinciple;
 
     protected void setupAuthManagerAndSubject()
@@ -73,7 +73,7 @@ public class UserServiceTest
                 mock( AuthenticationStrategy.class), new InMemoryUserRepository() );
 
         userManagerSupplier = basicAuthManager;
-        neo4jSubject = new BasicAuthSubject( basicAuthManager, NEO4J_USER, AuthenticationResult.SUCCESS );
+        neo4jContext = new BasicSecurityContext( basicAuthManager, NEO4J_USER, AuthenticationResult.SUCCESS );
     }
 
     @Before
@@ -81,7 +81,7 @@ public class UserServiceTest
     {
         userRepository.create( NEO4J_USER );
         setupAuthManagerAndSubject();
-        neo4jPrinciple = new DelegatingPrincipal( "neo4j", neo4jSubject );
+        neo4jPrinciple = new DelegatingPrincipal( "neo4j", neo4jContext );
     }
 
     @After

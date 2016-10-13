@@ -25,7 +25,8 @@ import java.util.Set;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.enterprise.api.security.CouldBeAdmin;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
@@ -34,14 +35,16 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 
 class PersonalUserManager implements EnterpriseUserManager
 {
-    private final EnterpriseUserManager userManager;
-    private final AuthSubject authSubject;
-    private final SecurityLog securityLog;
+    private EnterpriseUserManager userManager;
+    private SecurityContext securityContext;
+    private AuthSubject authSubject;
+    private SecurityLog securityLog;
 
-    PersonalUserManager( EnterpriseUserManager userManager, AuthSubject authSubject, SecurityLog securityLog )
+    PersonalUserManager( EnterpriseUserManager userManager, SecurityContext securityContext, SecurityLog securityLog )
     {
         this.userManager = userManager;
-        this.authSubject = authSubject;
+        this.securityContext = securityContext;
+        this.authSubject = securityContext.subject();
         this.securityLog = securityLog;
     }
 
@@ -342,9 +345,9 @@ class PersonalUserManager implements EnterpriseUserManager
 
     private void assertAdmin() throws AuthorizationViolationException
     {
-        if ( authSubject instanceof EnterpriseAuthSubject )
+        if ( securityContext instanceof CouldBeAdmin )
         {
-            if ( ((EnterpriseAuthSubject) authSubject).isAdmin() )
+            if ( ((CouldBeAdmin) securityContext).isAdmin() )
             {
                 return;
             }

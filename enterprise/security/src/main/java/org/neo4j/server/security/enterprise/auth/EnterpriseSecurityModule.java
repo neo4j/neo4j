@@ -33,11 +33,11 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -55,7 +55,7 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.time.Clocks;
 
-import static org.neo4j.kernel.api.proc.Context.AUTH_SUBJECT;
+import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 @Service.Implementation( SecurityModule.class )
 public class EnterpriseSecurityModule extends SecurityModule
@@ -91,12 +91,14 @@ public class EnterpriseSecurityModule extends SecurityModule
         // Register procedures
         procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
         procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager );
+        procedures.registerComponent( EnterpriseSecurityContext.class,
+                ctx -> asEnterprise( ctx.get( SECURITY_CONTEXT ) ) );
 
         if ( config.get( SecuritySettings.native_authentication_enabled )
              || config.get( SecuritySettings.native_authorization_enabled ) )
         {
             procedures.registerComponent( EnterpriseUserManager.class,
-                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( AUTH_SUBJECT ) ) ) );
+                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ) );
             procedures.registerProcedure( UserManagementProcedures.class, true );
         }
         else
@@ -107,14 +109,14 @@ public class EnterpriseSecurityModule extends SecurityModule
         procedures.registerProcedure( SecurityProcedures.class, true );
     }
 
-    private EnterpriseAuthSubject asEnterprise( AuthSubject authSubject )
+    private EnterpriseSecurityContext asEnterprise( SecurityContext securityContext )
     {
-        if ( authSubject instanceof EnterpriseAuthSubject )
+        if ( securityContext instanceof EnterpriseSecurityContext )
         {
-            return ((EnterpriseAuthSubject) authSubject);
+            return ((EnterpriseSecurityContext) securityContext);
         }
         // TODO: better handling of this possible cast failure
-        throw new RuntimeException( "Expected EnterpriseAuthSubject, got " + authSubject.getClass().getName() );
+        throw new RuntimeException( "Expected EnterpriseSecurityContext, got " + securityContext.getClass().getName() );
     }
 
     public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,

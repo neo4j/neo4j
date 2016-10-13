@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
-public interface AuthSubject extends SecurityContext
+public interface AuthSubject
 {
     void logout();
 
@@ -53,14 +53,20 @@ public interface AuthSubject extends SecurityContext
     boolean hasUsername( String username );
 
     /**
-     * Ensure that the provided username is the name of an existing user known to the system.
-     *
-     * @param username a username
-     * @throws InvalidArgumentsException if the provided user name is not the name of an existing user
+     * Get the username associated with the auth subject
+     * @return the username
      */
-    default void ensureUserExistsWithName( String username ) throws InvalidArgumentsException {
-        throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
-    }
+    String username();
+
+//    /**
+//     * Ensure that the provided username is the name of an existing user known to the system.
+//     *
+//     * @param username a username
+//     * @throws InvalidArgumentsException if the provided user name is not the name of an existing user
+//     */
+//    default void ensureUserExistsWithName( String username ) throws InvalidArgumentsException {
+//        throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
+//    }
 
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
@@ -97,15 +103,50 @@ public interface AuthSubject extends SecurityContext
         }
 
         @Override
-        public Allowance allows()
+        public String username()
         {
-            return null;
+            return ""; // Should never clash with a valid username
+        }
+
+    };
+
+    /**
+     * Implementation to use when authentication is disabled. Allows everything.
+     */
+    AuthSubject AUTH_DISABLED = new AuthSubject()
+    {
+        @Override
+        public String username()
+        {
+            return ""; // Should never clash with a valid username
         }
 
         @Override
-        public String name()
+        public void logout()
         {
-            return "<anonymous>";
+        }
+
+        @Override
+        public AuthenticationResult getAuthenticationResult()
+        {
+            return AuthenticationResult.SUCCESS;
+        }
+
+        @Override
+        public void setPassword( String password, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
+        {
+        }
+
+        @Override
+        public void setPasswordChangeNoLongerRequired()
+        {
+        }
+
+        @Override
+        public boolean hasUsername( String username )
+        {
+            return false;
         }
     };
 }

@@ -22,9 +22,9 @@ package org.neo4j.kernel.api.security;
 /** Controls the capabilities of a KernelTransaction. */
 public class AnonymousContext implements SecurityContext
 {
-    final Allowance allowance;
+    private final Allowance allowance;
 
-    public AnonymousContext( Allowance allowance )
+    private AnonymousContext( Allowance allowance )
     {
         this.allowance = allowance;
     }
@@ -49,9 +49,10 @@ public class AnonymousContext implements SecurityContext
         return new AnonymousContext( Allowance.Static.WRITE_ONLY );
     }
 
-    public static AnonymousContext authDisabled()
+    @Override
+    public AuthSubject subject()
     {
-        return new AnonymousContext( Allowance.Static.FULL );
+        return AuthSubject.ANONYMOUS;
     }
 
     @Override
@@ -61,8 +62,8 @@ public class AnonymousContext implements SecurityContext
     }
 
     @Override
-    public String name()
+    public String toString()
     {
-        return allowance.toString();
+        return defaultString( "anonymous" );
     }
 }

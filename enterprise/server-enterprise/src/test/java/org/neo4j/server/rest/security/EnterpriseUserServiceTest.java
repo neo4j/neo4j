@@ -45,7 +45,7 @@ public class EnterpriseUserServiceTest extends UserServiceTest
 
         ShiroSubject shiroSubject = mock( ShiroSubject.class );
         when( shiroSubject.getPrincipal() ).thenReturn( "neo4j" );
-        neo4jSubject = authManagerRule.makeSubject( shiroSubject );
+        neo4jContext = authManagerRule.makeSecurityContext( shiroSubject );
     }
 
     @Test

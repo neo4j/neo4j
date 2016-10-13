@@ -214,7 +214,7 @@ public class KernelStatement implements TxStateHolder, Statement
 
     final String username()
     {
-        return transaction.securityContext().username();
+        return transaction.securityContext().subject().username();
     }
 
     final ExecutingQueryList executingQueryList()
@@ -255,7 +255,8 @@ public class KernelStatement implements TxStateHolder, Statement
         if ( !allows.apply( allowance ) )
         {
             throw allowance.onViolation(
-                    String.format( "%s operations are not allowed for '%s'.", mode, transaction.securityContext().name() ) );
+                    String.format( "%s operations are not allowed for '%s'.", mode, transaction.securityContext()
+                            .subject().username() ) );
         }
     }
 }

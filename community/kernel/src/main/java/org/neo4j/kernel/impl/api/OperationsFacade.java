@@ -1498,7 +1498,8 @@ public class OperationsFacade
         Allowance allowance = tx.securityContext().allows();
         if ( !allowance.allowsReads() )
         {
-            throw allowance.onViolation( format( "Read operations are not allowed for '%s'.", tx.securityContext().name() ) );
+            throw allowance.onViolation( format( "Read operations are not allowed for '%s'.",
+                    tx.securityContext().subject().username() ) );
         }
         return callProcedure( name, input, new RestrictedAllowance( tx.securityContext().allows(), Allowance.Static
                 .READ ) );
@@ -1516,7 +1517,8 @@ public class OperationsFacade
         Allowance allowance = tx.securityContext().allows();
         if ( !allowance.allowsWrites() )
         {
-            throw allowance.onViolation( format( "Write operations are not allowed for '%s'.", tx.securityContext().name() ) );
+            throw allowance.onViolation( format( "Write operations are not allowed for '%s'.",
+                    tx.securityContext().subject().username() ) );
         }
         return callProcedure( name, input, new RestrictedAllowance( tx.securityContext().allows(), Allowance.Static.WRITE ) );
     }
@@ -1533,7 +1535,8 @@ public class OperationsFacade
         Allowance allowance = tx.securityContext().allows();
         if ( !allowance.allowsSchemaWrites() )
         {
-            throw allowance.onViolation( format( "Schema operations are not allowed for '%s'.", tx.securityContext().name() ) );
+            throw allowance.onViolation( format( "Schema operations are not allowed for '%s'.",
+                    tx.securityContext().subject().username() ) );
         }
         return callProcedure( name, input, new RestrictedAllowance( tx.securityContext().allows(), Allowance.Static.FULL ) );
     }
@@ -1550,7 +1553,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
 
-        final SecurityContext procedureSecurityContext = securityContextWithAllowance( override );
+        final SecurityContext procedureSecurityContext = SecurityContext.frozen( tx.securityContext(), override );
         final RawIterator<Object[],ProcedureException> procedureCall;
         try ( KernelTransaction.Revertable ignore = tx.overrideWith( procedureSecurityContext ) )
         {
@@ -1581,24 +1584,6 @@ public class OperationsFacade
         };
     }
 
-    private SecurityContext securityContextWithAllowance( final Allowance override )
-    {
-        return new SecurityContext() {
-
-            @Override
-            public Allowance allows()
-            {
-                return override;
-            }
-
-            @Override
-            public String name()
-            {
-                return "";
-            }
-        };
-    }
-
     @Override
     public Object functionCall( QualifiedName name, Object[] arguments ) throws ProcedureException
     {
@@ -1624,7 +1609,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
 
-        try ( KernelTransaction.Revertable ignore = tx.overrideWith( securityContextWithAllowance( mode ) ) )
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( SecurityContext.frozen( tx.securityContext(), mode )) )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );

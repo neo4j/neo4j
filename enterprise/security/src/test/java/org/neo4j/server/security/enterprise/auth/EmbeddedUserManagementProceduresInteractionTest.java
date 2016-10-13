@@ -22,15 +22,15 @@ package org.neo4j.server.security.enterprise.auth;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class EmbeddedUserManagementProceduresInteractionTest extends AuthProceduresInteractionTestBase<EnterpriseAuthSubject>
+public class EmbeddedUserManagementProceduresInteractionTest extends AuthProceduresInteractionTestBase<EnterpriseSecurityContext>
 {
     @Override
-    protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer( Map<String, String> config )
+    protected NeoInteractionLevel<EnterpriseSecurityContext> setUpNeoServer( Map<String, String> config )
             throws Throwable
     {
         return new EmbeddedInteraction( config );

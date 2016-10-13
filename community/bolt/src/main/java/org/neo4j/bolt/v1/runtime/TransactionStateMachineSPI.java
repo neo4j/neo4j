@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -88,9 +89,9 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( AuthSubject authSubject )
+    public KernelTransaction beginTransaction( SecurityContext securityContext )
     {
-        db.beginTransaction( KernelTransaction.Type.explicit, authSubject );
+        db.beginTransaction( KernelTransaction.Type.explicit, securityContext );
         return txBridge.getKernelTransactionBoundToThisThread( false );
     }
 
@@ -114,11 +115,11 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
 
     @Override
     public BoltResultHandle executeQuery( String querySource,
-            AuthSubject authSubject,
+            SecurityContext securityContext,
             String statement,
             Map<String,Object> params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
     {
-        InternalTransaction internalTransaction = queryService.beginTransaction( implicit, authSubject );
+        InternalTransaction internalTransaction = queryService.beginTransaction( implicit, securityContext );
         QuerySource sourceDetails = new QuerySource( "bolt-session", querySource );
         TransactionalContext transactionalContext =
                 contextFactory.newContext( sourceDetails, internalTransaction, statement, params );

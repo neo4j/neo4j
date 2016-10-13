@@ -22,12 +22,14 @@ package org.neo4j.server.security.enterprise.auth;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Procedure;
 
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
@@ -40,14 +42,17 @@ public class SecurityProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
     public Stream<UserManagementProcedures.UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
-        return Stream.of( userResultForName( authSubject.username() ) );
+        return Stream.of( userResultForName( securityContext.subject().username() ) );
     }
 
     @Description( "Clears authentication and authorization cache." )
     @Procedure( name = "dbms.security.clearAuthCache", mode = DBMS )
     public void clearAuthenticationCache()
     {
-        ensureAdminAuthSubject();
+        if ( !securityContext.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
         authManager.clearAuthCache();
     }
 }

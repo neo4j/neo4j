@@ -19,52 +19,39 @@
  */
 package org.neo4j.kernel.enterprise.api.security;
 
-import java.util.Map;
+import org.neo4j.kernel.api.security.Allowance;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-
-public interface EnterpriseAuthManager extends AuthManager
+/**
+ * A logged in user.
+ */
+public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
 {
-    void clearAuthCache();
-
-    @Override
-    EnterpriseSecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
-
-    /**
-     * Implementation that does no authentication.
-     */
-    EnterpriseAuthManager NO_AUTH = new EnterpriseAuthManager()
+    EnterpriseSecurityContext AUTH_DISABLED = new EnterpriseSecurityContext()
     {
         @Override
-        public EnterpriseSecurityContext login( Map<String,Object> authToken )
+        public AuthSubject subject()
         {
-            return EnterpriseSecurityContext.AUTH_DISABLED;
+            return AuthSubject.AUTH_DISABLED;
         }
 
         @Override
-        public void init() throws Throwable
+        public Allowance allows()
         {
+            return Allowance.Static.FULL;
         }
 
         @Override
-        public void start() throws Throwable
+        public String toString()
         {
+            return defaultString( "enterprise-auth-disabled" );
         }
 
         @Override
-        public void stop() throws Throwable
+        public boolean isAdmin()
         {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-        }
-
-        @Override
-        public void clearAuthCache()
-        {
+            return true;
         }
     };
 }

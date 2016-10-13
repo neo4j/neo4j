@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 
 public class TransactionStateMachine implements StatementProcessor
@@ -145,7 +145,7 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         if ( statement.equalsIgnoreCase( BEGIN ) )
                         {
-                            ctx.currentTransaction = spi.beginTransaction( ctx.authSubject );
+                            ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
 
                             if ( params.containsKey( "bookmark" ) )
                             {
@@ -181,7 +181,7 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                         else
                         {
-                            ctx.currentTransaction = spi.beginTransaction( ctx.authSubject );
+                            ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
                             BoltResultHandle resultHandle = execute( ctx, spi, statement, params );
                             ctx.currentResultHandle = resultHandle;
                             ctx.currentResult = resultHandle.start();
@@ -337,7 +337,7 @@ public class TransactionStateMachine implements StatementProcessor
                                                   Map<String,Object> params, ThrowingAction<KernelException> onFail )
             throws QueryExecutionKernelException
     {
-        return spi.executeQuery( ctx.querySource, ctx.authSubject, statement, params, onFail );
+        return spi.executeQuery( ctx.querySource, ctx.securityContext, statement, params, onFail );
     }
 
     /**
@@ -353,8 +353,8 @@ public class TransactionStateMachine implements StatementProcessor
 
     static class MutableTransactionState
     {
-        /** The current session auth state to be used for starting transactions */
-        final AuthSubject authSubject;
+        /** The current session security context to be used for starting transactions */
+        final SecurityContext securityContext;
 
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
@@ -380,7 +380,7 @@ public class TransactionStateMachine implements StatementProcessor
         private MutableTransactionState( AuthenticationResult authenticationResult, Clock clock )
         {
             this.clock = clock;
-            this.authSubject = authenticationResult.getAuthSubject();
+            this.securityContext = authenticationResult.getSecurityContext();
         }
     }
 
@@ -390,7 +390,7 @@ public class TransactionStateMachine implements StatementProcessor
 
         long newestEncounteredTxId();
 
-        KernelTransaction beginTransaction( AuthSubject authSubject );
+        KernelTransaction beginTransaction( SecurityContext securityContext );
 
         void bindTransactionToCurrentThread( KernelTransaction tx );
 
@@ -399,7 +399,7 @@ public class TransactionStateMachine implements StatementProcessor
         boolean isPeriodicCommit( String query );
 
         BoltResultHandle executeQuery( String querySource,
-                AuthSubject authSubject,
+                SecurityContext securityContext,
                 String statement,
                 Map<String,Object> params,
                 ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException;

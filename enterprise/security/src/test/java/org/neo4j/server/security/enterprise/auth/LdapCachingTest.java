@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -119,7 +119,7 @@ public class LdapCachingTest
     public void shouldCacheAuthorizationInfo() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
+        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
         mike.allows().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
@@ -134,7 +134,7 @@ public class LdapCachingTest
     public void shouldInvalidateAuthorizationCacheAfterTTL() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
+        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
         mike.allows().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 

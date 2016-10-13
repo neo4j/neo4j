@@ -19,36 +19,20 @@
  */
 package org.neo4j.kernel.api.security;
 
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-
 /** Controls the capabilities of a KernelTransaction. */
 public interface SecurityContext
 {
     Allowance allows();
-    String name();
+    AuthSubject subject();
 
-    /**
-     * Determines whether this mode allows execution of a procedure with the parameter string array in its
-     * procedure annotation.
-     *
-     * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
-     * @return <tt>true</tt> if this mode allows the execution of a procedure with the given parameter string array
-     * encoding permission
-     * @throws InvalidArgumentsException
-     */
-    default boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException
+    default String defaultString( String name )
     {
-        return false;
-    }
-
-    default String username()
-    {
-        return ""; // Should never clash with a valid username
+        return String.format( "%s{ securityContext=%s, allowance=%s }", name, subject().username(), allows() );
     }
 
     /** Allows all operations. */
-    SecurityContext AUTH_DISABLED = new SecurityContext() {
-
+    SecurityContext AUTH_DISABLED = new SecurityContext()
+    {
         @Override
         public Allowance allows()
         {
@@ -56,9 +40,44 @@ public interface SecurityContext
         }
 
         @Override
-        public String name()
+        public String toString()
         {
-            return "auth-disabled";
+            return defaultString( "auth-disabled" );
+        }
+
+        @Override
+        public AuthSubject subject()
+        {
+            return AuthSubject.AUTH_DISABLED;
         }
     };
+
+    static SecurityContext frozen( SecurityContext context, Allowance allowance )
+    {
+        return frozen( context.subject(), allowance );
+    }
+
+    static SecurityContext frozen( AuthSubject subject, Allowance allowance )
+    {
+        return new SecurityContext()
+        {
+            @Override
+            public Allowance allows()
+            {
+                return allowance;
+            }
+
+            @Override
+            public AuthSubject subject()
+            {
+                return subject;
+            }
+
+            @Override
+            public String toString()
+            {
+                return defaultString( "frozen-security-context" );
+            }
+        };
+    }
 }

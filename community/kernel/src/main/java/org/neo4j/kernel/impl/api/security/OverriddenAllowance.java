@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.Allowance;
 
 /**
@@ -48,6 +49,12 @@ public class OverriddenAllowance extends WrappedAllowance
     public boolean allowsSchemaWrites()
     {
         return wrapping.allowsSchemaWrites();
+    }
+
+    @Override
+    public boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException
+    {
+        return false;
     }
 
     @Override
