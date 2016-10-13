@@ -6,13 +6,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-metrics-docs</artifactId>
-  <version>3.0.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j - Metrics Kernel Extension docs</name>
   <packaging>jar</packaging>
