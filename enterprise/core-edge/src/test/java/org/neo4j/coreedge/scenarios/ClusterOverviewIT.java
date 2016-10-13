@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.hamcrest.Description;
 import org.hamcrest.FeatureMatcher;
@@ -269,19 +271,14 @@ public class ClusterOverviewIT
     private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId )
             throws org.neo4j.kernel.api.exceptions.KernelException, InterruptedException
     {
-        assertEventually( "should have overview",
+        assertEventually( "should have overview from core " + coreServerId,
                 () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 60, SECONDS );
     }
 
     private Matcher<Iterable<? extends MemberInfo>> containsAllMemberAddresses(
             Collection<? extends ClusterMember>... members )
     {
-        ArrayList<ClusterMember> clusterMembers = new ArrayList<>();
-        for ( Collection<? extends ClusterMember> member : members )
-        {
-            clusterMembers.addAll( member );
-        }
-        return containsMemberAddresses( clusterMembers );
+        return containsMemberAddresses( Stream.of( members).flatMap( Collection::stream ).collect( toList() ) );
     }
 
     private Matcher<Iterable<? extends MemberInfo>> containsMemberAddresses( Collection<? extends ClusterMember> members )
@@ -338,7 +335,6 @@ public class ClusterOverviewIT
         List<MemberInfo> infos = new ArrayList<>();
         try ( Statement statement = transaction.acquireStatement() )
         {
-
             RawIterator<Object[],ProcedureException> itr = statement.procedureCallOperations().procedureCallRead(
                     procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
 
@@ -377,8 +373,7 @@ public class ClusterOverviewIT
                 return false;
             }
             MemberInfo that = (MemberInfo) o;
-            return Arrays.equals( addresses, that.addresses ) &&
-                    role == that.role;
+            return Arrays.equals( addresses, that.addresses ) && role == that.role;
         }
 
         @Override
@@ -390,7 +385,7 @@ public class ClusterOverviewIT
         @Override
         public String toString()
         {
-            return String.format( "MemberInfo{addresses='%s', role=%s}", addresses, role );
+            return String.format( "MemberInfo{addresses='%s', role=%s}", Arrays.toString( addresses ), role );
         }
     }
 }
