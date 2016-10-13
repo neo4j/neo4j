@@ -1,0 +1,20 @@
+[[rest-api-weblogic]]
+== Using the REST API from WebLogic ==
+
+When deploying an application to WebLogic you may run into problems when Neo4j responds with an HTTP status of `204 No Content`.
+The response does not contain an entity body in such cases.
+
+This can cause WebLogic to throw
+`java.net.SocketTimeoutException: Read timed out`
+for no obvious reason.
+
+If you encounter this, please try setting `UseSunHttpHandler` to `true`.
+You can for example do this by adding the following to the WebLogic startup script:
+
+[source,properties]
+----
+-DUseSunHttpHandler=true
+----
+
+The WebLogic startup script is called `bin\startWebLogic.sh` (`bin/startWebLogic.cmd` on Windows).
+

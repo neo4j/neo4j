@@ -1,0 +1,12 @@
+[[rest-api-schema-indexes]]
+== Indexing ==
+
+NOTE: This documents schema based indexes, a feature that was introduced in Neo4j 2.0, see <<rest-api-indexes>> for legacy indexing.
+
+For more details about indexes and the optional schema in Neo4j, see <<graphdb-neo4j-schema>>.
+
+include::create-index.asciidoc[]
+
+include::list-indexes-for-a-label.asciidoc[]
+
+include::drop-index.asciidoc[]

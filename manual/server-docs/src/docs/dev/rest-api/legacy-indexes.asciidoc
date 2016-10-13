@@ -1,0 +1,36 @@
+[[rest-api-indexes]]
+== Legacy indexing ==
+
+NOTE: This documents the legacy indexing in Neo4j, which is no longer the preferred way to handle indexes. Consider looking at <<rest-api-schema-indexes>>.
+
+An index can contain either nodes or relationships.
+
+NOTE: To create an index with default configuration, simply start using it by adding nodes/relationships to it. It will then be automatically created for you.
+
+What default configuration means depends on how you have configured your database.
+If you haven't changed any indexing configuration, it means the indexes will be using a Lucene-based backend.
+
+All the examples below show you how to do operations on node indexes, but all of them are just as applicable
+to relationship indexes. Simple change the "node" part of the URL to "relationship".
+
+If you want to customize the index settings, see <<rest-api-create-node-index-with-configuration>>.
+
+include::create-node-index.asciidoc[]
+
+include::create-node-index-with-configuration.asciidoc[]
+
+include::delete-node-index.asciidoc[]
+
+include::list-node-indexes.asciidoc[]
+
+include::add-node-to-index.asciidoc[]
+
+include::remove-all-entries-with-a-given-node-from-an-index.asciidoc[]
+
+include::remove-all-entries-with-a-given-node-and-key-from-an-index.asciidoc[]
+
+include::remove-all-entries-with-a-given-node,-key-and-value-from-an-index.asciidoc[]
+
+include::find-node-by-exact-match.asciidoc[]
+
+include::find-node-by-query.asciidoc[]

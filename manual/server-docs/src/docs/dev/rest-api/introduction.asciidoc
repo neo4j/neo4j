@@ -1,0 +1,14 @@
+
+The Neo4j REST API is designed with discoverability in mind, so that you can start with a +GET+ on the <<rest-api-service-root>> and from there discover URIs to perform other requests.
+The examples below uses URIs in the examples; they are subject to change in the future, so for future-proofness _discover URIs where possible_, instead of relying on the current layout.
+The default representation is http://www.json.org/[json], both for responses and for data sent with +POST+/+PUT+ requests.
+
+Below follows a listing of ways to interact with the REST API. For language bindings to the REST API, see <<languages>>.
+
+To interact with the JSON interface you must explicitly set the request header +Accept:application/json+ for those requests that responds with data.
+You should also set the header +Content-Type:application/json+ if your request sends data, for example when you're creating a relationship.
+The examples include the relevant request and response headers.
+
+The server supports streaming results, with better performance and lower memory overhead.
+See <<rest-api-streaming>> for more information.
+

@@ -1,0 +1,42 @@
+[[rest-api-unique-indexes]]
+== Unique Indexing ==
+
+[NOTE]
+As of Neo4j 2.0, unique constraints have been added.
+These make Neo4j enforce the uniqueness, guaranteeing that uniqueness is maintained.
+See <<graphdb-neo4j-schema-constraints>> for details about this.
+For most cases, the unique constraints should be used rather than the features described below.
+
+For uniqueness enforcements, there are two modes:
+
+* URL Parameter `uniqueness=get_or_create`: Create a new node/relationship and index it if no existing one can be found. If an existing node/relationship is found, discard the sent data and return the existing node/relationship.
+
+* URL Parameter `uniqueness=create_or_fail`: Create a new node/relationship if no existing one can be found in the index. If an existing node/relationship is found, return a conflict error.
+
+For more information, see <<transactions-unique-nodes>>.
+
+include::get-or-create-unique-node-(create).asciidoc[]
+
+include::get-or-create-unique-node-(existing).asciidoc[]
+
+include::create-a-unique-node-or-return-fail-(create).asciidoc[]
+
+include::create-a-unique-node-or-return-fail-(fail).asciidoc[]
+
+include::add-an-existing-node-to-unique-index-(not-indexed).asciidoc[]
+
+include::add-an-existing-node-to-unique-index-(already-indexed).asciidoc[]
+
+include::get-or-create-unique-relationship-(create).asciidoc[]
+
+include::get-or-create-unique-relationship-(existing).asciidoc[]
+
+include::create-a-unique-relationship-or-return-fail-(create).asciidoc[]
+
+include::create-a-unique-relationship-or-return-fail-(fail).asciidoc[]
+
+include::add-an-existing-relationship-to-a-unique-index-(not-indexed).asciidoc[]
+
+include::add-an-existing-relationship-to-a-unique-index-(already-indexed).asciidoc[]
+
+

@@ -1,0 +1,33 @@
+[[rest-api-property-values]]
+== Property values ==
+
+The REST API allows setting properties on nodes and relationships through direct RESTful operations.
+However, there are restrictions as to what types of values can be used as property values.
+Allowed value types are as follows:
+
+* Numbers: Both integer values, with capacity as Java's Long type, and floating points, with capacity as Java's Double.
+* Booleans.
+* Strings.
+* Arrays of the basic types above.
+
+=== Arrays ===
+
+There are two important points to be made about array values.
+First, all values in the array must be of the same type.
+That means either all integers, all floats, all booleans or all strings.
+Mixing types is not currently supported.
+
+Second, storing empty arrays is only possible given certain preconditions.
+Because the JSON transfer format does not contain type information for arrays, type is inferred from the values in the array.
+If the array is empty, the Neo4j Server cannot determine the type.
+In these cases, it will check if an array is already stored for the given property, and will use the stored array's type when storing the empty array.
+If no array exists already, the server will reject the request.
+
+=== Property keys ===
+
+You can list all property keys ever used in the database. This includes and property keys you have used, but deleted.
+
+There is currently no way to tell which ones are in use and which ones are not, short of walking the entire set of properties in the database.
+
+include::list-all-property-keys.asciidoc[]
+

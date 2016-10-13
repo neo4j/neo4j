@@ -1,0 +1,6 @@
+[[rest-api-service-root]]
+== Service root ==
+
+include::get-service-root.asciidoc[]
+
+

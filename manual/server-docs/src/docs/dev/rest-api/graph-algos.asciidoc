@@ -1,0 +1,28 @@
+[[rest-api-graph-algos]]
+== Graph Algorithms ==
+
+Neo4j comes with a number of built-in graph algorithms.
+They are performed from a start node.
+The traversal is controlled by the URI and the body sent with the request.
+These are the parameters that can be used:
+
+algorithm:: The algorithm to choose. If not set, default is +shortestPath+.
+ +algorithm+ can have one of these values:
+ * +shortestPath+
+ * +allSimplePaths+
+ * +allPaths+
+ * +dijkstra+ (optionally with +cost_property+ and +default_cost+ parameters)
+
+max_depth:: The maximum depth as an integer for the algorithms like +shortestPath+, where applicable.
+Default is +1+.
+
+include::find-all-shortest-paths.asciidoc[]
+
+include::find-one-of-the-shortest-paths.asciidoc[]
+
+include::execute-a-dijkstra-algorithm-and-get-a-single-path.asciidoc[]
+
+include::execute-a-dijkstra-algorithm-with-equal-weights-on-relationships.asciidoc[]
+
+include::execute-a-dijkstra-algorithm-and-get-multiple-paths.asciidoc[]
+

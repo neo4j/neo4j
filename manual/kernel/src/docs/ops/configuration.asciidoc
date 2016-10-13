@@ -16,7 +16,7 @@ For additional configuration settings, see:
 
 include::configuration-attributes.asciidoc[]
 
-include::{importdir}/neo4j-server-docs-jar/ops/configuration-attributes.asciidoc[]
+include::{importdir}/neo4j-server-docs-docs-jar/ops/configuration-attributes.asciidoc[]
 
 include::{importdir}/neo4j-dbms-docs-jar/ops/configuration-attributes.asciidoc[]
 
