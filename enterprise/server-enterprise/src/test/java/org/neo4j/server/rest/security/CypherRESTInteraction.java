@@ -31,8 +31,13 @@ import org.neo4j.test.server.HTTP;
 
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-class CypherRESTInteraction extends RESTInteraction
+class CypherRESTInteraction extends AbstractRESTInteraction
 {
+
+    CypherRESTInteraction( Map<String,String> config ) throws IOException
+    {
+        super( config );
+    }
 
     @Override
     String commitPath()
@@ -40,9 +45,10 @@ class CypherRESTInteraction extends RESTInteraction
         return "db/data/cypher";
     }
 
-    CypherRESTInteraction( Map<String,String> config ) throws IOException
+    @Override
+    HTTP.RawPayload constructQuery( String query )
     {
-        super( config );
+        return quotedJson( " { 'query': '" + query.replace( "'", "\\'" ).replace( "\"", "\\\"" ) + "' }" );
     }
 
     @Override
@@ -55,19 +61,13 @@ class CypherRESTInteraction extends RESTInteraction
     }
 
     @Override
-    HTTP.RawPayload constructQuery( String query )
-    {
-        return quotedJson( " { 'query': '" + query.replace( "'", "\\'" ).replace( "\"", "\\\"" ) + "' }" );
-    }
-
-    @Override
     protected HTTP.Response authenticate( String principalCredentials )
     {
         return HTTP.withHeaders( HttpHeaders.AUTHORIZATION, principalCredentials )
                 .request( POST, commitURL(), constructQuery( "RETURN 1" ) );
     }
 
-    private class CypherRESTResult extends RESTResult
+    private class CypherRESTResult extends AbstractRESTResult
     {
         CypherRESTResult( JsonNode fullResult )
         {
@@ -75,7 +75,7 @@ class CypherRESTInteraction extends RESTInteraction
         }
 
         @Override
-        JsonNode getRow( JsonNode data, int i )
+        protected JsonNode getRow( JsonNode data, int i )
         {
             return data.get( i );
         }
