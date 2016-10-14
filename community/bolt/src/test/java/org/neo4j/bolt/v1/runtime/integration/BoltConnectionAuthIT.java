@@ -31,7 +31,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
-import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class BoltConnectionAuthIT
@@ -81,21 +80,30 @@ public class BoltConnectionAuthIT
     }
 
     @Test
-    public void shouldCloseConnectionAfterAuthenticationFailure() throws Throwable
+    public void shouldBeAbleToReinitializeOnAuthenticationFailureAndAck() throws Throwable
     {
-        // Given
         BoltStateMachine machine = env.newMachine( "test" );
-
-        // When... then
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.init( USER_AGENT, map(
+
+        // when
+        machine.init( USER_AGENT, map(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), recorder ) );
+        ), recorder );
+        machine.ackFailure( recorder );
 
-        // ...and
+        // when
+        machine.init( USER_AGENT, map(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "neo4j"
+        ), recorder );
+
+        // then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.Unauthorized ) );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
     }
 
     @Test

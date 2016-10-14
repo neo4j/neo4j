@@ -26,7 +26,6 @@ import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.testing.NullResponseHandler;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
@@ -60,17 +59,17 @@ public class BoltConnectionIT
     public SessionRule env = new SessionRule();
 
     @Test
-    public void shouldCloseConnectionAckFailureBeforeInit() throws Throwable
+    public void shouldAllowAckFailureBeforeInit() throws Throwable
     {
         // Given
         BoltStateMachine machine = env.newMachine( "<test>" );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.ackFailure( recorder ) );
+        machine.ackFailure( recorder );
 
         // then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
+        assertThat( recorder.nextResponse(), succeeded() );
     }
 
     @Test
