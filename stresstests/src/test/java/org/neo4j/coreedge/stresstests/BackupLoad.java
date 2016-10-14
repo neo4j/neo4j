@@ -76,9 +76,15 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
         return isConnectionException( e ) || isChannelClosedException( e );
     }
 
-    private boolean isConnectionException( RuntimeException e )
+    private boolean isConnectionException( Throwable e )
     {
-        return e.getCause() != null && e.getCause() instanceof ConnectException;
+        if ( e == null )
+        {
+            return false;
+        }
+
+        return e instanceof ConnectException || isConnectionException( e.getCause() );
+
     }
 
     private boolean isChannelClosedException( Throwable e )
