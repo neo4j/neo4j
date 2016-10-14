@@ -50,6 +50,7 @@ import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.ISet;
@@ -425,25 +426,37 @@ public class HazelcastClientTest
         }
 
         @Override
-        public Future getAsync( Object key )
+        public ICompletableFuture<Object> getAsync( Object key )
         {
             return null;
         }
 
         @Override
-        public Future putAsync( Object key, Object value )
+        public ICompletableFuture<Object> putAsync( Object key, Object value )
         {
             return null;
         }
 
         @Override
-        public Future putAsync( Object key, Object value, long ttl, TimeUnit timeunit )
+        public ICompletableFuture<Object> putAsync( Object key, Object value, long ttl, TimeUnit timeunit )
         {
             return null;
         }
 
         @Override
-        public Future removeAsync( Object key )
+        public ICompletableFuture<Void> setAsync( Object o, Object o2 )
+        {
+            return null;
+        }
+
+        @Override
+        public ICompletableFuture<Void> setAsync( Object o, Object o2, long l, TimeUnit timeUnit )
+        {
+            return null;
+        }
+
+        @Override
+        public ICompletableFuture<Object> removeAsync( Object key )
         {
             return null;
         }
@@ -551,7 +564,7 @@ public class HazelcastClientTest
         }
 
         @Override
-        public Future submitToKey( Object key, EntryProcessor entryProcessor )
+        public ICompletableFuture submitToKey( Object key, EntryProcessor entryProcessor )
         {
             return null;
         }
