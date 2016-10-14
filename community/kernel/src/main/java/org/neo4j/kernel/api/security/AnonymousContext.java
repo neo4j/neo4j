@@ -62,7 +62,7 @@ public class AnonymousContext implements SecurityContext
     }
 
     @Override
-    public SecurityContext freeze( AccessMode mode )
+    public SecurityContext withMode( AccessMode mode )
     {
         return new Frozen( subject(), mode );
     }

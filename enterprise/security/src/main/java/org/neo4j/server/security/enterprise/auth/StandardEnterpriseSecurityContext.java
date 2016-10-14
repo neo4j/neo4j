@@ -23,6 +23,10 @@ import org.apache.shiro.authz.AuthorizationInfo;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -90,7 +94,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
     }
 
     @Override
-    public EnterpriseSecurityContext freeze( AccessMode mode )
+    public EnterpriseSecurityContext withMode( AccessMode mode )
     {
         return new Frozen( neoShiroSubject, mode, isAdmin() );
     }
@@ -134,18 +138,12 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         @Override
         public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
         {
-            for ( AuthorizationInfo info : authorizationInfoSnapshot )
+            Set<String> roles = roleNames();
+            for ( int i = 0; i < roleNames.length; i++ )
             {
-                Collection<String> roles = info.getRoles();
-                if ( roles != null )
+                if ( roles.contains( roleNames[i] ) )
                 {
-                    for ( int i = 0; i < roleNames.length; i++ )
-                    {
-                        if ( roles.contains( roleNames[i] ) )
-                        {
-                            return true;
-                        }
-                    }
+                    return true;
                 }
             }
             return false;
@@ -167,7 +165,18 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         @Override
         public String name()
         {
-            return "";
+            Set<String> roles = new TreeSet<>( roleNames() );
+            return roles.isEmpty() ? "no roles" : "roles [" + String.join( ",", roles ) + "]";
+        }
+
+        private Set<String> roleNames()
+        {
+            return authorizationInfoSnapshot.stream()
+                    .flatMap( authInfo -> {
+                        Collection<String> roles = authInfo.getRoles();
+                        return roles == null ? Stream.empty() : roles.stream();
+                    } )
+                    .collect( Collectors.toSet() );
         }
     }
 

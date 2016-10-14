@@ -140,7 +140,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     {
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestAuthPlugin" ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
     }
 
     @Test
@@ -148,7 +148,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     {
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAuthPlugin" ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
     }
 
     @Test
@@ -167,14 +167,14 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertConnectionSucceeds( authToken );
         assertThat( TestCacheableAuthPlugin.getAuthInfoCallCount.get(), equalTo( 1 ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
 
         // When we log in the second time our plugin should _not_ get a call since auth info should be cached
         reconnect();
         assertConnectionSucceeds( authToken );
         assertThat( TestCacheableAuthPlugin.getAuthInfoCallCount.get(), equalTo( 1 ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
 
         // When we log in the with the wrong credentials it should fail and
         // our plugin should _not_ get a call since auth info should be cached
@@ -193,7 +193,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCombinedAuthPlugin" ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
     }
 
     @Test
@@ -206,7 +206,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", null ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
     }
 
     @Test

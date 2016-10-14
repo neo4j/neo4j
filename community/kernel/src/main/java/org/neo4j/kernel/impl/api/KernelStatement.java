@@ -255,8 +255,8 @@ public class KernelStatement implements TxStateHolder, Statement
         if ( !allows.apply( accessMode ) )
         {
             throw accessMode.onViolation(
-                    String.format( "%s operations are not allowed for '%s'.", mode, transaction.securityContext()
-                            .subject().username() ) );
+                    String.format( "%s operations are not allowed for %s.", mode,
+                            transaction.securityContext().description() ) );
         }
     }
 }

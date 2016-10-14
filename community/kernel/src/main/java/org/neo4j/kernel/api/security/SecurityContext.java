@@ -26,7 +26,12 @@ public interface SecurityContext
     AuthSubject subject();
 
     SecurityContext freeze();
-    SecurityContext freeze( AccessMode mode );
+    SecurityContext withMode( AccessMode mode );
+
+    default String description()
+    {
+        return String.format( "user '%s' with %s", subject().username(), mode().name() );
+    }
 
     default String defaultString( String name )
     {
@@ -34,18 +39,21 @@ public interface SecurityContext
     }
 
     /** Allows all operations. */
-    SecurityContext AUTH_DISABLED = new SecurityContext()
+    SecurityContext AUTH_DISABLED = new AuthDisabled(AccessMode.Static.FULL);
+
+    final class AuthDisabled implements SecurityContext
     {
-        @Override
-        public AccessMode mode()
+        private final AccessMode mode;
+
+        private AuthDisabled( AccessMode mode )
         {
-            return AccessMode.Static.FULL;
+            this.mode = mode;
         }
 
         @Override
-        public String toString()
+        public AccessMode mode()
         {
-            return defaultString( "auth-disabled" );
+            return mode;
         }
 
         @Override
@@ -55,19 +63,31 @@ public interface SecurityContext
         }
 
         @Override
+        public String toString()
+        {
+            return defaultString( "auth-disabled" );
+        }
+
+        @Override
+        public String description()
+        {
+            return "AUTH_DISABLED with " + mode.name();
+        }
+
+        @Override
         public SecurityContext freeze()
         {
             return this;
         }
 
         @Override
-        public SecurityContext freeze( AccessMode mode )
+        public SecurityContext withMode( AccessMode mode )
         {
-            return new Frozen( subject(), mode );
+            return new AuthDisabled( mode );
         }
     };
 
-    class Frozen implements SecurityContext
+    final class Frozen implements SecurityContext
     {
         private final AuthSubject subject;
         private final AccessMode mode;
@@ -97,7 +117,7 @@ public interface SecurityContext
         }
 
         @Override
-        public SecurityContext freeze( AccessMode mode )
+        public SecurityContext withMode( AccessMode mode )
         {
             return new Frozen( subject, mode );
         }

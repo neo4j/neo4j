@@ -32,10 +32,20 @@ public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
     EnterpriseSecurityContext freeze();
 
     @Override
-    EnterpriseSecurityContext freeze( AccessMode mode );
+    EnterpriseSecurityContext withMode( AccessMode mode );
 
-    EnterpriseSecurityContext AUTH_DISABLED = new EnterpriseSecurityContext()
+    EnterpriseSecurityContext AUTH_DISABLED = new AuthDisabled( AccessMode.Static.FULL );
+
+    /** Allows all operations. */
+    final class AuthDisabled implements EnterpriseSecurityContext
     {
+        private final AccessMode mode;
+
+        private AuthDisabled( AccessMode mode )
+        {
+            this.mode = mode;
+        }
+
         @Override
         public EnterpriseSecurityContext freeze()
         {
@@ -43,9 +53,9 @@ public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
         }
 
         @Override
-        public EnterpriseSecurityContext freeze( AccessMode mode )
+        public EnterpriseSecurityContext withMode( AccessMode mode )
         {
-            return new Frozen( subject(), mode, isAdmin() );
+            return new EnterpriseSecurityContext.AuthDisabled( mode );
         }
 
         @Override
@@ -57,7 +67,13 @@ public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
         @Override
         public AccessMode mode()
         {
-            return AccessMode.Static.FULL;
+            return mode;
+        }
+
+        @Override
+        public String description()
+        {
+            return "AUTH_DISABLED with " + mode().name();
         }
 
         @Override
@@ -71,9 +87,9 @@ public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
         {
             return true;
         }
-    };
+    }
 
-    class Frozen implements EnterpriseSecurityContext
+    final class Frozen implements EnterpriseSecurityContext
     {
         private final AuthSubject subject;
         private final AccessMode mode;
@@ -111,7 +127,7 @@ public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
         }
 
         @Override
-        public EnterpriseSecurityContext freeze( AccessMode mode )
+        public EnterpriseSecurityContext withMode( AccessMode mode )
         {
             return new EnterpriseSecurityContext.Frozen( subject, mode, isAdmin );
         }

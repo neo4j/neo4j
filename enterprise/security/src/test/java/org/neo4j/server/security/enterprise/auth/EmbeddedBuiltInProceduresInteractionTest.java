@@ -103,7 +103,7 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
             }
 
             @Override
-            public EnterpriseSecurityContext freeze( AccessMode mode )
+            public EnterpriseSecurityContext withMode( AccessMode mode )
             {
                 return new EnterpriseSecurityContext.Frozen( subject(), mode, isAdmin() );
             }

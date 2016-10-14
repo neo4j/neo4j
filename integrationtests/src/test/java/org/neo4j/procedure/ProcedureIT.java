@@ -612,7 +612,8 @@ public class ProcedureIT
     {
         // Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Schema operations are not allowed for 'AUTH_DISABLED restricted to WRITE'." );
+        exception.expectMessage(
+                "Schema operations are not allowed for AUTH_DISABLED with FULL restricted to WRITE." );
 
         // Give
         try ( Transaction ignore = db.beginTx() )
@@ -822,7 +823,10 @@ public class ProcedureIT
         // given
         Runnable doIt = () -> {
             Result result = db.execute( "CALL org.neo4j.procedure.unsupportedProcedure()" );
-            result.resultAsString();
+            while ( result.hasNext() )
+            {
+                result.next();
+            }
             result.close();
         };
 
@@ -1248,6 +1252,7 @@ public class ProcedureIT
         }
     }
 
+    @SuppressWarnings( "unused" )
     public static class ClassWithProcedures
     {
         @Context

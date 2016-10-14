@@ -621,7 +621,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "neo", "" );
     }
 
     //@Test
@@ -631,7 +631,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "neo", "" );
     }
 
     //@Test
@@ -658,7 +658,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings );
 
         assertAuth( "smith", "abc123ABC123" );
-        assertReadFails( "smith" );
+        assertReadFails( "smith", "" );
     }
 
     //@Test
@@ -667,7 +667,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings );
 
         assertAuth( "smith", "abc123ABC123" );
-        assertReadFails( "smith" );
+        assertReadFails( "smith", "" );
     }
 
     //------------------------------------------------------------------
@@ -685,7 +685,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "neo", "" );
     }
 
     //@Test
@@ -697,7 +697,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "neo", "" );
     }
 
     //@Test
@@ -709,7 +709,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "neo", "" );
     }
 
     //@Test
@@ -721,7 +721,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "neo", "" );
     }
 
     //-------------------------------------------------------------------------
@@ -825,7 +825,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
             // Then
             assertAuth( "tank", "abc123", "ldap" );
             assertReadSucceeds();
-            assertWriteFails( "tank" );
+            assertWriteFails( "tank", "reader" );
         }
     }
 
@@ -845,67 +845,6 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         // Clear auth cache
         adminClient.send( TransportTestUtil.chunk( run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
         assertThat( adminClient, eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    protected void assertReadSucceeds() throws Exception
-    {
-        // When
-        client.send( TransportTestUtil.chunk( run( "MATCH (n) RETURN count(n)" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives(
-                msgSuccess(),
-                msgRecord( eqRecord( greaterThanOrEqualTo( 0L ) ) ),
-                msgSuccess() ) );
-    }
-
-    protected void assertReadFails( String username ) throws Exception
-    {
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "MATCH (n) RETURN n" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives(
-                msgFailure( Status.Security.Forbidden,
-                        String.format( "Read operations are not allowed for '%s'.", username ) ) ) );
-    }
-
-    protected void assertWriteSucceeds() throws Exception
-    {
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "CREATE ()" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    protected void assertWriteFails( String username ) throws Exception
-    {
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "CREATE ()" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives(
-                msgFailure( Status.Security.Forbidden,
-                        String.format( "Write operations are not allowed for '%s'.", username ) ) ) );
-    }
-
-    protected void assertBeginTransactionSucceeds() throws Exception
-    {
-        // When
-        client.send( TransportTestUtil.chunk( run( "BEGIN" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives(
-                msgSuccess(), msgSuccess() ) );
     }
 
     private void testClearAuthCache() throws Exception
