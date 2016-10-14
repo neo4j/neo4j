@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.catchup.tx;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -34,6 +35,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.function.Predicates.awaitForever;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
@@ -57,6 +59,7 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
 
     private volatile long lastQueuedTxId;
     private volatile long lastAppliedTxId;
+    private volatile boolean stopped;
 
     public BatchingTxApplier( int maxBatchSize, Supplier<TransactionIdStore> txIdStoreSupplier,
             Supplier<TransactionCommitProcess> commitProcessSupplier, Supplier<DatabaseHealth> healthSupplier,
@@ -74,9 +77,16 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
     @Override
     public void start()
     {
+        stopped = false;
         refreshFromNewStore();
         txBatcher =
                 new TransactionQueue( maxBatchSize, ( first, last ) -> commitProcess.commit( first, NULL, EXTERNAL ) );
+    }
+
+    @Override
+    public void stop()
+    {
+        stopped = true;
     }
 
     void refreshFromNewStore()
@@ -104,15 +114,11 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
             return;
         }
 
-        try
+        awaitForever( () -> stopped || txQueue.offer( tx ), 100, TimeUnit.MILLISECONDS );
+        if ( !stopped )
         {
-            txQueue.put( tx );
             lastQueuedTxId = receivedTxId;
             monitor.txPullResponse( receivedTxId );
-        }
-        catch ( InterruptedException e )
-        {
-            log.warn( "Not expecting to be interrupted", e );
         }
     }
 
