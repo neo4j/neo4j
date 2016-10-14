@@ -68,7 +68,6 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         String result = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( createJsonFrom( definition ) )
                 .post( getSchemaIndexLabelUri( labelName ) )
@@ -100,7 +99,6 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
             public String call()
             {
                 return gen.get()
-                        .noGraph()
                         .expectedStatus( 200 )
                         .payload( createJsonFrom( definition ) )
                         .get( getSchemaIndexLabelUri( labelName ) )
@@ -167,7 +165,7 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
             @Override
             public String call() throws Exception
             {
-                return gen.get().noGraph().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity();
+                return gen.get().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity();
             }
         } );
 
@@ -194,7 +192,6 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
         assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), containsOnly( schemaIndex ) );
 
         gen.get()
-                .noGraph()
                 .expectedStatus( 204 )
                 .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) )
                 .entity();
@@ -213,7 +210,6 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         gen.get()
-                .noGraph()
                 .expectedStatus( 409 )
                 .payload( createJsonFrom( definition ) )
                 .post( getSchemaIndexLabelUri( labelName ) );
@@ -238,7 +234,6 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
         Map<String,Object> definition = map( "property_keys", asList( properties.newInstance(), properties.newInstance()) );
 
         gen.get()
-                .noGraph()
                 .expectedStatus( 400 )
                 .payload( createJsonFrom( definition ) )
                 .post( getSchemaIndexLabelUri( labels.newInstance() ) );

@@ -68,7 +68,6 @@ public class UsersIT extends ExclusiveServerTestBase
 
         // Document
         RESTDocsGenerator.ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) )
                 .get( userURL( "neo4j" ) );
@@ -91,7 +90,6 @@ public class UsersIT extends ExclusiveServerTestBase
 
         // Document
         RESTDocsGenerator.ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) )
                 .get( userURL( "neo4j" ) );
@@ -115,7 +113,6 @@ public class UsersIT extends ExclusiveServerTestBase
 
         // Document
         RESTDocsGenerator.ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) )
                 .payload( quotedJson( "{'password':'secret'}" ) )

@@ -137,7 +137,6 @@ public class SetNodePropertiesIT extends
             throws Exception
     {
         gen.get()
-                .noGraph()
                 .payload( "{\"foo\" : {\"bar\" : \"baz\"}}" )
                 .expectedStatus(
                 400 ).post( getDataUri() + "node/" );

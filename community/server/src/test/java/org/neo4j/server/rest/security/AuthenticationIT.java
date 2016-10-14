@@ -61,7 +61,6 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // Document
         RESTDocsGenerator.ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 401 )
                 .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
                 .get( dataURL() );
@@ -86,7 +85,6 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // Document
         RESTDocsGenerator.ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) )
                 .get( userURL( "neo4j" ) );
@@ -109,7 +107,6 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // Document
         RESTDocsGenerator.ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 401 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "incorrect" ) )
                 .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
@@ -136,7 +133,6 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // Document
         RESTDocsGenerator.ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 403 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) )
                 .get( dataURL() );
@@ -160,7 +156,6 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // Document
         gen.get()
-            .noGraph()
             .expectedStatus( 200 )
             .get( dataURL() );
     }

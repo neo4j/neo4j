@@ -62,7 +62,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
     {
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 201 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n {props}) RETURN n', " +
                         "'parameters': { 'props': { 'name': 'My Node' } } } ] }" ) )
@@ -87,7 +86,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
 
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN n' } ] }" ) )
                 .post( location );
@@ -111,7 +109,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
 
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN n','resultDataContents':['REST'] } ] }" ) )
                 .post( location );
@@ -149,7 +146,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
 
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ ] }" ) )
                 .post( location );
@@ -174,7 +170,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
 
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)' } ] }" ) )
                 .post( location + "/commit" );
@@ -196,7 +191,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
     {
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)' } ] }" ) )
                 .post( getDataUri() + "transaction/commit" );
@@ -217,7 +211,7 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
     public void execute_multiple_statements() throws JsonParseException
     {
         // Document
-        ResponseEntity response = gen.get().noGraph().expectedStatus( 200 )
+        ResponseEntity response = gen.get().expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)' }, "
                         + "{ 'statement': 'CREATE (n {props}) RETURN n', "
                         + "'parameters': { 'props': { 'name': 'My Node' } } } ] }" ) )
@@ -242,7 +236,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
     {
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{'statements':[{'statement':" +
                         "'CREATE ( bike:Bike { weight: 10 } ) " +
@@ -277,7 +270,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
 
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .delete( location );
 
@@ -312,7 +304,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
 
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'This is not a valid Cypher Statement.' } ] }" ) )
                 .post( location + "/commit" );
@@ -335,7 +326,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
 
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'This is not a valid Cypher Statement.' } ] }" ) )
                 .post( location );
@@ -353,7 +343,6 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
     {
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson(
                         "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)', 'includeStats': true } ] }" ) )

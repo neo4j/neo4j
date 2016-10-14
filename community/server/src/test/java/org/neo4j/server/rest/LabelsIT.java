@@ -103,7 +103,6 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
-            .noGraph()
             .expectedStatus( 400 )
             .payload( createJsonFrom( "" ) )
             .post( nodeUri + "/labels"  );
@@ -279,7 +278,6 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
         data.get();
         String uri = getLabelsUri();
         String body = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .get( uri )
                 .entity();

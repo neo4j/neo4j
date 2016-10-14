@@ -122,7 +122,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     {
         data.get();
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().description( startGraph( "remove non-existent property from relationship" ) ).noGraph()
+        gen().description( startGraph( "remove non-existent property from relationship" ) )
                 .expectedStatus( Status.NOT_FOUND.getStatusCode() )
                 .delete( getPropertiesUri( loves ) + "/non-existent" ).entity();
     }
@@ -149,7 +149,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     public void shouldReturn404WhenPropertiesRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();
-        gen().noGraph().expectedStatus( Status.NOT_FOUND.getStatusCode() )
+        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() )
                 .delete( functionalTestHelper.relationshipPropertiesUri( 1234L ) )
                 .entity();
     }
@@ -161,7 +161,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();
-        gen().noGraph().expectedStatus( Status.NOT_FOUND.getStatusCode() )
+        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() )
                 .delete(
                         functionalTestHelper.relationshipPropertiesUri( 1234L )
                                 + "/cost" )
