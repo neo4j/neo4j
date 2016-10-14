@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -39,11 +38,9 @@ import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
-import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.RoutingNetworkSession;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -586,12 +583,9 @@ public class BoltCoreEdgeIT
 
     private ClusterMember connectedServer( Session session ) throws NoSuchFieldException, IllegalAccessException
     {
-        Field connectionField = NetworkSession.class.getDeclaredField( "connection" );
-        connectionField.setAccessible( true );
-        Connection connection = (Connection) connectionField.get( session );
-
-        String host = connection.address().host();
-        int port = connection.address().port();
+        BoltServerAddress address = ((RoutingNetworkSession) session).address();
+        String host = address.host();
+        int port = address.port();
 
         return cluster.getMemberByBoltAddress( new AdvertisedSocketAddress( host, port ) );
     }
