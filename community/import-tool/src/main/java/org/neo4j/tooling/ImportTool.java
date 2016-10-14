@@ -105,7 +105,7 @@ public class ImportTool
         STORE_DIR( "into", null,
                 "<store-dir>",
                 "Database directory to import into. " + "Must not contain existing database." ),
-        DB_DIR( "database", null,
+        DB_NAME( "database", null,
                 "<database-name>",
                 "Database name to import into. " + "Must not contain existing database.", true ),
         NODE_DATA( "nodes", null,

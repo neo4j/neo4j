@@ -43,6 +43,8 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 public class ImportCommand implements AdminCommand
 {
+    public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
+
     public static class Provider extends AdminCommand.Provider
     {
         public Provider()

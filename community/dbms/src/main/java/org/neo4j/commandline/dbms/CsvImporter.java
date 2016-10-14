@@ -68,10 +68,10 @@ class CsvImporter implements Importer
 
     public static String description()
     {
-        return "--mode=csv Import a database from a collection of CSV files.\n" +
-                "--report-file <filename>\n" +
+        return "--mode=csv Import a database from a collection of CSV files.\n" + "--report-file <filename>\n" +
                 "        File name in which to store the report of the import.\n" +
-                "        Defaults to import.report in the current directory.\n" +
+                "        Defaults to " + ImportCommand.DEFAULT_REPORT_FILE_NAME +
+                " in the current directory.\n" +
                 "--nodes[:Label1:Label2]=\"<file1>,<file2>,...\"\n" +
                 "        Node CSV header and data. Multiple files will be logically seen as\n" +
                 "        one big file from the perspective of the importer. The first line\n" +
@@ -109,7 +109,8 @@ class CsvImporter implements Importer
         this.outsideWorld = outsideWorld;
         nodesFiles = extractInputFiles( args, "nodes", outsideWorld.errorStream() );
         relationshipsFiles = extractInputFiles( args, "relationships", outsideWorld.errorStream() );
-        reportFileName = args.interpretOption( "report-file", withDefault( "import.report" ), s -> s );
+        reportFileName =
+                args.interpretOption( "report-file", withDefault( ImportCommand.DEFAULT_REPORT_FILE_NAME ), s -> s );
         try
         {
             validateInputFiles( nodesFiles, relationshipsFiles );
@@ -136,15 +137,14 @@ class CsvImporter implements Importer
         File reportFile = new File( reportFileName );
 
         OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
-        Collector badCollector = badCollector( badOutput, 1000, collect( true, false, false ) );
+        Collector badCollector = badCollector( badOutput, 1000, collect( true, true, true ) );
 
         Configuration configuration = importConfiguration( null, false, config, pageSize );
         CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                 relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(), idType,
                 csvConfiguration( args, false ), badCollector, configuration.maxNumberOfProcessors() );
 
-        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(),
-                storeDir, logsDir, reportFile, fs, nodesFiles, relationshipsFiles, false,
-                input, config, badOutput, configuration );
+        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), storeDir, logsDir, reportFile, fs,
+                nodesFiles, relationshipsFiles, false, input, config, badOutput, configuration );
     }
 }

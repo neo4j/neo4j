@@ -467,7 +467,7 @@ public class ImportToolDocIT
         // WHEN
         File badFile = badFile();
         String[] arguments = arguments(
-                "--into", directory.absolutePath().getAbsolutePath(),
+                "--database", "the_database",
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships", roles.getAbsolutePath() );
@@ -530,7 +530,7 @@ public class ImportToolDocIT
         // WHEN
         File badFile = badFile();
         String[] arguments = arguments(
-                "--into", directory.absolutePath().getAbsolutePath(),
+                "--database", "the_database",
                 "--nodes", actors.getAbsolutePath(),
                 "--skip-duplicate-nodes" );
         importTool( arguments );
@@ -682,7 +682,7 @@ public class ImportToolDocIT
         String documentationArgs = StringUtils.join( cleanedArguments, " " );
         documentationArgs = documentationArgs.replace( dir + File.separator, "" )
                 .replace( directory.absolutePath().getAbsolutePath(), "path_to_target_directory" );
-        String docsCommand = "neo4j-admin import --mode=csv" + documentationArgs;
+        String docsCommand = "neo4j-admin import " + documentationArgs;
         try ( PrintStream out = new PrintStream( file( "ops", fileName ) ) )
         {
             out.println( docsCommand );
@@ -750,6 +750,6 @@ public class ImportToolDocIT
 
     private File badFile()
     {
-        return new File( directory.absolutePath(), BAD_FILE_NAME );
+        return new File( ImportCommand.DEFAULT_REPORT_FILE_NAME );
     }
 }
