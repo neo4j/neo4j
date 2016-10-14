@@ -76,6 +76,13 @@
       <scope>provided</scope>
     </dependency>
 
+   <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-core-edge</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-bolt</artifactId>
