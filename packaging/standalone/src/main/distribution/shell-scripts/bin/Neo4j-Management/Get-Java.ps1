@@ -169,7 +169,17 @@ Function Get-Java
       $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.initial_size' -Neo4jServer $Neo4jServer)
       if ($option -ne $null) {
         $mem="$($option.Value)"
-        if ($mem -notmatch '[\d]+[gGmMkK]') { $mem += "m" }
+        if ($mem -notmatch '[\d]+[gGmMkK]') {
+          $mem += "m"
+          Write-Warning @"
+WARNING: dbms.memory.heap.initial_size will require a unit suffix in a
+         future version of Neo4j. Please add a unit suffix to your
+         configuration. Example:
+
+         dbms.memory.heap.initial_size=512m
+                                          ^
+"@
+          }
         $ShellArgs += "-Xms$mem"
       }
 
@@ -177,7 +187,17 @@ Function Get-Java
       $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.max_size' -Neo4jServer $Neo4jServer)
       if ($option -ne $null) {
         $mem="$($option.Value)"
-        if ($mem -notmatch '[\d]+[gGmMkK]') { $mem += "m" }
+        if ($mem -notmatch '[\d]+[gGmMkK]') {
+          $mem += "m"
+          Write-Warning @"
+WARNING: dbms.memory.heap.max_size will require a unit suffix in a
+         future version of Neo4j. Please add a unit suffix to your
+         configuration. Example:
+
+         dbms.memory.heap.max_size=512m
+                                      ^
+"@
+          }
         $ShellArgs += "-Xmx$mem"
       }
 
