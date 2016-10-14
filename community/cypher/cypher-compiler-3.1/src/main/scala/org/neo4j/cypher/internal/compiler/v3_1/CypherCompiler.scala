@@ -236,7 +236,7 @@ case class CypherCompiler(parser: CypherParser,
 
   private def procedureDeprecationNotifications(statement: Statement): Set[InternalNotification] =
     statement.treeFold(Set.empty[InternalNotification]) {
-      case f@ResolvedCall(ProcedureSignature(name, _, _, Some(deprecatedBy), _), _, _, _, _) =>
+      case f@ResolvedCall(ProcedureSignature(name, _, _, Some(deprecatedBy), _, _), _, _, _, _) =>
         (seq) => (seq + DeprecatedProcedureNotification(f.position, name.toString, deprecatedBy), None)
     }
 

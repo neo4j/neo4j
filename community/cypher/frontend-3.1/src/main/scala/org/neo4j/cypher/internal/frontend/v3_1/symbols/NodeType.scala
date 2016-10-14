@@ -23,6 +23,8 @@ object NodeType {
   val instance = new NodeType() {
     val parentType = CTMap
     override val toString = "Node"
+    override val toNeoTypeString = "NODE?"
+
   }
 }
 

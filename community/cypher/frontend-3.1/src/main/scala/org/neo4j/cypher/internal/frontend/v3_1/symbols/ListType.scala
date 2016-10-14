@@ -33,6 +33,8 @@ object ListType {
     override def parents = innerType.parents.map(copy) ++ super.parents
 
     override val toString = s"List<$innerType>"
+    override val toNeoTypeString = s"LIST? OF ${innerType.toNeoTypeString}"
+
 
     override def isAssignableFrom(other: CypherType): Boolean = other match {
       case otherCollection: ListType =>
