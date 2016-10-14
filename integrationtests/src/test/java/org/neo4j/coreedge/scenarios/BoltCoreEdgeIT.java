@@ -19,16 +19,13 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -60,6 +57,10 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.coreedge.ClusterRule;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -213,7 +214,7 @@ public class BoltCoreEdgeIT
         {
             try
             {
-                startTheLeaderSwitching.await();
+                startTheLeaderSwitching.await( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
                 CoreClusterMember theLeader = cluster.awaitLeader();
                 switchLeader( theLeader );
             }
@@ -243,7 +244,6 @@ public class BoltCoreEdgeIT
 
                 try ( Session session = driver.session( AccessMode.WRITE ) )
                 {
-                    startTheLeaderSwitching.countDown();
                     BoltServerAddress boltServerAddress = ((RoutingNetworkSession) session).address();
 
                     seenAddresses.add( boltServerAddress );
@@ -254,6 +254,12 @@ public class BoltCoreEdgeIT
                 {
                     Thread.sleep( 100 );
                 }
+
+                /*
+                 * Having the latch release here ensures that we've done at least one pass through the loop, which means
+                 * we've completed a connection before the forced master switch.
+                 */
+                startTheLeaderSwitching.countDown();
             }
         }
         finally
