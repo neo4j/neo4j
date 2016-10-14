@@ -20,7 +20,9 @@
 package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
+
 import org.neo4j.cypher.LoadExternalResourceException;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -39,7 +41,7 @@ public class Neo4jErrorTest
         Neo4jError error = Neo4jError.from( cause );
 
         // Then
-        assertThat( error.status(), equalTo( (Status) Status.General.UnknownError ) );
+        assertThat( error.status(), equalTo( Status.General.UnknownError ) );
     }
 
     @Test
@@ -60,5 +62,19 @@ public class Neo4jErrorTest
 
         // Then
         assertThat( error.status().code().classification().shouldLog(), is( false ) );
+    }
+
+    @Test
+    public void shouldSetStatusToDatabaseUnavailableOnDatabaseShutdownException()
+    {
+        // Given
+        DatabaseShutdownException ex = new DatabaseShutdownException();
+
+        // When
+        Neo4jError error = Neo4jError.from( ex );
+
+        // Then
+        assertThat( error.status(), equalTo( Status.General.DatabaseUnavailable ) );
+        assertThat( error.cause(), equalTo( ex ) );
     }
 }

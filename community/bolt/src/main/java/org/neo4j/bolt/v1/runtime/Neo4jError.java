@@ -19,9 +19,10 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
 import java.util.UUID;
+
+import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * An error object, represents something having gone wrong that is to be signaled to the user. This is, by design, not
@@ -158,7 +159,10 @@ public class Neo4jError
             {
                 return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage(), any, isFatal );
             }
-
+            if ( cause instanceof DatabaseShutdownException )
+            {
+                return new Neo4jError( Status.General.DatabaseUnavailable, cause, isFatal );
+            }
             if (cause instanceof OutOfMemoryError)
             {
                 return new Neo4jError( Status.General.OutOfMemoryError, cause, isFatal );
