@@ -29,6 +29,6 @@ include::security.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-management-docs-jar/ops/monitoring.asciidoc[]
+include::{importdir}/neo4j-management-docs-docs-jar/ops/monitoring.asciidoc[]
 
 
