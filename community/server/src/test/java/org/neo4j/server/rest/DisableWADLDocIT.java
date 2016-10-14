@@ -19,33 +19,18 @@
  */
 package org.neo4j.server.rest;
 
+import java.net.URI;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.net.URI;
-
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.domain.GraphDbHelper;
 
 import static org.junit.Assert.assertEquals;
 
 public class DisableWADLDocIT extends AbstractRestFunctionalTestBase
 {
-    private static FunctionalTestHelper functionalTestHelper;
-    private static GraphDbHelper helper;
-
-    @BeforeClass
-    public static void setupServer() throws IOException
-    {
-        functionalTestHelper = new FunctionalTestHelper( server() );
-        helper = functionalTestHelper.getGraphDbHelper();
-    }
-
     @Test
     public void should404OnAnyUriEndinginWADL() throws Exception
     {

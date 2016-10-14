@@ -29,7 +29,6 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -138,11 +137,6 @@ public final class FunctionalTestHelper
         return relationshipUri( id ) + "/properties";
     }
 
-    String relationshipPropertyUri( long id, String key )
-    {
-        return relationshipPropertiesUri( id ) + "/" + key;
-    }
-
     public String relationshipsUri( long nodeId, String dir, String... types )
     {
         StringBuilder typesString = new StringBuilder();
@@ -157,16 +151,6 @@ public final class FunctionalTestHelper
     public String indexUri()
     {
         return dataUri() + "index/";
-    }
-
-    String nodeAutoIndexUri()
-    {
-        return indexUri() + "auto/node/";
-    }
-
-    String relationshipAutoIndexUri()
-    {
-        return indexUri() + "auto/relationship/";
     }
 
     public String nodeIndexUri()
@@ -210,49 +194,8 @@ public final class FunctionalTestHelper
         return dataUri() + "ext";
     }
 
-    String extensionUri( String name )
-    {
-        return extensionUri() + "/" + name;
-    }
-
-    String graphdbExtensionUri( String name, String method )
-    {
-        return extensionUri( name ) + "/graphdb/" + method;
-    }
-
-    String nodeExtensionUri( String name, String method, long id )
-    {
-        return extensionUri( name ) + "/node/" + id + "/" + method;
-    }
-
-    String relationshipExtensionUri( String name, String method, long id )
-    {
-        return extensionUri( name ) + "/relationship/" + id + "/" + method;
-    }
-
-    public GraphDatabaseAPI getDatabase()
-    {
-        return server.getDatabase().getGraph();
-    }
-
     public JaxRsResponse get(String path) {
         return request.get(path);
-    }
-
-    public JaxRsResponse get(String path, String data) {
-        return request.get(path, data);
-    }
-
-    public JaxRsResponse delete(String path) {
-        return request.delete(path);
-    }
-
-    public JaxRsResponse post(String path, String data) {
-        return request.post(path, data);
-    }
-
-    public void put(String path, String data) {
-        request.put(path, data);
     }
 
     public long getNodeIdFromUri( String nodeUri )
@@ -285,8 +228,4 @@ public final class FunctionalTestHelper
         return server.baseUri();
     }
 
-    public String browserUri()
-    {
-        return server.baseUri().toString() + "browser/";
-    }
 }

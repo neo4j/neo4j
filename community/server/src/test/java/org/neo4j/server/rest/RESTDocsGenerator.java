@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientRequest.Builder;
-import com.sun.jersey.api.client.ClientResponse;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -40,6 +35,11 @@ import java.util.function.Predicate;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
+import com.sun.jersey.api.client.ClientResponse;
 
 import org.neo4j.doc.tools.AsciiDocGenerator;
 import org.neo4j.function.Predicates;
@@ -103,7 +103,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     /**
      * Creates a documented test case. Finish building it by using one of these:
      * {@link #get(String)}, {@link #post(String)}, {@link #put(String)},
-     * {@link #delete(String)}, {@link #request(ClientRequest)}. To access the
+     * {@link #delete(String)}. To access the
      * response, use {@link ResponseEntity#entity} to get the entity or
      * {@link ResponseEntity#response} to get the rest of the response
      * (excluding the entity).
@@ -246,17 +246,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     {
         this.expectedHeaderFields.add( Pair.of(expectedHeaderField, Predicate.isEqual( expectedValue )) );
         return this;
-    }
-
-    /**
-     * Send a request using your own request object.
-     *
-     * @param request the request to perform
-     */
-    public ResponseEntity request( final ClientRequest request )
-    {
-        return retrieveResponse( title, description, request.getURI()
-                .toString(), expectedResponseStatus, expectedMediaType, expectedHeaderFields, request );
     }
 
     @Override

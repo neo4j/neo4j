@@ -77,9 +77,6 @@ public class ModelBuilder
         String nodeIndexName = "nodes";
         public Map<String, String> indexedNodeKeyValues = new HashMap<String, String>();
         public Map<URI, DomainEntity> indexedNodeUriToEntityMap = new HashMap<URI, DomainEntity>();
-        String relationshipIndexName = "relationships";
-        public Map<URI, DomainEntity> indexedRelationshipUriToEntityMap = new HashMap<URI, DomainEntity>();
-        public Map<String, String> indexedRelationshipKeyValues = new HashMap<String, String>();
 
         public void add( DomainEntity de )
         {
