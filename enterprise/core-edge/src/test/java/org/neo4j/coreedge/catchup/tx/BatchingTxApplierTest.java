@@ -24,6 +24,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -159,6 +161,36 @@ public class BatchingTxApplierTest
 
         // then
         verify( dbHealth ).panic( any() );
+    }
+
+    @Test( timeout = 3_000 )
+    public void shouldGiveUpQueueingOnStop() throws Throwable
+    {
+        // given
+        for ( int i = 1; i <= maxBatchSize; i++ ) // fell the queue
+        {
+            txApplier.queue( createTxWithId( startTxId + i ) );
+        }
+
+        // when
+        CountDownLatch latch = new CountDownLatch( 1 );
+        Thread thread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                latch.countDown();
+                txApplier.queue( createTxWithId( startTxId + maxBatchSize + 1 ) );
+            }
+        };
+
+        thread.start();
+
+        latch.await();
+        txApplier.stop();
+
+        // then we don't get stuck
+        thread.join();
     }
 
     private CommittedTransactionRepresentation createTxWithId( long txId )
