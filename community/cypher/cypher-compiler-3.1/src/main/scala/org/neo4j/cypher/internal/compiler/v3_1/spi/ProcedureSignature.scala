@@ -43,7 +43,10 @@ case class UserFunctionSignature(name: QualifiedName,
                                  inputSignature: IndexedSeq[FieldSignature],
                                  outputType: CypherType,
                                  deprecationInfo: Option[String],
-                                 allowed: Array[String])
+                                 allowed: Array[String],
+                                 description: Option[String]) {
+  override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
+}
 
 object QualifiedName {
   def apply(unresolved: UnresolvedCall): QualifiedName =

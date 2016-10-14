@@ -109,12 +109,29 @@ public class UserFunctionIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage(
-                "Function call does not provide the required number of arguments (1) (line 1, column 8 (offset: 7)" );
+        exception.expectMessage( String.format("Function call does not provide the required number of arguments: expected 1 got 0.%n%n" +
+                                 "Function org.neo4j.procedure.simpleArgument has signature: org.neo4j.procedure.simpleArgument(someValue :: INTEGER?) :: INTEGER?%n" +
+                                 "meaning that it expects 1 argument with type INTEGER? (line 1, column 8 (offset: 7))" ));
         // When
         try ( Transaction ignore = db.beginTx() )
         {
             db.execute( "RETURN org.neo4j.procedure.simpleArgument()" );
+        }
+    }
+
+    @Test
+    public void shouldShowDescriptionWhenMissingArguments() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( String.format("Function call does not provide the required number of arguments: expected 1 got 0.%n%n" +
+                                               "Function org.neo4j.procedure.nodeWithDescription has signature: org.neo4j.procedure.nodeWithDescription(someValue :: NODE?) :: NODE?%n" +
+                                               "meaning that it expects 1 argument with type NODE?%n" +
+                                               "Description: This is a description (line 1, column 8 (offset: 7))" ));
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "RETURN org.neo4j.procedure.nodeWithDescription()" );
         }
     }
 
