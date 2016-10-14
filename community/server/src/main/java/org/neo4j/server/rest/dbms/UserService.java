@@ -32,7 +32,6 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -45,6 +44,7 @@ import org.neo4j.server.security.auth.UserManager;
 import org.neo4j.server.security.auth.UserManagerSupplier;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getSecurityContextFromUserPrincipal;
 import static org.neo4j.server.rest.web.CustomStatusType.UNPROCESSABLE;
 
 @Path("/user")
@@ -74,7 +74,7 @@ public class UserService
             return output.notFound();
         }
 
-        SecurityContext securityContext = getSecurityContextFromPrincipal( principal );
+        SecurityContext securityContext = getSecurityContextFromUserPrincipal( principal );
         UserManager userManager = userManagerSupplier.getUserManager( securityContext );
 
         try
@@ -123,7 +123,7 @@ public class UserService
 
         try
         {
-            SecurityContext securityContext = getSecurityContextFromPrincipal( principal );
+            SecurityContext securityContext = getSecurityContextFromUserPrincipal( principal );
             if ( securityContext == null )
             {
                 return output.notFound();
@@ -144,14 +144,5 @@ public class UserService
                     new Neo4jError( e.status(), e.getMessage() ) ) );
         }
         return output.ok();
-    }
-
-    private SecurityContext getSecurityContextFromPrincipal( Principal principal )
-    {
-        if ( principal instanceof DelegatingPrincipal )
-        {
-            return ((DelegatingPrincipal) principal).getSecurityContext();
-        }
-        return null;
     }
 }

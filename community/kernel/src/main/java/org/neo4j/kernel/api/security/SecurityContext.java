@@ -30,7 +30,7 @@ public interface SecurityContext
 
     default String defaultString( String name )
     {
-        return String.format( "%s{ securityContext=%s, allowance=%s }", name, subject().username(), mode() );
+        return String.format( "%s{ username=%s, accessMode=%s }", name, subject().username(), mode() );
     }
 
     /** Allows all operations. */

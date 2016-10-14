@@ -31,20 +31,20 @@ import org.neo4j.kernel.api.security.SecurityContext;
 
 public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
 {
-    public static final SecurityContext getSecurityContextFromHttpServletRequest( HttpServletRequest request )
+    public static SecurityContext getSecurityContextFromHttpServletRequest( HttpServletRequest request )
     {
         Principal principal = request.getUserPrincipal();
         return getSecurityContextFromUserPrincipal( principal );
     }
 
-    public static final SecurityContext getSecurityContextFromHttpContext( HttpContext httpContext )
+    public static SecurityContext getSecurityContextFromHttpContext( HttpContext httpContext )
     {
         HttpRequestContext requestContext = httpContext.getRequest();
         Principal principal = requestContext.getUserPrincipal();
         return getSecurityContextFromUserPrincipal( principal );
     }
 
-    private static final SecurityContext getSecurityContextFromUserPrincipal( Principal principal )
+    public static SecurityContext getSecurityContextFromUserPrincipal( Principal principal )
     {
         if ( principal instanceof DelegatingPrincipal )
         {

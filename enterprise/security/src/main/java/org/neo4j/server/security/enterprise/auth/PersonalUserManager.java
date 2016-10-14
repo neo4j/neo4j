@@ -35,10 +35,10 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 
 class PersonalUserManager implements EnterpriseUserManager
 {
-    private EnterpriseUserManager userManager;
-    private SecurityContext securityContext;
-    private AuthSubject authSubject;
-    private SecurityLog securityLog;
+    private final EnterpriseUserManager userManager;
+    private final SecurityContext securityContext;
+    private final AuthSubject authSubject;
+    private final SecurityLog securityLog;
 
     PersonalUserManager( EnterpriseUserManager userManager, SecurityContext securityContext, SecurityLog securityLog )
     {
