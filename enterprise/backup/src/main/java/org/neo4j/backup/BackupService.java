@@ -21,6 +21,7 @@ package org.neo4j.backup;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -113,7 +114,13 @@ class BackupService
 
     BackupService()
     {
-        this( new DefaultFileSystemAbstraction(), FormattedLogProvider.toOutputStream( System.out ), new Monitors() );
+        this( System.out );
+    }
+
+    BackupService( OutputStream logDestination )
+    {
+        this( new DefaultFileSystemAbstraction(), FormattedLogProvider.toOutputStream( logDestination ),
+                new Monitors() );
     }
 
     BackupService( FileSystemAbstraction fileSystem, LogProvider logProvider, Monitors monitors )
