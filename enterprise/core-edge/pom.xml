@@ -21,7 +21,7 @@
 
 
     <scm>
-      <url>https://github.com/neo4j/neo4j/tree/3.0/enterprise/core-edge</url>
+        <url>https://github.com/neo4j/neo4j/tree/3.0/enterprise/core-edge</url>
     </scm>
 
     <licenses>
@@ -51,24 +51,24 @@
             <version>${project.version}</version>
         </dependency>
 
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-command-line</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-command-line</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-dbms</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-dbms</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-consistency-check</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-consistency-check</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
@@ -95,62 +95,62 @@
             <version>${project.version}</version>
         </dependency>
 
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-kernel</artifactId>
-        <version>${project.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-common</artifactId>
-        <version>${project.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-cypher</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-kernel</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-common</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-com</artifactId>
-          <version>${project.version}</version>
-          <type>test-jar</type>
-          <scope>test</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-com</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-enterprise-kernel</artifactId>
-        <version>${project.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-enterprise-kernel</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-security-enterprise</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-security-enterprise</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-logging</artifactId>
-        <version>${project.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-logging</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-backup</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-backup</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
@@ -192,20 +192,20 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>org.apache.commons</groupId>
-          <artifactId>commons-lang3</artifactId>
-          <scope>test</scope>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <profiles>
-      <profile>
-        <id>core-edge-tests-only</id>
-        <properties>
-          <test-phase>test</test-phase>
-          <integration-test-phase>integration-test</integration-test-phase>
-          <integration-verify-phase>verify</integration-verify-phase>
-        </properties>
-      </profile>
+        <profile>
+            <id>core-edge-tests-only</id>
+            <properties>
+                <test-phase>test</test-phase>
+                <integration-test-phase>integration-test</integration-test-phase>
+                <integration-verify-phase>verify</integration-verify-phase>
+            </properties>
+        </profile>
     </profiles>
 </project>
