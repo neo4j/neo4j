@@ -190,7 +190,7 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> edge_time_to_live =
             setting( "core_edge.edge_time_to_live", DURATION, "1m", min(60_000L) );
 
-    @Description( "Edge server 'call home' frequency"  )
+    @Description( "How often edge servers should contact core servers for refreshing database contents"  )
     public static final Setting<Long> edge_refresh_rate =
             setting( "core_edge.edge_refresh_rate", DURATION, "5s", min(5_000L) );
 
@@ -198,63 +198,93 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> cluster_routing_ttl =
             setting( "core_edge.cluster_routing_ttl", DURATION, "5m", min(1_000L) );
 
-    @Description( "NODE ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they runs out of NODE ids. " +
+            "Larger values mean less frequent requests but also result in more unused ids (and unused disk space) " +
+            "in the event of a crash." )
     public static final Setting<Integer> node_id_allocation_size =
             setting( "core_edge.node_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "RELATIONSHIP ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of RELATIONSHIP ids. Larger values mean less frequent requests but also result in more unused ids " +
+            "(and unused disk space) in the event of a crash." )
     public static final Setting<Integer> relationship_id_allocation_size =
             setting( "core_edge.relationship_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "PROPERTY ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of PROPERTY ids. Larger values mean less frequent requests but also result in more unused ids " +
+            "(and unused disk space) in the event of a crash." )
     public static final Setting<Integer> property_id_allocation_size =
             setting( "core_edge.property_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "STRING_BLOCK ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of STRING_BLOCK ids. Larger values mean less frequent requests but also result in more unused ids " +
+            "(and unused disk space) in the event of a crash." )
     public static final Setting<Integer> string_block_id_allocation_size =
             setting( "core_edge.string_block_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "ARRAY_BLOCK ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of ARRAY_BLOCK ids. Larger values mean less frequent requests but also result in more unused ids " +
+            "(and unused disk space) in the event of a crash." )
     public static final Setting<Integer> array_block_id_allocation_size =
             setting( "core_edge.array_block_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "PROPERTY_KEY_TOKEN ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of PROPERTY_KEY_TOKEN ids. Larger values mean less frequent requests but also result in more unused ids " +
+            "(and unused disk space) in the event of a crash." )
     public static final Setting<Integer> property_key_token_id_allocation_size =
             setting( "core_edge.property_key_token_id_allocation_size", INTEGER, "32" );
 
-    @Description( "PROPERTY_KEY_TOKEN_NAME ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of PROPERTY_KEY_TOKEN_NAME ids. Larger values mean less frequent requests but also result in more " +
+            "unused ids (and unused disk space) in the event of a crash." )
     public static final Setting<Integer> property_key_token_name_id_allocation_size =
             setting( "core_edge.property_key_token_name_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "RELATIONSHIP_TYPE_TOKEN ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of RELATIONSHIP_TYPE_TOKEN ids. Larger values mean less frequent requests but also result in more " +
+            "unused ids (and unused disk space) in the event of a crash." )
     public static final Setting<Integer> relationship_type_token_id_allocation_size =
             setting( "core_edge.relationship_type_token_id_allocation_size", INTEGER, "32" );
 
-    @Description( "RELATIONSHIP_TYPE_TOKEN_NAME ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of RELATIONSHIP_TYPE_TOKEN_NAME ids. Larger values mean less frequent requests but also result in more " +
+            "unused ids (and unused disk space) in the event of a crash." )
     public static final Setting<Integer> relationship_type_token_name_id_allocation_size =
             setting( "core_edge.relationship_type_token_name_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "LABEL_TOKEN ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of LABEL_TOKEN ids. Larger values mean less frequent requests but also result in more " +
+            "unused ids (and unused disk space) in the event of a crash." )
     public static final Setting<Integer> label_token_id_allocation_size =
             setting( "core_edge.label_token_id_allocation_size", INTEGER, "32" );
 
-    @Description( "LABEL_TOKEN_NAME ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of LABEL_TOKEN_NAME ids. Larger values mean less frequent requests but also result in more " +
+            "unused ids (and unused disk space) in the event of a crash." )
     public static final Setting<Integer> label_token_name_id_allocation_size =
             setting( "core_edge.label_token_name_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "NEOSTORE_BLOCK ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of NEOSTORE_BLOCK ids. Larger values mean less frequent requests but also result in more " +
+            "unused ids (and unused disk space) in the event of a crash." )
     public static final Setting<Integer> neostore_block_id_allocation_size =
             setting( "core_edge.neostore_block_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "SCHEMA ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of SCHEMA ids. Larger values mean less frequent requests but also result in more " +
+            "unused ids (and unused disk space) in the event of a crash." )
     public static final Setting<Integer> schema_id_allocation_size =
             setting( "core_edge.schema_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "NODE_LABELS ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of NODE_LABELS ids. Larger values mean less frequent requests but also result in more " +
+            "unused ids (and unused disk space) in the event of a crash." )
     public static final Setting<Integer> node_labels_id_allocation_size =
             setting( "core_edge.node_labels_id_allocation_size", INTEGER, "1024" );
 
-    @Description( "RELATIONSHIP_GROUP ID Allocation Space Size" )
+    @Description( "The size of the id allocation requests core servers will make when they run out " +
+            "of RELATIONSHIP_GROUP ids. Larger values mean less frequent requests but also result in more " +
+            "unused ids (and unused disk space) in the event of a crash." )
     public static final Setting<Integer> relationship_group_id_allocation_size =
             setting( "core_edge.relationship_group_id_allocation_size", INTEGER, "1024" );
 
