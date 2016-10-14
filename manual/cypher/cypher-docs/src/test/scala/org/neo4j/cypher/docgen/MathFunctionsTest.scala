@@ -46,7 +46,7 @@ class MathFunctionsTest extends DocumentingTest {
     graphViz()
     section("Number functions", "query-functions-numeric") {
       section("abs()", "functions-abs") {
-        p("`abs()` returns the absolute value for a number.")
+        p("`abs()` returns the absolute value of a number.")
         function("`abs( expression )`", ("expression", "A numeric expression."))
         query("MATCH (a), (e) WHERE a.name = 'Alice' AND e.name = 'Eskil' RETURN a.age, e.age, abs(a.age - e.age)",
               ResultAssertions((r) => {
@@ -267,7 +267,7 @@ class MathFunctionsTest extends DocumentingTest {
         }
       }
       section("radians()", "functions-radians") {
-        p("`radians()` returns the common logarithm (base 10) of the expression.")
+        p("`radians()` converts degrees to radians.")
         function("`radians( expression )`",
                  ("expression", "A numeric expression that represents the angle in degrees."))
         query("RETURN radians(180)", ResultAssertions((r) => {
