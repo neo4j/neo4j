@@ -35,7 +35,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
 
-public class EnterpriseAuthenticationIT extends AuthenticationDocIT
+public class EnterpriseAuthenticationIT extends AuthenticationIT
 {
     @Override
     public void startServer( boolean authEnabled ) throws IOException
