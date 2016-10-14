@@ -20,6 +20,7 @@
 package org.neo4j.commandline.admin;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import java.nio.file.Path;
 import java.util.Optional;
@@ -29,6 +30,7 @@ import org.neo4j.helpers.collection.Iterables;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.inOrder;
 
 public class AdminToolTest
 {
@@ -162,8 +164,9 @@ public class AdminToolTest
         };
         new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
                 .execute( null, null, "exception" );
-        verify( outsideWorld ).stdErrLine( "neo4j-admin exception" );
-        verify( outsideWorld ).stdErrLine( "the-usage-message" );
+        InOrder inOrder = inOrder(outsideWorld);
+        inOrder.verify( outsideWorld ).stdErrLine( "the-usage-message" );
+        inOrder.verify( outsideWorld ).stdErrLine( "neo4j-admin exception" );
         verify( outsideWorld ).exit( 1 );
     }
 
