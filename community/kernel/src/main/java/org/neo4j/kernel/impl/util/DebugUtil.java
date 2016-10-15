@@ -109,31 +109,6 @@ public class DebugUtil
         return item -> item.getClassName().equals( cls.getName() ) && item.getMethodName().equals( methodName );
     }
 
-    public static void dumpThreads( PrintStream out )
-    {
-        dumpThreads( out, true, true );
-    }
-
-    public static void dumpThreads( PrintStream out, boolean excludeSystemThreads, boolean excludeCallingThread )
-    {
-        for ( Map.Entry<Thread,StackTraceElement[]> stack : Thread.getAllStackTraces().entrySet() )
-        {
-            Thread thread = stack.getKey();
-            ThreadGroup group = thread.getThreadGroup();
-            if ( excludeSystemThreads && group != null && "system".equals( thread.getThreadGroup().getName() ) )
-            {
-                continue;
-            }
-            if ( excludeCallingThread && thread == Thread.currentThread() )
-            {
-                continue;
-            }
-
-            out.println( new CallStack( stack.getValue(), "Thread: " + stack.getKey() ) );
-            out.println();
-        }
-    }
-
     public static class StackTracer
     {
         private final Map<CallStack, AtomicInteger> uniqueStackTraces = new HashMap<>();

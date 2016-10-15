@@ -23,17 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.concurrent.CountDownLatch;
-
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class DebugUtilTest
 {
@@ -55,41 +48,6 @@ public class DebugUtilTest
     public void shouldFigureOutThatWeStartedInATest() throws Exception
     {
         new Noise().white();
-    }
-
-    @Test
-    public void shouldDumpThreads() throws Exception
-    {
-        // GIVEN
-        ByteArrayOutputStream capturedOut = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( capturedOut );
-        final CountDownLatch latch = new CountDownLatch( 1 );
-        t2.execute( new WorkerCommand<Void,Void>()
-        {
-            @Override
-            public Void doWork( Void state ) throws Exception
-            {
-                awaitLatch( latch );
-                return null;
-            }
-        } );
-        t2.get().waitUntilThreadState( Thread.State.WAITING, Thread.State.TIMED_WAITING );
-
-        // WHEN
-        DebugUtil.dumpThreads( out );
-        latch.countDown();
-        out.flush();
-        String dump = capturedOut.toString();
-
-        // THEN
-        // main
-        assertTrue( dump.contains( "main" ) );
-        assertTrue( dump.contains( DebugUtilTest.class.getName() ) );
-        assertTrue( dump.contains( testName.getMethodName() ) );
-
-        // the other thread
-        assertTrue( dump.contains( THE_OTHER_THREAD_NAME ) );
-        assertTrue( dump.contains( "doWork" ) );
     }
 
     private class Noise
