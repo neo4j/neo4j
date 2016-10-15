@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.labelscan.storestrategy;
 
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 
 import java.io.IOException;
 
@@ -28,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesAccess;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
+import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.labelscan.bitmaps.BitmapExtractor;
 import org.neo4j.kernel.api.impl.labelscan.bitmaps.LongPageIterator;
 
@@ -38,19 +42,34 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
     private final BitmapDocumentFormat format;
     private final int rangesPerPage;
     private final int[] labels;
-    private DocValuesCollector.LongValuesIterator rangesIterator;
+    private ValuesIterator rangesIterator;
+    private final boolean matchAny;
 
     PageOfRangesIterator( BitmapDocumentFormat format, IndexSearcher searcher, int rangesPerPage, Query query,
-            int... labels )
+            Occur occur, int... labels )
     {
         this.searcher = searcher;
         this.query = query;
         this.format = format;
         this.rangesPerPage = rangesPerPage;
+        this.matchAny = matchMode( occur );
         this.labels = labels;
-        if (labels.length == 0)
+        if ( labels.length == 0 )
         {
             throw new IllegalArgumentException( "At least one label required" );
+        }
+    }
+
+    private boolean matchMode( Occur occur )
+    {
+        switch ( occur )
+        {
+        case MUST:
+            return false;
+        case SHOULD:
+            return true;
+        default:
+            throw new IllegalArgumentException( "Unexpected occurrence parameter " + occur );
         }
     }
 
@@ -62,7 +81,7 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
             return null; // we are done searching with this iterator
         }
 
-        DocValuesCollector.LongValuesIterator ranges = getRanges();
+        ValuesIterator ranges = getRanges();
         int pageSize = Math.min( ranges.remaining(), rangesPerPage );
         long[] rangeMap = new long[pageSize * 2];
 
@@ -80,7 +99,7 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
         return new LongPageIterator( new BitmapExtractor( format.bitmapFormat(), rangeMap ) );
     }
 
-    private DocValuesCollector.LongValuesIterator getRanges() {
+    private ValuesIterator getRanges() {
         if ( rangesIterator != null )
         {
             return rangesIterator;
@@ -89,7 +108,8 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector();
             searcher.search( query, docValuesCollector );
-            rangesIterator = docValuesCollector.getValuesIterator( BitmapDocumentFormat.RANGE );
+            rangesIterator = docValuesCollector.getSortedValuesIterator( BitmapDocumentFormat.RANGE,
+                    new Sort( new SortField( BitmapDocumentFormat.RANGE, SortField.Type.LONG ) ) );
             return rangesIterator;
         }
         catch ( IOException e )
@@ -100,6 +120,18 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
 
     private long labeledBitmap( DocValuesAccess doc )
     {
+        if ( matchAny )
+        {
+            // OR
+            long bitmap = 0;
+            for ( int label : labels )
+            {
+                bitmap |= doc.getValue( format.label( label ) );
+            }
+            return bitmap;
+        }
+
+        // AND
         long bitmap = -1;
         for ( int label : labels )
         {

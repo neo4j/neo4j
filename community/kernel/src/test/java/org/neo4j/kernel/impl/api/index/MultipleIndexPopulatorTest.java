@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
@@ -64,10 +65,19 @@ public class MultipleIndexPopulatorTest
 
     @Mock
     private IndexStoreView indexStoreView;
+    @Mock
+    private StoreScan storeScan;
     @Mock( answer = Answers.RETURNS_MOCKS )
     private LogProvider logProvider;
     @InjectMocks
     private MultipleIndexPopulator multipleIndexPopulator;
+
+    @Before
+    public void setUp()
+    {
+        when( indexStoreView.visitNodes( any( int[].class ), any( IntPredicate.class ), any(Visitor.class),
+                any(Visitor.class) )).thenReturn( storeScan );
+    }
 
     @Test
     public void testMultiplePopulatorsCreation() throws Exception
@@ -127,8 +137,7 @@ public class MultipleIndexPopulatorTest
         multipleIndexPopulator.create();
         multipleIndexPopulator.indexAllNodes();
 
-        verify( indexStoreView ).visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
-                any( Visitor.class ), any( Visitor.class ) );
+        verify( indexStoreView ).visitNodes( any(int[].class), any( IntPredicate.class ), any( Visitor.class ), any( Visitor.class ) );
     }
 
     @Test
@@ -155,8 +164,8 @@ public class MultipleIndexPopulatorTest
         IndexPopulator populator1 = createIndexPopulator();
         IndexPopulator populator2 = createIndexPopulator();
 
-        addPopulator( populator1, 1, descriptor1 );
-        IndexPopulation population2 = addPopulator( populator2, 2, descriptor2 );
+        addPopulator( populator1, descriptor1 );
+        IndexPopulation population2 = addPopulator( populator2, descriptor2 );
 
         multipleIndexPopulator.fail( population2, getPopulatorException() );
 
@@ -173,8 +182,8 @@ public class MultipleIndexPopulatorTest
         IndexPopulator populator1 = createIndexPopulator();
         IndexPopulator populator2 = createIndexPopulator();
 
-        IndexPopulation population1 = addPopulator( populator1, 1, descriptor1 );
-        IndexPopulation population2 = addPopulator( populator2, 2, descriptor2 );
+        IndexPopulation population1 = addPopulator( populator1, descriptor1 );
+        IndexPopulation population2 = addPopulator( populator2, descriptor2 );
 
         multipleIndexPopulator.fail( population1, getPopulatorException() );
         multipleIndexPopulator.fail( population2, getPopulatorException() );
@@ -192,7 +201,7 @@ public class MultipleIndexPopulatorTest
 
         IndexPopulator populator = createIndexPopulator();
 
-        addPopulator( populator, 1, descriptor );
+        addPopulator( populator, descriptor );
 
         multipleIndexPopulator.fail( nonExistingPopulation, getPopulatorException() );
 
@@ -301,6 +310,7 @@ public class MultipleIndexPopulatorTest
 
         when( indexPopulator1.sampleResult() ).thenThrow( getSampleError() );
 
+        multipleIndexPopulator.indexAllNodes();
         multipleIndexPopulator.flipAfterPopulation();
 
         verify( indexPopulator1 ).close( false );
@@ -437,25 +447,40 @@ public class MultipleIndexPopulatorTest
     private void addPopulator( IndexPopulator indexPopulator, int id, FlippableIndexProxy flippableIndexProxy,
             FailedIndexProxyFactory failedIndexProxyFactory )
     {
+        addPopulator(multipleIndexPopulator, indexPopulator, id, flippableIndexProxy, failedIndexProxyFactory );
+    }
+
+    private void addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator, int id,
+            FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
+    {
         IndexDescriptor descriptor = mock( IndexDescriptor.class );
         when( descriptor.getLabelId() ).thenReturn( id );
         when( descriptor.getPropertyKeyId() ).thenReturn( id );
-        addPopulator( descriptor, indexPopulator, id, flippableIndexProxy, failedIndexProxyFactory );
+        addPopulator( multipleIndexPopulator, descriptor, indexPopulator, flippableIndexProxy,
+                failedIndexProxyFactory );
     }
 
-    private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id, IndexDescriptor descriptor )
+    private IndexPopulation addPopulator(IndexPopulator indexPopulator, IndexDescriptor descriptor )
     {
-        return addPopulator( descriptor, indexPopulator, id, mock( FlippableIndexProxy.class ),
+        return addPopulator( multipleIndexPopulator, indexPopulator, descriptor );
+    }
+
+    private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator,
+            IndexDescriptor descriptor )
+    {
+        return addPopulator( multipleIndexPopulator, descriptor, indexPopulator, mock( FlippableIndexProxy.class ),
                 mock( FailedIndexProxyFactory.class ) );
     }
 
-    private IndexPopulation addPopulator( IndexDescriptor descriptor, IndexPopulator indexPopulator, int id,
+    private IndexPopulation addPopulator(MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor descriptor,
+            IndexPopulator indexPopulator,
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, descriptor,
                 mock( SchemaIndexProvider.Descriptor.class ), IndexConfiguration.NON_UNIQUE,
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
+
 
     private FlippableIndexProxy addPopulator( IndexPopulator indexPopulator, int id )
     {

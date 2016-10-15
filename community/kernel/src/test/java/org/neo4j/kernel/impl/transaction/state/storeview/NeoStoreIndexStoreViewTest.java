@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
@@ -51,6 +52,8 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -74,7 +77,7 @@ public class NeoStoreIndexStoreViewTest
     private GraphDatabaseAPI graphDb;
     private NeoStoreIndexStoreView storeView;
 
-    private long labelId;
+    private int labelId;
     private int propertyKeyId;
 
     private Node alistair;
@@ -91,6 +94,7 @@ public class NeoStoreIndexStoreViewTest
         getOrCreateIds();
 
         neoStores = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+
         locks = mock( LockService.class, (Answer) invocation -> {
             Long nodeId = (Long) invocation.getArguments()[0];
             Lock lock = lockMocks.get( nodeId );
@@ -111,7 +115,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-            storeView.visitNodes( (id) -> id == labelId, (id) -> id == propertyKeyId, visitor, labelVisitor );
+            storeView.visitNodes( new int[] {labelId}, (id) -> id == propertyKeyId, visitor, labelVisitor );
 
         // when
         storeScan.run();
@@ -133,8 +137,8 @@ public class NeoStoreIndexStoreViewTest
         NodeUpdateCollectingVisitor visitor = new NodeUpdateCollectingVisitor();
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan =
-                storeView.visitNodes( (id) -> id == labelId, (id) -> id == propertyKeyId, visitor, labelVisitor );
+        StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{labelId}, (id) -> id == propertyKeyId,
+                visitor, labelVisitor );
 
         // when
         storeScan.run();
@@ -149,8 +153,7 @@ public class NeoStoreIndexStoreViewTest
         // given
         @SuppressWarnings("unchecked")
         Visitor<NodePropertyUpdates, Exception> visitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan = storeView.visitNodes(
-                (id) -> id == labelId, (id) -> id == propertyKeyId,
+        StoreScan<Exception> storeScan = storeView.visitNodes( new int[] {labelId}, (id) -> id == propertyKeyId,
                 visitor, null );
 
         // when
@@ -181,10 +184,10 @@ public class NeoStoreIndexStoreViewTest
     public void processAllNodeProperties() throws Exception
     {
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
-        NeoStoreIndexStoreView.StoreViewNodeStoreScan storeViewNodeStoreScan =
-                new NeoStoreIndexStoreView.StoreViewNodeStoreScan( neoStores.getNodeStore(), locks,
-                        neoStores.getPropertyStore(), null, propertyUpdateVisitor,
-                        id -> id == labelId, id -> true );
+        StoreViewNodeStoreScan storeViewNodeStoreScan =
+                new StoreViewNodeStoreScan( neoStores.getNodeStore(), locks,
+                        neoStores.getPropertyStore(), null, propertyUpdateVisitor, new int[]{labelId},
+                        id -> true );
 
 
         NodeRecord nodeRecord = new NodeRecord( -1 );

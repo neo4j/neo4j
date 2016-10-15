@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +36,10 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
@@ -84,7 +89,7 @@ public class BatchingMultipleIndexPopulatorTest
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
 
-        batchingPopulator.populateFromQueue( 42 );
+        batchingPopulator.populateFromQueueBatched( 42 );
 
         verify( updater, never() ).process( any() );
         verify( populator, never() ).newPopulatingUpdater( any() );
@@ -95,17 +100,25 @@ public class BatchingMultipleIndexPopulatorTest
     {
         setProperty( QUEUE_THRESHOLD_NAME, 2 );
 
+        NeoStores neoStores = mock( NeoStores.class );
+        NodeStore nodeStore = mock( NodeStore.class );
+        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
+
+        NeoStoreIndexStoreView storeView =
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
-                mock( IndexStoreView.class ), mock( ExecutorService.class ), NullLogProvider.getInstance() );
+                storeView, mock( ExecutorService.class ), NullLogProvider.getInstance() );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, 1 );
         IndexUpdater updater1 = mock( IndexUpdater.class );
         when( populator1.newPopulatingUpdater( any() ) ).thenReturn( updater1 );
 
+
         IndexPopulator populator2 = addPopulator( batchingPopulator, 2 );
         IndexUpdater updater2 = mock( IndexUpdater.class );
         when( populator2.newPopulatingUpdater( any() ) ).thenReturn( updater2 );
 
+        batchingPopulator.indexAllNodes();
         NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} );
         NodePropertyUpdate update2 = NodePropertyUpdate.add( 2, 2, "bar", new long[]{2} );
         NodePropertyUpdate update3 = NodePropertyUpdate.add( 3, 1, "baz", new long[]{1} );
@@ -364,9 +377,22 @@ public class BatchingMultipleIndexPopulatorTest
         }
 
         @Override
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+                long currentlyIndexedNodeId )
+        {
+
+        }
+
+        @Override
         public PopulationProgress getProgress()
         {
             return PopulationProgress.NONE;
+        }
+
+        @Override
+        public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+        {
+
         }
     }
 }

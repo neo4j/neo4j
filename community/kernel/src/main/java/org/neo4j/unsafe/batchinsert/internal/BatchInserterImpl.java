@@ -134,7 +134,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
@@ -142,6 +141,7 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
@@ -281,6 +281,7 @@ public class BatchInserterImpl implements BatchInserter
         relationshipTypeTokens = new BatchTokenHolder( types );
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore );
+
         indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
 
         Dependencies deps = new Dependencies();
@@ -519,8 +520,7 @@ public class BatchInserterImpl implements BatchInserter
         };
 
         InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();
-        StoreScan<IOException> storeScan = indexStoreView.visitNodes(
-                (labelId) -> PrimitiveIntCollections.contains( labelIds, labelId ),
+        StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
                 (propertyKeyId) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
                 propertyUpdateVisitor, labelUpdateVisitor );
         storeScan.run();

@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import java.util.Iterator;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
 
@@ -36,8 +34,21 @@ public interface LabelScanReader extends Resource
     PrimitiveLongIterator nodesWithLabel( int labelId );
 
     /**
+     * @param labelIds label token ids.
+     * @return node ids with any of the given label ids.
+     */
+    PrimitiveLongIterator nodesWithAnyOfLabels( int... labelIds );
+
+    /**
+     * @param labelIds label token ids.
+     * @return node ids with all of the given label ids.
+     */
+    PrimitiveLongIterator nodesWithAllLabels( int... labelIds );
+
+    /**
      * @param nodeId node id to get label ids for.
      * @return label ids for the given {@code nodeId}.
      */
     PrimitiveLongIterator labelsForNode( long nodeId );
+
 }

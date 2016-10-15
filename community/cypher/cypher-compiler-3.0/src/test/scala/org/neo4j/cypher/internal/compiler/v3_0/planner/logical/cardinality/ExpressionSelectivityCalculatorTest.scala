@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.cardinality
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, Selections}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_0.ast._

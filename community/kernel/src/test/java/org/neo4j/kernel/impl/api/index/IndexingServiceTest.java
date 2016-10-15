@@ -90,8 +90,8 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 
-import static java.lang.System.currentTimeMillis;
 import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -253,9 +253,9 @@ public class IndexingServiceTest
         //
         // (We don't get an update for value2 here because we mock a fake store that doesn't contain it
         //  just for the purpose of testing this behavior)
+        order.verify( populator ).verifyDeferredConstraints( storeView );
         order.verify( populator ).newPopulatingUpdater( storeView );
         order.verify( updater ).close();
-        order.verify( populator ).verifyDeferredConstraints( storeView );
         order.verify( populator ).sampleResult();
         order.verify( populator ).close( true );
         verifyNoMoreInteractions( updater );
@@ -1007,7 +1007,7 @@ public class IndexingServiceTest
         when( indexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) ) )
                 .thenReturn( accessor );
-        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.<File>emptyIterator() );
+        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.emptyIterator() );
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ),
                 any( LabelScanStoreProvider.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
@@ -1046,7 +1046,7 @@ public class IndexingServiceTest
 
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
-            when( mock.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
+            when( mock.visitNodes( any(int[].class), any( IntPredicate.class ),
                     any( Visitor.class ), any( Visitor.class ) ) ).thenAnswer( this );
         }
 
@@ -1078,9 +1078,23 @@ public class IndexingServiceTest
                 }
 
                 @Override
+                public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater,
+                        NodePropertyUpdate update,
+                        long currentlyIndexedNodeId )
+                {
+                    // no-op
+                }
+
+                @Override
                 public PopulationProgress getProgress()
                 {
                     return new PopulationProgress( 42, 100 );
+                }
+
+                @Override
+                public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+                {
+                    // no-op
                 }
             };
         }

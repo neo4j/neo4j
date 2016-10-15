@@ -271,6 +271,12 @@ public class IndexCRUDIT
         }
 
         @Override
+        public void configureSampling( boolean onlineSampling )
+        {
+            // nothing
+        }
+
+        @Override
         public IndexSample sampleResult()
         {
             long indexSize = 0;

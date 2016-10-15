@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
@@ -207,6 +208,6 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
 
     private static NonUniqueIndexSampler newSampler()
     {
-        return new NonUniqueIndexSampler( SAMPLING_BUFFER_SIZE_LIMIT );
+        return new DefaultNonUniqueIndexSampler( SAMPLING_BUFFER_SIZE_LIMIT );
     }
 }

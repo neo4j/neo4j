@@ -27,6 +27,8 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
@@ -91,24 +93,38 @@ public enum BitmapDocumentFormat
         return format;
     }
 
-    public long rangeOf( Document doc )
-    {
-        return Long.parseLong( doc.get( RANGE ) );
-    }
-
     public long rangeOf( IndexableField field )
     {
         return Long.parseLong( field.stringValue() );
     }
 
-    public long mapOf( Document doc, long labelId )
-    {
-        return bitmap( doc.getField( label( labelId ) ) );
-    }
-
-    public Query labelQuery( long labelId )
+    public Query labelQuery( int labelId )
     {
         return new TermQuery( new Term( LABEL, Long.toString( labelId ) ) );
+    }
+
+    /**
+     * Builds a {@link Query} suitable for returning documents of nodes having all or any
+     * (depending on {@code occur}) of the given {@code labelIds}.
+     *
+     * @param occur {@link Occur} to use in the query.
+     * @param labelIds label ids to query for.
+     * @return {@link Query} for searching for documents with (all or any) of the label ids.
+     */
+    public Query labelsQuery( Occur occur, int[] labelIds )
+    {
+        assert labelIds.length > 0;
+        if ( labelIds.length == 1 )
+        {
+            return labelQuery( labelIds[0] );
+        }
+
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
+        for ( int labelId : labelIds )
+        {
+            query.add( labelQuery( labelId ), occur );
+        }
+        return query.build();
     }
 
     public Query rangeQuery( long range )
@@ -145,11 +161,6 @@ public enum BitmapDocumentFormat
     public IndexableField labelSearchField( long label )
     {
         return new StringField( LABEL, Long.toString( label ), Field.Store.YES );
-    }
-
-    public IndexableField labelField( long key, Bitmap value )
-    {
-        return labelField( key, value.bitmap() );
     }
 
     String label( long key )

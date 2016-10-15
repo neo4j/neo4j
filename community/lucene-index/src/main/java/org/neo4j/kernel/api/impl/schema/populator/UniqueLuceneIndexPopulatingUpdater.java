@@ -64,9 +64,6 @@ public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpd
     @Override
     protected void changed( NodePropertyUpdate update )
     {
-        // sampler.increment( -1 ); // remove old vale
-        // sampler.increment( 1 ); // add new value
-
         updatedPropertyValues.add( update.getValueAfter() );
     }
 
