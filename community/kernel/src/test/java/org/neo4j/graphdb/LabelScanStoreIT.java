@@ -21,13 +21,16 @@ package org.neo4j.graphdb;
 
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -152,6 +155,26 @@ public class LabelScanStoreIT
     }
 
     @Test
+    public void retrieveNodeIdsInAscendingOrder()
+    {
+        for ( int i = 0; i < 50; i++ )
+        {
+            createLabeledNode( Labels.First, Labels.Second );
+            createLabeledNode( Labels.Second );
+            createLabeledNode( Labels.First );
+        }
+        long nodeWithThirdLabel = createLabeledNode( Labels.Third ).getId();
+
+        verifyFoundNodes( Labels.Third, "Expect to see 1 matched nodeId: " + nodeWithThirdLabel, nodeWithThirdLabel );
+
+        Node nodeById = getNodeById( 1 );
+        addLabels( nodeById, Labels.Third );
+
+        verifyFoundNodes( Labels.Third, "Expect to see 2 matched nodeIds: 1, " + nodeWithThirdLabel, 1,
+                nodeWithThirdLabel );
+    }
+
+    @Test
     public void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx() throws Exception
     {
         // Given
@@ -189,6 +212,21 @@ public class LabelScanStoreIT
                 Label label = label( "Label-" + l );
                 assertThat( "Should have founnd node when looking for label " + label,
                         single( db.findNodes( label ) ), equalTo( node ) );
+            }
+        }
+    }
+
+    private void verifyFoundNodes( Label label, String sizeMismatchMessage, long... expectedNodeIds )
+    {
+        try ( Transaction ignored = dbRule.getGraphDatabaseAPI().beginTx() )
+        {
+            ResourceIterator<Node> nodes = dbRule.getGraphDatabaseAPI().findNodes( label );
+            List<Node> nodeList = Iterators.asList( nodes );
+            assertThat( sizeMismatchMessage, nodeList, Matchers.hasSize( expectedNodeIds.length ) );
+            int index = 0;
+            for ( Node node : nodeList )
+            {
+                assertEquals( expectedNodeIds[index++], node.getId() );
             }
         }
     }
@@ -242,5 +280,20 @@ public class LabelScanStoreIT
             }
             tx.success();
         }
+    }
+
+    private Node getNodeById(long id)
+    {
+        try (Transaction ignored = dbRule.beginTx())
+        {
+            return dbRule.getNodeById( id );
+        }
+    }
+
+    private enum Labels implements Label
+    {
+        First,
+        Second,
+        Third
     }
 }

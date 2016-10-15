@@ -25,7 +25,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.junit.Assert.assertEquals;
 
-public class NonUniqueIndexSamplerTest
+public class DefaultNonUniqueIndexSamplerTest
 {
     private final String value = "aaa";
 
@@ -33,7 +33,7 @@ public class NonUniqueIndexSamplerTest
     public void shouldSampleNothing()
     {
         // given
-        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
 
         // when
         // nothing has been sampled
@@ -46,7 +46,7 @@ public class NonUniqueIndexSamplerTest
     public void shouldSampleASingleValue()
     {
         // given
-        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
 
         // when
         sampler.include( value, 2 );
@@ -59,7 +59,7 @@ public class NonUniqueIndexSamplerTest
     public void shouldSampleDuplicateValues()
     {
         // given
-        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
 
         // when
         sampler.include( value, 5 );
@@ -74,7 +74,7 @@ public class NonUniqueIndexSamplerTest
     public void shouldDivideTheSamplingInStepsNotBiggerThanBatchSize()
     {
         // given
-        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 1 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 1 );
 
         // when
         sampler.include( value, 5 );
@@ -90,7 +90,7 @@ public class NonUniqueIndexSamplerTest
     public void shouldExcludeValuesFromTheCurrentSampling1()
     {
         // given
-        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
         sampler.include( value, 5  );
         sampler.include( value, 4  );
         sampler.include( "bbb", 3  );
@@ -106,7 +106,7 @@ public class NonUniqueIndexSamplerTest
     public void shouldExcludeValuesFromTheCurrentSampling2()
     {
         // given
-        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
         sampler.include( value, 1  );
         sampler.include( value, 4  );
         sampler.include( "bbb", 1  );
@@ -122,7 +122,7 @@ public class NonUniqueIndexSamplerTest
     public void shouldDoNothingWhenExcludingAValueInAnEmptySample()
     {
         // given
-        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
 
         // when
         sampler.exclude( value, 1 );

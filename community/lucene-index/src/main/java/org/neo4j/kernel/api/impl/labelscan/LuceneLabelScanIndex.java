@@ -104,6 +104,6 @@ class LuceneLabelScanIndex extends AbstractLuceneIndex
     private LabelScanReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedLuceneLabelScanStoreReader(searchers, storageStrategy);
+        return new PartitionedLuceneLabelScanStoreReader(searchers, storageStrategy );
     }
 }

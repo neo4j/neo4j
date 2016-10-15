@@ -19,101 +19,25 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
-public class NonUniqueIndexSampler
+/**
+ * Builds index sample.
+ * It's implementation specific how sample will be build: using index directly or based on samples
+ * provided through various include/exclude calls
+ * @see DefaultNonUniqueIndexSampler
+ */
+public interface NonUniqueIndexSampler
 {
-    private final int sampleSizeLimit;
-    private final MultiSet<String> values;
+    void include( String value );
 
-    private int sampledSteps = 0;
+    void include( String value, long increment );
 
-    // kept as longs to side step overflow issues
+    void exclude( String value );
 
-    private long accumulatedUniqueValues = 0;
-    private long accumulatedSampledSize = 0;
-    private long sampleSize = 0;
+    void exclude( String value, long decrement );
 
-    public NonUniqueIndexSampler( int sampleSizeLimit )
-    {
-        this.values = new MultiSet<>( calculateInitialSetSize( sampleSizeLimit ) );
-        this.sampleSizeLimit = sampleSizeLimit;
-    }
+    IndexSample result();
 
-    public void include( String value )
-    {
-        include( value, 1 );
-    }
-
-    public void include( String value, long increment )
-    {
-        assert increment > 0;
-        if ( sampleSize >= sampleSizeLimit )
-        {
-            nextStep();
-        }
-
-        if ( values.increment( value, increment ) == increment )
-        {
-            sampleSize += value.length();
-        }
-    }
-
-    public void exclude( String value )
-    {
-        exclude( value, 1 );
-    }
-
-    public void exclude( String value, long decrement )
-    {
-        assert decrement > 0;
-        if ( values.increment( value, -decrement ) == 0 )
-        {
-            sampleSize -= value.length();
-        }
-    }
-
-    public IndexSample result()
-    {
-        return result( -1 );
-    }
-
-    public IndexSample result( int numDocs )
-    {
-        if ( !values.isEmpty() )
-        {
-            nextStep();
-        }
-
-        long uniqueValues = sampledSteps != 0 ? accumulatedUniqueValues / sampledSteps : 0;
-        long sampledSize = sampledSteps != 0 ? accumulatedSampledSize / sampledSteps : 0;
-
-        return new IndexSample( numDocs < 0 ? accumulatedSampledSize : numDocs, uniqueValues, sampledSize );
-    }
-
-    private void nextStep()
-    {
-        accumulatedUniqueValues += values.uniqueSize();
-        accumulatedSampledSize += values.size();
-        sampleSize = 0;
-
-        sampledSteps++;
-        values.clear();
-    }
-
-    /**
-     * Evaluate initial set size that evaluate initial set as log2(sampleSizeLimit) / 2 based on provided sample size
-     * limit.
-     * Minimum possible size is 1 << 10.
-     * Maximum possible size is 1 << 16.
-     *
-     * @param sampleSizeLimit specified sample size limit
-     * @return initial set size
-     */
-    private int calculateInitialSetSize( int sampleSizeLimit )
-    {
-        int basedOnSampleSize = Math.max( 10, (int) (Math.log( sampleSizeLimit ) / Math.log( 2 )) / 2 );
-        return (1 << Math.min( 16, basedOnSampleSize ));
-    }
+    IndexSample result( int numDocs );
 }
