@@ -32,6 +32,8 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.DeserializerFactory;
+
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,6 +45,7 @@ import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.IdType.INTEGER;
 
 public class InputGroupsDeserializerTest
@@ -103,15 +106,10 @@ public class InputGroupsDeserializerTest
         IdType idType = IdType.INTEGER;
         Collector badCollector = mock( Collector.class );
         Configuration config = lowBufferSize( COMMAS, false );
+        DeserializerFactory<InputNode> factory = defaultNodeDeserializer( groups, config, idType, badCollector );
         try ( InputGroupsDeserializer<InputNode> deserializer = new InputGroupsDeserializer<>(
                 data.iterator(), defaultFormatNodeFileHeader(), config, idType,
-                processors, processors, (header,stream,decorator,validator) ->
-                {
-                    InputNodeDeserialization deserialization =
-                            new InputNodeDeserialization( header, stream, groups, idType.idsAreExternal() );
-                    return new InputEntityDeserializer<>( header, stream, config.delimiter(),
-                            deserialization, decorator, validator, badCollector );
-                }, Validators.<InputNode>emptyValidator(), InputNode.class ) )
+                processors, processors, factory, Validators.<InputNode>emptyValidator(), InputNode.class ) )
         {
             // WHEN
             count( deserializer );

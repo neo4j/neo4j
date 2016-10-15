@@ -45,7 +45,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
     private final IdType idType;
     private InputIterator<ENTITY> currentInput = new InputIterator.Empty<>();
     private long previousInputsCollectivePositions;
-    private int previousInputProcessors = 1;
+    private int previousInputProcessors;
     private boolean currentInputOpen;
     private final int maxProcessors;
     private final DeserializerFactory<ENTITY> factory;
@@ -60,15 +60,15 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
     }
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,
-            Configuration config, IdType idType, int maxProcessors, int processors, DeserializerFactory<ENTITY> factory,
-            Validator<ENTITY> validator, Class<ENTITY> entityClass )
+            Configuration config, IdType idType, int maxProcessors, int initialProcessors,
+            DeserializerFactory<ENTITY> factory, Validator<ENTITY> validator, Class<ENTITY> entityClass )
     {
         super( dataFactory );
         this.headerFactory = headerFactory;
         this.config = config;
         this.idType = idType;
         this.maxProcessors = maxProcessors;
-        this.previousInputProcessors = processors;
+        this.previousInputProcessors = initialProcessors;
         this.factory = factory;
         this.validator = validator;
         this.entityClass = entityClass;
