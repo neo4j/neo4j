@@ -50,4 +50,4 @@ public class JoinFunction
         return String.join( delimiter, strings );
     }
 }
-// END SNIPPET: indexingProcedure
+// END SNIPPET: joinFunction

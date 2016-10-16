@@ -27,7 +27,7 @@ import org.neo4j.procedure.example.JoinFunction
 
 class UserDefinedFunctionTest extends DocumentingTestBase with QueryStatisticsTestSupport with HardReset {
 
-  override def section = "User-defined functions"
+  override def section = "functions"
 
   override def hardReset() = {
     super.hardReset()
