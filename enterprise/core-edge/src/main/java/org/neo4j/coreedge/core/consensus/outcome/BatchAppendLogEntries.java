@@ -62,11 +62,11 @@ public class BatchAppendLogEntries implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( InFlightMap<Long, RaftLogEntry> inFlightMap, Log log )
+    public void applyTo( InFlightMap<RaftLogEntry> inFlightMap, Log log )
     {
         for ( int i = offset; i < entries.length; i++ )
         {
-            inFlightMap.register( baseIndex + i , entries[i]);
+            inFlightMap.put( baseIndex + i , entries[i]);
         }
     }
 

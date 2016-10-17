@@ -44,25 +44,46 @@ public class TruncateLogCommandTest
         Log log = logProvider.getLog( getClass() );
         long fromIndex = 2L;
         TruncateLogCommand truncateLogCommand = new TruncateLogCommand( fromIndex );
-        InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
+        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
 
-        inFlightMap.register( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
-        inFlightMap.register( 1L, new RaftLogEntry( 1L, valueOf( 1 ) ) );
-        inFlightMap.register( 2L, new RaftLogEntry( 2L, valueOf( 2 ) ) );
-        inFlightMap.register( 3L, new RaftLogEntry( 3L, valueOf( 3 ) ) );
+        inFlightMap.put( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
+        inFlightMap.put( 1L, new RaftLogEntry( 1L, valueOf( 1 ) ) );
+        inFlightMap.put( 2L, new RaftLogEntry( 2L, valueOf( 2 ) ) );
+        inFlightMap.put( 3L, new RaftLogEntry( 3L, valueOf( 3 ) ) );
 
         //when
         truncateLogCommand.applyTo( inFlightMap, log );
 
         //then
-        assertNotNull( inFlightMap.retrieve( 0L ) );
-        assertNotNull( inFlightMap.retrieve( 1L ) );
-        assertNull( inFlightMap.retrieve( 2L ) );
-        assertNull( inFlightMap.retrieve( 3L ) );
+        assertNotNull( inFlightMap.get( 0L ) );
+        assertNotNull( inFlightMap.get( 1L ) );
+        assertNull( inFlightMap.get( 2L ) );
+        assertNull( inFlightMap.get( 3L ) );
 
         logProvider.assertAtLeastOnce( inLog( getClass() )
                 .debug( "Start truncating in-flight-map from index %d. Current map:%n%s", fromIndex, inFlightMap ) );
-        logProvider.assertAtLeastOnce( inLog( getClass() )
-                .debug( "End truncating in-flight-map at index %d", fromIndex + 1 ) );
+    }
+
+    @Test
+    public void shouldTruncateWithGaps() throws Exception
+    {
+        //given
+        long fromIndex = 1L;
+        TruncateLogCommand truncateLogCommand = new TruncateLogCommand( fromIndex );
+
+        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
+
+        inFlightMap.put( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
+        inFlightMap.put( 2L, new RaftLogEntry( 1L, valueOf( 1 ) ) );
+        inFlightMap.put( 4L, new RaftLogEntry( 2L, valueOf( 2 ) ) );
+
+        truncateLogCommand.applyTo( inFlightMap, NullLog.getInstance() );
+
+        inFlightMap.put( 1L, new RaftLogEntry( 3L, valueOf( 1 ) ) );
+        inFlightMap.put( 2L, new RaftLogEntry( 4L, valueOf( 2 ) ) );
+
+        assertNotNull( inFlightMap.get( 0L ) );
+        assertNotNull( inFlightMap.get( 1L ) );
+        assertNotNull( inFlightMap.get( 2L ) );
     }
 }

@@ -77,7 +77,7 @@ public class RaftMachineBuilder
             new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
     private CommitListener commitListener = commitIndex -> {};
-    private final InFlightMap<Long, RaftLogEntry> inFlightMap;
+    private final InFlightMap<RaftLogEntry> inFlightMap;
 
     public RaftMachineBuilder( MemberId member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
     {

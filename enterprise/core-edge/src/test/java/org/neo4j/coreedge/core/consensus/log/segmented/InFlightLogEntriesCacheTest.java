@@ -21,8 +21,8 @@ package org.neo4j.coreedge.core.consensus.log.segmented;
 
 import org.junit.Test;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -34,61 +34,58 @@ public class InFlightLogEntriesCacheTest
     @Test
     public void shouldRegisterAndUnregisterValues() throws Exception
     {
-        InFlightMap<Object,Object> entries = new InFlightMap<>();
+        InFlightMap<Object> entries = new InFlightMap<>();
 
-        List<Object> logEntryList = new LinkedList<>();
-        logEntryList.add( new Object() );
+        Map<Long, Object> logEntryList = new HashMap<>();
+        logEntryList.put(1L, new Object() );
 
-        for ( Object registeredEntry : logEntryList )
+        for ( Map.Entry<Long, Object> entry : logEntryList.entrySet() )
         {
-            entries.register( registeredEntry, registeredEntry );
+            entries.put( entry.getKey(), entry.getValue() );
         }
 
-        for ( Object expected : logEntryList )
+        for ( Map.Entry<Long, Object> entry : logEntryList.entrySet() )
         {
-            Object retrieved = entries.retrieve( expected );
-            assertEquals( expected, retrieved );
+            Object retrieved = entries.get( entry.getKey() );
+            assertEquals( entry.getValue(), retrieved );
         }
 
-        Object unexpected = new Object();
-        Object shouldBeNull = entries.retrieve( unexpected );
+        Long unexpected = 2L;
+        Object shouldBeNull = entries.get( unexpected );
         assertNull( shouldBeNull );
 
-        for ( Object expected : logEntryList )
+        for ( Map.Entry<Long, Object> entry : logEntryList.entrySet() )
         {
-            boolean wasThere = entries.unregister( expected );
+            boolean wasThere = entries.remove( entry.getKey() );
             assertEquals( true, wasThere );
         }
-
-        boolean shouldBeFalse = entries.unregister( unexpected );
-        assertFalse( shouldBeFalse );
     }
 
     @Test( expected = IllegalArgumentException.class )
     public void shouldNotReinsertValues() throws Exception
     {
-        InFlightMap<Object,Object> entries = new InFlightMap<>();
+        InFlightMap<Object> entries = new InFlightMap<>();
         Object addedObject = new Object();
-        entries.register( addedObject, addedObject );
-        entries.register( addedObject, addedObject );
+        entries.put( 1L, addedObject );
+        entries.put( 1L, addedObject );
     }
 
     @Test
     public void shouldNotReplaceRegisteredValues() throws Exception
     {
-        InFlightMap<Object,Object> cache = new InFlightMap<>();
+        InFlightMap<Object> cache = new InFlightMap<>();
         Object first = new Object();
         Object second = new Object();
 
         try
         {
-            cache.register( first, first );
-            cache.register( first, second );
+            cache.put( 1L, first );
+            cache.put( 1L, second );
             fail("Should not allow silent replacement of values");
         }
         catch ( IllegalArgumentException e )
         {
-            assertEquals( first, cache.retrieve( first ) );
+            assertEquals( first, cache.get( 1L ) );
         }
     }
 }

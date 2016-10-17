@@ -38,5 +38,5 @@ public interface RaftLogCommand
 
     void applyTo( RaftLog raftLog, Log log ) throws IOException;
 
-    void applyTo( InFlightMap<Long,RaftLogEntry> inFlightMap, Log log ) throws IOException;
+    void applyTo( InFlightMap<RaftLogEntry> inFlightMap, Log log ) throws IOException;
 }

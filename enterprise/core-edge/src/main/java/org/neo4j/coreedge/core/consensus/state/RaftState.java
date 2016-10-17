@@ -46,7 +46,7 @@ public class RaftState implements ReadableRaftState
     private final RaftMembership membership;
     private final Log log;
     private final RaftLog entryLog;
-    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
+    private final InFlightMap<RaftLogEntry> inFlightMap;
 
     private TermState termState;
     private VoteState voteState;
@@ -63,7 +63,7 @@ public class RaftState implements ReadableRaftState
                       RaftMembership membership,
                       RaftLog entryLog,
                       StateStorage<VoteState> voteStorage,
-                      InFlightMap<Long, RaftLogEntry> inFlightMap, LogProvider logProvider )
+                      InFlightMap<RaftLogEntry> inFlightMap, LogProvider logProvider )
     {
         this.myself = myself;
         this.termStorage = termStorage;

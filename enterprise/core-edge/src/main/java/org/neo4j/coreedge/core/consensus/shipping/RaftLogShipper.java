@@ -111,7 +111,7 @@ public class RaftLogShipper
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
-    private final InFlightMap<Long, RaftLogEntry> inFlightMap;
+    private final InFlightMap<RaftLogEntry> inFlightMap;
 
     private DelayedRenewableTimeoutService timeoutService;
     private RenewableTimeout timeout;
@@ -124,7 +124,7 @@ public class RaftLogShipper
     RaftLogShipper( Outbound<MemberId, RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                     ReadableRaftLog raftLog, Clock clock,
                     MemberId leader, MemberId follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
-                    int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<Long, RaftLogEntry> inFlightMap )
+                    int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<RaftLogEntry> inFlightMap )
     {
         this.outbound = outbound;
         this.catchupBatchSize = catchupBatchSize;

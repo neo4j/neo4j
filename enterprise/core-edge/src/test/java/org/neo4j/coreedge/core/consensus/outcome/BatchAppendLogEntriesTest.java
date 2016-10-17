@@ -90,14 +90,14 @@ public class BatchAppendLogEntriesTest
 
         BatchAppendLogEntries batchAppend = new BatchAppendLogEntries( baseIndex, offset, entries );
 
-        InFlightMap<Long,RaftLogEntry> cache = new InFlightMap<>();
+        InFlightMap<RaftLogEntry> cache = new InFlightMap<>();
 
         //when
         batchAppend.applyTo( cache, log );
 
         //then
-        assertNull( cache.retrieve( 0L ) );
-        assertNotNull( cache.retrieve( 1L ) );
-        assertNotNull( cache.retrieve( 2L ) );
+        assertNull( cache.get( 0L ) );
+        assertNotNull( cache.get( 1L ) );
+        assertNotNull( cache.get( 2L ) );
     }
 }
