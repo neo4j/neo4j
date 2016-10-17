@@ -30,7 +30,7 @@ public interface CacheSlots
         int SLOT_LABEL_FIELD = 1;
     }
 
-    interface NextRelationhip
+    interface NextRelationship
     {
         int SLOT_FIRST_IN_SOURCE = 0;
         int SLOT_FIRST_IN_TARGET = 1;

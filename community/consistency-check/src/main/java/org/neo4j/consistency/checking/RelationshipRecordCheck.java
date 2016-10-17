@@ -604,7 +604,7 @@ public class RelationshipRecordCheck extends
                 }
                 else
                 {
-                    if ( !referred.inUse() )
+                    if ( !referenceShouldBeSkipped( record, referred.getId(), records ) && !referred.inUse() )
                     {
                         engine.report().notUsedRelationshipReferencedInChain( referred );
                     }
