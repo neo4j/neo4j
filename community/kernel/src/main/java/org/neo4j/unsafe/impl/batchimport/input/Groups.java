@@ -38,7 +38,7 @@ public class Groups
      * This method also prevents mixing global and non-global groups, i.e. if first call is {@code null},
      * then consecutive calls have to specify {@code null} name as well. The same holds true for non-null values.
      */
-    public Group getOrCreate( String name )
+    public synchronized Group getOrCreate( String name )
     {
         boolean global = name == null;
         if ( globalMode == null )
