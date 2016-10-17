@@ -70,10 +70,13 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     static final String TASK_QUEUE_SIZE_NAME = "task_queue_size";
     static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
     static final String BATCH_SIZE_NAME = "batch_size";
+    static final String MAXIMUM_NUMBER_OF_WORKERS_NAME = "population_workers_maximum";
 
     private static final String EOL = System.lineSeparator();
     private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";
 
+    private final int MAXIMUM_NUMBER_OF_WORKERS = FeatureToggles.getInteger( getClass(), MAXIMUM_NUMBER_OF_WORKERS_NAME,
+            Runtime.getRuntime().availableProcessors() - 1 );
     private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME,
             getNumberOfPopulationWorkers() * 2 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
@@ -139,9 +142,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     @Override
     public String toString()
     {
-        String updatesString = batchedUpdates.entrySet()
+        String updatesString = batchedUpdates.values()
                 .stream()
-                .map( entry -> entry.getKey() + " - " + entry.getValue().size() + " updates" )
+                .map( entry -> entry.size() + " updates" )
                 .collect( joining( ", ", "[", "]" ) );
 
         return "BatchingMultipleIndexPopulator{activeTasks=" + activeTasks + ", executor=" + executor + ", " +
@@ -329,9 +332,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      *
      * @return number of threads that will be used for index population
      */
-    private static int getNumberOfPopulationWorkers()
+    private int getNumberOfPopulationWorkers()
     {
-        return Math.max( 2, Runtime.getRuntime().availableProcessors() - 1 );
+        return Math.max( 2, MAXIMUM_NUMBER_OF_WORKERS );
     }
 
     /**
@@ -378,7 +381,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
             {
                 delegate.run();
                 log.info( "Completed node store scan. " +
-                          "Flushing all pending deletes." + EOL + BatchingMultipleIndexPopulator.this );
+                          "Flushing all pending updates." + EOL + BatchingMultipleIndexPopulator.this );
                 flushAll();
             }
             catch ( Throwable scanError )
