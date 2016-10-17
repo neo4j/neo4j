@@ -25,6 +25,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +41,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -113,6 +115,47 @@ public class Neo4jPackTest
         assertThat( unpacked, instanceOf( Map.class ) );
         Map<String,Object> unpackedMap = (Map<String,Object>) unpacked;
         assertThat( unpackedMap, equalTo( ALICE.getAllProperties() ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldFailWhenTryingToPackAndUnpackMapStreamContainingNullKeys() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.packMapStreamHeader();
+
+        HashMap<String,Object> map = new HashMap<>();
+        map.put(null, 42L);
+        map.put("foo", 1337L);
+        for ( Map.Entry<String,Object> entry : map.entrySet() )
+        {
+            packer.pack( entry.getKey() );
+            packer.pack( entry.getValue() );
+        }
+        packer.packEndOfStream();
+
+        // Expect
+        exception.expect( BoltIOException.class );
+        exception.expectMessage( "Value `null` is not supported as key in maps, must be a non-nullable string." );
+
+        // When
+        unpacked( output.bytes() );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldFailWhenNullKeysInMaps() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        HashMap<String,Object> map = new HashMap<>();
+        map.put(null, 42L);
+        map.put("foo", 1337L);
+        packer.pack( map );
+        assertTrue( packer.hasErrors() );
     }
 
     @SuppressWarnings( "unchecked" )

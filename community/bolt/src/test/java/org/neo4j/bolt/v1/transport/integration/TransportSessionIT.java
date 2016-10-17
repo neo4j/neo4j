@@ -24,10 +24,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Collection;
+import java.util.HashMap;
 
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
@@ -417,6 +419,32 @@ public class TransportSessionIT
             bytes[i] = (byte) ints[i];
         }
         return bytes;
+    }
+
+    @Ignore
+    public void shouldFailNicelyOnNullKeysInMap() throws Throwable
+    {
+        //Given
+        GraphDatabaseService db = server.graphDatabaseService();
+        HashMap<String,Object> params = new HashMap<>();
+        HashMap<String,Object> inner = new HashMap<>();
+        inner.put(null, 42L);
+        inner.put("foo", 1337L);
+        params.put( "p", inner );
+
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "RETURN {p}", params ),
+                        pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string.")) );
     }
 
     @Before
