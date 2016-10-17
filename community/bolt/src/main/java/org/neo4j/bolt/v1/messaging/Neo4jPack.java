@@ -105,7 +105,8 @@ public class Neo4jPack
                 packMapHeader( map.size() );
                 for ( Map.Entry<?, ?> entry : map.entrySet() )
                 {
-                    pack( entry.getKey().toString() );
+                    Object key = entry.getKey();
+                    pack( key == null ? null : key.toString() );
                     pack( entry.getValue() );
                 }
             }
@@ -372,6 +373,8 @@ public class Neo4jPack
                 while ( more )
                 {
                     PackType keyType = peekNextType();
+                    String key;
+                    Object val;
                     switch ( keyType )
                     {
                         case END_OF_STREAM:
@@ -379,11 +382,19 @@ public class Neo4jPack
                             more = false;
                             break;
                         case STRING:
-                            String key = unpackString();
-                            Object val = unpack();
+                            key = unpackString();
+                            val = unpack();
                             if( map.put( key, val ) != null )
                             {
                                 throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
+                            }
+                            break;
+                        case NULL:
+                            unpackNull();
+                            val = unpack();
+                            if( map.put( null, val ) != null )
+                            {
+                                throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `null`." );
                             }
                             break;
                         default:
@@ -396,7 +407,21 @@ public class Neo4jPack
                 map = new HashMap<>( size, 1 );
                 for ( int i = 0; i < size; i++ )
                 {
-                    String key = unpackString();
+                    PackType type = peekNextType();
+                    String key;
+                    switch ( type )
+                    {
+                    case NULL:
+                        unpackNull();
+                        key = null;
+                        break;
+                    case STRING:
+                        key = unpackString();
+                        break;
+                    default:
+                        throw new PackStream.PackStreamException( "Bad key type: " + type );
+                    }
+
                     Object val = unpack();
                     if( map.put( key, val ) != null )
                     {
