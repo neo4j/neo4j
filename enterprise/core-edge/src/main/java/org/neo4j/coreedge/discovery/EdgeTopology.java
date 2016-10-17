@@ -26,8 +26,6 @@ import org.neo4j.coreedge.identity.ClusterId;
 
 public class EdgeTopology
 {
-    public static EdgeTopology EMPTY = new EdgeTopology( null, Collections.emptySet() );
-
     private final ClusterId clusterId;
     private final Set<EdgeAddresses> edgeMembers;
 
@@ -41,5 +39,11 @@ public class EdgeTopology
     public Set<EdgeAddresses> members()
     {
         return edgeMembers;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "EdgeTopology{edgeMembers=%s}", edgeMembers );
     }
 }
