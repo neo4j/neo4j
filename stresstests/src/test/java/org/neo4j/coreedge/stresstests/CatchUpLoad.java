@@ -36,7 +36,6 @@ import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.coreedge.handlers.ExceptionMonitoringHandler;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -44,7 +43,7 @@ import static org.neo4j.function.Predicates.await;
 
 class CatchUpLoad extends RepeatUntilCallable
 {
-    private static final IllegalStateException databaseShutdownEx = new IllegalStateException( "database is shutdown" );
+    private final Predicate<Throwable> isStoreClosed = new IsStoreClosed();
     private Cluster cluster;
 
     CatchUpLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
@@ -133,7 +132,7 @@ class CatchUpLoad extends RepeatUntilCallable
         // the database is create when starting the edge...
         final Monitors monitors =
                 edgeClusterMember.database().getDependencyResolver().resolveDependency( Monitors.class );
-        ExceptionMonitor exceptionMonitor = new ExceptionMonitor( new ConnectionResetFilter() );
+        ExceptionMonitor exceptionMonitor = new ExceptionMonitor( new IsConnectionRestByPeer() );
         monitors.addMonitorListener( exceptionMonitor, CatchUpClient.class.getName() );
         return exceptionMonitor;
     }
@@ -143,7 +142,7 @@ class CatchUpLoad extends RepeatUntilCallable
         GraphDatabaseAPI database = member.database();
         if ( database == null )
         {
-            return errorValueOrThrow( fail, databaseShutdownEx );
+            return errorValueOrThrow( fail, new IllegalStateException( "database is shutdown" ) );
         }
 
         try
@@ -153,7 +152,7 @@ class CatchUpLoad extends RepeatUntilCallable
         }
         catch ( Throwable ex )
         {
-            return errorValueOrThrow( fail && !isStoreClosed( ex ), ex );
+            return errorValueOrThrow( fail && !isStoreClosed.test( ex ), ex );
         }
     }
 
@@ -166,38 +165,6 @@ class CatchUpLoad extends RepeatUntilCallable
         else
         {
             return -1;
-        }
-    }
-
-    private boolean isStoreClosed( Throwable ex )
-    {
-        if ( ex == null )
-        {
-            return false;
-        }
-
-        if ( ex instanceof UnsatisfiedDependencyException )
-        {
-            return true;
-        }
-
-        if ( ex instanceof IllegalStateException )
-        {
-            String message = ex.getMessage();
-            return message.startsWith( "MetaDataStore for file " ) && message.endsWith( " is closed" );
-        }
-
-        return isStoreClosed( ex.getCause() );
-    }
-
-    private static class ConnectionResetFilter implements Predicate<Throwable>
-    {
-        private static final String MSG = "Connection reset by peer";
-
-        @Override
-        public boolean test( Throwable throwable )
-        {
-            return (throwable instanceof IOException) && MSG.equals( throwable.getMessage() );
         }
     }
 
