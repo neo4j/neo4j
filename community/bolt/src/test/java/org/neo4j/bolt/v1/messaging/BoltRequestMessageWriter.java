@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.messaging;
 
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
 
 import java.io.IOException;
 import java.util.Map;
@@ -98,4 +99,9 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
         packer.flush();
     }
 
+    @Override
+    public void onExternalError( Neo4jError error ) throws IOException
+    {
+        //ignore
+    }
 }

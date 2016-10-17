@@ -21,10 +21,12 @@
 package org.neo4j.bolt.v1.messaging;
 
 import org.neo4j.bolt.v1.packstream.PackStream;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Reader for Bolt request messages made available via a {@link Neo4jPack.Unpacker}.
@@ -74,7 +76,14 @@ public class BoltRequestMessageReader
                 case RUN:
                     String statement = unpacker.unpackString();
                     Map<String, Object> params = unpacker.unpackMap();
-                    handler.onRun( statement, params );
+                    Optional<Neo4jError> error = unpacker.consumeError();
+                    if (error.isPresent())
+                    {
+                        handler.onExternalError( error.get() );
+                    } else {
+                        handler.onRun( statement, params );
+
+                    }
                     break;
                 case DISCARD_ALL:
                     handler.onDiscardAll();
@@ -99,5 +108,4 @@ public class BoltRequestMessageReader
                     "Error was: " + e.getMessage(), e );
         }
     }
-
 }

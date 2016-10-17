@@ -421,7 +421,7 @@ public class TransportSessionIT
         return bytes;
     }
 
-    @Ignore
+    @Test
     public void shouldFailNicelyOnNullKeysInMap() throws Throwable
     {
         //Given
@@ -444,7 +444,17 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string.")) );
+                msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string."),
+                msgIgnored()));
+
+        client.send( TransportTestUtil.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgSuccess(),
+                msgRecord( eqRecord( equalTo( 1L ) ) ),
+                msgSuccess() ) );
     }
 
     @Before

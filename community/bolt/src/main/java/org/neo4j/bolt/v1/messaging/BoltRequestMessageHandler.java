@@ -22,6 +22,8 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.util.Map;
 
+import org.neo4j.bolt.v1.runtime.Neo4jError;
+
 /**
  * Interface defining simple handler methods for each defined
  * Bolt request message.
@@ -30,16 +32,18 @@ import java.util.Map;
  */
 public interface BoltRequestMessageHandler<E extends Exception>
 {
-    void onInit( String userAgent, Map<String, Object> authToken ) throws E;
+    void onInit( String userAgent, Map<String,Object> authToken ) throws E;
 
     void onAckFailure() throws E;
 
     void onReset() throws E;
 
-    void onRun( String statement, Map<String, Object> params ) throws E;
+    void onRun( String statement, Map<String,Object> params ) throws E;
 
     void onDiscardAll() throws E;
 
     void onPullAll() throws E;
+
+    void onExternalError( Neo4jError error ) throws E;
 
 }
