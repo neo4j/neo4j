@@ -23,10 +23,14 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.coreedge.core.consensus.ReplicatedInteger.valueOf;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class TruncateLogCommandTest
 {
@@ -36,9 +40,10 @@ public class TruncateLogCommandTest
         //Test that truncate commands correctly remove entries from the cache.
 
         //given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log = logProvider.getLog( getClass() );
         long fromIndex = 2L;
         TruncateLogCommand truncateLogCommand = new TruncateLogCommand( fromIndex );
-
         InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
         inFlightMap.register( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
@@ -47,12 +52,17 @@ public class TruncateLogCommandTest
         inFlightMap.register( 3L, new RaftLogEntry( 3L, valueOf( 3 ) ) );
 
         //when
-        truncateLogCommand.applyTo( inFlightMap );
+        truncateLogCommand.applyTo( inFlightMap, log );
 
         //then
         assertNotNull( inFlightMap.retrieve( 0L ) );
         assertNotNull( inFlightMap.retrieve( 1L ) );
         assertNull( inFlightMap.retrieve( 2L ) );
         assertNull( inFlightMap.retrieve( 3L ) );
+
+        logProvider.assertAtLeastOnce( inLog( getClass() )
+                .debug( "Start truncating in-flight-map from index %d. Current map:%n%s", fromIndex, inFlightMap ) );
+        logProvider.assertAtLeastOnce( inLog( getClass() )
+                .debug( "End truncating in-flight-map at index %d", fromIndex + 1 ) );
     }
 }

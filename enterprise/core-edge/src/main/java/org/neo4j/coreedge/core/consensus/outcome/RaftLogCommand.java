@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.logging.Log;
 
 public interface RaftLogCommand
 {
@@ -35,7 +36,7 @@ public interface RaftLogCommand
 
     void dispatch( Handler handler ) throws IOException;
 
-    void applyTo( RaftLog raftLog ) throws IOException;
+    void applyTo( RaftLog raftLog, Log log ) throws IOException;
 
-    void applyTo( InFlightMap<Long,RaftLogEntry> inFlightMap ) throws IOException;
+    void applyTo( InFlightMap<Long,RaftLogEntry> inFlightMap, Log log ) throws IOException;
 }

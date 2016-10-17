@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.logging.Log;
 
 public class AppendLogEntry implements RaftLogCommand
 {
@@ -38,7 +39,7 @@ public class AppendLogEntry implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( RaftLog raftLog ) throws IOException
+    public void applyTo( RaftLog raftLog, Log log ) throws IOException
     {
         if ( index <= raftLog.appendIndex() )
         {
@@ -48,7 +49,7 @@ public class AppendLogEntry implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( InFlightMap<Long, RaftLogEntry> inFlightMap ) throws IOException
+    public void applyTo( InFlightMap<Long, RaftLogEntry> inFlightMap, Log log ) throws IOException
     {
         inFlightMap.register( index, entry );
     }

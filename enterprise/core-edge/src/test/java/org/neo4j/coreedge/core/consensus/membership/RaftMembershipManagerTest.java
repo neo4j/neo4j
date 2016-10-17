@@ -31,6 +31,8 @@ import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.coreedge.core.consensus.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
 import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 import org.neo4j.time.Clocks;
 
 import static java.util.Arrays.asList;
@@ -42,6 +44,8 @@ import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class RaftMembershipManagerTest
 {
+    private final Log log = NullLog.getInstance();
+
     @Rule
     public LifeRule lifeRule = new LifeRule( true );
 
@@ -68,9 +72,9 @@ public class RaftMembershipManagerTest
             throws Exception
     {
         // given
-        final InMemoryRaftLog log = new InMemoryRaftLog();
+        final InMemoryRaftLog raftLog = new InMemoryRaftLog();
 
-        RaftMembershipManager membershipManager = lifeRule.add( raftMembershipManager( log ) );
+        RaftMembershipManager membershipManager = lifeRule.add( raftMembershipManager( raftLog ) );
 
         // when
         List<RaftLogCommand> logCommands = asList(
@@ -81,7 +85,7 @@ public class RaftMembershipManagerTest
 
         for ( RaftLogCommand logCommand : logCommands )
         {
-            logCommand.applyTo( log );
+            logCommand.applyTo( raftLog, log );
         }
         membershipManager.processLog( 0, logCommands );
 
@@ -95,9 +99,9 @@ public class RaftMembershipManagerTest
             throws Exception
     {
         // given
-        final InMemoryRaftLog log = new InMemoryRaftLog();
+        final InMemoryRaftLog raftLog = new InMemoryRaftLog();
 
-        RaftMembershipManager membershipManager = lifeRule.add( raftMembershipManager( log ) );
+        RaftMembershipManager membershipManager = lifeRule.add( raftMembershipManager( raftLog ) );
 
         // when
         List<RaftLogCommand> logCommands = asList(
@@ -108,7 +112,7 @@ public class RaftMembershipManagerTest
         );
         for ( RaftLogCommand logCommand : logCommands )
         {
-            logCommand.applyTo( log );
+            logCommand.applyTo( raftLog, log );
         }
         membershipManager.processLog( 0, logCommands );
 

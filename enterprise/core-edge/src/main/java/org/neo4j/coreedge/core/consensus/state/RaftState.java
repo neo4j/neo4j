@@ -185,8 +185,8 @@ public class RaftState implements ReadableRaftState
 
         for ( RaftLogCommand logCommand : outcome.getLogCommands() )
         {
-            logCommand.applyTo( entryLog );
-            logCommand.applyTo( inFlightMap );
+            logCommand.applyTo( entryLog, log );
+            logCommand.applyTo( inFlightMap, log );
         }
         commitIndex = outcome.getCommitIndex();
     }

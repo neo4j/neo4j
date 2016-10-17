@@ -28,11 +28,14 @@ import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.ReadableRaftLog;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
-import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
-import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
+import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerStates;
+import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
 
@@ -41,6 +44,7 @@ public class ComparableRaftState implements ReadableRaftState
     protected final MemberId myself;
     private final Set votingMembers;
     private final Set replicationMembers;
+    private final Log log;
     protected long term = 0;
     protected MemberId leader;
     private long leaderCommit = -1;
@@ -53,19 +57,20 @@ public class ComparableRaftState implements ReadableRaftState
     private long commitIndex = -1;
 
     ComparableRaftState( MemberId myself, Set votingMembers, Set replicationMembers,
-                         RaftLog entryLog, InFlightMap<Long, RaftLogEntry> inFlightMap )
+                         RaftLog entryLog, InFlightMap<Long, RaftLogEntry> inFlightMap, LogProvider logProvider )
     {
         this.myself = myself;
         this.votingMembers = votingMembers;
         this.replicationMembers = replicationMembers;
         this.entryLog = entryLog;
         this.inFlightMap = inFlightMap;
+        this.log = logProvider.getLog( getClass() );
     }
 
     public ComparableRaftState( ReadableRaftState original ) throws IOException
     {
-        this( original.myself(), original.votingMembers(), original.replicationMembers(), new ComparableRaftLog( original.entryLog() ),
-                new InFlightMap<>() );
+        this( original.myself(), original.votingMembers(), original.replicationMembers(),
+                new ComparableRaftLog( original.entryLog() ), new InFlightMap<>(), NullLogProvider.getInstance() );
     }
 
     @Override
@@ -151,8 +156,8 @@ public class ComparableRaftState implements ReadableRaftState
 
         for ( RaftLogCommand logCommand : outcome.getLogCommands() )
         {
-            logCommand.applyTo( entryLog );
-            logCommand.applyTo( inFlightMap );
+            logCommand.applyTo( entryLog, log );
+            logCommand.applyTo( inFlightMap, log );
         }
 
         commitIndex = outcome.getCommitIndex();
