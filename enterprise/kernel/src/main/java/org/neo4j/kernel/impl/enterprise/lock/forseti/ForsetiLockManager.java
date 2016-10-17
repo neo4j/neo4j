@@ -261,8 +261,8 @@ public class ForsetiLockManager implements Locks
         // very limited set of integers.
         private final Queue<Integer> unusedIds = new ConcurrentLinkedQueue<>();
         private final ConcurrentMap<Integer,ForsetiClient> clientsById = new ConcurrentHashMap<>();
-        private Config config;
-        private Clock clock;
+        private final Config config;
+        private final Clock clock;
         private final ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps;
         private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
         private final DeadlockResolutionStrategy deadlockResolutionStrategy = DeadlockStrategies.DEFAULT;

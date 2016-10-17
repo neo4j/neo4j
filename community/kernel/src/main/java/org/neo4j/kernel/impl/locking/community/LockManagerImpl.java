@@ -34,7 +34,7 @@ public class LockManagerImpl
 {
     private final Map<Object,RWLock> resourceLockMap = new HashMap<>();
     private final RagManager ragManager;
-    private Clock clock;
+    private final Clock clock;
 
     /**
      * Time within which any particular lock should be acquired.

@@ -68,8 +68,8 @@ class RWLock
     private final LinkedList<LockRequest> waitingThreadList = new LinkedList<>();
     private final ArrayMap<Object,TxLockElement> txLockElementMap = new ArrayMap<>( (byte) 5, false, true );
     private final RagManager ragManager;
-    private Clock clock;
-    private long lockAcquisitionTimeoutMillis;
+    private final Clock clock;
+    private final long lockAcquisitionTimeoutMillis;
 
     // access to these is guarded by synchronized blocks
     private int totalReadCount;

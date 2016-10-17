@@ -91,8 +91,8 @@ public class ForsetiClient implements Locks.Client
      * Time within which any particular lock should be acquired.
      * @see GraphDatabaseSettings#lock_acquisition_timeout
      */
-    private long lockAcquisitionTimeoutMillis;
-    private Clock clock;
+    private final long lockAcquisitionTimeoutMillis;
+    private final Clock clock;
 
     /** List of other clients this client is waiting for. */
     private final SimpleBitSet waitList = new SimpleBitSet( 64 );
