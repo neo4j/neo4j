@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.security;
 
-import org.codehaus.jackson.node.ArrayNode;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.ws.rs.core.HttpHeaders;
+
+import org.codehaus.jackson.node.ArrayNode;
+import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -35,7 +35,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
 
-public class EnterpriseAuthenticationDocIT extends AuthenticationDocIT
+public class EnterpriseAuthenticationIT extends AuthenticationDocIT
 {
     @Override
     public void startServer( boolean authEnabled ) throws IOException

@@ -1,7 +1,7 @@
 [[rest-api-schema-constraints]]
 ==  Constraints ==
 
-:enterprise-server-docs: ../../../neo4j-server-enterprise-docs-jar/rest-api/
+:enterprise-server-docs: ../../../neo4j-server-enterprise-docs-docs-jar/rest-api/
 
 include::create-uniqueness-constraint.asciidoc[]
 
