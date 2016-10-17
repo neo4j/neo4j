@@ -22,15 +22,21 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import org.junit.Test;
 
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.DeserializerFactory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -39,6 +45,7 @@ import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.IdType.INTEGER;
 
 public class InputGroupsDeserializerTest
@@ -51,8 +58,8 @@ public class InputGroupsDeserializerTest
         final AtomicInteger flips = new AtomicInteger();
         final AtomicReference<InputGroupsDeserializer<InputNode>> deserializerTestHack = new AtomicReference<>( null );
         InputGroupsDeserializer<InputNode> deserializer = new InputGroupsDeserializer<>(
-                data.iterator(), defaultFormatNodeFileHeader(), lowBufferSize( COMMAS ), INTEGER,
-                Runtime.getRuntime().availableProcessors(), (header,stream,decorator,validator) ->
+                data.iterator(), defaultFormatNodeFileHeader(), lowBufferSize( COMMAS, true ), INTEGER,
+                Runtime.getRuntime().availableProcessors(), 1, (header,stream,decorator,validator) ->
                 {
                     // This is the point where the currentInput field in InputGroupsDeserializer was null
                     // so ensure that's no longer the case, just by poking those source methods right here and now.
@@ -80,7 +87,47 @@ public class InputGroupsDeserializerTest
         assertEquals( 2, flips.get() );
     }
 
-    private Configuration lowBufferSize( Configuration conf )
+    @Test
+    public void shouldCoordinateGroupCreationForParallelProcessing() throws Exception
+    {
+        // GIVEN
+        List<DataFactory<InputNode>> data = new ArrayList<>();
+        int processors = Runtime.getRuntime().availableProcessors();
+        for ( int i = 0; i < processors; i++ )
+        {
+            StringBuilder builder = new StringBuilder( ":ID(Group" + i + ")" );
+            for ( int j = 0; j < 100; j++ )
+            {
+                builder.append( "\n" + j );
+            }
+            data.add( data( builder.toString() ) );
+        }
+        Groups groups = new Groups();
+        IdType idType = IdType.INTEGER;
+        Collector badCollector = mock( Collector.class );
+        Configuration config = lowBufferSize( COMMAS, false );
+        DeserializerFactory<InputNode> factory = defaultNodeDeserializer( groups, config, idType, badCollector );
+        try ( InputGroupsDeserializer<InputNode> deserializer = new InputGroupsDeserializer<>(
+                data.iterator(), defaultFormatNodeFileHeader(), config, idType,
+                processors, processors, factory, Validators.<InputNode>emptyValidator(), InputNode.class ) )
+        {
+            // WHEN
+            count( deserializer );
+        }
+
+        // THEN
+        assertEquals( processors, groups.getOrCreate( "LastOne" ).id() );
+        boolean[] seen = new boolean[processors];
+        for ( int i = 0; i < processors; i++ )
+        {
+            String groupName = "Group" + i;
+            groups.getOrCreate( groupName );
+            assertFalse( seen[i] );
+            seen[i] = true;
+        }
+    }
+
+    private Configuration lowBufferSize( Configuration conf, boolean multilineFields )
     {
         return new Configuration.Overridden( conf )
         {
@@ -93,7 +140,7 @@ public class InputGroupsDeserializerTest
             @Override
             public boolean multilineFields()
             {
-                return true;
+                return multilineFields;
             }
         };
     }
