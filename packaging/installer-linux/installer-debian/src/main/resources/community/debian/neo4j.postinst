@@ -98,6 +98,12 @@ case "$1" in
             echo "-----------------------------------------------------------------------------"
             rm /tmp/neo4j-upgraded-from-2.x
         else
+            if [ -f /etc/neo4j/neo4j-wrapper.conf ]; then
+                echo >> /etc/neo4j/neo4j.conf
+                cat /etc/neo4j/neo4j-wrapper.conf >> /etc/neo4j/neo4j.conf
+                rm /etc/neo4j/neo4j-wrapper.conf
+            fi
+
             # Start neo4j
             invoke-rc.d neo4j start
         fi
