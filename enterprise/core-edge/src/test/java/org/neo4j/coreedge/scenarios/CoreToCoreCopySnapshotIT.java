@@ -19,6 +19,9 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,9 +38,6 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.time.Clocks;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_frequency;
@@ -50,8 +50,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreToCoreCopySnapshotIT
 {
-    private static final int TIMEOUT_MS = 5000;
-
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
@@ -69,12 +67,11 @@ public class CoreToCoreCopySnapshotIT
         } );
 
         // when
-        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 5, TimeUnit.SECONDS );
 
         // shutdown the follower, remove the store, restart
         follower.shutdown();
         FileUtils.deleteRecursively( follower.storeDir() );
-        follower.storeDir().mkdir();
         follower.start();
 
         // then

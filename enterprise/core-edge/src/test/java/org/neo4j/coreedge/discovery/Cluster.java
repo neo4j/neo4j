@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
@@ -47,6 +46,7 @@ import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
 import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -62,6 +62,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.function.Predicates.await;
+import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -70,7 +71,6 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpi
 public class Cluster
 {
     private static final int DEFAULT_TIMEOUT_MS = 25_000;
-    private static final int DEFAULT_BACKOFF_MS = 100;
     private static final int DEFAULT_CLUSTER_SIZE = 3;
 
     private final File parentDir;
@@ -266,17 +266,17 @@ public class Cluster
 
     public CoreClusterMember awaitLeader() throws TimeoutException
     {
-        return awaitCoreMemberWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
+        return awaitCoreMemberWithRole( Role.LEADER, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
-    public CoreClusterMember awaitLeader( long timeoutMillis ) throws TimeoutException
+    public CoreClusterMember awaitLeader( long timeout, TimeUnit timeUnit ) throws TimeoutException
     {
-        return awaitCoreMemberWithRole( timeoutMillis, Role.LEADER );
+        return awaitCoreMemberWithRole( Role.LEADER, timeout, timeUnit );
     }
 
-    public CoreClusterMember awaitCoreMemberWithRole( long timeoutMillis, Role role ) throws TimeoutException
+    public CoreClusterMember awaitCoreMemberWithRole( Role role, long timeout, TimeUnit timeUnit ) throws TimeoutException
     {
-        return await( () -> getDbWithRole( role ), notNull(), timeoutMillis, TimeUnit.MILLISECONDS );
+        return await( () -> getDbWithRole( role ), notNull(), timeout, timeUnit );
     }
 
     public int numberOfCoreMembersReportedByTopology()
@@ -295,7 +295,7 @@ public class Cluster
             throws TimeoutException, InterruptedException
     {
         // this currently wraps the leader-only strategy, since it is the recommended and only approach
-        return leaderTx( op );
+        return leaderTx( op, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
     private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
@@ -311,23 +311,23 @@ public class Cluster
     /**
      * Perform a transaction against the leader of the core cluster, retrying as necessary.
      */
-    private CoreClusterMember leaderTx( BiConsumer<CoreGraphDatabase, Transaction> op )
-            throws TimeoutException, InterruptedException
+    private CoreClusterMember leaderTx( BiConsumer<CoreGraphDatabase,Transaction> op, int timeout, TimeUnit timeUnit )
+            throws TimeoutException
     {
-        long endTime = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
-
-        do
-        {
-            CoreClusterMember member = awaitCoreMemberWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
-            CoreGraphDatabase db = member.database();
-            if ( db == null )
+        ThrowingSupplier<CoreClusterMember,RuntimeException> supplier = () -> {
+            try
             {
-                throw new DatabaseShutdownException();
-            }
+                CoreClusterMember member = awaitLeader( timeout, timeUnit );
+                CoreGraphDatabase db = member.database();
+                if ( db == null )
+                {
+                    throw new DatabaseShutdownException();
+                }
 
-            try ( Transaction tx = db.beginTx() )
-            {
-                op.accept( db, tx );
+                try ( Transaction tx = db.beginTx() )
+                {
+                    op.accept( db, tx );
+                }
                 return member;
             }
             catch ( Throwable e )
@@ -337,18 +337,15 @@ public class Cluster
                     // this is not the best, but it helps in debugging
                     System.err.println( "Transient failure in leader transaction, trying again." );
                     e.printStackTrace();
-                    // sleep and retry
-                    Thread.sleep( DEFAULT_BACKOFF_MS );
+                    return null;
                 }
                 else
                 {
-                    throw e;
+                    throw new RuntimeException( e );
                 }
             }
-        }
-        while ( System.currentTimeMillis() < endTime );
-
-        throw new TimeoutException( "Transaction did not succeed in time" );
+        };
+        return awaitEx( supplier, notNull()::test, timeout, timeUnit );
     }
 
     private boolean isTransientFailure( Throwable e )

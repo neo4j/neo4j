@@ -140,16 +140,30 @@ public class Predicates
     public static <TYPE> TYPE await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout,
             TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit ) throws TimeoutException
     {
-        Suppliers.CapturingSupplier<TYPE> composed = Suppliers.compose( supplier, predicate );
-        await( composed, timeout, timeoutUnit, pollInterval, pollUnit );
-        return composed.lastInput();
+        return awaitEx( supplier::get, predicate::test, timeout, timeoutUnit, pollInterval, pollUnit );
     }
 
     public static <TYPE> TYPE await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout,
             TimeUnit timeoutUnit ) throws TimeoutException
     {
-        Suppliers.CapturingSupplier<TYPE> composed = Suppliers.compose( supplier, predicate );
-        await( composed, timeout, timeoutUnit );
+        return awaitEx( supplier::get, predicate::test, timeout, timeoutUnit );
+    }
+
+    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,EXCEPTION> supplier,
+            ThrowingPredicate<TYPE,EXCEPTION> predicate, long timeout, TimeUnit timeoutUnit, long pollInterval,
+            TimeUnit pollUnit ) throws TimeoutException, EXCEPTION
+    {
+        Suppliers.ThrowingCapturingSupplier<TYPE,EXCEPTION> composed = Suppliers.compose( supplier, predicate );
+        awaitEx( composed, timeout, timeoutUnit, pollInterval, pollUnit );
+        return composed.lastInput();
+    }
+
+    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,EXCEPTION> supplier,
+            ThrowingPredicate<TYPE,EXCEPTION> predicate, long timeout, TimeUnit timeoutUnit )
+            throws TimeoutException, EXCEPTION
+    {
+        Suppliers.ThrowingCapturingSupplier<TYPE,EXCEPTION> composed = Suppliers.compose( supplier, predicate );
+        awaitEx( composed, timeout, timeoutUnit );
         return composed.lastInput();
     }
 

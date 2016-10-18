@@ -183,7 +183,7 @@ public class EdgeServerReplicationIT
 
         executeOnLeaderWithRetry( this::createData, cluster );
 
-        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( 2000, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 2, TimeUnit.SECONDS );
         // Shutdown server before copying its data, because Windows can't copy open files.
         follower.shutdown();
 
@@ -493,7 +493,7 @@ public class EdgeServerReplicationIT
         {
             try
             {
-                CoreGraphDatabase coreDB = cluster.awaitLeader( 5000 ).database();
+                CoreGraphDatabase coreDB = cluster.awaitLeader( 5L, SECONDS ).database();
                 try ( Transaction tx = coreDB.beginTx() )
                 {
                     workload.doWork( coreDB );
