@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.frontend.v3_1.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, SemanticTable}
 
-class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val rewriter = PlannerQueryRewriter
+  val rewriter = OptionalMatchRemover
 
   assert_that(
     """MATCH (a)
@@ -174,7 +174,7 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
           OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->(:A:B {foo: 'apa', id: 42})
           RETURN DISTINCT b as b""")
 
-  case class rewriteTester(originalQuery: String) {
+  case class RewriteTester(originalQuery: String) {
     def is_rewritten_to(newQuery: String): Unit =
       test(originalQuery) {
         val expected = getUnionQueryFrom(newQuery.stripMargin)
@@ -191,7 +191,7 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
-  private def assert_that(originalQuery: String): rewriteTester = rewriteTester(originalQuery)
+  private def assert_that(originalQuery: String): RewriteTester = RewriteTester(originalQuery)
 
   private def getUnionQueryFrom(query: String): UnionQuery = {
     val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)

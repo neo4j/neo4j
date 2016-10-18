@@ -70,7 +70,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       }
     }
 
-    // Did not find shortest path. Let's do the safe thing and return everything
+    // Did not find any path. Let's do the safe thing and return everything
     patternRelationships.flatMap(_.coveredIds)
   }
 
