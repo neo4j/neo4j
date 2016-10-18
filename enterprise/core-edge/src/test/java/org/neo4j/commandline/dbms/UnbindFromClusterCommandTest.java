@@ -32,6 +32,7 @@ import java.util.UUID;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -43,6 +44,9 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.contains;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
 
 public class UnbindFromClusterCommandTest
@@ -58,7 +62,8 @@ public class UnbindFromClusterCommandTest
         fsa.mkdir( testDir.directory() );
 
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
+                        mock( OutsideWorld.class ) );
 
         try
         {
@@ -81,7 +86,8 @@ public class UnbindFromClusterCommandTest
         fsa.mkdir( testDir.directory() );
 
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
+                        mock( OutsideWorld.class ) );
 
         try
         {
@@ -104,7 +110,8 @@ public class UnbindFromClusterCommandTest
         fsa.mkdir( testDir.directory() );
 
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
+                        mock( OutsideWorld.class ) );
 
         FileLock fileLock = createLockedFakeDbDir( testDir.directory().toPath() );
 
@@ -118,7 +125,7 @@ public class UnbindFromClusterCommandTest
         {
             // then
             assertThat( e.getMessage(), containsString(
-                    "Database is currently locked. Please check that no other Neo4j instance using it." ) );
+                    "Database is currently locked. Please shutdown Neo4j." ) );
         }
         finally
         {
@@ -137,7 +144,8 @@ public class UnbindFromClusterCommandTest
 
         Path fakeDbDir = createUnlockedFakeDbDir( testDir.directory().toPath() );
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
+                        mock( OutsideWorld.class ) );
 
         // when
         command.execute( databaseName( "graph.db" ) );
@@ -156,20 +164,15 @@ public class UnbindFromClusterCommandTest
         Path fakeDbDir = createUnlockedFakeDbDir( testDir.directory().toPath() );
         Files.delete( Paths.get( fakeDbDir.toString(), "cluster-state" ) );
 
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
         UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath() );
+                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
+                        outsideWorld );
 
         // when
-        try
-        {
-            command.execute( databaseName( "graph.db" ) );
-            fail();
-        }
-        // then
-        catch ( CommandFailed expected )
-        {
-            assertThat( expected.getMessage(), containsString( "is not bound to any cluster" ) );
-        }
+        command.execute( databaseName( "graph.db" ) );
+
+        verify(outsideWorld).stdOutLine( contains( "No cluster state found in" ) );
     }
 
     private String[] databaseName( String databaseName )

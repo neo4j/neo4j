@@ -64,24 +64,26 @@ public class UnbindFromClusterCommand implements AdminCommand
         @Override
         public String description()
         {
-            return "Removes cluster state data from the specified database making it suitable for use non-Core-Edge " +
-                    "databases";
+            return "Removes cluster state data from the specified database making it suitable for use in single " +
+                    "instance database, or for seeding a new cluster";
         }
 
         @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
-            return new UnbindFromClusterCommand( homeDir, configDir );
+            return new UnbindFromClusterCommand( homeDir, configDir, outsideWorld );
         }
     }
 
     private Path homeDir;
     private Path configDir;
+    private OutsideWorld outsideWorld;
 
-    UnbindFromClusterCommand( Path homeDir, Path configDir )
+    UnbindFromClusterCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
+        this.outsideWorld = outsideWorld;
     }
 
     @Override
@@ -95,14 +97,21 @@ public class UnbindFromClusterCommand implements AdminCommand
             Path pathToSpecificDatabase = config.get( DatabaseManagementSystemSettings.database_path ).toPath();
 
             Validators.CONTAINS_EXISTING_DATABASE.validate( pathToSpecificDatabase.toFile() );
-            confirmClusterStateDirectoryExists( Paths.get( pathToSpecificDatabase.toString(), "cluster-state" ) );
-            confirmTargetDirectoryIsWritable( pathToSpecificDatabase );
-            deleteClusterStateIn( clusterStateFrom( pathToSpecificDatabase ) );
+
+            if ( exists( Paths.get( pathToSpecificDatabase.toString(), "cluster-state" ) ) )
+            {
+                confirmTargetDirectoryIsWritable( pathToSpecificDatabase );
+                deleteClusterStateIn( clusterStateFrom( pathToSpecificDatabase ) );
+            }
+            else
+            {
+                outsideWorld.stdOutLine(
+                        format( "No cluster state found in %s. No work perfomed.", pathToSpecificDatabase ) );
+            }
         }
         catch ( StoreLockException e )
         {
-            throw new CommandFailed(
-                    "Database is currently locked. Please check that no other Neo4j instance using it.", e );
+            throw new CommandFailed( "Database is currently locked. Please shutdown Neo4j.", e );
         }
         catch ( IllegalArgumentException e )
         {
@@ -123,14 +132,6 @@ public class UnbindFromClusterCommand implements AdminCommand
     private Path clusterStateFrom( Path target )
     {
         return Paths.get( target.toString(), CLUSTER_STATE_DIRECTORY_NAME );
-    }
-
-    private void confirmClusterStateDirectoryExists( Path clusterStateDirectory ) throws UnbindFailureException
-    {
-        if ( !exists( clusterStateDirectory ) )
-        {
-            throw new UnbindFailureException( "Database %s is not bound to any cluster", clusterStateDirectory );
-        }
     }
 
     private void deleteClusterStateIn( Path target ) throws UnbindFailureException
