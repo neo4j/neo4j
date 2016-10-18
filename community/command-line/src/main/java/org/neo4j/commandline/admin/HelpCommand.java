@@ -20,8 +20,11 @@
 package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
+
+import org.neo4j.helpers.Args;
 
 public class HelpCommand implements AdminCommand
 {
@@ -56,22 +59,44 @@ public class HelpCommand implements AdminCommand
         @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
-            return new HelpCommand( usage, outsideWorld::stdOutLine );
+            return new HelpCommand( usage, outsideWorld::stdOutLine, CommandLocator.fromServiceLocator() );
         }
     }
 
     private final Usage usage;
     private final Consumer<String> output;
+    private final CommandLocator locator;
 
-    public HelpCommand( Usage usage, Consumer<String> output )
+    public HelpCommand( Usage usage, Consumer<String> output, CommandLocator locator )
     {
         this.usage = usage;
         this.output = output;
+        this.locator = locator;
     }
 
     @Override
     public void execute( String... args )
     {
-        usage.print( output );
+        if (args.length > 0)
+        {
+            try
+            {
+                AdminCommand.Provider commandProvider = this.locator.findProvider( args[0] );
+                Usage.CommandUsage commandUsage = new Usage.CommandUsage( commandProvider, "neo4j-admin" );
+                commandUsage.print( this.output );
+                this.output.accept( commandProvider.description() );
+                this.output.accept( "" );
+                return;
+            }
+            catch (NoSuchElementException e)
+            {
+                this.output.accept( "Unknown command: " + args[0] );
+                this.output.accept( "" );
+            }
+        }
+        else
+        {
+            usage.print( output );
+        }
     }
 }
