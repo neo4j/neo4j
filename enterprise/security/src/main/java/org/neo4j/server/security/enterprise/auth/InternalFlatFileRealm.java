@@ -374,7 +374,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         // so all authentication request will go through this method.
         // Hence the credentials matcher is set to AllowAllCredentialsMatcher,
         // and we do not need to store hashed credentials in the AuthenticationInfo.
-        return new ShiroAuthenticationInfo( user.name(), null, getName(), result );
+        return new ShiroAuthenticationInfo( user.name(), getName(), result );
     }
 
     @Override

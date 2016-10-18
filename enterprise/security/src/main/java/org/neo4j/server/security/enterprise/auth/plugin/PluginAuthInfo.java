@@ -41,7 +41,7 @@ public class PluginAuthInfo extends ShiroAuthenticationInfo implements Authoriza
 
     private PluginAuthInfo( Object principal, String realmName, Set<String> roles )
     {
-        super( principal, null, realmName, AuthenticationResult.SUCCESS );
+        super( principal, realmName, AuthenticationResult.SUCCESS );
         this.roles = roles;
     }
 

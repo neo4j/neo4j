@@ -138,7 +138,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                 config.get( SecuritySettings.ldap_authorization_enabled ) )
                 && configuredRealms.contains( SecuritySettings.LDAP_REALM_NAME ) )
         {
-            realms.add( new LdapRealm( config, securityLog ) );
+            realms.add( new LdapRealm( config, securityLog, secureHasher ) );
         }
 
         // Load plugin realms if we have any

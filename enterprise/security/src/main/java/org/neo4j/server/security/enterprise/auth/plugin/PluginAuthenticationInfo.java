@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.util.ByteSource;
 
@@ -37,7 +36,7 @@ public class PluginAuthenticationInfo extends ShiroAuthenticationInfo implements
     public PluginAuthenticationInfo( Object principal, String realmName,
             CustomCacheableAuthenticationInfo.CredentialsMatcher credentialsMatcher )
     {
-        super( principal, null, realmName, AuthenticationResult.SUCCESS );
+        super( principal, realmName, AuthenticationResult.SUCCESS );
         this.credentialsMatcher = credentialsMatcher;
     }
 

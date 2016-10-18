@@ -21,11 +21,12 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
-import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
+import org.apache.shiro.authc.credential.AllowAllCredentialsMatcher;
 import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.cache.Cache;
+import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
 import org.apache.shiro.realm.ldap.JndiLdapRealm;
 import org.apache.shiro.realm.ldap.LdapContextFactory;
@@ -68,7 +69,6 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static java.lang.String.format;
-import org.neo4j.server.security.auth.Credential;
 
 /**
  * Shiro realm for LDAP based on configuration settings
@@ -89,23 +89,29 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     private Boolean useSystemAccountForAuthorization;
     private Map<String,Collection<String>> groupToRoleMapping;
     private final SecurityLog securityLog;
+    private final SecureHasher secureHasher;
 
     // Parser regex for group-to-role-mapping
     private static final String KEY_GROUP = "\\s*('(.+)'|\"(.+)\"|(\\S)|(\\S.*\\S))\\s*";
     private static final String VALUE_GROUP = "\\s*(.*)";
     private Pattern keyValuePattern = Pattern.compile( KEY_GROUP + KEY_VALUE_DELIMITER + VALUE_GROUP );
 
-    public LdapRealm( Config config, SecurityLog securityLog )
+    public LdapRealm( Config config, SecurityLog securityLog, SecureHasher secureHasher )
     {
         super();
-        setName( SecuritySettings.LDAP_REALM_NAME );
         this.securityLog = securityLog;
+        this.secureHasher = secureHasher;
+        setName( SecuritySettings.LDAP_REALM_NAME );
         setRolePermissionResolver( PredefinedRolesBuilder.rolePermissionResolver );
         configureRealm( config );
-        setCredentialsMatcher( new HashedCredentialsMatcher( Credential.DIGEST_ALGO ) );
-        setAuthorizationCachingEnabled( true );
-        boolean authenticationCachingEnabled = config.get( SecuritySettings.ldap_authentication_cache_enabled );
-        setAuthenticationCachingEnabled( authenticationCachingEnabled );
+        if ( isAuthenticationCachingEnabled() )
+        {
+            setCredentialsMatcher( secureHasher.getHashedCredentialsMatcher() );
+        }
+        else
+        {
+            setCredentialsMatcher( new AllowAllCredentialsMatcher() );
+        }
     }
 
     private String withRealm( String template, Object... args )
@@ -282,8 +288,16 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
             cacheAuthorizationInfo( username, roleNames );
         }
 
-        return new ShiroAuthenticationInfo( token.getPrincipal(), (String) token.getCredentials(), getName(),
-                AuthenticationResult.SUCCESS );
+        if ( isAuthenticationCachingEnabled() )
+        {
+            SimpleHash hashedCredentials = secureHasher.hash( ((String) token.getCredentials()).getBytes() );
+            return new ShiroAuthenticationInfo( token.getPrincipal(), hashedCredentials.getBytes(),
+                    hashedCredentials.getSalt(), getName(), AuthenticationResult.SUCCESS );
+        }
+        else
+        {
+            return new ShiroAuthenticationInfo( token.getPrincipal(), getName(), AuthenticationResult.SUCCESS );
+        }
     }
 
     @Override
@@ -362,6 +376,9 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
         useSystemAccountForAuthorization = config.get( SecuritySettings.ldap_authorization_use_system_account );
         groupToRoleMapping =
                 parseGroupToRoleMapping( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) );
+
+        setAuthenticationCachingEnabled( config.get( SecuritySettings.ldap_authentication_cache_enabled ) );
+        setAuthorizationCachingEnabled( true );
     }
 
     private String parseLdapServerUrl( String rawLdapServer )
