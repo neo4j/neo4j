@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.parser
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast
+import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, ast}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.parboiled.scala._
 
@@ -27,7 +27,7 @@ trait ProcedureCalls {
   self: Parser with Base with Expressions with Literals =>
 
   def Call: Rule1[UnresolvedCall] = rule("CALL") {
-    group(keyword("CALL") ~~ Namespace ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResults) ~~>> (ast.UnresolvedCall(_, _, _, _))
+    group(keyword("CALL") ~~ Namespace ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResult) ~~>> (ast.UnresolvedCall(_, _, _, _))
   }
 
   private def ProcedureArguments: Rule1[Option[Seq[Expression]]] = rule("arguments to a procedure") {
@@ -36,22 +36,31 @@ trait ProcedureCalls {
     ) ~~> (_.toIndexedSeq))
   }
 
-  private def ProcedureResults: Rule1[Option[Seq[ProcedureResultItem]]] =
+  private def ProcedureResult =
     rule("result fields of a procedure") {
       optional(
-        keyword("YIELD") ~~ oneOrMore(ProcedureResult, separator = CommaSep) ~~> (_.toIndexedSeq)
+        group(
+          keyword("YIELD") ~~
+          oneOrMore(ProcedureResultItem, separator = CommaSep) ~~
+          optional(group(keyword("WHERE") ~~ Expression ~~>> (ast.Where(_))))
+        ) ~~> { (a, b) => a -> b } ~~>> (procedureResult(_))
       )
     }
 
-  private def ProcedureResult: Rule1[ProcedureResultItem] =
-    AliasedProcedureResult | SimpleProcedureResult
+  private def procedureResult(data: (List[ast.ProcedureResultItem], Option[ast.Where]))(pos: InputPosition) = {
+    val (items, optWhere) = data
+    ast.ProcedureResult(items.toIndexedSeq, optWhere)(pos)
+  }
 
-  private def AliasedProcedureResult: Rule1[ast.ProcedureResultItem] =
+  private def ProcedureResultItem: Rule1[ast.ProcedureResultItem] =
+    AliasedProcedureResultItem | SimpleProcedureResultItem
+
+  private def AliasedProcedureResultItem: Rule1[ast.ProcedureResultItem] =
     rule("aliased procedure result field") {
       ProcedureOutput ~~ keyword("AS") ~~ Variable ~~>> (ast.ProcedureResultItem(_, _))
     }
 
-  private def SimpleProcedureResult: Rule1[ast.ProcedureResultItem] =
+  private def SimpleProcedureResultItem: Rule1[ast.ProcedureResultItem] =
     rule("simple procedure result field") {
       Variable ~~>> (ast.ProcedureResultItem(_))
     }

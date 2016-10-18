@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.parser
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{ProcedureResult, ProcedureResultItem}
 import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, ast}
 
 class ProcedureCallParserTest
@@ -27,7 +27,7 @@ class ProcedureCallParserTest
     with Expressions
     with Literals
     with Base
-    with ProcedureCalls  {
+    with ProcedureCalls {
 
   implicit val parser = Call
 
@@ -62,19 +62,19 @@ class ProcedureCallParserTest
   }
 
   test("CALL foo YIELD bar") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), None, Some(Seq(result("bar")))))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), None, Some(ProcedureResult.from(result("bar"))(pos))))
   }
 
   test("CALL foo YIELD bar, baz") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), None, Some(Seq(result("bar"), result("baz")))))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), None, Some(ProcedureResult.from(result("bar"), result("baz"))(pos))))
   }
 
   test("CALL foo() YIELD bar") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(result("bar")))))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(ProcedureResult.from(result("bar"))(pos))))
   }
 
   test("CALL foo() YIELD bar, baz") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(result("bar"), result("baz")))))
+    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(ProcedureResult.from(result("bar"), result("baz"))(pos))))
   }
 
   private def result(name: String): ProcedureResultItem =
@@ -83,7 +83,7 @@ class ProcedureCallParserTest
   private def result(output: String, name: String): ProcedureResultItem =
     ast.ProcedureResultItem(ast.ProcedureOutput(output)(pos), ast.Variable(name)(pos))(pos)
 
-  private val pos = DummyPosition(-1)
+  private implicit val pos = DummyPosition(-1)
 
   implicit class StringToVariable(string: String) {
     def asVar = id(string)(pos)
