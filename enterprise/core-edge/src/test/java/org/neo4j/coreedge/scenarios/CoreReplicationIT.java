@@ -193,6 +193,7 @@ public class CoreReplicationIT
 
         // when
         cluster.removeCoreMember( cluster.awaitLeader() );
+        cluster.awaitLeader( 1, TimeUnit.MINUTES ); // <- let's give a bit more time for the leader to show up
         CoreClusterMember last = cluster.coreTx( ( db, tx ) ->
         {
             Node node = db.createNode();

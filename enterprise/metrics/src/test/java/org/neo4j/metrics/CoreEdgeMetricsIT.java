@@ -90,7 +90,7 @@ public class CoreEdgeMetricsIT
         cluster = clusterRule.startCluster();
 
         // when
-        CoreGraphDatabase coreDB = cluster.awaitLeader( 5000 ).database();
+        CoreGraphDatabase coreDB = cluster.awaitLeader( 5, TimeUnit.SECONDS ).database();
 
         try ( Transaction tx = coreDB.beginTx() )
         {
