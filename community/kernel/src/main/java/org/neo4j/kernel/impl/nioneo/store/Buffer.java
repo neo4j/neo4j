@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.nio.ByteBuffer;
 
+import sun.nio.ch.DirectBuffer;
+
 /**
  * Wraps a <CODE>ByteBuffer</CODE> and is tied to a {@link PersistenceWindow}.
  * Using the {@link #setOffset(int)} method one can offset the buffer (within
@@ -53,11 +55,13 @@ public class Buffer
      */
     public ByteBuffer getBuffer()
     {
+        assertOpen();
         return buf;
     }
 
     public void reset()
     {
+        assertOpen();
         buf.clear();
     }
 
@@ -71,6 +75,7 @@ public class Buffer
      */
     public Buffer setOffset( int offset )
     {
+        assertOpen();
         try
         {
             buf.position( offset );
@@ -90,6 +95,7 @@ public class Buffer
      */
     public int getOffset()
     {
+        assertOpen();
         return buf.position();
     }
 
@@ -102,6 +108,7 @@ public class Buffer
      */
     public Buffer put( byte b )
     {
+        assertOpen();
         buf.put( b );
         return this;
     }
@@ -115,6 +122,7 @@ public class Buffer
      */
     public Buffer putInt( int i )
     {
+        assertOpen();
         buf.putInt( i );
         return this;
     }
@@ -128,6 +136,7 @@ public class Buffer
      */
     public Buffer putLong( long l )
     {
+        assertOpen();
         buf.putLong( l );
         return this;
     }
@@ -139,6 +148,7 @@ public class Buffer
      */
     public byte get()
     {
+        assertOpen();
         return buf.get();
     }
 
@@ -149,11 +159,13 @@ public class Buffer
      */
     public int getInt()
     {
+        assertOpen();
         return buf.getInt();
     }
 
     public long getUnsignedInt()
     {
+        assertOpen();
         return buf.getInt()&0xFFFFFFFFL;
     }
 
@@ -164,6 +176,7 @@ public class Buffer
      */
     public long getLong()
     {
+        assertOpen();
         return buf.getLong();
     }
 
@@ -176,12 +189,14 @@ public class Buffer
      */
     public Buffer put( byte src[] )
     {
+        assertOpen();
         buf.put( src );
         return this;
     }
 
     public Buffer put( char src[] )
     {
+        assertOpen();
         int oldPos = buf.position();
         buf.asCharBuffer().put( src );
         buf.position( oldPos + src.length * 2 );
@@ -203,6 +218,7 @@ public class Buffer
      */
     public Buffer put( byte src[], int offset, int length )
     {
+        assertOpen();
         buf.put( src, offset, length );
         return this;
     }
@@ -217,19 +233,34 @@ public class Buffer
      */
     public Buffer get( byte dst[] )
     {
+        assertOpen();
         buf.get( dst );
         return this;
     }
 
     public Buffer get( char dst[] )
     {
+        assertOpen();
         buf.asCharBuffer().get( dst );
         return this;
     }
 
-    public void close()
+    public synchronized void close()
     {
+        if(buf.limit() == 0)
+        {
+            throw new IllegalStateException( "This buffer is already closed, it cannot be closed twice." );
+        }
         buf.limit( 0 );
+        if(buf instanceof DirectBuffer)
+        {
+            ((DirectBuffer)buf).cleaner().clean();
+        }
+    }
+
+    private void assertOpen()
+    {
+        assert buf.limit() > 0 : "This buffer is closed, it is not legal to access it anymore.";
     }
 
     @Override
