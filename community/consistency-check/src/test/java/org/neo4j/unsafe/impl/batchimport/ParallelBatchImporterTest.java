@@ -60,6 +60,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.WriterFactory;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 import org.neo4j.unsafe.impl.batchimport.store.io.SimplePool;
 
@@ -74,15 +75,28 @@ public class ParallelBatchImporterTest
 {
     private static final long SEED = 12345L;
     private static final String[] LABELS = new String[]{"Person", "Guy"};
-    private static final int NODE_COUNT = 100_000;
+    private static final int NODE_COUNT = 10_000;
     private static final int RELATIONSHIP_COUNT = NODE_COUNT * 10;
 
     private static final Configuration config = new Configuration.Default()
     {
         @Override
+        public int batchSize()
+        {
+            // Have this small just to exercise the IoQueue more
+            return 100;
+        }
+
+        @Override
         public int denseNodeThreshold()
         {
             return 30;
+        }
+
+        @Override
+        public int numberOfIoThreads()
+        {
+            return 4;
         }
     };
 
@@ -92,13 +106,12 @@ public class ParallelBatchImporterTest
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data()
     {
-        return Arrays.asList(
-                new Object[]{"synchronous", SYNCHRONOUS},
-                new Object[]{"slow-synchronous", synchronousSlowWriterFactory}
-                // FIXME: disable these WriterFactories due to a race in IoQueue
-//                ,
+        return Arrays.<Object[]>asList(
+//                new Object[]{"synchronous", SYNCHRONOUS},
+//                new Object[]{"slow-synchronous", synchronousSlowWriterFactory}
+                // FIXME: enable these WriterFactories do that race condition IoQueue gets visible
 //                new Object[]{"io-queue", new IoQueue( config.numberOfIoThreads(), SYNCHRONOUS )},
-//                new Object[]{"slow-io-queue", new IoQueue( config.numberOfIoThreads(), synchronousSlowWriterFactory )}
+                new Object[]{"slow-io-queue", new IoQueue( config.numberOfIoThreads(), synchronousSlowWriterFactory )}
         );
     }
 
@@ -190,12 +203,17 @@ public class ParallelBatchImporterTest
             return new Writer()
             {
                 final Writer delegate = SYNCHRONOUS.create( channel, monitor );
+                final Random random = new Random();
 
                 @Override
                 public void write( ByteBuffer data, long position, SimplePool<ByteBuffer> pool )
                         throws IOException
                 {
-                    LockSupport.parkNanos( 50_000_000 ); // slowness comes from here
+                    // Simulate some writes being extra slow
+                    if ( random.nextInt( 10 ) == 0 )
+                    {
+                        LockSupport.parkNanos( random.nextInt( 100 ) * 1_000_000 ); // slowness comes from here
+                    }
                     delegate.write( data, position, pool );
                 }
             };
