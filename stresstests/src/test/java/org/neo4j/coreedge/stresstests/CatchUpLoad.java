@@ -80,7 +80,7 @@ class CatchUpLoad extends RepeatUntilCallable
         try
         {
             monitoredException = startAndRegisterExceptionMonitor( edgeClusterMember );
-            await( () -> txIdBeforeStartingNewEdge <= txId( edgeClusterMember, true ), 3, TimeUnit.MINUTES );
+            await( () -> txIdBeforeStartingNewEdge <= txId( edgeClusterMember, true ), 10, TimeUnit.MINUTES );
         }
         catch ( Throwable e )
         {
