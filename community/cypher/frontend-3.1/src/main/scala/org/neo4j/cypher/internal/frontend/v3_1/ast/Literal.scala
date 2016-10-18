@@ -63,6 +63,10 @@ sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLi
 case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with SignedIntegerLiteral
 case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with UnsignedIntegerLiteral
 
+object UnsignedDecimalIntegerLiteral {
+  def apply(v: Long)(position: InputPosition) = new UnsignedDecimalIntegerLiteral(v.toString)(position)
+}
+
 sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
   lazy val value: java.lang.Long = java.lang.Long.parseLong(stringVal, 8)
 

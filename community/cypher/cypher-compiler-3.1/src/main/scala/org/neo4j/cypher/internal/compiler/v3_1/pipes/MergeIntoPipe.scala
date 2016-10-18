@@ -168,7 +168,7 @@ case class MergeIntoPipe(source: Pipe,
   }
 
   def planDescriptionWithoutCardinality =
-    source.planDescription.andThen(this.id, "Merge(Into)", variables, ExpandExpression(fromName, relName, Seq(typ), toName, dir))
+    source.planDescription.andThen(this.id, "Merge(Into)", variables, ExpandExpression(fromName, relName, Seq(typ), toName, dir, 1, None))
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

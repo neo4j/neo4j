@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v2_3.{notification => notification_2_3}
-import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, notification}
+import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticDirection, notification}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 object RewindableExecutionResult {
@@ -150,8 +150,8 @@ object RewindableExecutionResult {
         case v2_3.planDescription.InternalPlanDescription.Arguments.PlannerImpl(value) => Arguments.PlannerImpl(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(value) => Arguments.Runtime(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.RuntimeImpl(value) => Arguments.RuntimeImpl(value)
-        case v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression(from, relName, relTypes, to, _, varLength) =>
-          Arguments.ExpandExpression(from, relName, relTypes, to, null, varLength)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression(from, relName, relTypes, to, dir, varLength) =>
+          Arguments.ExpandExpression(from, relName, relTypes, to, SemanticDirection.BOTH, 1, None)
         case v2_3.planDescription.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
       }

@@ -65,6 +65,81 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs("n").toList should equal(List(n1, n2))
   }
 
+  // TCK'd
+  test("test zero length var len path in the middle") {
+    createNodes("A", "B", "C", "D", "E")
+    relate("A" -> "CONTAINS" -> "B")
+    relate("B" -> "FRIEND" -> "C")
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a {name:'A'})-[:CONTAINS*0..1]->(b)-[:FRIEND*0..1]->(c) return a,b,c")
+
+    result.toSet should equal(
+      Set(
+        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A")),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B")),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C")))
+      )
+  }
+
+  // TCK'd
+  test("simple var length acceptance test") {
+    createNodes("A", "B", "C", "D")
+    relate("A" -> "CONTAINS" -> "B")
+    relate("B" -> "CONTAINS" -> "C")
+    relate("C" -> "CONTAINS" -> "D")
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a {name:'A'})-[*]->(x) return x")
+
+    result.toSet should equal(
+      Set(
+        Map("x" -> node("B")),
+        Map("x" -> node("C")),
+        Map("x" -> node("D")))
+      )
+  }
+
+  // TCK'd
+  test("should return a var length path without minimal length") {
+    createNodes("A", "B", "C")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+    val r2 = relate("B" -> "KNOWS" -> "C")
+
+    val result = graph.execute("profile cypher planner=rule match p=(n {name:'A'})-[:KNOWS*..2]->(x) return p")
+    println(result.resultAsString())
+    println(result.getExecutionPlanDescription)
+//    val result = executeWithAllPlannersAndCompatibilityMode("match p=(n {name:'A'})-[:KNOWS*..2]->(x) return p")
+
+
+//    result.columnAs[Path]("p").toList should equal(List(
+//      PathImpl(node("A"), r1, node("B")),
+//      PathImpl(node("A"), r1, node("B"), r2, node("C"))
+//    ))
+  }
+
+  // TCK'd
+  test("should return a var length path with unbound max") {
+    createNodes("A", "B", "C")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+    val r2 = relate("B" -> "KNOWS" -> "C")
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match p=(n {name:'A'})-[:KNOWS*..]->(x) return p")
+
+    result.columnAs[Path]("p").toList should equal(List(
+      PathImpl(node("A"), r1, node("B")),
+      PathImpl(node("A"), r1, node("B"), r2, node("C"))
+    ))
+  }
+
+  // TCK'd
+  test("should handle bound nodes not part of the pattern") {
+    createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a {name:'A'}),(c {name:'C'}) match (a)-->(b) return a,b,c").toSet
+
+    result should equal (Set(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))))
+  }
+
   // Not TCK material -- shortestPath(), allShortestPaths()
 
   test("should return shortest path") {
