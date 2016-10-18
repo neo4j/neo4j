@@ -21,9 +21,9 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.function.example.JoinFunction
 import org.neo4j.graphdb.Label
 import org.neo4j.kernel.impl.proc.Procedures
-import org.neo4j.procedure.example.JoinFunction
 
 class UserDefinedFunctionTest extends DocumentingTestBase with QueryStatisticsTestSupport with HardReset {
 
@@ -31,7 +31,7 @@ class UserDefinedFunctionTest extends DocumentingTestBase with QueryStatisticsTe
 
   override def hardReset() = {
     super.hardReset()
-    db.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction( classOf[JoinFunction] )
+    db.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[JoinFunction])
     db.inTx {
       for (name <- List("John", "Paul", "George", "Ringo")) {
         val node = db.createNode(Label.label("Member"))
@@ -43,11 +43,11 @@ class UserDefinedFunctionTest extends DocumentingTestBase with QueryStatisticsTe
   @Test def call_a_udf() {
     testQuery(
       title = "Call a user-defined function",
-      text = "This calls the user defined function `org.neo4j.procedure.example.join`",
-      queryText = "MATCH (n:Member) RETURN org.neo4j.procedure.example.join(collect(n.name))",
+      text = "This calls the user-defined function `org.neo4j.procedure.example.join()`.",
+      queryText = "MATCH (n:Member) RETURN org.neo4j.function.example.join(collect(n.name))",
       optionalResultExplanation = "",
       assertions = (p) => {
         p.toList === List("John,Paul,George,Ringo")
-      } )
+      })
   }
 }

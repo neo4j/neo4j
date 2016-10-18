@@ -290,17 +290,10 @@ ifndef::asciidoctor[:leveloffset: 1]
 == User-defined functions ==
 User-defined functions are written in Java, deployed into the database and are called in the same way as any other Cypher function.
 
-This example shows how you create a _user-defined function_ and invoke it from Cypher.
-[snippet,java]
-----
-component=neo4j-cypher-docs
-source=org/neo4j/procedure/example/JoinFunction.java
-classifier=sources
-tag=joinFunction
-----
+This example shows how you invoke a user-defined function called `join` from Cypher.
 
 ifndef::asciidoctor[:leveloffset: 2]
 
-include::call-a-user-defined-function.asciidoc[]
+include::call-a-user-defined-function.asciidoc[leveloffset=+1]
 
 ifdef::asciidoctor[See also <<user-defined-functions>>.]

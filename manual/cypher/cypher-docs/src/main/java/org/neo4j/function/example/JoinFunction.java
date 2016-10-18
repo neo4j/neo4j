@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.example;
+package org.neo4j.function.example;
 
 import java.util.List;
 
@@ -37,7 +37,7 @@ public class JoinFunction
      * @return A string composed of the <code>strings</code> joined using the <code>delimiter</code>
      */
     @UserFunction
-    @Description( "org.neo4j.procedure.example.join(['s1','s2',...], delimiter) - join the given strings with the " +
+    @Description( "org.neo4j.function.example.join(['s1','s2',...], delimiter) - join the given strings with the " +
                   "given delimiter." )
     public String join(
             @Name( "strings" ) List<String> strings,
