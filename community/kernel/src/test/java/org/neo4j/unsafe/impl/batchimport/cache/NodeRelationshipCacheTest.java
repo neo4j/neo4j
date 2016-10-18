@@ -328,22 +328,20 @@ public class NodeRelationshipCacheTest
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 10, 100, base );
         long nodeId = 5;
-        int count = NodeRelationshipCache.MAX_COUNT - 5;
+        long count = NodeRelationshipCache.MAX_COUNT - 1;
         cache.setHighNodeId( 10 );
-        cache.setCount( nodeId, count );
+        cache.setCount( nodeId, count, OUTGOING );
 
         // WHEN
-        for ( int i = 0; i < 10; i++ )
+        cache.incrementCount( nodeId );
+        try
         {
-            try
-            {
-                cache.incrementCount( i );
-            }
-            catch ( IllegalStateException e )
-            {
-                assertEquals( NodeRelationshipCache.MAX_COUNT + 1, i );
-                break;
-            }
+            cache.incrementCount( nodeId );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN Good
         }
     }
 
@@ -402,9 +400,54 @@ public class NodeRelationshipCacheTest
         }
     }
 
+    @Test
+    public void shouldHaveSparseNodesWithBigCounts() throws Exception
+    {
+        // GIVEN
+        cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
+        long nodeId = 1;
+        cache.setHighNodeId( nodeId + 1 );
+
+        // WHEN
+        long highCount = NodeRelationshipCache.MAX_COUNT - 100;
+        cache.setCount( nodeId, highCount, OUTGOING );
+        long nextHighCount = cache.incrementCount( nodeId );
+
+        // THEN
+        assertEquals( highCount + 1, nextHighCount );
+    }
+
+    @Test
+    public void shouldHaveDenseNodesWithBigCounts() throws Exception
+    {
+        // A count of a dense node follow a different path during import, first there's counting per node
+        // then import goes into actual import of relationships where individual chain degrees are
+        // kept. So this test will first set a total count, then set count for a specific chain
+
+        // GIVEN
+        cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
+        long nodeId = 1;
+        cache.setHighNodeId( nodeId + 1 );
+        cache.setCount( nodeId, 2, OUTGOING ); // surely dense now
+        cache.getAndPutRelationship( nodeId, OUTGOING, 1, true );
+        cache.getAndPutRelationship( nodeId, INCOMING, 2, true );
+
+        // WHEN
+        long highCountOut = NodeRelationshipCache.MAX_COUNT - 100;
+        long highCountIn = NodeRelationshipCache.MAX_COUNT - 50;
+        cache.setCount( nodeId, highCountOut, OUTGOING );
+        cache.setCount( nodeId, highCountIn, INCOMING );
+        cache.getAndPutRelationship( nodeId, OUTGOING, 1, true /*increment count*/ );
+        cache.getAndPutRelationship( nodeId, INCOMING, 2, true /*increment count*/ );
+
+        // THEN
+        assertEquals( highCountOut + 1, cache.getCount( nodeId, OUTGOING ) );
+        assertEquals( highCountIn + 1, cache.getCount( nodeId, INCOMING ) );
+    }
+
     private void testNode( NodeRelationshipCache link, long node, Direction direction )
     {
-        int count = link.getCount( node, direction );
+        long count = link.getCount( node, direction );
         assertEquals( -1, link.getAndPutRelationship( node, direction, 5, false ) );
         assertEquals( 5, link.getAndPutRelationship( node, direction, 10, false ) );
         assertEquals( count, link.getCount( node, direction ) );
@@ -422,9 +465,9 @@ public class NodeRelationshipCacheTest
         throw new IllegalArgumentException( "No dense node found" );
     }
 
-    private int incrementRandomCounts( NodeRelationshipCache link, int nodeCount, int i )
+    private long incrementRandomCounts( NodeRelationshipCache link, int nodeCount, int i )
     {
-        int highestSeenCount = 0;
+        long highestSeenCount = 0;
         while ( i --> 0 )
         {
             long node = random.nextInt( nodeCount );
