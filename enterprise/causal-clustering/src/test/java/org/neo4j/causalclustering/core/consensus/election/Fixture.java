@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.election;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,8 +31,11 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMachine.BootstrapException;
 import org.neo4j.causalclustering.core.consensus.RaftMachineBuilder;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
-import org.neo4j.causalclustering.core.consensus.membership.RaftTestGroup;
+import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
+import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
+import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.TestNetwork;
@@ -40,6 +44,8 @@ import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.helpers.collection.Iterables.asSet;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class Fixture
@@ -47,7 +53,7 @@ public class Fixture
     private final Set<MemberId> members = new HashSet<>();
     private final Set<BootstrapWaiter> bootstrapWaiters = new HashSet<>();
     private final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
-    final Set<RaftMachine> rafts = new HashSet<>();
+    final Set<RaftFixture> rafts = new HashSet<>();
     final TestNetwork net;
 
     Fixture( Set<MemberId> memberIds, TestNetwork net, long electionTimeout, long heartbeatInterval )
@@ -66,6 +72,7 @@ public class Fixture
             BootstrapWaiter waiter = new BootstrapWaiter();
             bootstrapWaiters.add( waiter );
 
+            InMemoryRaftLog raftLog = new InMemoryRaftLog();
             RaftMachine raftMachine =
                     new RaftMachineBuilder( member, memberIds.size(), RaftTestMemberSetBuilder.INSTANCE )
                             .electionTimeout( electionTimeout )
@@ -73,11 +80,11 @@ public class Fixture
                             .inbound( inbound )
                             .outbound( outbound )
                             .timeoutService( timeoutService )
-                            .raftLog( new InMemoryRaftLog() )
+                            .raftLog( raftLog )
                             .commitListener( waiter )
                             .build();
 
-            rafts.add( raftMachine );
+            rafts.add( new RaftFixture(raftMachine, raftLog) );
         }
     }
 
@@ -94,11 +101,12 @@ public class Fixture
         return timeoutService;
     }
 
-    void boot() throws BootstrapException, TimeoutException, InterruptedException
+    void boot() throws BootstrapException, TimeoutException, InterruptedException, IOException
     {
-        for ( RaftMachine raft : rafts )
+        for ( RaftFixture raft : rafts )
         {
-            raft.bootstrapWithInitialMembers( new RaftTestGroup( members ) );
+            raft.raftLog().append( new RaftLogEntry(0, new MemberIdSet(asSet( members ))) );
+            raft.raftMachine().installCoreState( new RaftCoreState( new MembershipEntry( 0, members  ) ) );
         }
         net.start();
         awaitBootstrapped();
@@ -118,9 +126,9 @@ public class Fixture
                 e.printStackTrace();
             }
         }
-        for ( RaftMachine raft : rafts )
+        for ( RaftFixture raft : rafts )
         {
-            raft.logShippingManager().stop();
+            raft.raftMachine().logShippingManager().stop();
         }
     }
 
@@ -157,5 +165,28 @@ public class Fixture
             }
             return true;
         }, 30, SECONDS, 100, MILLISECONDS );
+    }
+
+    class RaftFixture
+    {
+
+        private final RaftMachine raftMachine;
+        private final InMemoryRaftLog raftLog;
+
+        public RaftFixture( RaftMachine raftMachine, InMemoryRaftLog raftLog )
+        {
+            this.raftMachine = raftMachine;
+            this.raftLog = raftLog;
+        }
+
+        public RaftMachine raftMachine()
+        {
+            return raftMachine;
+        }
+
+        public InMemoryRaftLog raftLog()
+        {
+            return raftLog;
+        }
     }
 }

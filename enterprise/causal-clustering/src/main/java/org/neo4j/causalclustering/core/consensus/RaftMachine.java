@@ -29,9 +29,7 @@ import java.util.function.Predicate;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
-import org.neo4j.causalclustering.core.consensus.membership.RaftGroup;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManager;
-import org.neo4j.causalclustering.core.consensus.outcome.AppendLogEntry;
 import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
@@ -52,7 +50,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static java.util.Collections.singletonList;
+
 import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 
 /**
@@ -72,7 +70,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private final RaftState state;
     private final MemberId myself;
-    private final RaftLog entryLog;
 
     private final RenewableTimeoutService renewableTimeoutService;
     private final long heartbeatInterval;
@@ -100,7 +97,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
                         Monitors monitors )
     {
         this.myself = myself;
-        this.entryLog = entryLog;
         this.electionTimeout = electionTimeout;
         this.heartbeatInterval = heartbeatInterval;
 
@@ -166,42 +162,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     public synchronized void installCoreState( RaftCoreState coreState ) throws IOException
     {
         membershipManager.install( coreState.committed() );
-    }
-
-    /**
-     * All members must be bootstrapped with the exact same set of initial members. Bootstrapping
-     * requires an empty log as input and will seed it with the initial group entry in term 0.
-     *
-     * @param memberSet The other members.
-     */
-    public synchronized void bootstrapWithInitialMembers( RaftGroup memberSet ) throws BootstrapException
-    {
-        log.info( "Attempting to bootstrap with initial member set %s", memberSet );
-        if ( entryLog.appendIndex() >= 0 )
-        {
-            log.info( "Ignoring bootstrap attempt because the raft log is not empty." );
-            return;
-        }
-
-        RaftLogEntry membershipLogEntry = new RaftLogEntry( 0, memberSet );
-
-        try
-        {
-            Outcome outcome = new Outcome( currentRole, state );
-            outcome.setCommitIndex( 0 );
-            outcome.setLeaderCommit( 0 );
-
-            AppendLogEntry appendCommand = new AppendLogEntry( 0, membershipLogEntry );
-            outcome.addLogCommand( appendCommand );
-
-            state.update( outcome );
-
-            membershipManager.processLog( 0, singletonList( appendCommand ) );
-        }
-        catch ( IOException e )
-        {
-            throw new BootstrapException( e );
-        }
     }
 
     public synchronized void setTargetMembershipSet( Set<MemberId> targetMembers )

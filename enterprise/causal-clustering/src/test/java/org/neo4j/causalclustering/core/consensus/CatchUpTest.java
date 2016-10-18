@@ -19,16 +19,19 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+
+import org.junit.Test;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages.NewEntry.Request;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
-import org.neo4j.causalclustering.core.consensus.membership.RaftTestGroup;
+import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
+import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -80,7 +83,8 @@ public class CatchUpTest
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, allMembers );
         fixture.bootstrap( allMembers );
-        fixture.members().withId( leaderId ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( allMembers ) );
+        fixture.members().withId( leaderId ).raftInstance().installCoreState(
+                new RaftCoreState( new MembershipEntry( 0, new HashSet<>( Arrays.asList( allMembers ) ) ) ));
 
         fixture.members().withId( leaderId ).timeoutService().invokeTimeout( RaftMachine.Timeouts.ELECTION );
         net.processMessages();

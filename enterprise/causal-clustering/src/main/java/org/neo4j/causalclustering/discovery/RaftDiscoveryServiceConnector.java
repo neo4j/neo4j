@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMachine.BootstrapException;
-import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -41,14 +40,6 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
     @Override
     public void start() throws BootstrapException
     {
-        CoreTopology clusterTopology = discoveryService.coreServers();
-        Set<MemberId> initialMembers = clusterTopology.members();
-
-        if ( clusterTopology.canBeBootstrapped() )
-        {
-            raftMachine.bootstrapWithInitialMembers( new MemberIdSet( initialMembers ) );
-        }
-
         discoveryService.addCoreTopologyListener( this );
     }
 

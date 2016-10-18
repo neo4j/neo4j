@@ -24,15 +24,16 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMachineBuilder;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.membership.RaftTestGroup;
-import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
+import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
+import org.neo4j.causalclustering.messaging.Inbound;
+import org.neo4j.causalclustering.messaging.Outbound;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
@@ -40,12 +41,14 @@ import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.voteRequest;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.voteResponse;
 import static org.neo4j.causalclustering.core.consensus.roles.Role.CANDIDATE;
 import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class ElectionTest
@@ -72,7 +75,7 @@ public class ElectionTest
                 .timeoutService( timeouts )
                 .build();
 
-        raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
+        raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
 
         timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
 
@@ -102,7 +105,8 @@ public class ElectionTest
                 .timeoutService( timeouts )
                 .build();
 
-        raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
+        raft.installCoreState(
+                new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 ) ) ));
 
         timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
 
@@ -129,7 +133,7 @@ public class ElectionTest
                 .timeoutService( timeouts )
                 .build();
 
-        raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
+        raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
 
         // when
         raft.handle( voteRequest().from( member1 ).candidate( member1 ).term( 1 ).build() );
