@@ -45,6 +45,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -55,6 +56,7 @@ import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.hasNotification;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
@@ -346,6 +348,25 @@ public class TransportSessionIT
         assertThat( client, eventuallyRecieves(
                 msgSuccess(),
                 msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string.")) );
+    }
+
+    @Test
+    public void shouldFailNicelyWhenDroppingUnknownIndex() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "DROP INDEX on :Movie12345(id)" ),
+                        pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves(
+                msgSuccess(),
+                msgFailure( Status.Schema.IndexDropFailed, "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)."),
+                msgIgnored()) );
     }
 
     @Before

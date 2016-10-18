@@ -605,14 +605,12 @@ public interface Status
 
         private final boolean rollbackTransaction;
         private final boolean shouldLog;
-        private final boolean respondToClient;
         private final String description;
 
         Classification( TransactionEffect transactionEffect, PublishingPolicy publishingPolicy, String description )
         {
             this.description = description;
             this.shouldLog = publishingPolicy.shouldLog();
-            this.respondToClient = publishingPolicy != PublishingPolicy.REFERS_TO_LOG;
             this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
         }
 
@@ -624,11 +622,6 @@ public interface Status
         public boolean shouldLog()
         {
             return shouldLog;
-        }
-
-        public boolean shouldRespondToClient()
-        {
-            return respondToClient;
         }
 
         public String description()
