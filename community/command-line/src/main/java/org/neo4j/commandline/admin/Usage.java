@@ -63,10 +63,7 @@ public class Usage
             String arguments = command.arguments().map( ( s ) -> " " + s ).orElse( "" );
             output.accept( format( "%s %s%s", scriptName, command.name(), arguments ) );
             output.accept( "" );
-            for ( String line : splitLongLine( command.summary(), 80 ) )
-            {
-                output.accept( "    " + line );
-            }
+            output.accept( "    " + command.summary() );
             output.accept( "" );
         }
     }

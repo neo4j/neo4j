@@ -49,7 +49,7 @@ public class UsageTest
                         new StubProvider( "restore",
                                 Optional.of( "---from <backup-directory> --database=<database-name> [--force]" ),
                                 "Restores a database backed up using the neo4j-backup tool." ),
-                        new StubProvider( "bam", Optional.empty(), "Some description" )
+                        new StubProvider( "bam", Optional.empty(), "A summary" )
                 };
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
         usage.print( out );
@@ -64,7 +64,7 @@ public class UsageTest
         ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "neo4j-admin bam" );
         ordered.verify( out ).accept( "" );
-        ordered.verify( out ).accept( "    Some description" );
+        ordered.verify( out ).accept( "    A summary" );
         ordered.verify( out ).accept( "" );
         ordered.verifyNoMoreInteractions();
     }
@@ -72,13 +72,13 @@ public class UsageTest
     private static class StubProvider extends AdminCommand.Provider
     {
         private final Optional<String> arguments;
-        private final String description;
+        private final String summary;
 
-        public StubProvider( String name, Optional<String> arguments, String description )
+        public StubProvider( String name, Optional<String> arguments, String summary )
         {
             super( name );
             this.arguments = arguments;
-            this.description = description;
+            this.summary = summary;
         }
 
         @Override
@@ -90,13 +90,13 @@ public class UsageTest
         @Override
         public String description()
         {
-            return description;
+            return "";
         }
 
         @Override
         public String summary()
         {
-            return description;
+            return summary;
         }
 
         @Override
