@@ -651,6 +651,15 @@ public class NeoStoresTest
             assertEquals( 12, metaDataStore.getUpgradeTime() );
             assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{6,44,43} );
         }
+
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13 );
+
+        try ( NeoStores neoStores = factory.openAllNeoStores() )
+        {
+            MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+            assertEquals( new TransactionId( 10, 11, 13 ),
+                    metaDataStore.getUpgradeTransaction() );
+        }
     }
 
     @Test
