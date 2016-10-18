@@ -49,15 +49,10 @@ public class TruncateLogCommand implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( InFlightMap<Long,RaftLogEntry> inFlightMap, Log log ) throws IOException
+    public void applyTo( InFlightMap<RaftLogEntry> inFlightMap, Log log ) throws IOException
     {
-        long truncateIndex = fromIndex;
-        log.debug( "Start truncating in-flight-map from index %d. Current map:%n%s", truncateIndex, inFlightMap );
-        while ( inFlightMap.unregister( truncateIndex ) )
-        {
-            truncateIndex++;
-        }
-        log.debug( "End truncating in-flight-map at index %d", truncateIndex - 1 );
+        log.debug( "Start truncating in-flight-map from index %d. Current map:%n%s", fromIndex, inFlightMap );
+        inFlightMap.truncate( fromIndex );
     }
 
     @Override

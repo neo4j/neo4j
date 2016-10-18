@@ -62,7 +62,7 @@ public class RaftStateTest
         //Test that updates applied to the raft state will be refelcted in the entry cache.
 
         //given
-        InFlightMap<Long,RaftLogEntry> cache = new InFlightMap<>();
+        InFlightMap<RaftLogEntry> cache = new InFlightMap<>();
         RaftState raftState = new RaftState( member( 0 ),
                 new InMemoryStateStorage<>( new TermState() ), new FakeMembership(), new InMemoryRaftLog(),
                 new InMemoryStateStorage<>( new VoteState() ), cache, NullLogProvider.getInstance() );
@@ -85,11 +85,11 @@ public class RaftStateTest
         raftState.update(raftTestMemberOutcome);
 
         //then
-        assertNotNull( cache.retrieve( 1L ) );
-        assertNotNull( cache.retrieve( 2L ) );
-        assertNotNull( cache.retrieve( 3L ) );
-        assertEquals( valueOf( 5 ), cache.retrieve( 3L ).content() );
-        assertNull( cache.retrieve( 4L ) );
+        assertNotNull( cache.get( 1L ) );
+        assertNotNull( cache.get( 2L ) );
+        assertNotNull( cache.get( 3L ) );
+        assertEquals( valueOf( 5 ), cache.get( 3L ).content() );
+        assertNull( cache.get( 4L ) );
     }
 
     @Test

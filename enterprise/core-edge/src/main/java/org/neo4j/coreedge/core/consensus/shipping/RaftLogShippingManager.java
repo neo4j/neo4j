@@ -51,7 +51,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
-    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
+    private final InFlightMap<RaftLogEntry> inFlightMap;
 
     private Map<MemberId,RaftLogShipper> logShippers = new HashMap<>();
     private LeaderContext lastLeaderContext;
@@ -63,7 +63,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
                                    ReadableRaftLog raftLog,
                                    Clock clock, MemberId myself, RaftMembership membership, long retryTimeMillis,
                                    int catchupBatchSize, int maxAllowedShippingLag,
-                                   InFlightMap<Long, RaftLogEntry> inFlightMap )
+                                   InFlightMap<RaftLogEntry> inFlightMap )
     {
         this.outbound = outbound;
         this.logProvider = logProvider;

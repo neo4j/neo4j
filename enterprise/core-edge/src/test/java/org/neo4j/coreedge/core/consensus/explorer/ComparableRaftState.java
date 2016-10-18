@@ -53,11 +53,11 @@ public class ComparableRaftState implements ReadableRaftState
     private long lastLogIndexBeforeWeBecameLeader = -1;
     private FollowerStates followerStates = new FollowerStates<>();
     protected final RaftLog entryLog;
-    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
+    private final InFlightMap<RaftLogEntry> inFlightMap;
     private long commitIndex = -1;
 
     ComparableRaftState( MemberId myself, Set votingMembers, Set replicationMembers,
-                         RaftLog entryLog, InFlightMap<Long, RaftLogEntry> inFlightMap, LogProvider logProvider )
+                         RaftLog entryLog, InFlightMap<RaftLogEntry> inFlightMap, LogProvider logProvider )
     {
         this.myself = myself;
         this.votingMembers = votingMembers;

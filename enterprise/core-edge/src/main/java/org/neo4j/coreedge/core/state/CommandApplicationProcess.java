@@ -56,7 +56,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
     private final ProgressTracker progressTracker;
     private final SessionTracker sessionTracker;
     private final Supplier<DatabaseHealth> dbHealth;
-    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
+    private final InFlightMap<RaftLogEntry> inFlightMap;
     private final Log log;
     private final CoreStateApplier applier;
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
@@ -81,7 +81,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
             StateStorage<Long> lastFlushedStorage,
             SessionTracker sessionTracker,
             CoreStateApplier applier,
-            InFlightMap<Long, RaftLogEntry> inFlightMap,
+            InFlightMap<RaftLogEntry> inFlightMap,
             Monitors monitors )
     {
         this.coreStateMachines = coreStateMachines;

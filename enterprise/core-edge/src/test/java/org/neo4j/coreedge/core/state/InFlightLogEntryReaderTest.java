@@ -47,7 +47,7 @@ public class InFlightLogEntryReaderTest
 {
     private final ReadableRaftLog raftLog = mock( ReadableRaftLog.class );
     @SuppressWarnings( "unchecked" )
-    private final InFlightMap<Long,RaftLogEntry> inFlightMap = mock( InFlightMap.class );
+    private final InFlightMap<RaftLogEntry> inFlightMap = mock( InFlightMap.class );
     private final long logIndex = 42L;
     private final RaftLogEntry entry = mock( RaftLogEntry.class );
 
@@ -73,7 +73,7 @@ public class InFlightLogEntryReaderTest
 
         // then
         assertEquals( entry, raftLogEntry );
-        verify( inFlightMap ).retrieve( logIndex );
+        verify( inFlightMap ).get( logIndex );
         assertCacheIsUpdated( inFlightMap, logIndex );
         verifyNoMoreInteractions( inFlightMap );
         verifyZeroInteractions( raftLog );
@@ -92,9 +92,10 @@ public class InFlightLogEntryReaderTest
 
         // then
         assertEquals( entry, raftLogEntry );
-        verify( inFlightMap ).retrieve( logIndex );
+        verify( inFlightMap ).get( logIndex );
         verify( raftLog ).getEntryCursor( logIndex );
         assertCacheIsUpdated( inFlightMap, logIndex );
+
         verifyNoMoreInteractions( inFlightMap );
         verifyNoMoreInteractions( raftLog );
     }
@@ -118,7 +119,7 @@ public class InFlightLogEntryReaderTest
 
             if ( offset <= 1)
             {
-                verify( inFlightMap ).retrieve( offset + logIndex );
+                verify( inFlightMap ).get( offset + logIndex );
             }
 
             if ( offset == 1 )
@@ -133,13 +134,13 @@ public class InFlightLogEntryReaderTest
         verifyNoMoreInteractions( raftLog );
     }
 
-    private void startingFromIndexReturnEntries( InFlightMap<Long,RaftLogEntry> inFlightMap, long startIndex,
+    private void startingFromIndexReturnEntries( InFlightMap<RaftLogEntry> inFlightMap, long startIndex,
             RaftLogEntry entry, RaftLogEntry... otherEntries ) throws IOException
     {
-        when( inFlightMap.retrieve( startIndex ) ).thenReturn( entry );
+        when( inFlightMap.get( startIndex ) ).thenReturn( entry );
         for ( int offset = 0; offset < otherEntries.length; offset++ )
         {
-            when( inFlightMap.retrieve( startIndex + offset + 1L ) ).thenReturn( otherEntries[offset] );
+            when( inFlightMap.get( startIndex + offset + 1L ) ).thenReturn( otherEntries[offset] );
         }
     }
 
@@ -168,15 +169,15 @@ public class InFlightLogEntryReaderTest
         when( cursor.get() ).thenReturn( entry, raftLogEntries );
     }
 
-    public void assertCacheIsUpdated( InFlightMap<Long,RaftLogEntry> inFlightMap, long key )
+    public void assertCacheIsUpdated( InFlightMap<RaftLogEntry> inFlightMap, long key )
     {
         if ( clearCache )
         {
-            verify( inFlightMap, times( 1 ) ).unregister( key );
+            verify( inFlightMap, times( 1 ) ).remove( key );
         }
         else
         {
-            verify( inFlightMap, never() ).unregister( key );
+            verify( inFlightMap, never() ).remove( key );
         }
     }
 }

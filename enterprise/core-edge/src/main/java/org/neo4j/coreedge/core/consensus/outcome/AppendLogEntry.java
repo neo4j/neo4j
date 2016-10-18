@@ -49,9 +49,9 @@ public class AppendLogEntry implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( InFlightMap<Long, RaftLogEntry> inFlightMap, Log log ) throws IOException
+    public void applyTo( InFlightMap<RaftLogEntry> inFlightMap, Log log ) throws IOException
     {
-        inFlightMap.register( index, entry );
+        inFlightMap.put( index, entry );
     }
 
     @Override
