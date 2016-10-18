@@ -24,6 +24,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.collection.ContinuableArrayCursor;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -65,6 +67,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     private final TicketedProcessing<CharSeeker,Header,ENTITY[]> processing;
     private final ContinuableArrayCursor<ENTITY> cursor;
     private SourceTraceability last = SourceTraceability.EMPTY;
+    private final Future<Void> processingCompletion;
 
     @SuppressWarnings( "unchecked" )
     public ParallelInputEntityDeserializer( Data<ENTITY> data, Header.Factory headerFactory, Configuration config,
@@ -119,7 +122,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             cursor = new ContinuableArrayCursor<>( batchSupplier );
 
             // Start an asynchronous slurp of the chunks fed directly into the processors
-            processing.slurp( seekers( firstSeeker, source, config ), true );
+            processingCompletion = processing.slurp( seekers( firstSeeker, source, config ), true );
         }
         catch ( IOException e )
         {
@@ -260,7 +263,11 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     @Override
     public void close()
     {
-        processing.shutdown( true );
+        // At this point normally the "slurp" above will have called shutdown and so calling close
+        // before that has completed signals some sort of panic. Encode this knowledge in flags passed
+        // to shutdown
+        int flags = processingCompletion.isDone() ? 0 : TaskExecutor.SF_ABORT_QUEUED;
+        processing.shutdown( flags );
         try
         {
             source.close();

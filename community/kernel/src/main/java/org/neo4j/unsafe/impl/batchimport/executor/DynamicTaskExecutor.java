@@ -168,6 +168,12 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     {
         if ( shutDown )
         {
+            // We're already shut down, although take the ABORT_QUEUED flag seriously as to abort all
+            // processors still working on tasks. This looks like a panic.
+            if ( (flags & TaskExecutor.SF_ABORT_QUEUED) != 0 )
+            {
+                this.abortQueued = true;
+            }
             return;
         }
 

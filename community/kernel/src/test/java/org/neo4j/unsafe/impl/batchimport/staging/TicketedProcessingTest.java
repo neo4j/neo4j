@@ -30,6 +30,7 @@ import java.util.function.BiFunction;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.test.OtherThreadRule;
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -83,7 +84,7 @@ public class TicketedProcessingTest
         {
             processing.submit( i );
         }
-        processing.shutdown( true );
+        processing.shutdown( TaskExecutor.SF_AWAIT_ALL_COMPLETED );
 
         // THEN
         assertions.get();
@@ -126,7 +127,7 @@ public class TicketedProcessingTest
         assertEquals( 3, processing.next().intValue() );
 
         // THEN
-        processing.shutdown( true );
+        processing.shutdown( TaskExecutor.SF_AWAIT_ALL_COMPLETED );
     }
 
     private static class StringJob
