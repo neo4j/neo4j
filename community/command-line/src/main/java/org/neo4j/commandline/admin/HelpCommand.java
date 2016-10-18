@@ -41,13 +41,13 @@ public class HelpCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.empty();
+            return Optional.of( "[<command>] ");
         }
 
         @Override
         public String description()
         {
-            return "Display this help text.";
+            return "This help text, or help for the command specified in <command>.";
         }
 
         @Override
