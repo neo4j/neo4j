@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_1.SyntaxExceptionCreator
-import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.StatementConverters.toUnionQuery
-import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.flattenBooleanOperators
-import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_1.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v3_2.SyntaxExceptionCreator
+import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters.toUnionQuery
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.flattenBooleanOperators
+import org.neo4j.cypher.internal.compiler.v3_2.planner._
+import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_2.{DummyPosition, SemanticTable}
 
-class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val rewriter = PlannerQueryRewriter
+  val rewriter = OptionalMatchRemover
 
   assert_that(
     """MATCH (a)
@@ -174,7 +174,7 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
           OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->(:A:B {foo: 'apa', id: 42})
           RETURN DISTINCT b as b""")
 
-  case class rewriteTester(originalQuery: String) {
+  case class RewriteTester(originalQuery: String) {
     def is_rewritten_to(newQuery: String): Unit =
       test(originalQuery) {
         val expected = getUnionQueryFrom(newQuery.stripMargin)
@@ -191,7 +191,7 @@ class PlannerQueryRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
-  private def assert_that(originalQuery: String): rewriteTester = rewriteTester(originalQuery)
+  private def assert_that(originalQuery: String): RewriteTester = RewriteTester(originalQuery)
 
   private def getUnionQueryFrom(query: String): UnionQuery = {
     val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)

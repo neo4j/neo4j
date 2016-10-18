@@ -78,13 +78,13 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     }
   }
 
-  def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
-                        (planContext: PlanContext,
-                         notificationLogger: InternalNotificationLogger):
+  private def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
+                        (planContext: PlanContext, notificationLogger: InternalNotificationLogger):
   (Option[PeriodicCommit], LogicalPlan, PipeExecutionBuilderContext) = {
 
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val unionQuery = toUnionQuery(ast, semanticTable).endoRewrite(PlannerQueryRewriter)
+    val original = toUnionQuery(ast, semanticTable)
+    val unionQuery = original.endoRewrite(OptionalMatchRemover)
     val metrics = metricsFactory.newMetrics(planContext.statistics)
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
 

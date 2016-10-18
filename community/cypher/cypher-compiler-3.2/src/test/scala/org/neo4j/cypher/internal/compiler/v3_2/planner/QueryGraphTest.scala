@@ -25,11 +25,12 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class QueryGraphTest extends CypherFunSuite {
   val x = IdName("x")
-  val n = IdName("a")
-  val m = IdName("b")
+  val n = IdName("n")
+  val m = IdName("m")
   val c = IdName("c")
   val r1 = IdName("r1")
   val r2 = IdName("r2")
+  val r3 = IdName("r3")
 
   test("returns no pattern relationships when the query graph doesn't contain any") {
     val rels: Set[PatternRelationship] = Set.empty
@@ -78,7 +79,7 @@ class QueryGraphTest extends CypherFunSuite {
     qg.smallestGraphIncluding(Set(n, m)) should equal(Set(n, m, r1))
   }
 
-  test("finds shortest path starting from two nodes with a two relationships in the QG") {
+  test("finds shortest path starting from two nodes with two relationships in the QG") {
     val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m, c))
@@ -86,7 +87,7 @@ class QueryGraphTest extends CypherFunSuite {
     qg.smallestGraphIncluding(Set(n, m)) should equal(Set(n, m, r1))
   }
 
-  test("finds shortest path starting from two nodes with a two relationships between the same nodes in the QG") {
+  test("finds shortest path starting from two nodes with two relationships between the same nodes in the QG") {
     val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val pattRel2 = PatternRelationship(r2, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m))
@@ -106,10 +107,10 @@ class QueryGraphTest extends CypherFunSuite {
       Set(n, m, c, r1, r2))
   }
 
-  test("find smallest graph that connect three nodes") { // MATCH (x)<--(a)-->(b), (a)-->(c) RETURN DISTINCT a,b,c
+  test("find smallest graph that connect three nodes") { // MATCH (n)-[r1]-(m), (n)-[r2]->(c), (n)-[r3]->(x)
     val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val pattRel2 = PatternRelationship(r2, (n, c), BOTH, Seq.empty, SimplePatternLength)
-    val pattRel3 = PatternRelationship(IdName("r3"), (n, x), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel3 = PatternRelationship(r3, (n, x), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattRel1, pattRel2, pattRel3),
       patternNodes = Set(n, m, c, x))

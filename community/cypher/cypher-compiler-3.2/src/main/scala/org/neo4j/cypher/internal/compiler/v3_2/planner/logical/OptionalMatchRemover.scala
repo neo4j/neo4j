@@ -28,15 +28,15 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.collection.{TraversableOnce, mutable}
 
-case object PlannerQueryRewriter extends Rewriter {
+case object OptionalMatchRemover extends Rewriter {
 
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = topDown(Rewriter.lift {
-    case RegularPlannerQuery(graph, AggregatingQueryProjection(distinctExpressions, aggregations, shuffle), tail)
+    case RegularPlannerQuery(graph, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _), tail)
       if validAggregations(aggregations) =>
 
-      // The variables that are needed by the return clause
+      // The variables that are needed by the return/with clause
       val expressionDeps: Set[IdName] =
         (distinctExpressions.values ++ aggregations.values)
           .flatMap(_.dependencies)
@@ -46,19 +46,21 @@ case object PlannerQueryRewriter extends Rewriter {
       val optionalMatches = graph.optionalMatches.flatMapWithTail {
         (original: QueryGraph, tail: Seq[QueryGraph]) =>
 
-          //The dependencies of an optional match are:
+          //The dependencies on an optional match are:
           val allDeps =
           // dependencies from optional matches listed later in the query
             tail.flatMap(g => g.argumentIds ++ g.selections.variableDependencies).toSet ++
               // any dependencies from the next horizon
               expressionDeps --
-              // But we don't need to solve variables already present
+              // But we don't need to solve variables already present by the non-optional part of the QG
               graph.coveredIds
 
           val mustInclude = allDeps -- original.argumentIds
           val mustKeep = original.smallestGraphIncluding(mustInclude)
 
           if (mustKeep.isEmpty)
+            // We did not find anything in this OPTIONAL MATCH. Since there are no variable deps from this clause,
+          // and it can't change cardinality, it's safe to ignore it
             None
           else {
             val (predicatesForPatterns, remaining) = {
@@ -85,14 +87,14 @@ case object PlannerQueryRewriter extends Rewriter {
           }
       }
 
-      val projection = AggregatingQueryProjection(distinctExpressions, aggregations, shuffle)
       val matches = graph.withOptionalMatches(optionalMatches)
-      RegularPlannerQuery(matches, horizon = projection, tail = tail)
+      RegularPlannerQuery(matches, horizon = proj, tail = tail)
   })
 
   private object LabelsAndEquality {
     def empty = new LabelsAndEquality(Seq.empty, Seq.empty)
   }
+
   private case class LabelsAndEquality(labels: Seq[LabelName], equality: Seq[(PropertyKeyName, Expression)])
 
   /**
@@ -151,7 +153,7 @@ case object PlannerQueryRewriter extends Rewriter {
 
     def createNode(name: IdName): NodePattern = {
       val labelsAndProps = predicates.getOrElse(name, LabelsAndEquality.empty)
-      val props = if(labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(pos))
+      val props = if (labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(pos))
       NodePattern(createVariable(name), labels = labelsAndProps.labels, properties = props)(pos)
     }
 
