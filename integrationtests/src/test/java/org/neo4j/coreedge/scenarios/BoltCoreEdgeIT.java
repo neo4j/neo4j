@@ -27,8 +27,13 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.logging.Level;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.roles.Role;
@@ -58,16 +63,17 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.coreedge.ClusterRule;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -146,7 +152,7 @@ public class BoltCoreEdgeIT
 
         assertEventually( "Failed to execute write query on read server", () ->
         {
-            triggerElection();
+            switchLeader(cluster.awaitLeader());
             CoreClusterMember leader = cluster.awaitLeader();
             Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
@@ -210,6 +216,8 @@ public class BoltCoreEdgeIT
 
         CountDownLatch startTheLeaderSwitching = new CountDownLatch( 1 );
 
+        AtomicBoolean successfullySwitchedLeader = new AtomicBoolean( false );
+
         Thread thread = new Thread( () ->
         {
             try
@@ -217,6 +225,7 @@ public class BoltCoreEdgeIT
                 startTheLeaderSwitching.await( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
                 CoreClusterMember theLeader = cluster.awaitLeader();
                 switchLeader( theLeader );
+                successfullySwitchedLeader.set( true );
             }
             catch ( TimeoutException | InterruptedException e )
             {
@@ -227,11 +236,11 @@ public class BoltCoreEdgeIT
         thread.start();
 
         Config config = Config.build().withLogging( new JULogging( Level.OFF ) ).toConfig();
+        Set<BoltServerAddress> seenAddresses = new HashSet<>();
         try ( Driver driver = GraphDatabase
                 .driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ), config ) )
         {
             boolean success = false;
-            Set<BoltServerAddress> seenAddresses = new HashSet<>();
 
             long deadline = System.currentTimeMillis() + (30 * 1000);
 
@@ -239,15 +248,15 @@ public class BoltCoreEdgeIT
             {
                 if ( System.currentTimeMillis() > deadline )
                 {
-                    fail( "Failed to write to the new leader in time" );
+                    fail( "Failed to write to the new leader in time. Addresses seen: " + seenAddresses );
                 }
 
                 try ( Session session = driver.session( AccessMode.WRITE ) )
                 {
                     BoltServerAddress boltServerAddress = ((RoutingNetworkSession) session).address();
 
-                    seenAddresses.add( boltServerAddress );
                     session.run( "CREATE (p:Person)" );
+                    seenAddresses.add( boltServerAddress );
                     success = seenAddresses.size() >= 2;
                 }
                 catch ( Exception e )
@@ -265,6 +274,8 @@ public class BoltCoreEdgeIT
         finally
         {
             thread.join();
+            assertThat( seenAddresses.size(), greaterThanOrEqualTo( 2 ) );
+            assertTrue( successfullySwitchedLeader.get() );
         }
     }
 
@@ -348,10 +359,10 @@ public class BoltCoreEdgeIT
                 assertEquals( 1, record.get( "count" ).asInt() );
 
                 // change leader
-                switchLeader( leader );
 
                 try
                 {
+                    switchLeader( leader );
                     session.run( "CREATE (p:Person {name: {name} })" ).consume();
                     fail( "Should have thrown an exception as the leader went away mid session" );
                 }
@@ -361,6 +372,10 @@ public class BoltCoreEdgeIT
                     assertEquals(
                             String.format( "Server at %s no longer accepts writes", leader.boltAdvertisedAddress() ),
                             sep.getMessage() );
+                }
+                catch ( InterruptedException e )
+                {
+                    // ignored
                 }
                 return null;
             } );
@@ -602,11 +617,12 @@ public class BoltCoreEdgeIT
         return cluster.getMemberByBoltAddress( new AdvertisedSocketAddress( host, port ) );
     }
 
-    private void switchLeader( CoreClusterMember initialLeader )
+    private void switchLeader( CoreClusterMember initialLeader ) throws InterruptedException
     {
         long deadline = System.currentTimeMillis() + (30 * 1000);
 
-        while ( initialLeader.database().getRole() != Role.FOLLOWER )
+        Role role = initialLeader.database().getRole();
+        while ( role != Role.FOLLOWER )
         {
             if ( System.currentTimeMillis() > deadline )
             {
@@ -615,23 +631,31 @@ public class BoltCoreEdgeIT
 
             try
             {
-                triggerElection();
+                triggerElection(initialLeader);
             }
             catch ( IOException | TimeoutException e )
             {
                 // keep trying
             }
+            finally
+            {
+                role = initialLeader.database().getRole();
+                Thread.sleep( 100 );
+            }
         }
     }
 
-    private void triggerElection() throws IOException, TimeoutException
+    private CoreClusterMember triggerElection( CoreClusterMember initialLeader ) throws IOException, TimeoutException
     {
-        CoreClusterMember aFollower = cluster.getDbWithRole( Role.FOLLOWER );
-
-        if ( aFollower != null )
+        for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
         {
-            aFollower.raft().triggerElection();
-            cluster.awaitLeader();
+            if ( !coreClusterMember.equals( initialLeader ) )
+            {
+                coreClusterMember.raft().triggerElection();
+                CoreClusterMember coreClusterMember1 = cluster.awaitLeader();
+                return coreClusterMember1;
+            }
         }
+        return initialLeader;
     }
 }
