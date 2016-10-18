@@ -234,7 +234,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       """Procedure call does not provide the required number of arguments: got 0 expected 1.
         |
         |Procedure my.proc.foo has signature: my.proc.foo(a :: INTEGER?) :: x :: INTEGER?, y :: LIST? OF NODE?
-        |meaning that it expects 1 argument with type INTEGER? (line 1, column 0 (offset: 0))""".stripMargin
+        |meaning that it expects 1 argument of type INTEGER? (line 1, column 0 (offset: 0))""".stripMargin
     ))
   }
 

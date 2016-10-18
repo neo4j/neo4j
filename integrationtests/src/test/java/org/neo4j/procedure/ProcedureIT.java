@@ -206,7 +206,7 @@ public class ProcedureIT
         exception.expectMessage(
                 String.format("Procedure call does not provide the required number of arguments: got 0 expected 1.%n%n" +
                               "Procedure org.neo4j.procedure.simpleArgument has signature: org.neo4j.procedure.simpleArgument(name :: INTEGER?) :: someVal :: INTEGER?%n" +
-                              "meaning that it expects 1 argument with type INTEGER?" ));
+                              "meaning that it expects 1 argument of type INTEGER?" ));
         // When
         try ( Transaction ignore = db.beginTx() )
         {
@@ -239,7 +239,7 @@ public class ProcedureIT
         exception.expectMessage(
                 String.format("Procedure call does not provide the required number of arguments: got 0 expected 1.%n%n" +
                               "Procedure org.neo4j.procedure.nodeWithDescription has signature: org.neo4j.procedure.nodeWithDescription(node :: NODE?) :: node :: NODE?%n" +
-                              "meaning that it expects 1 argument with type NODE?%n" +
+                              "meaning that it expects 1 argument of type NODE?%n" +
                               "Description: This is a description (line 1, column 1 (offset: 0))" ));
         // When
         try ( Transaction ignore = db.beginTx() )
