@@ -128,7 +128,13 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
             await( myTurnToAddToProcessedQueue, ticket, healthCheck, park );
 
             // OK now it's my turn to add this result to the result queue which user will pull from later on
-            while ( !processed.offer( result, 10, MILLISECONDS ) );
+            boolean offered;
+            do
+            {
+                healthCheck.run();
+                offered = processed.offer( result, 10, MILLISECONDS );
+            }
+            while ( !offered );
 
             // Signal that this ticket has been processed and added to the result queue
             processedTicket.incrementAndGet();
@@ -141,7 +147,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
      * {@link #next()}.
      *
      * @param input {@link Iterator} of input to process.
-     * @param shutdownAfterAllSubmitted will call {@link #shutdown(boolean)} after all jobs submitted if {@code true}.
+     * @param shutdownAfterAllSubmitted will call {@link #shutdown(int)} after all jobs submitted if {@code true}.
      * @return {@link Future} representing the work of submitting the inputs to be processed. When the future
      * is completed all items from the {@code input} {@link Iterator} have been submitted, but some items
      * may still be queued and processed.
@@ -156,7 +162,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
             }
             if ( shutdownAfterAllSubmitted )
             {
-                shutdown( true );
+                shutdown( TaskExecutor.SF_AWAIT_ALL_COMPLETED );
             }
             return null;
         } );
@@ -166,18 +172,19 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
      * Tells this processor that there will be no more submissions and so {@link #next()} will stop blocking,
      * waiting for new processed results.
      *
-     * @param awaitAllProcessed if {@code true} will block until all submitted jobs have been processed,
-     * otherwise if {@code false} will return immediately, where processing will still commence and complete.
+     * @param flags see {@link TaskExecutor}
      */
-    public void shutdown( boolean awaitAllProcessed )
+    public void shutdown( int flags )
     {
+        // This also marks the end of input
         done = true;
-        executor.shutdown( awaitAllProcessed ? TaskExecutor.SF_AWAIT_ALL_COMPLETED : 0 );
+
+        executor.shutdown( flags );
     }
 
     /**
      * @return next processed job (blocking call), or {@code null} if all jobs have been processed
-     * and {@link #shutdown(boolean)} has been called.
+     * and {@link #shutdown(int)} has been called.
      */
     public TO next()
     {
