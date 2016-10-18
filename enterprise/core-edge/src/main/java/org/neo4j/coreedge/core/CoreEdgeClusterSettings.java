@@ -183,7 +183,7 @@ public class CoreEdgeClusterSettings
 
     @Description( "Maximum transaction batch size for Edge servers when applying transactions pulled from Core servers." )
     @Internal
-    public final static Setting<Integer> edge_transaction_applier_batch_size =
+    public static final Setting<Integer> edge_transaction_applier_batch_size =
             setting( "core_edge.edge_transaction_applier_batch_size", INTEGER, "16" );
 
     @Description( "Time To Live before Edge server is considered unavailable" )
