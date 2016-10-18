@@ -25,32 +25,35 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 
-object idSeekLeafPlanner extends LeafPlanner {
-  def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) = {
-    val predicates: Seq[Expression] = queryGraph.selections.flatPredicates
-    val arguments = queryGraph.argumentIds.map(n => Variable(n.name)(null))
+object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
-    val idSeekPredicates: Seq[(Expression, Variable, SeekableArgs)] = predicates.collect {
+  override def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+    val arguments = qg.argumentIds.map(n => Variable(n.name)(null))
+    val idSeekPredicates: Option[(Expression, Variable, SeekableArgs)] = e match {
       // MATCH (a)-[r]-(b) WHERE id(r) IN expr
       // MATCH a WHERE id(a) IN {param}
       case predicate@AsIdSeekable(seekable) if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
-        (predicate, seekable.ident, seekable.args)
+        Some(predicate, seekable.ident, seekable.args)
+      case _ => None
     }
 
-    val candidatePlans = idSeekPredicates.collect {
-      case (predicate, idExpr @ Variable(idName), idValues) if !queryGraph.argumentIds.contains(IdName(idName)) =>
-        queryGraph.patternRelationships.find(_.name.name == idName) match {
+    idSeekPredicates map {
+      case (predicate, idExpr@Variable(id), idValues) if !qg.argumentIds.contains(IdName(id)) =>
+
+        qg.patternRelationships.find(_.name.name == id) match {
           case Some(relationship) =>
             val types = relationship.types.toList
-            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), queryGraph.argumentIds)
-            planRelTypeFilter(seekPlan, idExpr, types)
+            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds)
+            LeafPlansForVariable(IdName(id), Set(planRelTypeFilter(seekPlan, idExpr, types)))
           case None =>
-            context.logicalPlanProducer.planNodeByIdSeek(IdName(idName), idValues, Seq(predicate), queryGraph.argumentIds)
+            val plan = context.logicalPlanProducer.planNodeByIdSeek(IdName(id), idValues, Seq(predicate), qg.argumentIds)
+            LeafPlansForVariable(IdName(id), Set(plan))
         }
     }
-
-    candidatePlans
   }
+
+  override def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) =
+    queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph).toSeq.flatMap(_.plans))
 
   private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: SeekableArgs, predicates: Seq[Expression], argumentIds: Set[IdName])
                                       (implicit context: LogicalPlanningContext): LogicalPlan = {

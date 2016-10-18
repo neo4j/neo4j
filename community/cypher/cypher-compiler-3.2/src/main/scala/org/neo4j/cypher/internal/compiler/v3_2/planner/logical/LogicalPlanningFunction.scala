@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 
 trait LogicalPlanningFunction0[+B] {
   def apply(implicit context: LogicalPlanningContext): B
@@ -63,3 +64,9 @@ trait PlanTransformer[-T] extends LogicalPlanningFunction2[LogicalPlan, T, Logic
 trait CandidateSelector extends ProjectingSelector[LogicalPlan]
 
 trait LeafPlanner extends LogicalPlanningFunction1[QueryGraph, Seq[LogicalPlan]]
+
+case class LeafPlansForVariable(id: IdName, plans: Set[LogicalPlan])
+
+trait LeafPlanFromExpression {
+  def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable]
+}
