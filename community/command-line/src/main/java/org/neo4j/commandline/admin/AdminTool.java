@@ -104,15 +104,17 @@ public class AdminTool
 
     private void badUsage( AdminCommand.Provider command, IncorrectUsage e )
     {
-        failure( e.getMessage() );
         final Usage.CommandUsage commandUsage = new Usage.CommandUsage( command, scriptName );
+        outsideWorld.stdErrLine( e.getMessage() );
         commandUsage.print( outsideWorld::stdErrLine );
+        failure();
     }
 
     private void badUsage( String message )
     {
         usage.print( outsideWorld::stdErrLine );
-        failure( message );
+        outsideWorld.stdErrLine( message );
+        failure();
     }
 
     private void unexpected( RuntimeException e )
@@ -123,6 +125,11 @@ public class AdminTool
     private void commandFailed( CommandFailed e )
     {
         failure( "command failed", e );
+    }
+
+    private void failure()
+    {
+        outsideWorld.exit( 1 );
     }
 
     private void failure( String message, Exception e )
