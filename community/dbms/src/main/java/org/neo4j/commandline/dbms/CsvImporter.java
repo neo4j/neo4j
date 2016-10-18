@@ -64,10 +64,14 @@ class CsvImporter implements Importer
     private final Config config;
     private final Args args;
     private final OutsideWorld outsideWorld;
+    private final String reportFileName;
 
     public static String description()
     {
-        return "--mode=csv Import a database from a collection of CSV files.\n" +
+        return "--mode=csv Import a database from a collection of CSV files.\n" + "--report-file <filename>\n" +
+                "        File name in which to store the report of the import.\n" +
+                "        Defaults to " + ImportCommand.DEFAULT_REPORT_FILE_NAME +
+                " in the current directory.\n" +
                 "--nodes[:Label1:Label2]=\"<file1>,<file2>,...\"\n" +
                 "        Node CSV header and data. Multiple files will be logically seen as\n" +
                 "        one big file from the perspective of the importer. The first line\n" +
@@ -94,7 +98,7 @@ class CsvImporter implements Importer
 
     public static String arguments()
     {
-        return "[--nodes[:Label1:Label2]=\"<file1>,<file2>,...\"] " +
+        return "[--report-file=<filename>] [--nodes[:Label1:Label2]=\"<file1>,<file2>,...\"] " +
                 "[--relationships[:RELATIONSHIP_TYPE]=\"<file1>,<file2>,...\"] " +
                 "[--input-encoding=<character-set>] " + "[--id-type=<id-type>] ";
     }
@@ -105,6 +109,8 @@ class CsvImporter implements Importer
         this.outsideWorld = outsideWorld;
         nodesFiles = extractInputFiles( args, "nodes", outsideWorld.errorStream() );
         relationshipsFiles = extractInputFiles( args, "relationships", outsideWorld.errorStream() );
+        reportFileName =
+                args.interpretOption( "report-file", withDefault( ImportCommand.DEFAULT_REPORT_FILE_NAME ), s -> s );
         try
         {
             validateInputFiles( nodesFiles, relationshipsFiles );
@@ -128,17 +134,17 @@ class CsvImporter implements Importer
         FileSystemAbstraction fs = outsideWorld.fileSystem();
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         File logsDir = config.get( GraphDatabaseSettings.logs_directory );
-        File badFile = new File( logsDir, BAD_FILE_NAME );
-        OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
-        Collector badCollector = badCollector( badOutput, 1000, collect( true, false, false ) );
+        File reportFile = new File( reportFileName );
+
+        OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
+        Collector badCollector = badCollector( badOutput, 1000, collect( true, true, true ) );
 
         Configuration configuration = importConfiguration( null, false, config, pageSize );
         CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                 relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(), idType,
                 csvConfiguration( args, false ), badCollector, configuration.maxNumberOfProcessors() );
 
-        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(),
-                storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles, false,
-                input, config, badOutput, configuration );
+        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), storeDir, logsDir, reportFile, fs,
+                nodesFiles, relationshipsFiles, false, input, config, badOutput, configuration );
     }
 }

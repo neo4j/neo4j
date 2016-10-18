@@ -43,6 +43,8 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 public class ImportCommand implements AdminCommand
 {
+    public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
+
     public static class Provider extends AdminCommand.Provider
     {
         public Provider()
@@ -79,7 +81,7 @@ public class ImportCommand implements AdminCommand
     private final ImporterFactory importerFactory;
     private final String[] allowedModes = {"database", "csv"};
 
-    ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this( homeDir, configDir, outsideWorld, new ImporterFactory() );
     }
