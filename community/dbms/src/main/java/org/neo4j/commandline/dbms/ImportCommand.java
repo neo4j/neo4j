@@ -56,15 +56,29 @@ public class ImportCommand implements AdminCommand
         public Optional<String> arguments()
         {
             return Optional
-                    .of( "--database=<database-name> [--mode={csv|database}] [--additional-config=<config-file-path>]" +
-                            " " + DatabaseImporter.arguments() + " " + CsvImporter.arguments() );
+                    .of( "--database=<database-name> " +
+                            "[--mode={csv|database}] " +
+                            "[--additional-config=<config-file-path>] " +
+                            DatabaseImporter.arguments() +
+                            " " +
+                            CsvImporter.arguments() );
         }
 
         @Override
         public String description()
         {
-            return "Import a collection of CSV files with --mode=csv (default), or a database from a " +
-                    "pre-3.0 installation with --mode=database." + "\n" + DatabaseImporter.description() + "\n\n" +
+            return "Import a collection of CSV files with --mode=csv (default), or a database from\n" +
+                    "a pre-3.0 installation with --mode=database.\n" +
+                    "\n" +
+                    "--database=<database-name>\n" +
+                    "        The name of the new database to import into. This cannot be an existing\n" +
+                    "        database.\n" +
+                    "--additional-config=<config-file-path>\n" +
+                    "        Configuration file to supply additional configuration values to\n" +
+                    "        the import tools.\n" +
+                    "\n" +
+                    DatabaseImporter.description() +
+                    "\n" +
                     CsvImporter.description();
         }
 
