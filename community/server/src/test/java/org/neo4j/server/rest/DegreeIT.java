@@ -44,7 +44,7 @@ public class DegreeIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Root" ) );
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
                 .get( nodeUri + "/degree/all" );
 
@@ -64,7 +64,7 @@ public class DegreeIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Root" ) );
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
                 .get( nodeUri + "/degree/out" );
 
@@ -84,7 +84,7 @@ public class DegreeIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Root" ) );
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
                 .get( nodeUri + "/degree/out/KNOWS&LIKES" );
 

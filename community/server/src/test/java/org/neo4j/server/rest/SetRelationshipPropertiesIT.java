@@ -66,8 +66,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
         data.get();
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
-        gen.get().description( startGraph( "update relationship properties" ) )
-                .payload( JsonHelper.createJsonFrom( map ) )
+        gen.get().payload( JsonHelper.createJsonFrom( map ) )
                 .expectedStatus( 204 )
                 .put( propertiesUri.toString() );
         JaxRsResponse response = updatePropertiesOnServer(map);

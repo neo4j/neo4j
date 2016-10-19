@@ -44,8 +44,8 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.server.rest.RESTDocsGenerator;
-import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
+import org.neo4j.server.rest.RESTRequestGenerator;
+import org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
@@ -75,14 +75,8 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
 
     public
     @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+    TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
     private static FakeClock clock;
-
-    @Before
-    public void setUp()
-    {
-        gen.get().setSection( "dev/rest-api" );
-    }
 
     @BeforeClass
     public static void setupServer() throws Exception

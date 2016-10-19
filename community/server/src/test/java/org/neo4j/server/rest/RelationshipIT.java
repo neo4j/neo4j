@@ -70,8 +70,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     public void shouldReturn204WhenPropertiesAreRemovedFromRelationship()
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().description( startGraph( "remove properties from a relationship" ) )
-                .expectedStatus( Status.NO_CONTENT.getStatusCode() )
+        gen().expectedStatus( Status.NO_CONTENT.getStatusCode() )
                 .delete( functionalTestHelper.relationshipPropertiesUri( loves.getId() ) ).entity();
     }
 
@@ -104,8 +103,6 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     {
         data.get();
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().description(
-                startGraph( "Remove property from a relationship1" ) );
         gen().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
                 getPropertiesUri( loves ) + "/cost" ).entity();
 
@@ -122,8 +119,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     {
         data.get();
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().description( startGraph( "remove non-existent property from relationship" ) )
-                .expectedStatus( Status.NOT_FOUND.getStatusCode() )
+        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() )
                 .delete( getPropertiesUri( loves ) + "/non-existent" ).entity();
     }
 
@@ -178,7 +174,6 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     {
         data.get();
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().description( startGraph( "Delete relationship1" ) );
         gen().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
                 getRelationshipUri( loves ) ).entity();
 
@@ -211,7 +206,6 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
         assertThat( loves, inTx( graphdb(), hasProperty( "cost" ).withValue( "high" ) ) );
-        gen().description( startGraph( "Set relationship property1" ) );
         gen().expectedStatus( ClientResponse.Status.NO_CONTENT ).payload( "\"deadly\"" ).put( getRelPropURI( loves,
                 "cost" ) ).entity();
         assertThat( loves, inTx( graphdb(), hasProperty( "cost" ).withValue( "deadly" ) ) );
@@ -226,7 +220,6 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
         assertThat( loves, inTx( graphdb(), hasProperty( "cost" ).withValue( "high" ) ) );
-        gen().description( startGraph( "Set relationship property1" ) );
         gen().expectedStatus( ClientResponse.Status.NO_CONTENT ).payload( JsonHelper.createJsonFrom( MapUtil.map(
                 "happy", false ) ) ).put( getRelPropsURI( loves ) ).entity();
         assertThat( loves, inTx( graphdb(), hasProperty( "happy" ).withValue( false ) ) );

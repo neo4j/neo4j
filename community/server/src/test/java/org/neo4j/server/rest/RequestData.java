@@ -23,12 +23,10 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-class DocumentationData
+class RequestData
 {
     private String payload;
     private MediaType payloadType = MediaType.APPLICATION_JSON_TYPE;
-    public String title;
-    public String description;
     public String uri;
     public String method;
     public int status;
@@ -59,17 +57,6 @@ class DocumentationData
     {
         this.payloadType = payloadType;
     }
-
-    public void setDescription( final String description )
-    {
-        this.description = description;
-    }
-
-    public void setTitle( final String title )
-    {
-        this.title = title;
-    }
-    
 
     public void setUri( final String uri )
     {
@@ -105,7 +92,7 @@ class DocumentationData
     @Override
     public String toString()
     {
-        return "DocumentationData [payload=" + payload + ", title=" + title + ", description=" + description
+        return "DocumentationData [payload=" + payload
                + ", uri=" + uri + ", method=" + method + ", status=" + status + ", entity=" + entity
                + ", requestHeaders=" + requestHeaders + ", responseHeaders=" + responseHeaders + "]";
     }
