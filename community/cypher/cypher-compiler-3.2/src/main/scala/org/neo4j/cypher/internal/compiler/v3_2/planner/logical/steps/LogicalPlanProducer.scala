@@ -473,6 +473,22 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     Aggregation(left, returnAll.toMap, Map.empty)(left.solved)
   }
 
+  def updateSolvedForOr(orPlan: LogicalPlan, orPredicate: Ors, predicates: Set[Expression])
+                       (implicit context: LogicalPlanningContext): LogicalPlan = {
+    val solved = orPlan.solved.updateTailOrSelf { that =>
+
+      /*
+        * We want to report all solved predicates, so we have kept track of what each subplan reports to solve.
+        * There is no need to report the predicates that are inside the OR (exprs),
+        * since we will add the OR itself instead.
+        */
+      val newSelections = Selections.from((predicates -- orPredicate.exprs + orPredicate).toSeq: _*)
+      that.amendQueryGraph(qg => qg.withSelections(newSelections))
+    }
+    val cardinality = context.cardinality.apply(solved, context.input, context.semanticTable)
+    orPlan.updateSolved(CardinalityEstimation.lift(solved, cardinality))
+  }
+
   def planTriadicSelection(positivePredicate: Boolean, left: LogicalPlan, sourceId: IdName, seenId: IdName, targetId: IdName, right: LogicalPlan, predicate: Expression)
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = (left.solved ++ right.solved).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))

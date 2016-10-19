@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
@@ -36,12 +37,12 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
       case predicate@Contains(prop@Property(Variable(name), propertyKey), expr) =>
         val plans = produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _))
-        Some(LeafPlansForVariable(IdName(name), plans))
+        maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
       case predicate@EndsWith(prop@Property(Variable(name), propertyKey), expr) =>
         val plans = produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _))
-        Some(LeafPlansForVariable(IdName(name), plans))
+        maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) =>
@@ -49,7 +50,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         val propertyKeyName = scannable.propertyKey.name
 
         val plans = produce(name, propertyKeyName, qg, scannable.property, scannable.expr, lpp.planNodeIndexScan)
-        Some(LeafPlansForVariable(IdName(name), plans))
+        maybeLeafPlans(name, plans)
 
       case _ =>
         None

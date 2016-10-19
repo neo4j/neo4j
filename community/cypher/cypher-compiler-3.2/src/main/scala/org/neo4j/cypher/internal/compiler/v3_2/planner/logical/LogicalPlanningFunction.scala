@@ -65,7 +65,14 @@ trait CandidateSelector extends ProjectingSelector[LogicalPlan]
 
 trait LeafPlanner extends LogicalPlanningFunction1[QueryGraph, Seq[LogicalPlan]]
 
-case class LeafPlansForVariable(id: IdName, plans: Set[LogicalPlan])
+object LeafPlansForVariable {
+  def maybeLeafPlans(id: String, plans: Set[LogicalPlan]): Option[LeafPlansForVariable] =
+    if (plans.isEmpty) None else Some(LeafPlansForVariable(IdName(id), plans))
+}
+
+case class LeafPlansForVariable(id: IdName, plans: Set[LogicalPlan]) {
+  assert(plans.nonEmpty)
+}
 
 trait LeafPlanFromExpression {
   def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable]

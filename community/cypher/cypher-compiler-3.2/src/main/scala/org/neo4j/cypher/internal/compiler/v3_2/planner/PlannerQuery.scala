@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, PatternRelationship, StrictnessMode}
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Variable, PeriodicCommitHint, Hint, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Hint, LabelName, PeriodicCommitHint, Variable}
 
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce
@@ -99,6 +99,11 @@ sealed trait PlannerQuery {
   def updateTailOrSelf(f: PlannerQuery => PlannerQuery): PlannerQuery = tail match {
     case None => f(this)
     case Some(tailQuery) => this.updateTail(_.updateTailOrSelf(f))
+  }
+
+  def tailOrSelf: PlannerQuery = tail match {
+    case None => this
+    case Some(t) => t.tailOrSelf
   }
 
   def exists(f: PlannerQuery => Boolean): Boolean =

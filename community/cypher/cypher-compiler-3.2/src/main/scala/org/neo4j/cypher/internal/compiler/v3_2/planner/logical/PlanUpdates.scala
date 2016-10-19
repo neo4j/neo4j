@@ -159,7 +159,7 @@ case object PlanUpdates
     val producer = context.logicalPlanProducer
 
     //Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
-    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
+    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(Seq(mergeUniqueIndexSeekLeafPlanner)),
       context.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
@@ -34,6 +35,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     val arguments: Set[Variable] = qg.argumentIds.map(n => Variable(n.name)(null))
     val labelPredicateMap: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
     val hints = qg.hints
+
     implicit val semanticTable = context.semanticTable
 
     e match {
@@ -41,7 +43,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
         val plans = producePlansFor(seekable.name, seekable.propertyKey, predicate,
           seekable.args.asQueryExpression, labelPredicateMap, hints, qg.argumentIds)
-        Some(LeafPlansForVariable(IdName(seekable.name), plans))
+        maybeLeafPlans(seekable.name, plans)
 
       // ... = n.prop
       // In some rare cases, we can't rewrite these predicates cleanly,
@@ -50,19 +52,19 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         if a.dependencies.forall(arguments) && !arguments(seekable) =>
         val expr = SingleQueryExpression(a)
         val plans = producePlansFor(seekable.name, propKeyName, predicate, expr, labelPredicateMap, hints, qg.argumentIds)
-        Some(LeafPlansForVariable(IdName(seekable.name), plans))
+        maybeLeafPlans(seekable.name, plans)
 
       // n.prop STARTS WITH "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) =>
         val plans = producePlansFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate),
           seekable.asQueryExpression, labelPredicateMap, hints, qg.argumentIds)
-        Some(LeafPlansForVariable(IdName(seekable.name), plans))
+        maybeLeafPlans(seekable.name, plans)
 
       // n.prop <|<=|>|>= value
       case predicate@AsValueRangeSeekable(seekable) =>
         val plans = producePlansFor(seekable.name, seekable.propertyKeyName, predicate, seekable.asQueryExpression,
           labelPredicateMap, hints, qg.argumentIds)
-        Some(LeafPlansForVariable(IdName(seekable.name), plans))
+        maybeLeafPlans(seekable.name, plans)
 
       case _ =>
         None
