@@ -21,5 +21,4 @@ neo4j_home$ ./bin/neo4j start
 ----
 
 You can also stop, install and remove it as a service and ask for its status in exactly the same way as for other Neo4j instances.
-See also <<server-installation>>.
 

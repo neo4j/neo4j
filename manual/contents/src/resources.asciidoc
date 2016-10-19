@@ -17,5 +17,3 @@ Below are some starting points within this manual:
 * <<rest-api>>
 * <<deployment>>
 * <<deployment-upgrading>>
-* <<operations-security>>
-

@@ -5,11 +5,6 @@ This chapter will guide you through your first steps with <<cypher,Cypher>>.
 
 In the online edition of this manual, all queries in this section can be executed interactively without installing Neo4j on your computer.
 
-Otherwise, first get the Neo4j server running to try things out locally.
-Instructions are found in <<server-installation>>.
-With the server running, you can choose to issue Cypher queries from either the Neo4j Browser or the Neo4j shell.
-See <<shell>>.
-
 :leveloffset: 2
 
 include::../../parsed-graphgists/cypher/create-nodes-and-rels.asciidoc[]

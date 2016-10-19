@@ -161,24 +161,31 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-server-docs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-server-docs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>test-sources</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server-enterprise</artifactId>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-server-enterprise-docs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-server-enterprise-docs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>test-sources</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -342,7 +349,7 @@
               <excludes>META-INF,META-INF/**,org/neo4j/kernel/impl/storemigration/legacystore/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.test-sources}</outputDirectory>
-              <includeArtifactIds>neo4j-cypher-docs,neo4j-examples,neo4j-harness-test,neo4j-server,neo4j-lucene-index-docs,neo4j-backup-docs,neo4j-kernel-docs</includeArtifactIds>
+              <includeArtifactIds>neo4j-cypher-docs,neo4j-examples,neo4j-harness-test,neo4j-server,neo4j-server-docs,neo4j-server-enterprise-docs,neo4j-lucene-index-docs,neo4j-backup-docs,neo4j-kernel-docs</includeArtifactIds>
             </configuration>
           </execution>
           <execution>
