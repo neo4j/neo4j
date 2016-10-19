@@ -53,9 +53,3 @@ include::terminology.asciidoc[]
 :leveloffset: 0
 
 include::resources.asciidoc[]
-
-:leveloffset: 0
-
-include::manpages.asciidoc[]
-
-

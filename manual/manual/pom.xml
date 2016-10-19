@@ -282,23 +282,6 @@
         <version>2.0.16</version>
         <executions>
           <execution>
-            <id>generate-manpages</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>generate-manpages</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.build.directory}/manpages</sourceDirectory>
-            <postProcess>
-              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j.1" destfile="${project.build.directory}/manpages/neo4j.1.gz"/>
-              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-admin.1" destfile="${project.build.directory}/manpages/neo4j-admin.1.gz"/>
-              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-shell.1" destfile="${project.build.directory}/manpages/neo4j-shell.1.gz"/>
-              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-backup.1" destfile="${project.build.directory}/manpages/neo4j-backup.1.gz"/>
-              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-import.1" destfile="${project.build.directory}/manpages/neo4j-import.1.gz"/>
-            </postProcess>
-            </configuration>
-          </execution>
-          <execution>
             <id>generate-webhelp-html</id>
             <phase>process-classes</phase>
             <goals>
@@ -328,13 +311,6 @@
                 section toc
                 set toc,title
               </generateToc>
-              <preProcess>
-                <move todir="${project.build.directory}" overwrite="true">
-                  <fileset dir="${project.build.directory}/manpages">
-                    <include name="*.xml"/>
-                  </fileset>
-                </move>
-              </preProcess>
               <postProcess>
                 <copy todir="${project.build.directory}/docbkx/webhelp/images" overwrite="true">
                   <fileset dir="${docs.resources}/images"/>
@@ -464,42 +440,6 @@
         <configuration>
           <tag>${releaseVersion}</tag>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>manpages</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>assemblies/manpages.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-          <execution>
-            <id>manpagesenterprise</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>assemblies/manpages-enterprise.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

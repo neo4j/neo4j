@@ -87,7 +87,7 @@ dbms.directories.certificates=/var/lib/neo4j/certificates
 
             <!-- Copy manpages into build folder -->
             <copy toDir="${project.build.outputDirectory}/@{name}/manpages">
-                <fileset dir="${project.build.directory}/manpages" includes="**"/>
+                <fileset dir="${project.build.outputDirectory}/common/manpages" includes="**"/>
             </copy>
 
             <!-- Run installer projects -->
