@@ -87,7 +87,7 @@ public class BackupCoreIT
         }
     }
 
-    static CoreGraphDatabase createSomeData( Cluster cluster ) throws TimeoutException, InterruptedException
+    static CoreGraphDatabase createSomeData( Cluster cluster ) throws Exception
     {
         return cluster.coreTx( ( db, tx ) ->
         {

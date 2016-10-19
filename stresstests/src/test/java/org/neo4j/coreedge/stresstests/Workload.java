@@ -64,5 +64,9 @@ class Workload extends RepeatUntilCallable
         {
             // whatever let's go on with the workload
         }
+        catch ( Throwable e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

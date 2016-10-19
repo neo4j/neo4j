@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.util.concurrent.TimeoutException;
-
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -31,7 +29,7 @@ import static org.neo4j.graphdb.Label.label;
 
 class SampleData
 {
-    static void createSomeData( int items, Cluster cluster ) throws TimeoutException, InterruptedException
+    static void createSomeData( int items, Cluster cluster ) throws Exception
     {
         for ( int i = 0; i < items; i++ )
         {

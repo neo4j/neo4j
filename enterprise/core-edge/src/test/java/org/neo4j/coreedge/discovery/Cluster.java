@@ -291,8 +291,7 @@ public class Cluster
     /**
      * Perform a transaction against the core cluster, selecting the target and retrying as necessary.
      */
-    public CoreClusterMember coreTx( BiConsumer<CoreGraphDatabase, Transaction> op )
-            throws TimeoutException, InterruptedException
+    public CoreClusterMember coreTx( BiConsumer<CoreGraphDatabase, Transaction> op ) throws Exception
     {
         // this currently wraps the leader-only strategy, since it is the recommended and only approach
         return leaderTx( op, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
@@ -312,22 +311,19 @@ public class Cluster
      * Perform a transaction against the leader of the core cluster, retrying as necessary.
      */
     private CoreClusterMember leaderTx( BiConsumer<CoreGraphDatabase,Transaction> op, int timeout, TimeUnit timeUnit )
-            throws TimeoutException
+            throws Exception
     {
-        ThrowingSupplier<CoreClusterMember,RuntimeException> supplier = () -> {
-            try
+        ThrowingSupplier<CoreClusterMember,Exception> supplier = () -> {
+            CoreClusterMember member = awaitLeader( timeout, timeUnit );
+            CoreGraphDatabase db = member.database();
+            if ( db == null )
             {
-                CoreClusterMember member = awaitLeader( timeout, timeUnit );
-                CoreGraphDatabase db = member.database();
-                if ( db == null )
-                {
-                    throw new DatabaseShutdownException();
-                }
+                throw new DatabaseShutdownException();
+            }
 
-                try ( Transaction tx = db.beginTx() )
-                {
-                    op.accept( db, tx );
-                }
+            try ( Transaction tx = db.beginTx() )
+            {
+                op.accept( db, tx );
                 return member;
             }
             catch ( Throwable e )
