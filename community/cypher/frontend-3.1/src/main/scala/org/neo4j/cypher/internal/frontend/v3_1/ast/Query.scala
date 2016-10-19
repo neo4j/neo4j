@@ -52,6 +52,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   override def returnColumns = clauses.last.returnColumns
 
   override def semanticCheck =
+    checkStandaloneCall chain
     checkOrder chain
     checkClauses chain
     checkIndexHints
@@ -63,6 +64,15 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       SemanticCheckResult.error(s, SemanticError("Cannot use planner hints with start clause", hints.head.position))
     } else {
       SemanticCheckResult.success(s)
+    }
+  }
+
+  private def checkStandaloneCall: SemanticCheck = s => {
+    clauses match {
+      case Seq(call: UnresolvedCall, where: With) =>
+        SemanticCheckResult.error(s, SemanticError("Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)", where.position))
+      case _ =>
+        SemanticCheckResult.success(s)
     }
   }
 
