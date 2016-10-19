@@ -28,33 +28,33 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.discovery.EdgeClusterMember;
-import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.ReadReplica;
+import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.metrics.source.coreedge.CoreMetrics;
-import org.neo4j.test.coreedge.ClusterRule;
+import org.neo4j.metrics.source.causalclustering.CoreMetrics;
+import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_advertised_address;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
-import static org.neo4j.metrics.source.coreedge.EdgeMetrics.PULL_UPDATES;
-import static org.neo4j.metrics.source.coreedge.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_RECEIVED;
-import static org.neo4j.metrics.source.coreedge.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_REQUESTED;
+import static org.neo4j.metrics.source.causalclustering.ReadReplicaMetrics.PULL_UPDATES;
+import static org.neo4j.metrics.source.causalclustering.ReadReplicaMetrics.PULL_UPDATE_HIGHEST_TX_ID_RECEIVED;
+import static org.neo4j.metrics.source.causalclustering.ReadReplicaMetrics.PULL_UPDATE_HIGHEST_TX_ID_REQUESTED;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class CoreEdgeMetricsIT
@@ -64,13 +64,13 @@ public class CoreEdgeMetricsIT
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
-            .withNumberOfEdgeMembers( 1 )
+            .withNumberOfReadReplicas( 1 )
             .withSharedCoreParam( MetricsSettings.metricsEnabled, Settings.TRUE )
-            .withSharedEdgeParam( MetricsSettings.metricsEnabled, Settings.TRUE )
+            .withSharedReadReplicaParam( MetricsSettings.metricsEnabled, Settings.TRUE )
             .withSharedCoreParam( MetricsSettings.csvEnabled, Settings.TRUE )
-            .withSharedEdgeParam( MetricsSettings.csvEnabled, Settings.TRUE )
+            .withSharedReadReplicaParam( MetricsSettings.csvEnabled, Settings.TRUE )
             .withSharedCoreParam( MetricsSettings.csvInterval, "100ms" )
-            .withSharedEdgeParam( MetricsSettings.csvInterval, "100ms" );
+            .withSharedReadReplicaParam( MetricsSettings.csvInterval, "100ms" );
 
     private Cluster cluster;
 
@@ -105,7 +105,7 @@ public class CoreEdgeMetricsIT
             assertAllNodesVisible( db.database() );
         }
 
-        for ( EdgeClusterMember db : cluster.edgeMembers() )
+        for ( ReadReplica db : cluster.readReplicas() )
         {
             assertAllNodesVisible( db.database() );
         }
@@ -146,18 +146,18 @@ public class CoreEdgeMetricsIT
                 () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.IS_LEADER ) ),
                 greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
-        File edgeServerMetricsDir = new File( cluster.getEdgeMemberById( 0 ).storeDir(), "metrics" );
+        File readReplicaMetricsDir = new File( cluster.getReadReplicaById( 0 ).storeDir(), "metrics" );
 
         assertEventually( "pull update request registered",
-                () -> readLongValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATES ) ),
+                () -> readLongValue( metricsCsv( readReplicaMetricsDir, PULL_UPDATES ) ),
                 greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "pull update request registered",
-                () -> readLongValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_REQUESTED ) ),
+                () -> readLongValue( metricsCsv( readReplicaMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_REQUESTED ) ),
                 greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "pull update response received",
-                () -> readLongValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_RECEIVED ) ),
+                () -> readLongValue( metricsCsv( readReplicaMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_RECEIVED ) ),
                 greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "dropped messages eventually accurate",

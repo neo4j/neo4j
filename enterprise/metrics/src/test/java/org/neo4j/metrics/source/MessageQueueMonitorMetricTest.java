@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 
 import org.junit.Test;
 
-import org.neo4j.metrics.source.coreedge.MessageQueueMonitorMetric;
+import org.neo4j.metrics.source.causalclustering.MessageQueueMonitorMetric;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;

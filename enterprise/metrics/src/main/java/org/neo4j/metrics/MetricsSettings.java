@@ -64,9 +64,9 @@ public class MetricsSettings
     @Description( "Enable reporting metrics about the network usage." )
     public static Setting<Boolean> neoNetworkEnabled = setting(
             "metrics.neo4j.network.enabled", Settings.BOOLEAN, neoEnabled );
-    @Description( "Enable reporting metrics about core-edge mode." )
-    public static Setting<Boolean> coreEdgeEnabled = setting(
-            "metrics.neo4j.core_edge.enabled", Settings.BOOLEAN, neoEnabled );
+    @Description( "Enable reporting metrics about Causal Clustering mode." )
+    public static Setting<Boolean> causalClusteringEnabled = setting(
+            "metrics.neo4j.causal_clustering.enabled", Settings.BOOLEAN, neoEnabled );
     @Description( "Enable reporting metrics about Neo4j check pointing; when it occurs and how much time it takes to " +
                   "complete." )
     public static Setting<Boolean> neoCheckPointingEnabled = setting(

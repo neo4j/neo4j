@@ -63,7 +63,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-core-edge</artifactId>
+      <artifactId>neo4j-causal-clustering</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -126,7 +126,7 @@
                   <arg value="org.neo4j.shell.ShellSettings" />
                   <arg value="org.neo4j.cluster.ClusterSettings" />
                   <arg value="org.neo4j.kernel.ha.HaSettings" />
-                  <arg value="org.neo4j.coreedge.core.CoreEdgeClusterSettings" />
+                  <arg value="org.neo4j.causalclustering.core.CoreEdgeClusterSettings" />
                   <arg value="org.neo4j.consistency.ConsistencyCheckSettings" />
                   <arg value="org.neo4j.server.enterprise.EnterpriseServerSettings" />
                   <arg value="org.neo4j.server.security.enterprise.configuration.SecuritySettings" />
