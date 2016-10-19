@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.Before;
-import org.junit.Rule;
-
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;
+
+import org.junit.Before;
+import org.junit.Rule;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -45,7 +45,9 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
+
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.web.Surface.PATH_NODES;
 import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
@@ -53,7 +55,6 @@ import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
 import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
-import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_RELATIONSHIP_CONSTRAINT;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
@@ -238,12 +239,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return gen.get();
     }
 
-    public void description( String description )
-    {
-        gen().description( description );
-
-    }
-
     protected String getDocumentationSectionName() {
         return "dev/rest-api";
     }
@@ -299,28 +294,9 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/";
     }
 
-    public String getSchemaConstraintLabelExistenceUri( String label )
-    {
-        return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/existence/";
-    }
-
-    public String getSchemaRelationshipConstraintTypeExistenceUri( String type )
-    {
-        return getDataUri() + PATH_SCHEMA_RELATIONSHIP_CONSTRAINT + "/" + type + "/existence/";
-    }
-
     public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/" + property;
     }
 
-    public String getSchemaConstraintLabelExistencePropertyUri( String label, String property )
-    {
-        return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/existence/" + property;
-    }
-
-    public String getSchemaRelationshipConstraintTypeExistencePropertyUri( String type, String property )
-    {
-        return getDataUri() + PATH_SCHEMA_RELATIONSHIP_CONSTRAINT + "/" + type + "/existence/" + property;
-    }
 }

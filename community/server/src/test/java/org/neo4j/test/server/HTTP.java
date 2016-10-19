@@ -19,13 +19,6 @@
  */
 package org.neo4j.test.server;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import org.codehaus.jackson.JsonNode;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,16 +26,25 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import org.codehaus.jackson.JsonNode;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Collections.unmodifiableMap;
+
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -58,11 +60,6 @@ public class HTTP
         DefaultClientConfig defaultClientConfig = new DefaultClientConfig();
         defaultClientConfig.getProperties().put( ClientConfig.PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE );
         CLIENT = Client.create( defaultClientConfig );
-    }
-
-    public static Builder withHeaders( Map<String, String> headers )
-    {
-        return BUILDER.withHeaders( headers );
     }
 
     public static Builder withHeaders( String... kvPairs )
@@ -90,34 +87,9 @@ public class HTTP
         return BUILDER.POST( uri, payload );
     }
 
-    public static Response PUT( String uri )
-    {
-        return BUILDER.PUT( uri );
-    }
-
-    public static Response PUT( String uri, Object payload )
-    {
-        return BUILDER.PUT( uri, payload );
-    }
-
-    public static Response PUT( String uri, RawPayload payload )
-    {
-        return BUILDER.PUT( uri, payload );
-    }
-
-    public static Response DELETE( String uri )
-    {
-        return BUILDER.DELETE( uri );
-    }
-
     public static Response GET( String uri )
     {
         return BUILDER.GET( uri );
-    }
-
-    public static Response request( String method, String uri )
-    {
-        return BUILDER.request( method, uri );
     }
 
     public static Response request( String method, String uri, Object payload )
@@ -172,21 +144,6 @@ public class HTTP
         public Response POST( String uri, RawPayload payload )
         {
             return request( "POST", uri, payload );
-        }
-
-        public Response PUT( String uri )
-        {
-            return request( "PUT", uri );
-        }
-
-        public Response PUT( String uri, Object payload )
-        {
-            return request( "PUT", uri, payload );
-        }
-
-        public Response PUT( String uri, RawPayload payload )
-        {
-            return request( "PUT", uri, payload );
         }
 
         public Response DELETE( String uri )

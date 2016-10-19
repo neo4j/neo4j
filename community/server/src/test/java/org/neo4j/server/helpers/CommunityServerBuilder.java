@@ -48,7 +48,6 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -306,12 +305,6 @@ public class CommunityServerBuilder
     public CommunityServerBuilder withProperty( String key, String value )
     {
         arbitraryProperties.put( key, value );
-        return this;
-    }
-
-    public CommunityServerBuilder withPreflightTasks( PreflightTask... tasks )
-    {
-        this.preflightTasks = new PreFlightTasks( NullLogProvider.getInstance(), tasks );
         return this;
     }
 

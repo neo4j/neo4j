@@ -19,16 +19,16 @@
  */
 package org.neo4j.server;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -38,6 +38,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
@@ -70,10 +71,6 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     }
 
     protected abstract ServerBootstrapper newBootstrapper() throws IOException;
-
-    protected abstract void start( String[] args );
-
-    protected abstract void stop( String[] args );
 
     @Test
     public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws Throwable

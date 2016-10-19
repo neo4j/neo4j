@@ -1,0 +1,17 @@
+= Neo4j Server =
+ 
+This project contains the runnable neo4j server component. 
+
+== build-test-run cycle ==
+
+When building for the first time, run:
+
+ mvn clean package -P initial-build
+
+Subsequent builds can be run using:
+
+ mvn clean package
+
+Run the server using:
+
+ mvn exec:java

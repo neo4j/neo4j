@@ -21,12 +21,9 @@ package org.neo4j.server.rest;
 
 import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
-
 class DocumentationData
 {
     private String payload;
-    private MediaType payloadType = MediaType.APPLICATION_JSON_TYPE;
     public String title;
     public String description;
     public String uri;
@@ -35,35 +32,10 @@ class DocumentationData
     public String entity;
     public Map<String, String> requestHeaders;
     public Map<String, String> responseHeaders;
-    public boolean ignore;
 
     public void setPayload( final String payload )
     {
         this.payload = payload;
-    }
-
-    public String getPayload()
-    {
-        if ( this.payload != null && !this.payload.trim()
-                .isEmpty()
-             && MediaType.APPLICATION_JSON_TYPE.equals( payloadType ) )
-        {
-            return JSONPrettifier.parse( this.payload );
-        }
-        else
-        {
-            return this.payload;
-        }
-    }
-
-    public String getPrettifiedEntity()
-    {
-        return JSONPrettifier.parse( entity );
-    }
-
-    public void setPayloadType( final MediaType payloadType )
-    {
-        this.payloadType = payloadType;
     }
 
     public void setDescription( final String description )
@@ -105,10 +77,6 @@ class DocumentationData
     public void setRequestHeaders( final Map<String, String> request )
     {
         requestHeaders = request;
-    }
-
-    public void setIgnore() {
-        this.ignore = true;
     }
 
     @Override

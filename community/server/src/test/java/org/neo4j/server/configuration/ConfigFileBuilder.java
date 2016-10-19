@@ -34,18 +34,6 @@ public class ConfigFileBuilder
     private final File directory;
     private final Map<String,String> config;
 
-    private static class Tuple
-    {
-        public Tuple( String name, String value )
-        {
-            this.name = name;
-            this.value = value;
-        }
-
-        public String name;
-        public String value;
-    }
-
     public static ConfigFileBuilder builder( File directory )
     {
         return new ConfigFileBuilder( directory );

@@ -19,24 +19,18 @@
  */
 package org.neo4j.server.rest;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
+
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
 public class RestRequest {
@@ -79,15 +73,6 @@ public class RestRequest {
         return uriString.endsWith( "/" ) ? uri( uriString.substring( 0, uriString.length() - 1 ) ) : uri;
     }
 
-    public static String encode( Object value ) {
-        if ( value == null ) return "";
-        try {
-            return URLEncoder.encode( value.toString(), StandardCharsets.UTF_8.name() ).replaceAll( "\\+", "%20" );
-        } catch ( UnsupportedEncodingException e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
     private Builder builder( String path ) {
         return builder( path, accept );
     }
@@ -110,20 +95,6 @@ public class RestRequest {
 
     public JaxRsResponse get( String path ) {
         return JaxRsResponse.extractFrom( HTTP.sanityCheck( builder( path ).get( ClientResponse.class ) ) );
-    }
-
-    public JaxRsResponse get(String path, String data) {
-        return get( path, data, MediaType.APPLICATION_JSON_TYPE );
-    }
-
-    public JaxRsResponse get( String path, String data, final MediaType mediaType ) {
-        Builder builder = builder( path );
-        if ( data != null ) {
-            builder = builder.entity( data, mediaType);
-        } else {
-            builder = builder.type( mediaType );
-        }
-        return JaxRsResponse.extractFrom( HTTP.sanityCheck( builder.get( ClientResponse.class ) ) );
     }
 
     public JaxRsResponse delete(String path) {
@@ -152,41 +123,12 @@ public class RestRequest {
         return new JaxRsResponse( HTTP.sanityCheck( builder.put( ClientResponse.class ) ) );
     }
 
-    public Object toEntity( JaxRsResponse JaxRsResponse ) throws JsonParseException {
-        return JsonHelper.readJson( entityString( JaxRsResponse ) );
-    }
-
-    public Map<?, ?> toMap( JaxRsResponse JaxRsResponse) throws JsonParseException {
-        final String json = entityString( JaxRsResponse );
-        return JsonHelper.jsonToMap(json);
-    }
-
-    private String entityString( JaxRsResponse JaxRsResponse) {
-        return JaxRsResponse.getEntity();
-    }
-
-    public boolean statusIs( JaxRsResponse JaxRsResponse, Response.StatusType status ) {
-        return JaxRsResponse.getStatus() == status.getStatusCode();
-    }
-
-    public boolean statusOtherThan( JaxRsResponse JaxRsResponse, Response.StatusType status ) {
-        return !statusIs(JaxRsResponse, status );
-    }
-
-    public RestRequest with( String uri ) {
-        return new RestRequest( uri( uri ), client );
-    }
-
     private URI uri( String uri ) {
         try {
             return new URI( uri );
         } catch ( URISyntaxException e ) {
             throw new RuntimeException( e );
         }
-    }
-
-    public URI getUri() {
-        return baseUri;
     }
 
     public JaxRsResponse get() {
