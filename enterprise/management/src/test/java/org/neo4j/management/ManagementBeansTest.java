@@ -19,11 +19,11 @@
  */
 package org.neo4j.management;
 
+import java.util.Map;
+
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Map;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
@@ -49,10 +49,8 @@ public class ManagementBeansTest
     @Test
     public void canAccessKernelBean() throws Exception
     {
-        // START SNIPPET: getKernel
         Kernel kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Kernel.class );
-        // END SNIPPET: getKernel
         assertNotNull( "kernel bean is null", kernel );
         assertNotNull( "MBeanQuery of kernel bean is null", kernel.getMBeanQuery() );
     }
