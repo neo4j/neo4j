@@ -43,6 +43,6 @@ public class StoreLockerLifecycleAdapter extends LifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
-        storeLocker.release();
+        storeLocker.close();
     }
 }

@@ -33,11 +33,9 @@ public class Util
 {
     public static void checkLock( Path databaseDirectory ) throws CommandFailed
     {
-        try
+        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
         {
-            StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
             storeLocker.checkLock( databaseDirectory.toFile() );
-            storeLocker.release();
         }
         catch ( StoreLockException e )
         {
