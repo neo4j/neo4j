@@ -353,14 +353,14 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     {
         JndiLdapContextFactory contextFactory = new JndiLdapContextFactory();
         contextFactory.setUrl( parseLdapServerUrl( config.get( SecuritySettings.ldap_server ) ) );
-        contextFactory.setAuthenticationMechanism( config.get( SecuritySettings.ldap_auth_mechanism ) );
+        contextFactory.setAuthenticationMechanism( config.get( SecuritySettings.ldap_authentication_mechanism ) );
         contextFactory.setReferral( config.get( SecuritySettings.ldap_referral ) );
-        contextFactory.setSystemUsername( config.get( SecuritySettings.ldap_system_username ) );
-        contextFactory.setSystemPassword( config.get( SecuritySettings.ldap_system_password ) );
+        contextFactory.setSystemUsername( config.get( SecuritySettings.ldap_authorization_system_username ) );
+        contextFactory.setSystemPassword( config.get( SecuritySettings.ldap_authorization_system_password ) );
 
         setContextFactory( contextFactory );
 
-        String userDnTemplate = config.get( SecuritySettings.ldap_user_dn_template );
+        String userDnTemplate = config.get( SecuritySettings.ldap_authentication_user_dn_template );
         if ( userDnTemplate != null )
         {
             setUserDnTemplate( userDnTemplate );
