@@ -31,7 +31,11 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.BasicSecurityContext;
+import org.neo4j.server.security.auth.PasswordPolicy;
+import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.time.FakeClock;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
@@ -221,6 +225,25 @@ public class BasicAuthenticationTest
 
         // When
         authentication.authenticate( map( "this", "does", "not", "matter", "for", "test" ) );
+    }
+
+    @Test
+    public void shouldFailOnMalformedToken() throws Exception
+    {
+        // Given
+        BasicAuthManager manager = new BasicAuthManager( mock( UserRepository.class), mock( PasswordPolicy.class ),
+                FakeClock.systemUTC(), mock( UserRepository.class ) );
+        BasicAuthentication authentication = new BasicAuthentication( manager );
+
+        // Expect
+        exception.expect( AuthenticationException.class );
+        exception.expect( hasStatus( Status.Security.Unauthorized ) );
+        exception.expectMessage(
+                "The value associated with the key `principal` must be a String but was: SingletonList" );
+
+        // When
+        authentication
+                .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", "secret" ) );
     }
 
     private HasStatus hasStatus( Status status )
