@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.security;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -52,13 +53,20 @@ public interface AuthToken
             throws InvalidAuthTokenException
     {
         Object value = authToken.get( key );
-        if ( value != null && !(value instanceof Map) )
+        if ( value == null )
+        {
+            return Collections.emptyMap();
+        }
+        else if ( value instanceof Map )
+        {
+            return (Map<String,Object>) value;
+        }
+        else
         {
             throw new InvalidAuthTokenException(
                     "The value associated with the key `" + key + "` must be a Map but was: " +
                     value.getClass().getSimpleName() );
         }
-        return (Map<String,Object>) value;
     }
 
     static Map<String,Object> newBasicAuthToken( String username, String password )

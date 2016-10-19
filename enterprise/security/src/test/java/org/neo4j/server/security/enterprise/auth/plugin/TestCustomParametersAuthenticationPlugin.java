@@ -40,14 +40,11 @@ public class TestCustomParametersAuthenticationPlugin extends AuthenticationPlug
     {
         Map<String,Object> parameters = authToken.parameters();
 
-        if ( parameters != null )
-        {
-            List<Long> myCredentials = (List<Long>) parameters.get( "my_credentials" );
+        List<Long> myCredentials = (List<Long>) parameters.get( "my_credentials" );
 
-            if ( myCredentials.containsAll( Arrays.asList( 1L, 2L, 3L, 4L ) ) )
-            {
-                return (AuthenticationInfo) () -> "neo4j";
-            }
+        if ( myCredentials.containsAll( Arrays.asList( 1L, 2L, 3L, 4L ) ) )
+        {
+            return (AuthenticationInfo) () -> "neo4j";
         }
         return null;
     }
