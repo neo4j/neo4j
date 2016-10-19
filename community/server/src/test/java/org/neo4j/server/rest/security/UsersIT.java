@@ -25,7 +25,6 @@ import javax.ws.rs.core.HttpHeaders;
 import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,7 +32,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.server.rest.RESTDocsGenerator;
+import org.neo4j.server.rest.RESTRequestGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.string.UTF8;
@@ -47,14 +46,8 @@ import static org.junit.Assert.assertThat;
 
 public class UsersIT extends ExclusiveServerTestBase
 {
-    public @Rule TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+    public @Rule TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
     private CommunityNeoServer server;
-
-    @Before
-    public void setUp()
-    {
-        gen.get().setSection( "dev/rest-api" );
-    }
 
     @Test
     @Documented( "User status\n" +
@@ -66,7 +59,7 @@ public class UsersIT extends ExclusiveServerTestBase
         startServerWithConfiguredUser();
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) )
                 .get( userURL( "neo4j" ) );
@@ -88,7 +81,7 @@ public class UsersIT extends ExclusiveServerTestBase
         startServer( true );
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) )
                 .get( userURL( "neo4j" ) );
@@ -111,7 +104,7 @@ public class UsersIT extends ExclusiveServerTestBase
         startServer( true );
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) )
                 .payload( quotedJson( "{'password':'secret'}" ) )
