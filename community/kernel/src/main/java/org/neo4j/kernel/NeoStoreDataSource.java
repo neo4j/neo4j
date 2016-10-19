@@ -502,6 +502,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             throw Exceptions.launderedException( e );
         }
 
+        // NOTE: please make sure this is performed after having added everything to the life, in fact we would like
+        // to perform the checkpointing as first step when the life is shutdown.
+        life.add( lifecycleToTriggerCheckPointOnShutdown() );
+
         try
         {
             life.start();
@@ -873,23 +877,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             // will be able to start committing at this point.
             awaitAllTransactionsClosed();
 
-            // Write new checkpoint in the log only if the kernel is healthy.
-            // We cannot throw here since we need to shutdown without exceptions,
-            // so let's make the checkpointing part of the life, so LifeSupport can handle exceptions properly
-            life.add( new LifecycleAdapter()
-            {
-                @Override
-                public void shutdown() throws Throwable
-                {
-                    if ( databaseHealth.isHealthy() )
-                    {
-                        // Flushing of neo stores happens as part of the checkpoint
-                        transactionLogModule.checkPointing()
-                                .forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
-                    }
-                }
-            } );
-
+            // Checkpointing is now triggered as part of life.shutdown see lifecycleToTriggerCheckPointOnShutdown()
             // Shut down all services in here, effectively making the database unusable for anyone who tries.
             life.shutdown();
         }
@@ -909,6 +897,26 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         {
             LockSupport.parkNanos( 10_000_000 ); // 10 ms
         }
+    }
+
+    private Lifecycle lifecycleToTriggerCheckPointOnShutdown()
+    {
+        // Write new checkpoint in the log only if the kernel is healthy.
+        // We cannot throw here since we need to shutdown without exceptions,
+        // so let's make the checkpointing part of the life, so LifeSupport can handle exceptions properly
+        return  new LifecycleAdapter()
+        {
+            @Override
+            public void shutdown() throws Throwable
+            {
+                if ( databaseHealth.isHealthy() )
+                {
+                    // Flushing of neo stores happens as part of the checkpoint
+                    transactionLogModule.checkPointing()
+                            .forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
+                }
+            }
+        };
     }
 
     @Override
