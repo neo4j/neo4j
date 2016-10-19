@@ -26,18 +26,27 @@ case class ProcedureSignature(name: QualifiedName,
                               inputSignature: IndexedSeq[FieldSignature],
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],
-                              accessMode: ProcedureAccessMode) {
+                              accessMode: ProcedureAccessMode,
+                              description: Option[String] = None) {
 
   def outputFields = outputSignature.getOrElse(Seq.empty)
 
   def isVoid = outputSignature.isEmpty
+
+  override def toString = {
+    val sig = inputSignature.mkString(", ")
+    outputSignature.map(out => s"$name($sig) :: ${out.mkString(", ")}").getOrElse(s"$name($sig) :: VOID")
+  }
 }
 
 case class UserFunctionSignature(name: QualifiedName,
                                  inputSignature: IndexedSeq[FieldSignature],
                                  outputType: CypherType,
                                  deprecationInfo: Option[String],
-                                 allowed: Array[String])
+                                 allowed: Array[String],
+                                 description: Option[String]) {
+  override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
+}
 
 object QualifiedName {
   def apply(unresolved: UnresolvedCall): QualifiedName =
@@ -51,7 +60,12 @@ case class QualifiedName(namespace: Seq[String], name: String) {
 }
 
 case class CypherValue(value: AnyRef, cypherType: CypherType)
-case class FieldSignature(name: String, typ: CypherType, default: Option[CypherValue] = None)
+case class FieldSignature(name: String, typ: CypherType, default: Option[CypherValue] = None) {
+  override def toString = {
+    val nameValue = default.map( d => s"$name  =  ${d.value}").getOrElse(name)
+    s"$nameValue :: ${typ.toNeoTypeString}"
+  }
+}
 
 sealed trait  ProcedureAccessMode
 

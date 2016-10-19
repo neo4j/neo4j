@@ -23,6 +23,8 @@ object BooleanType {
   val instance = new BooleanType() {
     val parentType = CTAny
     override val toString = "Boolean"
+    override val toNeoTypeString = "BOOLEAN?"
+
   }
 }
 

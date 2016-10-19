@@ -23,6 +23,7 @@ object StringType {
   val instance = new StringType() {
     val parentType = CTAny
     override val toString = "String"
+    override val toNeoTypeString = "STRING?"
   }
 }
 

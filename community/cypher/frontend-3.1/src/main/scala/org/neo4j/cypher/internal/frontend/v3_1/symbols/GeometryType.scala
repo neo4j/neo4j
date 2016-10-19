@@ -23,6 +23,8 @@ object GeometryType {
   val instance = new GeometryType() {
     val parentType = CTAny
     override val toString = "Geometry"
+
+    override def toNeoTypeString = "GEOMETRY?"
   }
 }
 

@@ -80,7 +80,14 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
               arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
           }.foldLeft(success)(_ chain _)
         } else {
-          error(_: SemanticState, SemanticError(s"Function call does not provide the required number of arguments ($expectedNumArgs)", position))
+          val msg = (if (signature.inputSignature.isEmpty) "arguments"
+          else if (signature.inputSignature.size == 1) s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
+          else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
+            signature.description.map(d => s"${System.lineSeparator()}Description: $d").getOrElse("")
+          error(_: SemanticState, SemanticError( s"""Function call does not provide the required number of arguments: expected $expectedNumArgs got $actualNumArgs.
+             |
+             |Function ${signature.name} has signature: $signature
+             |meaning that it expects $expectedNumArgs $msg""".stripMargin, position))
         }
   }
 }

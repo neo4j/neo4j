@@ -175,7 +175,7 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(NO_VARIABLES_IN_SCOPE)
     else if (msg.matches(semanticError("RETURN \\* is not allowed when there are no identifiers in scope")))
       detail should equal(NO_VARIABLES_IN_SCOPE)
-    else if (msg.matches(semanticError("Procedure call does not provide the required number of arguments (.+)")))
+    else if (msg.matches(semanticError("Procedure call does not provide the required number of arguments.+")))
       detail should equal("InvalidNumberOfArguments")
     else if (msg.matches("Expected a parameter named .+"))
       detail should equal("MissingParameter")

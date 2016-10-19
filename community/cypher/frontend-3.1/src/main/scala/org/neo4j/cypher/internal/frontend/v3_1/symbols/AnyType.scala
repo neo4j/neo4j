@@ -27,6 +27,8 @@ object AnyType {
     override def isAssignableFrom(other: CypherType): Boolean = true
 
     override val toString = "Any"
+    override val toNeoTypeString = "ANY?"
+
   }
 }
 

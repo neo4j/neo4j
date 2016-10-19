@@ -23,6 +23,7 @@ object PointType {
   val instance = new PointType() {
     val parentType = CTAny
     override val toString = "Point"
+    override val toNeoTypeString = "POINT?"
   }
 }
 

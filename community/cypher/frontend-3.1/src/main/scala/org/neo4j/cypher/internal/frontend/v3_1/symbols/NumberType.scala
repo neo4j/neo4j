@@ -24,6 +24,7 @@ object NumberType {
     val parentType = CTAny
     override val isAbstract = true
     override val toString = "Number"
+    override val toNeoTypeString = "NUMBER?"
   }
 }
 
