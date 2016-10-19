@@ -167,16 +167,16 @@ public interface TransactionData
     /**
      * Get the username under which authorization state this transaction is running.
      *
-     * @return name of subject
+     * @return the username of the user who initiated the transaction.
      */
-    String getUsername();
+    String username();
 
     /**
      * Applications that start transactions may attach additional application specific meta-data to each transaction.
      *
-     * @return The application specific meta-data map associated with this transaction
+     * @return The application specific meta-data map associated with this transaction.
      */
-    Map<String,Object> getMetaData();
+    Map<String,Object> metaData();
 
     /**
      * Return transaction id that assigned during transaction commit process.

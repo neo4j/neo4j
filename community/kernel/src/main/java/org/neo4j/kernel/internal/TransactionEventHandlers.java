@@ -286,15 +286,15 @@ public class TransactionEventHandlers
         }
 
         @Override
-        public String getUsername()
+        public String username()
         {
             return "";
         }
 
         @Override
-        public Map<String,Object> getMetaData()
+        public Map<String,Object> metaData()
         {
-            return Collections.EMPTY_MAP;
+            return Collections.emptyMap();
         }
 
         @Override

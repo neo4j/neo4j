@@ -159,8 +159,8 @@ public class TransactionEventsIT
     public void shouldGetEmptyUsernameOnAuthDisabled()
     {
         db.registerTransactionEventHandler( getBeforeCommitHandler( txData -> {
-            assertThat( "Should have no username", txData.getUsername(), equalTo( "" ) );
-            assertThat( "Should have no metadata", txData.getMetaData(), equalTo( Collections.emptyMap() ) );
+            assertThat( "Should have no username", txData.username(), equalTo( "" ) );
+            assertThat( "Should have no metadata", txData.metaData(), equalTo( Collections.emptyMap() ) );
         }) );
         runTransaction();
     }
@@ -171,8 +171,8 @@ public class TransactionEventsIT
         final AtomicReference<String> usernameRef = new AtomicReference<>();
         final AtomicReference<Map<String,Object>> metaDataRef = new AtomicReference<>();
         db.registerTransactionEventHandler( getBeforeCommitHandler( txData -> {
-            usernameRef.set( txData.getUsername() );
-            metaDataRef.set( txData.getMetaData() );
+            usernameRef.set( txData.username() );
+            metaDataRef.set( txData.metaData() );
         } ) );
         AuthSubject subject = mock( AuthSubject.class );
         when( subject.allowsWrites() ).thenReturn( true );

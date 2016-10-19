@@ -158,13 +158,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     }
 
     @Override
-    public String getUsername()
+    public String username()
     {
         return transaction.mode().username();
     }
 
     @Override
-    public Map<String,Object> getMetaData()
+    public Map<String,Object> metaData()
     {
         if ( transaction instanceof KernelTransactionImplementation )
         {

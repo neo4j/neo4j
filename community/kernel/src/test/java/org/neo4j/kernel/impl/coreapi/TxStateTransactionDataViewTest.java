@@ -310,7 +310,7 @@ public class TxStateTransactionDataViewTest
         when( transaction.mode() ).thenReturn( accessMode );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
-        assertEquals( "", transactionDataSnapshot.getUsername() );
+        assertEquals( "", transactionDataSnapshot.username() );
     }
 
     @Test
@@ -321,14 +321,14 @@ public class TxStateTransactionDataViewTest
         when( transaction.mode() ).thenReturn( authSubject );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
-        assertEquals( "Christof", transactionDataSnapshot.getUsername() );
+        assertEquals( "Christof", transactionDataSnapshot.username() );
     }
 
     @Test
     public void shouldAccessEmptyMetaData()
     {
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
-        assertEquals( 0, transactionDataSnapshot.getMetaData().size() );
+        assertEquals( 0, transactionDataSnapshot.metaData().size() );
     }
 
     @Test
@@ -340,8 +340,8 @@ public class TxStateTransactionDataViewTest
         when( transaction.getMetaData() ).thenReturn( genericMap( "username", "Igor" ) );
         TxStateTransactionDataSnapshot transactionDataSnapshot =
                 new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement, transaction );
-        assertEquals( 1, transactionDataSnapshot.getMetaData().size() );
-        assertThat( "Expected metadata map to contain defined username", transactionDataSnapshot.getMetaData(),
+        assertEquals( 1, transactionDataSnapshot.metaData().size() );
+        assertThat( "Expected metadata map to contain defined username", transactionDataSnapshot.metaData(),
                 equalTo( genericMap( "username", "Igor" ) ) );
     }
 
