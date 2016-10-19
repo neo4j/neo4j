@@ -120,7 +120,7 @@ public class EnterpriseSecurityModule extends SecurityModule
     public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        List<String> configuredRealms = config.get( SecuritySettings.active_realms );
+        List<String> configuredRealms = config.get( SecuritySettings.auth_providers );
         List<Realm> realms = new ArrayList<>( configuredRealms.size() + 1 );
 
         SecureHasher secureHasher = new SecureHasher();

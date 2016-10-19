@@ -117,8 +117,8 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( ldapOnlyAuthSettings.andThen(
                 settings -> {
-                    settings.put( SecuritySettings.ldap_auth_mechanism, "DIGEST-MD5" );
-                    settings.put( SecuritySettings.ldap_user_dn_template, "{0}" );
+                    settings.put( SecuritySettings.ldap_authentication_mechanism, "DIGEST-MD5" );
+                    settings.put( SecuritySettings.ldap_authentication_user_dn_template, "{0}" );
                 }
         ) ) );
     }
@@ -128,8 +128,8 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( ldapOnlyAuthSettings.andThen(
                 settings -> {
-                    settings.put( SecuritySettings.ldap_auth_mechanism, "CRAM-MD5" );
-                    settings.put( SecuritySettings.ldap_user_dn_template, "{0}" );
+                    settings.put( SecuritySettings.ldap_authentication_mechanism, "CRAM-MD5" );
+                    settings.put( SecuritySettings.ldap_authentication_user_dn_template, "{0}" );
                 }
         ) ) );
     }
@@ -139,10 +139,10 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     {
         return super.getSettingsFunction().andThen( ldapOnlyAuthSettings ).andThen( settings -> {
             settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
-            settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
+            settings.put( SecuritySettings.ldap_authentication_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
             settings.put( SecuritySettings.ldap_authentication_cache_enabled, "true" );
-            settings.put( SecuritySettings.ldap_system_username, "uid=admin,ou=system" );
-            settings.put( SecuritySettings.ldap_system_password, "secret" );
+            settings.put( SecuritySettings.ldap_authorization_system_username, "uid=admin,ou=system" );
+            settings.put( SecuritySettings.ldap_authorization_system_password, "secret" );
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
             settings.put( SecuritySettings.ldap_authorization_user_search_base, "dc=example,dc=com" );
             settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(uid={0}))" );
@@ -384,7 +384,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     {
         // When
         restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.active_realms,
+            settings.put( SecuritySettings.auth_providers,
                     SecuritySettings.NATIVE_REALM_NAME + "," + SecuritySettings.LDAP_REALM_NAME );
             settings.put( SecuritySettings.native_authentication_enabled, "false" );
             settings.put( SecuritySettings.native_authorization_enabled, "true" );
@@ -730,7 +730,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     public void shouldBeAbleToLoginWithLdapWhenSelectingRealmFromClient() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.active_realms,
+            settings.put( SecuritySettings.auth_providers,
                     SecuritySettings.NATIVE_REALM_NAME + "," + SecuritySettings.LDAP_REALM_NAME );
             settings.put( SecuritySettings.native_authentication_enabled, "true" );
             settings.put( SecuritySettings.native_authorization_enabled, "true" );
@@ -968,7 +968,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
     private static Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
     {
-        settings.put( SecuritySettings.active_realm, SecuritySettings.LDAP_REALM_NAME );
+        settings.put( SecuritySettings.auth_provider, SecuritySettings.LDAP_REALM_NAME );
         settings.put( SecuritySettings.native_authentication_enabled, "false" );
         settings.put( SecuritySettings.native_authorization_enabled, "false" );
         settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
@@ -976,10 +976,10 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     };
 
     private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2Settings = settings -> {
-        settings.put( SecuritySettings.active_realm, SecuritySettings.LDAP_REALM_NAME );
+        settings.put( SecuritySettings.auth_provider, SecuritySettings.LDAP_REALM_NAME );
         //settings.put( SecuritySettings.ldap_server, "ec2-176-34-79-113.eu-west-1.compute.amazonaws.com:389" );
         settings.put( SecuritySettings.ldap_server, "henrik.neohq.net:389" );
-        settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},cn=Users,dc=neo4j,dc=com" );
+        settings.put( SecuritySettings.ldap_authentication_user_dn_template, "cn={0},cn=Users,dc=neo4j,dc=com" );
         settings.put( SecuritySettings.ldap_authorization_user_search_base, "cn=Users,dc=neo4j,dc=com" );
         settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(CN={0}))" );
         settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "memberOf" );
@@ -999,8 +999,8 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2UsingSystemAccountSettings =
             activeDirectoryOnEc2Settings.andThen( settings -> {
                 settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
-                settings.put( SecuritySettings.ldap_system_username, "Petra Selmer" );
-                settings.put( SecuritySettings.ldap_system_password, "S0uthAfrica" );
+                settings.put( SecuritySettings.ldap_authorization_system_username, "Petra Selmer" );
+                settings.put( SecuritySettings.ldap_authorization_system_password, "S0uthAfrica" );
             } );
 
     //-------------------------------------------------------------------------

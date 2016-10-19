@@ -67,7 +67,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
         return super.getSettingsFunction().andThen( settings -> {
-            settings.put( SecuritySettings.active_realms, DEFAULT_TEST_PLUGIN_REALMS );
+            settings.put( SecuritySettings.auth_providers, DEFAULT_TEST_PLUGIN_REALMS );
         });
     }
 
@@ -188,7 +188,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     public void shouldAuthenticateAndAuthorizeWithTestCombinedAuthPlugin() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.active_realms, "plugin-TestCombinedAuthPlugin" );
+            settings.put( SecuritySettings.auth_providers, "plugin-TestCombinedAuthPlugin" );
         });
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCombinedAuthPlugin" ) );
@@ -200,7 +200,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     public void shouldAuthenticateAndAuthorizeWithTwoSeparateTestPlugins() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.active_realms,
+            settings.put( SecuritySettings.auth_providers,
                     "plugin-TestAuthenticationPlugin,plugin-TestAuthorizationPlugin" );
         });
 
@@ -213,7 +213,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     public void shouldFailIfAuthorizationExpiredWithAuthPlugin() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.active_realms, "plugin-TestCacheableAdminAuthPlugin" );
+            settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" );
         });
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
@@ -236,7 +236,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithAuthPlugin() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.active_realms, "plugin-TestCacheableAdminAuthPlugin" );
+            settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" );
         });
 
         // Then

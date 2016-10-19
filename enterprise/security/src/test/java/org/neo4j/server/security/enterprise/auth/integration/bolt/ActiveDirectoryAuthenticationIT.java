@@ -104,7 +104,7 @@ public class ActiveDirectoryAuthenticationIT
             settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
             settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
             settings.put( SecuritySettings.ldap_server, "activedirectory.neohq.net:389" );
-            settings.put( SecuritySettings.ldap_user_dn_template, "CN={0},CN=Users,DC=neo4j,DC=com" );
+            settings.put( SecuritySettings.ldap_authentication_user_dn_template, "CN={0},CN=Users,DC=neo4j,DC=com" );
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
             settings.put( SecuritySettings.ldap_authorization_user_search_base, "cn=Users,dc=neo4j,dc=com" );
             settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(CN={0}))" );
@@ -119,8 +119,8 @@ public class ActiveDirectoryAuthenticationIT
 
     private Consumer<Map<Setting<?>,String>> useSystemAccountSettings = settings -> {
         settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
-        settings.put( SecuritySettings.ldap_system_username, "Neo4j System" );
-        settings.put( SecuritySettings.ldap_system_password, "ProudListingsMedia1" );
+        settings.put( SecuritySettings.ldap_authorization_system_username, "Neo4j System" );
+        settings.put( SecuritySettings.ldap_authorization_system_password, "ProudListingsMedia1" );
     };
 
     public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
