@@ -112,8 +112,8 @@ public class AdminTool
 
     private void badUsage( String message )
     {
-        usage.print( outsideWorld::stdErrLine );
         outsideWorld.stdErrLine( message );
+        usage.print( outsideWorld::stdErrLine );
         failure();
     }
 
