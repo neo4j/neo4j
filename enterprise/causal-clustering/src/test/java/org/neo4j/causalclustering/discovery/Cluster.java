@@ -337,7 +337,7 @@ public class Cluster
                 }
                 else
                 {
-                    throw new RuntimeException( e );
+                    throw e;
                 }
             }
         };
