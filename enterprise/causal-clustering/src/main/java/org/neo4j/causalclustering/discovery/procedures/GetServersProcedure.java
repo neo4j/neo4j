@@ -20,9 +20,9 @@
 package org.neo4j.causalclustering.discovery.procedures;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,9 +45,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.util.Collections.emptySet;
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
@@ -87,9 +87,9 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
     @Override
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        Set<ReadWriteRouteEndPoint> writeEndpoints = emptySet();
-        Set<ReadWriteRouteEndPoint> readEndpoints = readEndpoints();
-        Set<ReadWriteRouteEndPoint> routeEndpoints = routeEndpoints();
+        List<ReadWriteRouteEndPoint> writeEndpoints = emptyList();
+        List<ReadWriteRouteEndPoint> readEndpoints = readEndpoints();
+        List<ReadWriteRouteEndPoint> routeEndpoints = routeEndpoints();
         try
         {
             AdvertisedSocketAddress leaderAddress =
@@ -105,21 +105,26 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
         return wrapUpEndpoints( routeEndpoints, writeEndpoints, readEndpoints );
     }
 
-    private Set<ReadWriteRouteEndPoint> routeEndpoints()
+    private List<ReadWriteRouteEndPoint> routeEndpoints()
     {
         Stream<AdvertisedSocketAddress> routers =
                 discoveryService.coreServers().addresses().stream()
                         .map( server -> server.getClientConnectorAddresses().getBoltAddress() );
-
-        return routers.map( ReadWriteRouteEndPoint::route ).collect( toSet() );
+        List<ReadWriteRouteEndPoint> routeEndpoints = routers.map( ReadWriteRouteEndPoint::route ).collect( toList() );
+        Collections.shuffle( routeEndpoints );
+        return routeEndpoints;
     }
 
-    private Set<ReadWriteRouteEndPoint> writeEndpoints( AdvertisedSocketAddress leader )
+    private List<ReadWriteRouteEndPoint> writeEndpoints( AdvertisedSocketAddress leader )
     {
-        return Stream.of( leader ).map( ReadWriteRouteEndPoint::write ).collect( Collectors.toSet() );
+        List<ReadWriteRouteEndPoint> writeEndPoints =
+                Stream.of( leader ).map( ReadWriteRouteEndPoint::write ).collect( Collectors.toList() );
+        Collections.shuffle( writeEndPoints );
+        return writeEndPoints;
+
     }
 
-    private Set<ReadWriteRouteEndPoint> readEndpoints()
+    private List<ReadWriteRouteEndPoint> readEndpoints()
     {
         Stream<AdvertisedSocketAddress> readReplica =
                 discoveryService.readReplicas().members().stream()
@@ -128,16 +133,18 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
         Stream<AdvertisedSocketAddress> readCore =
                 discoveryService.coreServers().addresses().stream()
                         .map( server -> server.getClientConnectorAddresses().getBoltAddress() );
-
-        return concat( readReplica, readCore ).map( ReadWriteRouteEndPoint::read ).collect( toSet() );
+        List<ReadWriteRouteEndPoint> readEndPoints =
+                concat( readReplica, readCore ).map( ReadWriteRouteEndPoint::read ).collect( toList() );
+        Collections.shuffle(readEndPoints);
+        return readEndPoints;
     }
 
-    private RawIterator<Object[],ProcedureException> wrapUpEndpoints( Set<ReadWriteRouteEndPoint> routeEndpoints,
-            Set<ReadWriteRouteEndPoint> writeEndpoints, Set<ReadWriteRouteEndPoint> readEndpoints )
+    private RawIterator<Object[],ProcedureException> wrapUpEndpoints( List<ReadWriteRouteEndPoint> routeEndpoints,
+            List<ReadWriteRouteEndPoint> writeEndpoints, List<ReadWriteRouteEndPoint> readEndpoints )
     {
-        Object[] routers = routeEndpoints.stream().map( ReadWriteRouteEndPoint::address ).sorted().toArray();
-        Object[] readers = readEndpoints.stream().map( ReadWriteRouteEndPoint::address ).sorted().toArray();
-        Object[] writers = writeEndpoints.stream().map( ReadWriteRouteEndPoint::address ).sorted().toArray();
+        Object[] routers = routeEndpoints.stream().map( ReadWriteRouteEndPoint::address ).toArray();
+        Object[] readers = readEndpoints.stream().map( ReadWriteRouteEndPoint::address ).toArray();
+        Object[] writers = writeEndpoints.stream().map( ReadWriteRouteEndPoint::address ).toArray();
 
         List<Map<String,Object>> servers = new ArrayList<>();
 
