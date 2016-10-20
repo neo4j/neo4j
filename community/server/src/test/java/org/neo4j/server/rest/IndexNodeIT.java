@@ -31,7 +31,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,7 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
+import org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -70,12 +69,6 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
-    }
-
-    @Before
-    public void setup()
-    {
-        gen().setGraph( server().getDatabase().getGraph() );
     }
 
     @Documented( "List node indexes." )

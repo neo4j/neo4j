@@ -18,10 +18,10 @@
  */
 package org.neo4j.examples.server;
 
-import org.junit.Test;
-
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Test;
 
 import org.neo4j.examples.server.plugins.GetAll;
 import org.neo4j.graphdb.Label;
@@ -38,12 +38,6 @@ public class GetAllDocIT extends AbstractPluginTestBase
 {
     private static final String GET_ALL_RELATIONSHIPS = "getAllRelationships";
     private static final String GET_ALL_NODES = "get_all_nodes";
-
-    @Override
-    protected String getDocumentationSectionName()
-    {
-        return "rest-api";
-    }
 
     @Test
     public void testName() throws Exception

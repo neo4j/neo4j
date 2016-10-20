@@ -18,10 +18,10 @@
  */
 package org.neo4j.examples.server;
 
-import org.junit.Test;
-
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Test;
 
 import org.neo4j.examples.server.plugins.DepthTwo;
 import org.neo4j.graphdb.Label;
@@ -42,11 +42,6 @@ public class DepthTwoDocIT extends AbstractPluginTestBase
     private static final String NODES_ON_DEPTH_TWO = "nodesOnDepthTwo";
     private static final String RELATIONSHIPS_ON_DEPTH_TWO = "relationshipsOnDepthTwo";
     private static final String PATHS_ON_DEPTH_TWO = "pathsOnDepthTwo";
-
-    protected String getDocumentationSectionName()
-    {
-        return "rest-api";
-    }
 
     @Test
     public void canFindExtension() throws Exception

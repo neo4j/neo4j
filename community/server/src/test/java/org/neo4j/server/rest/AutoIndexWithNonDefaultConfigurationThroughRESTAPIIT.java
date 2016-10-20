@@ -48,14 +48,7 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIIT extends Exclus
     public static TemporaryFolder staticFolder = new TemporaryFolder();
 
     @Rule
-    public
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-
-    @Before
-    public void setUp()
-    {
-        gen.get().setSection( "dev/rest-api" );
-    }
+    public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
 
     @BeforeClass
     public static void allocateServer() throws IOException

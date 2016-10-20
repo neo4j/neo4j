@@ -20,13 +20,13 @@
 package org.neo4j.server.rest.streaming;
 
 import org.neo4j.server.rest.PathsIT;
-import org.neo4j.server.rest.RESTDocsGenerator;
+import org.neo4j.server.rest.RESTRequestGenerator;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 
 public class StreamingPathsIT extends PathsIT
 {
     @Override
-    public RESTDocsGenerator gen() {
+    public RESTRequestGenerator gen() {
         return super.gen().withHeader(StreamingJsonFormat.STREAM_HEADER, "true");
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.configuration.docs;
+package org.neo4j.doc;
 
 import org.junit.Test;
 
@@ -59,7 +59,7 @@ public class SettingsDocumenterTest
         // in which case you should trust your best judgement, and change the assertion
         // below accordingly.
         assertThat( result, equalTo( String.format(
-            "[[config-org.neo4j.kernel.configuration.docs.SettingsDocumenterTest-SimpleSettings]]%n" +
+            "[[config-org.neo4j.doc.SettingsDocumenterTest-SimpleSettings]]%n" +
             ".List of configuration settings%n" +
             "ifndef::nonhtmloutput[]%n" +
             "%n" +
@@ -78,7 +78,7 @@ public class SettingsDocumenterTest
             "endif::nonhtmloutput[]%n" +
             "%n" +
             "%n" +
-            "[[config-org.neo4j.kernel.configuration.docs.SettingsDocumenterTest-SimpleSettings-deprecated]]%n" +
+            "[[config-org.neo4j.doc.SettingsDocumenterTest-SimpleSettings-deprecated]]%n" +
             ".Deprecated settings%n" +
             "ifndef::nonhtmloutput[]%n" +
             "%n" +
@@ -170,7 +170,7 @@ public class SettingsDocumenterTest
 
         // then
         assertThat( result, equalTo( String.format(
-                "[[config-org.neo4j.kernel.configuration.docs.SettingsDocumenterTest-Giraffe]]%n" +
+                "[[config-org.neo4j.doc.SettingsDocumenterTest-Giraffe]]%n" +
                 ".Use this group to configure giraffes%n" +
                 "ifndef::nonhtmloutput[]%n" +
                 "%n" +

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.configuration.docs;
+package org.neo4j.doc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.kernel.configuration.docs.SettingsDescription.describe;
+import static org.neo4j.doc.SettingsDescription.describe;
 
 public class SettingsDocumenter
 {
