@@ -105,7 +105,7 @@ public class UnbindFromClusterCommand implements AdminCommand
             }
             else
             {
-                outsideWorld.stdOutLine(
+                outsideWorld.stdErrLine(
                         format( "No cluster state found in %s. No work perfomed.", pathToSpecificDatabase ) );
             }
         }
