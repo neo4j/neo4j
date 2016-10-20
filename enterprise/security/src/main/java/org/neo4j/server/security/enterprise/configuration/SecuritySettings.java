@@ -237,7 +237,7 @@ public class SecuritySettings
             PATH );
 
     @Description("Security log level threshold.")
-    public static final Setting<Level> security_log_level = setting( "dbms.security.log_level",
+    public static final Setting<Level> security_log_level = setting( "dbms.logs.security.level",
             options( Level.class ), "INFO" );
 
     @Description( "Set to log successful authentication events." )
