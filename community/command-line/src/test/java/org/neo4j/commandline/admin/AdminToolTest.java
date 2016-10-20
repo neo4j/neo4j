@@ -27,10 +27,10 @@ import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
 
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.inOrder;
 
 public class AdminToolTest
 {
@@ -57,7 +57,7 @@ public class AdminToolTest
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null, "help" );
-        verify( outsideWorld ).stdOutLine( "neo4j-admin help" );
+        verify( outsideWorld ).stdOutLine( "neo4j-admin help [<command>] " );
     }
 
     @Test
@@ -78,8 +78,7 @@ public class AdminToolTest
         {
             throw new RuntimeException( "the-exception-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "unexpected error: the-exception-message" );
         verify( outsideWorld ).exit( 1 );
     }
@@ -93,8 +92,7 @@ public class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true ).execute( null, null, "exception" );
         verify( outsideWorld ).printStacktrace( exception );
     }
 
@@ -107,8 +105,7 @@ public class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
         verify( outsideWorld, never() ).printStacktrace( exception );
     }
 
@@ -120,8 +117,7 @@ public class AdminToolTest
         {
             throw new CommandFailed( "the-failure-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "command failed: the-failure-message" );
         verify( outsideWorld ).exit( 1 );
     }
@@ -135,8 +131,7 @@ public class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true ).execute( null, null, "exception" );
         verify( outsideWorld ).printStacktrace( exception );
     }
 
@@ -149,8 +144,7 @@ public class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
         verify( outsideWorld, never() ).printStacktrace( exception );
     }
 
@@ -162,9 +156,8 @@ public class AdminToolTest
         {
             throw new IncorrectUsage( "the-usage-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
-        InOrder inOrder = inOrder(outsideWorld);
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
+        InOrder inOrder = inOrder( outsideWorld );
         inOrder.verify( outsideWorld ).stdErrLine( "the-usage-message" );
         inOrder.verify( outsideWorld ).stdErrLine( "neo4j-admin exception" );
         verify( outsideWorld ).exit( 1 );
