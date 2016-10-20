@@ -263,7 +263,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     public void shouldPassOnAuthorizationExpiredException() throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.active_realms,
+            settings.put( SecuritySettings.auth_providers,
                     "plugin-TestCombinedAuthPlugin" );
         });
 
