@@ -160,7 +160,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     @Override
     public String username()
     {
-        return transaction.mode().username();
+        return transaction.securityContext().subject().username();
     }
 
     @Override
