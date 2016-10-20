@@ -23,12 +23,11 @@ import java.io.IOException;
 import javax.ws.rs.core.HttpHeaders;
 
 import org.codehaus.jackson.JsonNode;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.rest.RESTDocsGenerator;
+import org.neo4j.server.rest.RESTRequestGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestData;
@@ -42,13 +41,7 @@ import static org.junit.Assert.assertThat;
 public class AuthenticationIT extends CommunityServerTestBase
 {
     @Rule
-    public TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-
-    @Before
-    public void setUp()
-    {
-        gen.get().setSection( "dev/rest-api" );
-    }
+    public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
 
     @Test
     @Documented( "Missing authorization\n" +
@@ -60,7 +53,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServerWithConfiguredUser();
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 401 )
                 .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
                 .get( dataURL() );
@@ -84,7 +77,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServerWithConfiguredUser();
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) )
                 .get( userURL( "neo4j" ) );
@@ -106,7 +99,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServerWithConfiguredUser();
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 401 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "incorrect" ) )
                 .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
@@ -132,7 +125,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServer( true );
 
         // Document
-        RESTDocsGenerator.ResponseEntity response = gen.get()
+        RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 403 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) )
                 .get( dataURL() );

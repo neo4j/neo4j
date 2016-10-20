@@ -107,7 +107,6 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
             .endArray().toString();
 
         String entity = gen.get()
-        .description( startGraph( "execute multiple operations in batch" ) )
         .payload(jsonString)
         .expectedStatus(200)
         .post(batchUri()).entity();

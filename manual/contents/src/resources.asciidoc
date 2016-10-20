@@ -16,4 +16,3 @@ Below are some starting points within this manual:
 * <<cypher-getting-started>>
 * <<rest-api>>
 * <<deployment>>
-* <<deployment-upgrading>>

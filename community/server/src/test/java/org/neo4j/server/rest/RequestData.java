@@ -21,11 +21,9 @@ package org.neo4j.server.rest;
 
 import java.util.Map;
 
-class DocumentationData
+class RequestData
 {
     private String payload;
-    public String title;
-    public String description;
     public String uri;
     public String method;
     public int status;
@@ -36,16 +34,6 @@ class DocumentationData
     public void setPayload( final String payload )
     {
         this.payload = payload;
-    }
-
-    public void setDescription( final String description )
-    {
-        this.description = description;
-    }
-
-    public void setTitle( final String title )
-    {
-        this.title = title;
     }
 
     public void setUri( final String uri )
@@ -82,7 +70,7 @@ class DocumentationData
     @Override
     public String toString()
     {
-        return "DocumentationData [payload=" + payload + ", title=" + title + ", description=" + description
+        return "DocumentationData [payload=" + payload
                + ", uri=" + uri + ", method=" + method + ", status=" + status + ", entity=" + entity
                + ", requestHeaders=" + requestHeaders + ", responseHeaders=" + responseHeaders + "]";
     }

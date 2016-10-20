@@ -86,6 +86,11 @@
       <artifactId>neo4j-security-enterprise</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-doc-tools</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <licenses>
@@ -114,7 +119,7 @@
               <target>
                 <!-- Combined configuration docs for all public configuration other than
                      connectors, which are handled separately below. -->
-                <java classname="org.neo4j.kernel.configuration.docs.GenerateConfigDocumentation"
+                <java classname="org.neo4j.doc.GenerateConfigDocumentation"
                       classpathref="maven.compile.classpath" failonerror="true">
                   <arg line="-o ${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
                   <arg value="org.neo4j.server.configuration.ServerSettings" />
@@ -135,13 +140,13 @@
 
                 <!-- Connector documentation is kept separate, because otherwise the
                      grouping of these keys becomes unclear (IMO) -->
-                <java classname="org.neo4j.kernel.configuration.docs.GenerateConfigDocumentation"
+                <java classname="org.neo4j.doc.GenerateConfigDocumentation"
                       classpathref="maven.compile.classpath" failonerror="true">
                   <arg line="-o ${project.build.directory}/docs/ops/configuration-bolt-connector-attributes.asciidoc" />
                   <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettings$BoltConnector" />
                 </java>
 
-                <java classname="org.neo4j.kernel.configuration.docs.GenerateConfigDocumentation"
+                <java classname="org.neo4j.doc.GenerateConfigDocumentation"
                       classpathref="maven.compile.classpath" failonerror="true">
                   <arg line="-o ${project.build.directory}/docs/ops/configuration-http-connector-attributes.asciidoc" />
                   <arg value="org.neo4j.server.configuration.ClientConnectorSettings$HttpConnector" />

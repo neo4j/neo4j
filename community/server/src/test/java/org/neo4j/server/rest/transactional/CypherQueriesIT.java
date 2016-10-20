@@ -30,7 +30,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 
 import static org.junit.Assert.assertFalse;
 
-import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
+import static org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class CypherQueriesIT extends AbstractRestFunctionalTestBase

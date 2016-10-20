@@ -18,10 +18,10 @@
  */
 package org.neo4j.examples.server;
 
-import org.junit.Test;
-
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Test;
 
 import org.neo4j.examples.server.plugins.ShortestPath;
 import org.neo4j.graphdb.Label;
@@ -40,11 +40,6 @@ import static org.junit.Assert.assertTrue;
 public class ShortestPathDocIT extends AbstractPluginTestBase
 {
     private static final String SHORTEST_PATHS = "shortestPath";
-
-    protected String getDocumentationSectionName()
-    {
-        return "rest-api";
-    }
 
     @Test
     public void canFindExtension() throws Exception

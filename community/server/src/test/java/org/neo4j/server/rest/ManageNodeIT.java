@@ -233,8 +233,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
         long node = helper.createNode();
-        gen.get().description( startGraph( "delete node" ) )
-                .expectedStatus( 204 )
+        gen.get().expectedStatus( 204 )
                 .delete( functionalTestHelper.dataUri() + "node/" + node );
     }
 
@@ -266,8 +265,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         assertThat( jsonMap, hasKey( "message" ) );
         assertNotNull( jsonMap.get( "message" ) );
 
-        gen.get().description( startGraph( "nodes with rels can not be deleted" ) )
-                .expectedStatus( 409 )
+        gen.get().expectedStatus( 409 )
                 .delete( functionalTestHelper.dataUri() + "node/" + id );
     }
 
@@ -327,15 +325,8 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         public static TemporaryFolder staticFolder = new TemporaryFolder();
 
         @Rule
-        public
-        TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+        public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
         private static FakeClock clock;
-
-        @Before
-        public void setUp()
-        {
-            gen.get().setSection( "dev/rest-api/database-version" );
-        }
 
         @BeforeClass
         public static void setupServer() throws Exception
