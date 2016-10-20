@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import org.neo4j.unsafe.impl.batchimport.Parallelizable;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -91,6 +92,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     };
     private final Runnable healthCheck;
     private volatile boolean done;
+    private volatile Throwable slurpFailure;
 
     public TicketedProcessing( String name, int maxProcessors, BiFunction<FROM,STATE,TO> processor,
             Supplier<STATE> threadLocalStateSupplier )
@@ -98,7 +100,14 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
         this.processor = processor;
         this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, maxProcessors, park, name,
                 threadLocalStateSupplier );
-        this.healthCheck = executor::assertHealthy;
+        this.healthCheck = () ->
+        {
+            if ( slurpFailure != null )
+            {
+                throw new TaskExecutionPanicException( "Failure adding jobs for processing", slurpFailure );
+            }
+            executor.assertHealthy();
+        };
         this.processed = new ArrayBlockingQueue<>( maxProcessors );
     }
 
@@ -156,15 +165,24 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     {
         return future( () ->
         {
-            while ( input.hasNext() )
+            try
             {
-                submit( input.next() );
+                while ( input.hasNext() )
+                {
+                    submit( input.next() );
+                }
+                if ( shutdownAfterAllSubmitted )
+                {
+                    shutdown( TaskExecutor.SF_AWAIT_ALL_COMPLETED );
+                }
+                return null;
             }
-            if ( shutdownAfterAllSubmitted )
+            catch ( Throwable e )
             {
-                shutdown( TaskExecutor.SF_AWAIT_ALL_COMPLETED );
+                slurpFailure = e;
+                shutdown( TaskExecutor.SF_ABORT_QUEUED );
+                throw e;
             }
-            return null;
         } );
     }
 
