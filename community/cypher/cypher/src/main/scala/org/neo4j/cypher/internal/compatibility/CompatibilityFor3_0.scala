@@ -71,6 +71,7 @@ object typeConversionsFor3_0 extends RuntimeTypeConverter {
   override def asPrivateType = {
     case map: Map[_, _] => asPrivateMap(map.asInstanceOf[Map[String, Any]])
     case seq: Seq[_] => seq.map(asPrivateType)
+    case javaMap: java.util.Map[_, _] => Eagerly.immutableMapValues(javaMap.asScala, asPrivateType)
     case javaIterable: java.lang.Iterable[_] => javaIterable.asScala.map(asPrivateType)
     case arr: Array[Any] => arr.map(asPrivateType)
     case point: spatial.Point => asPrivatePoint(point)
@@ -105,7 +106,7 @@ object typeConversionsFor3_0 extends RuntimeTypeConverter {
     override def getCode: Int = crs.code
   }
 
-  def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] = Eagerly.immutableMapValues(incoming, asPrivateType)
+  def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] = Eagerly.immutableMapValues[String,Any, Any](incoming, asPrivateType)
 
   private def asPrivatePoint(point: spatial.Point) = new Point {
     override def x: Double = point.getCoordinate.getCoordinate.get(0)
