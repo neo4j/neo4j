@@ -22,7 +22,7 @@ package org.neo4j.server.enterprise;
 import java.util.Map;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -56,7 +56,7 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
         if ( isCEMode( settings ) )
         {
             return Iterables.concat( super.settingsClasses( settings ),
-                    asList( CoreEdgeClusterSettings.class, SecuritySettings.class ) );
+                    asList( CausalClusteringSettings.class, SecuritySettings.class ) );
         }
         else
         {

@@ -65,7 +65,7 @@ public class DatabaseRoleInfoServerModule implements ServerModule
         return asList(
                 MasterInfoService.class.getName(),
                 CoreDatabaseAvailabilityService.class.getName(),
-                EdgeDatabaseAvailabilityService.class.getName()
+                ReadReplicaDatabaseAvailabilityService.class.getName()
         );
     }
 

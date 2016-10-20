@@ -364,7 +364,7 @@
       </build>
     </profile>
     <profile>
-      <id>core-edge-tests-only</id>
+      <id>causal-clustering-tests-only</id>
       <properties>
         <test-phase>none</test-phase>
       </properties>

@@ -33,7 +33,9 @@ public interface EnterpriseServerSettings
 {
     @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, 'HA' for " +
             "operating as a member in a cluster, 'ARBITER' for an HA-only cluster member with no database, " +
-            "CORE for a core member of a Core-Edge cluster, or EDGE for an edge member of a Core-Edge cluster. " )
+            "CORE for a core member of a Causal Clustering cluster, or READ_REPLICA for read replica." +
+            " cluster" +
+            ". " )
     Setting<String> mode = setting( "dbms.mode", STRING, "SINGLE" );
 
     @SuppressWarnings("unused") // accessed from the browser

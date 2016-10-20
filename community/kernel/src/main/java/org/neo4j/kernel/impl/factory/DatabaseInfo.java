@@ -26,7 +26,7 @@ public class DatabaseInfo
     public static final DatabaseInfo ENTERPRISE = new DatabaseInfo( Edition.enterprise, OperationalMode.single );
     public static final DatabaseInfo HA = new DatabaseInfo( Edition.enterprise, OperationalMode.ha );
     public static final DatabaseInfo CORE = new DatabaseInfo( Edition.enterprise, OperationalMode.core );
-    public static final DatabaseInfo EDGE = new DatabaseInfo( Edition.enterprise, OperationalMode.edge );
+    public static final DatabaseInfo READ_REPLICA = new DatabaseInfo( Edition.enterprise, OperationalMode.read_replica );
 
     public final Edition edition;
     public final OperationalMode operationalMode;

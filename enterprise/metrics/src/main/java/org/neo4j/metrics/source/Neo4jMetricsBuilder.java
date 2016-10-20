@@ -23,7 +23,7 @@ import com.codahale.metrics.MetricRegistry;
 
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.core.consensus.CoreMetaData;
+import org.neo4j.causalclustering.core.consensus.CoreMetaData;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
@@ -39,10 +39,10 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.metrics.output.EventReporter;
+import org.neo4j.metrics.source.causalclustering.CoreMetrics;
+import org.neo4j.metrics.source.causalclustering.ReadReplicaMetrics;
 import org.neo4j.metrics.source.cluster.ClusterMetrics;
 import org.neo4j.metrics.source.cluster.NetworkMetrics;
-import org.neo4j.metrics.source.coreedge.CoreMetrics;
-import org.neo4j.metrics.source.coreedge.EdgeMetrics;
 import org.neo4j.metrics.source.db.BoltMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
@@ -104,8 +104,8 @@ public class Neo4jMetricsBuilder
         boolean result = false;
         if ( config.get( MetricsSettings.neoTxEnabled ) )
         {
-            life.add( new TransactionMetrics( registry,
-                    dependencies.transactionIdStore(), dependencies.transactionCounters() ) );
+            life.add( new TransactionMetrics( registry, dependencies.transactionIdStore(),
+                    dependencies.transactionCounters() ) );
             result = true;
         }
 
@@ -117,15 +117,15 @@ public class Neo4jMetricsBuilder
 
         if ( config.get( MetricsSettings.neoCheckPointingEnabled ) )
         {
-            life.add( new CheckPointingMetrics( reporter, registry,
-                    dependencies.monitors(), dependencies.checkPointerMonitor() ) );
+            life.add( new CheckPointingMetrics( reporter, registry, dependencies.monitors(),
+                    dependencies.checkPointerMonitor() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoLogRotationEnabled ) )
         {
-            life.add( new LogRotationMetrics( reporter, registry,
-                    dependencies.monitors(), dependencies.logRotationMonitor() ) );
+            life.add( new LogRotationMetrics( reporter, registry, dependencies.monitors(),
+                    dependencies.logRotationMonitor() ) );
             result = true;
         }
 
@@ -191,7 +191,7 @@ public class Neo4jMetricsBuilder
             result = true;
         }
 
-        if ( config.get( MetricsSettings.coreEdgeEnabled ) )
+        if ( config.get( MetricsSettings.causalClusteringEnabled ) )
         {
             OperationalMode mode = kernelContext.databaseInfo().operationalMode;
             if ( mode == OperationalMode.core )
@@ -199,15 +199,16 @@ public class Neo4jMetricsBuilder
                 life.add( new CoreMetrics( dependencies.monitors(), registry, dependencies.raft() ) );
                 result = true;
             }
-            else if ( mode == OperationalMode.edge )
+            else if ( mode == OperationalMode.read_replica )
             {
-                life.add( new EdgeMetrics( dependencies.monitors(), registry ) );
+                life.add( new ReadReplicaMetrics( dependencies.monitors(), registry ) );
                 result = true;
             }
             else
             {
                 logService.getUserLog( getClass() )
-                        .warn( "Core Edge metrics was enabled but the graph database is not in Core-Edge mode." );
+                        .warn( "Causal Clustering metrics was enabled but the graph database is not in Causal " +
+                                "Clustering mode." );
             }
         }
 

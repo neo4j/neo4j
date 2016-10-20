@@ -27,8 +27,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.neo4j.coreedge.core.CoreGraphDatabase;
-import org.neo4j.coreedge.edge.EdgeGraphDatabase;
+import org.neo4j.causalclustering.core.CoreGraphDatabase;
+import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
@@ -97,7 +97,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
 
     private static final GraphFactory EDGE_FACTORY = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new EdgeGraphDatabase( storeDir, config.getParams(), dependencies );
+        return new ReadReplicaGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
     public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
