@@ -131,7 +131,7 @@
                   <arg value="org.neo4j.shell.ShellSettings" />
                   <arg value="org.neo4j.cluster.ClusterSettings" />
                   <arg value="org.neo4j.kernel.ha.HaSettings" />
-                  <arg value="org.neo4j.causalclustering.core.CoreEdgeClusterSettings" />
+                  <arg value="org.neo4j.causalclustering.core.CausalClusteringSettings" />
                   <arg value="org.neo4j.consistency.ConsistencyCheckSettings" />
                   <arg value="org.neo4j.server.enterprise.EnterpriseServerSettings" />
                   <arg value="org.neo4j.server.security.enterprise.configuration.SecuritySettings" />
