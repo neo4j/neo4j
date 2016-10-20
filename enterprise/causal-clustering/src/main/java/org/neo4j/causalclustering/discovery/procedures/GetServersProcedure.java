@@ -117,10 +117,7 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
 
     private List<ReadWriteRouteEndPoint> writeEndpoints( AdvertisedSocketAddress leader )
     {
-        List<ReadWriteRouteEndPoint> writeEndPoints =
-                Stream.of( leader ).map( ReadWriteRouteEndPoint::write ).collect( Collectors.toList() );
-        Collections.shuffle( writeEndPoints );
-        return writeEndPoints;
+        return Stream.of( leader ).map( ReadWriteRouteEndPoint::write ).collect( Collectors.toList() );
 
     }
 

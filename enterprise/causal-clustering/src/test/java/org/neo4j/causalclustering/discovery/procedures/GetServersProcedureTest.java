@@ -422,57 +422,6 @@ public class GetServersProcedureTest
                 containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
     }
 
-    @Test
-    public void shouldReturnReadEndpointsInDifferentOrders() throws Exception
-    {
-        // given
-        final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
-
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
-
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), coreAddresses( 0 ) );
-        coreMembers.put( member( 1 ), coreAddresses( 1 ) );
-        coreMembers.put( member( 2 ), coreAddresses( 2 ) );
-
-        final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
-        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.edgeServers() ).thenReturn( new EdgeTopology( clusterId, emptySet() ) );
-
-        final GetServersProcedure proc =
-                new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
-
-        // when
-        Object[] readServers = getReadServers( proc );
-
-        //then
-        Object[] readServersDifferentOrder = getReadServers( proc );
-        for ( int i = 0; i < 100; i++ )
-        {
-            if ( Arrays.deepEquals( readServersDifferentOrder, readServers ) )
-            {
-                readServersDifferentOrder = getReadServers( proc );
-            }
-            else
-            {
-                //Different order of servers, no need to retry.
-                break;
-            }
-        }
-        assertFalse( Arrays.deepEquals( readServers, readServersDifferentOrder ) );
-    }
-
-    private Object[] getReadServers( GetServersProcedure proc )
-            throws org.neo4j.kernel.api.exceptions.ProcedureException
-    {
-        List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
-        Object[] rows = results.get( 0 );
-        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
-        Map<String,Object[]> readServers = servers.get( 1 );
-        return readServers.get( "addresses" );
-    }
-
     static Set<ReadReplicaAddresses> addresses( int... ids )
     {
         return Arrays.stream( ids ).mapToObj( GetServersProcedureTest::readReplicaAddresses ).collect( Collectors.toSet() );
