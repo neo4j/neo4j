@@ -27,6 +27,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.logging.Level;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -39,6 +40,7 @@ import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -233,6 +235,10 @@ public class SecuritySettings
             GraphDatabaseSettings.logs_directory,
             ( logs ) -> new File( logs, "security.log" ),
             PATH );
+
+    @Description("Security log level threshold.")
+    public static final Setting<Level> security_log_level = setting( "dbms.security.log_level",
+            options( Level.class ), "INFO" );
 
     @Description( "Set to log successful authentication events." )
     public static final Setting<Boolean> security_log_successful_authentication =

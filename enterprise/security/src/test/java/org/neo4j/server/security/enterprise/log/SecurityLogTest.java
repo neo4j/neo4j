@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.log;
 
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,9 +29,14 @@ import java.util.Scanner;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Level;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.array;
+import static org.hamcrest.Matchers.containsString;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SecurityLogTest
@@ -40,7 +44,7 @@ public class SecurityLogTest
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
-    Config config = Config.defaults().augment(
+    private Config config = Config.defaults().augment(
             stringMap( SecuritySettings.store_security_log_rotation_threshold.name(), "5",
                     SecuritySettings.store_security_log_rotation_delay.name(), "1ms" ) );
 
@@ -54,17 +58,61 @@ public class SecurityLogTest
         FileSystemAbstraction fs = fileSystemRule.get();
 
         File activeLogFile = config.get( SecuritySettings.security_log_filename );
-        MatcherAssert.assertThat( fs.fileExists( activeLogFile ), Matchers.equalTo( true ) );
-        MatcherAssert.assertThat( fs.fileExists( archive( 1 ) ), Matchers.equalTo( true ) );
-        MatcherAssert.assertThat( fs.fileExists( archive( 2 ) ), Matchers.equalTo( false ) );
+        assertThat( fs.fileExists( activeLogFile ), Matchers.equalTo( true ) );
+        assertThat( fs.fileExists( archive( 1 ) ), Matchers.equalTo( true ) );
+        assertThat( fs.fileExists( archive( 2 ) ), Matchers.equalTo( false ) );
 
         String[] activeLines = readLogFile( fs, activeLogFile );
-        MatcherAssert.assertThat( activeLines.length, Matchers.equalTo( 1 ) );
-        MatcherAssert.assertThat( activeLines[0], Matchers.containsString( "line 2" ) );
+        assertThat( activeLines, array( containsString( "line 2" ) ) );
 
         String[] archiveLines = readLogFile( fs, archive( 1 ) );
-        MatcherAssert.assertThat( archiveLines.length, Matchers.equalTo( 1 ) );
-        MatcherAssert.assertThat( archiveLines[0], Matchers.containsString( "line 1" ) );
+        assertThat( archiveLines, array( containsString( "line 1" ) ) );
+    }
+
+    @Test
+    public void shouldHonorLogLevel() throws Throwable
+    {
+        writeAllLevelsAndShutdown( withLogLevel( Level.DEBUG ), "debug" );
+        writeAllLevelsAndShutdown( withLogLevel( Level.INFO ), "info" );
+        writeAllLevelsAndShutdown( withLogLevel( Level.WARN ), "warn" );
+        writeAllLevelsAndShutdown( withLogLevel( Level.ERROR ), "error" );
+
+        FileSystemAbstraction fs = fileSystemRule.get();
+        File activeLogFile = config.get( SecuritySettings.security_log_filename );
+        String[] activeLines = readLogFile( fs, activeLogFile );
+        assertThat( activeLines, array(
+                containsString( "debug: debug line" ),
+                containsString( "debug: info line" ),
+                containsString( "debug: warn line" ),
+                containsString( "debug: error line" ),
+
+                containsString( "info: info line" ),
+                containsString( "info: warn line" ),
+                containsString( "info: error line" ),
+
+                containsString( "warn: warn line" ),
+                containsString( "warn: error line" ),
+
+                containsString( "error: error line" )
+            ) );
+    }
+
+    private void writeAllLevelsAndShutdown( SecurityLog securityLog, String tag ) throws Throwable
+    {
+        securityLog.debug( format( "%s: debug line", tag ) );
+        securityLog.info( format( "%s: info line", tag ) );
+        securityLog.warn( format( "%s: warn line", tag ) );
+        securityLog.error( format( "%s: error line", tag ) );
+        securityLog.shutdown();
+    }
+
+    private SecurityLog withLogLevel( Level debug ) throws IOException
+    {
+        return new SecurityLog(
+                Config.defaults().augment( stringMap( SecuritySettings.security_log_level.name(), debug.name() ) ),
+                fileSystemRule.get(),
+                Runnable::run
+            );
     }
 
     private String[] readLogFile( FileSystemAbstraction fs, File activeLogFile ) throws IOException
@@ -78,7 +126,6 @@ public class SecurityLogTest
 
     private File archive( int archiveNumber )
     {
-        return new File( String.format( "%s.%d", config.get( SecuritySettings.security_log_filename ),
-                archiveNumber ) );
+        return new File( format( "%s.%d", config.get( SecuritySettings.security_log_filename ), archiveNumber ) );
     }
 }
