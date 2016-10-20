@@ -131,6 +131,21 @@ public class ExecutionResultTest
         assertThat( Math.round( distance ), equalTo( 86107L ) );
     }
 
+
+    @Test
+    public void shouldHandleMapWithPointsAsInput()
+    {
+        // Given
+        Point point1 = (Point) db.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point"  ).next().get( "point" );
+        Point point2 = (Point) db.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point"  ).next().get( "point" );
+
+        // When
+        double distance = (double) db.execute( "RETURN distance({points}['p1'], {points}['p2']) as dist",
+                map( "points", map("p1", point1, "p2", point2) ) ).next().get( "dist" );
+        // Then
+        assertThat(Math.round( distance ), equalTo(86107L));
+    }
+
     private TopLevelTransaction activeTransaction()
     {
         ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
