@@ -23,6 +23,7 @@ package org.neo4j.bolt.v1.runtime;
 import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
@@ -84,7 +85,10 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
     private void before( BoltResponseHandler handler ) throws BoltConnectionFatality
     {
-        if ( ctx.interruptCounter.get() > 0 )
+        if (ctx.isTerminated.get())
+        {
+            close();
+        } else if ( ctx.interruptCounter.get() > 0 )
         {
             state = state.interrupt( this );
         }
@@ -290,14 +294,20 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     @Override
     public void terminate()
     {
-        close();
+        /*
+         * This is a side-channel call and we should not close anything directly.
+         * Just mark the transaction and set isTerminated to true and then the session
+         * thread will close down the connection eventually.
+         */
+        ctx.isTerminated.set( true );
+        ctx.statementProcessor.markCurrentTransactionForTermination();
         spi.onTerminate( this );
     }
 
     @Override
-    public boolean hasTerminated()
+    public boolean willTerminate()
     {
-        return isClosed();
+        return ctx.isTerminated.get();
     }
 
     public enum State
@@ -674,6 +684,8 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
          * can be called to "purge" all the messages ahead of the reset message.
          */
         final AtomicInteger interruptCounter = new AtomicInteger();
+
+        final AtomicBoolean isTerminated = new AtomicBoolean( false );
 
         StatementProcessor statementProcessor = NULL_STATEMENT_PROCESSOR;
 

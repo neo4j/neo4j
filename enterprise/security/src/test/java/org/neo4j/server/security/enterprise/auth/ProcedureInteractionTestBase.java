@@ -20,7 +20,6 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.directory.api.util.Strings;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -65,7 +64,6 @@ import static java.lang.String.format;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.either;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -472,7 +470,7 @@ public abstract class ProcedureInteractionTestBase<S>
                 boltConnectionTracker
                         .getActiveConnections()
                         .stream()
-                        .filter( session -> !session.hasTerminated() )
+                        .filter( session -> !session.willTerminate() )
                         .map( ManagedBoltStateMachine::owner )
                 ).collect( Collectors.toMap( r -> r.username, r -> r.connectionCount ) );
     }

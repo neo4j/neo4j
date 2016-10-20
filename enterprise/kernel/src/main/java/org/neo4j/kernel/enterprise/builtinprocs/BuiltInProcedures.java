@@ -145,7 +145,7 @@ public class BuiltInProcedures
             boltConnectionTracker
                 .getActiveConnections()
                 .stream()
-                .filter( session -> !session.hasTerminated() )
+                .filter( session -> !session.willTerminate() )
                 .map( ManagedBoltStateMachine::owner )
         );
     }

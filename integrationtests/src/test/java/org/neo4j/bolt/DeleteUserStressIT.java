@@ -95,12 +95,9 @@ public class DeleteUserStressIT
                 {
                     errors.add( e );
                 }
-
             }
         }
-
     };
-
 
     @SuppressWarnings( "InfiniteLoopStatement" )
     private final Runnable deleteUserWork = () -> {
