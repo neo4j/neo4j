@@ -57,7 +57,7 @@ public class AdminToolTest
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null, "help" );
-        verify( outsideWorld ).stdOutLine( "neo4j-admin help [<command>] " );
+        verify( outsideWorld ).stdOutLine( "neo4j-admin help [<command>]" );
     }
 
     @Test

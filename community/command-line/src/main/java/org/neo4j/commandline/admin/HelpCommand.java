@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import org.neo4j.helpers.Args;
+import static java.lang.String.format;
 
 public class HelpCommand implements AdminCommand
 {
@@ -41,7 +41,7 @@ public class HelpCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "[<command>] ");
+            return Optional.of( "[<command>]" );
         }
 
         @Override
@@ -75,9 +75,9 @@ public class HelpCommand implements AdminCommand
     }
 
     @Override
-    public void execute( String... args )
+    public void execute( String... args ) throws IncorrectUsage
     {
-        if (args.length > 0)
+        if ( args.length > 0 )
         {
             try
             {
@@ -86,12 +86,15 @@ public class HelpCommand implements AdminCommand
                 commandUsage.print( this.output );
                 this.output.accept( commandProvider.description() );
                 this.output.accept( "" );
-                return;
             }
-            catch (NoSuchElementException e)
+            catch ( NoSuchElementException e )
             {
-                this.output.accept( "Unknown command: " + args[0] );
-                this.output.accept( "" );
+                StringBuilder validCommands = new StringBuilder( "" );
+                locator.getAllProviders()
+                        .forEach( commandProvider -> validCommands.append( commandProvider.name() ).append( " " ) );
+
+                throw new IncorrectUsage(
+                        format( "Unknown command: %s. Available commands are %s\n", args[0], validCommands ) );
             }
         }
         else

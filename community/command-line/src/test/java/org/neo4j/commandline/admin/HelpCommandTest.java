@@ -20,16 +20,19 @@
 package org.neo4j.commandline.admin;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -40,30 +43,64 @@ public class HelpCommandTest
     private Consumer<String> out;
 
     @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
+    public void setUp()
+    {
+        MockitoAnnotations.initMocks( this );
     }
 
-    @Ignore
-    public void showsGeneralHelpOutputWhenNoCommandIsProvided() {};
-
     @Test
-    public void printsUnknownCommandWhenUnknownCommandIsProvided()
+    public void printsUnknownCommandWhenUnknownCommandIsProvided() throws Exception
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
+        when( commandLocator.getAllProviders() ).thenReturn( Collections.EMPTY_LIST );
         when( commandLocator.findProvider( "foobar" ) ).thenThrow( new NoSuchElementException( "foobar" ) );
 
         HelpCommand helpCommand = new HelpCommand( mock( Usage.class ), out, commandLocator );
-        helpCommand.execute( "foobar" );
 
-        InOrder ordered = inOrder( out );
-        ordered.verify( out ).accept( "Unknown command: foobar" );
-        ordered.verify( out ).accept( "" );
-        ordered.verifyNoMoreInteractions();
+        try
+        {
+            helpCommand.execute( "foobar" );
+        }
+        catch ( IncorrectUsage e )
+        {
+            assertThat( e.getMessage(), containsString( "Unknown command: foobar" ) );
+        }
     }
 
     @Test
-    public void showsArgumentsAndDescriptionForSpecifiedCommand()
+    public void printsAvailableCommandsWhenUnknownCommandIsProvided() throws Exception
+    {
+        CommandLocator commandLocator = mock( CommandLocator.class );
+        ArrayList<AdminCommand.Provider> mockCommands = new ArrayList<AdminCommand.Provider>()
+        {{
+            add( mockCommand( "foo" ) );
+            add( mockCommand( "bar" ) );
+            add( mockCommand( "baz" ) );
+        }};
+        when( commandLocator.getAllProviders() ).thenReturn( mockCommands );
+        when( commandLocator.findProvider( "foobar" ) ).thenThrow( new NoSuchElementException( "foobar" ) );
+
+        HelpCommand helpCommand = new HelpCommand( mock( Usage.class ), out, commandLocator );
+
+        try
+        {
+            helpCommand.execute( "foobar" );
+        }
+        catch ( IncorrectUsage e )
+        {
+            assertThat( e.getMessage(), containsString( "Available commands are foo bar baz" ) );
+        }
+    }
+
+    private AdminCommand.Provider mockCommand( String name )
+    {
+        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
+        when( commandProvider.name() ).thenReturn( name );
+        return commandProvider;
+    }
+
+    @Test
+    public void showsArgumentsAndDescriptionForSpecifiedCommand() throws Exception
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
