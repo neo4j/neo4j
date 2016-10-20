@@ -69,8 +69,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
-        gen.get().description( startGraph( "delete all prps from node" ) )
-                .expectedStatus( 204 )
+        gen.get().expectedStatus( 204 )
                 .delete( functionalTestHelper.nodePropertiesUri( nodeId ) );
     }
 
@@ -97,7 +96,6 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
         helper.setNodeProperties( nodeId, map );
         gen.get()
         .expectedStatus( 204 )
-        .description( startGraph( "delete named property start" ))
         .delete( functionalTestHelper.nodePropertyUri( nodeId, "name") );
     }
 

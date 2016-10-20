@@ -37,7 +37,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
+import org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;

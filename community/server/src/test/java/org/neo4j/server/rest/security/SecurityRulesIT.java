@@ -32,7 +32,7 @@ import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.server.rest.RESTDocsGenerator;
+import org.neo4j.server.rest.RESTRequestGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -49,7 +49,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     private FunctionalTestHelper functionalTestHelper;
 
     @Rule
-    public TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+    public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
 
     @After
     public void stopServer()
@@ -85,14 +85,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
-        gen.get().addSnippet(
-                "config",
-                "\n[source,properties]\n----\ndbms.security.http_authorization_classes=my.rules" +
-                        ".PermanentlyFailingSecurityRule\n----\n" );
-        gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRule.class,
-                "failingRule" );
         functionalTestHelper = new FunctionalTestHelper( server );
-        gen.get().setSection( "ops" );
         JaxRsResponse response = gen.get().expectedStatus( 401 ).expectedHeader(
                 "WWW-Authenticate" ).post( functionalTestHelper.nodeUri() ).response();
 
@@ -189,17 +182,6 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
                 .build();
         server.start();
 
-        gen.get()
-                .addSnippet(
-                        "config",
-                        "\n[source,properties]\n----\ndbms.security.http_authorization_classes=my.rules" +
-                                ".PermanentlyFailingSecurityRuleWithWildcardPath\n----\n" );
-
-        gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRuleWithWildcardPath.class,
-                "failingRuleWithWildcardPath" );
-
-        gen.get().setSection("ops");
-
         functionalTestHelper = new FunctionalTestHelper( server );
 
         JaxRsResponse clientResponse = gen.get()
@@ -237,13 +219,6 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
-        gen.get().addSnippet(
-                "config",
-                "\n[source,properties]\n----\ndbms.security.http_authorization_classes=my.rules" +
-                        ".PermanentlyFailingSecurityRuleWithComplexWildcardPath\n----\n");
-        gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRuleWithComplexWildcardPath.class,
-                "failingRuleWithComplexWildcardPath" );
-        gen.get().setSection( "ops" );
 
         functionalTestHelper = new FunctionalTestHelper( server );
 

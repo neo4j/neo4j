@@ -19,13 +19,13 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
-import java.io.File;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -86,20 +86,16 @@ public class IncrementalBackupTests
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         server = startServer( serverPath, "127.0.0.1:6362" );
 
-        // START SNIPPET: onlineBackup
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
 
         backup.full( backupPath.getPath() );
 
-        // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = addMoreData2( serverPath );
         server = startServer( serverPath, null );
-        // START SNIPPET: onlineBackup
         backup.incremental( backupPath.getPath() );
-        // END SNIPPET: onlineBackup
         assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }
@@ -129,20 +125,16 @@ public class IncrementalBackupTests
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         server = startServer( serverPath, "127.0.0.1:6362" );
 
-        // START SNIPPET: onlineBackup
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
 
         backup.full( backupPath.getPath() );
 
-        // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = createTransactiongWithWeirdRelationshipGroupRecord( serverPath );
         server = startServer( serverPath, null );
-        // START SNIPPET: onlineBackup
         backup.incremental( backupPath.getPath() );
-        // END SNIPPET: onlineBackup
         assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }

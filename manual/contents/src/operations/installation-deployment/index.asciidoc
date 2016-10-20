@@ -17,9 +17,5 @@ include::file-locations.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-docs-jar/ops/upgrades.asciidoc[]
-
-:leveloffset: 2
-
 include::udc.asciidoc[]
 
