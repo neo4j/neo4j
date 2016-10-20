@@ -2,7 +2,6 @@
 = Upgrading
 
 :manual-ha-upgrade-guide: {operations-manual-base-uri}/#ha-upgrade-guide
-:manual-neo4j-admin-manpage: {operations-manual-base-uri}/#man-neo4j-admin
 :neo4j-releases-download-page: http://neo4j.com/download/other-releases
 
 This section describes upgrading a _single_ Neo4j instance.
@@ -52,9 +51,7 @@ available with Neo4j Enterprise, ensure that backups have completed successfully
 
 . Install Neo4j {neo4j-version}.
 . Review the settings in the configuration files in the previous installation, and transfer any custom settings to the {neo4j-version} installation. Since many settings have been changed between Neo4j 2.x and Neo4j 3.0, it is advisable to use the `2.x-config-migrator` to migrate the config files for you. The `2.x-config-migrator` can be found in the `tools` directory, and can be invoked with a command like: `java -jar 2.x-config-migrator.jar path/to/neo4j2.3 path/to/neo4j3.0`. Take note of any warnings printed, and manually review the edited config files produced.
-. Import your data from the old installation using `neo4j-admin import --mode=database --database=<database-name> --from=<source-directory>` (for details, see
-ifndef::upgradetext[<<neo4j-admin-manpage, the man page>>).]
-ifdef::upgradetext[the man page at {manual-neo4j-admin-manpage}).]
+. Import your data from the old installation using `neo4j-admin import --mode=database --database=<database-name> --from=<source-directory>` (for details, see `neo4j-admin help import`).
 . If the database is not called `graph.db`, set `dbms.active_database` in `neo4j.conf` to the name of the database.
 . Set `dbms.allow_format_migration=true` in `neo4j.conf` of the {neo4j-version} installation.
   Neo4j will fail to start without this configuration.
