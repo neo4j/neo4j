@@ -94,6 +94,7 @@ public class EdgeServerReplicationIT
     @Rule
     public final ClusterRule clusterRule =
             new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfEdgeMembers( 1 )
+                    .withSharedCoreParam( CoreEdgeClusterSettings.cluster_topology_refresh, "5s" )
                     .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
 
     @Test
@@ -389,9 +390,8 @@ public class EdgeServerReplicationIT
     {
         try
         {
-            long lastClosedTransactionId = db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+            return db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
                     .getLastClosedTransactionId();
-            return lastClosedTransactionId;
         }
         catch ( IllegalStateException  | UnsatisfiedDependencyException /* db is shutdown or not available */ ex )
         {

@@ -70,12 +70,11 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-@SuppressWarnings( "unchecked" )
 @RunWith( Parameterized.class )
 public class ClusterOverviewIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedCoreParam( CoreEdgeClusterSettings.cluster_topology_refresh, "5s" );
 
     private enum DiscoveryService
@@ -277,7 +276,8 @@ public class ClusterOverviewIT
                 () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 60, SECONDS );
     }
 
-    private Matcher<Iterable<? extends MemberInfo>> containsAllMemberAddresses(
+    @SafeVarargs
+    private final Matcher<Iterable<? extends MemberInfo>> containsAllMemberAddresses(
             Collection<? extends ClusterMember>... members )
     {
         return containsMemberAddresses( Stream.of( members).flatMap( Collection::stream ).collect( toList() ) );
