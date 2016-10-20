@@ -85,10 +85,11 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
     private void before( BoltResponseHandler handler ) throws BoltConnectionFatality
     {
-        if (ctx.isTerminated.get())
+        if ( ctx.isTerminated.get() )
         {
             close();
-        } else if ( ctx.interruptCounter.get() > 0 )
+        }
+        else if ( ctx.interruptCounter.get() > 0 )
         {
             state = state.interrupt( this );
         }
@@ -278,6 +279,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         }
         finally
         {
+            spi.onTerminate( this );
             ctx.closed = true;
             //However a new transaction may have been created
             //so we must always to reset

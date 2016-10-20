@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.Collections;
 
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -38,6 +39,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -71,10 +73,12 @@ public class BoltStateMachineTest
     {
         for ( BoltStateMachine.State initialState : BoltStateMachine.State.values() )
         {
-            verifyOneResponse( initialState, ( machine, recorder ) -> machine.init( USER_AGENT, emptyMap(), recorder ) );
+            verifyOneResponse( initialState,
+                    ( machine, recorder ) -> machine.init( USER_AGENT, emptyMap(), recorder ) );
             verifyOneResponse( initialState, BoltStateMachine::ackFailure );
             verifyOneResponse( initialState, BoltStateMachine::reset );
-            verifyOneResponse( initialState, ( machine, recorder ) -> machine.run( "statement", emptyMap(), recorder ) );
+            verifyOneResponse( initialState,
+                    ( machine, recorder ) -> machine.run( "statement", emptyMap(), recorder ) );
             verifyOneResponse( initialState, BoltStateMachine::discardAll );
             verifyOneResponse( initialState, BoltStateMachine::pullAll );
         }
@@ -437,7 +441,8 @@ public class BoltStateMachineTest
     {
         // Given
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-        doThrow( new AuthExpirationException( "Auth expired!" ) ).when( responseHandler ).onRecords( any(), anyBoolean() );
+        doThrow( new AuthExpirationException( "Auth expired!" ) ).when( responseHandler )
+                .onRecords( any(), anyBoolean() );
         BoltStateMachine machine = newMachine( STREAMING );
         // We assume the only implementation of statement processor is TransactionStateMachine
         ((TransactionStateMachine) machine.statementProcessor()).ctx.currentResult = BoltResult.EMPTY;
@@ -460,15 +465,29 @@ public class BoltStateMachineTest
         // When we close
         TransactionStateMachine statementProcessor = (TransactionStateMachine) machine.statementProcessor();
         machine.close();
-        assertThat(statementProcessor.ctx.currentTransaction, nullValue());
-        assertTrue(machine.ctx.closed);
+        assertThat( statementProcessor.ctx.currentTransaction, nullValue() );
+        assertTrue( machine.ctx.closed );
 
         //But someone runs a query and thus opens a new transaction
         statementProcessor.run( "RETURN 1", Collections.emptyMap() );
-        assertThat(statementProcessor.ctx.currentTransaction, notNullValue());
+        assertThat( statementProcessor.ctx.currentTransaction, notNullValue() );
 
         // Then, when we close again we should make sure the transaction is closed againg
         machine.close();
-        assertThat(statementProcessor.ctx.currentTransaction, nullValue());
+        assertThat( statementProcessor.ctx.currentTransaction, nullValue() );
+    }
+
+    @Test
+    public void shouldCallOnTerminateWhenClosing() throws Throwable
+    {
+        // Given
+        BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
+        final BoltStateMachine machine = new BoltStateMachine( spi, null, Clock.systemUTC() );
+
+        // When
+        machine.close();
+
+        // Then
+        verify( spi ).onTerminate( machine );
     }
 }
