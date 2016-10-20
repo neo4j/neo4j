@@ -21,8 +21,6 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.util.Collection;
 
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
-
 /**
  * An authorization plugin realm for the Neo4j enterprise security module.
  *
@@ -34,6 +32,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
  *
  * @see AuthenticationPlugin
  * @see AuthPlugin
+ * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpired
  */
 public interface AuthorizationPlugin extends RealmLifecycle
 {

@@ -258,4 +258,23 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
                 "realm", "plugin-TestCustomParametersAuthenticationPlugin",
                 "parameters", map( "my_credentials", Arrays.asList( 1L, 2L, 3L, 4L ) ) ) );
     }
+
+    @Test
+    public void shouldPassOnAuthorizationExpiredException() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.active_realms,
+                    "plugin-TestCombinedAuthPlugin" );
+        });
+
+        assertConnectionSucceeds( authToken( "authorization_expired_user", "neo4j", null ) );
+
+        // Then
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ), pullAll() ) );
+        assertThat( client, eventuallyReceives(
+                msgFailure( Status.Security.AuthorizationExpired,
+                        "Plugin 'plugin-TestCombinedAuthPlugin' authorization info expired: " +
+                        "authorization_expired_user needs to re-authenticate." ) ) );
+    }
 }

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpired;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
@@ -48,6 +49,10 @@ public class TestCombinedAuthPlugin extends AuthenticationPlugin.Adapter impleme
         {
             return AuthenticationInfo.of( "neo4j" );
         }
+        else if ( principal.equals( "authorization_expired_user" ) && Arrays.equals( credentials, "neo4j".toCharArray() ) )
+        {
+            return (AuthenticationInfo) () -> "authorization_expired_user";
+        }
         return null;
     }
 
@@ -57,6 +62,10 @@ public class TestCombinedAuthPlugin extends AuthenticationPlugin.Adapter impleme
         if ( principals.stream().anyMatch( p -> "neo4j".equals( p.principal() ) ) )
         {
             return (AuthorizationInfo) () -> Collections.singleton( PredefinedRoles.READER );
+        }
+        else if ( principals.stream().anyMatch( p -> "authorization_expired_user".equals( p.principal() ) ) )
+        {
+            throw new AuthorizationExpired( "authorization_expired_user needs to re-authenticate." );
         }
         return null;
     }

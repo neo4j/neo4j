@@ -46,6 +46,7 @@ import org.neo4j.server.security.enterprise.auth.SecureHasher;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthorizationInfoProvider;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpired;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
@@ -148,8 +149,16 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
     {
         if ( authorizationPlugin != null )
         {
-            org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo authorizationInfo =
-                    authorizationPlugin.authorize( getPrincipalAndRealmCollection( principals ) );
+            org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo authorizationInfo;
+            try
+            {
+                 authorizationInfo = authorizationPlugin.authorize( getPrincipalAndRealmCollection( principals ) );
+            }
+            catch ( AuthorizationExpired e )
+            {
+                throw new AuthExpirationException(
+                        "Plugin '" + getName() + "' authorization info expired: " + e.getMessage() );
+            }
             if ( authorizationInfo != null )
             {
                 return PluginAuthorizationInfo.create( authorizationInfo );
