@@ -453,4 +453,15 @@ order by a.age""").toList)
 
     result.toList should equal(List(Map("count" -> 1)))
   }
+
+  test("parameters should be transformed to cypher types") {
+    def echo(any: Any) = {
+      executeScalarWithAllPlannersAndCompatibilityMode[AnyRef]("RETURN {p} AS p", "p" -> any)
+    }
+
+    echo(41.asInstanceOf[Byte]) shouldBe a[java.lang.Long]
+    echo(41.asInstanceOf[Short]) shouldBe a[java.lang.Long]
+    echo(41) shouldBe a[java.lang.Long]
+    echo(41.0f) shouldBe a[java.lang.Double]
+  }
 }
