@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphdb.event;
 
+import java.util.Map;
+import java.util.Optional;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
@@ -160,6 +163,20 @@ public interface TransactionData
      * @return all properties that have been removed from relationships.
      */
     Iterable<PropertyEntry<Relationship>> removedRelationshipProperties();
+
+    /**
+     * Get the username under which authorization state this transaction is running.
+     *
+     * @return the username of the user who initiated the transaction.
+     */
+    String username();
+
+    /**
+     * Applications that start transactions may attach additional application specific meta-data to each transaction.
+     *
+     * @return The application specific meta-data map associated with this transaction.
+     */
+    Map<String,Object> metaData();
 
     /**
      * Return transaction id that assigned during transaction commit process.
