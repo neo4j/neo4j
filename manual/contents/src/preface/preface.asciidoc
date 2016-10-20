@@ -15,7 +15,6 @@ The main parts of the manual are:
 * <<advanced-usage>> -- using Neo4j in more advanced ways.
 * <<terminology>> -- terminology about graph databases.
 * <<resources>> -- find additional documentation resources.
-* <<manpages>> -- command line documentation.
 
 The material is practical, technical, and focused on answering specific questions.
 It addresses how things work, what to do and what to avoid to successfully run Neo4j in a production environment.

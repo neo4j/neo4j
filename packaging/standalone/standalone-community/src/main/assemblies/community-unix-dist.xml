@@ -111,7 +111,6 @@
       <useStrictFiltering>true</useStrictFiltering>
       <excludes>
         <exclude>org.neo4j:*</exclude>
-        <exclude>org.neo4j.doc:*</exclude>
         <exclude>jline:jline</exclude>
         <exclude>org.apache.lucene:*</exclude>
         <exclude>org.scala-lang:*</exclude>
