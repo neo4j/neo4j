@@ -55,7 +55,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_routing_ttl;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.bolt;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
@@ -136,7 +135,7 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
+        assertEquals( config.get( cluster_routing_ttl ) / 1000, ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
@@ -152,7 +151,7 @@ public class GetServersProcedureTest
     }
 
     @Test
-    public void shouldReturnCoreServersWithReadRouteAndSingleWriteActions() throws Exception
+    public void shouldReturnCoreServersWithRouteAllCoresButLeaderAsReadAndSingleWriteActions() throws Exception
     {
         // given
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
@@ -179,7 +178,7 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
+        assertEquals( config.get( cluster_routing_ttl ) / 1000, ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
@@ -191,8 +190,7 @@ public class GetServersProcedureTest
         Map<String,Object[]> readServers = servers.get( 1 );
         assertThat( readServers.get( "role" ), equalTo( "READ" ) );
         assertThat( asList( readServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString(),
-                        coreAddresses( 1 ).getRaftServer().toString(),
+                containsInAnyOrder( coreAddresses( 1 ).getRaftServer().toString(),
                         coreAddresses( 2 ).getRaftServer().toString() ) );
 
         Map<String,Object[]> routingServers = servers.get( 2 );
@@ -229,7 +227,7 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
+        assertEquals( config.get( cluster_routing_ttl ) / 1000, ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
@@ -275,7 +273,7 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
+        assertEquals( config.get( cluster_routing_ttl ) / 1000, ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
@@ -322,7 +320,7 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
+        assertEquals( config.get( cluster_routing_ttl ) / 1000, ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
@@ -367,7 +365,7 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
+        assertEquals( config.get( cluster_routing_ttl ) / 1000, ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
@@ -407,7 +405,7 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
+        assertEquals( config.get( cluster_routing_ttl)  / 1000, ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 

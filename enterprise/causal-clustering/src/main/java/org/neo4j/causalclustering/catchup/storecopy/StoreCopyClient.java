@@ -26,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
-import org.neo4j.causalclustering.discovery.NoKnownAddressesException;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 
@@ -77,7 +76,7 @@ public class StoreCopyClient
                         }
                     } );
         }
-        catch ( CatchUpClientException | NoKnownAddressesException e )
+        catch ( CatchUpClientException e )
         {
             throw new StoreCopyFailedException( e );
         }
@@ -98,7 +97,7 @@ public class StoreCopyClient
                         }
                     } );
         }
-        catch ( CatchUpClientException | NoKnownAddressesException e )
+        catch ( CatchUpClientException e )
         {
             throw new StoreIdDownloadFailedException( e );
         }

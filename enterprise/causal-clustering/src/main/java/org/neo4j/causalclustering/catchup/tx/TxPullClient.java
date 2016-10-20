@@ -25,7 +25,6 @@ import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.CatchupResult;
-import org.neo4j.causalclustering.discovery.NoKnownAddressesException;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -42,7 +41,7 @@ public class TxPullClient
     }
 
     public CatchupResult pullTransactions( MemberId from, StoreId storeId, long startTxId,
-            TxPullResponseListener txPullResponseListener ) throws CatchUpClientException, NoKnownAddressesException
+            TxPullResponseListener txPullResponseListener ) throws CatchUpClientException
     {
         pullRequestMonitor.txPullRequest( startTxId );
         return catchUpClient.makeBlockingRequest( from, new TxPullRequest( startTxId, storeId ),

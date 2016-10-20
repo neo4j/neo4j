@@ -27,7 +27,6 @@ import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.discovery.NoKnownAddressesException;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -76,7 +75,7 @@ public class StoreFetcher
             log.info( "Pulling transactions from: %d", fromTxId );
             return txPullClient.pullTransactions( from, expectedStoreId, fromTxId, writer );
         }
-        catch ( CatchUpClientException | NoKnownAddressesException e )
+        catch ( CatchUpClientException e )
         {
             throw new StoreCopyFailedException( e );
         }

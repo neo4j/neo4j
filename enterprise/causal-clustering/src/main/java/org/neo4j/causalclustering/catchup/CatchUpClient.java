@@ -28,9 +28,10 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.time.Clock;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.causalclustering.discovery.NoKnownAddressesException;
+import org.neo4j.causalclustering.discovery.CoreAddresses;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
@@ -68,12 +69,14 @@ public class CatchUpClient extends LifecycleAdapter
     }
 
     public <T> T makeBlockingRequest( MemberId target, CatchUpRequest request,
-            CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException, NoKnownAddressesException
+            CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
-        AdvertisedSocketAddress catchUpAddress =
-                discoveryService.coreServers().find( target ).getCatchupServer();
-        CatchUpChannel channel = pool.acquire( catchUpAddress );
+        Optional<AdvertisedSocketAddress> catchUpAddress =
+                discoveryService.coreServers().find( target ).map( CoreAddresses::getCatchupServer );
+
+        CatchUpChannel channel = pool.acquire( catchUpAddress.orElseThrow(
+                () -> new CatchUpClientException( "Cannot find the target member socket address" ) ) );
 
         future.whenComplete( ( result, e ) -> {
             if ( e == null )

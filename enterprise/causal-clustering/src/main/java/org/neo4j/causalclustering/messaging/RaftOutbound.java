@@ -19,16 +19,17 @@
  */
 package org.neo4j.causalclustering.messaging;
 
-import org.neo4j.causalclustering.core.consensus.RaftMessages.RaftMessage;
+import java.util.Optional;
+
 import org.neo4j.causalclustering.core.consensus.RaftMessages.ClusterIdAwareMessage;
+import org.neo4j.causalclustering.core.consensus.RaftMessages.RaftMessage;
 import org.neo4j.causalclustering.discovery.CoreAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.NoKnownAddressesException;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.ClusterIdentity;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.causalclustering.messaging.address.UnknownAddressMonitor;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
@@ -58,19 +59,17 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
         if ( clusterId == null )
         {
             log.warn( "Attempting to send a message before bound to a cluster" );
+            return;
+        }
+
+        Optional<CoreAddresses> coreAddresses = discoveryService.coreServers().find( to );
+        if ( coreAddresses.isPresent() )
+        {
+            outbound.send( coreAddresses.get().getRaftServer(), new ClusterIdAwareMessage( clusterId, message ) );
         }
         else
         {
-            try
-            {
-                CoreAddresses coreAddresses = discoveryService.coreServers().find( to );
-                outbound.send( coreAddresses.getRaftServer(), new ClusterIdAwareMessage( clusterId, message ) );
-            }
-            catch ( NoKnownAddressesException e )
-            {
-                unknownAddressMonitor.logAttemptToSendToMemberWithNoKnownAddress( to );
-            }
+            unknownAddressMonitor.logAttemptToSendToMemberWithNoKnownAddress( to );
         }
     }
-
 }

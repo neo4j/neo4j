@@ -23,18 +23,19 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import org.neo4j.collection.RawIterator;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
+import org.neo4j.causalclustering.discovery.CoreAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaAddresses;
-import org.neo4j.causalclustering.discovery.NoKnownAddressesException;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -86,17 +87,17 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 
         for ( MemberId memberId : coreMembers )
         {
-            ClientConnectorAddresses clientConnectorAddresses = null;
-            try
+            Optional<ClientConnectorAddresses> clientConnectorAddresses =
+                    coreTopology.find( memberId ).map( CoreAddresses::getClientConnectorAddresses );
+            if ( clientConnectorAddresses.isPresent() )
             {
-                clientConnectorAddresses = coreTopology.find( memberId ).getClientConnectorAddresses();
+                Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
+                endpoints.add( new ReadWriteEndPoint( clientConnectorAddresses.get(), role, memberId.getUuid() ) );
             }
-            catch ( NoKnownAddressesException e )
+            else
             {
                 log.debug( "No Address found for " + memberId );
             }
-            Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
-            endpoints.add( new ReadWriteEndPoint( clientConnectorAddresses, role, memberId.getUuid() ) );
         }
         for ( ReadReplicaAddresses readReplicaAddresses : discoveryService.readReplicas().members() )
         {
