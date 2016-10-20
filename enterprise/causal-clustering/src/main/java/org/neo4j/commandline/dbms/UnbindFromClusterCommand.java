@@ -44,7 +44,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
 import static java.nio.file.Files.exists;
-import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
+import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 
 public class UnbindFromClusterCommand implements AdminCommand
 {

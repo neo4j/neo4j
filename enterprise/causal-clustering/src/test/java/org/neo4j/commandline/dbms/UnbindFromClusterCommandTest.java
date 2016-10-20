@@ -45,6 +45,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.contains;
+import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
@@ -124,8 +125,7 @@ public class UnbindFromClusterCommandTest
         catch ( CommandFailed e )
         {
             // then
-            assertThat( e.getMessage(), containsString(
-                    "Database is currently locked. Please shutdown Neo4j." ) );
+            assertThat( e.getMessage(), containsString( "Database is currently locked. Please shutdown Neo4j." ) );
         }
         finally
         {
@@ -172,7 +172,7 @@ public class UnbindFromClusterCommandTest
         // when
         command.execute( databaseName( "graph.db" ) );
 
-        verify(outsideWorld).stdOutLine( contains( "No cluster state found in" ) );
+        verify( outsideWorld ).stdErrLine( startsWith( "No cluster state found in" ) );
     }
 
     private String[] databaseName( String databaseName )
