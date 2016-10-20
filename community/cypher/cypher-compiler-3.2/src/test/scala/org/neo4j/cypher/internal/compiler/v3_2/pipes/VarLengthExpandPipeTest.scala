@@ -689,7 +689,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode)))
 
-    val filteringStep = new VarlenghtPredicate {
+    val filteringStep = new VarLenghtPredicate {
 
       override def filterNode(row: ExecutionContext,
                               state: QueryState)
