@@ -50,6 +50,8 @@ import org.neo4j.test.Race;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -57,10 +59,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
@@ -740,17 +738,6 @@ public class MetaDataStoreTest
         {
             fakePageCursorOverflow = true;
             store.setUpgradeTransaction( 13, 42, 42 );
-        }
-    }
-
-    @Test( expected = UnderlyingStorageException.class )
-    public void getUpgradeTransactionMustThrowOnPageOverflow() throws Exception
-    {
-        try ( MetaDataStore store = newMetaDataStore() )
-        {
-            store.setUpgradeTransaction( 13, 42, 42 );
-            fakePageCursorOverflow = true;
-            store.getUpgradeTransaction();
         }
     }
 

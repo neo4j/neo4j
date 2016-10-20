@@ -61,6 +61,6 @@ class IdGroup
     @Override
     public String toString()
     {
-        return group.toString();
+        return "[" + group.toString() + ",lowDataIndex:" + lowDataIndex + ",highDataIndex:" + highDataIndex + "]";
     }
 }

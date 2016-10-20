@@ -49,7 +49,6 @@ import org.neo4j.time.Clocks;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -120,8 +119,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile long graphNextPropField = FIELD_NOT_INITIALIZED;
     private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxIdField = FIELD_NOT_INITIALIZED;
+    private volatile long upgradeTxChecksumField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeCommitTimestampField = FIELD_NOT_INITIALIZED;
+
+    private volatile TransactionId upgradeTransaction = new TransactionId( FIELD_NOT_INITIALIZED,
+            FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
 
     // This is not a field in the store, but something keeping track of which is the currently highest
     // committed transaction id, together with its checksum.
@@ -364,7 +367,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 setRecord( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM, checksum );
                 setRecord( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
                 upgradeTxIdField = id;
+                upgradeTxChecksumField = checksum;
                 upgradeCommitTimestampField = timestamp;
+                upgradeTransaction = new TransactionId( id, checksum, timestamp );
             }
             catch ( IOException e )
             {
@@ -529,13 +534,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             creationTimeField = getRecordValue( cursor, Position.TIME );
             randomNumberField = getRecordValue( cursor, Position.RANDOM_NUMBER );
             versionField = getRecordValue( cursor, Position.LOG_VERSION );
-            upgradeTxIdField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_ID );
-            upgradeTimeField = getRecordValue( cursor, Position.UPGRADE_TIME );
             long lastCommittedTxId = getRecordValue( cursor, Position.LAST_TRANSACTION_ID );
             lastCommittingTxField.set( lastCommittedTxId );
             storeVersionField = getRecordValue( cursor, Position.STORE_VERSION );
             graphNextPropField = getRecordValue( cursor, Position.FIRST_GRAPH_PROPERTY );
             latestConstraintIntroducingTxField = getRecordValue( cursor, Position.LAST_CONSTRAINT_TRANSACTION );
+            upgradeTxIdField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_ID );
+            upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
+            upgradeTimeField = getRecordValue( cursor, Position.UPGRADE_TIME );
             long lastClosedTransactionLogVersion = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
             long lastClosedTransactionLogByteOffset = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
             lastClosedTx.set( lastCommittedTxId,
@@ -546,6 +552,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                     ) );
             upgradeCommitTimestampField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
                     BASE_TX_COMMIT_TIMESTAMP );
+
+            upgradeTransaction = new TransactionId( upgradeTxIdField, upgradeTxChecksumField,
+                    upgradeCommitTimestampField );
         }
         while ( cursor.shouldRetry() );
         if ( cursor.checkAndClearBoundsFlag() )
@@ -766,32 +775,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public TransactionId getUpgradeTransaction()
     {
         assertNotClosed();
-        long pageId = pageIdForRecord( Position.UPGRADE_TRANSACTION_ID.id );
-        assert pageId == pageIdForRecord( Position.UPGRADE_TRANSACTION_CHECKSUM.id );
-        long upgradeTxIdField;
-        long upgradeTxChecksumField;
-        long upgradeCommitTimestampField;
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
-        {
-            if ( !cursor.next() )
-            {
-                throw new UnderlyingStorageException( "Could not access MetaDataStore page " + pageId );
-            }
-            do
-            {
-                upgradeTxIdField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_ID );
-                upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
-                upgradeCommitTimestampField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
-                        BASE_TX_COMMIT_TIMESTAMP );
-            }
-            while ( cursor.shouldRetry() );
-            checkForDecodingErrors( cursor, Position.UPGRADE_TRANSACTION_ID.id, NORMAL );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-        return new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
+        checkInitialized( upgradeTxIdField  );
+        return upgradeTransaction;
     }
 
     @Override

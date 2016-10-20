@@ -58,7 +58,7 @@ public class EnterpriseSecurityModuleTest
         when( config.get( SecuritySettings.ldap_authorization_enabled ) ).thenReturn( true );
         when( config.get( SecuritySettings.plugin_authentication_enabled ) ).thenReturn( true );
         when( config.get( SecuritySettings.plugin_authorization_enabled ) ).thenReturn( true );
-        when( config.get( SecuritySettings.active_realms ) ).thenReturn( Arrays.asList( "this-realm-does-not-exist" ) );
+        when( config.get( SecuritySettings.auth_providers ) ).thenReturn( Arrays.asList( "this-realm-does-not-exist" ) );
         thrown.expect( IllegalArgumentException.class );
 
         // When
@@ -84,7 +84,7 @@ public class EnterpriseSecurityModuleTest
         when( config.get( SecuritySettings.ldap_authorization_enabled ) ).thenReturn( false );
         when( config.get( SecuritySettings.plugin_authentication_enabled ) ).thenReturn( true );
         when( config.get( SecuritySettings.plugin_authorization_enabled ) ).thenReturn( true );
-        when( config.get( SecuritySettings.active_realms ) ).thenReturn(
+        when( config.get( SecuritySettings.auth_providers ) ).thenReturn(
                 Arrays.asList(
                         SecuritySettings.NATIVE_REALM_NAME,
                         SecuritySettings.LDAP_REALM_NAME )

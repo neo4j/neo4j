@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -147,7 +148,7 @@ public class RestartIT
         Cluster cluster = clusterRule.withNumberOfCoreMembers( 2 ).withNumberOfEdgeMembers( 1 ).startCluster();
 
         // when
-        final GraphDatabaseService coreDB = cluster.awaitLeader( 5000 ).database();
+        final GraphDatabaseService coreDB = cluster.awaitLeader( 5, TimeUnit.SECONDS ).database();
 
         try ( Transaction tx = coreDB.beginTx() )
         {

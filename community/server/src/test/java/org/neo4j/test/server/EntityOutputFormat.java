@@ -19,18 +19,17 @@
  */
 package org.neo4j.test.server;
 
-import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.Response;
 
 import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationFormat;
+
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 public class EntityOutputFormat extends OutputFormat
 {
@@ -53,11 +52,6 @@ public class EntityOutputFormat extends OutputFormat
     public Map<String, Object> getResultAsMap()
     {
         return (Map<String, Object>) serialize( representation );
-    }
-
-    public Representation getRepresentation()
-    {
-        return representation;
     }
 
     @SuppressWarnings( "unchecked" )

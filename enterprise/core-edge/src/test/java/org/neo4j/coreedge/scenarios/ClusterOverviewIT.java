@@ -39,6 +39,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.ClusterMember;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
@@ -74,7 +75,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class ClusterOverviewIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withSharedCoreParam( CoreEdgeClusterSettings.cluster_topology_refresh, "5s" );
 
     private enum DiscoveryService
     {

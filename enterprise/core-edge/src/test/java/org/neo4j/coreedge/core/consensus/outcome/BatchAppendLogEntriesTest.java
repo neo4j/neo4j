@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -33,6 +35,7 @@ import static org.neo4j.coreedge.core.consensus.log.RaftLogHelper.readLogEntry;
 
 public class BatchAppendLogEntriesTest
 {
+    private final Log log = NullLog.getInstance();
     private RaftLogEntry entryA = new RaftLogEntry( 0, valueOf( 100 ) );
     private RaftLogEntry entryB = new RaftLogEntry( 1, valueOf( 200 ) );
     private RaftLogEntry entryC = new RaftLogEntry( 2, valueOf( 300 ) );
@@ -42,35 +45,35 @@ public class BatchAppendLogEntriesTest
     public void shouldApplyMultipleEntries() throws Exception
     {
         // given
-        InMemoryRaftLog log = new InMemoryRaftLog();
+        InMemoryRaftLog raftLog = new InMemoryRaftLog();
         BatchAppendLogEntries batchAppendLogEntries =
                 new BatchAppendLogEntries( 0, 0, new RaftLogEntry[]{entryA, entryB, entryC} );
 
         // when
-        batchAppendLogEntries.applyTo( log );
+        batchAppendLogEntries.applyTo( raftLog, log );
 
         // then
-        assertEquals( entryA, readLogEntry( log, 0 ) );
-        assertEquals( entryB, readLogEntry( log, 1 ) );
-        assertEquals( entryC, readLogEntry( log, 2 ) );
-        assertEquals( 2, log.appendIndex() );
+        assertEquals( entryA, readLogEntry( raftLog, 0 ) );
+        assertEquals( entryB, readLogEntry( raftLog, 1 ) );
+        assertEquals( entryC, readLogEntry( raftLog, 2 ) );
+        assertEquals( 2, raftLog.appendIndex() );
     }
 
     @Test
     public void shouldApplyFromOffsetOnly() throws Exception
     {
         // given
-        InMemoryRaftLog log = new InMemoryRaftLog();
+        InMemoryRaftLog raftLog = new InMemoryRaftLog();
         BatchAppendLogEntries batchAppendLogEntries =
                 new BatchAppendLogEntries( 0, 2, new RaftLogEntry[]{entryA, entryB, entryC, entryD} );
 
         // when
-        batchAppendLogEntries.applyTo( log );
+        batchAppendLogEntries.applyTo( raftLog, log );
 
         // then
-        assertEquals( entryC, readLogEntry( log, 0 ) );
-        assertEquals( entryD, readLogEntry( log, 1 ) );
-        assertEquals( 1, log.appendIndex() );
+        assertEquals( entryC, readLogEntry( raftLog, 0 ) );
+        assertEquals( entryD, readLogEntry( raftLog, 1 ) );
+        assertEquals( 1, raftLog.appendIndex() );
     }
 
     @Test
@@ -87,14 +90,14 @@ public class BatchAppendLogEntriesTest
 
         BatchAppendLogEntries batchAppend = new BatchAppendLogEntries( baseIndex, offset, entries );
 
-        InFlightMap<Long,RaftLogEntry> cache = new InFlightMap<>();
+        InFlightMap<RaftLogEntry> cache = new InFlightMap<>();
 
         //when
-        batchAppend.applyTo( cache );
+        batchAppend.applyTo( cache, log );
 
         //then
-        assertNull( cache.retrieve( 0L ) );
-        assertNotNull( cache.retrieve( 1L ) );
-        assertNotNull( cache.retrieve( 2L ) );
+        assertNull( cache.get( 0L ) );
+        assertNotNull( cache.get( 1L ) );
+        assertNotNull( cache.get( 2L ) );
     }
 }

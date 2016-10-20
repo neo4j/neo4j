@@ -80,7 +80,7 @@ public class CommandApplicationProcessTest
     private final int batchSize = 16;
 
     private final CoreStateApplier applier = new CoreStateApplier( NullLogProvider.getInstance() );
-    private InFlightMap<Long,RaftLogEntry> inFlightMap = spy( new InFlightMap<>() );
+    private InFlightMap<RaftLogEntry> inFlightMap = spy( new InFlightMap<>() );
     private final Monitors monitors = new Monitors();
     private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
     private final CommandApplicationProcess applicationProcess = new CommandApplicationProcess(
@@ -282,14 +282,14 @@ public class CommandApplicationProcessTest
         // given
         applicationProcess.start();
 
-        inFlightMap.register( 0L, new RaftLogEntry( 1, operation( nullTx ) ) );
+        inFlightMap.put( 0L, new RaftLogEntry( 1, operation( nullTx ) ) );
 
         //when
         applicationProcess.notifyCommitted( 0 );
         applier.sync( false );
 
         //then the cache should have had it's get method called.
-        verify( inFlightMap, times( 1 ) ).retrieve( 0L );
+        verify( inFlightMap, times( 1 ) ).get( 0L );
         verifyZeroInteractions( raftLog );
     }
 
@@ -299,18 +299,18 @@ public class CommandApplicationProcessTest
         //given a cache in submitApplyJob, the contents of the cache should only contain unapplied "things"
         applicationProcess.start();
 
-        inFlightMap.register( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
-        inFlightMap.register( 1L, new RaftLogEntry( 0, operation( nullTx ) ) );
-        inFlightMap.register( 2L, new RaftLogEntry( 0, operation( nullTx ) ) );
+        inFlightMap.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
+        inFlightMap.put( 1L, new RaftLogEntry( 0, operation( nullTx ) ) );
+        inFlightMap.put( 2L, new RaftLogEntry( 0, operation( nullTx ) ) );
         //when
         applicationProcess.notifyCommitted( 0 );
 
         applier.sync( false );
 
         //then the cache should have had its get method called.
-        assertNull( inFlightMap.retrieve( 0L ) );
-        assertNotNull( inFlightMap.retrieve( 1L ) );
-        assertNotNull( inFlightMap.retrieve( 2L ) );
+        assertNull( inFlightMap.get( 0L ) );
+        assertNotNull( inFlightMap.get( 1L ) );
+        assertNotNull( inFlightMap.get( 2L ) );
     }
 
     @Test
@@ -325,8 +325,8 @@ public class CommandApplicationProcessTest
         ReplicatedContent operation1 = operation( nullTx );
         ReplicatedContent operation2 = operation( nullTx );
 
-        inFlightMap.register( 0L, new RaftLogEntry( 0, operation0 ) );
-        inFlightMap.register( 2L, new RaftLogEntry( 2, operation2 ) );
+        inFlightMap.put( 0L, new RaftLogEntry( 0, operation0 ) );
+        inFlightMap.put( 2L, new RaftLogEntry( 2, operation2 ) );
 
         raftLog.append( new RaftLogEntry( 0, operation0 ) );
         raftLog.append( new RaftLogEntry( 1, operation1 ) );
@@ -337,9 +337,13 @@ public class CommandApplicationProcessTest
 
         applier.sync( false );
 
-        //then the cache should have had its get method called.
-        verify( inFlightMap, times( 0 ) ).retrieve( 2L );
-        verify( inFlightMap, times( 3 ) ).unregister( anyLong() ); //everything is cleaned up
+        //then the cache stops being used after it finds 1 is missing
+        verify( inFlightMap, times( 1 ) ).get( 0L );
+        verify( inFlightMap, times( 1 ) ).get( 1L );
+        verify( inFlightMap, times( 0 ) ).get( 2L );
+
+        // we only look up 1 so let's remove that from the cache
+        verify( inFlightMap, times( 1 ) ).remove( 0L );
 
         verify( commandDispatcher, times( 1 ) ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
         verify( commandDispatcher, times( 1 ) ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
@@ -354,7 +358,7 @@ public class CommandApplicationProcessTest
         //When an entry is not in the log, we must fail.
         applicationProcess.start();
 
-        inFlightMap.register( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
+        inFlightMap.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 1, operation( nullTx ) ) );
 

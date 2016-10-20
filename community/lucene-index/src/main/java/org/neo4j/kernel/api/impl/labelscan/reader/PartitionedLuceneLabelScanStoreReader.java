@@ -51,7 +51,7 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
                 .collect( Collectors.toList() ) );
     }
 
-    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers)
+    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers )
     {
         this.storeReaders = readers;
     }
@@ -60,6 +60,18 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
     public PrimitiveLongIterator nodesWithLabel( int labelId )
     {
         return partitionedOperation( storeReader -> storeReader.nodesWithLabel( labelId ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAnyOfLabels( int... labelIds )
+    {
+        return partitionedOperation( storeReader -> storeReader.nodesWithAnyOfLabels( labelIds ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAllLabels( int... labelIds )
+    {
+        return partitionedOperation( storeReader -> storeReader.nodesWithAllLabels( labelIds ) );
     }
 
     @Override
@@ -81,11 +93,10 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
         }
     }
 
-    private PrimitiveLongIterator partitionedOperation(
-            Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
+    private PrimitiveLongIterator partitionedOperation( Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
     {
-        return PrimitiveLongCollections.concat( storeReaders.parallelStream()
-                .map( readerFunction::apply )
+        return PrimitiveLongCollections.concat( storeReaders.stream()
+                .map( readerFunction )
                 .iterator() );
     }
 }

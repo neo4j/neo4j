@@ -75,7 +75,7 @@ public class LdapCachingTest
                 new InMemoryUserRepository()
             );
 
-        testRealm = new TestRealm( getLdapConfig(), securityLog );
+        testRealm = new TestRealm( getLdapConfig(), securityLog, new SecureHasher() );
 
         List<Realm> realms = listOf( internalFlatFileRealm, testRealm );
 
@@ -218,9 +218,9 @@ public class LdapCachingTest
             return t;
         }
 
-        TestRealm( Config config, SecurityLog securityLog )
+        TestRealm( Config config, SecurityLog securityLog, SecureHasher secureHasher )
         {
-            super( config, securityLog );
+            super( config, securityLog, secureHasher );
             setAuthenticationCachingEnabled( true );
             setAuthorizationCachingEnabled( true );
         }

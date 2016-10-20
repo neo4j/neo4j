@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
@@ -34,15 +36,16 @@ public class ComparableRaftStateTest
     public void twoIdenticalStatesShouldBeEqual() throws Exception
     {
         // given
+        NullLogProvider logProvider = NullLogProvider.getInstance();
         ComparableRaftState state1 = new ComparableRaftState( member( 0 ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                new InMemoryRaftLog(), new InFlightMap<>() );
+                new InMemoryRaftLog(), new InFlightMap<>(), logProvider );
 
         ComparableRaftState state2 = new ComparableRaftState( member( 0 ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                new InMemoryRaftLog(), new InFlightMap<>() );
+                new InMemoryRaftLog(), new InFlightMap<>(), logProvider );
 
         // then
         assertEquals(state1, state2);

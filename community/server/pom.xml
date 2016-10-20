@@ -46,7 +46,7 @@
     <docs-plugin.filter>true</docs-plugin.filter>
 
     <neo4j.version>${project.version}</neo4j.version>
-    <neo4j-browser.version>2.0.0-M04</neo4j-browser.version>
+    <neo4j-browser.version>2.0.0-M05</neo4j-browser.version>
 
     <neo4j-server.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
@@ -519,52 +519,6 @@
             </group>
           </groups>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.7</version>
-        <!--$NO-MVN-MAN-VER$-->
-        <executions>
-          <execution>
-            <id>generate-source-based-documentation</id>
-            <phase>process-classes</phase>
-            <configuration>
-              <target>
-                <java classname="org.neo4j.server.rest.transactional.error.ErrorDocumentationGenerator"
-                      classpathref="maven.compile.classpath" failonerror="true">
-                  <arg value="${project.build.directory}/docs/dev/rest-api"/>
-                </java>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>ant-contrib</groupId>
-            <artifactId>ant-contrib</artifactId>
-            <version>1.0b3</version>
-            <exclusions>
-              <exclusion>
-                <groupId>ant</groupId>
-                <artifactId>ant</artifactId>
-              </exclusion>
-            </exclusions>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant</artifactId>
-            <version>1.8.2</version>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant-apache-regexp</artifactId>
-            <version>1.8.2</version>
-          </dependency>
-        </dependencies>
       </plugin>
 
     </plugins>

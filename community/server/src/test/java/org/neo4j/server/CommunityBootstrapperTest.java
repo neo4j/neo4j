@@ -27,15 +27,4 @@ public class CommunityBootstrapperTest extends BaseBootstrapperTest
         return new CommunityBootstrapper();
     }
 
-    @Override
-    protected void start(String[] args)
-    {
-        CommunityEntryPoint.start( args );
-    }
-
-    @Override
-    protected void stop(String[] args)
-    {
-        CommunityEntryPoint.stop( args );
-    }
 }

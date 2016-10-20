@@ -29,7 +29,12 @@ public interface LabelScanStorageStrategy
 {
     PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId );
 
+    PrimitiveLongIterator nodesWithAnyOfLabels( IndexSearcher indexSearcher, int[] labelIds );
+
+    PrimitiveLongIterator nodesWithAllLabels( IndexSearcher indexSearcher, int[] labelIds );
+
     AllEntriesLabelScanReader newNodeLabelReader( LuceneAllDocumentsReader allDocumentsReader );
 
     PrimitiveLongIterator labelsForNode( IndexSearcher searcher, long nodeId );
+
 }

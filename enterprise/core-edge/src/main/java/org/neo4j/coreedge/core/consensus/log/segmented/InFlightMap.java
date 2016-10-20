@@ -19,14 +19,14 @@
  */
 package org.neo4j.coreedge.core.consensus.log.segmented;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.SortedMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import static java.lang.String.format;
 
-public class InFlightMap<K, V>
+public class InFlightMap<V>
 {
-    private final Map<K,V> map = new ConcurrentHashMap<>();
+    private final SortedMap<Long,V> map = new ConcurrentSkipListMap<>();
 
     /**
      * Adds a new mapping.
@@ -35,7 +35,7 @@ public class InFlightMap<K, V>
      * @param value The value corresponding to the key provided.
      * @throws IllegalArgumentException if a mapping for the key already exists
      */
-    public void register( K key, V value )
+    public void put( Long key, V value )
     {
         V previousValue = map.putIfAbsent( key, value );
 
@@ -52,19 +52,35 @@ public class InFlightMap<K, V>
      * @param key The key to use for retrieving the value from the map
      * @return the value for this key, otherwise null.
      */
-    public V retrieve( K key )
+    public V get( Long key )
     {
         return map.get( key );
     }
 
     /**
-     * Attempts to unregister this object from the map.
+     * Attempts to remove this object from the map.
      *
      * @param key The object to attempt unregistering.
      * @return true if the attempt to unregister was successful, otherwise false if this object was not found.
      */
-    public boolean unregister( K key )
+    public boolean remove( Long key )
     {
         return map.remove( key ) != null;
+    }
+
+    /**
+     * Attempts to remove all objects at this key or higher from the map.
+     *
+     * @param key The object to attempt unregistering.
+     */
+    public void truncate( Long key )
+    {
+        map.tailMap( key ).keySet().forEach( map::remove );
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "InFlightMap{map=%s}", map );
     }
 }

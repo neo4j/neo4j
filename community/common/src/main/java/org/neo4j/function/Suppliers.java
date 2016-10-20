@@ -118,9 +118,10 @@ public final class Suppliers
         };
     }
 
-    public static <T> CapturingSupplier<T> compose( final Supplier<T> input, final Predicate<T> predicate )
+    public static <T, E extends Exception> ThrowingCapturingSupplier<T,E> compose( final ThrowingSupplier<T,E> input,
+            final ThrowingPredicate<T,E> predicate )
     {
-        return new CapturingSupplier<T>( input, predicate );
+        return new ThrowingCapturingSupplier<>( input, predicate );
     }
 
     public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
@@ -129,14 +130,14 @@ public final class Suppliers
         return () -> currentTimeMillis() <= endTimeInMilliseconds;
     }
 
-    static class CapturingSupplier<T> implements Supplier<Boolean>
+    static class ThrowingCapturingSupplier<T, E extends Exception> implements ThrowingSupplier<Boolean,E>
     {
-        private final Supplier<T> input;
-        private final Predicate<T> predicate;
+        private final ThrowingSupplier<T,E> input;
+        private final ThrowingPredicate<T,E> predicate;
 
         private T current;
 
-        CapturingSupplier( Supplier<T> input, Predicate<T> predicate )
+        ThrowingCapturingSupplier( ThrowingSupplier<T,E> input, ThrowingPredicate<T,E> predicate )
         {
             this.input = input;
             this.predicate = predicate;
@@ -148,7 +149,7 @@ public final class Suppliers
         }
 
         @Override
-        public Boolean get()
+        public Boolean get() throws E
         {
             current = input.get();
             return predicate.test( current );

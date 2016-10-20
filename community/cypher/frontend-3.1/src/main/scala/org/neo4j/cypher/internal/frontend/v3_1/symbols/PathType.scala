@@ -23,6 +23,8 @@ object PathType {
   val instance = new PathType() {
     val parentType = CTAny
     override val toString = "Path"
+    override val toNeoTypeString = "PATH?"
+
   }
 }
 

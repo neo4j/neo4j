@@ -139,8 +139,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: I
     val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
     val deprecationInfo = asOption(ks.deprecated())
     val mode = asCypherProcMode(ks.mode(), ks.allowed())
+    val description = asOption(ks.description())
 
-    ProcedureSignature(name, input, output, deprecationInfo, mode)
+    ProcedureSignature(name, input, output, deprecationInfo, mode, description)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
@@ -151,8 +152,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: I
       val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
       val output = asCypherType(ks.outputType())
       val deprecationInfo = asOption(ks.deprecated())
+      val description = asOption(ks.description())
 
-      Some(UserFunctionSignature(name, input, output, deprecationInfo, ks.allowed()))
+      Some(UserFunctionSignature(name, input, output, deprecationInfo, ks.allowed(), description))
     }
     else None
   }

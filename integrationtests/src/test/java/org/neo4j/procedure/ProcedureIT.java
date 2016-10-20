@@ -204,11 +204,47 @@ public class ProcedureIT
         //Expect
         exception.expect( QueryExecutionException.class );
         exception.expectMessage(
-                "Procedure call does not provide the required number of arguments (1) (line 1, column 1 (offset: 0))" );
+                String.format("Procedure call does not provide the required number of arguments: got 0 expected 1.%n%n" +
+                              "Procedure org.neo4j.procedure.simpleArgument has signature: org.neo4j.procedure.simpleArgument(name :: INTEGER?) :: someVal :: INTEGER?%n" +
+                              "meaning that it expects 1 argument of type INTEGER?" ));
         // When
         try ( Transaction ignore = db.beginTx() )
         {
             db.execute( "CALL org.neo4j.procedure.simpleArgument()" );
+        }
+    }
+
+    @Test
+    public void shouldGiveNiceErrorWhenMissingArgumentsToVoidFunction() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage(
+                String.format("Procedure call does not provide the required number of arguments: got 1 expected 3.%n%n" +
+                              "Procedure org.neo4j.procedure.sideEffectWithDefault has signature: org.neo4j.procedure" +
+                              ".sideEffectWithDefault(label :: STRING?, propertyKey :: STRING?, value  =  Zhang Wei :: STRING?) :: VOID%n" +
+                              "meaning that it expects 3 arguments of type STRING?, STRING?, STRING? (line 1, column 1 (offset: 0))" ));
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.sideEffectWithDefault()" );
+        }
+    }
+
+    @Test
+    public void shouldShowDescriptionWhenMissingArguments() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage(
+                String.format("Procedure call does not provide the required number of arguments: got 0 expected 1.%n%n" +
+                              "Procedure org.neo4j.procedure.nodeWithDescription has signature: org.neo4j.procedure.nodeWithDescription(node :: NODE?) :: node :: NODE?%n" +
+                              "meaning that it expects 1 argument of type NODE?%n" +
+                              "Description: This is a description (line 1, column 1 (offset: 0))" ));
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.nodeWithDescription()" );
         }
     }
 

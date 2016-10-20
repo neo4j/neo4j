@@ -31,13 +31,13 @@ import static java.lang.String.format;
 public class InFlightLogEntryReader implements AutoCloseable
 {
     private final ReadableRaftLog raftLog;
-    private final InFlightMap<Long, RaftLogEntry> inFlightMap;
+    private final InFlightMap<RaftLogEntry> inFlightMap;
     private final boolean removeReadIndexFromMap;
 
     private RaftLogCursor cursor;
     private boolean useInFlightMap = true;
 
-    public InFlightLogEntryReader( ReadableRaftLog raftLog, InFlightMap<Long,RaftLogEntry> inFlightMap,
+    public InFlightLogEntryReader( ReadableRaftLog raftLog, InFlightMap<RaftLogEntry> inFlightMap,
             boolean removeReadIndexFromMap )
     {
         this.raftLog = raftLog;
@@ -51,7 +51,7 @@ public class InFlightLogEntryReader implements AutoCloseable
 
         if ( useInFlightMap )
         {
-            entry = inFlightMap.retrieve( logIndex );
+            entry = inFlightMap.get( logIndex );
         }
 
         if ( entry == null )
@@ -62,7 +62,7 @@ public class InFlightLogEntryReader implements AutoCloseable
 
         if ( removeReadIndexFromMap )
         {
-            inFlightMap.unregister( logIndex );
+            inFlightMap.remove( logIndex );
         }
 
         return entry;

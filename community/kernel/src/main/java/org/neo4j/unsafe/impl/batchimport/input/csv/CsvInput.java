@@ -34,6 +34,9 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.DeserializerFactory;
 
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultRelationshipDeserializer;
+
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
  * the {@link CharSeeker} objects seeking values in the csv data and header factories for how to
@@ -108,15 +111,9 @@ public class CsvInput implements Input
             @Override
             public InputIterator<InputNode> iterator()
             {
-                DeserializerFactory<InputNode> factory = (dataHeader, dataStream, decorator, validator) ->
-                {
-                        InputNodeDeserialization deserialization =
-                                new InputNodeDeserialization( dataHeader, dataStream, groups, idType.idsAreExternal() );
-                        return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
-                                deserialization, decorator, validator, badCollector );
-                };
+                DeserializerFactory<InputNode> factory = defaultNodeDeserializer( groups, config, idType, badCollector );
                 return new InputGroupsDeserializer<>( nodeDataFactory.iterator(), nodeHeaderFactory, config,
-                        idType, maxProcessors, factory, Validators.<InputNode>emptyValidator(), InputNode.class );
+                        idType, maxProcessors, 1, factory, Validators.<InputNode>emptyValidator(), InputNode.class );
             }
 
             @Override
@@ -135,15 +132,10 @@ public class CsvInput implements Input
             @Override
             public InputIterator<InputRelationship> iterator()
             {
-                DeserializerFactory<InputRelationship> factory = (dataHeader, dataStream, decorator, validator) ->
-                {
-                        InputRelationshipDeserialization deserialization =
-                                new InputRelationshipDeserialization( dataHeader, dataStream, groups );
-                        return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
-                                deserialization, decorator, validator, badCollector );
-                };
+                DeserializerFactory<InputRelationship> factory =
+                        defaultRelationshipDeserializer( groups, config, idType, badCollector );
                 return new InputGroupsDeserializer<>( relationshipDataFactory.iterator(), relationshipHeaderFactory,
-                        config, idType, maxProcessors, factory, new InputRelationshipValidator(),
+                        config, idType, maxProcessors, 1, factory, new InputRelationshipValidator(),
                         InputRelationship.class );
             }
 

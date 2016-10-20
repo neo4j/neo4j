@@ -18,10 +18,10 @@
  */
 package org.neo4j.examples.server;
 
-import org.junit.BeforeClass;
-
 import java.io.IOException;
 import java.util.Map;
+
+import org.junit.BeforeClass;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.plugins.PluginFunctionalTestHelper;
@@ -88,7 +88,6 @@ public class AbstractPluginTestBase extends AbstractRestFunctionalTestBase
     protected String performPost( String uri, String body )
     {
         RESTDocsGenerator requestBuilder = gen.get()
-                .noGraph()
                 .expectedStatus( 200 );
         if ( body != null )
         {

@@ -25,10 +25,6 @@ include::{importdir}/neo4j-backup-docs-docs-jar/ops/backup.asciidoc[]
 
 :leveloffset: 1
 
-include::security.asciidoc[]
-
-:leveloffset: 1
-
 include::{importdir}/neo4j-management-docs-docs-jar/ops/monitoring.asciidoc[]
 
 

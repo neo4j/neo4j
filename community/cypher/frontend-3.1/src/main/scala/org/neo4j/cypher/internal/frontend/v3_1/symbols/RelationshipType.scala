@@ -23,6 +23,8 @@ object RelationshipType {
   val instance = new RelationshipType() {
     val parentType = CTMap
     override val toString = "Relationship"
+    override val toNeoTypeString = "RELATIONSHIP?"
+
   }
 }
 

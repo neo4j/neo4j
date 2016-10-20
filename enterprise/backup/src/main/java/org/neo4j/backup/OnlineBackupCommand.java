@@ -38,7 +38,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.impl.util.Converters.mandatory;
 import static org.neo4j.kernel.impl.util.Converters.optional;
 import static org.neo4j.kernel.impl.util.Converters.toFile;
@@ -87,7 +86,8 @@ public class OnlineBackupCommand implements AdminCommand
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new OnlineBackupCommand(
-                    new BackupTool( new BackupService(), outsideWorld.errorStream() ), homeDir, configDir );
+                    new BackupTool( new BackupService( outsideWorld.errorStream() ), outsideWorld.errorStream() ),
+                    homeDir, configDir );
         }
     }
 

@@ -226,6 +226,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private void refreshEdgeTopology()
     {
         latestEdgeTopology = HazelcastClusterTopology.getEdgeTopology( hazelcastInstance, log );
+        log.info( "Current edge topology is %s", latestEdgeTopology );
     }
 
     private class OurEntryListener extends MapListenerAdapter

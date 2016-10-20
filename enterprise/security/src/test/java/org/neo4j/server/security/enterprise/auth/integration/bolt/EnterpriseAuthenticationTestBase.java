@@ -27,27 +27,18 @@ import org.junit.Rule;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.Log;
-import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Mode;
-import org.neo4j.procedure.Procedure;
-import org.neo4j.server.security.enterprise.auth.AuthProceduresBase;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -59,7 +50,6 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.procedure.Mode.READ;
 
 public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestUnit
 {
@@ -128,7 +118,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected static Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
     {
-        settings.put( SecuritySettings.active_realm, SecuritySettings.LDAP_REALM_NAME );
+        settings.put( SecuritySettings.auth_provider, SecuritySettings.LDAP_REALM_NAME );
     };
 
     protected void testCreateReaderUser() throws Exception

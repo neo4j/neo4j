@@ -70,7 +70,7 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexStoreView indexStoreView;
     private LuceneSchemaIndexProvider provider;
     private Directory directory;
-    private IndexPopulator index;
+    private IndexPopulator indexPopulator;
     private IndexReader reader;
     private IndexSearcher searcher;
     private final long indexId = 0;
@@ -88,8 +88,9 @@ public class LuceneSchemaIndexPopulatorTest
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
-        index = provider.getPopulator( indexId, indexDescriptor, indexConfig, samplingConfig );
-        index.create();
+        indexPopulator = provider.getPopulator( indexId, indexDescriptor, indexConfig, samplingConfig );
+        indexPopulator.create();
+        indexPopulator.configureSampling( true );
     }
 
     @After
@@ -106,14 +107,14 @@ public class LuceneSchemaIndexPopulatorTest
     public void addingValuesShouldPersistThem() throws Exception
     {
         // WHEN
-        addUpdate( index, 1, "First" );
-        addUpdate( index, 2, "Second" );
-        addUpdate( index, 3, (byte) 1 );
-        addUpdate( index, 4, (short) 2 );
-        addUpdate( index, 5, 3 );
-        addUpdate( index, 6, 4L );
-        addUpdate( index, 7, 5F );
-        addUpdate( index, 8, 6D );
+        addUpdate( indexPopulator, 1, "First" );
+        addUpdate( indexPopulator, 2, "Second" );
+        addUpdate( indexPopulator, 3, (byte) 1 );
+        addUpdate( indexPopulator, 4, (short) 2 );
+        addUpdate( indexPopulator, 5, 3 );
+        addUpdate( indexPopulator, 6, 4L );
+        addUpdate( indexPopulator, 7, 5F );
+        addUpdate( indexPopulator, 8, 6D );
 
         // THEN
         assertIndexedValues(
@@ -131,9 +132,9 @@ public class LuceneSchemaIndexPopulatorTest
     public void multipleEqualValues() throws Exception
     {
         // WHEN
-        addUpdate( index, 1, "value" );
-        addUpdate( index, 2, "value" );
-        addUpdate( index, 3, "value" );
+        addUpdate( indexPopulator, 1, "value" );
+        addUpdate( indexPopulator, 2, "value" );
+        addUpdate( indexPopulator, 3, "value" );
 
         // THEN
         assertIndexedValues(
@@ -144,10 +145,10 @@ public class LuceneSchemaIndexPopulatorTest
     public void multipleEqualValuesWithUpdateThatRemovesOne() throws Exception
     {
         // WHEN
-        addUpdate( index, 1, "value" );
-        addUpdate( index, 2, "value" );
-        addUpdate( index, 3, "value" );
-        updatePopulator( index, asList( remove( 2, "value" ) ), indexStoreView );
+        addUpdate( indexPopulator, 1, "value" );
+        addUpdate( indexPopulator, 2, "value" );
+        addUpdate( indexPopulator, 3, "value" );
+        updatePopulator( indexPopulator, asList( remove( 2, "value" ) ), indexStoreView );
 
         // THEN
         assertIndexedValues(
@@ -158,10 +159,10 @@ public class LuceneSchemaIndexPopulatorTest
     public void changeUpdatesInterleavedWithAdds() throws Exception
     {
         // WHEN
-        addUpdate( index, 1, "1" );
-        addUpdate( index, 2, "2" );
-        updatePopulator( index, asList( change( 1, "1", "1a" ) ), indexStoreView );
-        addUpdate( index, 3, "3" );
+        addUpdate( indexPopulator, 1, "1" );
+        addUpdate( indexPopulator, 2, "2" );
+        updatePopulator( indexPopulator, asList( change( 1, "1", "1a" ) ), indexStoreView );
+        addUpdate( indexPopulator, 3, "3" );
 
         // THEN
         assertIndexedValues(
@@ -175,10 +176,10 @@ public class LuceneSchemaIndexPopulatorTest
     public void addUpdatesInterleavedWithAdds() throws Exception
     {
         // WHEN
-        addUpdate( index, 1, "1" );
-        addUpdate( index, 2, "2" );
-        updatePopulator( index, asList( remove( 1, "1" ), add( 1, "1a" ) ), indexStoreView );
-        addUpdate( index, 3, "3" );
+        addUpdate( indexPopulator, 1, "1" );
+        addUpdate( indexPopulator, 2, "2" );
+        updatePopulator( indexPopulator, asList( remove( 1, "1" ), add( 1, "1a" ) ), indexStoreView );
+        addUpdate( indexPopulator, 3, "3" );
 
         // THEN
         assertIndexedValues(
@@ -192,10 +193,10 @@ public class LuceneSchemaIndexPopulatorTest
     public void removeUpdatesInterleavedWithAdds() throws Exception
     {
         // WHEN
-        addUpdate( index, 1, "1" );
-        addUpdate( index, 2, "2" );
-        updatePopulator( index, asList( remove( 2, "2" ) ), indexStoreView );
-        addUpdate( index, 3, "3" );
+        addUpdate( indexPopulator, 1, "1" );
+        addUpdate( indexPopulator, 2, "2" );
+        updatePopulator( indexPopulator, asList( remove( 2, "2" ) ), indexStoreView );
+        addUpdate( indexPopulator, 3, "3" );
 
         // THEN
         assertIndexedValues(
@@ -208,12 +209,12 @@ public class LuceneSchemaIndexPopulatorTest
     public void multipleInterleaves() throws Exception
     {
         // WHEN
-        addUpdate( index, 1, "1" );
-        addUpdate( index, 2, "2" );
-        updatePopulator( index, asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ), indexStoreView );
-        addUpdate( index, 3, "3" );
-        addUpdate( index, 4, "4" );
-        updatePopulator( index, asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ), indexStoreView );
+        addUpdate( indexPopulator, 1, "1" );
+        addUpdate( indexPopulator, 2, "2" );
+        updatePopulator( indexPopulator, asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ), indexStoreView );
+        addUpdate( indexPopulator, 3, "3" );
+        addUpdate( indexPopulator, 4, "4" );
+        updatePopulator( indexPopulator, asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ), indexStoreView );
 
         // THEN
         assertIndexedValues(
@@ -289,7 +290,7 @@ public class LuceneSchemaIndexPopulatorTest
 
     private void switchToVerification() throws IOException
     {
-        index.close( true );
+        indexPopulator.close( true );
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
         reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );

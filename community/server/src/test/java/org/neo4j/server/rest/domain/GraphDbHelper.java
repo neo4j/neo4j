@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -46,12 +45,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
-import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.server.database.Database;
 
-import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -400,33 +395,6 @@ public class GraphDbHelper
         }
     }
 
-    public Iterable<ConstraintDefinition> getNodePropertyExistenceConstraints( String labelName,
-            final String propertyKey )
-    {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ) )
-        {
-            Iterable<ConstraintDefinition> definitions = filterByConstraintTypeAndPropertyKey(
-                    database.getGraph().schema().getConstraints( label( labelName ) ),
-                    ConstraintType.NODE_PROPERTY_EXISTENCE, propertyKey );
-            tx.success();
-            return definitions;
-        }
-    }
-
-    public Iterable<ConstraintDefinition> getRelationshipPropertyExistenceConstraints( String typeName,
-            final String propertyKey )
-    {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ) )
-        {
-            RelationshipType type = RelationshipType.withName( typeName );
-            Iterable<ConstraintDefinition> definitions = filterByConstraintTypeAndPropertyKey(
-                    database.getGraph().schema().getConstraints( type ),
-                    ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE, propertyKey );
-            tx.success();
-            return definitions;
-        }
-    }
-
     public ConstraintDefinition createPropertyUniquenessConstraint( String labelName, List<String> propertyKeys )
     {
         try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL) )
@@ -442,24 +410,6 @@ public class GraphDbHelper
         }
     }
 
-    public ConstraintDefinition createNodePropertyExistenceConstraint( String labelName, String propertyKey )
-    {
-        String query = String.format( "CREATE CONSTRAINT ON (n:%s) ASSERT exists(n.%s)", labelName, propertyKey );
-        database.getGraph().execute( query );
-        awaitIndexes();
-        return new NodePropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ),
-                label( labelName ), propertyKey );
-    }
-
-    public ConstraintDefinition createRelationshipPropertyExistenceConstraint( String typeName, String propertyKey )
-    {
-        String query = String.format( "CREATE CONSTRAINT ON ()-[r:%s]-() ASSERT exists(r.%s)", typeName, propertyKey );
-        database.getGraph().execute( query );
-        awaitIndexes();
-        return new RelationshipPropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ),
-                RelationshipType.withName( typeName ), propertyKey );
-    }
-
     public long getLabelCount( long nodeId )
     {
         try (Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ))
@@ -468,25 +418,4 @@ public class GraphDbHelper
         }
     }
 
-    private static Iterable<ConstraintDefinition> filterByConstraintTypeAndPropertyKey(
-            Iterable<ConstraintDefinition> definitions, final ConstraintType type, final String propertyKey )
-    {
-        return Iterables.filter( definition -> {
-            if ( definition.isConstraintType( type ) )
-            {
-                Iterable<String> keys = definition.getPropertyKeys();
-                return single( keys ).equals( propertyKey );
-            }
-            return false;
-        }, definitions );
-    }
-
-    private void awaitIndexes()
-    {
-        try ( Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ) )
-        {
-            database.getGraph().schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
-        }
-    }
 }

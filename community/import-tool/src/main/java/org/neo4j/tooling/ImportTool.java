@@ -105,6 +105,9 @@ public class ImportTool
         STORE_DIR( "into", null,
                 "<store-dir>",
                 "Database directory to import into. " + "Must not contain existing database." ),
+        DB_NAME( "database", null,
+                "<database-name>",
+                "Database name to import into. " + "Must not contain existing database.", true ),
         NODE_DATA( "nodes", null,
                 "[:Label1:Label2] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
                 "Node CSV header and data. Multiple files will be logically seen as one big file "
@@ -113,7 +116,7 @@ public class ImportTool
                         + "Multiple data sources like these can be specified in one import, "
                         + "where each data source has its own header. "
                         + "Note that file groups must be enclosed in quotation marks.",
-                        true ),
+                        true, true ),
         RELATIONSHIP_DATA( "relationships", null,
                 "[:RELATIONSHIP_TYPE] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" +
                 MULTI_FILE_DELIMITER + "...\"",
@@ -123,7 +126,7 @@ public class ImportTool
                         + "Multiple data sources like these can be specified in one import, "
                         + "where each data source has its own header. "
                         + "Note that file groups must be enclosed in quotation marks.",
-                        true ),
+                        true, true ),
         DELIMITER( "delimiter", null,
                 "<delimiter-character>",
                 "Delimiter character, or 'TAB', between values in CSV data. The default option is `" + COMMAS.delimiter() + "`." ),
@@ -150,7 +153,8 @@ public class ImportTool
                 "<character set>",
                 "Character set that input data is encoded in. Provided value must be one out of the available "
                         + "character sets in the JVM, as provided by Charset#availableCharsets(). "
-                        + "If no input encoding is provided, the default character set of the JVM will be used." ),
+                        + "If no input encoding is provided, the default character set of the JVM will be used.",
+                true ),
         IGNORE_EMPTY_STRINGS( "ignore-empty-strings", org.neo4j.csv.reader.Configuration.DEFAULT.emptyQuotedStringsAsNull(),
                 "<true/false>",
                 "Whether or not empty string fields, i.e. \"\" from input source are ignored, i.e. treated as null." ),
@@ -161,7 +165,8 @@ public class ImportTool
                         + "input files are treated.\n"
                         + IdType.STRING + ": arbitrary strings for identifying nodes.\n"
                         + IdType.INTEGER + ": arbitrary integer values for identifying nodes.\n"
-                        + IdType.ACTUAL + ": (advanced) actual node ids. The default option is `" + IdType.STRING  + "`." ),
+                        + IdType.ACTUAL + ": (advanced) actual node ids. The default option is `" + IdType.STRING  +
+                        "`.", true ),
         PROCESSORS( "processors", null,
                 "<max processor count>",
                 "(advanced) Max number of processors used by the importer. Defaults to the number of "
@@ -170,7 +175,7 @@ public class ImportTool
                         + ". There is a certain amount of minimum threads needed so for that reason there "
                         + "is no lower bound for this value. For optimal performance this value shouldn't be "
                         + "greater than the number of available processors." ),
-        STACKTRACE( "stacktrace", null,
+        STACKTRACE( "stacktrace", false,
                 "<true/false>",
                 "Enable printing of error stack traces." ),
         BAD_TOLERANCE( "bad-tolerance", 1000,
@@ -206,27 +211,45 @@ public class ImportTool
                         + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
                         + GraphDatabaseSettings.string_block_size.name() + "\n"
                         + GraphDatabaseSettings.array_block_size.name() ),
+        ADDITIONAL_CONFIG( "additional-config", null,
+                "<path/to/neo4j.conf>",
+                "(advanced) File specifying database-specific configuration. For more information consult "
+                        + "manual about available configuration options for a neo4j configuration file. "
+                        + "Only configuration affecting store at time of creation will be read. "
+                        + "Examples of supported config are:\n"
+                        + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
+                        + GraphDatabaseSettings.string_block_size.name() + "\n"
+                        + GraphDatabaseSettings.array_block_size.name(), true ),
         PAGE_SIZE( "page-size", Format.bytes( org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.pageSize() ),
                 "<page size in bytes",
-                "Page size in bytes, or e.g. 4M or 8k" );
+                "Page size in bytes, or e.g. 4M or 8k", true );
 
         private final String key;
         private final Object defaultValue;
         private final String usage;
         private final String description;
         private final boolean keyAndUsageGoTogether;
+        private boolean supported;
 
         Options( String key, Object defaultValue, String usage, String description )
         {
-            this( key, defaultValue, usage, description, false );
+            this( key, defaultValue, usage, description, false, false );
         }
 
-        Options( String key, Object defaultValue, String usage, String description, boolean keyAndUsageGoTogether )
+        Options( String key, Object defaultValue, String usage, String description, boolean supported )
+        {
+            this( key, defaultValue, usage, description, supported, false );
+        }
+
+        Options( String key, Object defaultValue, String usage, String description, boolean supported, boolean
+                keyAndUsageGoTogether
+                )
         {
             this.key = key;
             this.defaultValue = defaultValue;
             this.usage = usage;
             this.description = description;
+            this.supported = supported;
             this.keyAndUsageGoTogether = keyAndUsageGoTogether;
         }
 
@@ -288,6 +311,11 @@ public class ImportTool
         private static String availableProcessorsHint()
         {
             return " (in your case " + Runtime.getRuntime().availableProcessors() + ")";
+        }
+
+        public boolean isSupportedOption()
+        {
+            return this.supported;
         }
     }
 

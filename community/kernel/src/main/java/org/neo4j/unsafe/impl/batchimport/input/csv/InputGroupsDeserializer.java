@@ -45,7 +45,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
     private final IdType idType;
     private InputIterator<ENTITY> currentInput = new InputIterator.Empty<>();
     private long previousInputsCollectivePositions;
-    private int previousInputProcessors = 1;
+    private int previousInputProcessors;
     private boolean currentInputOpen;
     private final int maxProcessors;
     private final DeserializerFactory<ENTITY> factory;
@@ -60,14 +60,15 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
     }
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,
-            Configuration config, IdType idType, int maxProcessors, DeserializerFactory<ENTITY> factory,
-            Validator<ENTITY> validator, Class<ENTITY> entityClass )
+            Configuration config, IdType idType, int maxProcessors, int initialProcessors,
+            DeserializerFactory<ENTITY> factory, Validator<ENTITY> validator, Class<ENTITY> entityClass )
     {
         super( dataFactory );
         this.headerFactory = headerFactory;
         this.config = config;
         this.idType = idType;
         this.maxProcessors = maxProcessors;
+        this.previousInputProcessors = initialProcessors;
         this.factory = factory;
         this.validator = validator;
         this.entityClass = entityClass;
@@ -111,8 +112,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
             // complete rows of data and can be parsed individually by multiple threads.
 
             currentInput = new ParallelInputEntityDeserializer<>( data, headerFactory, config, idType,
-                    maxProcessors, factory, validator, entityClass );
-            currentInput.processors( previousInputProcessors );
+                    maxProcessors, previousInputProcessors, factory, validator, entityClass );
             currentInputOpen = true;
         }
 

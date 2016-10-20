@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.scan;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -113,7 +115,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             // Keep the write for using it in visit
             this.writer = writer;
             IndexStoreView view = lazyIndexStoreView.get();
-            StoreScan<IOException> scan = view.visitNodes( ALWAYS_TRUE_INT, ALWAYS_TRUE_INT, null, this );
+            StoreScan<IOException> scan = view.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, this );
             scan.run();
             return count;
         }

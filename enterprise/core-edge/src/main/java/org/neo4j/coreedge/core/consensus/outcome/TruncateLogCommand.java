@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.logging.Log;
 
 public class TruncateLogCommand implements RaftLogCommand
 {
@@ -42,19 +43,16 @@ public class TruncateLogCommand implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( RaftLog raftLog ) throws IOException
+    public void applyTo( RaftLog raftLog, Log log ) throws IOException
     {
         raftLog.truncate( fromIndex );
     }
 
     @Override
-    public void applyTo( InFlightMap<Long,RaftLogEntry> inFlightMap ) throws IOException
+    public void applyTo( InFlightMap<RaftLogEntry> inFlightMap, Log log ) throws IOException
     {
-        long truncateIndex = fromIndex;
-        while ( inFlightMap.unregister( truncateIndex ) )
-        {
-            truncateIndex++;
-        }
+        log.debug( "Start truncating in-flight-map from index %d. Current map:%n%s", fromIndex, inFlightMap );
+        inFlightMap.truncate( fromIndex );
     }
 
     @Override

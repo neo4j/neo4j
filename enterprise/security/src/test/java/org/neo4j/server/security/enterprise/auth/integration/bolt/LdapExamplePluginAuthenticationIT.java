@@ -86,7 +86,7 @@ public class LdapExamplePluginAuthenticationIT extends EnterpriseAuthenticationT
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
         return super.getSettingsFunction().andThen( settings -> {
-            settings.put( SecuritySettings.active_realm,
+            settings.put( SecuritySettings.auth_provider,
                     SecuritySettings.PLUGIN_REALM_NAME_PREFIX + new LdapGroupHasUsersAuthPlugin().name() );
         } );
     }

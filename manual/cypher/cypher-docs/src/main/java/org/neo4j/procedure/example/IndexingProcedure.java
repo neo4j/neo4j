@@ -21,10 +21,10 @@ package org.neo4j.procedure.example;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.procedure.Name;
-import org.neo4j.procedure.PerformsWrites;
-import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
 
 // START SNIPPET: indexingProcedure
 public class IndexingProcedure
@@ -39,8 +39,7 @@ public class IndexingProcedure
      * @param nodeId id of the node to add to the index
      * @param propKey property to index (value is read from the node)
      */
-    @Procedure
-    @PerformsWrites
+    @Procedure(mode = Mode.WRITE)
     public void addNodeToIndex( @Name("indexName") String indexName,
                                 @Name("node") long nodeId,
                                 @Name( value = "propKey", defaultValue = "name" ) String propKey )

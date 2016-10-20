@@ -97,7 +97,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
                         Outbound<MemberId, RaftMessages.RaftMessage> outbound,
                         LogProvider logProvider, RaftMembershipManager membershipManager,
                         RaftLogShippingManager logShipping,
-                        InFlightMap<Long, RaftLogEntry> inFlightMap,
+                        InFlightMap<RaftLogEntry> inFlightMap,
                         Monitors monitors )
     {
         this.myself = myself;

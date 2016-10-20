@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.assertTrue;
-
 import java.net.URI;
+
+import static org.junit.Assert.assertTrue;
 
 class RepresentationTestBase
 {
@@ -34,19 +34,9 @@ class RepresentationTestBase
         assertUriMatches( expectedRegex, RepresentationTestAccess.serialize( uriRepr ) );
     }
 
-    static void assertUriMatches( String expectedRegex, URI actualUri )
-    {
-        assertUriMatches( expectedRegex, actualUri.toString() );
-    }
-
     static void assertUriMatches( String expectedRegex, String actualUri )
     {
         assertTrue( "expected <" + expectedRegex + "> got <" + actualUri + ">", actualUri.matches( expectedRegex ) );
-    }
-
-    static void assertRegexpMatches( String expectedRegex, String actual )
-    {
-        assertTrue( "expected <" + expectedRegex + "> got <" + actual + ">", actual.matches( expectedRegex ) );
     }
 
     static String uriPattern( String subPath )

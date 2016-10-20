@@ -68,7 +68,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
 
     @SuppressWarnings( "unchecked" )
     public ParallelInputEntityDeserializer( Data<ENTITY> data, Header.Factory headerFactory, Configuration config,
-            IdType idType, int maxProcessors, DeserializerFactory<ENTITY> factory,
+            IdType idType, int maxProcessors, int initialProcessors, DeserializerFactory<ENTITY> factory,
             Validator<ENTITY> validator, Class<ENTITY> entityClass )
     {
         // Reader of chunks, characters aligning to nearest newline
@@ -110,6 +110,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
                 return entities.toArray( (ENTITY[]) Array.newInstance( entityClass, entities.size() ) );
             },
             () -> dataHeader.clone() /*We need to clone the stateful header to each processing thread*/ );
+            processing.processors( initialProcessors - processing.processors( 0 ) );
 
             // Utility cursor which takes care of moving over processed results from chunk to chunk
             Supplier<ENTITY[]> batchSupplier = rebaseBatches( processing );

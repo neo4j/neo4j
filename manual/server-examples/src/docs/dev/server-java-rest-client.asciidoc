@@ -13,7 +13,7 @@ which are easily https://jersey.java.net/nonav/documentation/1.9/user-guide.html
 
 == Start the server ==
 
-Before we can perform any actions on the server, we need to start it as per <<server-installation>>.
+Before we can perform any actions on the server, we need to start it.
 Next up, we'll check the connection to the server:
 
 [snippet,java]

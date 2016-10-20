@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
@@ -81,6 +82,10 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  */
 public class MultipleIndexPopulator implements IndexPopulator
 {
+
+    public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
+    private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
+
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
     protected final Queue<NodePropertyUpdate> queue = new LinkedBlockingQueue<>();
@@ -93,6 +98,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final IndexStoreView storeView;
     private final LogProvider logProvider;
     protected final Log log;
+    private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
     {
@@ -153,10 +159,11 @@ public class MultipleIndexPopulator implements IndexPopulator
     {
         int[] labelIds = labelIds();
         int[] propertyKeyIds = propertyKeyIds();
-        IntPredicate labelIdFilter = (labelId) -> contains( labelIds, labelId );
         IntPredicate propertyKeyIdFilter = (propertyKeyId) -> contains( propertyKeyIds, propertyKeyId );
 
-        return storeView.visitNodes( labelIdFilter, propertyKeyIdFilter, new NodePopulationVisitor(), null );
+        storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null );
+        storeScan.configure(populations);
+        return storeScan;
     }
 
     /**
@@ -268,6 +275,12 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
+    public void configureSampling( boolean onlineSampling )
+    {
+        throw new UnsupportedOperationException( "Multiple index populator can't be configured." );
+    }
+
+    @Override
     public IndexSample sampleResult()
     {
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
@@ -311,6 +324,19 @@ public class MultipleIndexPopulator implements IndexPopulator
         close( false );
     }
 
+    void populateFromQueueBatched( long currentlyIndexedNodeId )
+    {
+        if ( isQueueThresholdReached() )
+        {
+            populateFromQueue( currentlyIndexedNodeId );
+        }
+    }
+
+    private boolean isQueueThresholdReached()
+    {
+        return queue.size() >= QUEUE_THRESHOLD;
+    }
+
     protected void populateFromQueue( long currentlyIndexedNodeId )
     {
         populateFromQueueIfAvailable( currentlyIndexedNodeId );
@@ -326,11 +352,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                 {
                     // no need to check for null as nobody else is emptying this queue
                     NodePropertyUpdate update = queue.poll();
-                    // TODO: We see updates twice here from IndexStatisticsTest
-                    if ( update.getNodeId() <= currentlyIndexedNodeId )
-                    {
-                        updater.process( update );
-                    }
+                    storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                 }
                 while ( !queue.isEmpty() );
             }
@@ -352,7 +374,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private static class MultipleIndexUpdater implements IndexUpdater
+    public static class MultipleIndexUpdater implements IndexUpdater
     {
         private final Map<IndexPopulation,IndexUpdater> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
@@ -428,9 +450,9 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    protected class IndexPopulation
+    public class IndexPopulation
     {
-        final IndexPopulator populator;
+        public final IndexPopulator populator;
         final IndexDescriptor descriptor;
         final IndexConfiguration config;
         final SchemaIndexProvider.Descriptor providerDescriptor;
@@ -502,7 +524,6 @@ public class MultipleIndexPopulator implements IndexPopulator
                 IndexSample sample = populator.sampleResult();
                 storeView.replaceIndexCounts( descriptor, sample.uniqueValues(), sample.sampleSize(),
                         sample.indexSize() );
-
                 populator.close( true );
                 return null;
             }, failedIndexProxyFactory );
@@ -517,7 +538,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         public boolean visit( NodePropertyUpdates updates ) throws IndexPopulationFailedKernelException
         {
             add( updates );
-            populateFromQueue( updates.getNodeId() );
+            populateFromQueueBatched( updates.getNodeId() );
             return false;
         }
 

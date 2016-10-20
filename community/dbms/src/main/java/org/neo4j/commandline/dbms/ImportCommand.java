@@ -43,6 +43,8 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 public class ImportCommand implements AdminCommand
 {
+    public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
+
     public static class Provider extends AdminCommand.Provider
     {
         public Provider()
@@ -54,15 +56,29 @@ public class ImportCommand implements AdminCommand
         public Optional<String> arguments()
         {
             return Optional
-                    .of( "--database=<database-name> [--mode={csv|database}] [--additional-config=<config-file-path>]" +
-                            " " + DatabaseImporter.arguments() + " " + CsvImporter.arguments() );
+                    .of( "--database=<database-name> " +
+                            "[--mode={csv|database}] " +
+                            "[--additional-config=<config-file-path>] " +
+                            DatabaseImporter.arguments() +
+                            " " +
+                            CsvImporter.arguments() );
         }
 
         @Override
         public String description()
         {
-            return "Import a collection of CSV files with --mode=csv (default), or a database from a " +
-                    "pre-3.0 installation with --mode=database." + "\n" + DatabaseImporter.description() + "\n\n" +
+            return "Import a collection of CSV files with --mode=csv (default), or a database from\n" +
+                    "a pre-3.0 installation with --mode=database.\n" +
+                    "\n" +
+                    "--database=<database-name>\n" +
+                    "        The name of the new database to import into. This cannot be an existing\n" +
+                    "        database.\n" +
+                    "--additional-config=<config-file-path>\n" +
+                    "        Configuration file to supply additional configuration values to\n" +
+                    "        the import tools.\n" +
+                    "\n" +
+                    DatabaseImporter.description() +
+                    "\n" +
                     CsvImporter.description();
         }
 
@@ -79,7 +95,7 @@ public class ImportCommand implements AdminCommand
     private final ImporterFactory importerFactory;
     private final String[] allowedModes = {"database", "csv"};
 
-    ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this( homeDir, configDir, outsideWorld, new ImporterFactory() );
     }

@@ -21,13 +21,17 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
+import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.junit.Assert.assertEquals;
@@ -57,13 +61,25 @@ public class NodeStoreScanTest
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
 
-        final NeoStoreIndexStoreView.NodeStoreScan scan =
-                new NeoStoreIndexStoreView.NodeStoreScan( nodeStore, locks,  total )
+        final NodeStoreScan scan = new NodeStoreScan( nodeStore, locks,  total )
         {
             private int read = 0;
 
             @Override
-            protected void process( NodeRecord node )
+            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+                    long currentlyIndexedNodeId )
+            {
+                // no-op
+            }
+
+            @Override
+            public void configure( List list )
+            {
+                // no-op
+            }
+
+            @Override
+            public void process( NodeRecord node )
             {
                 // then
                 read++;

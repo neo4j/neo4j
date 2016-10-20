@@ -64,22 +64,28 @@ class CsvImporter implements Importer
     private final Config config;
     private final Args args;
     private final OutsideWorld outsideWorld;
+    private final String reportFileName;
 
     public static String description()
     {
-        return "--mode=csv Import a database from a collection of CSV files.\n" +
+        return "--mode=csv\n" +
+                "        Import a database from a collection of CSV files.\n" +
+                "--report-file=<filename>\n" +
+                "        File name in which to store the report of the import.\n" +
+                "        Defaults to " + ImportCommand.DEFAULT_REPORT_FILE_NAME + " in the current directory.\n" +
                 "--nodes[:Label1:Label2]=\"<file1>,<file2>,...\"\n" +
                 "        Node CSV header and data. Multiple files will be logically seen as\n" +
                 "        one big file from the perspective of the importer. The first line\n" +
                 "        must contain the header. Multiple data sources like these can be\n" +
                 "        specified in one import, where each data source has its own header.\n" +
                 "        Note that file groups must be enclosed in quotation marks.\n" +
-                "--relationships[:RELATIONSHIP_TYPE] \"<file1>,<file2>,...\"\n" +
+                "--relationships[:RELATIONSHIP_TYPE]=\"<file1>,<file2>,...\"\n" +
                 "        Relationship CSV header and data. Multiple files will be logically\n" +
                 "        seen as one big file from the perspective of the importer. The first\n" +
                 "        line must contain the header. Multiple data sources like these can be\n" +
                 "        specified in one import, where each data source has its own header.\n" +
-                "        Note that file groups must be enclosed in quotation marks.\n" + "--id-type <id-type>\n" +
+                "        Note that file groups must be enclosed in quotation marks.\n" +
+                "--id-type=<id-type>\n" +
                 "        Each node must provide a unique id. This is used to find the correct\n" +
                 "        nodes when creating relationships. Must be one of:\n" +
                 "            STRING: (default) arbitrary strings for identifying nodes.\n" +
@@ -87,16 +93,20 @@ class CsvImporter implements Importer
                 "            ACTUAL: (advanced) actual node ids. The default option is STRING.\n" +
                 "        For more information on id handling, please see the Neo4j Manual:\n" +
                 "        http://neo4j.com/docs/operations-manual/current/deployment/#import-tool\n" +
-                "--input-encoding <character-set>\n" +
+                "--input-encoding=<character-set>\n" +
                 "        Character set that input data is encoded in. Defaults to UTF-8.\n" +
-                "--page-size <page-size>\n" + "        Page size to use for import in bytes. (e. g. 4M or 8k)\n";
+                "--page-size=<page-size>\n" +
+                "        Page size to use for import in bytes. (e. g. 4M or 8k)\n";
     }
 
     public static String arguments()
     {
-        return "[--nodes[:Label1:Label2]=\"<file1>,<file2>,...\"] " +
+        return "[--report-file=<filename>] " +
+                "[--nodes[:Label1:Label2]=\"<file1>,<file2>,...\"] " +
                 "[--relationships[:RELATIONSHIP_TYPE]=\"<file1>,<file2>,...\"] " +
-                "[--input-encoding=<character-set>] " + "[--id-type=<id-type>] ";
+                "[--id-type=<id-type>] " +
+                "[--input-encoding=<character-set>] " +
+                "[--page-size=<page-size>]";
     }
 
     CsvImporter( Args args, Config config, OutsideWorld outsideWorld ) throws IncorrectUsage
@@ -105,6 +115,8 @@ class CsvImporter implements Importer
         this.outsideWorld = outsideWorld;
         nodesFiles = extractInputFiles( args, "nodes", outsideWorld.errorStream() );
         relationshipsFiles = extractInputFiles( args, "relationships", outsideWorld.errorStream() );
+        reportFileName =
+                args.interpretOption( "report-file", withDefault( ImportCommand.DEFAULT_REPORT_FILE_NAME ), s -> s );
         try
         {
             validateInputFiles( nodesFiles, relationshipsFiles );
@@ -128,17 +140,17 @@ class CsvImporter implements Importer
         FileSystemAbstraction fs = outsideWorld.fileSystem();
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         File logsDir = config.get( GraphDatabaseSettings.logs_directory );
-        File badFile = new File( logsDir, BAD_FILE_NAME );
-        OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
-        Collector badCollector = badCollector( badOutput, 1000, collect( true, false, false ) );
+        File reportFile = new File( reportFileName );
+
+        OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
+        Collector badCollector = badCollector( badOutput, 1000, collect( true, true, true ) );
 
         Configuration configuration = importConfiguration( null, false, config, pageSize );
         CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                 relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(), idType,
                 csvConfiguration( args, false ), badCollector, configuration.maxNumberOfProcessors() );
 
-        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(),
-                storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles, false,
-                input, config, badOutput, configuration );
+        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), storeDir, logsDir, reportFile, fs,
+                nodesFiles, relationshipsFiles, false, input, config, badOutput, configuration );
     }
 }

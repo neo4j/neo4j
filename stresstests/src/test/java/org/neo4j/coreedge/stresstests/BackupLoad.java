@@ -20,18 +20,21 @@
 package org.neo4j.coreedge.stresstests;
 
 import java.io.File;
-import java.net.ConnectException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 import org.neo4j.backup.OnlineBackup;
-import org.neo4j.com.ComException;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.helpers.SocketAddress;
 
 class BackupLoad extends RepeatUntilOnSelectedMemberCallable
 {
+    private final Predicate<Throwable> isTransientError =
+            new IsConnectionException().or( new IsConnectionRestByPeer() ).or( new IsChannelClosedException() )
+                    .or( new IsStoreClosed() );
+
     private final File baseDirectory;
     private final BiFunction<Boolean,Integer,SocketAddress> backupAddress;
 
@@ -56,7 +59,7 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
         }
         catch ( RuntimeException e )
         {
-            if ( isConnectionError( e ) )
+            if ( isTransientError.test( e ) )
             {
                 // if we could not connect, wait a bit and try again...
                 LockSupport.parkNanos( 10_000_000 );
@@ -69,33 +72,5 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
         {
             throw new RuntimeException( "Not consistent backup from " + address );
         }
-    }
-
-    private boolean isConnectionError( RuntimeException e )
-    {
-        return isConnectionException( e ) || isChannelClosedException( e );
-    }
-
-    private boolean isConnectionException( Throwable e )
-    {
-        if ( e == null )
-        {
-            return false;
-        }
-
-        return e instanceof ConnectException || isConnectionException( e.getCause() );
-
-    }
-
-    private boolean isChannelClosedException( Throwable e )
-    {
-        if ( e == null )
-        {
-            return false;
-        }
-
-        boolean match = e instanceof ComException && e.getMessage() != null &&
-                e.getMessage().startsWith( "Channel has been closed" );
-        return match || isChannelClosedException( e.getCause() );
     }
 }
