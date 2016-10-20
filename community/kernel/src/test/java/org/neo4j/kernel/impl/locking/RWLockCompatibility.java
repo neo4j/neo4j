@@ -199,6 +199,13 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             File file = dumper.dumpState( locks, t1, t2, t3, t4 );
             throw new RuntimeException( "Failed, forensics information dumped to " + file.getAbsolutePath(), e );
         }
+        finally
+        {
+            t1.close();
+            t2.close();
+            t3.close();
+            t4.close();
+        }
     }
 
     public class StressThread extends Thread

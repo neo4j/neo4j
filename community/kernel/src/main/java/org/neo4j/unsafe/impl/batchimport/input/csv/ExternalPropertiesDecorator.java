@@ -117,4 +117,10 @@ public class ExternalPropertiesDecorator implements Decorator<InputNode>
     {
         return true;
     }
+
+    @Override
+    public void close()
+    {
+        deserializer.close();
+    }
 }

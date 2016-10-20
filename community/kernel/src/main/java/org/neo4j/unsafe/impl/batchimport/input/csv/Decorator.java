@@ -21,9 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.function.Function;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
-public interface Decorator<ENTITY extends InputEntity> extends Function<ENTITY,ENTITY>
+public interface Decorator<ENTITY extends InputEntity> extends Function<ENTITY,ENTITY>, Resource
 {
     /**
      * @return whether or not this decorator is mutable. This is important because a state-less decorator
@@ -33,5 +34,10 @@ public interface Decorator<ENTITY extends InputEntity> extends Function<ENTITY,E
     default boolean isMutable()
     {
         return false;
+    }
+
+    @Override
+    default void close()
+    {   // Nothing to close by default
     }
 }

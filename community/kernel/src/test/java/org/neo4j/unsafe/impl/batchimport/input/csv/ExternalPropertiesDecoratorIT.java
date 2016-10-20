@@ -35,6 +35,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import static java.lang.String.valueOf;
 
@@ -64,10 +66,10 @@ public class ExternalPropertiesDecoratorIT
             }
         };
         IdType idType = IdType.STRING;
-        Decorator<InputNode> decorator = new ExternalPropertiesDecorator(
+        Decorator<InputNode> decorator = spy( new ExternalPropertiesDecorator(
                 data( NO_NODE_DECORATOR, () -> decoratedData( count ) ),
                 defaultFormatNodeFileHeader(),
-                config, idType, UpdateBehaviour.ADD, collector );
+                config, idType, UpdateBehaviour.ADD, collector ) );
         Input input = new CsvInput(
                 nodeData( data( decorator, () -> mainData( count ) ) ), defaultFormatNodeFileHeader(),
                 null, null,
@@ -93,6 +95,7 @@ public class ExternalPropertiesDecoratorIT
             assertEquals( count, i );
             assertFalse( nodes.hasNext() );
         }
+        verify( decorator ).close();
     }
 
     private void assertHasProperty( InputNode node, String key, Object value )

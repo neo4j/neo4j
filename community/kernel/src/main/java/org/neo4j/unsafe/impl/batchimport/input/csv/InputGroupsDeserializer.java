@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.Iterator;
-import java.util.function.Function;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.kernel.impl.util.Validator;
@@ -56,7 +55,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
     public interface DeserializerFactory<ENTITY extends InputEntity>
     {
         InputEntityDeserializer<ENTITY> create( Header dataHeader, CharSeeker dataStream,
-                Function<ENTITY,ENTITY> decorator, Validator<ENTITY> validator );
+                Decorator<ENTITY> decorator, Validator<ENTITY> validator );
     }
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,

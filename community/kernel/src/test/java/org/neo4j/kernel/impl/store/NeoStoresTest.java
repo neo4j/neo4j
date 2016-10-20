@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -103,9 +102,9 @@ public class NeoStoresTest
 
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final ExpectedException exception = ExpectedException.none();
-    private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private TestDirectory dir = TestDirectory.testDirectory( fs.get() );
-    private NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory dir = TestDirectory.testDirectory( fs.get() );
+    private final NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( exception ).around( pageCacheRule )
@@ -177,7 +176,14 @@ public class NeoStoresTest
         exception.expectMessage(
                 "Specified store was not initialized. Please specify " + StoreType.META_DATA.name() +
                 " as one of the stores types that should be open to be able to use it." );
-        neoStores.getMetaDataStore();
+        try
+        {
+            neoStores.getMetaDataStore();
+        }
+        finally
+        {
+            neoStores.close();
+        }
     }
 
     @Test

@@ -276,6 +276,7 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends InputIterat
     {
         try
         {
+            processing.shutdown( true );
             cacheChannel.close();
             closeAction.run();
         }
