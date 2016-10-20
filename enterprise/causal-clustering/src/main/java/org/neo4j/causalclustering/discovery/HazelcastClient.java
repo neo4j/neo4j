@@ -117,7 +117,13 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
                 {
                     throw e;
                 }
-                log.info( "Unable to shutdown Hazelcast", e );
+                log.warn( "Unable to shutdown Hazelcast", e );
+            }
+            catch ( NullPointerException e )
+            {
+                // Hazelcast is not able to stop correctly sometimes and throws a NPE
+                // let's log it but go on with our shutdown
+                log.warn( "Stopping Hazelcast failed with a NPE", e );
             }
         }
 
