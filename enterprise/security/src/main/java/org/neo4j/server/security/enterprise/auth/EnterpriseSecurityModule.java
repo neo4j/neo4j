@@ -142,7 +142,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         }
 
         // Load plugin realms if we have any
-        realms.addAll( createPluginRealms( config, logProvider, secureHasher ) );
+        realms.addAll( createPluginRealms( config, securityLog, secureHasher ) );
 
         // Select the active realms in the order they are configured
         List<Realm> orderedActiveRealms = selectOrderedActiveRealms( configuredRealms, realms );
@@ -196,7 +196,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         return new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity );
     }
 
-    private static List<Realm> createPluginRealms( Config config, LogProvider logProvider, SecureHasher secureHasher )
+    private static List<Realm> createPluginRealms( Config config, SecurityLog securityLog, SecureHasher secureHasher )
     {
         List<Realm> realms = new ArrayList<>();
         Set<Class> excludedClasses = new HashSet<>();
@@ -212,7 +212,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             for ( AuthPlugin plugin : authPlugins )
             {
                 PluginRealm pluginRealm =
-                        new PluginRealm( plugin, config, logProvider, Clocks.systemClock(), secureHasher );
+                        new PluginRealm( plugin, config, securityLog, Clocks.systemClock(), secureHasher );
                 realms.add( pluginRealm );
             }
         }
@@ -229,7 +229,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                 if ( pluginAuthorizationEnabled && plugin instanceof AuthorizationPlugin )
                 {
                     // This plugin implements both interfaces, create a combined plugin
-                    pluginRealm = new PluginRealm( plugin, (AuthorizationPlugin) plugin, config, logProvider,
+                    pluginRealm = new PluginRealm( plugin, (AuthorizationPlugin) plugin, config, securityLog,
                             Clocks.systemClock(), secureHasher );
 
                     // We need to make sure we do not add a duplicate when the AuthorizationPlugin service gets loaded
@@ -239,7 +239,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                 else
                 {
                     pluginRealm =
-                            new PluginRealm( plugin, null, config, logProvider, Clocks.systemClock(), secureHasher );
+                            new PluginRealm( plugin, null, config, securityLog, Clocks.systemClock(), secureHasher );
                 }
                 realms.add( pluginRealm );
             }
@@ -255,7 +255,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                 if ( !excludedClasses.contains( plugin.getClass() ) )
                 {
                     PluginRealm pluginRealm =
-                            new PluginRealm( null, plugin, config, logProvider, Clocks.systemClock(), secureHasher );
+                            new PluginRealm( null, plugin, config, securityLog, Clocks.systemClock(), secureHasher );
                     realms.add( pluginRealm );
                 }
             }
@@ -267,8 +267,11 @@ public class EnterpriseSecurityModule extends SecurityModule
     public static RoleRepository getRoleRepository( Config config, LogProvider logProvider,
             FileSystemAbstraction fileSystem )
     {
-        File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
-        File roleStoreFile = new File( authStoreDir, ROLE_STORE_FILENAME );
-        return new FileRoleRepository( fileSystem, roleStoreFile, logProvider );
+        return new FileRoleRepository( fileSystem, getRoleRepositoryFile( config ), logProvider );
+    }
+
+    public static File getRoleRepositoryFile( Config config )
+    {
+        return new File( config.get( DatabaseManagementSystemSettings.auth_store_directory ), ROLE_STORE_FILENAME );
     }
 }
