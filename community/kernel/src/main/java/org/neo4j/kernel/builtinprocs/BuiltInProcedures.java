@@ -20,6 +20,7 @@
 package org.neo4j.kernel.builtinprocs;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -279,12 +280,17 @@ public class BuiltInProcedures
         public final String name;
         public final String signature;
         public final String description;
+        public final String mode;
+        public final String allowed;
 
         private ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
+            this.mode = signature.mode().toString();
+            this.allowed = Arrays.stream( signature.allowed() ).reduce( "", ( acc, next ) ->
+                    acc.isEmpty() ? next : acc + ", " + next );
         }
     }
 
