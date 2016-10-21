@@ -28,7 +28,8 @@ import org.neo4j.logging.Log;
 
 class Heart
 {
-    static void beat( ReadableRaftState state, Outcome outcome, RaftMessages.Heartbeat request, Log log ) throws IOException
+    static void beat( ReadableRaftState state, Outcome outcome, RaftMessages.Heartbeat request, Log log )
+            throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {
@@ -39,6 +40,8 @@ class Heart
         outcome.setNextTerm( request.leaderTerm() );
         outcome.setLeader( request.from() );
         outcome.setLeaderCommit( request.commitIndex() );
+        outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(),
+                new RaftMessages.HeartbeatResponse( state.myself(), RaftMessages.Type.HEARTBEAT_RESPONSE ) ) );
 
         if ( !Follower.logHistoryMatches( state, request.commitIndex(), request.commitIndexTerm(), log ) )
         {

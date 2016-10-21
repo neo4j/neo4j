@@ -44,6 +44,7 @@ public interface RaftMessages
         APPEND_ENTRIES_RESPONSE,
 
         HEARTBEAT,
+        HEARTBEAT_RESPONSE,
         LOG_COMPACTION_INFO,
 
         // Timeouts
@@ -87,6 +88,27 @@ public interface RaftMessages
         public String toString()
         {
             return format( "Directed{to=%s, message=%s}", to, message );
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            Directed directed = (Directed) o;
+            return Objects.equals( to, directed.to ) && Objects.equals( message, directed.message );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( to, message );
         }
     }
 
@@ -443,6 +465,15 @@ public interface RaftMessages
         {
             return format( "Heartbeat from %s {leaderTerm=%d, commitIndex=%d, commitIndexTerm=%d}", from, leaderTerm,
                     commitIndex, commitIndexTerm );
+        }
+    }
+
+    class HeartbeatResponse extends BaseRaftMessage
+    {
+
+        public HeartbeatResponse( MemberId from, Type type )
+        {
+            super( from, type );
         }
     }
 
