@@ -122,8 +122,6 @@ the relevant Commercial Agreement.
                   <includes>
                     <include>org.neo4j:*</include>
                     <include>org.neo4j.app:*</include>
-                    <include>org.neo4j.examples:*</include>
-                    <include>org.neo4j.doc:*</include>
                     <include>org.neo4j.test:*</include>
                     <include>org.neo4j.build:licensecheck-config:*</include>
                   </includes>
