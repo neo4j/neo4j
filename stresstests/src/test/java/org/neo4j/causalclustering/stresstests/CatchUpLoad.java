@@ -39,6 +39,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.function.Predicates.await;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 class CatchUpLoad extends RepeatUntilCallable
 {
@@ -54,23 +55,6 @@ class CatchUpLoad extends RepeatUntilCallable
     @Override
     protected void doWork()
     {
-        CoreClusterMember leader;
-        try
-        {
-            leader = cluster.awaitLeader();
-        }
-        catch ( TimeoutException e )
-        {
-            // whatever... we'll try again
-            return;
-        }
-
-        long txIdBeforeStartingNewEdge = txId( leader, false );
-        if ( txIdBeforeStartingNewEdge < TransactionIdStore.BASE_TX_ID )
-        {
-            // leader has been shut down, let's try again later
-            return;
-        }
         int newMemberId = cluster.readReplicas().size();
         final ReadReplica readReplica = cluster.addReadReplicaWithId( newMemberId );
 
@@ -79,7 +63,9 @@ class CatchUpLoad extends RepeatUntilCallable
         try
         {
             monitoredException = startAndRegisterExceptionMonitor( readReplica );
-            await( () -> txIdBeforeStartingNewEdge <= txId( readReplica, true ), 10, TimeUnit.MINUTES );
+            await( this::leaderTxId, // if the txId from the leader is -1, give up and retry later (leader switch?)
+                    ( leaderTxId ) -> leaderTxId < BASE_TX_ID || leaderTxId <= txId( readReplica, true ), // caught up?
+                    10, TimeUnit.MINUTES );
         }
         catch ( Throwable e )
         {
@@ -134,6 +120,19 @@ class CatchUpLoad extends RepeatUntilCallable
         ExceptionMonitor exceptionMonitor = new ExceptionMonitor( new IsConnectionRestByPeer() );
         monitors.addMonitorListener( exceptionMonitor, CatchUpClient.class.getName() );
         return exceptionMonitor;
+    }
+
+    private long leaderTxId()
+    {
+        try
+        {
+            return txId( cluster.awaitLeader(), false );
+        }
+        catch ( TimeoutException e )
+        {
+            // whatever... we'll try again
+            return -1;
+        }
     }
 
     private long txId( ClusterMember member, boolean fail )
