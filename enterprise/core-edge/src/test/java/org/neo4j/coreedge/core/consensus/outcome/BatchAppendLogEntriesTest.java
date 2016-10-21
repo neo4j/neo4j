@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
@@ -74,30 +73,5 @@ public class BatchAppendLogEntriesTest
         assertEquals( entryC, readLogEntry( raftLog, 0 ) );
         assertEquals( entryD, readLogEntry( raftLog, 1 ) );
         assertEquals( 1, raftLog.appendIndex() );
-    }
-
-    @Test
-    public void applyTo() throws Exception
-    {
-        //Test that batch commands apply entries to the cache.
-
-        //given
-        long baseIndex = 0;
-        int offset = 1;
-        RaftLogEntry[] entries =
-                new RaftLogEntry[]{new RaftLogEntry( 0L, valueOf( 0 ) ), new RaftLogEntry( 1L, valueOf( 1 ) ),
-                        new RaftLogEntry( 2L, valueOf( 2 ) ),};
-
-        BatchAppendLogEntries batchAppend = new BatchAppendLogEntries( baseIndex, offset, entries );
-
-        InFlightMap<RaftLogEntry> cache = new InFlightMap<>();
-
-        //when
-        batchAppend.applyTo( cache, log );
-
-        //then
-        assertNull( cache.get( 0L ) );
-        assertNotNull( cache.get( 1L ) );
-        assertNotNull( cache.get( 2L ) );
     }
 }

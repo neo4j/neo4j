@@ -22,8 +22,6 @@ package org.neo4j.coreedge.core.consensus.explorer;
 import org.junit.Test;
 
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -40,12 +38,12 @@ public class ComparableRaftStateTest
         ComparableRaftState state1 = new ComparableRaftState( member( 0 ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                new InMemoryRaftLog(), new InFlightMap<>(), logProvider );
+                new InMemoryRaftLog(), logProvider );
 
         ComparableRaftState state2 = new ComparableRaftState( member( 0 ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                new InMemoryRaftLog(), new InFlightMap<>(), logProvider );
+                new InMemoryRaftLog(), logProvider );
 
         // then
         assertEquals(state1, state2);

@@ -43,7 +43,6 @@ import org.neo4j.coreedge.core.consensus.NewLeaderBarrier;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;

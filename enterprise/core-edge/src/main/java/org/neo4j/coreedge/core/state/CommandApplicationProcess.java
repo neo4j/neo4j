@@ -30,8 +30,6 @@ import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogCursor;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.coreedge.core.consensus.log.segmented.CachedSuffixRaftLog;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.replication.DistributedOperation;
 import org.neo4j.coreedge.core.replication.ProgressTracker;
 import org.neo4j.coreedge.core.state.machines.CoreStateMachines;

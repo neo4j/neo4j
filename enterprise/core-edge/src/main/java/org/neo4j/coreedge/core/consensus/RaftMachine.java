@@ -28,7 +28,6 @@ import java.util.function.Predicate;
 
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.RaftGroup;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembershipManager;
 import org.neo4j.coreedge.core.consensus.outcome.AppendLogEntry;
