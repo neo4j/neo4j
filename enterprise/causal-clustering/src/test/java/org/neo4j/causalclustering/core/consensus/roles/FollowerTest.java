@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.RaftMessage;
@@ -274,6 +275,26 @@ public class FollowerTest
 
         // then
         assertFalse( outcome.electionTimeoutRenewed() );
+    }
+
+    @Test
+    public void shouldAcknowledgeHeartbeats() throws Exception
+    {
+        // given
+        RaftState state = raftState()
+                .myself( myself )
+                .term( 2 )
+                .build();
+
+        Follower follower = new Follower();
+
+        Outcome outcome = follower.handle( new RaftMessages.Heartbeat( state.leader(), 2, 2, 2 ),
+                state, log() );
+
+        // then
+        Collection<RaftMessages.Directed> outgoingMessages = outcome.getOutgoingMessages();
+        assertTrue( outgoingMessages.contains( new RaftMessages.Directed( state.leader(),
+                new RaftMessages.HeartbeatResponse( myself, RaftMessages.Type.HEARTBEAT_RESPONSE ) ) ) );
     }
 
     private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend, int term, int firstIndex ) throws IOException
