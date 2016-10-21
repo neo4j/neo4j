@@ -30,7 +30,6 @@ import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembership;
 import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
@@ -129,7 +128,7 @@ public class RaftStateBuilder
         StubMembership membership = new StubMembership();
 
         RaftState state =
-                new RaftState( myself, termStore, membership, entryLog, voteStore, new InFlightMap<>(), NullLogProvider.getInstance() );
+                new RaftState( myself, termStore, membership, entryLog, voteStore, NullLogProvider.getInstance() );
 
         Collection<RaftMessages.Directed> noMessages = Collections.emptyList();
         List<RaftLogCommand> noLogCommands = Collections.emptyList();

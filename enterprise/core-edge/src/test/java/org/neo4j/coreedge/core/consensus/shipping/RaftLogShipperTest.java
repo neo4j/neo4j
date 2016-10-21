@@ -37,7 +37,6 @@ import org.neo4j.coreedge.core.consensus.ReplicatedString;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
@@ -107,7 +106,7 @@ public class RaftLogShipperTest
     private void startLogShipper()
     {
         logShipper = new RaftLogShipper( outbound, logProvider, raftLog, clock, leader, follower, leaderTerm, leaderCommit,
-                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, new InFlightMap<>() );
+                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
         logShipper.start();
     }
 

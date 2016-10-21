@@ -22,6 +22,7 @@ package org.neo4j.coreedge.core.consensus.shipping;
 import java.io.IOException;
 import java.time.Clock;
 
+import org.neo4j.coreedge.core.consensus.log.RaftLogCursor;
 import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.LeaderContext;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
@@ -111,7 +112,6 @@ public class RaftLogShipper
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
-    private final InFlightMap<RaftLogEntry> inFlightMap;
 
     private DelayedRenewableTimeoutService timeoutService;
     private RenewableTimeout timeout;
@@ -124,7 +124,7 @@ public class RaftLogShipper
     RaftLogShipper( Outbound<MemberId, RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                     ReadableRaftLog raftLog, Clock clock,
                     MemberId leader, MemberId follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
-                    int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<RaftLogEntry> inFlightMap )
+                    int catchupBatchSize, int maxAllowedShippingLag )
     {
         this.outbound = outbound;
         this.catchupBatchSize = catchupBatchSize;
@@ -137,7 +137,6 @@ public class RaftLogShipper
         this.leader = leader;
         this.retryTimeMillis = retryTimeMillis;
         this.lastLeaderContext = new LeaderContext( leaderTerm, leaderCommit );
-        this.inFlightMap = inFlightMap;
     }
 
     public Object identity()
@@ -480,16 +479,16 @@ public class RaftLogShipper
             }
 
             boolean entryMissing = false;
-            try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, false ) )
+            try ( RaftLogCursor logEntryCursor = raftLog.getEntryCursor( startIndex ) )
             {
                 for ( int offset = 0; offset < batchSize; offset++ )
                 {
-                    entries[offset] = logEntrySupplier.get( startIndex + offset );
-                    if ( entries[offset] == null )
+                    if ( !logEntryCursor.next() )
                     {
                         entryMissing = true;
                         break;
                     }
+                    entries[offset] = logEntryCursor.get();
                     if ( entries[offset].term() > leaderContext.term )
                     {
                         log.warn( "%s aborting send. Not leader anymore? %s, entryTerm=%d",

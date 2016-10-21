@@ -27,9 +27,7 @@ import java.util.Map;
 
 import org.neo4j.coreedge.core.consensus.LeaderContext;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
-import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.ReadableRaftLog;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembership;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.consensus.outcome.ShipCommand;
@@ -51,7 +49,6 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
-    private final InFlightMap<RaftLogEntry> inFlightMap;
 
     private Map<MemberId,RaftLogShipper> logShippers = new HashMap<>();
     private LeaderContext lastLeaderContext;
@@ -59,11 +56,10 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
     private boolean running;
     private boolean stopped = false;
 
-    public RaftLogShippingManager( Outbound<MemberId,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
+    public RaftLogShippingManager( Outbound<MemberId, RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                                    ReadableRaftLog raftLog,
                                    Clock clock, MemberId myself, RaftMembership membership, long retryTimeMillis,
-                                   int catchupBatchSize, int maxAllowedShippingLag,
-                                   InFlightMap<RaftLogEntry> inFlightMap )
+                                   int catchupBatchSize, int maxAllowedShippingLag )
     {
         this.outbound = outbound;
         this.logProvider = logProvider;
@@ -74,7 +70,6 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
         this.retryTimeMillis = retryTimeMillis;
         this.catchupBatchSize = catchupBatchSize;
         this.maxAllowedShippingLag = maxAllowedShippingLag;
-        this.inFlightMap = inFlightMap;
         membership.registerListener( this );
     }
 
@@ -123,7 +118,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
         {
             logShipper = new RaftLogShipper( outbound, logProvider, raftLog, clock, myself, member,
                     leaderContext.term, leaderContext.commitIndex, retryTimeMillis, catchupBatchSize,
-                    maxAllowedShippingLag, inFlightMap );
+                    maxAllowedShippingLag );
 
             logShippers.put( member, logShipper );
 

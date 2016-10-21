@@ -26,10 +26,9 @@ import org.neo4j.coreedge.core.EnterpriseCoreEditionModule;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.MonitoredRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
-import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
+import org.neo4j.coreedge.core.consensus.log.segmented.CachedSuffixRaftLog;
 import org.neo4j.coreedge.core.consensus.log.segmented.CoreLogPruningStrategy;
 import org.neo4j.coreedge.core.consensus.log.segmented.CoreLogPruningStrategyFactory;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.core.consensus.membership.MemberIdSetBuilder;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembershipManager;
@@ -55,7 +54,6 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.time.Clocks;
 
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.catchup_batch_size;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.join_catch_up_timeout;
@@ -69,11 +67,11 @@ public class ConsensusModule
     public static final String RAFT_TERM_NAME = "term";
     public static final String RAFT_VOTE_NAME = "vote";
 
-    private final MonitoredRaftLog raftLog;
+    private final RaftLog raftLog;
+    private final RaftLog cacheLog = new InMemoryRaftLog();
     private final RaftMachine raftMachine;
     private final DelayedRenewableTimeoutService raftTimeoutService;
     private final RaftMembershipManager raftMembershipManager;
-    private final InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
 
     public ConsensusModule( MemberId myself, final PlatformModule platformModule, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             File clusterStateDirectory, CoreTopologyService discoveryService )
@@ -89,7 +87,7 @@ public class ConsensusModule
 
         RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider, platformModule.jobScheduler );
 
-        raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
+        raftLog = new MonitoredRaftLog( new CachedSuffixRaftLog( underlyingLog, cacheLog ), platformModule.monitors );
 
         StateStorage<TermState> termState;
         StateStorage<VoteState> voteState;
@@ -131,14 +129,14 @@ public class ConsensusModule
                 new RaftLogShippingManager( outbound, logProvider, raftLog, systemClock(),
                         myself, raftMembershipManager, electionTimeout,
                         config.get( catchup_batch_size ),
-                        config.get( log_shipping_max_lag ), inFlightMap );
+                        config.get( log_shipping_max_lag ) );
 
         raftTimeoutService = new DelayedRenewableTimeoutService( systemClock(), logProvider );
 
         raftMachine =
                 new RaftMachine( myself, termState, voteState, raftLog, electionTimeout,
                         heartbeatInterval, raftTimeoutService, outbound, logProvider, raftMembershipManager,
-                        logShipping, inFlightMap, platformModule.monitors );
+                        logShipping, platformModule.monitors );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftMachine ) );
 
@@ -178,6 +176,11 @@ public class ConsensusModule
         return raftLog;
     }
 
+    public RaftLog cacheLog()
+    {
+        return cacheLog;
+    }
+
     public RaftMachine raftMachine()
     {
         return raftMachine;
@@ -191,10 +194,5 @@ public class ConsensusModule
     public RaftMembershipManager raftMembershipManager()
     {
         return raftMembershipManager;
-    }
-
-    public InFlightMap<RaftLogEntry> inFlightMap()
-    {
-        return inFlightMap;
     }
 }

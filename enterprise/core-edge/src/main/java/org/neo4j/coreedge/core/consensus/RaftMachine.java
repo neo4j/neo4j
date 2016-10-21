@@ -39,7 +39,6 @@ import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.core.consensus.state.ExposedRaftState;
 import org.neo4j.coreedge.core.consensus.state.RaftState;
-import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.core.consensus.term.TermState;
 import org.neo4j.coreedge.core.consensus.vote.VoteState;
 import org.neo4j.coreedge.core.state.snapshot.RaftCoreState;
@@ -97,7 +96,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
                         Outbound<MemberId, RaftMessages.RaftMessage> outbound,
                         LogProvider logProvider, RaftMembershipManager membershipManager,
                         RaftLogShippingManager logShipping,
-                        InFlightMap<RaftLogEntry> inFlightMap,
                         Monitors monitors )
     {
         this.myself = myself;
@@ -113,7 +111,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
         this.membershipManager = membershipManager;
 
-        this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightMap, logProvider );
+        this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, logProvider );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
 

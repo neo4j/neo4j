@@ -160,7 +160,7 @@ public class CoreServerModule
                         config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                         config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ), databaseHealthSupplier,
                         logProvider, replicationModule.getProgressTracker(), lastFlushedStorage,
-                        replicationModule.getSessionTracker(), coreStateApplier, consensusModule.inFlightMap(),
+                        replicationModule.getSessionTracker(), coreStateApplier, consensusModule.cacheLog(),
                         platformModule.monitors );
         CoreState coreState =
                 new CoreState( consensusModule.raftMachine(), localDatabase, clusteringModule.clusterIdentity(),

@@ -19,79 +19,35 @@
  */
 package org.neo4j.coreedge.core.consensus.state;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 
-import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
+import org.junit.Test;
+
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
-import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembership;
-import org.neo4j.coreedge.core.consensus.outcome.AppendLogEntry;
-import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
-import org.neo4j.coreedge.core.consensus.outcome.TruncateLogCommand;
+import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerState;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.coreedge.core.consensus.term.TermState;
 import org.neo4j.coreedge.core.consensus.vote.VoteState;
+import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptySet;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.neo4j.coreedge.core.consensus.ReplicatedInteger.valueOf;
+
 import static org.neo4j.coreedge.core.consensus.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
 
 public class RaftStateTest
 {
-
-    @Test
-    public void shouldUpdateCacheState() throws Exception
-    {
-        //Test that updates applied to the raft state will be refelcted in the entry cache.
-
-        //given
-        InFlightMap<RaftLogEntry> cache = new InFlightMap<>();
-        RaftState raftState = new RaftState( member( 0 ),
-                new InMemoryStateStorage<>( new TermState() ), new FakeMembership(), new InMemoryRaftLog(),
-                new InMemoryStateStorage<>( new VoteState() ), cache, NullLogProvider.getInstance() );
-
-        List<RaftLogCommand> logCommands = new LinkedList<RaftLogCommand>()
-        {{
-            add( new AppendLogEntry( 1, new RaftLogEntry( 0L, valueOf( 0 ) ) ) );
-            add( new AppendLogEntry( 2, new RaftLogEntry( 0L, valueOf( 1 ) ) ) );
-            add( new AppendLogEntry( 3, new RaftLogEntry( 0L, valueOf( 2 ) ) ) );
-            add( new AppendLogEntry( 4, new RaftLogEntry( 0L, valueOf( 4 ) ) ) );
-            add( new TruncateLogCommand( 3 ) );
-            add( new AppendLogEntry( 3, new RaftLogEntry( 0L, valueOf( 5 ) ) ) );
-        }};
-
-        Outcome raftTestMemberOutcome =
-                new Outcome( CANDIDATE, 0, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true,
-                        logCommands, emptyOutgoingMessages(), Collections.emptySet(), -1 );
-
-        //when
-        raftState.update(raftTestMemberOutcome);
-
-        //then
-        assertNotNull( cache.get( 1L ) );
-        assertNotNull( cache.get( 2L ) );
-        assertNotNull( cache.get( 3L ) );
-        assertEquals( valueOf( 5 ), cache.get( 3L ).content() );
-        assertNull( cache.get( 4L ) );
-    }
-
     @Test
     public void shouldRemoveFollowerStateAfterBecomingLeader() throws Exception
     {
@@ -100,7 +56,7 @@ public class RaftStateTest
                 new InMemoryStateStorage<>( new TermState() ),
                 new FakeMembership(), new InMemoryRaftLog(),
                 new InMemoryStateStorage<>( new VoteState( ) ),
-                new InFlightMap<>(), NullLogProvider.getInstance() );
+                NullLogProvider.getInstance() );
 
         raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true, emptyLogCommands(),
                 emptyOutgoingMessages(), Collections.emptySet(), -1) );

@@ -96,10 +96,10 @@ public class RaftMachineBuilder
         membershipManager.setRecoverFromIndexSupplier( () -> 0 );
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, clock, member, membershipManager,
-                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
+                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
         RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, outbound, logProvider,
-                membershipManager, logShipping, inFlightMap, monitors );
+                membershipManager, logShipping, monitors );
         inbound.registerHandler( ( incomingMessage ) -> {
             try
             {

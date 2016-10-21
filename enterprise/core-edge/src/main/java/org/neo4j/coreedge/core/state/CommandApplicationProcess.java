@@ -27,8 +27,10 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.SessionTracker;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
+import org.neo4j.coreedge.core.consensus.log.RaftLogCursor;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
+import org.neo4j.coreedge.core.consensus.log.segmented.CachedSuffixRaftLog;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.replication.DistributedOperation;
 import org.neo4j.coreedge.core.replication.ProgressTracker;
@@ -56,7 +58,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
     private final ProgressTracker progressTracker;
     private final SessionTracker sessionTracker;
     private final Supplier<DatabaseHealth> dbHealth;
-    private final InFlightMap<RaftLogEntry> inFlightMap;
+    private final RaftLog cacheLog;
     private final Log log;
     private final CoreStateApplier applier;
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
@@ -81,7 +83,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
             StateStorage<Long> lastFlushedStorage,
             SessionTracker sessionTracker,
             CoreStateApplier applier,
-            InFlightMap<RaftLogEntry> inFlightMap,
+            RaftLog cacheLog,
             Monitors monitors )
     {
         this.coreStateMachines = coreStateMachines;
@@ -91,9 +93,9 @@ public class CommandApplicationProcess extends LifecycleAdapter
         this.progressTracker = progressTracker;
         this.sessionTracker = sessionTracker;
         this.applier = applier;
+        this.cacheLog = cacheLog;
         this.log = logProvider.getLog( getClass() );
         this.dbHealth = dbHealth;
-        this.inFlightMap = inFlightMap;
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
         this.batcher = new OperationBatcher( maxBatchSize );
         this.batchStat = StatUtil.create( "BatchSize", log, 4096, true );
@@ -122,11 +124,13 @@ public class CommandApplicationProcess extends LifecycleAdapter
     {
         boolean success = applier.submit( ( status ) -> () ->
         {
-            try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, true ) )
+            try ( RaftLogCursor logEntryCursor = raftLog.getEntryCursor( lastApplied + 1 ) )
             {
-                for ( long logIndex = lastApplied + 1; !status.isCancelled() && logIndex <= lastSeenCommitIndex; logIndex++ )
+                while ( !status.isCancelled() && logEntryCursor.index() < lastSeenCommitIndex )
                 {
-                    RaftLogEntry entry = logEntrySupplier.get( logIndex );
+                    logEntryCursor.next();
+                    RaftLogEntry entry = logEntryCursor.get();
+                    long logIndex = logEntryCursor.index();
                     if ( entry == null )
                     {
                         throw new IllegalStateException( format( "Committed log %d entry must exist.", logIndex ) );
@@ -144,6 +148,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
                         // since this last entry didn't get in the batcher we need to update the lastApplied:
                         lastApplied = logIndex;
                     }
+                    cacheLog.prune( logIndex );
                 }
                 batcher.flush();
             }

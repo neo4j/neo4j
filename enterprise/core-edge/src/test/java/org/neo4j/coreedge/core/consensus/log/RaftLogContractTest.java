@@ -74,7 +74,7 @@ public abstract class RaftLogContractTest
     }
 
     @Test
-    public void shouldAppendDataAndNotCommitImmediately() throws Exception
+    public void shouldAppendEntries() throws Exception
     {
         RaftLog log = createRaftLog();
 
