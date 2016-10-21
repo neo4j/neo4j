@@ -233,7 +233,6 @@ public class ExecutionResultTest
         assertThat( Math.round( distance ), equalTo( 86107L ) );
     }
 
-
     @Test
     public void shouldHandleMapWithPointsAsInput()
     {
