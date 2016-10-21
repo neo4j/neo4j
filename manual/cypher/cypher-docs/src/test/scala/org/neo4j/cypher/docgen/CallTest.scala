@@ -70,6 +70,17 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
       assertions = (p) => assert(p.nonEmpty) )
   }
 
+  @Test def call_a_procedure_and_filter_its_results() {
+    testQuery(
+      title = "Call a procedure and filter its results",
+      text = "This calls the built-in procedure 'db.labels' to count all in-use labels in the database that contain the word 'User'",
+      planners = Seq(""),
+      queryText = "CALL db.labels() YIELD label WHERE label CONTAINS 'User' RETURN count(label) AS numLabels",
+      optionalResultExplanation =
+        "Since the procedure call is part of a larger query, all outputs must be named explicitly.",
+      assertions = (p) => assert(p.nonEmpty) )
+  }
+
   @Test def call_a_procedure_within_a_complex_query_and_rename_outputs() {
     testQuery(
       title = "Call a procedure within a complex query and rename its outputs",
