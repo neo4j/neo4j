@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.log;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -37,6 +36,7 @@ import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.array;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SecurityLogTest
@@ -58,9 +58,9 @@ public class SecurityLogTest
         FileSystemAbstraction fs = fileSystemRule.get();
 
         File activeLogFile = config.get( SecuritySettings.security_log_filename );
-        assertThat( fs.fileExists( activeLogFile ), Matchers.equalTo( true ) );
-        assertThat( fs.fileExists( archive( 1 ) ), Matchers.equalTo( true ) );
-        assertThat( fs.fileExists( archive( 2 ) ), Matchers.equalTo( false ) );
+        assertThat( fs.fileExists( activeLogFile ), equalTo( true ) );
+        assertThat( fs.fileExists( archive( 1 ) ), equalTo( true ) );
+        assertThat( fs.fileExists( archive( 2 ) ), equalTo( false ) );
 
         String[] activeLines = readLogFile( fs, activeLogFile );
         assertThat( activeLines, array( containsString( "line 2" ) ) );

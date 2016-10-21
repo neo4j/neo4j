@@ -91,64 +91,42 @@ public class PluginRealmTest
             );
     }
 
-    private class LoggingAuthPlugin extends LoggingAdapter implements AuthPlugin
-    {
-        @Override
-        public String name()
-        {
-            return "LoggingAuthPlugin";
-        }
-
-        @Override
-        public AuthInfo authenticateAndAuthorize( AuthToken authToken ) throws AuthenticationException
-        {
-            return null;
-        }
-    }
-
-    private class LoggingAuthenticationPlugin extends LoggingAdapter implements AuthenticationPlugin
-    {
-        @Override
-        public String name()
-        {
-            return "LoggingAuthenticationPlugin";
-        }
-
-        @Override
-        public AuthenticationInfo authenticate( AuthToken authToken ) throws AuthenticationException
-        {
-            return null;
-        }
-    }
-
-    private class LoggingAuthorizationPlugin extends LoggingAdapter implements AuthorizationPlugin
-    {
-        @Override
-        public String name()
-        {
-            return "LoggingAuthorizationPlugin";
-        }
-
-        @Override
-        public AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals )
-        {
-            return null;
-        }
-    }
-
-    abstract class LoggingAdapter extends RealmLifecycle.Adapter
+    private class LoggingAuthPlugin extends TestAuthPlugin
     {
         @Override
         public void initialize( RealmOperations realmOperations ) throws Throwable
         {
-            RealmOperations.Log log = realmOperations.log();
-            if ( log.isDebugEnabled() )
-            {
-                log.debug( "debug line" );
-            }
-            log.info( "info line" );
-            log.warn( "warn line" );
-            log.error( "error line" );
+            logLines( realmOperations );
         }
+    }
+
+    private class LoggingAuthenticationPlugin extends TestAuthenticationPlugin
+    {
+        @Override
+        public void initialize( RealmOperations realmOperations ) throws Throwable
+        {
+            logLines( realmOperations );
+        }
+    }
+
+    private class LoggingAuthorizationPlugin extends TestAuthorizationPlugin
+    {
+        @Override
+        public void initialize( RealmOperations realmOperations ) throws Throwable
+        {
+            logLines( realmOperations );
+        }
+    }
+
+    private static void logLines( RealmOperations realmOperations ) throws Throwable
+    {
+        RealmOperations.Log log = realmOperations.log();
+        if ( log.isDebugEnabled() )
+        {
+            log.debug( "debug line" );
+        }
+        log.info( "info line" );
+        log.warn( "warn line" );
+        log.error( "error line" );
     }
 }
