@@ -19,27 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Spliterator;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import com.hazelcast.core.Client;
 import com.hazelcast.core.ClientService;
 import com.hazelcast.core.Cluster;
@@ -70,6 +49,27 @@ import com.hazelcast.monitor.LocalMapStats;
 import com.hazelcast.query.Predicate;
 import org.junit.Test;
 
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -78,16 +78,15 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.startsWith;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.causalclustering.discovery.HazelcastClient.REFRESH_READ_REPLICA;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.CLIENT_CONNECTOR_ADDRESSES;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.MEMBER_UUID;
@@ -359,6 +358,36 @@ public class HazelcastClientTest
 
         // then
         assertEquals( 0, hazelcastMap.size() );
+    }
+
+    @Test
+    public void shouldSwallowNPEFromHazelcast() throws Throwable
+    {
+        // given
+        Endpoint endpoint = mock( Endpoint.class );
+        when( endpoint.getUuid() ).thenReturn( "12345" );
+
+        HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
+        when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
+        when( hazelcastInstance.getMap( anyString() ) ).thenReturn( new HazelcastMap() );
+        doThrow( new NullPointerException( "boom!!!" ) ).when( hazelcastInstance ).shutdown();
+
+        HazelcastConnector connector = mock( HazelcastConnector.class );
+        when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
+
+        ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
+
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), config(),
+                renewableTimeoutService, 60_000, 5_000 );
+
+        hazelcastClient.start();
+
+        renewableTimeoutService.invokeTimeout( REFRESH_READ_REPLICA );
+
+        // when
+        hazelcastClient.stop();
+
+        // then no NPE has been thrown
     }
 
     private Member makeMember( int id ) throws UnknownHostException
