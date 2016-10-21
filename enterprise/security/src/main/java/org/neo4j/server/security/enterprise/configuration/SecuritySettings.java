@@ -27,6 +27,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.logging.Level;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -39,6 +40,7 @@ import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -229,24 +231,28 @@ public class SecuritySettings
     //=========================================================================
 
     @Internal
-    public static final Setting<File> security_log_filename = derivedSetting("dbms.security.log_path",
+    public static final Setting<File> security_log_filename = derivedSetting( "dbms.security.log_path",
             GraphDatabaseSettings.logs_directory,
             ( logs ) -> new File( logs, "security.log" ),
             PATH );
 
+    @Description( "Security log level threshold." )
+    public static final Setting<Level> security_log_level = setting( "dbms.logs.security.level",
+            options( Level.class ), "INFO" );
+
     @Description( "Set to log successful authentication events." )
     public static final Setting<Boolean> security_log_successful_authentication =
-            setting("dbms.security.log_successful_authentication", BOOLEAN, "true" );
+            setting( "dbms.security.log_successful_authentication", BOOLEAN, "true" );
 
     @Description( "Threshold for rotation of the security log." )
     public static final Setting<Long> store_security_log_rotation_threshold =
-            setting("dbms.logs.security.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+            setting( "dbms.logs.security.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
     @Description( "Minimum time interval after last rotation of the security log before it may be rotated again." )
     public static final Setting<Long> store_security_log_rotation_delay =
-            setting("dbms.logs.security.rotation.delay", DURATION, "300s" );
+            setting( "dbms.logs.security.rotation.delay", DURATION, "300s" );
 
     @Description( "Maximum number of history files for the security log." )
     public static final Setting<Integer> store_security_log_max_archives =
-            setting("dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
+            setting( "dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
 }

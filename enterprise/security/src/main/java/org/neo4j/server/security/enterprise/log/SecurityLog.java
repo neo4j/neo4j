@@ -53,10 +53,10 @@ public class SecurityLog extends LifecycleAdapter implements Log
                 config.get( SecuritySettings.store_security_log_rotation_delay ),
                 config.get( SecuritySettings.store_security_log_max_archives ), executor );
 
-        this.inner = new AsyncLog(
-                event -> executor.execute( event::process ),
-                builder.toOutputStream( rotatingSupplier )
-        );
+        FormattedLog formattedLog = builder.toOutputStream( rotatingSupplier );
+        formattedLog.setLevel( config.get( SecuritySettings.security_log_level ) );
+
+        this.inner = new AsyncLog( event -> executor.execute( event::process ), formattedLog );
     }
 
     /* Only used for tests */
