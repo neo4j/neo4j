@@ -49,6 +49,7 @@ import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 /*
@@ -128,11 +129,12 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
 
     private List<ReadWriteRouteEndPoint> readEndpoints()
     {
-        Stream<AdvertisedSocketAddress> readEdge = discoveryService.readReplicas().members().stream()
-                .map( server -> server.getClientConnectorAddresses().getBoltAddress() );
-        Stream<AdvertisedSocketAddress> readCore = coreReadEndPoints();
+        List<AdvertisedSocketAddress> readReplicas = discoveryService.readReplicas().members().stream()
+                .map( server -> server.getClientConnectorAddresses().getBoltAddress() ).collect( toList() );
+        boolean addFollowers = readReplicas.isEmpty() || config.get( cluster_allow_reads_on_followers );
+        Stream<AdvertisedSocketAddress> readCore = addFollowers ? coreReadEndPoints() : Stream.empty();
         List<ReadWriteRouteEndPoint> readEndPoints =
-                concat( readEdge, readCore ).map( ReadWriteRouteEndPoint::read ).collect( toList() );
+                concat( readReplicas.stream(), readCore ).map( ReadWriteRouteEndPoint::read ).collect( toList() );
         Collections.shuffle( readEndPoints );
         return readEndPoints;
     }

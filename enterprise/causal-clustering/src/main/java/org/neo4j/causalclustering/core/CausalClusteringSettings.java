@@ -26,6 +26,7 @@ import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -198,6 +199,12 @@ public class CausalClusteringSettings
     @Description( "How long drivers should cache the data from the `dbms.cluster.routing.getServers()` procedure."  )
     public static final Setting<Long> cluster_routing_ttl =
             setting( "causal_clustering.cluster_routing_ttl", DURATION, "5m", min(1_000L) );
+
+    @Description( "Configure if the `dbms.cluster.routing.getServers()` procedure should include followers as read " +
+            "endpoints or return only read replicas. If there are no read replicas in the cluster, followers are " +
+            "returned as read end points regardless the value of this setting." )
+    public static final Setting<Boolean> cluster_allow_reads_on_followers =
+            setting( "core_edge.cluster_allow_reads_on_followers", BOOLEAN, Settings.FALSE );
 
     @Description( "The size of the ID allocation requests Core servers will make when they run out of NODE IDs. " +
             "Larger values mean less frequent requests but also result in more unused IDs (and unused disk space) " +

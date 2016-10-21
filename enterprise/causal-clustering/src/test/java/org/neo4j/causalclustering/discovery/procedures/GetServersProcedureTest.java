@@ -20,8 +20,11 @@
 package org.neo4j.causalclustering.discovery.procedures;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,9 +52,11 @@ import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -59,6 +64,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_routing_ttl;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.bolt;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
@@ -67,10 +73,28 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
+@RunWith( Parameterized.class )
 public class GetServersProcedureTest
 {
-    private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
-    private Config config = Config.defaults();
+    private final ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+
+    @Parameterized.Parameter( 0 )
+    public String ignored; // <- JUnit is happy only if this is here!
+    @Parameterized.Parameter( 1 )
+    public Config config;
+    @Parameterized.Parameter( 2 )
+    public boolean expectFollowersAsReadEndPoints;
+
+    @Parameterized.Parameters( name = "{0}")
+    public static Collection<Object[]> params()
+    {
+        return Arrays.asList(
+                new Object[]{"with followers as read end points", Config.defaults().augment(
+                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.TRUE ) ), true },
+                new Object[]{"no followers as read end points", Config.defaults().augment(
+                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.FALSE ) ), false }
+        );
+    }
 
     @Test
     public void ttlShouldBeInSeconds() throws Exception
@@ -234,7 +258,10 @@ public class GetServersProcedureTest
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
         builder.writeAddress( coreAddresses( 0 ).getRaftServer() );
-        builder.readAddress( coreAddresses( 0 ).getRaftServer() );
+        if ( expectFollowersAsReadEndPoints )
+        {
+            builder.readAddress( coreAddresses( 0 ).getRaftServer() );
+        }
         builder.readAddress( readReplicaAddresses( 1 ).getClientConnectorAddresses().getBoltAddress() );
         builder.routeAddress( coreAddresses( 0 ).getRaftServer() );
 
