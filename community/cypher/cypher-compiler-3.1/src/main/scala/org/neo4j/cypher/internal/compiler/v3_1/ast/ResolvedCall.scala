@@ -28,26 +28,32 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CypherType, _}
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
-    val UnresolvedCall(_, _, declaredArguments, declaredResults) = unresolved
+    val UnresolvedCall(_, _, declaredArguments, declaredResult) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedName(unresolved))
     val nonDefaults = signature.inputSignature.flatMap(s => if (s.default.isDefined) None else Some(Parameter(s.name, CTAny)(position)))
     val callArguments = declaredArguments.getOrElse(nonDefaults)
-    val callResults = declaredResults.getOrElse(signatureResults(signature, position))
-    ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResults.nonEmpty)(position)
+    val callResults = declaredResult.map(_.items).getOrElse(signatureResults(signature, position))
+    val callFilter = declaredResult.flatMap(_.where)
+    if (callFilter.nonEmpty)
+      throw new IllegalArgumentException(s"Expected no unresolved call with WHERE but got: $unresolved")
+    else
+      ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResult.nonEmpty)(position)
   }
 
-  private def signatureResults(signature: ProcedureSignature, position: InputPosition): Seq[ProcedureResultItem] =
-    signature.outputSignature.getOrElse(Seq.empty).map { field => ProcedureResultItem(Variable(field.name)(position))(position) }
+  private def signatureResults(signature: ProcedureSignature, position: InputPosition): IndexedSeq[ProcedureResultItem] =
+    signature.outputSignature.getOrElse(Seq.empty).map {
+      field => ProcedureResultItem(Variable(field.name)(position))(position)
+  }.toIndexedSeq
 }
 
 case class ResolvedCall(signature: ProcedureSignature,
                         callArguments: Seq[Expression],
-                        callResults: Seq[ProcedureResultItem],
+                        callResults: IndexedSeq[ProcedureResultItem],
                         // true if given by the user originally
-                        val declaredArguments: Boolean = true,
+                        declaredArguments: Boolean = true,
                         // true if given by the user originally
-                        val declaredResults: Boolean = true)
+                        declaredResults: Boolean = true)
                        (val position: InputPosition)
   extends CallClause {
 
