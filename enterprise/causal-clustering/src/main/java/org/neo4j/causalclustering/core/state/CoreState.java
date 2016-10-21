@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.state;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
@@ -38,7 +39,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.function.Predicates.awaitEx;
 
 public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMessage>, LogPruner, Lifecycle
 {
@@ -162,16 +163,20 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
 
         // TODO: Move haveState and CoreBootstrapper into CommandApplicationProcess, which perhaps needs a better name.
         // TODO: Include the None/Partial/Full in the move.
-        if ( !haveState() )
-        {
-            boolean acquired = bootstrapLatch.await( 1, MINUTES );
-            if ( !acquired )
-            {
-                throw new RuntimeException( "Timed out while waiting to download a snapshot from another cluster member" );
-            }
-        }
+        awaitEx( () -> haveState() || snapshotDownloaded(), 30, TimeUnit.MINUTES );
         localDatabase.start();
         applicationProcess.start();
+    }
+
+    private boolean snapshotDownloaded() throws InterruptedException
+    {
+        boolean acquired = bootstrapLatch.await( 30, TimeUnit.SECONDS );
+        if ( !acquired )
+        {
+            log.warn( "This machine is not ready to start yet. " +
+                    "It is waiting for the download of the cluster snapshot from another member to complete." );
+        }
+        return acquired;
     }
 
     private boolean haveState()
