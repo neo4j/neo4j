@@ -19,10 +19,10 @@
  */
 package org.neo4j.restore;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -62,21 +62,16 @@ public class RestoreDatabaseCommandTest
         createDbAt( fromPath, fromNodeCount );
         createDbAt( toPath, toNodeCount );
 
-        StoreLocker storeLocker = new StoreLocker( fs );
-        storeLocker.checkLock( toPath );
-
-        try
+        try ( StoreLocker storeLocker = new StoreLocker( fs ) )
         {
+            storeLocker.checkLock( toPath );
+
             new RestoreDatabaseCommand( fs, fromPath, config, databaseName, true ).execute();
             fail( "expected exception" );
         }
         catch ( Exception e )
         {
             assertThat( e.getMessage(), equalTo( "the database is in use -- stop Neo4j and try again" ) );
-        }
-        finally
-        {
-            storeLocker.release();
         }
     }
 

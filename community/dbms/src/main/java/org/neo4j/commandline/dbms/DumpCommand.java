@@ -39,13 +39,11 @@ import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.StoreLockException;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.identity;
@@ -117,12 +115,13 @@ public class DumpCommand implements AdminCommand
         }
         catch ( CannotWriteException e )
         {
-            throw new CommandFailed( "you do not have permission to dump the database -- is Neo4j running as a " +
-                    "different user?", e );
+            throw new CommandFailed(
+                    "you do not have permission to dump the database -- is Neo4j running as a " + "different user?",
+                    e );
         }
     }
 
-    private <T> T parse( String[] args, String argument, Function<String, T> converter ) throws IncorrectUsage
+    private <T> T parse( String[] args, String argument, Function<String,T> converter ) throws IncorrectUsage
     {
         try
         {
@@ -138,8 +137,7 @@ public class DumpCommand implements AdminCommand
     {
         //noinspection unchecked
         return new ConfigLoader( asList( DatabaseManagementSystemSettings.class, GraphDatabaseSettings.class ) )
-                .loadOfflineConfig(
-                        Optional.of( homeDir.toFile() ),
+                .loadOfflineConfig( Optional.of( homeDir.toFile() ),
                         Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) )
                 .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) )
                 .get( database_path ).toPath();

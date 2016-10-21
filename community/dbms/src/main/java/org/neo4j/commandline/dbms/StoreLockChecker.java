@@ -40,7 +40,7 @@ class StoreLockChecker
 
                 storeLocker.checkLock( databaseDirectory.toFile() );
 
-                return storeLocker::release;
+                return storeLocker;
             }
             else
             {

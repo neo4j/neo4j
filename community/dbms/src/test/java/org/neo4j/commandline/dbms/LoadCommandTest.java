@@ -132,10 +132,10 @@ public class LoadCommandTest
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
-        new StoreLocker( new DefaultFileSystemAbstraction() ).checkLock( databaseDirectory.toFile() );
 
-        try
+        try ( StoreLocker locker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
         {
+            locker.checkLock( databaseDirectory.toFile() );
             execute( "foo.db", "--force" );
             fail( "expected exception" );
         }
