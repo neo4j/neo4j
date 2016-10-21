@@ -74,6 +74,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -575,6 +576,62 @@ public class BoltCausalClusteringIT
         }, is( true ), 30, SECONDS );
     }
 
+    @Test
+    public void shouldHandleLeaderSwitch() throws Exception
+    {
+        // given
+        cluster = clusterRule.startCluster();
+
+        CoreClusterMember leader = cluster.awaitLeader();
+
+        try ( Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
+        {
+            // when
+            try ( Session session = driver.session() )
+            {
+                try ( Transaction tx = session.beginTransaction() )
+                {
+                    switchLeader( leader );
+
+                    tx.run( "CREATE (person:Person {name: {name}, title: {title}})",
+                            parameters( "name", "Webber", "title", "Mr" ) );
+                    tx.success();
+                }
+                catch ( SessionExpiredException ignored )
+                {
+                    // expected
+                }
+            }
+
+            String bookmark = inExpirableSession( driver, Driver::session, s ->
+            {
+                try ( Transaction tx = s.beginTransaction() )
+                {
+                    tx.run( "CREATE (person:Person {name: {name}, title: {title}})",
+                            parameters( "name", "Webber", "title", "Mr" ) );
+                    tx.success();
+                }
+                catch ( SessionExpiredException ignored )
+                {
+                    // expected
+                }
+                return s.lastBookmark();
+            } );
+
+            // then
+            try ( Session session = driver.session( AccessMode.READ ) )
+            {
+                try ( Transaction tx = session.beginTransaction( bookmark ) )
+                {
+                    Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                    tx.success();
+                    assertEquals( 1, record.get( "count" ).asInt() );
+                }
+            }
+        }
+
+    }
+
     private void executeReadQuery( String bookmark, Session session )
     {
         try ( Transaction tx = session.beginTransaction( bookmark ) )
@@ -607,14 +664,8 @@ public class BoltCausalClusteringIT
 
     private ClusterMember connectedServer( Session session ) throws NoSuchFieldException, IllegalAccessException
     {
-        Field connectionField = NetworkSession.class.getDeclaredField( "connection" );
-        connectionField.setAccessible( true );
-        Connection connection = (Connection) connectionField.get( session );
-
-        String host = connection.address().host();
-        int port = connection.address().port();
-
-        return cluster.getMemberByBoltAddress( new AdvertisedSocketAddress( host, port ) );
+        BoltServerAddress address = ((RoutingNetworkSession) session).address();
+        return cluster.getMemberByBoltAddress( new AdvertisedSocketAddress( address.host(), address.port() ) );
     }
 
     private void switchLeader( CoreClusterMember initialLeader ) throws InterruptedException
