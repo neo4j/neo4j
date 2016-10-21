@@ -72,10 +72,11 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
     @Override
     public AccessMode mode()
     {
+        boolean isAuthenticated = shiroSubject.isAuthenticated();
         return new StandardAccessMode(
-                shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ ),
-                shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ_WRITE ),
-                shiroSubject.isAuthenticated() && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
+                isAuthenticated && shiroSubject.isPermitted( READ ),
+                isAuthenticated && shiroSubject.isPermitted( READ_WRITE ),
+                isAuthenticated && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
                 shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED,
                 authManager.getAuthorizationInfo( shiroSubject.getPrincipals() )
             );
