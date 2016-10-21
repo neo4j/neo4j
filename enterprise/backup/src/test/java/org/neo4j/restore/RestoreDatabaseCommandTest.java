@@ -52,7 +52,7 @@ public class RestoreDatabaseCommandTest
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
-        Config config = configWith(  Config.empty(), databaseName);
+        Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -81,7 +81,7 @@ public class RestoreDatabaseCommandTest
         // given
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
-        Config config = configWith(  Config.empty(), databaseName);
+        Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -99,8 +99,8 @@ public class RestoreDatabaseCommandTest
         catch ( IllegalArgumentException exception )
         {
             // then
-            assertTrue( exception.getMessage(), exception.getMessage().contains(
-                    "Database with name [to] already exists" ) );
+            assertTrue( exception.getMessage(),
+                    exception.getMessage().contains( "Database with name [to] already exists" ) );
         }
     }
 
@@ -110,7 +110,7 @@ public class RestoreDatabaseCommandTest
         // given
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
-        Config config = configWith(  Config.empty(), databaseName);
+        Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -127,8 +127,7 @@ public class RestoreDatabaseCommandTest
         catch ( IllegalArgumentException exception )
         {
             // then
-            assertTrue( exception.getMessage(),
-                    exception.getMessage().contains( "Source directory does not exist" ) );
+            assertTrue( exception.getMessage(), exception.getMessage().contains( "Source directory does not exist" ) );
         }
     }
 
@@ -138,7 +137,7 @@ public class RestoreDatabaseCommandTest
         // given
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
-        Config config = configWith(  Config.empty(), databaseName);
+        Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -154,17 +153,18 @@ public class RestoreDatabaseCommandTest
         // then
         GraphDatabaseService copiedDb = new GraphDatabaseFactory().newEmbeddedDatabase( toPath );
 
-        try(Transaction ignored = copiedDb.beginTx())
+        try ( Transaction ignored = copiedDb.beginTx() )
         {
-            assertEquals(fromNodeCount, Iterables.count( copiedDb.getAllNodes() ) );
+            assertEquals( fromNodeCount, Iterables.count( copiedDb.getAllNodes() ) );
         }
 
         copiedDb.shutdown();
     }
 
-    public static Config configWith( Config config, String databaseName )
+    public static Config configWith( Config config, String databaseName, String dataDirectory )
     {
-        return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
+        return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName,
+                DatabaseManagementSystemSettings.data_directory.name(), dataDirectory ) );
     }
 
     private void createDbAt( File fromPath, int nodesToCreate )
@@ -173,7 +173,7 @@ public class RestoreDatabaseCommandTest
 
         GraphDatabaseService db = factory.newEmbeddedDatabase( fromPath );
 
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < nodesToCreate; i++ )
             {
