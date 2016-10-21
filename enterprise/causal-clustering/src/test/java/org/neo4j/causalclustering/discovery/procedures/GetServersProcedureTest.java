@@ -49,7 +49,6 @@ import org.neo4j.kernel.configuration.Config;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -408,7 +407,7 @@ public class GetServersProcedureTest
         Object[] rows = results.get( 0 );
 
         long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl)  / 1000, ttl );
+        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
 
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
 
