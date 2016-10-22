@@ -46,6 +46,8 @@ import static java.util.stream.Collectors.toList;
  */
 public class OutputMappers
 {
+    private final TypeMappers typeMappers;
+
     public OutputMappers( TypeMappers typeMappers )
     {
         this.typeMappers = typeMappers;
@@ -124,9 +126,6 @@ public class OutputMappers
         }
     }
 
-    private final Lookup lookup = MethodHandles.lookup();
-    private final TypeMappers typeMappers;
-
     /**
      * Build an output mapper for the return type of a given method.
      *
@@ -177,6 +176,8 @@ public class OutputMappers
     public OutputMapper mapper( Class<?> userClass ) throws ProcedureException
     {
         assertIsValidRecordClass( userClass );
+
+        final Lookup lookup = MethodHandles.lookup();
 
         List<Field> fields = instanceFields( userClass );
         FieldSignature[] signature = new FieldSignature[fields.size()];

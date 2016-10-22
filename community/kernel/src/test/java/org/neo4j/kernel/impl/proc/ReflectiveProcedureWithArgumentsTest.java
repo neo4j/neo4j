@@ -214,6 +214,10 @@ public class ReflectiveProcedureWithArgumentsTest
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
-        return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), NullLog.getInstance() ).compileProcedure( clazz );
+        return new ReflectiveProcedureCompiler(
+                new TypeMappers(),
+                new ComponentRegistry(),
+                () -> NullLog.getInstance()
+            ).compileProcedure( clazz );
     }
 }
