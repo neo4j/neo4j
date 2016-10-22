@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Before;
 import org.junit.Rule;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -64,14 +63,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     @Rule
-    public TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-
-    @Before
-    public void setUp()
-    {
-        gen().setSection( getDocumentationSectionName() );
-        gen().setGraph( graphdb() );
-    }
+    public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
 
     @SafeVarargs
     public final String doCypherRestCall( String endpoint, String scriptTemplate, Status status,
@@ -89,10 +81,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         String script = createScript( scriptTemplate );
         String queryString = "{\"query\": \"" + script + "\",\"params\":{" + parameterString + "}}";
 
-        String snippet = org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier$.MODULE$.apply( script );
         gen().expectedStatus( status.getStatusCode() )
-                .payload( queryString )
-                .description( AsciidocHelper.createAsciiDocSnippet( "cypher", snippet ) );
+                .payload( queryString );
         return gen().post( endpoint ).entity();
     }
 
@@ -235,12 +225,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return getNodeUri( node )+  "/properties";
     }
 
-    public RESTDocsGenerator gen() {
+    public RESTRequestGenerator gen() {
         return gen.get();
-    }
-
-    protected String getDocumentationSectionName() {
-        return "dev/rest-api";
     }
 
     public String getLabelsUri()
@@ -298,5 +284,4 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/" + property;
     }
-
 }

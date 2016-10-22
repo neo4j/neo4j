@@ -40,12 +40,12 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder;
 import org.neo4j.server.security.enterprise.auth.SecureHasher;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthorizationInfoProvider;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpired;
 import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
@@ -53,6 +53,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CustomCacheableAuthenticationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.neo4j.server.security.enterprise.configuration.SecuritySettings.PLUGIN_REALM_NAME_PREFIX;
 
@@ -68,12 +69,12 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
 
     private RealmOperations realmOperations = new PluginRealmOperations();
 
-    public PluginRealm( Config config, LogProvider logProvider, Clock clock, SecureHasher secureHasher )
+    public PluginRealm( Config config, SecurityLog securityLog, Clock clock, SecureHasher secureHasher )
     {
         this.config = config;
         this.clock = clock;
         this.secureHasher = secureHasher;
-        this.log = logProvider.getLog( getClass() );
+        this.log = securityLog;
 
         setCredentialsMatcher( new CredentialsMatcher() );
 
@@ -87,18 +88,18 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
     }
 
     public PluginRealm( AuthenticationPlugin authenticationPlugin, AuthorizationPlugin authorizationPlugin,
-            Config config, LogProvider logProvider, Clock clock, SecureHasher secureHasher )
+            Config config, SecurityLog securityLog, Clock clock, SecureHasher secureHasher )
     {
-        this( config, logProvider, clock, secureHasher );
+        this( config, securityLog, clock, secureHasher );
         this.authenticationPlugin = authenticationPlugin;
         this.authorizationPlugin = authorizationPlugin;
         resolvePluginName();
     }
 
-    public PluginRealm( AuthPlugin authPlugin, Config config, LogProvider logProvider, Clock clock,
+    public PluginRealm( AuthPlugin authPlugin, Config config, SecurityLog securityLog, Clock clock,
             SecureHasher secureHasher )
     {
-        this( config, logProvider, clock, secureHasher );
+        this( config, securityLog, clock, secureHasher );
         this.authPlugin = authPlugin;
         resolvePluginName();
     }
@@ -148,8 +149,16 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
     {
         if ( authorizationPlugin != null )
         {
-            org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo authorizationInfo =
-                    authorizationPlugin.authorize( getPrincipalAndRealmCollection( principals ) );
+            org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo authorizationInfo;
+            try
+            {
+                 authorizationInfo = authorizationPlugin.authorize( getPrincipalAndRealmCollection( principals ) );
+            }
+            catch ( AuthorizationExpired e )
+            {
+                throw new AuthExpirationException(
+                        "Plugin '" + getName() + "' authorization info expired: " + e.getMessage() );
+            }
             if ( authorizationInfo != null )
             {
                 return PluginAuthorizationInfo.create( authorizationInfo );

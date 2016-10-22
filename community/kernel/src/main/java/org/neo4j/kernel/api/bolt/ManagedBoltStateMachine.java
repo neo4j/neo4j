@@ -25,5 +25,5 @@ public interface ManagedBoltStateMachine
 
     void terminate();
 
-    boolean hasTerminated();
+    boolean willTerminate();
 }

@@ -140,7 +140,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     {
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestAuthPlugin" ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
     }
 
     @Test
@@ -148,7 +148,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     {
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAuthPlugin" ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
     }
 
     @Test
@@ -167,14 +167,14 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertConnectionSucceeds( authToken );
         assertThat( TestCacheableAuthPlugin.getAuthInfoCallCount.get(), equalTo( 1 ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
 
         // When we log in the second time our plugin should _not_ get a call since auth info should be cached
         reconnect();
         assertConnectionSucceeds( authToken );
         assertThat( TestCacheableAuthPlugin.getAuthInfoCallCount.get(), equalTo( 1 ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
 
         // When we log in the with the wrong credentials it should fail and
         // our plugin should _not_ get a call since auth info should be cached
@@ -193,7 +193,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCombinedAuthPlugin" ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
     }
 
     @Test
@@ -206,7 +206,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", null ) );
         assertReadSucceeds();
-        assertWriteFails( "neo4j" );
+        assertWriteFails( "neo4j", "reader" );
     }
 
     @Test
@@ -257,5 +257,24 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
                 "principal", "neo4j",
                 "realm", "plugin-TestCustomParametersAuthenticationPlugin",
                 "parameters", map( "my_credentials", Arrays.asList( 1L, 2L, 3L, 4L ) ) ) );
+    }
+
+    @Test
+    public void shouldPassOnAuthorizationExpiredException() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.auth_providers,
+                    "plugin-TestCombinedAuthPlugin" );
+        });
+
+        assertConnectionSucceeds( authToken( "authorization_expired_user", "neo4j", null ) );
+
+        // Then
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ), pullAll() ) );
+        assertThat( client, eventuallyReceives(
+                msgFailure( Status.Security.AuthorizationExpired,
+                        "Plugin 'plugin-TestCombinedAuthPlugin' authorization info expired: " +
+                        "authorization_expired_user needs to re-authenticate." ) ) );
     }
 }

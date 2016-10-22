@@ -60,9 +60,8 @@ public class StoreLockerTest
                 return true;
             }
         };
-        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
 
-        try
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
         {
             storeLocker.checkLock( target.directory( "unused" ) );
 
@@ -71,10 +70,6 @@ public class StoreLockerTest
         catch ( StoreLockException e )
         {
             fail();
-        }
-        finally
-        {
-            storeLocker.release();
         }
     }
 
@@ -89,16 +84,11 @@ public class StoreLockerTest
                 return false;
             }
         };
-        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
 
-        try
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
         {
             storeLocker.checkLock( target.directory( "unused" ) );
             // Ok
-        }
-        finally
-        {
-            storeLocker.release();
         }
     }
 
@@ -119,22 +109,20 @@ public class StoreLockerTest
                 return false;
             }
         };
-        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
+
         File storeDir = target.directory( "unused" );
 
-        try
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
         {
             storeLocker.checkLock( storeDir );
             fail();
         }
         catch ( StoreLockException e )
         {
-            String msg = format( "Unable to create path for store dir: %s. Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", storeDir );
+            String msg = format( "Unable to create path for store dir: %s. " +
+                    "Please ensure no other process is using this database, and that " +
+                    "the directory is writable (required even for read-only access)", storeDir );
             assertThat( e.getMessage(), is( msg ) );
-        }
-        finally
-        {
-            storeLocker.release();
         }
     }
 
@@ -155,23 +143,21 @@ public class StoreLockerTest
                 return false;
             }
         };
-        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
+
         File storeDir = target.directory( "unused" );
 
-        try
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
         {
             storeLocker.checkLock( storeDir );
             fail();
         }
         catch ( StoreLockException e )
         {
-            String msg = format( "Unable to obtain lock on store lock file: %s. Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", new File( storeDir,
-                    STORE_LOCK_FILENAME ) );
+            String msg = format( "Unable to obtain lock on store lock file: %s. " +
+                            "Please ensure no other process is using this database, and that the " +
+                            "directory is writable (required even for read-only access)",
+                    new File( storeDir, STORE_LOCK_FILENAME ) );
             assertThat( e.getMessage(), is( msg ) );
-        }
-        finally
-        {
-            storeLocker.release();
         }
     }
 
@@ -199,20 +185,16 @@ public class StoreLockerTest
                 };
             }
         };
-        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
 
-        try
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
         {
             storeLocker.checkLock( target.directory( "unused" ) );
             fail();
         }
         catch ( StoreLockException e )
         {
-            assertThat( e.getMessage(), containsString( "Store and its lock file has been locked by another process" ) );
-        }
-        finally
-        {
-            storeLocker.release();
+            assertThat( e.getMessage(),
+                    containsString( "Store and its lock file has been locked by another process" ) );
         }
     }
 

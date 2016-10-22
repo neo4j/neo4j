@@ -42,7 +42,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-core-edge</artifactId>
+      <artifactId>neo4j-causal-clustering</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
@@ -130,7 +130,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-core-edge</artifactId>
+      <artifactId>neo4j-causal-clustering</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <type>test-jar</type>

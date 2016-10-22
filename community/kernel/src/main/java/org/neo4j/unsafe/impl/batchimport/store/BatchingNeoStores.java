@@ -122,7 +122,18 @@ public class BatchingNeoStores implements AutoCloseable
         if ( alreadyContainsData( neoStores ) )
         {
             neoStores.close();
-            throw new IllegalStateException( storeDir + " already contains data, cannot do import here" );
+            IllegalStateException ise =
+                    new IllegalStateException( storeDir + " already contains data, cannot do import here" );
+            try
+            {
+                pageCache.close();
+            }
+            catch ( IOException e )
+            {
+                // Oddly enough we can't close the page cache, how to communicate this? Here we add as suppressed
+                ise.addSuppressed( e );
+            }
+            throw ise;
         }
         try
         {

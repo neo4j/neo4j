@@ -50,7 +50,6 @@ public class CreateRelationshipTest extends AbstractRestFunctionalDocTestBase
                             + getNode( "Sara" ).getId()
                             + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
         Node i = getNode( "Joe" );
-        gen.get().description( startGraph( "Add relationship with properties before" ) );
         gen.get().expectedStatus(
                 Status.CREATED.getStatusCode() ).payload( jsonString ).post(
                 getNodeUri( i ) + "/relationships" );
@@ -74,7 +73,6 @@ public class CreateRelationshipTest extends AbstractRestFunctionalDocTestBase
         Node i = getNode( "Joe" );
         String entity = gen.get().expectedStatus(
                 Status.CREATED.getStatusCode() ).payload( jsonString )
-                .description( startGraph( "create relationship" ) )
                 .post( getNodeUri( i ) + "/relationships" ).entity();
         try ( Transaction tx = graphdb().beginTx() )
         {

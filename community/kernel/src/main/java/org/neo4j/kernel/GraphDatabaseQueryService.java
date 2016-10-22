@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 /*
@@ -51,21 +51,21 @@ public interface GraphDatabaseQueryService
      * Begin new internal transaction with with default timeout.
      *
      * @param type transaction type
-     * @param accessMode transaction access mode
+     * @param securityContext transaction security context
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
+    InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext );
 
     /**
      * Begin new internal transaction with specified timeout in milliseconds.
      *
      * @param type transaction type
-     * @param accessMode transaction access mode
+     * @param securityContext transaction security context
      * @param timeout transaction timeout
      * @param unit time unit of timeout argument
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout,
+    InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout,
             TimeUnit unit);
 
     URL validateURLAccess( URL url ) throws URLAccessValidationError;

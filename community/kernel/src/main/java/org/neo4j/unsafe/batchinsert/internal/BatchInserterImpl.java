@@ -976,7 +976,7 @@ public class BatchInserterImpl implements BatchInserter
 
             try
             {
-                storeLocker.release();
+                storeLocker.close();
             }
             catch ( IOException e )
             {

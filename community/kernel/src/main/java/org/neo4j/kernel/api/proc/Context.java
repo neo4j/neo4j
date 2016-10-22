@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.proc;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 /**
  * The context in which a procedure is invoked. This is a read-only map-like structure. For instance, a read-only transactional procedure might have
@@ -32,7 +33,7 @@ import org.neo4j.kernel.api.security.AuthSubject;
 public interface Context
 {
     Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
-    Key<AuthSubject> AUTH_SUBJECT = Key.key( "AuthSubject", AuthSubject.class );
+    Key<SecurityContext> SECURITY_CONTEXT = Key.key( "SecurityContext", SecurityContext.class );
     Key<Thread> THREAD = Key.key( "Thread", Thread.class );
 
     <T> T get( Key<T> key ) throws ProcedureException;

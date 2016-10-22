@@ -21,10 +21,8 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
-//START SNIPPET: forbiddenRule
 public class PermanentlyForbiddenSecurityRule implements ForbiddingSecurityRule
 {
-
     public static final String REALM = "WallyWorld"; // as per RFC2617 :-)
 
     @Override
@@ -51,4 +49,3 @@ public class PermanentlyForbiddenSecurityRule implements ForbiddingSecurityRule
         return SecurityFilter.basicAuthenticationResponse(REALM);
     }
 }
-// END SNIPPET: forbiddenRule

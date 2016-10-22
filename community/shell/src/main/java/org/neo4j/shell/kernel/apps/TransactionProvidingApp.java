@@ -59,7 +59,7 @@ import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
-import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.shell.ShellException.stackTraceAsString;
 
 /**
@@ -232,7 +232,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     @Override
     public Continuation execute( AppCommandParser parser, Session session, Output out ) throws Exception
     {
-        try ( Transaction tx = getServer().getDb().beginTransaction( implicit, FULL ) )
+        try ( Transaction tx = getServer().getDb().beginTransaction( implicit, AUTH_DISABLED ) )
         {
             getServer().registerTopLevelTransactionInProgress( session.getId() );
             Continuation result = this.exec( parser, session, out );

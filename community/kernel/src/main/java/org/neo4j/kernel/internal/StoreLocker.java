@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.internal;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
@@ -28,7 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.StoreLockException;
 
-public class StoreLocker
+public class StoreLocker implements Closeable
 {
     public static final String STORE_LOCK_FILENAME = "store_lock";
 
@@ -46,6 +47,9 @@ public class StoreLocker
      * Obtains lock on store file so that we can ensure the store is not shared between database instances
      * <p>
      * Creates store dir if necessary, creates store lock file if necessary
+     * <p>
+     * Please note that this lock is only valid for as long the {@link #storeLockFileChannel} lives, so make sure the
+     * lock cannot be garbage collected as long as the lock should be valid.
      *
      * @throws StoreLockException if lock could not be acquired
      */
@@ -86,11 +90,12 @@ public class StoreLocker
     private StoreLockException storeLockException( String message, Exception e )
     {
         String help = "Please ensure no other process is using this database, and that the directory is writable " +
-                      "(required even for read-only access)";
+                "(required even for read-only access)";
         return new StoreLockException( message + ". " + help, e );
     }
 
-    public void release() throws IOException
+    @Override
+    public void close() throws IOException
     {
         if ( storeLockFileLock != null )
         {

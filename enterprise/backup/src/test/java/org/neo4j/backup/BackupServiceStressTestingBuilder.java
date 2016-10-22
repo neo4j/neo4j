@@ -50,14 +50,13 @@ import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.util.DebugUtil;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.ThreadTestUtils;
 
-import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.fail;
 
 public class BackupServiceStressTestingBuilder
@@ -235,7 +234,7 @@ public class BackupServiceStressTestingBuilder
                 executor.shutdown();
                 if ( !executor.awaitTermination( 5, TimeUnit.MINUTES ) )
                 {
-                    DebugUtil.dumpThreads( System.err );
+                    ThreadTestUtils.dumpAllStackTraces();
                     fail( "Didn't manage to shut down the workers correctly, dumped threads for forensic purposes" );
                 }
 

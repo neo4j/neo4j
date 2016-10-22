@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -93,6 +91,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -103,9 +102,9 @@ public class NeoStoresTest
 
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final ExpectedException exception = ExpectedException.none();
-    private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private TestDirectory dir = TestDirectory.testDirectory( fs.get() );
-    private NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory dir = TestDirectory.testDirectory( fs.get() );
+    private final NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( exception ).around( pageCacheRule )
@@ -177,7 +176,14 @@ public class NeoStoresTest
         exception.expectMessage(
                 "Specified store was not initialized. Please specify " + StoreType.META_DATA.name() +
                 " as one of the stores types that should be open to be able to use it." );
-        neoStores.getMetaDataStore();
+        try
+        {
+            neoStores.getMetaDataStore();
+        }
+        finally
+        {
+            neoStores.close();
+        }
     }
 
     @Test
@@ -775,7 +781,7 @@ public class NeoStoresTest
 
     private void startTx() throws TransactionFailureException
     {
-        tx = ds.getKernel().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        tx = ds.getKernel().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         transaction = ((KernelTransactionImplementation) tx).txState();
     }
 

@@ -403,7 +403,7 @@ public interface Status
         }
     }
 
-    enum Security implements Status  // TODO: rework by the Security Team before these are updated
+    enum Security implements Status
     {
         // client
         CredentialsExpired( ClientError, "The credentials have expired and need to be updated." ),

@@ -59,11 +59,6 @@ public class PluginApiAuthToken implements AuthToken
         return parameters;
     }
 
-    public static AuthToken of( String principal, char[] credentials )
-    {
-        return new PluginApiAuthToken( principal, credentials, null );
-    }
-
     public static AuthToken of( String principal, char[] credentials, Map<String,Object> parameters )
     {
         return new PluginApiAuthToken( principal, credentials, parameters );

@@ -212,6 +212,8 @@ public class DynamicTaskExecutorTest
         // THEN
         assertExceptionOnSubmit( executor, exception );
         executor.shutdown( SF_ABORT_QUEUED ); // call would block if the shutdown as part of failure doesn't complete properly
+
+        secondBlockingTask.latch.finish();
     }
 
     @Test
@@ -307,7 +309,7 @@ public class DynamicTaskExecutorTest
         executor.shutdown( SF_AWAIT_ALL_COMPLETED );
     }
 
-    @Repeat( times = 100 )
+    @Repeat( times = 10 )
     @Test
     public void shouldCopeWithConcurrentIncrementOfProcessorsAndShutdown() throws Throwable
     {

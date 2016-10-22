@@ -28,7 +28,10 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,11 +43,22 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 /**
  * Test for randomly creating data and verifying transaction data seen in transaction event handlers.
@@ -142,6 +156,35 @@ public class TransactionEventsIT
         runTransaction();
     }
 
+    @Test
+    public void shouldGetEmptyUsernameOnAuthDisabled()
+    {
+        db.registerTransactionEventHandler( getBeforeCommitHandler( txData -> {
+            assertThat( "Should have no username", txData.username(), equalTo( "" ) );
+            assertThat( "Should have no metadata", txData.metaData(), equalTo( Collections.emptyMap() ) );
+        }) );
+        runTransaction();
+    }
+
+    @Test
+    public void shouldGetSpecifiedUsernameAndMetaDataInTXData()
+    {
+        final AtomicReference<String> usernameRef = new AtomicReference<>();
+        final AtomicReference<Map<String,Object>> metaDataRef = new AtomicReference<>();
+        db.registerTransactionEventHandler( getBeforeCommitHandler( txData -> {
+            usernameRef.set( txData.username() );
+            metaDataRef.set( txData.metaData() );
+        } ) );
+        AuthSubject subject = mock( AuthSubject.class );
+        when( subject.username() ).thenReturn( "Christof" );
+        SecurityContext securityContext = new SecurityContext.Frozen( subject, AccessMode.Static.WRITE );
+        Map<String,Object> metadata = genericMap( "username", "joe" );
+        runTransaction( securityContext, metadata );
+
+        assertThat( "Should have specified username", usernameRef.get(), equalTo( "Christof" ) );
+        assertThat( "Should have metadata with specified username", metaDataRef.get(), equalTo( metadata ) );
+    }
+
     private TransactionEventHandler.Adapter<Object> getBeforeCommitHandler(Consumer<TransactionData> dataConsumer)
     {
         return new TransactionEventHandler.Adapter<Object>(){
@@ -156,9 +199,16 @@ public class TransactionEventsIT
 
     private void runTransaction()
     {
-        try (Transaction transaction = db.beginTx())
+        runTransaction( AnonymousContext.write(), Collections.emptyMap() );
+    }
+
+    private void runTransaction( SecurityContext securityContext, Map<String,Object> metaData)
+    {
+        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, securityContext ) )
         {
-            Node node = db.createNode();
+            db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get()
+                    .queryRegistration().setMetaData( metaData );
+            db.createNode();
             transaction.success();
         }
     }

@@ -20,8 +20,11 @@
 package org.neo4j.kernel.internal;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.graphdb.Node;
@@ -280,6 +283,18 @@ public class TransactionEventHandlers
         public boolean isDeleted( Relationship relationship )
         {
             return false;
+        }
+
+        @Override
+        public String username()
+        {
+            return "";
+        }
+
+        @Override
+        public Map<String,Object> metaData()
+        {
+            return Collections.emptyMap();
         }
 
         @Override

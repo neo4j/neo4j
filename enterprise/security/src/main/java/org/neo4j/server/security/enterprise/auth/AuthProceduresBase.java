@@ -23,13 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -38,13 +37,12 @@ import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 
 @SuppressWarnings( "WeakerAccess" )
 public class AuthProceduresBase
 {
     @Context
-    public AuthSubject authSubject;
+    public EnterpriseSecurityContext securityContext;
 
     @Context
     public GraphDatabaseAPI graph;
@@ -66,7 +64,7 @@ public class AuthProceduresBase
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "failed to terminate running transaction and bolt connections for " +
+            securityLog.error( securityContext.subject(), "failed to terminate running transaction and bolt connections for " +
                     "user `%s` following %s: %s", username, reason, e.getMessage() );
             throw e;
         }
@@ -78,7 +76,7 @@ public class AuthProceduresBase
         getActiveTransactions()
                 .stream()
                 .filter( tx ->
-                    tx.mode().username().equals( username ) &&
+                     tx.securityContext().subject().hasUsername( username ) &&
                     !tx.isUnderlyingTransaction( currentTx )
                 ).forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
     }
@@ -102,16 +100,6 @@ public class AuthProceduresBase
     {
         return graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
                 .getKernelTransactionBoundToThisThread( true );
-    }
-
-    protected StandardEnterpriseAuthSubject ensureAdminAuthSubject()
-    {
-        StandardEnterpriseAuthSubject enterpriseAuthSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-        if ( !enterpriseAuthSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        return enterpriseAuthSubject;
     }
 
     public static class StringResult

@@ -34,7 +34,12 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.StubCursors;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
@@ -50,6 +55,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
@@ -296,6 +302,48 @@ public class TxStateTransactionDataViewTest
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( committedTransactionId, transactionDataSnapshot.getTransactionId() );
         assertEquals( commitTime, transactionDataSnapshot.getCommitTime() );
+    }
+
+    @Test
+    public void shouldGetEmptyUsernameForAnonymousContext()
+    {
+        when( transaction.securityContext() ).thenReturn( AnonymousContext.read() );
+
+        TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
+        assertEquals( "", transactionDataSnapshot.username() );
+    }
+
+    @Test
+    public void shouldAccessUsernameFromAuthSubject()
+    {
+        AuthSubject authSubject = mock( AuthSubject.class );
+        when( authSubject.username() ).thenReturn( "Christof" );
+        when( transaction.securityContext() )
+                .thenReturn( new SecurityContext.Frozen( authSubject, AccessMode.Static.FULL ) );
+
+        TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
+        assertEquals( "Christof", transactionDataSnapshot.username() );
+    }
+
+    @Test
+    public void shouldAccessEmptyMetaData()
+    {
+        TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
+        assertEquals( 0, transactionDataSnapshot.metaData().size() );
+    }
+
+    @Test
+    public void shouldAccessExampleMetaData()
+    {
+        NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
+        final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
+        final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+        when( transaction.getMetaData() ).thenReturn( genericMap( "username", "Igor" ) );
+        TxStateTransactionDataSnapshot transactionDataSnapshot =
+                new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement, transaction );
+        assertEquals( 1, transactionDataSnapshot.metaData().size() );
+        assertThat( "Expected metadata map to contain defined username", transactionDataSnapshot.metaData(),
+                equalTo( genericMap( "username", "Igor" ) ) );
     }
 
     private List<Long> idList( Iterable<? extends PropertyContainer> entities )

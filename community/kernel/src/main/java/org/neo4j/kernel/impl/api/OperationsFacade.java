@@ -80,6 +80,7 @@ import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -1494,59 +1495,67 @@ public class OperationsFacade
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        if ( !tx.mode().allowsReads() )
+        AccessMode accessMode = tx.securityContext().mode();
+        if ( !accessMode.allowsReads() )
         {
-            throw tx.mode().onViolation( format( "Read operations are not allowed for '%s'.", tx.mode().name() ) );
+            throw accessMode.onViolation( format( "Read operations are not allowed for '%s'.",
+                    tx.securityContext().subject().username() ) );
         }
-        return callProcedure( name, input, new RestrictedAccessMode( tx.mode(), AccessMode.Static.READ ) );
+        return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static
+                .READ ) );
     }
 
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, new OverriddenAccessMode( tx.mode(), AccessMode.Static.READ ) );
+        return callProcedure( name, input, new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        if ( !tx.mode().allowsWrites() )
+        AccessMode accessMode = tx.securityContext().mode();
+        if ( !accessMode.allowsWrites() )
         {
-            throw tx.mode().onViolation( format( "Write operations are not allowed for '%s'.", tx.mode().name() ) );
+            throw accessMode.onViolation( format( "Write operations are not allowed for '%s'.",
+                    tx.securityContext().subject().username() ) );
         }
-        return callProcedure( name, input, new RestrictedAccessMode( tx.mode(), AccessMode.Static.WRITE ) );
+        return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.WRITE ) );
     }
 
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, new OverriddenAccessMode( tx.mode(), AccessMode.Static.WRITE ) );
+        return callProcedure( name, input, new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.WRITE ) );
     }
 
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        if ( !tx.mode().allowsSchemaWrites() )
+        AccessMode accessMode = tx.securityContext().mode();
+        if ( !accessMode.allowsSchemaWrites() )
         {
-            throw tx.mode().onViolation( format( "Schema operations are not allowed for '%s'.", tx.mode().name() ) );
+            throw accessMode.onViolation( format( "Schema operations are not allowed for '%s'.",
+                    tx.securityContext().subject().username() ) );
         }
-        return callProcedure( name, input, new RestrictedAccessMode( tx.mode(), AccessMode.Static.FULL ) );
+        return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.FULL ) );
     }
 
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, new OverriddenAccessMode( tx.mode(), AccessMode.Static.FULL ) );
+        return callProcedure( name, input, new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.FULL ) );
     }
 
     private RawIterator<Object[],ProcedureException> callProcedure(
-            QualifiedName name, Object[] input, final AccessMode mode )
+            QualifiedName name, Object[] input, final AccessMode override  )
             throws ProcedureException
     {
         statement.assertOpen();
 
+        final SecurityContext procedureSecurityContext = tx.securityContext().withMode( override );
         final RawIterator<Object[],ProcedureException> procedureCall;
-        try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( procedureSecurityContext ) )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );
@@ -1558,7 +1567,7 @@ public class OperationsFacade
             @Override
             public boolean hasNext() throws ProcedureException
             {
-                try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
+                try ( KernelTransaction.Revertable ignore = tx.overrideWith( procedureSecurityContext ) )
                 {
                     return procedureCall.hasNext();
                 }
@@ -1567,7 +1576,7 @@ public class OperationsFacade
             @Override
             public Object[] next() throws ProcedureException
             {
-                try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
+                try ( KernelTransaction.Revertable ignore = tx.overrideWith( procedureSecurityContext ) )
                 {
                     return procedureCall.next();
                 }
@@ -1578,17 +1587,20 @@ public class OperationsFacade
     @Override
     public Object functionCall( QualifiedName name, Object[] arguments ) throws ProcedureException
     {
-        if ( !tx.mode().allowsReads() )
+        if ( !tx.securityContext().mode().allowsReads() )
         {
-            throw tx.mode().onViolation( format( "Read operations are not allowed for '%s'.", tx.mode().name() ) );
+            throw tx.securityContext().mode().onViolation( format( "Read operations are not allowed for '%s'.", tx.securityContext().mode().name() ) );
         }
-        return callFunction( name, arguments, new RestrictedAccessMode( tx.mode(), AccessMode.Static.READ ) );
+        return callFunction( name, arguments, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static
+        .READ
+        ) );
     }
 
     @Override
     public Object functionCallOverride( QualifiedName name, Object[] arguments ) throws ProcedureException
     {
-        return callFunction( name, arguments, new OverriddenAccessMode( tx.mode(), AccessMode.Static.READ ) );
+        return callFunction( name, arguments, new OverriddenAccessMode( tx.securityContext().mode(), AccessMode
+                .Static.READ ) );
     }
 
     private Object callFunction(
@@ -1597,7 +1609,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
 
-        try ( KernelTransaction.Revertable ignore = tx.overrideWith( mode ) )
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( tx.securityContext().withMode( mode ) ) )
         {
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );

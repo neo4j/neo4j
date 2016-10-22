@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.coreapi;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 public interface InternalTransaction extends Transaction
 {
     KernelTransaction.Type transactionType();
-    AccessMode mode();
-    KernelTransaction.Revertable overrideWith( AccessMode mode );
+    SecurityContext securityContext();
+    KernelTransaction.Revertable overrideWith( SecurityContext context );
 }

@@ -94,6 +94,7 @@ public class PropertyEncoderStepTest
         // THEN
         verify( downstream ).receive( anyLong(), any() );
         verifyNoMoreInteractions( control );
+        step.close();
     }
 
     private void awaitCompleted( Step<?> step, StageControl control ) throws InterruptedException

@@ -300,18 +300,18 @@ abstract class CallClause extends Clause {
 
 case class UnresolvedCall(procedureNamespace: Namespace,
                           procedureName: ProcedureName,
-                          // None: No arguments given (i.e. no "YIELD" part)
+                          // None: No arguments given
                           declaredArguments: Option[Seq[Expression]] = None,
-                          // None: No results declared
-                          declaredResults: Option[Seq[ProcedureResultItem]] = None
+                          // None: No results declared  (i.e. no "YIELD" part)
+                          declaredResult: Option[ProcedureResult] = None
                          )(val position: InputPosition) extends CallClause {
 
   override def returnColumns =
-    declaredResults.map(_.map(_.variable.name).toList).getOrElse(List.empty)
+    declaredResult.map(_.items.map(_.variable.name).toList).getOrElse(List.empty)
 
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(_.semanticCheck(SemanticContext.Results)).getOrElse(success)
-    val resultsCheck = declaredResults.map(_.foldSemanticCheck(_.semanticCheck)).getOrElse(success)
+    val resultsCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
     val invalidExpressionsCheck = declaredArguments.map(_.map {
       case arg if arg.containsAggregate =>
         error(_: SemanticState,

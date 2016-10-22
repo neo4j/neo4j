@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -197,7 +197,7 @@ public class Start extends TransactionProvidingApp
         TransactionalContextFactory contextFactory =
                 new Neo4jTransactionalContextFactory( graph, new PropertyContainerLocker() );
         InternalTransaction transaction =
-                graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+                graph.beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
         return contextFactory.newContext( ShellQuerySession.describe( session ),
                 transaction,
                 queryText,

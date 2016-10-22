@@ -19,11 +19,18 @@
  */
 package org.neo4j.commandline.admin;
 
+import org.neo4j.kernel.StoreLockException;
+
 public class CommandFailed extends Exception
 {
     public CommandFailed( String message, Exception cause )
     {
         super( message, cause );
+    }
+
+    public CommandFailed( StoreLockException exception )
+    {
+        super( exception );
     }
 
     public CommandFailed( String message )

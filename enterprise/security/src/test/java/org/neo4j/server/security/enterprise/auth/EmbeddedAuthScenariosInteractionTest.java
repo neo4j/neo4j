@@ -21,12 +21,12 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.Map;
 
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 
-public class EmbeddedAuthScenariosInteractionTest extends AuthScenariosInteractionTestBase<EnterpriseAuthSubject>
+public class EmbeddedAuthScenariosInteractionTest extends AuthScenariosInteractionTestBase<EnterpriseSecurityContext>
 {
     @Override
-    protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer( Map<String, String> config ) throws Throwable
+    protected NeoInteractionLevel<EnterpriseSecurityContext> setUpNeoServer( Map<String, String> config ) throws Throwable
     {
         return new EmbeddedInteraction( config );
     }

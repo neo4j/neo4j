@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.KernelTransactionTestBase;
@@ -41,6 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class TimeoutGuardTest extends KernelTransactionTestBase
 {
@@ -116,7 +116,7 @@ public class TimeoutGuardTest extends KernelTransactionTestBase
         KernelTransactionImplementation transaction = newNotInitializedTransaction();
         StatementLocks statementLocks = mock( StatementLocks.class );
         transaction.initialize( 1L, 2L, statementLocks, KernelTransaction.Type.implicit,
-                AccessMode.Static.FULL, transactionTimeout );
+                AUTH_DISABLED, transactionTimeout );
         return transaction.acquireStatement();
     }
 

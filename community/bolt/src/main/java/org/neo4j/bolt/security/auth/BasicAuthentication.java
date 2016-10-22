@@ -25,9 +25,9 @@ import java.util.Map;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
 import static org.neo4j.kernel.api.security.AuthToken.NEW_CREDENTIALS;
@@ -61,9 +61,9 @@ public class BasicAuthentication implements Authentication
     {
         try
         {
-            AuthSubject authSubject = authManager.login( authToken );
+            SecurityContext securityContext = authManager.login( authToken );
 
-            switch ( authSubject.getAuthenticationResult() )
+            switch ( securityContext.subject().getAuthenticationResult() )
             {
             case SUCCESS:
             case PASSWORD_CHANGE_REQUIRED:
@@ -74,7 +74,7 @@ public class BasicAuthentication implements Authentication
                 throw new AuthenticationException( Status.Security.Unauthorized );
             }
 
-            return new BasicAuthenticationResult( authSubject );
+            return new BasicAuthenticationResult( securityContext );
         }
         catch ( InvalidAuthTokenException e )
         {
@@ -87,20 +87,20 @@ public class BasicAuthentication implements Authentication
     {
         try
         {
-            AuthSubject authSubject = authManager.login( authToken );
+            SecurityContext securityContext = authManager.login( authToken );
 
-            switch ( authSubject.getAuthenticationResult() )
+            switch ( securityContext.subject().getAuthenticationResult() )
             {
             case SUCCESS:
             case PASSWORD_CHANGE_REQUIRED:
                 String newPassword = AuthToken.safeCast( NEW_CREDENTIALS, authToken );
-                authSubject.setPassword( newPassword, requiresPasswordChange );
+                securityContext.subject().setPassword( newPassword, requiresPasswordChange );
                 break;
             default:
                 throw new AuthenticationException( Status.Security.Unauthorized );
             }
 
-            return new BasicAuthenticationResult( authSubject );
+            return new BasicAuthenticationResult( securityContext );
         }
         catch ( AuthorizationViolationException | InvalidArgumentsException | InvalidAuthTokenException e )
         {

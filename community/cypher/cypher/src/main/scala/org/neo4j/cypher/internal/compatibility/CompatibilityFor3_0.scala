@@ -27,14 +27,15 @@ import java.{lang, util}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, _}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_0, NormalMode => NormalModev3_0, ProfileMode => ProfileModev3_0, _}
 import org.neo4j.cypher.internal.compiler.v3_1.{CRS, Coordinate, Geometry, Point}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.{v3_0, v3_1}
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCypherException}
@@ -44,8 +45,8 @@ import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSear
 import org.neo4j.cypher.internal.spi.v3_0._
 import org.neo4j.cypher.internal.spi.{TransactionalContextWrapperv3_0, TransactionalContextWrapperv3_1}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -70,8 +71,10 @@ object typeConversionsFor3_0 extends RuntimeTypeConverter {
   }
 
   override def asPrivateType = {
-    case map: Map[String, Any] => asPrivateMap(map)
-    case seq: Seq[Any] => seq.map(asPrivateType)
+    case map: Map[_, _] => asPrivateMap(map.asInstanceOf[Map[String, Any]])
+    case seq: Seq[_] => seq.map(asPrivateType)
+    case javaMap: java.util.Map[_, _] => Eagerly.immutableMapValues(javaMap.asScala, asPrivateType)
+    case javaIterable: java.lang.Iterable[_] => javaIterable.asScala.map(asPrivateType)
     case arr: Array[Any] => arr.map(asPrivateType)
     case point: spatial.Point => asPrivatePoint(point)
     case geometry: spatial.Geometry => asPrivateGeometry(geometry)
@@ -94,7 +97,7 @@ object typeConversionsFor3_0 extends RuntimeTypeConverter {
 
     override def getCoordinates = geometry.coordinates.map { c =>
       new spatial.Coordinate(c.values: _*)
-    }.toList.asJava
+    }.toIndexedSeq.asJava
   }
 
   private def asPublicCRS(crs: CRS) = new spatial.CRS {
@@ -105,11 +108,8 @@ object typeConversionsFor3_0 extends RuntimeTypeConverter {
     override def getCode: Int = crs.code
   }
 
-  def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] = {
-    incoming.foldLeft(Map.empty[String, Any]) { (acc, v) =>
-      acc + (v._1 -> asPrivateType(v._2))
-    }
-  }
+  def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] =
+    Eagerly.immutableMapValues[String,Any, Any](incoming, asPrivateType)
 
   private def asPrivatePoint(point: spatial.Point) = new Point {
     override def x: Double = point.getCoordinate.getCoordinate.get(0)
@@ -519,7 +519,7 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
     }
 
     val logger = new StringInfoLogger3_0(log)
-    val monitors = new WrappedMonitors3_0(kernelMonitors)
+    val monitors = WrappedMonitors3_0(kernelMonitors)
     CypherCompilerFactory.costBasedCompiler(graph, config, clock, monitors, logger,
                                             rewriterSequencer, plannerName, runtimeName, updateStrategy, typeConversionsFor3_0)
   }
@@ -533,7 +533,7 @@ case class CompatibilityFor3_0Rule(graph: GraphDatabaseQueryService,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor3_0 {
   protected val compiler = {
-    val monitors = new WrappedMonitors3_0(kernelMonitors)
+    val monitors = WrappedMonitors3_0(kernelMonitors)
     CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, typeConversionsFor3_0)
   }
 

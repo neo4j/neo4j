@@ -58,7 +58,7 @@ public interface AuthToken
      * <p>This can be used as a vehicle to send arbitrary auth data from a client application
      * to a server-side auth plugin. Neo4j will act as a pure transport and will not touch the contents of this map.
      *
-     * @return a custom parameter map if provided by the client, otherwise <tt>null</tt>
+     * @return a custom parameter map (or an empty map if no parameters where provided by the client)
      */
     Map<String,Object> parameters();
 }

@@ -26,43 +26,44 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import java.security.Principal;
 
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
 {
-    public static final AccessMode getAccessModeFromHttpServletRequest( HttpServletRequest request )
+    public static SecurityContext getSecurityContextFromHttpServletRequest( HttpServletRequest request )
     {
         Principal principal = request.getUserPrincipal();
-        return getAccessModeFromUserPrincipal( principal );
+        return getSecurityContextFromUserPrincipal( principal );
     }
 
-    public static final AccessMode getAccessModeFromHttpContext( HttpContext httpContext )
+    public static SecurityContext getSecurityContextFromHttpContext( HttpContext httpContext )
     {
         HttpRequestContext requestContext = httpContext.getRequest();
         Principal principal = requestContext.getUserPrincipal();
-        return getAccessModeFromUserPrincipal( principal );
+        return getSecurityContextFromUserPrincipal( principal );
     }
 
-    private static final AccessMode getAccessModeFromUserPrincipal( Principal principal )
+    public static SecurityContext getSecurityContextFromUserPrincipal( Principal principal )
     {
         if ( principal instanceof DelegatingPrincipal )
         {
-            return ((DelegatingPrincipal) principal).getAccessMode();
+            return ((DelegatingPrincipal) principal).getSecurityContext();
         }
         // If whitelisted uris can start transactions we cannot throw exception here
         //throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
-        return AccessMode.Static.NONE;
+        return AnonymousContext.none();
     }
 
     private final String authType;
     private final DelegatingPrincipal principal;
 
     public AuthorizedRequestWrapper( final String authType, final String username, final HttpServletRequest request,
-            AccessMode accessMode )
+            SecurityContext securityContext )
     {
         super( request );
         this.authType = authType;
-        this.principal = new DelegatingPrincipal( username, accessMode );
+        this.principal = new DelegatingPrincipal( username, securityContext );
     }
 
     @Override

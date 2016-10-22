@@ -29,7 +29,6 @@ import org.junit.runners.Parameterized.Parameters;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.csv.reader.CharReadable;
@@ -107,9 +106,11 @@ public class CsvInputTest
                         getRuntime().availableProcessors() );
 
         // WHEN/THEN
-        Iterator<InputNode> nodes = input.nodes().iterator();
-        assertNode( nodes.next(), 123L, properties( "name", "Mattias Persson" ), labels( "HACKER" ) );
-        assertFalse( nodes.hasNext() );
+        try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            assertNode( nodes.next(), 123L, properties( "name", "Mattias Persson" ), labels( "HACKER" ) );
+            assertFalse( nodes.hasNext() );
+        }
     }
 
     @Test
@@ -130,9 +131,11 @@ public class CsvInputTest
                         getRuntime().availableProcessors() );
 
         // WHEN/THEN
-        Iterator<InputRelationship> relationships = input.relationships().iterator();
-        assertRelationship( relationships.next(), "node1", "node2", "KNOWS", properties( "since", 1234567L ) );
-        assertRelationship( relationships.next(), "node2", "node10", "HACKS", properties( "since", 987654L ) );
+        try ( InputIterator<InputRelationship> relationships = input.relationships().iterator() )
+        {
+            assertRelationship( relationships.next(), "node1", "node2", "KNOWS", properties( "since", 1234567L ) );
+            assertRelationship( relationships.next(), "node2", "node10", "HACKS", properties( "since", 987654L ) );
+        }
     }
 
     @Test
@@ -250,12 +253,14 @@ public class CsvInputTest
                                     getRuntime().availableProcessors() );
 
         // WHEN iterating over them, THEN the expected data should come out
-        ResourceIterator<InputNode> nodes = input.nodes().iterator();
-        assertNode( nodes.next(), "1", properties( "name", "Jim", "kills", 10, "health", 100 ), labels() );
-        assertNode( nodes.next(), "2", properties( "name", "Abathur", "kills", 0, "health", 200 ), labels() );
-        assertNode( nodes.next(), "3", properties( "type", "zergling" ), labels() );
-        assertNode( nodes.next(), "4", properties( "type", "csv" ), labels() );
-        assertFalse( nodes.hasNext() );
+        try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            assertNode( nodes.next(), "1", properties( "name", "Jim", "kills", 10, "health", 100 ), labels() );
+            assertNode( nodes.next(), "2", properties( "name", "Abathur", "kills", 0, "health", 200 ), labels() );
+            assertNode( nodes.next(), "3", properties( "type", "zergling" ), labels() );
+            assertNode( nodes.next(), "4", properties( "type", "csv" ), labels() );
+            assertFalse( nodes.hasNext() );
+        }
     }
 
     @Test
@@ -566,10 +571,12 @@ public class CsvInputTest
                         silentBadCollector( 0 ), getRuntime().availableProcessors() );
 
         // WHEN/THEN
-        Iterator<InputNode> nodes = input.nodes().iterator();
-        assertNode( nodes.next(), group, 123L, properties( "name", "one" ), labels() );
-        assertNode( nodes.next(), group, 456L, properties( "name", "two" ), labels() );
-        assertFalse( nodes.hasNext() );
+        try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            assertNode( nodes.next(), group, 123L, properties( "name", "one" ), labels() );
+            assertNode( nodes.next(), group, 456L, properties( "name", "two" ), labels() );
+            assertFalse( nodes.hasNext() );
+        }
     }
 
     @Test
@@ -592,10 +599,12 @@ public class CsvInputTest
                         silentBadCollector( 0 ), getRuntime().availableProcessors() );
 
         // WHEN/THEN
-        Iterator<InputRelationship> relationships = input.relationships().iterator();
-        assertRelationship( relationships.next(), startNodeGroup, 123L, endNodeGroup, 234L, "TYPE", properties() );
-        assertRelationship( relationships.next(), startNodeGroup, 345L, endNodeGroup, 456L, "TYPE", properties() );
-        assertFalse( relationships.hasNext() );
+        try ( InputIterator<InputRelationship> relationships = input.relationships().iterator() )
+        {
+            assertRelationship( relationships.next(), startNodeGroup, 123L, endNodeGroup, 234L, "TYPE", properties() );
+            assertRelationship( relationships.next(), startNodeGroup, 345L, endNodeGroup, 456L, "TYPE", properties() );
+            assertFalse( relationships.hasNext() );
+        }
     }
 
     @Test

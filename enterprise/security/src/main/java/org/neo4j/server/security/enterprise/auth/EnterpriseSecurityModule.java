@@ -33,11 +33,11 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -55,7 +55,7 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.time.Clocks;
 
-import static org.neo4j.kernel.api.proc.Context.AUTH_SUBJECT;
+import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 @Service.Implementation( SecurityModule.class )
 public class EnterpriseSecurityModule extends SecurityModule
@@ -91,12 +91,14 @@ public class EnterpriseSecurityModule extends SecurityModule
         // Register procedures
         procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
         procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager );
+        procedures.registerComponent( EnterpriseSecurityContext.class,
+                ctx -> asEnterprise( ctx.get( SECURITY_CONTEXT ) ) );
 
         if ( config.get( SecuritySettings.native_authentication_enabled )
              || config.get( SecuritySettings.native_authorization_enabled ) )
         {
             procedures.registerComponent( EnterpriseUserManager.class,
-                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( AUTH_SUBJECT ) ) ) );
+                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ) );
             procedures.registerProcedure( UserManagementProcedures.class, true );
         }
         else
@@ -107,14 +109,14 @@ public class EnterpriseSecurityModule extends SecurityModule
         procedures.registerProcedure( SecurityProcedures.class, true );
     }
 
-    private EnterpriseAuthSubject asEnterprise( AuthSubject authSubject )
+    private EnterpriseSecurityContext asEnterprise( SecurityContext securityContext )
     {
-        if ( authSubject instanceof EnterpriseAuthSubject )
+        if ( securityContext instanceof EnterpriseSecurityContext )
         {
-            return ((EnterpriseAuthSubject) authSubject);
+            return ((EnterpriseSecurityContext) securityContext);
         }
         // TODO: better handling of this possible cast failure
-        throw new RuntimeException( "Expected EnterpriseAuthSubject, got " + authSubject.getClass().getName() );
+        throw new RuntimeException( "Expected EnterpriseSecurityContext, got " + securityContext.getClass().getName() );
     }
 
     public EnterpriseAuthAndUserManager newAuthManager( Config config, LogProvider logProvider, SecurityLog securityLog,
@@ -142,7 +144,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         }
 
         // Load plugin realms if we have any
-        realms.addAll( createPluginRealms( config, logProvider, secureHasher ) );
+        realms.addAll( createPluginRealms( config, securityLog, secureHasher ) );
 
         // Select the active realms in the order they are configured
         List<Realm> orderedActiveRealms = selectOrderedActiveRealms( configuredRealms, realms );
@@ -196,7 +198,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         return new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity );
     }
 
-    private static List<Realm> createPluginRealms( Config config, LogProvider logProvider, SecureHasher secureHasher )
+    private static List<Realm> createPluginRealms( Config config, SecurityLog securityLog, SecureHasher secureHasher )
     {
         List<Realm> realms = new ArrayList<>();
         Set<Class> excludedClasses = new HashSet<>();
@@ -212,7 +214,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             for ( AuthPlugin plugin : authPlugins )
             {
                 PluginRealm pluginRealm =
-                        new PluginRealm( plugin, config, logProvider, Clocks.systemClock(), secureHasher );
+                        new PluginRealm( plugin, config, securityLog, Clocks.systemClock(), secureHasher );
                 realms.add( pluginRealm );
             }
         }
@@ -229,7 +231,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                 if ( pluginAuthorizationEnabled && plugin instanceof AuthorizationPlugin )
                 {
                     // This plugin implements both interfaces, create a combined plugin
-                    pluginRealm = new PluginRealm( plugin, (AuthorizationPlugin) plugin, config, logProvider,
+                    pluginRealm = new PluginRealm( plugin, (AuthorizationPlugin) plugin, config, securityLog,
                             Clocks.systemClock(), secureHasher );
 
                     // We need to make sure we do not add a duplicate when the AuthorizationPlugin service gets loaded
@@ -239,7 +241,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                 else
                 {
                     pluginRealm =
-                            new PluginRealm( plugin, null, config, logProvider, Clocks.systemClock(), secureHasher );
+                            new PluginRealm( plugin, null, config, securityLog, Clocks.systemClock(), secureHasher );
                 }
                 realms.add( pluginRealm );
             }
@@ -255,7 +257,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                 if ( !excludedClasses.contains( plugin.getClass() ) )
                 {
                     PluginRealm pluginRealm =
-                            new PluginRealm( null, plugin, config, logProvider, Clocks.systemClock(), secureHasher );
+                            new PluginRealm( null, plugin, config, securityLog, Clocks.systemClock(), secureHasher );
                     realms.add( pluginRealm );
                 }
             }
@@ -267,8 +269,11 @@ public class EnterpriseSecurityModule extends SecurityModule
     public static RoleRepository getRoleRepository( Config config, LogProvider logProvider,
             FileSystemAbstraction fileSystem )
     {
-        File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
-        File roleStoreFile = new File( authStoreDir, ROLE_STORE_FILENAME );
-        return new FileRoleRepository( fileSystem, roleStoreFile, logProvider );
+        return new FileRoleRepository( fileSystem, getRoleRepositoryFile( config ), logProvider );
+    }
+
+    public static File getRoleRepositoryFile( Config config )
+    {
+        return new File( config.get( DatabaseManagementSystemSettings.auth_store_directory ), ROLE_STORE_FILENAME );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.unsafe.batchinsert.internal;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,13 +40,14 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class BatchInserterImplTest
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public ExpectedException expected = ExpectedException.none();
 
     @Test
     public void testHonorsPassedInParams() throws Exception
@@ -79,24 +81,15 @@ public class BatchInserterImplTest
     {
         // Given
         File parent = testDirectory.graphDbDir();
-        StoreLocker lock = new StoreLocker( new DefaultFileSystemAbstraction() );
-        lock.checkLock( parent );
-
-        // When
-        try
+        try ( StoreLocker lock = new StoreLocker( new DefaultFileSystemAbstraction() ) )
         {
-            BatchInserters.inserter( parent.getAbsoluteFile() );
+            lock.checkLock( parent );
 
             // Then
-            fail();
-        }
-        catch ( StoreLockException e )
-        {
-            // OK
-        }
-        finally
-        {
-            lock.release();
+            expected.expect( StoreLockException.class );
+            expected.expectMessage( "Unable to obtain lock on store lock file" );
+            // When
+            BatchInserters.inserter( parent.getAbsoluteFile() );
         }
     }
 }

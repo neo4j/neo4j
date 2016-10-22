@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -29,7 +27,7 @@ import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 /**
  * A test implementation of {@link KernelTransactionHandle} that simply wraps a given {@link KernelTransaction}.
@@ -75,9 +73,9 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
-    public AccessMode mode()
+    public SecurityContext securityContext()
     {
-        return tx.mode();
+        return tx.securityContext();
     }
 
     @Override

@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -87,17 +87,17 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode ) throws TransactionFailureException
+    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext ) throws TransactionFailureException
     {
-        return newTransaction( type, accessMode, defaultTransactionTimeout );
+        return newTransaction( type, securityContext, defaultTransactionTimeout );
     }
 
     @Override
-    public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout ) throws
+    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout ) throws
             TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance( type, accessMode, timeout );
+        KernelTransaction transaction = transactions.newInstance( type, securityContext, timeout );
         transactionMonitor.transactionStarted();
         return transaction;
     }

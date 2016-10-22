@@ -19,7 +19,31 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.SyntaxException
+
 class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
+
+  test("should be able to filter as part of call") {
+    // Given
+    createLabeledNode("A")
+    createLabeledNode("B")
+    createLabeledNode("C")
+
+    //When
+    val result = execute("CALL db.labels() YIELD label WHERE label <> 'A' RETURN *")
+
+    // Then
+    result.toList should equal(
+      List(
+        Map("label" -> "B"),
+        Map("label" -> "C")))
+  }
+
+  test("should not be able to filter as part of standalone call") {
+    a [SyntaxException] should be thrownBy {
+      execute("CALL db.labels() YIELD label WHERE label <> 'A'")
+    }
+  }
 
   test("should be able to find labels from built-in-procedure") {
     // Given

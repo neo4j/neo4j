@@ -66,7 +66,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
@@ -99,6 +99,7 @@ import org.neo4j.storageengine.api.EntityType;
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
@@ -150,9 +151,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
          * (meaning, non-null is returned from {@link #currentTransaction()}), this should fail.
          *
          * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
-         * @see SPI#beginTransaction(KernelTransaction.Type, AccessMode)
+         * @see SPI#beginTransaction(KernelTransaction.Type, SecurityContext)
          */
-        KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout );
+        KernelTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout );
 
         /**
          * Retrieve the transaction associated with the current context. For the classic implementation of the Core API,
@@ -337,26 +338,26 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Transaction beginTx()
     {
-        return beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL );
+        return beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
     }
 
     @Override
     public Transaction beginTx( long timeout, TimeUnit unit )
     {
-        return beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL, timeout, unit );
+        return beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, timeout, unit );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
     {
-        return beginTransactionInternal( type, accessMode, defaultTransactionTimeout );
+        return beginTransactionInternal( type, securityContext, defaultTransactionTimeout );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext,
             long timeout, TimeUnit unit )
     {
-        return beginTransactionInternal( type, accessMode, unit.toMillis( timeout ) );
+        return beginTransactionInternal( type, securityContext, unit.toMillis( timeout ) );
     }
 
     @Override
@@ -375,7 +376,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
         // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
-        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        InternalTransaction transaction =
+                beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
 
         return execute( transaction, query, parameters );
     }
@@ -384,8 +386,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws
             QueryExecutionException
     {
-        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
-                timeout, unit );
+        InternalTransaction transaction =
+                beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout, unit );
         return execute( transaction, query, parameters );
     }
 
@@ -535,7 +537,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return allNodesWithLabel( myLabel );
     }
 
-    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, AccessMode accessMode,
+    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, SecurityContext securityContext,
             long timeoutMillis )
     {
         if ( spi.isInOpenTransaction() )
@@ -543,7 +545,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
             return new PlaceboTransaction( spi::currentTransaction, spi::currentStatement );
         }
-        return new TopLevelTransaction( spi.beginTransaction( type, accessMode, timeoutMillis ), spi::currentStatement );
+        return new TopLevelTransaction( spi.beginTransaction( type, securityContext, timeoutMillis ), spi::currentStatement );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )

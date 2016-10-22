@@ -38,7 +38,7 @@ OSX users need to have http://brew.sh/[Homebrew] installed.
 * To add execution of integration tests, use: `mvn clean install -DrunITs`.
 * In case you just want the jars, without running tests, this is for you: `mvn clean install -DskipTests`.
 * To skip building the browser module, use `-DskipBrowser` (note that you might not be able to build the server without it).
-* To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`.
+* To build everything, including running all tests and assembling product packages, use `mvn clean install -DfullBuild`.
 * To build the documentation see the link:manual/[Neo4j manual].
 * When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
 * The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`.

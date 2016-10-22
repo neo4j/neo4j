@@ -19,20 +19,21 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Predicate;
-
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -44,7 +45,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -56,7 +56,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
@@ -117,25 +116,21 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldRespectTheStoreLock() throws IOException, IncorrectUsage
+    public void shouldRespectTheStoreLock() throws IOException, IncorrectUsage, CommandFailed
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
-        StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
-        storeLocker.checkLock( databaseDirectory.toFile() );
 
-        try
+        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
         {
+            storeLocker.checkLock( databaseDirectory.toFile() );
+
             execute( "foo.db" );
             fail( "expected exception" );
         }
         catch ( CommandFailed e )
         {
             assertThat( e.getMessage(), equalTo( "the database is in use -- stop Neo4j and try again" ) );
-        }
-        finally
-        {
-            storeLocker.release();
         }
     }
 
@@ -183,30 +178,28 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock()
-            throws IOException, IncorrectUsage
+    public void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws IOException, IncorrectUsage
     {
         assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
 
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
-        StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
-        storeLocker.checkLock( databaseDirectory.toFile() );
 
-        try ( Closeable ignored =
-                      withPermissions( databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME ), emptySet() ) )
+        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
         {
-            execute( "foo.db" );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo( "you do not have permission to dump the database -- is Neo4j " +
-                    "running as a different user?" ) );
-        }
-        finally
-        {
-            storeLocker.release();
+            storeLocker.checkLock( databaseDirectory.toFile() );
+
+            try ( Closeable ignored = withPermissions( databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME ),
+                    emptySet() ) )
+            {
+                execute( "foo.db" );
+                fail( "expected exception" );
+            }
+            catch ( CommandFailed e )
+            {
+                assertThat( e.getMessage(), equalTo( "you do not have permission to dump the database -- is Neo4j " +
+                        "running as a different user?" ) );
+            }
         }
     }
 
@@ -272,8 +265,8 @@ public class DumpCommandTest
     @Test
     public void shouldGiveAClearMessageIfTheDatabaseDoesntExist() throws IOException, IncorrectUsage
     {
-        doThrow( new NoSuchFileException( homeDir.resolve( "data/databases/foo.db" ).toString() ) )
-                .when( dumper ).dump( any(), any(), any() );
+        doThrow( new NoSuchFileException( homeDir.resolve( "data/databases/foo.db" ).toString() ) ).when( dumper )
+                .dump( any(), any(), any() );
         try
         {
             execute( "foo.db" );
@@ -302,8 +295,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void
-    shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+    public void shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectUsage
     {
         doThrow( new IOException( "the-message" ) ).when( dumper ).dump( any(), any(), any() );
@@ -318,7 +310,7 @@ public class DumpCommandTest
         }
     }
 
-    private void execute( final String database ) throws IncorrectUsage, CommandFailed
+    private void execute( final String database ) throws IncorrectUsage, CommandFailed, AccessDeniedException
     {
         new DumpCommand( homeDir, configDir, dumper )
                 .execute( new String[]{"--database=" + database, "--to=" + archive} );
@@ -326,8 +318,9 @@ public class DumpCommandTest
 
     private void assertCanLockStore( Path databaseDirectory ) throws IOException
     {
-        StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
-        storeLocker.checkLock( databaseDirectory.toFile() );
-        storeLocker.release();
+        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        {
+            storeLocker.checkLock( databaseDirectory.toFile() );
+        }
     }
 }

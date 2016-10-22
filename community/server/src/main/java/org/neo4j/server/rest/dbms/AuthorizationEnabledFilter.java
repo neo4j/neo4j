@@ -38,6 +38,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -104,8 +105,8 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
 
         try
         {
-            AuthSubject authSubject = authenticate( username, password );
-            switch ( authSubject.getAuthenticationResult() )
+            SecurityContext securityContext = authenticate( username, password );
+            switch ( securityContext.subject().getAuthenticationResult() )
             {
             case PASSWORD_CHANGE_REQUIRED:
                 if ( !PASSWORD_CHANGE_WHITELIST.matcher( path ).matches() )
@@ -117,7 +118,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
             case SUCCESS:
                 try
                 {
-                    filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, username, request, authSubject ),
+                    filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, username, request, securityContext ),
                             servletResponse );
                 }
                 catch ( AuthorizationViolationException e )
@@ -139,13 +140,11 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         }
     }
 
-    private AuthSubject authenticate( String username, String password ) throws InvalidAuthTokenException
+    private SecurityContext authenticate( String username, String password ) throws InvalidAuthTokenException
     {
         AuthManager authManager = authManagerSupplier.get();
         Map<String,Object> authToken = newBasicAuthToken( username, password );
-
-        AuthSubject authSubject = authManager.login( authToken );
-        return authSubject;
+        return authManager.login( authToken );
     }
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> noHeader =

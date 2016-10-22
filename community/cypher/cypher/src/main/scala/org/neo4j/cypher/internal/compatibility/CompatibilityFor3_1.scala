@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, Intern
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_1.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}
@@ -70,7 +71,9 @@ object typeConversionsFor3_1 extends RuntimeTypeConverter {
 
   override def asPrivateType = {
     case map: Map[_, _] => asPrivateMap(map.asInstanceOf[Map[String, Any]])
-    case seq: Seq[Any] => seq.map(asPrivateType)
+    case seq: Seq[_] => seq.map(asPrivateType)
+    case javaMap: java.util.Map[_, _] => Eagerly.immutableMapValues(javaMap.asScala, asPrivateType)
+    case javaIterable: java.lang.Iterable[_] => javaIterable.asScala.map(asPrivateType)
     case arr: Array[Any] => arr.map(asPrivateType)
     case point: spatial.Point => asPrivatePoint(point)
     case geometry: spatial.Geometry => asPrivateGeometry(geometry)
@@ -93,7 +96,7 @@ object typeConversionsFor3_1 extends RuntimeTypeConverter {
 
     override def getCoordinates = geometry.coordinates.map { c =>
       new spatial.Coordinate(c.values: _*)
-    }.toList.asJava
+    }.toIndexedSeq.asJava
   }
 
   private def asPublicCRS(crs: CRS) = new spatial.CRS {
@@ -104,11 +107,8 @@ object typeConversionsFor3_1 extends RuntimeTypeConverter {
     override def getCode: Int = crs.code
   }
 
-  def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] = {
-    incoming.foldLeft(Map.empty[String, Any]) { (acc, v) =>
-      acc + (v._1 -> asPrivateType(v._2))
-    }
-  }
+  def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] =
+    Eagerly.immutableMapValues[String,Any, Any](incoming, asPrivateType)
 
   private def asPrivatePoint(point: spatial.Point) = new Point {
     override def x: Double = point.getCoordinate.getCoordinate.get(0)

@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -62,6 +62,7 @@ import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelIT extends KernelIntegrationTest
 {
@@ -512,7 +513,7 @@ public class KernelIT extends KernelIntegrationTest
         assumeThat(kernel, instanceOf( Kernel.class ));
 
         // Then
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ ) )
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() ) )
         {
             ((Kernel)kernel).stop();
             tx.acquireStatement().readOperations().nodeExists( 0L );
@@ -529,7 +530,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         try ( Statement statement = tx.acquireStatement() )
         {
             statement.dataWriteOperations().nodeCreate();
@@ -547,7 +548,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         try ( Statement statement = tx.acquireStatement() )
         {
             statement.dataWriteOperations().nodeCreate();
@@ -563,7 +564,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         try ( Statement statement = tx.acquireStatement() )
         {
             statement.dataWriteOperations().nodeCreate();
@@ -579,7 +580,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         try ( Statement statement = tx.acquireStatement() )
         {
             statement.dataWriteOperations().nodeCreate();
@@ -596,7 +597,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         try ( Statement statement = tx.acquireStatement();
               Cursor<NodeItem> cursor = statement.readOperations().nodeCursor( 1 ) )
         {

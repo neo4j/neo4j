@@ -45,7 +45,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.AssertableLogProvider;
@@ -61,7 +61,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.kernel.api.security.AuthSubject.AUTH_DISABLED;
 
 public class QueryLoggerIT
 {
@@ -105,14 +105,14 @@ public class QueryLoggerIT
         db.getLocalUserManager().addRoleToUser( "architect", "mats" );
         db.getLocalUserManager().addRoleToUser( "reader", "andres" );
 
-        EnterpriseAuthSubject mats = db.login( "mats", "neo4j" );
+        EnterpriseSecurityContext mats = db.login( "mats", "neo4j" );
 
         // run query
         db.executeQuery( mats, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(), ResourceIterator::close );
         db.executeQuery( mats, "CREATE (:Label)", Collections.emptyMap(), ResourceIterator::close );
 
         // switch user, run query
-        EnterpriseAuthSubject andres = db.login( "andres", "neo4j" );
+        EnterpriseSecurityContext andres = db.login( "andres", "neo4j" );
         db.executeQuery( andres, "MATCH (n:Label) RETURN n", Collections.emptyMap(), ResourceIterator::close );
 
         db.tearDown();
@@ -137,7 +137,7 @@ public class QueryLoggerIT
 
         db.getLocalUserManager().setUserPassword( "neo4j", "123", false );
 
-        EnterpriseAuthSubject subject = db.login( "neo4j", "123" );
+        EnterpriseSecurityContext subject = db.login( "neo4j", "123" );
         db.executeQuery( subject, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(),
                 ResourceIterator::close );
 
@@ -163,8 +163,6 @@ public class QueryLoggerIT
 
         // THEN
         List<String> logLines = readAllLines( logFilename );
-
-        System.out.println( String.join( "\n", logLines ) );
 
         assertThat( logLines, hasSize( 7 ) );
         assertThat( logLines.get( 0 ), not( containsString( "User: 'Johan'" ) ) );
@@ -192,7 +190,7 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s - {}", querySource(), QUERY ) ) );
-        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
+        assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
     @Test
@@ -220,12 +218,12 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ), endsWith( String.format(
                 " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: [Jake, Eddie, Susannah]}} - {}",
                 querySource, query) ) );
-        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
+        assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
     private QuerySource querySource()
     {
-        return QueryEngineProvider.describe().append( FULL.name() );
+        return QueryEngineProvider.describe().append( AUTH_DISABLED.username() );
     }
 
     @Test
@@ -246,7 +244,7 @@ public class QueryLoggerIT
                 endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]} - {}",
                         querySource(), query) ) );
-        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
+        assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
     @Test

@@ -109,14 +109,6 @@ public class DebugUtil
         return item -> item.getClassName().equals( cls.getName() ) && item.getMethodName().equals( methodName );
     }
 
-    public static void dumpThreads( PrintStream out )
-    {
-        for ( Map.Entry<Thread,StackTraceElement[]> stack : Thread.getAllStackTraces().entrySet() )
-        {
-            out.println( new DebugUtil.CallStack( stack.getValue(), "Thread: " + stack.getKey() ) );
-        }
-    }
-
     public static class StackTracer
     {
         private final Map<CallStack, AtomicInteger> uniqueStackTraces = new HashMap<>();

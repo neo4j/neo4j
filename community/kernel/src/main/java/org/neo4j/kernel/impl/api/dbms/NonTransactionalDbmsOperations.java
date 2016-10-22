@@ -25,8 +25,8 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.Procedures;
 
 public class NonTransactionalDbmsOperations implements DbmsOperations
@@ -43,16 +43,11 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     public RawIterator<Object[],ProcedureException> procedureCallDbms(
             QualifiedName name,
             Object[] input,
-            AccessMode mode
+            SecurityContext securityContext
     ) throws ProcedureException
     {
         BasicContext ctx = new BasicContext();
-
-        AccessMode originalMode = mode.getOriginalAccessMode();
-        if ( originalMode instanceof AuthSubject )
-        {
-            ctx.put( Context.AUTH_SUBJECT, (AuthSubject) originalMode );
-        }
+        ctx.put( Context.SECURITY_CONTEXT, securityContext );
         return procedures.callProcedure( ctx, name, input );
     }
 
@@ -60,15 +55,11 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     public Object functionCallDbms(
             QualifiedName name,
             Object[] input,
-            AccessMode mode
+            SecurityContext securityContext
     ) throws ProcedureException
     {
         BasicContext ctx = new BasicContext();
-        if ( mode instanceof AuthSubject )
-        {
-            AuthSubject subject = (AuthSubject) mode;
-            ctx.put( Context.AUTH_SUBJECT, subject );
-        }
+        ctx.put( Context.SECURITY_CONTEXT, securityContext );
         return procedures.callFunction( ctx, name, input );
     }
 }

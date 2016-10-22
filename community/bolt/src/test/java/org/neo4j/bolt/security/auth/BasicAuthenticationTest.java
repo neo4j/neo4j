@@ -26,10 +26,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.BasicAuthSubject;
+import org.neo4j.server.security.auth.BasicSecurityContext;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.time.FakeClock;
@@ -51,9 +52,12 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
+        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        AuthSubject authSubject = mock( AuthSubject.class );
+
+        when( manager.login( anyMap() ) ).thenReturn( securityContext );
+        when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         //Expect nothing
@@ -67,9 +71,12 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
+        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        AuthSubject authSubject = mock( AuthSubject.class );
+
+        when( manager.login( anyMap() ) ).thenReturn( securityContext );
+        when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
         // Expect
@@ -86,9 +93,12 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
+        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        AuthSubject authSubject = mock( AuthSubject.class );
+
+        when( manager.login( anyMap() ) ).thenReturn( securityContext );
+        when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         // When
@@ -104,9 +114,12 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
+        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        AuthSubject authSubject = mock( AuthSubject.class );
+
+        when( manager.login( anyMap() ) ).thenReturn( securityContext );
+        when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // Expect
@@ -123,9 +136,12 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
+        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        AuthSubject authSubject = mock( AuthSubject.class );
+
+        when( manager.login( anyMap() ) ).thenReturn( securityContext );
+        when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         //Expect nothing
@@ -140,9 +156,12 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
+        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        AuthSubject authSubject = mock( AuthSubject.class );
+
+        when( manager.login( anyMap() ) ).thenReturn( securityContext );
+        when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         //Expect nothing
@@ -157,9 +176,12 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
+        BasicSecurityContext securityContext = mock( BasicSecurityContext.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
+        AuthSubject authSubject = mock( AuthSubject.class );
+
+        when( manager.login( anyMap() ) ).thenReturn( securityContext );
+        when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
         // Expect
@@ -177,10 +199,9 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
+
         when( manager.login( anyMap() ) ).thenThrow( new InvalidAuthTokenException( "foo" ) );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect
         exception.expect( AuthenticationException.class );
@@ -191,21 +212,19 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldFailOnUnknownScheme() throws Exception
+    public void shouldFailOnInvalidAuthToken() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
         when( manager.login( anyMap() ) ).thenThrow( new InvalidAuthTokenException( "foo" ) );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
 
         // When
-        authentication.authenticate( map( "scheme", "UNKNOWN", "principal", "bob", "credentials", "secret" ) );
+        authentication.authenticate( map( "this", "does", "not", "matter", "for", "test" ) );
     }
 
     @Test
@@ -214,9 +233,7 @@ public class BasicAuthenticationTest
         // Given
         BasicAuthManager manager = new BasicAuthManager( mock( UserRepository.class), mock( PasswordPolicy.class ),
                 FakeClock.systemUTC(), mock( UserRepository.class ) );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect
         exception.expect( AuthenticationException.class );

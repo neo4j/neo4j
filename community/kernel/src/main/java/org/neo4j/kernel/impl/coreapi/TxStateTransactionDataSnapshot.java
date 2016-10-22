@@ -21,7 +21,10 @@ package org.neo4j.kernel.impl.coreapi;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -38,6 +41,9 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
@@ -149,6 +155,25 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     public Iterable<PropertyEntry<Relationship>> removedRelationshipProperties()
     {
         return removedRelationshipProperties;
+    }
+
+    @Override
+    public String username()
+    {
+        return transaction.securityContext().subject().username();
+    }
+
+    @Override
+    public Map<String,Object> metaData()
+    {
+        if ( transaction instanceof KernelTransactionImplementation )
+        {
+            return ((KernelTransactionImplementation) transaction).getMetaData();
+        }
+        else
+        {
+            return Collections.emptyMap();
+        }
     }
 
     @Override
