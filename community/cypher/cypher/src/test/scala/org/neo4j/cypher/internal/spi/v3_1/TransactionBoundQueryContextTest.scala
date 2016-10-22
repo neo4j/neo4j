@@ -34,6 +34,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api._
+import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.api.security.{AnonymousContext, SecurityContext}
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -58,7 +59,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     outerTx = mock[InternalTransaction]
     val kernelTransaction = mock[KernelTransactionImplementation]
-    when(kernelTransaction.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED)
+    when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
     val storeStatement = mock[StorageStatement]
     val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
     statement = new KernelStatement(kernelTransaction, null, storeStatement, new Procedures(), new CanWrite())
@@ -73,9 +74,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should mark transaction successful if successful") {
     // GIVEN
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
-    val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`,
-      SecurityContext.AUTH_DISABLED,
-      supply(statement), null, locker, null, null, null)
+    val tc = new Neo4jTransactionalContext(
+      graph, outerTx, KernelTransaction.Type.`implicit`, AUTH_DISABLED, supply(statement), null, null, locker
+    )
     val transactionalContext = TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -90,9 +91,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should mark transaction failed if not successful") {
     // GIVEN
     when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
-    val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`,
-      SecurityContext.AUTH_DISABLED,
-      supply(statement), null, locker, null, null, null)
+    val tc = new Neo4jTransactionalContext(
+      graph, outerTx, KernelTransaction.Type.`implicit`, AUTH_DISABLED, supply(statement), null, null, locker
+    )
     val transactionalContext = TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN

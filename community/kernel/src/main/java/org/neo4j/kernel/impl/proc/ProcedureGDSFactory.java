@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -47,6 +48,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
     private final Supplier<QueryExecutionEngine> queryExecutor;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator;
+    private final ThreadToStatementContextBridge txBridge;
 
     public ProcedureGDSFactory( Config config,
                                 File storeDir,
@@ -63,6 +65,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
         this.queryExecutor = queryExecutor;
         this.availability = availability;
         this.urlValidator = url -> urlAccessRule.validate( config, url );
+        this.txBridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     @Override
@@ -71,9 +74,21 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
         KernelTransaction transaction = context.get( Context.KERNEL_TRANSACTION );
         Thread owningThread = context.get( Context.THREAD );
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
-        facade.init( new ProcedureGDBFacadeSPI( owningThread, transaction, queryExecutor, storeDir, resolver,
-                AutoIndexing.UNSUPPORTED, storeId, availability, urlValidator ), config );
+        facade.init(
+            new ProcedureGDBFacadeSPI(
+                owningThread,
+                transaction,
+                queryExecutor,
+                storeDir,
+                resolver,
+                AutoIndexing.UNSUPPORTED,
+                storeId,
+                availability,
+                urlValidator
+            ),
+            txBridge,
+            config
+        );
         return facade;
     }
-
 }

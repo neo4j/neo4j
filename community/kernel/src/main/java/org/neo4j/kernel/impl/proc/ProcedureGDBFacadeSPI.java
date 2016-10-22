@@ -46,18 +46,25 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
 {
     private final Thread transactionThread;
     private final KernelTransaction transaction;
+
     private final Supplier<QueryExecutionEngine> queryExecutor;
 
+    private final File storeDir;
     private final DependencyResolver resolver;
     private final AutoIndexing autoIndexing;
     private final Supplier<StoreId> storeId;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator;
-    private final File storeDir;
 
-    public ProcedureGDBFacadeSPI( Thread transactionThread,  KernelTransaction transaction, Supplier<QueryExecutionEngine> queryExecutor,
-            File storeDir, DependencyResolver resolver, AutoIndexing autoIndexing,
-            Supplier<StoreId> storeId, CoreAPIAvailabilityGuard availability,
+    public ProcedureGDBFacadeSPI(
+            Thread transactionThread,
+            KernelTransaction transaction,
+            Supplier<QueryExecutionEngine> queryExecutor,
+            File storeDir,
+            DependencyResolver resolver,
+            AutoIndexing autoIndexing,
+            Supplier<StoreId> storeId,
+            CoreAPIAvailabilityGuard availability,
             ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator )
     {
         this.transactionThread = transactionThread;

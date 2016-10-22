@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.AutoIndexerFacade;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
@@ -196,7 +197,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     /**
      * Create a new Core API facade, backed by the given SPI.
      */
-    public void init( SPI spi, Config config )
+    public void init( SPI spi, ThreadToStatementContextBridge txBridge, Config config )
     {
         this.spi = spi;
         this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
@@ -217,7 +218,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                         .getOrCreateRelationshipIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, null ) ),
                 spi.autoIndexing().relationships() );
         this.indexManager = new IndexManagerImpl( spi::currentStatement, idxProvider, nodeAutoIndexer, relAutoIndexer );
-        this.contextFactory = new Neo4jTransactionalContextFactory( spi, locker );
+
+        this.contextFactory = new Neo4jTransactionalContextFactory(
+            spi::queryService, spi::currentStatement, txBridge, locker
+        );
     }
 
     @Override

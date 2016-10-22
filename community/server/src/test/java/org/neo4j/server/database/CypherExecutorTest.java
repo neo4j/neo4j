@@ -162,6 +162,7 @@ public class CypherExecutorTest
                 statementBridge );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn(
                 databaseQueryService );
+        when( databaseQueryService.getTxBridge() ).thenReturn( statementBridge );
         when( databaseQueryService.beginTransaction( type, securityContext ) )
                 .thenReturn( transaction );
         when( databaseQueryService.beginTransaction( type, securityContext,

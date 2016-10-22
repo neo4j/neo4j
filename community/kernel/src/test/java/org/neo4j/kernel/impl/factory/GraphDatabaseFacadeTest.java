@@ -23,10 +23,6 @@ package org.neo4j.kernel.impl.factory;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -37,10 +33,10 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
+
+import static org.mockito.Mockito.*;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class GraphDatabaseFacadeTest
@@ -67,7 +63,7 @@ public class GraphDatabaseFacadeTest
         when( contextBridge.get() ).thenReturn( statement );
         defaultConfig = Config.defaults();
 
-        graphDatabaseFacade.init( spi, defaultConfig );
+        graphDatabaseFacade.init( spi, contextBridge, defaultConfig );
     }
 
     @Test
