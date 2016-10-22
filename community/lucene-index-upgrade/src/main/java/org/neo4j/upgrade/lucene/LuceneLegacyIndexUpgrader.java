@@ -47,13 +47,6 @@ public class LuceneLegacyIndexUpgrader
     public interface Monitor
     {
         /**
-         * Upgrade is starting.
-         *
-         * @param count number of indexes to migrate.
-         */
-        default void starting( int count ) {}
-
-        /**
          * Called after an index has been migrated, called for each migrated index.
          *
          * @param name name of the index.
@@ -95,7 +88,6 @@ public class LuceneLegacyIndexUpgrader
             {
                 return;
             }
-            monitor.starting( (int) Files.walk( indexRootPath ).count() );
             try ( Stream<Path> pathStream = Files.walk( indexRootPath );
                   IndexUpgraderWrapper lucene4Upgrader = createIndexUpgrader( getLucene4JarPaths() );
                   IndexUpgraderWrapper lucene5Upgrader = createIndexUpgrader( getLucene5JarPaths() ) )

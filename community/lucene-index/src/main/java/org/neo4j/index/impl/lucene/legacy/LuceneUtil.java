@@ -19,15 +19,21 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.function.Predicate;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 public abstract class LuceneUtil
 {
@@ -110,5 +116,30 @@ public abstract class LuceneUtil
             return NumericRangeQuery.newIntRange( key, from != null ? from.intValue() : 0,
                     to != null ? to.intValue() : Integer.MAX_VALUE, includeFrom, includeTo );
         }
+    }
+
+    static boolean containsIndexFiles( FileSystemAbstraction fileSystem, File indexDirectory )
+    {
+        if (fileSystem.isDirectory( indexDirectory ))
+        {
+            File[] files = fileSystem.listFiles( indexDirectory );
+            return haveSegmentFile( files ) && haveNotOnlySegmentFiles( files );
+        }
+        return false;
+    }
+
+    private static boolean haveNotOnlySegmentFiles( File[] files )
+    {
+        return Arrays.stream( files ).map( File::getName ).anyMatch( Predicates.not( segmentFilePredicate() ) );
+    }
+
+    private static boolean haveSegmentFile( File[] files )
+    {
+        return Arrays.stream( files ).map( File::getName ).anyMatch( segmentFilePredicate() );
+    }
+
+    private static Predicate<String> segmentFilePredicate()
+    {
+        return name -> name.startsWith( IndexFileNames.SEGMENTS );
     }
 }

@@ -21,20 +21,13 @@ package org.neo4j.kernel.impl.storemigration.participant;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Map;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.format.CapabilityType;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.upgrade.lucene.LegacyIndexMigrationException;
-import org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader;
-import org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader.Monitor;
 
 /**
  * Migrates legacy lucene indexes between different neo4j versions.
@@ -43,122 +36,52 @@ import org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader.Monitor;
 public class LegacyIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private static final String LUCENE_LEGACY_INDEX_PROVIDER_NAME = "lucene";
-    private final Map<String,IndexImplementation> indexProviders;
-    private final FileSystemAbstraction fileSystem;
-    private File migrationLegacyIndexesRoot;
-    private File originalLegacyIndexesRoot;
-    private final Log log;
-    private boolean legacyIndexMigrated = false;
 
-    public LegacyIndexMigrator( FileSystemAbstraction fileSystem, Map<String,IndexImplementation> indexProviders,
-            LogProvider logProvider )
+    private final StoreMigrationParticipant delegate;
+
+    public LegacyIndexMigrator( Map<String,IndexImplementation> indexProviders, LogProvider logProvider )
+    {
+        this( getLegacyStoreMigrator( indexProviders, logProvider.getLog( LegacyIndexMigrator.class ) ) );
+    }
+
+    public LegacyIndexMigrator( StoreMigrationParticipant delegate )
     {
         super( "Legacy indexes" );
-        this.fileSystem = fileSystem;
-        this.indexProviders = indexProviders;
-        this.log = logProvider.getLog( getClass() );
+        this.delegate = delegate;
     }
 
     @Override
     public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        IndexImplementation indexImplementation = indexProviders.get( LUCENE_LEGACY_INDEX_PROVIDER_NAME );
-        if ( indexImplementation != null )
-        {
-            RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );
-            RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
-            if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
-            {
-                originalLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( storeDir );
-                migrationLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationDir );
-                if ( isNotEmptyDirectory( originalLegacyIndexesRoot ) )
-                {
-                    migrateLegacyIndexes( progressMonitor );
-                    legacyIndexMigrated = true;
-                }
-            }
-        }
-        else
-        {
-            log.debug( "Lucene index provider not found, nothing to migrate." );
-        }
+        delegate.migrate( storeDir, migrationDir, progressMonitor, versionToMigrateFrom, versionToMigrateTo );
     }
 
     @Override
     public void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom,
-            String versionToMigrateTo )
-            throws IOException
+            String versionToMigrateTo ) throws IOException
     {
-        if ( legacyIndexMigrated )
-        {
-            fileSystem.deleteRecursively( originalLegacyIndexesRoot );
-            fileSystem.moveToDirectory( migrationLegacyIndexesRoot, originalLegacyIndexesRoot.getParentFile() );
-        }
+        delegate.moveMigratedFiles( migrationDir, storeDir, versionToMigrateFrom, versionToMigrateTo );
     }
 
     @Override
     public void cleanup( File migrationDir ) throws IOException
     {
-        if ( isIndexMigrationDirectoryExists() )
+        delegate.cleanup( migrationDir );
+    }
+
+    private static StoreMigrationParticipant getLegacyStoreMigrator( Map<String,IndexImplementation> indexProviders,
+            Log log )
+    {
+        IndexImplementation indexImplementation = indexProviders.get( LUCENE_LEGACY_INDEX_PROVIDER_NAME );
+        if ( indexImplementation != null )
         {
-            fileSystem.deleteRecursively( migrationLegacyIndexesRoot );
+            return indexImplementation.getStoreMigrator();
         }
-    }
-
-    private boolean isIndexMigrationDirectoryExists()
-    {
-        return migrationLegacyIndexesRoot != null && fileSystem.fileExists( migrationLegacyIndexesRoot );
-    }
-
-    private void migrateLegacyIndexes( MigrationProgressMonitor.Section progressMonitor ) throws IOException
-    {
-        try
+        else
         {
-            fileSystem.copyRecursively( originalLegacyIndexesRoot, migrationLegacyIndexesRoot );
-            Path indexRootPath = migrationLegacyIndexesRoot.toPath();
-            LuceneLegacyIndexUpgrader indexUpgrader = createLuceneLegacyIndexUpgrader( indexRootPath, progressMonitor );
-            indexUpgrader.upgradeIndexes();
+            log.debug( "Lucene index provider not found, will do nothing during migration." );
+            return AbstractStoreMigrationParticipant.NOT_PARTICIPATING;
         }
-        catch ( LegacyIndexMigrationException lime )
-        {
-            log.error( "Migration of legacy indexes failed. Index: " + lime.getFailedIndexName() + " can't be " +
-                       "migrated.", lime );
-            throw new IOException( "Legacy index migration failed.", lime );
-        }
-    }
-
-    private boolean isNotEmptyDirectory(File file)
-    {
-        if (fileSystem.isDirectory( file ))
-        {
-            File[] files = fileSystem.listFiles( file );
-            return files != null && files.length > 0;
-        }
-        return false;
-    }
-
-    LuceneLegacyIndexUpgrader createLuceneLegacyIndexUpgrader( Path indexRootPath,
-            MigrationProgressMonitor.Section progressMonitor )
-    {
-        return new LuceneLegacyIndexUpgrader( indexRootPath, progressMonitor( progressMonitor ) );
-    }
-
-    private Monitor progressMonitor( MigrationProgressMonitor.Section progressMonitor )
-    {
-        return new Monitor()
-        {
-            @Override
-            public void starting( int total )
-            {
-                progressMonitor.start( total );
-            }
-
-            @Override
-            public void migrated( String name )
-            {
-                progressMonitor.progress( 1 );
-            }
-        };
     }
 }

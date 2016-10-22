@@ -31,9 +31,11 @@ public enum StoreVersion
     STANDARD_V2_2( "v0.A.5", true ),
     STANDARD_V2_3( "v0.A.6", true ),
     STANDARD_V3_0( "v0.A.7", true ),
+    STANDARD_V3_0_7( "v0.A.7b", true ),
 
     HIGH_LIMIT_V3_0_0( "vE.H.0", false ),
-    HIGH_LIMIT_V3_0_6( "vE.H.0b", false );
+    HIGH_LIMIT_V3_0_6( "vE.H.0b", false ),
+    HIGH_LIMIT_V3_0_7( "vE.H.0c", false );
 
     private static final StoreVersion[] ALL_STORE_VERSIONS = values();
 

@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -142,7 +142,7 @@ public class StoreCopyClientTest
     @Test
     public void storeCopyClientMustWorkWithStandardRecordFormat() throws Exception
     {
-        checkStoreCopyClientWithRecordFormats( StandardV3_0.NAME );
+        checkStoreCopyClientWithRecordFormats( StandardV3_0_7.NAME );
     }
 
     @Test
@@ -268,7 +268,7 @@ public class StoreCopyClientTest
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return startDatabase( storeDir, StandardV3_0.NAME );
+        return startDatabase( storeDir, StandardV3_0_7.NAME );
     }
 
     private GraphDatabaseService startDatabase( File storeDir, String recordFormatName )

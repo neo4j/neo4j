@@ -36,12 +36,14 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v30.Legacy30Store;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -148,7 +150,11 @@ public class MigrationTestUtils
 
     public static File findFormatStoreDirectoryForVersion( String version, File targetDir ) throws IOException
     {
-        if ( version.equals( StandardV2_3.STORE_VERSION ) )
+        if ( version.equals( StandardV3_0.STORE_VERSION ) )
+        {
+            return find30FormatStoreDirectory( targetDir );
+        }
+        else if ( version.equals( StandardV2_3.STORE_VERSION ) )
         {
             return find23FormatStoreDirectory( targetDir );
         }
@@ -168,6 +174,11 @@ public class MigrationTestUtils
         {
             throw new IllegalArgumentException( "Unknown version" );
         }
+    }
+
+    private static File find30FormatStoreDirectory( File targetDir ) throws IOException
+    {
+        return Unzip.unzip( Legacy30Store.class, "upgradeTest30Db.zip", targetDir );
     }
 
     private static File find23FormatStoreDirectory( File targetDir ) throws IOException
@@ -213,7 +224,7 @@ public class MigrationTestUtils
     public static boolean allStoreFilesHaveNoTrailer( FileSystemAbstraction fs, File dir )
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
-                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( StandardV3_0.STORE_VERSION ) );
+                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( StandardV3_0_7.STORE_VERSION ) );
         LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
 
         boolean success = true;
@@ -221,7 +232,7 @@ public class MigrationTestUtils
         {
             File file = new File( dir, storeFile.storeFileName() );
             StoreVersionCheck.Result result =
-                    legacyStoreVersionCheck.hasVersion( file, StandardV3_0.STORE_VERSION, storeFile.isOptional() );
+                    legacyStoreVersionCheck.hasVersion( file, StandardV3_0_7.STORE_VERSION, storeFile.isOptional() );
             success &= result.outcome == Outcome.unexpectedStoreVersion ||
                        result.outcome == Outcome.storeVersionNotFound;
         }

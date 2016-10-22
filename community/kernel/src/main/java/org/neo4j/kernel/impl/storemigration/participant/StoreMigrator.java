@@ -169,7 +169,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         writeLastTxInformation( migrationDir, lastTxInfo );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
 
-        if ( versionToMigrateFrom.equals( "vE.H.0" ) )
+        if ( versionToMigrateFrom.equals( "vE.H.0" ) || versionToMigrateFrom.equals( "vE.H.0b" ) )
         {
             // NOTE for 3.0 here is a special case for vE.H.0 "from" record format.
             // Legend has it that 3.0.5 enterprise changed store format without changing store version.
@@ -178,17 +178,18 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             // if a user uses 3.0.5 for a while and then goes back to a previous 3.0.x patch release
             // the db wouldn't recognize it was an incompatible downgrade and start up normally,
             // but read records with scrambled values and pointers, sort of.
+            // Then format was updated to vE.H.0c while keeping format exactly the same.
             //
             // This condition has two functions:
-            //  1. preventing actual store migration between vE.H.0 --> vE.H.0b
-            //  2. making vE.H.0b used in any migration where either vE.H.0 or vE.H.0b is the existing format,
-            //     this because vE.H.0b is a superset of vE.H.0 and sometimes (for 3.0.5) vE.H.0
-            //     actually means vE.H.0b (in later version).
+            //  1. preventing actual store migration between vE.H.0 --> vE.H.0c
+            //  2. making vE.H.0c used in any migration where either vE.H.0 or vE.H.0c is the existing format,
+            //     this because vE.H.0c is a superset of vE.H.0 and sometimes (for 3.0.5/3.0.7) vE.H.0
+            //     actually means vE.H.0c (in later version).
             //
             // In later versions of neo4j there are better mechanics in place so that a non-migration like this
             // can be performed w/o special casing. To not require backporting that functionality
             // this condition is here and should be removed in 3.1.
-            versionToMigrateFrom = "vE.H.0b";
+            versionToMigrateFrom = "vE.H.0c";
         }
         RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );

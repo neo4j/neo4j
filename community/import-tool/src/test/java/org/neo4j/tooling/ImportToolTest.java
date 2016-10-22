@@ -54,7 +54,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
@@ -1551,7 +1551,7 @@ public class ImportToolTest
         // THEN
         NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-        int headerSize = StandardV3_0.RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        int headerSize = StandardV3_0_7.RECORD_FORMATS.dynamic().getRecordHeaderSize();
         assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
         assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
     }

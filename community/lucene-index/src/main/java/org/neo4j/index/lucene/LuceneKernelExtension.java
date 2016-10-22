@@ -28,6 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.spi.legacyindex.IndexProviders;
+import org.neo4j.logging.LogProvider;
 
 public class LuceneKernelExtension extends LifecycleAdapter
 {
@@ -36,15 +37,18 @@ public class LuceneKernelExtension extends LifecycleAdapter
     private final Supplier<IndexConfigStore> indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final IndexProviders indexProviders;
+    private final LogProvider logProvider;
 
     public LuceneKernelExtension( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
-            FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders )
+            FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders,
+            LogProvider logProvider)
     {
         this.storeDir = storeDir;
         this.config = config;
         this.indexStore = indexStore;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.indexProviders = indexProviders;
+        this.logProvider = logProvider;
     }
 
     @Override
@@ -52,7 +56,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     {
 
         LuceneIndexImplementation indexImplementation =
-                new LuceneIndexImplementation( storeDir, config, indexStore, fileSystemAbstraction );
+                new LuceneIndexImplementation( storeDir, config, indexStore, fileSystemAbstraction, logProvider );
         indexProviders.registerIndexProvider( LuceneIndexImplementation.SERVICE_NAME, indexImplementation );
     }
 

@@ -28,8 +28,9 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,12 +43,14 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -70,6 +73,9 @@ public class StoreUpgradeOnStartupTest
     @Parameterized.Parameter( 0 )
     public String version;
 
+    private static final Set<String> STORES_WITHOUT_VERSIONS = new HashSet<>( asList( StandardV2_3.STORE_VERSION,
+            StandardV3_0.STORE_VERSION ) );
+
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private File workingDirectory;
     private StoreVersionCheck check;
@@ -77,11 +83,12 @@ public class StoreUpgradeOnStartupTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<String> versions()
     {
-        return Arrays.asList(
+        return asList(
                 StandardV2_0.STORE_VERSION,
                 StandardV2_1.STORE_VERSION,
                 StandardV2_2.STORE_VERSION,
-                StandardV2_3.STORE_VERSION
+                StandardV2_3.STORE_VERSION,
+                StandardV3_0.STORE_VERSION
         );
     }
 
@@ -93,7 +100,7 @@ public class StoreUpgradeOnStartupTest
         check = new StoreVersionCheck( pageCache );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
-        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
+        assertEquals( !STORES_WITHOUT_VERSIONS.contains( version ),
                 allLegacyStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
     }
 
@@ -133,7 +140,7 @@ public class StoreUpgradeOnStartupTest
 
     private void makeDbNotCleanlyShutdown() throws IOException
     {
-        if ( StandardV2_3.STORE_VERSION.equals( version ) )
+        if ( STORES_WITHOUT_VERSIONS.contains( version ) )
         {
             removeCheckPointFromTxLog( fileSystem, workingDirectory );
         }

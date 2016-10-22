@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.store.record.Record;
  * 5B   labels
  * => 15B
  */
-class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
+public class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
 {
     static final int RECORD_SIZE = 16;
     // size of the record in fixed references format;

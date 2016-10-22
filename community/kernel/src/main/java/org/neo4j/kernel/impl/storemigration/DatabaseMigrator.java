@@ -89,7 +89,7 @@ public class DatabaseMigrator
 
         StoreMigrationParticipant schemaMigrator = schemaIndexProvider.storeMigrationParticipant( fs, pageCache,
                 labelScanStoreProvider );
-        LegacyIndexMigrator legacyIndexMigrator = new LegacyIndexMigrator( fs, indexProviders, logProvider );
+        LegacyIndexMigrator legacyIndexMigrator = new LegacyIndexMigrator( indexProviders, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider );
 
         storeUpgrader.addParticipant( schemaMigrator );

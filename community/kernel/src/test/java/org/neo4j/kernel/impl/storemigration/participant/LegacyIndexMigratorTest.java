@@ -19,182 +19,90 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
+
+import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.upgrade.lucene.LegacyIndexMigrationException;
-import org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader;
+import org.neo4j.logging.AssertableLogProvider;
 
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class LegacyIndexMigratorTest
 {
-    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private final LogProvider logProvider = mock( LogProvider.class );
-    private final MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
+
     private final File storeDir = mock( File.class );
     private final File migrationDir = mock( File.class );
-    private final File originalIndexStore = mock( File.class );
-    private final File migratedIndexStore = new File( "." );
+    private final String versionToMigrateFrom = "A";
+    private final String versionToMigrateTo = "B";
+    private final IndexImplementation indexImplementation = mock( IndexImplementation.class );
+    private final ImmutableMap<String,IndexImplementation> testIndexProvider = ImmutableMap.of( "test",
+            indexImplementation );
+    private final ImmutableMap<String,IndexImplementation> luceneIndexProvider = ImmutableMap.of( "lucene",
+            indexImplementation );
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Before
     public void setUp()
     {
-        when( originalIndexStore.getParentFile() ).thenReturn( storeDir );
-        when( fs.isDirectory( originalIndexStore ) ).thenReturn( true );
-        when( fs.listFiles( originalIndexStore ) ).thenReturn( new File[]{mock( File.class )} );
+        logProvider.clear();
     }
 
     @Test
-    public void skipEmptyIndexStorageMigration() throws IOException
+    public void migrateLegacyIndexesWhenLuceneProviderNotFound() throws Exception
     {
-        when( fs.listFiles( originalIndexStore ) ).thenReturn( null );
+        LegacyIndexMigrator indexMigrator = new LegacyIndexMigrator( testIndexProvider, logProvider );
 
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
-        LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
+        performMigration( indexMigrator );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
-                StandardV3_0.STORE_VERSION );
-
-        verify( fs, never() ).deleteRecursively( originalIndexStore );
-        verify( fs, never() ).moveToDirectory( migratedIndexStore, storeDir );
+        logProvider.assertContainsMessageContaining( "Lucene index provider not found, will do nothing during migration." );
     }
 
     @Test
-    public void transferOriginalDataToMigrationDirectory() throws IOException
+    public void useLuceneLegacyIndexMigratorWhenLuceneProviderFound() throws IOException
     {
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
-        LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
+        StoreMigrationParticipant migrationParticipant = Mockito.mock( StoreMigrationParticipant.class );
+        when( indexImplementation.getStoreMigrator() ).thenReturn( migrationParticipant );
+        LegacyIndexMigrator indexMigrator = new LegacyIndexMigrator( luceneIndexProvider, logProvider );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
-                StandardV3_0.STORE_VERSION );
+        performMigration( indexMigrator );
 
-        verify( fs ).copyRecursively( originalIndexStore, migratedIndexStore );
+        verify( indexImplementation ).getStoreMigrator();
+        verify( migrationParticipant ).migrate( storeDir, migrationDir,
+                SilentMigrationProgressMonitor.NO_OP_SECTION, versionToMigrateFrom, versionToMigrateTo );
+        verify( migrationParticipant ).moveMigratedFiles( migrationDir, storeDir, versionToMigrateFrom, versionToMigrateTo );
+        verify( migrationParticipant ).cleanup( migrationDir );
+        logProvider.assertNoLoggingOccurred();
     }
 
     @Test
-    public void transferMigratedIndexesToStoreDirectory() throws IOException
+    public void useImplementationDelegateToPerformMigration() throws IOException
     {
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
-        LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
+        StoreMigrationParticipant migrationParticipant = mock( StoreMigrationParticipant.class );
+        LegacyIndexMigrator indexMigrator = new LegacyIndexMigrator( migrationParticipant );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
-                StandardV3_0.STORE_VERSION );
-        reset( fs );
+        performMigration( indexMigrator );
 
-        indexMigrator.moveMigratedFiles( migrationDir, storeDir, "any", "any" );
-
-        verify( fs ).deleteRecursively( originalIndexStore );
-        verify( fs ).moveToDirectory( migratedIndexStore, storeDir );
+        verify( migrationParticipant ).migrate( storeDir, migrationDir,
+                SilentMigrationProgressMonitor.NO_OP_SECTION, versionToMigrateFrom, versionToMigrateTo );
+        verify( migrationParticipant ).moveMigratedFiles( migrationDir, storeDir, versionToMigrateFrom, versionToMigrateTo );
+        verify( migrationParticipant ).cleanup( migrationDir );
     }
 
-    @Test
-    public void logErrorWithIndexNameOnIndexMigrationException() throws IOException
+    private void performMigration( LegacyIndexMigrator indexMigrator ) throws IOException
     {
-        Log log = mock( Log.class );
-        when( logProvider.getLog( TestLegacyIndexMigrator.class ) ).thenReturn( log );
-
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
-        try
-        {
-            LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, false );
-            indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
-                    StandardV3_0.STORE_VERSION );
-
-            fail( "Index migration should fail" );
-        }
-        catch ( IOException e )
-        {
-            // ignored
-        }
-
-        verify( log ).error( eq( "Migration of legacy indexes failed. Index: testIndex can't be migrated." ),
-                any( Throwable.class ) );
-    }
-
-    @Test
-    public void cleanupMigrationDirectory() throws IOException
-    {
-        when( fs.fileExists( migratedIndexStore ) ).thenReturn( true );
-
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
-        LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
-                StandardV3_0.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, SilentMigrationProgressMonitor.NO_OP_SECTION,
+                versionToMigrateFrom, versionToMigrateTo );
+        indexMigrator.moveMigratedFiles( migrationDir, storeDir, versionToMigrateFrom, versionToMigrateTo );
         indexMigrator.cleanup( migrationDir );
-
-        verify( fs ).deleteRecursively( migratedIndexStore );
-    }
-
-    private HashMap<String,IndexImplementation> getIndexProviders()
-    {
-        HashMap<String,IndexImplementation> indexProviders = new HashMap<>();
-        IndexImplementation indexImplementation = mock( IndexImplementation.class );
-        indexProviders.put( "lucene", indexImplementation );
-
-        when( indexImplementation.getIndexImplementationDirectory( storeDir ) ).thenReturn( originalIndexStore );
-        when( indexImplementation.getIndexImplementationDirectory( migrationDir ) ).thenReturn( migratedIndexStore );
-
-        return indexProviders;
-    }
-
-    private class TestLegacyIndexMigrator extends LegacyIndexMigrator
-    {
-
-        private final boolean successfullMigration;
-
-        public TestLegacyIndexMigrator( FileSystemAbstraction fileSystem,
-                Map<String,IndexImplementation> indexProviders, LogProvider logProvider, boolean successfullMigration )
-        {
-            super( fileSystem, indexProviders, logProvider );
-            this.successfullMigration = successfullMigration;
-        }
-
-        @Override
-        LuceneLegacyIndexUpgrader createLuceneLegacyIndexUpgrader( Path indexRootPath,
-                MigrationProgressMonitor.Section progressMonitor )
-        {
-            return new HumbleLegacyIndexUpgrader( indexRootPath, successfullMigration );
-        }
-    }
-
-    private class HumbleLegacyIndexUpgrader extends LuceneLegacyIndexUpgrader
-    {
-        private final boolean successfulMigration;
-
-        public HumbleLegacyIndexUpgrader( Path indexRootPath, boolean successfulMigration )
-        {
-            super( indexRootPath, NO_MONITOR );
-            this.successfulMigration = successfulMigration;
-        }
-
-        @Override
-        public void upgradeIndexes() throws LegacyIndexMigrationException
-        {
-            if ( !successfulMigration )
-            {
-                throw new LegacyIndexMigrationException( "testIndex", "Index migration failed", null );
-            }
-        }
     }
 }

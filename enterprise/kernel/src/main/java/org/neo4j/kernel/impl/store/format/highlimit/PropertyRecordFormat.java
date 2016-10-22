@@ -65,7 +65,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
  * Unlike other high limit records {@link BaseHighLimitRecordFormat} fixed reference marker in property record
  * format header is not inverted: 1 - fixed reference format used; 0 - variable length format used.
  */
-class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
+public class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 {
     static final int RECORD_SIZE = 48;
     private static final int PROPERTY_BLOCKS_PADDING = 3;
@@ -79,7 +79,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
     private static final long HIGH_DWORD_LOWER_WORD_MASK = 0xFFFF_0000_0000L;
     private static final long HIGH_DWORD_LOWER_WORD_CHECK_MASK = 0xFFFF_0000_0000_0000L;
 
-    protected PropertyRecordFormat()
+    public PropertyRecordFormat()
     {
         super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
     }

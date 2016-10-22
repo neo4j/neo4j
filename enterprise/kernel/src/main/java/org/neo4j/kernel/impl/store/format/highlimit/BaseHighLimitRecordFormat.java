@@ -87,7 +87,7 @@ import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdFor
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
+public abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
     static final int HEADER_BYTE = Byte.BYTES;
