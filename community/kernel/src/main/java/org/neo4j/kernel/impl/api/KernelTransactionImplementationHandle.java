@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -27,7 +26,7 @@ import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 /**
  * A {@link KernelTransactionHandle} that wraps the given {@link KernelTransactionImplementation}.
@@ -42,7 +41,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long lastTransactionTimestampWhenStarted;
     private final long startTime;
     private final KernelTransactionImplementation tx;
-    private final AccessMode mode;
+    private final SecurityContext securityContext;
     private final Status terminationReason;
     private final ExecutingQueryList executingQueries;
 
@@ -52,7 +51,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.lastTransactionIdWhenStarted = tx.lastTransactionIdWhenStarted();
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
-        this.mode = tx.mode();
+        this.securityContext = tx.securityContext();
         this.terminationReason = tx.getReasonIfTerminated();
         this.executingQueries = tx.executingQueries();
         this.tx = tx;
@@ -89,9 +88,9 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public AccessMode mode()
+    public SecurityContext securityContext()
     {
-        return mode;
+        return securityContext;
     }
 
     @Override

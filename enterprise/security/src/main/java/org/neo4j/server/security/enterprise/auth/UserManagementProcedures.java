@@ -58,7 +58,7 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "false" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
-        changeUserPassword( authSubject.username(), password, requirePasswordChange );
+        changeUserPassword( securityContext.subject().username(), password, requirePasswordChange );
     }
 
     @Description( "Change the given user's password." )
@@ -68,9 +68,9 @@ public class UserManagementProcedures extends AuthProceduresBase
             throws InvalidArgumentsException, IOException
     {
         userManager.setUserPassword( username, newPassword, requirePasswordChange );
-        if ( authSubject.hasUsername( username ) )
+        if ( securityContext.subject().hasUsername( username ) )
         {
-            authSubject.setPasswordChangeNoLongerRequired();
+            securityContext.subject().setPasswordChangeNoLongerRequired();
         }
     }
 
@@ -124,7 +124,7 @@ public class UserManagementProcedures extends AuthProceduresBase
         Set<String> users = userManager.getAllUsernames();
         if ( users.isEmpty() )
         {
-            return Stream.of( userResultForName( authSubject.username() ) );
+            return Stream.of( userResultForName( securityContext.subject().username() ) );
         }
         else
         {

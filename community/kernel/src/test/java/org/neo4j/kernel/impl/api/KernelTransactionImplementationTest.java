@@ -35,7 +35,8 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -67,6 +68,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -114,7 +116,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void useNonGuardedPartsWhenTransactionHaveTimeout() throws Exception
     {
-        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        try ( KernelTransaction transaction = newTransaction( securityContext() ) )
         {
             transaction.success();
         }
@@ -125,7 +127,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldCommitSuccessfulTransaction() throws Exception
     {
         // GIVEN
-        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        try ( KernelTransaction transaction = newTransaction( securityContext() ) )
         {
             // WHEN
             transactionInitializer.accept( transaction );
@@ -137,16 +139,16 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
-    private AccessMode accessMode()
+    private SecurityContext securityContext()
     {
-        return isWriteTx ? AccessMode.Static.WRITE : AccessMode.Static.READ;
+        return isWriteTx ? AnonymousContext.write() : AnonymousContext.read();
     }
 
     @Test
     public void shouldRollbackUnsuccessfulTransaction() throws Exception
     {
         // GIVEN
-        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        try ( KernelTransaction transaction = newTransaction( securityContext() ) )
         {
             // WHEN
             transactionInitializer.accept( transaction );
@@ -161,7 +163,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldRollbackFailedTransaction() throws Exception
     {
         // GIVEN
-        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        try ( KernelTransaction transaction = newTransaction( securityContext() ) )
         {
             // WHEN
             transactionInitializer.accept( transaction );
@@ -178,7 +180,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // GIVEN
         boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        try ( KernelTransaction transaction = newTransaction( securityContext() ) )
         {
             // WHEN
             transactionInitializer.accept( transaction );
@@ -201,7 +203,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldRollbackOnClosingTerminatedTransaction() throws Exception
     {
         // GIVEN
-        KernelTransaction transaction = newTransaction( accessMode() );
+        KernelTransaction transaction = newTransaction( securityContext() );
 
         transactionInitializer.accept( transaction );
         transaction.success();
@@ -227,7 +229,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldRollbackOnClosingSuccessfulButTerminatedTransaction() throws Exception
     {
-        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        try ( KernelTransaction transaction = newTransaction( securityContext() ) )
         {
             // WHEN
             transactionInitializer.accept( transaction );
@@ -245,7 +247,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldRollbackOnClosingTerminatedButSuccessfulTransaction() throws Exception
     {
         // GIVEN
-        KernelTransaction transaction = newTransaction( accessMode() );
+        KernelTransaction transaction = newTransaction( securityContext() );
 
         transactionInitializer.accept( transaction );
         transaction.markForTermination( Status.General.UnknownError );
@@ -272,7 +274,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldNotDowngradeFailureState() throws Exception
     {
-        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        try ( KernelTransaction transaction = newTransaction( securityContext() ) )
         {
             // WHEN
             transactionInitializer.accept( transaction );
@@ -290,7 +292,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldIgnoreTerminateAfterCommit() throws Exception
     {
-        KernelTransaction transaction = newTransaction( accessMode() );
+        KernelTransaction transaction = newTransaction( securityContext() );
         transactionInitializer.accept( transaction );
         transaction.success();
         transaction.close();
@@ -304,7 +306,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldIgnoreTerminateAfterRollback() throws Exception
     {
-        KernelTransaction transaction = newTransaction( accessMode() );
+        KernelTransaction transaction = newTransaction( securityContext() );
         transactionInitializer.accept( transaction );
         transaction.close();
         transaction.markForTermination( Status.General.UnknownError );
@@ -317,7 +319,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test( expected = TransactionTerminatedException.class )
     public void shouldThrowOnTerminationInCommit() throws Exception
     {
-        KernelTransaction transaction = newTransaction( accessMode() );
+        KernelTransaction transaction = newTransaction( securityContext() );
         transactionInitializer.accept( transaction );
         transaction.success();
         transaction.markForTermination( Status.General.UnknownError );
@@ -328,7 +330,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldIgnoreTerminationDuringRollback() throws Exception
     {
-        KernelTransaction transaction = newTransaction( accessMode() );
+        KernelTransaction transaction = newTransaction( securityContext() );
         transactionInitializer.accept( transaction );
         transaction.markForTermination( Status.General.UnknownError );
         transaction.close();
@@ -344,7 +346,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch( 1 );
-        final KernelTransaction transaction = newTransaction( accessMode() );
+        final KernelTransaction transaction = newTransaction( securityContext() );
         transactionInitializer.accept( transaction );
 
         Future<?> terminationFuture = Executors.newSingleThreadExecutor().submit( () ->
@@ -396,11 +398,11 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
                 any( ResourceLocker.class ),
                 anyLong() );
 
-        try ( KernelTransactionImplementation transaction = newTransaction( accessMode() ) )
+        try ( KernelTransactionImplementation transaction = newTransaction( securityContext() ) )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
             transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
-                    AccessMode.Static.FULL, 0L );
+                    AUTH_DISABLED, 0L );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
                 statement.legacyIndexTxState(); // which will pull it from the supplier and the mocking above
@@ -422,7 +424,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void successfulTxShouldNotifyKernelTransactionsThatItIsClosed() throws TransactionFailureException
     {
-        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        KernelTransactionImplementation tx = newTransaction( securityContext() );
 
         tx.success();
         tx.close();
@@ -433,7 +435,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void failedTxShouldNotifyKernelTransactionsThatItIsClosed() throws TransactionFailureException
     {
-        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        KernelTransactionImplementation tx = newTransaction( securityContext() );
 
         tx.failure();
         tx.close();
@@ -454,14 +456,14 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldIncrementReuseCounterOnReuse() throws Exception
     {
         // GIVEN
-        KernelTransactionImplementation transaction = newTransaction( accessMode() );
+        KernelTransactionImplementation transaction = newTransaction( securityContext() );
         int reuseCount = transaction.getReuseCount();
 
         // WHEN
         transaction.close();
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
         transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
-                accessMode(), 0L );
+                securityContext(), 0L );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -481,7 +483,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void markForTerminationInitializedTransaction()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
+        KernelTransactionImplementation tx = newTransaction( securityContext(), locksClient );
 
         tx.markForTermination( Status.General.UnknownError );
 
@@ -493,7 +495,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void markForTerminationTerminatedTransaction()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
+        KernelTransactionImplementation tx = newTransaction( securityContext(), locksClient );
         transactionInitializer.accept( tx );
 
         tx.markForTermination( Status.Transaction.Terminated );
@@ -509,7 +511,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void terminatedTxMarkedNeitherSuccessNorFailureClosesWithoutThrowing() throws TransactionFailureException
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
+        KernelTransactionImplementation tx = newTransaction( securityContext(), locksClient );
         transactionInitializer.accept( tx );
         tx.markForTermination( Status.General.UnknownError );
 
@@ -523,7 +525,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void terminatedTxMarkedForSuccessThrowsOnClose()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
+        KernelTransactionImplementation tx = newTransaction( securityContext(), locksClient );
         transactionInitializer.accept( tx );
         tx.success();
         tx.markForTermination( Status.General.UnknownError );
@@ -543,7 +545,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void terminatedTxMarkedForFailureClosesWithoutThrowing() throws TransactionFailureException
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
+        KernelTransactionImplementation tx = newTransaction( securityContext(), locksClient );
         transactionInitializer.accept( tx );
         tx.failure();
         tx.markForTermination( Status.General.UnknownError );
@@ -558,7 +560,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void terminatedTxMarkedForBothSuccessAndFailureThrowsOnClose()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
+        KernelTransactionImplementation tx = newTransaction( securityContext(), locksClient );
         transactionInitializer.accept( tx );
         tx.success();
         tx.failure();
@@ -578,7 +580,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void txMarkedForBothSuccessAndFailureThrowsOnClose()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
+        KernelTransactionImplementation tx = newTransaction( securityContext(), locksClient );
         tx.success();
         tx.failure();
 
@@ -595,7 +597,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void initializedTransactionShouldHaveNoTerminationReason() throws Exception
     {
-        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        KernelTransactionImplementation tx = newTransaction( securityContext() );
         assertNull( tx.getReasonIfTerminated() );
     }
 
@@ -603,7 +605,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldReportCorrectTerminationReason() throws Exception
     {
         Status status = Status.Transaction.Terminated;
-        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        KernelTransactionImplementation tx = newTransaction( securityContext() );
         tx.markForTermination( status );
         assertSame( status, tx.getReasonIfTerminated() );
     }
@@ -611,7 +613,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void closedTransactionShouldHaveNoTerminationReason() throws Exception
     {
-        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        KernelTransactionImplementation tx = newTransaction( securityContext() );
         tx.markForTermination( Status.Transaction.Terminated );
         tx.close();
         assertNull( tx.getReasonIfTerminated() );
@@ -622,7 +624,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // given
         AtomicLong closeTxId = new AtomicLong( Long.MIN_VALUE );
-        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        KernelTransactionImplementation tx = newTransaction( securityContext() );
         tx.registerCloseListener( closeTxId::set );
 
         // when
@@ -643,7 +645,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // given
         AtomicLong closeTxId = new AtomicLong( Long.MIN_VALUE );
-        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        KernelTransactionImplementation tx = newTransaction( securityContext() );
         tx.registerCloseListener( closeTxId::set );
 
         // when
@@ -666,7 +668,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void transactionStartTime()
     {
         long startTime = clock.forward( 5, TimeUnit.MINUTES ).millis();
-        KernelTransactionImplementation transaction = newTransaction( AccessMode.Static.FULL );
+        KernelTransactionImplementation transaction = newTransaction( AUTH_DISABLED );
         assertEquals( "Transaction start time should be the same as clock time.", startTime, transaction.startTime() );
     }
 
@@ -681,7 +683,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, accessMode(), 0L );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L );
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
@@ -701,7 +703,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, accessMode(), 0L );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L );
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
 
@@ -714,7 +716,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         for ( int i = 0; i < times; i++ )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, accessMode(), 0L );
+            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L );
             tx.close();
         }
     }

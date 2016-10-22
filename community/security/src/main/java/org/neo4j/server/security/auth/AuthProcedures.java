@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -40,7 +41,7 @@ import static org.neo4j.procedure.Mode.DBMS;
 public class AuthProcedures
 {
     @Context
-    public AuthSubject authSubject;
+    public SecurityContext securityContext;
 
     @Context
     public UserManager userManager;
@@ -60,7 +61,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
-        if ( authSubject.hasUsername( username ) )
+        if ( securityContext.subject().hasUsername( username ) )
         {
             throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
         }
@@ -79,19 +80,19 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
-        if ( authSubject == AuthSubject.ANONYMOUS )
+        if ( securityContext.subject() == AuthSubject.ANONYMOUS )
         {
             throw new AuthorizationViolationException( "Anonymous cannot change password" );
         }
-        userManager.setUserPassword( authSubject.username(), password, false );
-        authSubject.setPasswordChangeNoLongerRequired();
+        userManager.setUserPassword( securityContext.subject().username(), password, false );
+        securityContext.subject().setPasswordChangeNoLongerRequired();
     }
 
     @Description( "Show the current user." )
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
-        return Stream.of( userResultForName( authSubject.username() ) );
+        return Stream.of( userResultForName( securityContext.subject().username() ) );
     }
 
     @Description( "List all local users." )

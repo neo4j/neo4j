@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -66,7 +67,6 @@ import static org.neo4j.causalclustering.discovery.procedures.Role.LEADER;
 import static org.neo4j.causalclustering.discovery.procedures.Role.READ_REPLICA;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
-import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )
@@ -332,7 +332,7 @@ public class ClusterOverviewIT
             throws TransactionFailureException, ProcedureException
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        KernelTransaction transaction = kernel.newTransaction( Type.implicit, READ );
+        KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );
         List<MemberInfo> infos = new ArrayList<>();
         try ( Statement statement = transaction.acquireStatement() )
         {

@@ -23,9 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.api.security.AccessModeSnapshot;
 
-public interface AuthSubject extends AccessMode
+public interface AuthSubject
 {
     void logout();
 
@@ -54,71 +53,25 @@ public interface AuthSubject extends AccessMode
     boolean hasUsername( String username );
 
     /**
-     * Ensure that the provided username is the name of an existing user known to the system.
-     *
-     * @param username a username
-     * @throws InvalidArgumentsException if the provided user name is not the name of an existing user
+     * Get the username associated with the auth subject
+     * @return the username
      */
-    default void ensureUserExistsWithName( String username ) throws InvalidArgumentsException {
-        throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
-    }
+    String username();
 
-    @Override
-    default AccessMode getSnapshot()
-    {
-        return AccessModeSnapshot.create( this );
-    }
-
-    abstract class StaticAccessModeAdapter implements AuthSubject
-    {
-        private final AccessMode accessMode;
-
-        public StaticAccessModeAdapter( AccessMode.Static accessMode )
-        {
-            this.accessMode = accessMode;
-        }
-
-        @Override
-        public boolean allowsReads()
-        {
-            return accessMode.allowsReads();
-        }
-
-        @Override
-        public boolean allowsWrites()
-        {
-            return accessMode.allowsWrites();
-        }
-
-        @Override
-        public boolean allowsSchemaWrites()
-        {
-            return accessMode.allowsSchemaWrites();
-        }
-
-        @Override
-        public boolean isOverridden()
-        {
-            return accessMode.isOverridden();
-        }
-
-        @Override
-        public AuthorizationViolationException onViolation( String msg )
-        {
-            return accessMode.onViolation( msg );
-        }
-
-        @Override
-        public String name()
-        {
-            return accessMode.name();
-        }
-    }
+//    /**
+//     * Ensure that the provided username is the name of an existing user known to the system.
+//     *
+//     * @param username a username
+//     * @throws InvalidArgumentsException if the provided user name is not the name of an existing user
+//     */
+//    default void ensureUserExistsWithName( String username ) throws InvalidArgumentsException {
+//        throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
+//    }
 
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
-    AuthSubject ANONYMOUS = new StaticAccessModeAdapter( Static.NONE )
+    AuthSubject ANONYMOUS = new AuthSubject()
     {
         @Override
         public void logout()
@@ -150,27 +103,22 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public boolean allowsProcedureWith( String[] roleNames )
+        public String username()
         {
-            return false;
+            return ""; // Should never clash with a valid username
         }
 
-        @Override
-        public String name()
-        {
-            return "<anonymous>";
-        }
     };
 
     /**
      * Implementation to use when authentication is disabled. Allows everything.
      */
-    AuthSubject AUTH_DISABLED = new StaticAccessModeAdapter( Static.FULL )
+    AuthSubject AUTH_DISABLED = new AuthSubject()
     {
         @Override
-        public String name()
+        public String username()
         {
-            return "<auth disabled>";
+            return ""; // Should never clash with a valid username
         }
 
         @Override
@@ -199,12 +147,6 @@ public interface AuthSubject extends AccessMode
         public boolean hasUsername( String username )
         {
             return false;
-        }
-
-        @Override
-        public boolean allowsProcedureWith( String[] roleNames )
-        {
-            return true;
         }
     };
 }

@@ -25,6 +25,7 @@ import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.udc.UsageData;

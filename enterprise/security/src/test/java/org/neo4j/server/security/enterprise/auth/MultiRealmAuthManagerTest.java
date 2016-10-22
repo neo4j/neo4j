@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -117,7 +118,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // When
-        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).getAuthenticationResult();
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).subject()
+                .getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
@@ -136,7 +138,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // When
-        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).getAuthenticationResult();
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).subject().getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
@@ -152,7 +154,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "wrong password", AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // When
-        AuthSubject authSubject = manager.login( authToken( "jake", "wrong password" ) );
+        AuthSubject authSubject = manager.login( authToken( "jake", "wrong password" ) ).subject();
         AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
@@ -170,7 +172,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // When
-        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).getAuthenticationResult();
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).subject().getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
@@ -197,7 +199,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         manager.start();
 
         // When
-        AuthSubject authSubject = manager.login( authToken( "unknown", "abc123" ) );
+        AuthSubject authSubject = manager.login( authToken( "unknown", "abc123" ) ).subject();
         AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
@@ -212,7 +214,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         manager.start();
 
         // When
-        AuthSubject authSubject = manager.login( authToken( "unknown\n\t\r\"haxx0r\"", "abc123" ) );
+        AuthSubject authSubject = manager.login( authToken( "unknown\n\t\r\"haxx0r\"", "abc123" ) ).subject();
         AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
@@ -284,7 +286,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
 
         // Then
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) ).subject();
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
     }
 
@@ -302,7 +304,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) ).subject();
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
     }
 
@@ -320,7 +322,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) ).subject();
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
     }
 
@@ -338,7 +340,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) ).subject();
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
     }
 
@@ -405,7 +407,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "neo", "abc123", AuthenticationResult.SUCCESS );
 
         // When
-        AuthSubject authSubject = manager.login( authToken( "neo", "abc123" ) );
+        AuthSubject authSubject = manager.login( authToken( "neo", "abc123" ) ).subject();
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
 
         authSubject.setPassword( "hello, world!", false );
@@ -418,7 +420,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         assertThat( users.getUserByName( "neo" ), equalTo( updatedUser ) );
 
         authSubject.logout();
-        authSubject = manager.login( authToken( "neo", "hello, world!" ) );
+        authSubject = manager.login( authToken( "neo", "hello, world!" ) ).subject();
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
         logProvider.assertExactly(
                 info( "[neo]: logged in" ),
@@ -436,7 +438,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "neo", "wrong", AuthenticationResult.FAILURE );
 
         // When
-        AuthSubject authSubject = manager.login( authToken( "neo", "wrong" ) );
+        AuthSubject authSubject = manager.login( authToken( "neo", "wrong" ) ).subject();
 
         // Then
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
@@ -491,17 +493,17 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         setMockAuthenticationStrategyResult( "neo4j", "neo4j", AuthenticationResult.SUCCESS );
 
         // When
-        AuthSubject subject = manager.login( authToken( "neo4j", "neo4j" ) );
+        SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) );
         userManager.setUserPassword( "neo4j", "1234", false );
-        subject.logout();
+        securityContext.subject().logout();
 
         setMockAuthenticationStrategyResult( "neo4j", "1234", AuthenticationResult.SUCCESS );
-        subject = manager.login( authToken( "neo4j", "1234" ) );
+        securityContext = manager.login( authToken( "neo4j", "1234" ) );
 
         // Then
-        assertTrue( subject.allowsReads() );
-        assertTrue( subject.allowsWrites() );
-        assertTrue( subject.allowsSchemaWrites() );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertTrue( securityContext.mode().allowsWrites() );
+        assertTrue( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -512,12 +514,12 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( authToken( "morpheus", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) );
 
         // Then
-        assertTrue( subject.allowsReads() );
-        assertTrue( subject.allowsWrites() );
-        assertTrue( subject.allowsSchemaWrites() );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertTrue( securityContext.mode().allowsWrites() );
+        assertTrue( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -528,12 +530,12 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( authToken( "trinity", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) );
 
         // Then
-        assertTrue( subject.allowsReads() );
-        assertTrue( subject.allowsWrites() );
-        assertTrue( subject.allowsSchemaWrites() );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertTrue( securityContext.mode().allowsWrites() );
+        assertTrue( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -544,12 +546,12 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( authToken( "tank", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) );
 
         // Then
-        assertTrue( "should allow reads", subject.allowsReads() );
-        assertTrue( "should allow writes", subject.allowsWrites() );
-        assertFalse( "should _not_ allow schema writes", subject.allowsSchemaWrites() );
+        assertTrue( "should allow reads", securityContext.mode().allowsReads() );
+        assertTrue( "should allow writes", securityContext.mode().allowsWrites() );
+        assertFalse( "should _not_ allow schema writes", securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -560,12 +562,12 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( authToken( "neo", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) );
 
         // Then
-        assertTrue( subject.allowsReads() );
-        assertFalse( subject.allowsWrites() );
-        assertFalse( subject.allowsSchemaWrites() );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertFalse( securityContext.mode().allowsWrites() );
+        assertFalse( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -576,12 +578,12 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( authToken( "smith", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) );
 
         // Then
-        assertFalse( subject.allowsReads() );
-        assertFalse( subject.allowsWrites() );
-        assertFalse( subject.allowsSchemaWrites() );
+        assertFalse( securityContext.mode().allowsReads() );
+        assertFalse( securityContext.mode().allowsWrites() );
+        assertFalse( securityContext.mode().allowsSchemaWrites() );
     }
 
     @Test
@@ -592,17 +594,17 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( authToken( "morpheus", "abc123" ) );
-        assertTrue( subject.allowsReads() );
-        assertTrue( subject.allowsWrites() );
-        assertTrue( subject.allowsSchemaWrites() );
+        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) );
+        assertTrue( securityContext.mode().allowsReads() );
+        assertTrue( securityContext.mode().allowsWrites() );
+        assertTrue( securityContext.mode().allowsSchemaWrites() );
 
-        subject.logout();
+        securityContext.subject().logout();
 
         // Then
-        assertFalse( subject.allowsReads() );
-        assertFalse( subject.allowsWrites() );
-        assertFalse( subject.allowsSchemaWrites() );
+        assertFalse( securityContext.mode().allowsReads() );
+        assertFalse( securityContext.mode().allowsWrites() );
+        assertFalse( securityContext.mode().allowsSchemaWrites() );
     }
 
     private AssertableLogProvider.LogMatcher info( String message )

@@ -30,10 +30,9 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-
-import static org.neo4j.server.security.auth.UserManager.INITIAL_USER_NAME;
 
 /**
  * Manages server authentication and authorization.
@@ -108,7 +107,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
-    public BasicAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    public BasicSecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
         String scheme = AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken );
         if ( !scheme.equals( AuthToken.BASIC_SCHEME ) )
@@ -129,7 +128,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
                 result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
             }
         }
-        return new BasicAuthSubject( this, user, result );
+        return new BasicSecurityContext( this, user, result );
     }
 
     @Override
@@ -177,9 +176,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     void setPassword( AuthSubject authSubject, String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        BasicAuthSubject basicAuthSubject = BasicAuthSubject.castOrFail( authSubject );
-
-        if ( !basicAuthSubject.hasUsername( username ) )
+        if ( !authSubject.hasUsername( username ) )
         {
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
@@ -221,7 +218,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
-    public UserManager getUserManager( AuthSubject authSubject )
+    public UserManager getUserManager( SecurityContext securityContext )
     {
         return this;
     }

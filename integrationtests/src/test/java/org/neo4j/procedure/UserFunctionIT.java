@@ -57,7 +57,8 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -637,7 +638,7 @@ public class UserFunctionIT
         GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
 
         // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.NONE ) )
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.none() ) )
         {
             db.execute( "RETURN org.neo4j.procedure.integrationTestMe()" ).next();
             tx.success();

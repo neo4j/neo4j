@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -74,7 +74,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
     private final Type type;
-    private final AccessMode mode;
+    private final SecurityContext securityContext;
     private long customTransactionTimeout;
     private final Log log;
     private final long id;
@@ -83,7 +83,8 @@ public class TransactionHandle implements TransactionTerminationHandle
 
     TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
             GraphDatabaseQueryService queryService, TransactionRegistry registry, TransactionUriScheme uriScheme,
-            boolean implicitTransaction, AccessMode mode, long customTransactionTimeout, LogProvider logProvider )
+            boolean implicitTransaction, SecurityContext securityContext, long customTransactionTimeout,
+            LogProvider logProvider )
     {
         this.txManagerFacade = txManagerFacade;
         this.engine = engine;
@@ -91,7 +92,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         this.registry = registry;
         this.uriScheme = uriScheme;
         this.type = implicitTransaction ? Type.implicit : Type.explicit;
-        this.mode = mode;
+        this.securityContext = securityContext;
         this.customTransactionTimeout = customTransactionTimeout;
         this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
@@ -209,7 +210,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             try
             {
-                context = txManagerFacade.newTransaction( type, mode, customTransactionTimeout );
+                context = txManagerFacade.newTransaction( type, securityContext, customTransactionTimeout );
             }
             catch ( RuntimeException e )
             {
@@ -317,7 +318,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                     }
 
                     hasPrevious = true;
-                    TransactionalContext tc = txManagerFacade.create( request, queryService, type, mode,
+                    TransactionalContext tc = txManagerFacade.create( request, queryService, type, securityContext,
                             statement.statement(), statement.parameters() );
                     Result result = safelyExecute( statement, hasPeriodicCommit, tc );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );

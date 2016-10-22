@@ -66,7 +66,7 @@ public class AuthProceduresIT
     protected GraphDatabaseAPI db;
     private EphemeralFileSystemAbstraction fs;
     private BasicAuthManager authManager;
-    private BasicAuthSubject admin;
+    private BasicSecurityContext admin;
 
     //---------- change password -----------
 
@@ -211,7 +211,7 @@ public class AuthProceduresIT
                 r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", listOf( PWD_CHANGE ) ) ) );
 
         authManager.newUser( "andres", "123", false );
-        BasicAuthSubject andres = login( "andres", "123" );
+        BasicSecurityContext andres = login( "andres", "123" );
         assertSuccess( andres, "CALL dbms.security.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "andres", listOf() ) ) );
     }
@@ -257,26 +257,26 @@ public class AuthProceduresIT
         }
     }
 
-    private BasicAuthSubject login( String username, String password ) throws InvalidAuthTokenException
+    private BasicSecurityContext login( String username, String password ) throws InvalidAuthTokenException
     {
         return authManager.login( SecurityTestUtils.authToken( username, password ) );
     }
 
-    private void assertEmpty( BasicAuthSubject subject, String query )
+    private void assertEmpty( BasicSecurityContext subject, String query )
     {
         assertThat(
                 execute( subject, query, r -> { assert(!r.hasNext() ); } ),
                 equalTo( "" ) );
     }
 
-    private void assertFail( BasicAuthSubject subject, String query, String partOfErrorMsg )
+    private void assertFail( BasicSecurityContext subject, String query, String partOfErrorMsg )
     {
         assertThat(
                 execute( subject, query, r -> { assert(!r.hasNext() ); } ),
                 containsString( partOfErrorMsg ) );
     }
 
-    private void assertSuccess( BasicAuthSubject subject, String query,
+    private void assertSuccess( BasicSecurityContext subject, String query,
             Consumer<ResourceIterator<Map<String,Object>>> resultConsumer )
     {
         assertThat(
@@ -284,7 +284,7 @@ public class AuthProceduresIT
                 equalTo( "" ) );
     }
 
-    private String execute( BasicAuthSubject subject, String query,
+    private String execute( BasicSecurityContext subject, String query,
             Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
     {
         try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.implicit, subject ) )

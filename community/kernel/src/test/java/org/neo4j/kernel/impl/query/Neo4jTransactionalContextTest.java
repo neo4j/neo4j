@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -64,14 +64,14 @@ public class Neo4jTransactionalContextTest
     public void checkKernelStatementOnCheck() throws Exception
     {
         KernelTransaction.Type transactionType = null;
-        AccessMode transactionMode = null;
+        SecurityContext securityContext = null;
         ExecutingQuery executingQuery = null;
         DbmsOperations dbmsOperations = null;
         ThreadToStatementContextBridge txBridge = null;
 
         Neo4jTransactionalContext transactionalContext =
                 new Neo4jTransactionalContext(
-                        databaseQueryService, transaction, transactionType, transactionMode, () -> statement,
+                        databaseQueryService, transaction, transactionType, securityContext, () -> statement,
                         executingQuery, propertyContainerLocker, txBridge, dbmsOperations, guard );
 
         transactionalContext.check();
@@ -86,7 +86,7 @@ public class Neo4jTransactionalContextTest
         // Given
         KernelTransaction initialKTX = mock( KernelTransaction.class );
         KernelTransaction.Type transactionType = null;
-        AccessMode transactionMode = null;
+        SecurityContext securityContext = null;
         InternalTransaction initialTransaction = mock( InternalTransaction.class );
         QueryRegistryOperations initialQueryRegistry = mock( QueryRegistryOperations.class );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
@@ -103,14 +103,14 @@ public class Neo4jTransactionalContextTest
         when( executingQuery.queryText() ).thenReturn( "X" );
         when( executingQuery.queryParameters() ).thenReturn( Collections.emptyMap() );
         when( statement.queryRegistration() ).thenReturn( initialQueryRegistry );
-        when( databaseQueryService.beginTransaction( transactionType, transactionMode ) )
+        when( databaseQueryService.beginTransaction( transactionType, securityContext ) )
                 .thenReturn( secondTransaction );
         when( txBridge.getKernelTransactionBoundToThisThread( true ) ).thenReturn( initialKTX, secondKTX );
         when( txBridge.get() ).thenReturn( secondStatement );
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context = new Neo4jTransactionalContext(
-                databaseQueryService, initialTransaction, transactionType, transactionMode, () -> statement,
+                databaseQueryService, initialTransaction, transactionType, securityContext, () -> statement,
                 executingQuery, locker, txBridge, dbmsOperations, guard );
 
         // When
@@ -170,7 +170,7 @@ public class Neo4jTransactionalContextTest
         InternalTransaction initialTransaction = mock( InternalTransaction.class );
         KernelTransaction initialKTX = mock( KernelTransaction.class );
         KernelTransaction.Type transactionType = null;
-        AccessMode transactionMode = null;
+        SecurityContext securityContext = null;
         Statement initialStatement = mock( Statement.class );
         QueryRegistryOperations initialQueryRegistry = mock( QueryRegistryOperations.class );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
@@ -187,13 +187,13 @@ public class Neo4jTransactionalContextTest
         when( executingQuery.queryParameters() ).thenReturn( Collections.emptyMap() );
         Mockito.doThrow( RuntimeException.class ).when( initialTransaction ).close();
         when( initialStatement.queryRegistration() ).thenReturn( initialQueryRegistry );
-        when( graph.beginTransaction( transactionType, transactionMode ) ).thenReturn( secondTransaction );
+        when( graph.beginTransaction( transactionType, securityContext ) ).thenReturn( secondTransaction );
         when( txBridge.getKernelTransactionBoundToThisThread( true ) ).thenReturn( initialKTX, secondKTX );
         when( txBridge.get() ).thenReturn( secondStatement );
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context = new Neo4jTransactionalContext(
-                graph, initialTransaction, transactionType, transactionMode, () -> initialStatement, executingQuery,
+                graph, initialTransaction, transactionType, securityContext, () -> initialStatement, executingQuery,
                 locker, txBridge, dbmsOperations, guard );
 
         // When

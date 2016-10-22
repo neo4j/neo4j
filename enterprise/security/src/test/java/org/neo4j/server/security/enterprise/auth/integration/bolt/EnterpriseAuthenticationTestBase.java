@@ -23,6 +23,7 @@ import org.apache.directory.server.core.integ.AbstractLdapTestUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.parboiled.common.StringUtils;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -31,8 +32,8 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -42,12 +43,18 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -138,23 +145,22 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected void testCreateReaderUser( String username ) throws Exception
     {
-        assertAuth( "neo4j", "abc123" );
-
         // NOTE: The default user 'neo4j' has password change required, so we have to first change it
-        client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.changeUserPassword('neo4j', '123', false) " +
-                     "CALL dbms.security.createUser( '" + username + "', 'abc123', false ) " +
+        assertAuthAndChangePassword( "neo4j", "abc123", "123" );
+
+        client.send( chunk(
+                run( "CALL dbms.security.createUser( '" + username + "', 'abc123', false ) " +
                      "CALL dbms.security.addRoleToUser( 'reader', '" + username + "' ) RETURN 0" ),
                 pullAll() ) );
 
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgRecord( eqRecord( equalTo( 0L ) ) ) ) );
     }
 
     protected void testAuthWithReaderUser( String username, String realm ) throws Exception
     {
         assertAuth( username, "abc123", realm );
         assertReadSucceeds();
-        assertWriteFails( username );
+        assertWriteFails( username, "reader" );
     }
 
     protected void testAuthWithPublisherUser( String username, String realm ) throws Exception
@@ -166,12 +172,20 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     protected void testAuthWithNoPermissionUser( String username ) throws Exception
     {
         assertAuth( username, "abc123" );
-        assertReadFails( username );
+        assertReadFails( username, "" );
     }
 
     protected void assertAuth( String username, String password ) throws Exception
     {
         assertConnectionSucceeds( authToken( username, password, null ) );
+    }
+
+    protected void assertAuthAndChangePassword( String username, String password, String newPassword ) throws Exception
+    {
+        assertAuth( username, password );
+        String query = format( "CALL dbms.security.changeUserPassword('%s', '%s', false)", username, newPassword );
+        client.send( chunk( run( query ), pullAll() ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     protected void assertAuth( String username, String password, String realm ) throws Exception
@@ -189,7 +203,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         // When
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( chunk(
                         init( "TestClient/1.1", authToken ) ) );
 
         // Then
@@ -201,7 +215,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( chunk(
                         init( "TestClient/1.1", authToken ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
@@ -212,31 +226,35 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     protected void assertReadSucceeds() throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
-                run( "MATCH (n) RETURN n" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    protected void assertReadFails( String username ) throws Exception
-    {
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "MATCH (n) RETURN n" ),
+        client.send( TransportTestUtil.chunk( run( "MATCH (n) RETURN count(n)" ),
                 pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgRecord( eqRecord( greaterThanOrEqualTo( 0L ) ) ),
+                msgSuccess() ) );
+    }
+
+    protected void assertReadFails( String username, String roles ) throws Exception
+    {
+        // When
+        client.send( chunk(
+                run( "MATCH (n) RETURN n" ),
+                pullAll() ) );
+
+        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles +"]";
+
+        // Then
+        assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
-                        String.format( "Read operations are not allowed for '%s'.", username ) ) ) );
+                        format( "Read operations are not allowed for user '%s' with %s.", username, roleString ) ) ) );
     }
 
     protected void assertWriteSucceeds() throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( chunk(
                 run( "CREATE ()" ),
                 pullAll() ) );
 
@@ -244,34 +262,36 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
-    protected void assertWriteFails( String username ) throws Exception
+    protected void assertWriteFails( String username, String roles ) throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( chunk(
                 run( "CREATE ()" ),
                 pullAll() ) );
+
+        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles +"]";
 
         // Then
         assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
-                        String.format( "Write operations are not allowed for '%s'.", username ) ) ) );
+                        format( "Write operations are not allowed for user '%s' with %s.", username, roleString ) ) ) );
     }
 
-    protected void assertBeginTransaction() throws Exception
+    protected void assertBeginTransactionSucceeds() throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
-                run( "BEGIN" ),
+        client.send( TransportTestUtil.chunk( run( "BEGIN" ),
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, eventuallyReceives(
+                msgSuccess(), msgSuccess() ) );
     }
 
     protected void assertCommitTransaction() throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( chunk(
                 run( "COMMIT" ),
                 pullAll() ) );
 
@@ -282,7 +302,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     protected void assertQuerySucceeds( String query ) throws Exception
     {
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( chunk(
                 run( query ),
                 pullAll() ) );
 

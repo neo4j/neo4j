@@ -26,7 +26,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 public class PlaceboTransaction implements InternalTransaction
 {
@@ -87,14 +87,14 @@ public class PlaceboTransaction implements InternalTransaction
     }
 
     @Override
-    public AccessMode mode()
+    public SecurityContext securityContext()
     {
-        return currentTransaction.mode();
+        return currentTransaction.securityContext();
     }
 
     @Override
-    public KernelTransaction.Revertable overrideWith( AccessMode mode )
+    public KernelTransaction.Revertable overrideWith( SecurityContext context )
     {
-        return currentTransaction.overrideWith( mode );
+        return currentTransaction.overrideWith( context );
     }
 }

@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
  */
 public class EnterpriseEditionModule extends CommunityEditionModule
 {
-
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {

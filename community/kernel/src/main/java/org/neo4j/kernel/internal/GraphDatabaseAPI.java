@@ -26,7 +26,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
 
@@ -57,18 +57,18 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
     /**
      * Begin internal transaction with specified type and access mode
      * @param type transaction type
-     * @param accessMode transaction access mode
+     * @param securityContext transaction security context
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
+    InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext );
 
     /**
      * Begin internal transaction with specified type, access mode and timeout
      * @param type transaction type
-     * @param accessMode transaction access mode
+     * @param securityContext transaction security context
      * @param timeout transaction timeout
      * @param unit time unit of timeout argument
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout, TimeUnit unit );
+    InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout, TimeUnit unit );
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -88,7 +89,7 @@ public class KernelStatement implements TxStateHolder, Statement
     @Override
     public ReadOperations readOperations()
     {
-        assertAllows( () -> transaction.mode().allowsReads(), "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return facade;
     }
 
@@ -103,7 +104,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        assertAllows( () -> transaction.mode().allowsWrites(), "Write" );
+        assertAllows( AccessMode::allowsWrites, "Write" );
         return facade;
     }
 
@@ -113,7 +114,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        assertAllows( () -> transaction.mode().allowsWrites(), "Write" );
+        assertAllows( AccessMode::allowsWrites, "Write" );
         transaction.upgradeToDataWrites();
         return facade;
     }
@@ -124,7 +125,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        assertAllows( () -> transaction.mode().allowsSchemaWrites(), "Schema" );
+        assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
         transaction.upgradeToSchemaWrites();
         return facade;
     }
@@ -213,7 +214,7 @@ public class KernelStatement implements TxStateHolder, Statement
 
     final String username()
     {
-        return transaction.mode().username();
+        return transaction.securityContext().subject().username();
     }
 
     final ExecutingQueryList executingQueryList()
@@ -248,12 +249,14 @@ public class KernelStatement implements TxStateHolder, Statement
         return transaction;
     }
 
-    private void assertAllows( Supplier<Boolean> allows, String mode )
+    private void assertAllows( Function<AccessMode,Boolean> allows, String mode )
     {
-        if ( !allows.get() )
+        AccessMode accessMode = transaction.securityContext().mode();
+        if ( !allows.apply( accessMode ) )
         {
-            throw transaction.mode().onViolation(
-                    String.format( "%s operations are not allowed for '%s'.", mode, transaction.mode().name() ) );
+            throw accessMode.onViolation(
+                    String.format( "%s operations are not allowed for %s.", mode,
+                            transaction.securityContext().description() ) );
         }
     }
 }

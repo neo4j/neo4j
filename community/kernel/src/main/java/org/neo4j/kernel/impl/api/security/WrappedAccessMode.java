@@ -44,24 +44,6 @@ abstract class WrappedAccessMode implements AccessMode
     }
 
     @Override
-    public String username()
-    {
-        return original.username();
-    }
-
-    @Override
-    public AccessMode getOriginalAccessMode()
-    {
-        return original.getOriginalAccessMode();
-    }
-
-    @Override
-    public AccessMode getSnapshot()
-    {
-        return AccessModeSnapshot.create( this );
-    }
-
-    @Override
     public boolean isOverridden()
     {
         return true;

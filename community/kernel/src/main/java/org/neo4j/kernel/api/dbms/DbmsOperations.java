@@ -23,7 +23,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 
 /**
  * Defines all types of system-oriented operations - i.e. those which do not read from or write to the graph - that can be done from the {@link KernelAPI}.
@@ -39,13 +39,13 @@ public interface DbmsOperations
     RawIterator<Object[],ProcedureException> procedureCallDbms(
             QualifiedName name,
             Object[] input,
-            AccessMode mode
+            SecurityContext securityContext
     ) throws ProcedureException;
 
     /** Invoke a DBMS function by name */
     Object functionCallDbms(
             QualifiedName name,
             Object[] input,
-            AccessMode mode
+            SecurityContext securityContext
     ) throws ProcedureException;
 }

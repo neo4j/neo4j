@@ -48,6 +48,12 @@ public interface AccessMode
                     {
                         return false;
                     }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
+                    {
+                        return false;
+                    }
                 },
 
         /** No reading or writing allowed because of expired credentials. */
@@ -67,6 +73,12 @@ public interface AccessMode
 
                     @Override
                     public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
                     {
                         return false;
                     }
@@ -109,6 +121,12 @@ public interface AccessMode
                     {
                         return false;
                     }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
+                    {
+                        return false;
+                    }
                 },
 
         /** Allows writing data */
@@ -128,6 +146,12 @@ public interface AccessMode
 
                     @Override
                     public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
                     {
                         return false;
                     }
@@ -153,6 +177,12 @@ public interface AccessMode
                     {
                         return false;
                     }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
+                    {
+                        return false;
+                    }
                 },
 
         /** Allows all operations. */
@@ -175,6 +205,12 @@ public interface AccessMode
                     {
                         return true;
                     }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
+                    {
+                        return true;
+                    }
                 };
 
         @Override
@@ -182,35 +218,11 @@ public interface AccessMode
         {
             return new AuthorizationViolationException( msg );
         }
-
-        @Override
-        public AccessMode getSnapshot()
-        {
-            return this;
-        }
     }
 
     boolean allowsReads();
     boolean allowsWrites();
     boolean allowsSchemaWrites();
-
-    AuthorizationViolationException onViolation( String msg );
-    String name();
-
-    default String username()
-    {
-        return ""; // Should never clash with a valid username
-    }
-
-    default AccessMode getOriginalAccessMode()
-    {
-        return this;
-    }
-
-    default boolean isOverridden()
-    {
-        return false;
-    }
 
     /**
      * Determines whether this mode allows execution of a procedure with the parameter string array in its
@@ -221,10 +233,13 @@ public interface AccessMode
      * encoding permission
      * @throws InvalidArgumentsException
      */
-    default boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException
+    boolean allowsProcedureWith( String[] allowed ) throws InvalidArgumentsException;
+
+    AuthorizationViolationException onViolation( String msg );
+    String name();
+
+    default boolean isOverridden()
     {
         return false;
     }
-
-    AccessMode getSnapshot();
 }

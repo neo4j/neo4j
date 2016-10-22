@@ -38,7 +38,7 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.logging.Log;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
@@ -83,10 +83,14 @@ public class TransactionalService
         try
         {
             usage.get( features ).flag( http_tx_endpoint );
-            AccessMode accessMode = AuthorizedRequestWrapper.getAccessModeFromHttpServletRequest( request );
+            SecurityContext securityContext = AuthorizedRequestWrapper.getSecurityContextFromHttpServletRequest( request );
             long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false, accessMode, customTransactionTimeout );
-            return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request ) );
+            TransactionHandle transactionHandle =
+                    facade.newTransactionHandle( uriScheme, false, securityContext, customTransactionTimeout );
+            return createdResponse(
+                    transactionHandle,
+                    executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request )
+                );
         }
         catch ( TransactionLifecycleException e )
         {
@@ -142,9 +146,9 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            AccessMode accessMode = AuthorizedRequestWrapper.getAccessModeFromHttpServletRequest( request );
+            SecurityContext securityContext = AuthorizedRequestWrapper.getSecurityContextFromHttpServletRequest( request );
             long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-            transactionHandle = facade.newTransactionHandle( uriScheme, true, accessMode, customTransactionTimeout );
+            transactionHandle = facade.newTransactionHandle( uriScheme, true, securityContext, customTransactionTimeout );
         }
         catch ( TransactionLifecycleException e )
         {

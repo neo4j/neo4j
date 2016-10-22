@@ -32,7 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
@@ -44,7 +44,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.Encr
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
-public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
+public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecurityContext>
 {
     private GraphDatabaseFacade db;
     private EnterpriseAuthManager authManager;
@@ -100,14 +100,14 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     }
 
     @Override
-    public InternalTransaction beginLocalTransactionAsUser( EnterpriseAuthSubject subject,
+    public InternalTransaction beginLocalTransactionAsUser( EnterpriseSecurityContext subject,
             KernelTransaction.Type txType ) throws Throwable
     {
         return db.beginTransaction( txType, subject );
     }
 
     @Override
-    public String executeQuery( EnterpriseAuthSubject subject, String call, Map<String,Object> params,
+    public String executeQuery( EnterpriseSecurityContext subject, String call, Map<String,Object> params,
             Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
     {
         try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.implicit, subject ) )
@@ -124,26 +124,26 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     }
 
     @Override
-    public EnterpriseAuthSubject login( String username, String password ) throws Exception
+    public EnterpriseSecurityContext login( String username, String password ) throws Exception
     {
         return authManager.login( authToken( username, password ) );
     }
 
     @Override
-    public void logout( EnterpriseAuthSubject subject )
+    public void logout( EnterpriseSecurityContext securityContext )
     {
-        subject.logout();
+        securityContext.subject().logout();
     }
 
     @Override
-    public void updateAuthToken( EnterpriseAuthSubject subject, String username, String password )
+    public void updateAuthToken( EnterpriseSecurityContext subject, String username, String password )
     {
     }
 
     @Override
-    public String nameOf( EnterpriseAuthSubject subject )
+    public String nameOf( EnterpriseSecurityContext securityContext )
     {
-        return subject.name();
+        return securityContext.subject().username();
     }
 
     @Override
@@ -153,25 +153,25 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     }
 
     @Override
-    public void assertAuthenticated( EnterpriseAuthSubject subject )
+    public void assertAuthenticated( EnterpriseSecurityContext securityContext )
     {
-        assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+        assertThat( securityContext.subject().getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
     }
 
     @Override
-    public void assertPasswordChangeRequired( EnterpriseAuthSubject subject )
+    public void assertPasswordChangeRequired( EnterpriseSecurityContext securityContext )
     {
-        assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
+        assertThat( securityContext.subject().getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
     }
 
     @Override
-    public void assertInitFailed( EnterpriseAuthSubject subject )
+    public void assertInitFailed( EnterpriseSecurityContext securityContext )
     {
-        assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( securityContext.subject().getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
     }
 
     @Override
-    public void assertSessionKilled( EnterpriseAuthSubject subject )
+    public void assertSessionKilled( EnterpriseSecurityContext subject )
     {
         // There is no session that could have been killed
     }

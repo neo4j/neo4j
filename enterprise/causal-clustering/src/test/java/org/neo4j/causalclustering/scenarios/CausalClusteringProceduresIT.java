@@ -30,11 +30,11 @@ import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext.AUTH_DISABLED;
 
 public class CausalClusteringProceduresIT
 {
@@ -68,7 +68,7 @@ public class CausalClusteringProceduresIT
             CoreClusterMember coreClusterMember = cluster.coreMembers().stream().findFirst().get();
             CoreGraphDatabase database = coreClusterMember.database();
             InternalTransaction tx =
-                    database.beginTransaction( KernelTransaction.Type.explicit, EnterpriseAuthSubject.AUTH_DISABLED );
+                    database.beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
             Result coreResult = database.execute( "CALL " + procedure + "()" );
             assertTrue( "core with procedure " + procedure, coreResult.hasNext() );
             coreResult.close();
@@ -94,7 +94,7 @@ public class CausalClusteringProceduresIT
 
             ReadReplicaGraphDatabase database = readReplica.database();
             InternalTransaction tx =
-                    database.beginTransaction( KernelTransaction.Type.explicit, EnterpriseAuthSubject.AUTH_DISABLED );
+                    database.beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
             Result readReplicaResult = database.execute( "CALL " + procedure + "()" );
 
             // then

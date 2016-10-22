@@ -458,7 +458,7 @@ public abstract class ProcedureInteractionTestBase<S>
                             neo.getLocalGraph().getDependencyResolver()
                     ).stream()
                             .filter( tx -> !tx.terminationReason().isPresent() )
-                            .map( tx -> tx.mode().username() )
+                            .map( tx -> tx.securityContext().subject().username() )
                 ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
     }
 

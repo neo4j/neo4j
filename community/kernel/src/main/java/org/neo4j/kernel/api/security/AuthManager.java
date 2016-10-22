@@ -35,7 +35,7 @@ public interface AuthManager extends Lifecycle
      * @return An AuthSubject representing the newly logged-in user
      * @throws InvalidAuthTokenException if the authentication token is malformed
      */
-    AuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
+    SecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
 
     /**
      * Implementation that does no authentication.
@@ -63,9 +63,9 @@ public interface AuthManager extends Lifecycle
         }
 
         @Override
-        public AuthSubject login( Map<String,Object> authToken )
+        public SecurityContext login( Map<String,Object> authToken )
         {
-            return AuthSubject.AUTH_DISABLED;
+            return SecurityContext.AUTH_DISABLED;
         }
     };
 }

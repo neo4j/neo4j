@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -119,12 +119,12 @@ public class LdapCachingTest
     public void shouldCacheAuthorizationInfo() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
-        mike.allowsReads();
+        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
+        mike.mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
-        mike.allowsWrites();
+        mike.mode().allowsWrites();
 
         // Then
         assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
@@ -134,20 +134,20 @@ public class LdapCachingTest
     public void shouldInvalidateAuthorizationCacheAfterTTL() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
-        mike.allowsReads();
+        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
+        mike.mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
         fakeTicker.advance( 99, TimeUnit.MILLISECONDS );
-        mike.allowsWrites();
+        mike.mode().allowsWrites();
 
         // Then
         assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
 
         // When
         fakeTicker.advance( 2, TimeUnit.MILLISECONDS );
-        mike.allowsWrites();
+        mike.mode().allowsWrites();
 
         // Then
         assertThat( "Test realm did not received a call", testRealm.takeAuthorizationFlag(), is( true ) );

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -33,7 +33,7 @@ class TransitionalTxManagementKernelTransaction
 {
     private final GraphDatabaseFacade db;
     private final KernelTransaction.Type type;
-    private final AccessMode mode;
+    private final SecurityContext securityContext;
     private long customTransactionTimeout;
     private final ThreadToStatementContextBridge bridge;
 
@@ -41,11 +41,11 @@ class TransitionalTxManagementKernelTransaction
     private KernelTransaction suspendedTransaction;
 
     TransitionalTxManagementKernelTransaction( GraphDatabaseFacade db, KernelTransaction.Type type,
-            AccessMode mode, long customTransactionTimeout, ThreadToStatementContextBridge bridge )
+            SecurityContext securityContext, long customTransactionTimeout, ThreadToStatementContextBridge bridge )
     {
         this.db = db;
         this.type = type;
-        this.mode = mode;
+        this.securityContext = securityContext;
         this.customTransactionTimeout = customTransactionTimeout;
         this.bridge = bridge;
         this.tx = startTransaction();
@@ -119,7 +119,7 @@ class TransitionalTxManagementKernelTransaction
     private InternalTransaction startTransaction()
     {
         return customTransactionTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ?
-               db.beginTransaction( type, mode, customTransactionTimeout, TimeUnit.MILLISECONDS ) :
-               db.beginTransaction( type, mode );
+               db.beginTransaction( type, securityContext, customTransactionTimeout, TimeUnit.MILLISECONDS ) :
+               db.beginTransaction( type, securityContext );
     }
 }

@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -46,7 +46,7 @@ public class MyCoreAPI
     public long makeNode( String label ) throws ProcedureException
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE ) )
+        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() ) )
         {
             Statement statement = this.txBridge.get();
             DataWriteOperations writeOps = statement.dataWriteOperations();
@@ -68,7 +68,7 @@ public class MyCoreAPI
     public long countNodes()
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.READ ) )
+        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() ) )
         {
             Statement statement = this.txBridge.get();
             result = statement.readOperations().countsForNode( -1 );

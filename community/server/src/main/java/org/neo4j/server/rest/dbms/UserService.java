@@ -32,8 +32,7 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExceptionRepresentation;
@@ -45,6 +44,7 @@ import org.neo4j.server.security.auth.UserManager;
 import org.neo4j.server.security.auth.UserManagerSupplier;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getSecurityContextFromUserPrincipal;
 import static org.neo4j.server.rest.web.CustomStatusType.UNPROCESSABLE;
 
 @Path("/user")
@@ -74,8 +74,8 @@ public class UserService
             return output.notFound();
         }
 
-        AuthSubject authSubject = getSubjectFromPrincipal( principal );
-        UserManager userManager = userManagerSupplier.getUserManager( authSubject );
+        SecurityContext securityContext = getSecurityContextFromUserPrincipal( principal );
+        UserManager userManager = userManagerSupplier.getUserManager( securityContext );
 
         try
         {
@@ -123,14 +123,14 @@ public class UserService
 
         try
         {
-            AuthSubject subject = getSubjectFromPrincipal( principal );
-            if ( subject == null )
+            SecurityContext securityContext = getSecurityContextFromUserPrincipal( principal );
+            if ( securityContext == null )
             {
                 return output.notFound();
             }
             else
             {
-                UserManager userManager = userManagerSupplier.getUserManager( subject );
+                UserManager userManager = userManagerSupplier.getUserManager( securityContext );
                 userManager.setUserPassword( username, newPassword, false );
             }
         }
@@ -144,18 +144,5 @@ public class UserService
                     new Neo4jError( e.status(), e.getMessage() ) ) );
         }
         return output.ok();
-    }
-
-    private AuthSubject getSubjectFromPrincipal( Principal principal )
-    {
-        if ( principal instanceof DelegatingPrincipal )
-        {
-            AccessMode mode = ((DelegatingPrincipal) principal).getAccessMode();
-            if ( mode instanceof AuthSubject )
-            {
-                return (AuthSubject) mode;
-            }
-        }
-        return null;
     }
 }

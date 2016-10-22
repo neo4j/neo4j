@@ -41,6 +41,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -124,8 +125,8 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject, KernelTransaction.Type txType )
             throws Throwable
     {
-        AuthSubject authSubject = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
-        return getLocalGraph().beginTransaction( txType, authSubject );
+        SecurityContext securityContext = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
+        return getLocalGraph().beginTransaction( txType, securityContext );
     }
 
     @Override

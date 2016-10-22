@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
@@ -89,9 +89,9 @@ public class MultiRealmAuthManagerRule implements TestRule
         return manager;
     }
 
-    public AuthSubject makeSubject( ShiroSubject shiroSubject )
+    public SecurityContext makeSecurityContext( ShiroSubject shiroSubject )
     {
-        return new StandardEnterpriseAuthSubject( manager, shiroSubject );
+        return new StandardEnterpriseSecurityContext( manager, shiroSubject );
     }
 
     @Override

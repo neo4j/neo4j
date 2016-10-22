@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -74,16 +74,16 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
     {
-        return graph.beginTransaction( type, accessMode );
+        return graph.beginTransaction( type, securityContext );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext,
             long timeout, TimeUnit unit )
     {
-        return graph.beginTransaction( type, accessMode, timeout, unit );
+        return graph.beginTransaction( type, securityContext, timeout, unit );
     }
 
     @Override

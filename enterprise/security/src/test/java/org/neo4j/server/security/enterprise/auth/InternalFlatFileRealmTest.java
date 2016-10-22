@@ -35,7 +35,7 @@ import java.util.List;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -92,13 +92,13 @@ public class InternalFlatFileRealmTest
     public void shouldNotCacheAuthenticationInfo() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
-        assertThat( mike.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
+        assertThat( mike.subject().getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
         assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
 
         // When
         mike = authManager.login( authToken( "mike", "123" ) );
-        assertThat( mike.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+        assertThat( mike.subject().getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
 
         // Then
         assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
@@ -108,14 +108,14 @@ public class InternalFlatFileRealmTest
     public void shouldNotCacheAuthorizationInfo() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
-        assertThat( mike.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
+        assertThat( mike.subject().getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
 
-        mike.allowsReads();
+        mike.mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
-        mike.allowsWrites();
+        mike.mode().allowsWrites();
 
         // Then
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );

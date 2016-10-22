@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -48,10 +48,10 @@ public class TransitionalPeriodTransactionMessContainer
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    public TransitionalTxManagementKernelTransaction newTransaction( Type type, AccessMode mode,
+    public TransitionalTxManagementKernelTransaction newTransaction( Type type, SecurityContext securityContext,
             long customTransactionTimeout )
     {
-        return new TransitionalTxManagementKernelTransaction( db, type, mode, customTransactionTimeout, txBridge );
+        return new TransitionalTxManagementKernelTransaction( db, type, securityContext, customTransactionTimeout, txBridge );
     }
 
     ThreadToStatementContextBridge getBridge()
@@ -63,13 +63,13 @@ public class TransitionalPeriodTransactionMessContainer
             HttpServletRequest request,
             GraphDatabaseQueryService service,
             Type type,
-            AccessMode mode,
+            SecurityContext securityContext,
             String query,
             Map<String, Object> queryParameters)
     {
         TransactionalContextFactory contextFactory = new Neo4jTransactionalContextFactory( service, locker );
         QuerySource querySource = ServerQuerySession.describe( request );
-        InternalTransaction transaction = service.beginTransaction( type, mode );
+        InternalTransaction transaction = service.beginTransaction( type, securityContext );
         return contextFactory.newContext( querySource, transaction, query, queryParameters );
     }
 }

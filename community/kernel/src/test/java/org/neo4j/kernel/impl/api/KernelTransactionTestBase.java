@@ -28,7 +28,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
@@ -61,6 +61,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class KernelTransactionTestBase
@@ -99,37 +100,37 @@ public class KernelTransactionTestBase
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )
     {
-        return newTransaction( 0, AccessMode.Static.FULL, transactionTimeoutMillis );
+        return newTransaction( 0, AUTH_DISABLED, transactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( AccessMode accessMode )
+    public KernelTransactionImplementation newTransaction( SecurityContext securityContext )
     {
-        return newTransaction( 0, accessMode );
+        return newTransaction( 0, securityContext );
     }
 
-    public KernelTransactionImplementation newTransaction( AccessMode accessMode, Locks.Client locks )
+    public KernelTransactionImplementation newTransaction( SecurityContext securityContext, Locks.Client locks )
     {
-        return newTransaction( 0, accessMode, locks, defaultTransactionTimeoutMillis );
+        return newTransaction( 0, securityContext, locks, defaultTransactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode )
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, SecurityContext securityContext )
     {
-        return newTransaction( lastTransactionIdWhenStarted, accessMode, defaultTransactionTimeoutMillis );
+        return newTransaction( lastTransactionIdWhenStarted, securityContext, defaultTransactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode,
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, SecurityContext securityContext,
             long transactionTimeoutMillis )
     {
-        return newTransaction( lastTransactionIdWhenStarted, accessMode, new NoOpClient(), transactionTimeoutMillis );
+        return newTransaction( lastTransactionIdWhenStarted, securityContext, new NoOpClient(), transactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode,
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, SecurityContext securityContext,
             Locks.Client locks, long transactionTimeout )
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
         tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,statementLocks, Type.implicit,
-                accessMode, transactionTimeout );
+                securityContext, transactionTimeout );
         return tx;
     }
 
