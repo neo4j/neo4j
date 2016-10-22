@@ -69,6 +69,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1070,17 +1071,21 @@ public class ProcedureIT
         //Given/When
         Result res = db.execute( "CALL dbms.procedures()" );
 
-        while(res.hasNext())
+        boolean asserted = false;
+
+        while ( res.hasNext() )
         {
             Map<String,Object> result = res.next();
-            if ( result.get("name").equals( "org.neo4j.procedure.nodeWithDefault" ))
+            if ( result.get( "name" ).equals( "org.neo4j.procedure.nodeWithDefault" ) )
             {
-                assertThat(result.get("signature"),
-                        equalTo("org.neo4j.procedure.nodeWithDefault(node = null :: NODE?) :: (node :: NODE?)"));
+                assertThat( result.get( "signature" ),
+                        equalTo( "org.neo4j.procedure.nodeWithDefault(node = null :: NODE?) :: (node :: NODE?)" ) );
+                asserted = true;
             }
         }
         // Then
         assertFalse( res.hasNext() );
+        assertTrue( asserted );
     }
 
     @Test
@@ -1089,17 +1094,98 @@ public class ProcedureIT
         //Given/When
         Result res = db.execute( "CALL dbms.procedures()" );
 
-        while(res.hasNext())
+        boolean asserted = false;
+
+        while ( res.hasNext() )
         {
             Map<String,Object> result = res.next();
-            if ( result.get("name").equals( "org.neo4j.procedure.nodeWithDescription" ))
+            if ( result.get( "name" ).equals( "org.neo4j.procedure.nodeWithDescription" ) )
             {
-                assertThat(result.get("description"),
-                        equalTo("This is a description"));
+                assertThat( result.get( "description" ),
+                        equalTo( "This is a description" ) );
+                asserted = true;
             }
         }
         // Then
         assertFalse( res.hasNext() );
+        assertTrue( asserted );
+    }
+
+    @Test
+    public void shouldShowModeWhenListingProcedures() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL dbms.procedures()" );
+
+        boolean[] asserted = {false, false, false, false};
+
+        while ( res.hasNext() )
+        {
+            Map<String,Object> result = res.next();
+            Object name = result.get( "name" );
+            if ( name.equals( "db.labels" ) )
+            {
+                assertThat( result.get( "mode" ),
+                        equalTo( "READ_ONLY" ) );
+                asserted[0] = true;
+            }
+            else if ( name.equals( "org.neo4j.procedure.createNode" ) )
+            {
+                assertThat( result.get( "mode" ),
+                        equalTo( "READ_WRITE" ) );
+                asserted[1] = true;
+            }
+            else if ( name.equals( "org.neo4j.procedure.schemaCallReadProcedure" ) )
+            {
+                assertThat( result.get( "mode" ),
+                        equalTo( "SCHEMA_WRITE" ) );
+                asserted[2] = true;
+            }
+            else if ( name.equals( "test.dbmsProc" ) )
+            {
+                assertThat( result.get( "mode" ),
+                        equalTo( "DBMS" ) );
+                asserted[3] = true;
+            }
+        }
+        // Then
+        assertFalse( res.hasNext() );
+        assertTrue( asserted[0] && asserted[1] && asserted[2] && asserted[3] );
+    }
+
+    @Test
+    public void shouldShowAllowedWhenListingProcedures() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL dbms.procedures()" );
+
+        boolean[] asserted = {false, false, false};
+
+        while ( res.hasNext() )
+        {
+            Map<String,Object> result = res.next();
+            if ( result.get( "name" ).equals( "db.labels" ) )
+            {
+                assertThat( result.get( "allowed" ).toString(),
+                        isEmptyString() );
+                asserted[0] = true;
+            }
+            else if ( result.get( "name" ).equals( "test.oneRoleAllowed" ) )
+            {
+                assertThat( result.get( "allowed" ),
+                        equalTo( "role1" ) );
+                asserted[1] = true;
+            }
+            else if ( result.get( "name" ).equals( "test.threeRolesAllowed" ) )
+            {
+                assertThat( result.get( "allowed" ),
+                        equalTo( "role1, role2, role3" ) );
+                asserted[2] = true;
+            }
+        }
+        // Then
+        assertFalse( res.hasNext() );
+        assertTrue( asserted[0] && asserted[1] && asserted[2] );
     }
 
     @Test
@@ -1247,6 +1333,7 @@ public class ProcedureIT
         }
     }
 
+    @SuppressWarnings( {"WeakerAccess", "unused"} )
     public static class ClassWithProcedures
     {
         @Context
@@ -1260,6 +1347,21 @@ public class ProcedureIT
 
         @Context
         public KernelTransaction ktx;
+
+        @Procedure( name = "test.dbmsProc", mode = Mode.DBMS)
+        public void dbmsProc()
+        {
+        }
+
+        @Procedure( name = "test.oneRoleAllowed", allowed = {"role1"} )
+        public void oneRoleAllowed()
+        {
+        }
+
+        @Procedure( name = "test.threeRolesAllowed", allowed = {"role1", "role2", "role3"} )
+        public void threeRolesAllowed()
+        {
+        }
 
         @Procedure
         public Stream<Output> guardMe()
