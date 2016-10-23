@@ -187,7 +187,7 @@ public class TransactionPropagator implements Lifecycle
     }
 
     /**
-     * Propagatet transactions at least up to and including the given transaction id, which was committed by the given
+     * Propagates transactions at least up to and including the given transaction id, which was committed by the given
      * authorId, which is a server id.
      *
      * The number of slaves receiving each transactions is controlled by {@link HaSettings#tx_push_factor}.
