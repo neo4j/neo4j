@@ -412,7 +412,8 @@ public interface Status
         ModifiedConcurrently( TransientError, "The user was modified concurrently to this request." ),
         EncryptionRequired( ClientError, "A TLS encrypted connection is required." ),
         Forbidden( ClientError, "An attempt was made to perform an unauthorized action." ),
-        AuthorizationExpired( ClientError, "The stored authorization info has expired. Please reconnect." );
+        AuthorizationExpired( ClientError, "The stored authorization info has expired. Please reconnect." ),
+        Timeout( TransientError, "An authorization request timed out." );
 
         private final Code code;
 

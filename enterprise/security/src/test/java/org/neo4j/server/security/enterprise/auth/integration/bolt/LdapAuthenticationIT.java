@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
+import org.apache.directory.api.ldap.model.exception.LdapException;
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.annotations.SaslMechanism;
@@ -27,6 +28,11 @@ import org.apache.directory.server.core.annotations.ContextEntry;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.annotations.LoadSchema;
+import org.apache.directory.server.core.api.DirectoryService;
+import org.apache.directory.server.core.api.filtering.EntryFilteringCursor;
+import org.apache.directory.server.core.api.interceptor.BaseInterceptor;
+import org.apache.directory.server.core.api.interceptor.Interceptor;
+import org.apache.directory.server.core.api.interceptor.context.SearchOperationContext;
 import org.apache.directory.server.core.integ.FrameworkRunner;
 import org.apache.directory.server.ldap.handlers.extended.StartTlsHandler;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
@@ -514,6 +520,47 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertAllowedReadProcedure();
     }
 
+    @Test
+    public void shouldTimeoutIfInvalidLdapServer() throws Throwable
+    {
+        // When
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_server, "ldap://198.51.100.9" ); // An IP in the TEST-NET-2 range
+            settings.put( SecuritySettings.ldap_connection_timeout, "1s" );
+        } ) );
+
+        assertAuthFail( "neo", "abc123" );
+    }
+
+    @Test
+    public void shouldTimeoutIfLdapServerDoesNotRespond() throws Throwable
+    {
+        try ( DirectoryServiceWaitOnSearch ignore = new DirectoryServiceWaitOnSearch( 5000 ) )
+        {
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_read_timeout, "1s" );
+            } ) );
+
+            assertAuth( "neo", "abc123" );
+            assertLdapAuthorizationTimeout();
+        }
+    }
+
+    @Test
+    public void shouldTimeoutIfLdapServerDoesNotRespondWithLdapUserContext() throws Throwable
+    {
+        try ( DirectoryServiceWaitOnSearch ignore = new DirectoryServiceWaitOnSearch( 5000 ) )
+        {
+            // When
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+                settings.put( SecuritySettings.ldap_read_timeout, "1s" );
+            } ) );
+
+            assertAuthFail( "neo", "abc123" );
+        }
+    }
+
     private void assertAllowedReadProcedure() throws IOException
     {
         client.send( TransportTestUtil.chunk( run( "CALL test.allowedReadProcedure()" ), pullAll() ) );
@@ -848,6 +895,17 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertThat( adminClient, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
+    private void assertLdapAuthorizationTimeout() throws IOException
+    {
+        // When
+        client.send( TransportTestUtil.chunk( run( "MATCH (n) RETURN n" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgFailure( Status.Security.Timeout,
+                        String.format( "LDAP response read timed out" ) ) ) );
+    }
+
     private void testClearAuthCache() throws Exception
     {
         assertAuth( "neo4j", "abc123" );
@@ -904,6 +962,46 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
                     "', expected one of none, reader, publisher, architect, or admin" );
         }
         modifyLDAPAttribute( username, credentials, "gidnumber", gid );
+    }
+
+    private class DirectoryServiceWaitOnSearch implements AutoCloseable
+    {
+        private final Interceptor waitOnSearchInterceptor;
+
+        public DirectoryServiceWaitOnSearch( long waitingTimeMillis )
+        {
+            waitOnSearchInterceptor = new BaseInterceptor()
+            {
+                @Override
+                public EntryFilteringCursor search( SearchOperationContext searchContext ) throws LdapException
+                {
+                    try
+                    {
+                        Thread.sleep( waitingTimeMillis );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.interrupted();
+                    }
+                    return super.search( searchContext );
+                }
+            };
+
+            try
+            {
+                getService().addFirst( waitOnSearchInterceptor );
+            }
+            catch ( LdapException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            getService().remove( waitOnSearchInterceptor.getName() );
+        }
     }
 
     private static Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->

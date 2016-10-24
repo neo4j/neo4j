@@ -34,6 +34,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.security.AuthTimeoutException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -138,6 +139,10 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         {
             requestAuthentication( request, invalidAuthToken( e.getMessage() ) ).accept( response );
         }
+        catch ( AuthTimeoutException e )
+        {
+            authTimeout.accept( response );
+        }
     }
 
     private SecurityContext authenticate( String username, String password ) throws InvalidAuthTokenException
@@ -170,6 +175,12 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
                     map( "errors", singletonList( map(
                             "code", Status.Security.AuthenticationRateLimit.code().serialize(),
                             "message", "Too many failed authentication requests. Please wait 5 seconds and try again." ) ) ) );
+
+    private static final ThrowingConsumer<HttpServletResponse, IOException> authTimeout =
+            error(  504,
+                    map( "errors", singletonList( map(
+                            "code", Status.Security.Timeout.code().serialize(),
+                            "message", "An authorization request timed out." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> invalidAuthToken( final String message )
     {

@@ -59,6 +59,7 @@ import javax.naming.ldap.StartTlsRequest;
 import javax.naming.ldap.StartTlsResponse;
 
 import org.neo4j.graphdb.security.AuthExpirationException;
+import org.neo4j.graphdb.security.AuthTimeoutException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -77,6 +78,9 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     private static final String KEY_VALUE_DELIMITER = "=";
     private static final String ROLE_DELIMITER = ",";
     public static final String LDAP_REALM = "ldap";
+
+    private static final String JNDI_LDAP_CONNECT_TIMEOUT = "com.sun.jndi.ldap.connect.timeout";
+    private static final String JNDI_LDAP_READ_TIMEOUT = "com.sun.jndi.ldap.read.timeout";
 
     private Boolean authenticationEnabled;
     private Boolean authorizationEnabled;
@@ -336,6 +340,11 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
         {
             securityLog.error( withRealm( "Failed to get authorization info: '%s' caused by '%s'",
                     e.getMessage(), e.getCause().getMessage() ) );
+            if ( e.getCause().getMessage().contains( "LDAP response read timed out" ) )
+            {
+                throw new AuthTimeoutException( e.getCause().getMessage(), e );
+            }
+            // TODO: We should define a Neo4j exception with a status for this so it doesn't become Unknown Error
             throw e;
         }
     }
@@ -350,6 +359,12 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     private void configureRealm( Config config )
     {
         JndiLdapContextFactory contextFactory = new JndiLdapContextFactory();
+        Map<String,Object> environment = contextFactory.getEnvironment();
+        Long connectionTimeoutMillis = config.get( SecuritySettings.ldap_connection_timeout );
+        Long readTimeoutMillis = config.get( SecuritySettings.ldap_read_timeout );
+        environment.put( JNDI_LDAP_CONNECT_TIMEOUT, connectionTimeoutMillis.toString() );
+        environment.put( JNDI_LDAP_READ_TIMEOUT, readTimeoutMillis.toString() );
+        contextFactory.setEnvironment( environment );
         contextFactory.setUrl( parseLdapServerUrl( config.get( SecuritySettings.ldap_server ) ) );
         contextFactory.setAuthenticationMechanism( config.get( SecuritySettings.ldap_authentication_mechanism ) );
         contextFactory.setReferral( config.get( SecuritySettings.ldap_referral ) );
