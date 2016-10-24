@@ -436,23 +436,6 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         testFailWrite( henrik );
     }
 
-    private long pollNumNodes()
-    {
-        long nodeCount = 0;
-        try ( Transaction tx = neo.getLocalGraph().beginTx() )
-        {
-            Statement statement =
-                    neo.getLocalGraph().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
-            nodeCount = statement.readOperations().countsForNode( -1 );
-            tx.success();
-        }
-        catch ( Throwable t )
-        {
-            // do nothing, test will timeout eventually
-        }
-        return nodeCount;
-    }
-
     /*
      * Procedure 'test.allowedReadProcedure' with READ mode and 'allowed = role1' is loaded.
      * Procedure 'test.allowedWriteProcedure' with WRITE mode and 'allowed = role1' is loaded.
