@@ -56,4 +56,32 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
 
     plan.toString should include(MergePattern("second").toString)
   }
+
+  test("should handle query with nested expression") {
+    val query = """EXPLAIN
+                  |WITH
+                  |   ['Herfstvakantie Noord'] AS periodName
+                  |MATCH (perStart:Day)<-[:STARTS]-(per:Periode)-[:ENDS]->(perEnd:Day) WHERE per.naam=periodName
+                  |WITH perStart,perEnd
+                  |
+                  |MATCH perDays=shortestPath((perStart)-[:NEXT*]->(perEnd))
+                  |UNWIND nodes(perDays) as perDay
+                  |WITH perDay ORDER by perDay.day
+                  |
+                  |MATCH (bknStart:Day)-[:NEXT*0..]->(perDay)
+                  |WHERE (bknStart)<-[:FROM_DATE]-(:Boeking)
+                  |WITH distinct bknStart, collect(distinct perDay) as perDays
+                  |
+                  |MATCH (bknStart)<-[:FROM_DATE]-(bkn:Boeking)-[:TO_DATE]->(bknEnd)
+                  |WITH bknEnd, collect(bkn) as bookings, perDays
+                  |WHERE any(perDay IN perDays WHERE perDays = bknEnd OR exists((perDay)-[:NEXT*]->(bknEnd)))
+                  |
+                  |RETURN count(*), count(distinct bknEnd), avg(size(bookings)),avg(size(perDays));""".stripMargin
+
+    val result = execute(query)
+    val plan = result.executionPlanDescription()
+    result.close()
+
+    plan.toString should include("NestedExpression(VarLengthExpand(Into)-Argument)")
+  }
 }
