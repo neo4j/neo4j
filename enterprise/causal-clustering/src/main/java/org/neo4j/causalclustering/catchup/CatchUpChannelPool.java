@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.neo4j.causalclustering.discovery.NoKnownAddressesException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
@@ -41,7 +40,7 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
         this.factory = factory;
     }
 
-    synchronized CHANNEL acquire( AdvertisedSocketAddress catchUpAddress ) throws NoKnownAddressesException
+    synchronized CHANNEL acquire( AdvertisedSocketAddress catchUpAddress )
     {
         CHANNEL channel;
         LinkedList<CHANNEL> channels = idleChannels.get( catchUpAddress );

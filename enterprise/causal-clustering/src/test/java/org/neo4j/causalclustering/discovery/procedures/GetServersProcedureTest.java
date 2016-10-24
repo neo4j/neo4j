@@ -20,14 +20,20 @@
 package org.neo4j.causalclustering.discovery.procedures;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
@@ -41,21 +47,24 @@ import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_routing_ttl;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.bolt;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
@@ -64,10 +73,28 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
+@RunWith( Parameterized.class )
 public class GetServersProcedureTest
 {
-    private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
-    private Config config = Config.defaults();
+    private final ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+
+    @Parameterized.Parameter( 0 )
+    public String ignored; // <- JUnit is happy only if this is here!
+    @Parameterized.Parameter( 1 )
+    public Config config;
+    @Parameterized.Parameter( 2 )
+    public boolean expectFollowersAsReadEndPoints;
+
+    @Parameterized.Parameters( name = "{0}")
+    public static Collection<Object[]> params()
+    {
+        return Arrays.asList(
+                new Object[]{"with followers as read end points", Config.defaults().augment(
+                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.TRUE ) ), true },
+                new Object[]{"no followers as read end points", Config.defaults().augment(
+                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.FALSE ) ), false }
+        );
+    }
 
     @Test
     public void ttlShouldBeInSeconds() throws Exception
@@ -129,30 +156,18 @@ public class GetServersProcedureTest
                 new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
-        List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
+        ClusterView clusterView = run( proc );
 
         // then
+        ClusterView.Builder builder = new ClusterView.Builder();
+        builder.readAddress( coreAddresses( 0 ).getRaftServer() );
+        builder.routeAddress( coreAddresses( 0 ).getRaftServer() );
 
-        Object[] rows = results.get( 0 );
-
-        long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
-
-        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
-
-        Map<String,Object[]> readServers = servers.get( 0 );
-        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
-        assertThat( asList( readServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> routingServers = servers.get( 1 );
-        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
-        assertThat( asList( routingServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
+        assertEquals( builder.build(), clusterView );
     }
 
     @Test
-    public void shouldReturnCoreServersWithReadRouteAndSingleWriteActions() throws Exception
+    public void shouldReturnCoreServersWithRouteAllCoresButLeaderAsReadAndSingleWriteActions() throws Exception
     {
         // given
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
@@ -173,34 +188,18 @@ public class GetServersProcedureTest
                 new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
-        final List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
+        ClusterView clusterView = run( proc );
 
         // then
-        Object[] rows = results.get( 0 );
+        ClusterView.Builder builder = new ClusterView.Builder();
+        builder.writeAddress( coreAddresses( 0 ).getRaftServer() );
+        builder.readAddress( coreAddresses( 1 ).getRaftServer() );
+        builder.readAddress( coreAddresses( 2 ).getRaftServer() );
+        builder.routeAddress( coreAddresses( 0 ).getRaftServer() );
+        builder.routeAddress( coreAddresses( 1 ).getRaftServer() );
+        builder.routeAddress( coreAddresses( 2 ).getRaftServer() );
 
-        long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
-
-        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
-
-        Map<String,Object[]> writeServers = servers.get( 0 );
-        assertThat( writeServers.get( "role" ), equalTo( "WRITE" ) );
-        assertThat( asList( writeServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> readServers = servers.get( 1 );
-        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
-        assertThat( asList( readServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString(),
-                        coreAddresses( 1 ).getRaftServer().toString(),
-                        coreAddresses( 2 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> routingServers = servers.get( 2 );
-        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
-        assertThat( asList( routingServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString(),
-                        coreAddresses( 1 ).getRaftServer().toString(),
-                        coreAddresses( 2 ).getRaftServer().toString() ) );
+        assertEquals( builder.build(), clusterView );
     }
 
     @Test
@@ -223,30 +222,15 @@ public class GetServersProcedureTest
                 new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
-        final List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
+        ClusterView clusterView = run( proc );
 
         // then
-        Object[] rows = results.get( 0 );
+        ClusterView.Builder builder = new ClusterView.Builder();
+        builder.writeAddress( coreAddresses( 0 ).getRaftServer()  );
+        builder.readAddress( coreAddresses( 0 ).getRaftServer() );
+        builder.routeAddress( coreAddresses( 0 ).getRaftServer() );
 
-        long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
-
-        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
-
-        Map<String,Object[]> writeServers = servers.get( 0 );
-        assertThat( writeServers.get( "role" ), equalTo( "WRITE" ) );
-        assertThat( asList( writeServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> readServers = servers.get( 1 );
-        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
-        assertThat( asList( readServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> routingServers = servers.get( 2 );
-        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
-        assertThat( asList( routingServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
+        assertEquals( builder.build(), clusterView );
     }
 
     @Test
@@ -269,31 +253,19 @@ public class GetServersProcedureTest
                 new GetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
-        final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
+        ClusterView clusterView = run( procedure );
 
         // then
-        Object[] rows = results.get( 0 );
+        ClusterView.Builder builder = new ClusterView.Builder();
+        builder.writeAddress( coreAddresses( 0 ).getRaftServer() );
+        if ( expectFollowersAsReadEndPoints )
+        {
+            builder.readAddress( coreAddresses( 0 ).getRaftServer() );
+        }
+        builder.readAddress( readReplicaAddresses( 1 ).getClientConnectorAddresses().getBoltAddress() );
+        builder.routeAddress( coreAddresses( 0 ).getRaftServer() );
 
-        long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
-
-        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
-
-        Map<String,Object[]> writeServers = servers.get( 0 );
-        assertThat( writeServers.get( "role" ), equalTo( "WRITE" ) );
-        assertThat( asList( writeServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> readServers = servers.get( 1 );
-        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
-        assertThat( asList( readServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString(),
-                        readReplicaAddresses( 1 ).getClientConnectorAddresses().getBoltAddress().toString() ) );
-
-        Map<String,Object[]> routingServers = servers.get( 2 );
-        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
-        assertThat( asList( routingServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
+        assertEquals( builder.build(), clusterView );
     }
 
     @Test
@@ -316,30 +288,15 @@ public class GetServersProcedureTest
                 new GetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
-        final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
+        ClusterView clusterView = run( procedure );
 
         // then
-        Object[] rows = results.get( 0 );
+        ClusterView.Builder builder = new ClusterView.Builder();
+        builder.writeAddress( coreAddresses( 0 ).getRaftServer() );
+        builder.readAddress( coreAddresses( 0 ).getRaftServer() );
+        builder.routeAddress( coreAddresses( 0 ).getRaftServer() );
 
-        long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
-
-        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
-
-        Map<String,Object[]> writeServers = servers.get( 0 );
-        assertThat( writeServers.get( "role" ), equalTo( "WRITE" ) );
-        assertThat( asList( writeServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> readServers = servers.get( 1 );
-        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
-        assertThat( asList( readServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> routingServers = servers.get( 2 );
-        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
-        assertThat( asList( routingServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
+        assertEquals( builder.build(), clusterView );
     }
 
     @Test
@@ -361,25 +318,14 @@ public class GetServersProcedureTest
                 new GetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
-        final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
+        ClusterView clusterView = run( procedure );
 
         // then
-        Object[] rows = results.get( 0 );
+        ClusterView.Builder builder = new ClusterView.Builder();
+        builder.readAddress( coreAddresses( 0 ).getRaftServer() );
+        builder.routeAddress( coreAddresses( 0 ).getRaftServer() );
 
-        long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
-
-        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
-
-        Map<String,Object[]> readServers = servers.get( 0 );
-        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
-        assertThat( asList( readServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> routingServers = servers.get( 1 );
-        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
-        assertThat( asList( routingServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
+        assertEquals( builder.build(), clusterView );
     }
 
     @Test
@@ -401,25 +347,23 @@ public class GetServersProcedureTest
                 new GetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
-        final List<Object[]> results = asList( procedure.apply( null, new Object[0] ) );
+        ClusterView clusterView = run( procedure );
 
         // then
-        Object[] rows = results.get( 0 );
 
-        long ttl = (long) rows[0];
-        assertEquals( (long) config.get( cluster_routing_ttl ) / 1000, ttl );
+        ClusterView.Builder builder = new ClusterView.Builder();
+        builder.readAddress( coreAddresses( 0 ).getRaftServer() );
+        builder.routeAddress( coreAddresses( 0 ).getRaftServer() );
 
-        List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
+        assertEquals( builder.build(), clusterView );
+    }
 
-        Map<String,Object[]> readServers = servers.get( 0 );
-        assertThat( readServers.get( "role" ), equalTo( "READ" ) );
-        assertThat( asList( readServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
-
-        Map<String,Object[]> routingServers = servers.get( 1 );
-        assertThat( routingServers.get( "role" ), equalTo( "ROUTE" ) );
-        assertThat( asList( routingServers.get( "addresses" ) ),
-                containsInAnyOrder( coreAddresses( 0 ).getRaftServer().toString() ) );
+    @SuppressWarnings( "unchecked" )
+    private ClusterView run( GetServersProcedure proc ) throws ProcedureException
+    {
+        final Object[] rows = asList( proc.apply( null, new Object[0] ) ).get( 0 );
+        assertEquals( config.get( cluster_routing_ttl ) / 1000, /* ttl */(long) rows[0] );
+        return ClusterView.parse( (List<Map<String,Object>>) rows[1] );
     }
 
     static Set<ReadReplicaAddresses> addresses( int... ids )
@@ -439,5 +383,112 @@ public class GetServersProcedureTest
         AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
         return new ReadReplicaAddresses(
                 new ClientConnectorAddresses( singletonList( new ConnectorUri( bolt, advertisedSocketAddress ) ) ) );
+    }
+
+    private static class ClusterView
+    {
+        private final Map<GetServersProcedure.Type,Set<AdvertisedSocketAddress>> clusterView;
+
+        private ClusterView( Map<GetServersProcedure.Type,Set<AdvertisedSocketAddress>> clusterView )
+        {
+            this.clusterView = clusterView;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            ClusterView that = (ClusterView) o;
+            return Objects.equals( clusterView, that.clusterView );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( clusterView );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ClusterView{" + "clusterView=" + clusterView + '}';
+        }
+
+        static ClusterView parse( List<Map<String,Object>> result )
+        {
+            Map<GetServersProcedure.Type,Set<AdvertisedSocketAddress>> view = new HashMap<>();
+            for ( Map<String,Object> single : result )
+            {
+                GetServersProcedure.Type role = GetServersProcedure.Type.valueOf( (String) single.get( "role" ) );
+                Set<AdvertisedSocketAddress> addresses = parse( (Object[]) single.get( "addresses" ) );
+                assertFalse( view.containsKey( role ) );
+                view.put( role, addresses );
+            }
+
+            return new ClusterView( view );
+        }
+
+        private static Set<AdvertisedSocketAddress> parse( Object[] addresses )
+        {
+            List<AdvertisedSocketAddress> list =
+                    Stream.of( addresses ).map( address -> parse( (String) address ) ).collect( toList() );
+            Set<AdvertisedSocketAddress> set = new HashSet<>();
+            set.addAll( list );
+            assertEquals( list.size(), set.size() );
+            return set;
+        }
+
+        private static AdvertisedSocketAddress parse( String address )
+        {
+            String[] split = address.split( ":" );
+            assertEquals( 2, split.length );
+            return new AdvertisedSocketAddress( split[0], Integer.valueOf( split[1] ) );
+        }
+
+        static class Builder
+        {
+            private final Map<GetServersProcedure.Type,Set<AdvertisedSocketAddress>> view = new HashMap<>();
+
+            Builder readAddress( AdvertisedSocketAddress address )
+            {
+                addAddress( GetServersProcedure.Type.READ, address );
+                return this;
+            }
+
+            Builder writeAddress( AdvertisedSocketAddress address )
+            {
+                addAddress( GetServersProcedure.Type.WRITE, address );
+                return this;
+            }
+
+            Builder routeAddress( AdvertisedSocketAddress address )
+            {
+                addAddress( GetServersProcedure.Type.ROUTE, address );
+                return this;
+            }
+
+            private void addAddress( GetServersProcedure.Type role, AdvertisedSocketAddress address )
+            {
+                Set<AdvertisedSocketAddress> advertisedSocketAddresses = view.get( role );
+                if ( advertisedSocketAddresses == null )
+                {
+                    advertisedSocketAddresses = new HashSet<>();
+                    view.put( role, advertisedSocketAddresses );
+                }
+                advertisedSocketAddresses.add( address );
+            }
+
+            public ClusterView build()
+            {
+                return new ClusterView( view );
+            }
+        }
     }
 }

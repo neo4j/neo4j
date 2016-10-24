@@ -19,12 +19,15 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.procedures.GetServersProcedure;
@@ -35,44 +38,64 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.causalclustering.ClusterRule;
 
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
+@RunWith( Parameterized.class )
 public class ClusterDiscoveryIT
 {
+    @Parameterized.Parameter( 0 )
+    public String ignored; // <- JUnit is happy only if this is here!
+    @Parameterized.Parameter( 1 )
+    public Map<String,String> config;
+    @Parameterized.Parameter( 2 )
+    public boolean expectFollowersAsReadEndPoints;
+
+    @Parameterized.Parameters( name = "{0}")
+    public static Collection<Object[]> params()
+    {
+        return Arrays.asList(
+                new Object[]{"with followers as read end points",
+                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.TRUE ), true},
+                new Object[]{"no followers as read end points",
+                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.FALSE ), false}
+        );
+    }
+
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreMembers( 3 );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 );
 
     @Test
     public void shouldFindReadWriteAndRouteServers() throws Exception
     {
         // when
-        Cluster cluster = clusterRule.withNumberOfReadReplicas( 1 ).startCluster();
+        Cluster cluster = clusterRule.withSharedCoreParams( config ).withNumberOfReadReplicas( 1 ).startCluster();
 
         // then
-        List<Object[]> currentMembers;
+        int cores = cluster.coreMembers().size();
+        int readReplicas = cluster.readReplicas().size();
+        int readEndPoints = expectFollowersAsReadEndPoints ? (cores - 1 + readReplicas) : readReplicas;
         for ( int i = 0; i < 3; i++ )
         {
-            currentMembers = getMembers( cluster.getCoreMemberById( i ).database() );
-
-            List<Map<String,Object>> members = (List<Map<String, Object>>) currentMembers.get( 0 )[1];
+            List<Map<String,Object>> members = getMembers( cluster.getCoreMemberById( i ).database() );
 
             assertEquals( 1, members.stream().filter( x -> x.get( "role" ).equals( "WRITE" ) )
                     .flatMap( x -> Arrays.stream( (Object[]) x.get( "addresses" ) ) ).count() );
 
-            assertEquals( 4, members.stream().filter( x -> x.get( "role" ).equals( "READ" ) )
+            assertEquals( readEndPoints, members.stream().filter( x -> x.get( "role" ).equals( "READ" ) )
                     .flatMap( x -> Arrays.stream( (Object[]) x.get( "addresses" ) ) ).count() );
 
-            assertEquals( 3, members.stream().filter( x -> x.get( "role" ).equals( "ROUTE" ) )
+            assertEquals( cores, members.stream().filter( x -> x.get( "role" ).equals( "ROUTE" ) )
                     .flatMap( x -> Arrays.stream( (Object[]) x.get( "addresses" ) ) ).count() );
         }
     }
@@ -81,7 +104,7 @@ public class ClusterDiscoveryIT
     public void shouldNotBeAbleToDiscoverFromReadReplicas() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.withNumberOfReadReplicas( 2 ).startCluster();
+        Cluster cluster = clusterRule.withSharedCoreParams( config ).withNumberOfReadReplicas( 2 ).startCluster();
 
         try
         {
@@ -96,7 +119,8 @@ public class ClusterDiscoveryIT
         }
     }
 
-    private List<Object[]> getMembers( GraphDatabaseFacade db ) throws TransactionFailureException, org
+    @SuppressWarnings( "unchecked" )
+    private List<Map<String,Object>> getMembers( GraphDatabaseFacade db ) throws TransactionFailureException, org
             .neo4j.kernel.api.exceptions.ProcedureException
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
@@ -104,9 +128,11 @@ public class ClusterDiscoveryIT
         try ( Statement statement = transaction.acquireStatement() )
         {
             // when
-            return asList( statement.procedureCallOperations().procedureCallRead(
-                    procedureName( "dbms", "cluster", "routing", GetServersProcedure.NAME ),
-                    new Object[0] ) );
+            List<Object[]> currentMembers = asList( statement.procedureCallOperations()
+                    .procedureCallRead( procedureName( "dbms", "cluster", "routing", GetServersProcedure.NAME ),
+                            new Object[0] ) );
+
+            return (List<Map<String, Object>>) currentMembers.get( 0 )[1];
         }
     }
 }

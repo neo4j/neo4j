@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.discovery;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -37,7 +38,7 @@ import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Sche
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 
-public class ClientConnectorAddresses
+public class ClientConnectorAddresses implements Iterable<ClientConnectorAddresses.ConnectorUri>
 {
     private final List<ConnectorUri> connectorUris;
 
@@ -108,6 +109,12 @@ public class ClientConnectorAddresses
     {
         return new ClientConnectorAddresses( Stream.of( value.split( "," ) )
                 .map( ConnectorUri::fromString ).collect( Collectors.toList() ) );
+    }
+
+    @Override
+    public Iterator<ConnectorUri> iterator()
+    {
+        return connectorUris.iterator();
     }
 
     public enum Scheme

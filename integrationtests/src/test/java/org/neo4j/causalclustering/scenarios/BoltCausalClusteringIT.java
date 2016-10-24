@@ -19,9 +19,12 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -31,21 +34,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.logging.Level;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
+import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
-import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.RoutingNetworkSession;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -65,7 +63,7 @@ import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -73,7 +71,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -133,15 +130,14 @@ public class BoltCausalClusteringIT
     {
         try ( Driver driver = GraphDatabase.driver( core.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
-            int count = inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+
+            return inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
             {
                 // when
                 session.run( "MERGE (n:Person {name: 'Jim'})" ).consume();
                 Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
                 return record.get( "count" ).asInt();
             } );
-
-            return count;
         }
     }
 
@@ -153,7 +149,7 @@ public class BoltCausalClusteringIT
 
         assertEventually( "Failed to execute write query on read server", () ->
         {
-            switchLeader(cluster.awaitLeader());
+            switchLeader( cluster.awaitLeader() );
             CoreClusterMember leader = cluster.awaitLeader();
             Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
@@ -327,8 +323,7 @@ public class BoltCausalClusteringIT
         catch ( SessionExpiredException sep )
         {
             // then
-            assertEquals( String.format( "Server at %s is no longer available", coreServer.boltAdvertisedAddress() ),
-                    sep.getMessage() );
+            assertThat( sep.getMessage(), containsString( "is no longer available" ) );
         }
         finally
         {
@@ -516,7 +511,7 @@ public class BoltCausalClusteringIT
     }
 
     @Test
-    public void shouldSendRequestsToNewlyAddedServers() throws Throwable
+    public void shouldSendRequestsToNewlyAddedReadReplicas() throws Throwable
     {
         // given
         cluster = clusterRule.withNumberOfReadReplicas( 1 )
@@ -538,33 +533,29 @@ public class BoltCausalClusteringIT
         } );
 
         // when
-        Set<String> unusedServers = new HashSet<>();
+        Set<String> readReplicas = new HashSet<>();
 
-        for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
-        {
-            unusedServers.add( coreClusterMember.boltAdvertisedAddress() );
-        }
         for ( ReadReplica readReplica : cluster.readReplicas() )
         {
-            unusedServers.add( readReplica.boltAdvertisedAddress() );
+            readReplicas.add( readReplica.boltAdvertisedAddress() );
         }
 
-        for ( int i = 1; i <= 3; i++ )
+        for ( int i = 10; i <= 13; i++ )
         {
-            ReadReplica newEdge = cluster.addReadReplicaWithId( i );
-            unusedServers.add( newEdge.boltAdvertisedAddress() );
-            newEdge.start();
+            ReadReplica newReadReplica = cluster.addReadReplicaWithId( i );
+            readReplicas.add( newReadReplica.boltAdvertisedAddress() );
+            newReadReplica.start();
         }
 
         assertEventually( "Failed to send requests to all servers", () ->
         {
-            for ( int i = 0; i < cluster.coreMembers().size() + cluster.readReplicas().size(); i++ )
+            for ( int i = 0; i < cluster.readReplicas().size(); i++ ) // don't care about cores
             {
                 try ( Session session = driver.session( AccessMode.READ ) )
                 {
                     BoltServerAddress boltServerAddress = ((RoutingNetworkSession) session).address();
                     executeReadQuery( bookmark, session );
-                    unusedServers.remove( boltServerAddress.toString() );
+                    readReplicas.remove( boltServerAddress.toString() );
                 }
                 catch ( Throwable throwable )
                 {
@@ -572,7 +563,7 @@ public class BoltCausalClusteringIT
                 }
             }
 
-            return unusedServers.size() == 0;
+            return readReplicas.size() == 0; // have sent something to all replicas
         }, is( true ), 30, SECONDS );
     }
 
@@ -682,7 +673,7 @@ public class BoltCausalClusteringIT
 
             try
             {
-                triggerElection(initialLeader);
+                triggerElection( initialLeader );
             }
             catch ( IOException | TimeoutException e )
             {
@@ -703,8 +694,7 @@ public class BoltCausalClusteringIT
             if ( !coreClusterMember.equals( initialLeader ) )
             {
                 coreClusterMember.raft().triggerElection();
-                CoreClusterMember coreClusterMember1 = cluster.awaitLeader();
-                return coreClusterMember1;
+                return cluster.awaitLeader();
             }
         }
         return initialLeader;

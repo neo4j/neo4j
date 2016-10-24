@@ -21,12 +21,12 @@ package org.neo4j.causalclustering.catchup;
 
 public class CatchUpClientException extends Exception
 {
-    public CatchUpClientException( Throwable cause )
+    CatchUpClientException( String message )
     {
-        super( cause );
+        super( message );
     }
 
-    public CatchUpClientException( String operation, Throwable cause )
+    CatchUpClientException( String operation, Throwable cause )
     {
         super( operation, cause );
     }
