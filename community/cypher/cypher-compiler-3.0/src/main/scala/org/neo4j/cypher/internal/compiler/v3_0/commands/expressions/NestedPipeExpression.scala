@@ -37,4 +37,6 @@ case class NestedPipeExpression(pipe: Pipe, path: ProjectedPath) extends Express
   def calculateType(symbols: SymbolTable): CypherType = CTList(CTPath)
 
   def symbolTableDependencies = Set()
+
+  override def toString: String = s"NestedExpression(${pipe.planDescription.flatten.map(_.name).mkString("-")})"
 }
