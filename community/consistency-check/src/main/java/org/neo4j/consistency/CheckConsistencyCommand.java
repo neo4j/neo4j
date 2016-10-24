@@ -63,19 +63,26 @@ public class CheckConsistencyCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "--database=<database> [--additional-config=<file>] [--verbose]" );
+            return Optional.of( "--database=<database-name> [--additional-config=<config-file-path>] [--verbose]" );
         }
 
         @Override
         public String description()
         {
-            return "Check the consistency of a database.";
+            return "Check the consistency of a database.\n" +
+                    "\n" +
+                    "--database=<database>\n" +
+                    "        The name of the database to check the consistency of.\n" +
+                    "--additional-config=<config-file-path>\n" +
+                    "        Configuration file to supply additional configuration in.\n" +
+                    "--verbose\n" +
+                    "        Enable verbose output.\n";
         }
 
         @Override
         public String summary()
         {
-            return description();
+            return "Check the consistency of a database.";
         }
 
         @Override
