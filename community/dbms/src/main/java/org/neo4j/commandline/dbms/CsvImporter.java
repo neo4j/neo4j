@@ -39,9 +39,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
-import static java.lang.Math.toIntExact;
 import static java.nio.charset.Charset.defaultCharset;
-import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.tooling.ImportTool.csvConfiguration;
 import static org.neo4j.tooling.ImportTool.extractInputFiles;
@@ -49,7 +47,6 @@ import static org.neo4j.tooling.ImportTool.importConfiguration;
 import static org.neo4j.tooling.ImportTool.nodeData;
 import static org.neo4j.tooling.ImportTool.relationshipData;
 import static org.neo4j.tooling.ImportTool.validateInputFiles;
-import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
@@ -60,7 +57,6 @@ class CsvImporter implements Importer
     private final Collection<Args.Option<File[]>> nodesFiles, relationshipsFiles;
     private final IdType idType;
     private final Charset inputEncoding;
-    private final int pageSize;
     private final Config config;
     private final Args args;
     private final OutsideWorld outsideWorld;
@@ -93,10 +89,8 @@ class CsvImporter implements Importer
                 "            ACTUAL: (advanced) actual node ids. The default option is STRING.\n" +
                 "        For more information on id handling, please see the Neo4j Manual:\n" +
                 "        http://neo4j.com/docs/operations-manual/current/deployment/#import-tool\n" +
-                "--input-encoding=<character-set>\n" +
-                "        Character set that input data is encoded in. Defaults to UTF-8.\n" +
-                "--page-size=<page-size>\n" +
-                "        Page size to use for import in bytes. (e. g. 4M or 8k)\n";
+                "--input-encoding <character-set>\n" +
+                "        Character set that input data is encoded in. Defaults to UTF-8.\n";
     }
 
     public static String arguments()
@@ -129,8 +123,6 @@ class CsvImporter implements Importer
         idType = args.interpretOption( "id-type", withDefault( IdType.STRING ),
                 from -> IdType.valueOf( from.toUpperCase() ) );
         inputEncoding = Charset.forName( args.get( "input-encoding", defaultCharset().name() ) );
-        pageSize = toIntExact(
-                parseLongWithUnit( args.get( "page-size", String.valueOf( Configuration.DEFAULT.pageSize() ) ) ) );
         this.config = config;
     }
 
@@ -145,7 +137,7 @@ class CsvImporter implements Importer
         OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
         Collector badCollector = badCollector( badOutput, 1000, collect( true, true, true ) );
 
-        Configuration configuration = importConfiguration( null, false, config, pageSize );
+        Configuration configuration = importConfiguration( null, false, config );
         CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                 relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(), idType,
                 csvConfiguration( args, false ), badCollector, configuration.maxNumberOfProcessors() );

@@ -593,6 +593,12 @@ public class ImportTool
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
+            final boolean defaultSettingsSuitableForTests, final Config dbConfig )
+    {
+        return importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, UNSPECIFIED );
+    }
+
+    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
             final boolean defaultSettingsSuitableForTests, final Config dbConfig, int pageSize )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
