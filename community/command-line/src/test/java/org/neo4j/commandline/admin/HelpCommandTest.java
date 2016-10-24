@@ -88,7 +88,7 @@ public class HelpCommandTest
         }
         catch ( IncorrectUsage e )
         {
-            assertThat( e.getMessage(), containsString( "Available commands are foo bar baz" ) );
+            assertThat( e.getMessage(), containsString( "Available commands are: foo bar baz" ) );
         }
     }
 
@@ -106,20 +106,16 @@ public class HelpCommandTest
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
         when( commandProvider.name() ).thenReturn( "foobar" );
         when( commandProvider.arguments() ).thenReturn( Optional.of( "--baz --qux" ) );
-        when( commandProvider.summary() ).thenReturn( "This is a summary of the foobar command." );
         when( commandProvider.description() ).thenReturn( "This is a description of the foobar command." );
         when( commandLocator.findProvider( "foobar" ) ).thenReturn( commandProvider );
 
-        HelpCommand helpCommand = new HelpCommand( mock( Usage.class ), out, commandLocator );
+        HelpCommand helpCommand = new HelpCommand( new Usage( "neo4j-admin", commandLocator ), out, commandLocator );
         helpCommand.execute( "foobar" );
 
         InOrder ordered = inOrder( out );
         ordered.verify( out ).accept( "neo4j-admin foobar --baz --qux" );
         ordered.verify( out ).accept( "" );
-        ordered.verify( out ).accept( "    This is a summary of the foobar command." );
-        ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "This is a description of the foobar command." );
-        ordered.verify( out ).accept( "" );
         ordered.verifyNoMoreInteractions();
     }
 }

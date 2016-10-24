@@ -57,7 +57,7 @@ public class AdminToolTest
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null, "help" );
-        verify( outsideWorld ).stdOutLine( "neo4j-admin help [<command>]" );
+        verify( outsideWorld ).stdOutLine( "    help" );
     }
 
     @Test
@@ -66,7 +66,7 @@ public class AdminToolTest
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null );
         verify( outsideWorld ).stdErrLine( "you must provide a command" );
-        verify( outsideWorld ).stdErrLine( "Usage:" );
+        verify( outsideWorld ).stdErrLine( "Usage: neo4j-admin <command>" );
         verify( outsideWorld ).exit( 1 );
     }
 
@@ -159,7 +159,6 @@ public class AdminToolTest
         new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
         InOrder inOrder = inOrder( outsideWorld );
         inOrder.verify( outsideWorld ).stdErrLine( "the-usage-message" );
-        inOrder.verify( outsideWorld ).stdErrLine( "neo4j-admin exception" );
         verify( outsideWorld ).exit( 1 );
     }
 

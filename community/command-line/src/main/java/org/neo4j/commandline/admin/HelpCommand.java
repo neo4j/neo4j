@@ -82,10 +82,7 @@ public class HelpCommand implements AdminCommand
             try
             {
                 AdminCommand.Provider commandProvider = this.locator.findProvider( args[0] );
-                Usage.CommandUsage commandUsage = new Usage.CommandUsage( commandProvider, "neo4j-admin" );
-                commandUsage.print( this.output );
-                this.output.accept( commandProvider.description() );
-                this.output.accept( "" );
+                usage.printUsageForCommand( commandProvider, output );
             }
             catch ( NoSuchElementException e )
             {
@@ -94,7 +91,7 @@ public class HelpCommand implements AdminCommand
                         .forEach( commandProvider -> validCommands.append( commandProvider.name() ).append( " " ) );
 
                 throw new IncorrectUsage(
-                        format( "Unknown command: %s. Available commands are %s\n", args[0], validCommands ) );
+                        format( "Unknown command: %s. Available commands are: %s\n", args[0], validCommands ) );
             }
         }
         else

@@ -55,17 +55,16 @@ public class UsageTest
         usage.print( out );
 
         InOrder ordered = inOrder( out );
-        ordered.verify( out ).accept( "Usage:" );
+        ordered.verify( out ).accept( "Usage: neo4j-admin <command>" );
         ordered.verify( out ).accept( "" );
+        ordered.verify( out ).accept( "Available commands:" );
         ordered.verify( out )
-                .accept( "neo4j-admin restore ---from <backup-directory> --database=<database-name> [--force]" );
+                .accept( "    restore" );
+        ordered.verify( out ).accept( "        Restores a database backed up using the neo4j-backup tool." );
+        ordered.verify( out ).accept( "    bam" );
+        ordered.verify( out ).accept( "        A summary" );
         ordered.verify( out ).accept( "" );
-        ordered.verify( out ).accept( "    Restores a database backed up using the neo4j-backup tool." );
-        ordered.verify( out ).accept( "" );
-        ordered.verify( out ).accept( "neo4j-admin bam" );
-        ordered.verify( out ).accept( "" );
-        ordered.verify( out ).accept( "    A summary" );
-        ordered.verify( out ).accept( "" );
+        ordered.verify( out ).accept( "Use neo4j-admin help <command> for more details." );
         ordered.verifyNoMoreInteractions();
     }
 

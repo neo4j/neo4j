@@ -106,7 +106,7 @@ public class AdminTool
     {
         final Usage.CommandUsage commandUsage = new Usage.CommandUsage( command, scriptName );
         outsideWorld.stdErrLine( e.getMessage() );
-        commandUsage.print( outsideWorld::stdErrLine );
+        commandUsage.printSummary( outsideWorld::stdErrLine );
         failure();
     }
 
