@@ -44,7 +44,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure() {
     testQuery(
       title = "Call a procedure",
-      text = "This calls the built-in procedure 'db.labels', which lists all in-use labels in the database.",
+      text = "This calls the built-in procedure `db.labels`, which lists all in-use labels in the database.",
       queryText = "CALL db.labels",
       optionalResultExplanation = "",
       assertions = (p) => assert(p.nonEmpty) )
@@ -53,7 +53,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure_name_quoting() {
     testQuery(
       title = "Call a procedure using a quoted namespace and name",
-      text = "This calls the built-in procedure 'db.labels', which lists all in-use labels in the database.",
+      text = "This calls the built-in procedure `db.labels`, which lists all in-use labels in the database.",
       queryText = "CALL `db`.`labels`",
       optionalResultExplanation = "",
       assertions = (p) => assert(p.nonEmpty) )
@@ -62,7 +62,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure_within_a_complex_query() {
     testQuery(
       title = "Call a procedure within a complex query",
-      text = "This calls the built-in procedure 'db.labels' to count all in-use labels in the database.",
+      text = "This calls the built-in procedure `db.labels` to count all in-use labels in the database.",
       planners = Seq(""),
       queryText = "CALL db.labels() YIELD label RETURN count(label) AS numLabels",
       optionalResultExplanation =
@@ -73,7 +73,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure_and_filter_its_results() {
     testQuery(
       title = "Call a procedure and filter its results",
-      text = "This calls the built-in procedure 'db.labels' to count all in-use labels in the database that contain the word 'User'",
+      text = "This calls the built-in procedure `db.labels` to count all in-use labels in the database that contain the word 'User'",
       planners = Seq(""),
       queryText = "CALL db.labels() YIELD label WHERE label CONTAINS 'User' RETURN count(label) AS numLabels",
       optionalResultExplanation =
@@ -85,7 +85,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
     testQuery(
       title = "Call a procedure within a complex query and rename its outputs",
       text =
-        "This calls the built-in procedure 'db.propertyKeys' as part of counting " +
+        "This calls the built-in procedure `db.propertyKeys` as part of counting " +
         "the number of nodes per property key that is currently used in the database.",
       planners = Seq(""),
       queryText = "CALL db.propertyKeys() YIELD propertyKey AS prop " +

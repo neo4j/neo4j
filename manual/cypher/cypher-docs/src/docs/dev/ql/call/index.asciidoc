@@ -9,24 +9,27 @@ The `CALL` clause is used to call a procedure deployed in the database.
 Procedures are called using the `CALL` clause.
 
 Each procedure call needs to specify all required procedure arguments.
-This may be done either explicitly, by listing them in parenthesis and separated by commas after the procedure name, or implicitly by using available query parameters as procedure call arguments.
-The latter form is only available when the whole query consists of a single `CALL` clause (i.e. in a standalone procedure call).
+This may be done either explicitly, by using a comma-separated list wrapped in parentheses after the procedure name, or implicitly by using available query parameters as procedure call arguments.
+The latter form is available only in a so-called standalone procedure call, when the whole query consists of a single `CALL` clause.
 
 Most procedures return a stream of records with a fixed set of result fields, similar to how running a Cypher query returns a stream of records, too.
-The `YIELD` sub clause is used to explicitly select which of these result fields are returned as newly bound variables from the procedure call to the user or for further processing by the remaining query.
+The `YIELD` sub-clause is used to explicitly select which of the available result fields are returned as newly-bound variables from the procedure call to the user or for further processing by the remaining query.
 Each yielded result field may optionally be renamed using aliasing (i.e. `resultFieldName AS newName`).
 All new variables bound by a procedure call are added to the set of variables already bound in the current scope.
-It is an error if a procedure call tries to rebind an already bound variable (i.e. a procedure call cannot shadow a variable that is already bound in the current scope).
+It is an error if a procedure call tries to rebind a previously bound variable (i.e. a procedure call cannot shadow a variable that was previously bound in the current scope).
 
-Inside a larger query, the records returned from a procedure call with explicit `YIELD` may be further filtered using a `WHERE` sub clause followed by a predicate (similar to `WITH ... WHERE ...`).
+Inside a larger query, the records returned from a procedure call with an explicit `YIELD` may be further filtered using a `WHERE` sub-clause followed by a predicate (similar to `WITH ... WHERE ...`).
 
-In a standalone procedure call only, `YIELD` may be omitted.
-In this case, all result fields are yielded as newly bound variables from the procedure call to the user or for further processing by the remaining query.
+If the called procedure declares at least one result field, `YIELD` may generally not be omitted.
+However `YIELD` may always be omitted in a standalone procedure call.
+In this case, all result fields are yielded as newly-bound variables from the procedure call to the user.
 
-Calling a `VOID` procedures may only have a side effect and will not produce any result records and thus does neither allow nor require the use of `YIELD`.
-Calling a `VOID` procedure in the middle of a larger query will simply pass on each input record (i.e. it acts like `WITH *`).
+Neo4j supports the notion of `VOID` procedures.
+A `VOID` procedure is a procedure that does not declare any result fields and returns no result records and that has explicitly been declared as `VOID`.
+Calling a `VOID` procedure may only have a side effect and thus does neither allow nor require the use of `YIELD`.
+Calling a `VOID` procedure in the middle of a larger query will simply pass on each input record (i.e. it acts like `WITH *` in terms of the record stream).
 
-The following examples show how to pass arguments to and how to yield result fields from a procedure call.
+The following examples show how to pass arguments to and yield result fields from a procedure call.
 All examples use the following procedure:
 
 [snippet,java]
