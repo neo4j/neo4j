@@ -675,7 +675,8 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
 
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'Henrik')" );
 
-        assertFail( henrik, "CALL test.createNode()", "Write operations are not allowed for 'Henrik'." );
+        assertFail( henrik, "CALL test.createNode()",
+                "Write operations are not allowed for user 'Henrik' with roles [reader]." );
     }
 
     //---------- change password -----------
