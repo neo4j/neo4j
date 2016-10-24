@@ -104,9 +104,8 @@ public class AdminTool
 
     private void badUsage( AdminCommand.Provider command, IncorrectUsage e )
     {
-        final Usage.CommandUsage commandUsage = new Usage.CommandUsage( command, scriptName );
         outsideWorld.stdErrLine( e.getMessage() );
-        commandUsage.printSummary( outsideWorld::stdErrLine );
+        usage.printUsageForCommand( command, outsideWorld::stdErrLine );
         failure();
     }
 
