@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.util.Collections;
+import java.util.function.IntConsumer;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.Response;
@@ -88,14 +89,14 @@ public class TransactionPropagatorTest
         };
         Log logger = mock( Log.class );
         Slaves slaves = mock( Slaves.class );
-        when( slaves.getSlaves() ).thenReturn( Collections.<Slave>emptyList() );
-        CommitPusher pusher = mock( CommitPusher.class );
-        TransactionPropagator propagator = life.add( new TransactionPropagator( config, logger, slaves, pusher ) );
+        IntConsumer missedReplicas = (x) -> {};
+        when( slaves.getSlaves() ).thenReturn( Collections.emptyList() );
+        TransactionPropagator propagator = life.add( new TransactionPropagator( config, logger, slaves ) );
 
         // WHEN
         for ( int i = 0; i < 10; i++ )
         {
-            propagator.committed( TransactionIdStore.BASE_TX_ID, serverId );
+            propagator.committed( TransactionIdStore.BASE_TX_ID, serverId, missedReplicas );
         }
 
         // THEN

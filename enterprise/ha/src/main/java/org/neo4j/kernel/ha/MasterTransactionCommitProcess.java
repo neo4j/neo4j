@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.function.IntConsumer;
+
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -36,7 +38,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     private final TransactionCommitProcess inner;
     private final TransactionPropagator txPropagator;
     private final IntegrityValidator validator;
-    private final Monitor monitor;
+    private final IntConsumer missedReplicasIntConsumer;
 
     public interface Monitor
     {
@@ -49,7 +51,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
         this.inner = commitProcess;
         this.txPropagator = txPropagator;
         this.validator = validator;
-        this.monitor = monitor;
+        this.missedReplicasIntConsumer = monitor::missedReplicas;
     }
 
     @Override
@@ -61,12 +63,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
         long result = inner.commit( batch, commitEvent, mode );
 
         // Assuming all the transactions come from the same author
-        int missedReplicas = txPropagator.committed( result, batch.transactionRepresentation().getAuthorId() );
-
-        if ( missedReplicas > 0 )
-        {
-            monitor.missedReplicas( missedReplicas );
-        }
+        txPropagator.committed( result, batch.transactionRepresentation().getAuthorId(), missedReplicasIntConsumer );
 
         return result;
     }

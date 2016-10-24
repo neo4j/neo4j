@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.function.IntConsumer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ComException;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
-import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
@@ -68,13 +68,16 @@ public class TestMasterCommittingAtSlave
 
     private Iterable<Slave> slaves;
     private AssertableLogProvider logProvider = new AssertableLogProvider();
-    LogMatcher communicationLogMessage = new LogMatcher( any( String.class ), is( ERROR ), containsString( "communication" ), any( Object[].class ), any( Throwable.class ) );
+    private LogMatcher communicationLogMessage = new LogMatcher(
+            any( String.class ), is( ERROR ), containsString( "communication" ), any( Object[].class ),
+            any( Throwable.class ) );
+    private IntConsumer missedReplicas = (missedReplicas) ->{};
 
     @Test
     public void commitSuccessfullyToTheFirstOne() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
-        propagator.committed( 2, MasterServerId );
+        propagator.committed( 2, MasterServerId, missedReplicas );
         assertCalls( (FakeSlave) slaves.iterator().next(), 2L );
         logProvider.assertNone( communicationLogMessage );
     }
@@ -83,9 +86,9 @@ public class TestMasterCommittingAtSlave
     public void commitACoupleOfTransactionsSuccessfully() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
-        propagator.committed( 2, MasterServerId );
-        propagator.committed( 3, MasterServerId );
-        propagator.committed( 4, MasterServerId );
+        propagator.committed( 2, MasterServerId, missedReplicas );
+        propagator.committed( 3, MasterServerId, missedReplicas );
+        propagator.committed( 4, MasterServerId, missedReplicas );
         assertCalls( (FakeSlave) slaves.iterator().next(), 2, 3, 4 );
         logProvider.assertNone( communicationLogMessage );
     }
@@ -94,7 +97,7 @@ public class TestMasterCommittingAtSlave
     public void commitFailureAtFirstOneShouldMoveOnToNext() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder(), true );
-        propagator.committed( 2, MasterServerId );
+        propagator.committed( 2, MasterServerId, missedReplicas );
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next() );
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
@@ -105,9 +108,9 @@ public class TestMasterCommittingAtSlave
     public void commitSuccessfullyAtThreeSlaves() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder() );
-        propagator.committed( 2, MasterServerId );
-        propagator.committed( 3, 1 );
-        propagator.committed( 4, 2 );
+        propagator.committed( 2, MasterServerId, missedReplicas );
+        propagator.committed( 3, 1, missedReplicas );
+        propagator.committed( 4, 2, missedReplicas );
 
         Iterator<Slave> slaveIt = slaves.iterator();
 
@@ -123,7 +126,7 @@ public class TestMasterCommittingAtSlave
     public void commitSuccessfullyOnSomeOfThreeSlaves() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder(), false, true, true );
-        propagator.committed( 2, MasterServerId );
+        propagator.committed( 2, MasterServerId, missedReplicas );
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
         slaveIt.next();
@@ -139,7 +142,7 @@ public class TestMasterCommittingAtSlave
         TransactionPropagator propagator = newPropagator( 3, 1, roundRobin() );
         for ( long tx = 2; tx <= 6; tx++ )
         {
-            propagator.committed( tx, MasterServerId );
+            propagator.committed( tx, MasterServerId, missedReplicas );
         }
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next(), 2, 5 );
@@ -154,7 +157,7 @@ public class TestMasterCommittingAtSlave
         TransactionPropagator propagator = newPropagator( 4, 2, roundRobin(), false, true );
         for ( long tx = 2; tx <= 6; tx++ )
         {
-            propagator.committed( tx, MasterServerId );
+            propagator.committed( tx, MasterServerId, missedReplicas );
         }
 
         /* SLAVE |    TX
@@ -176,7 +179,7 @@ public class TestMasterCommittingAtSlave
     public void notEnoughSlavesSuccessful() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 3, 2, givenOrder(), true, true );
-        propagator.committed( 2, MasterServerId );
+        propagator.committed( 2, MasterServerId, missedReplicas );
         Iterator<Slave> slaveIt = slaves.iterator();
         slaveIt.next();
         slaveIt.next();
@@ -220,7 +223,7 @@ public class TestMasterCommittingAtSlave
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
         Neo4jJobScheduler scheduler = cleanup.add( new Neo4jJobScheduler() );
         TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
-                NullLog.getInstance(), () -> slaves, new CommitPusher() );
+                NullLog.getInstance(), () -> slaves );
         // Life
         try
         {

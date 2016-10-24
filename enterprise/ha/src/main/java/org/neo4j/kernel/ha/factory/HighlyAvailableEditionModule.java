@@ -115,7 +115,6 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.id.HaIdReuseEligibility;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
-import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -570,7 +569,7 @@ public class HighlyAvailableEditionModule
                 clusterClient, slaveFactory, me ) ) );
 
         TransactionPropagator transactionPropagator = new TransactionPropagator( TransactionPropagator.from( config ),
-                logging.getInternalLog( TransactionPropagator.class ), slaves, new CommitPusher() );
+                logging.getInternalLog( TransactionPropagator.class ), slaves );
         paxosLife.add( transactionPropagator );
 
         DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate = new DelegateInvocationHandler<>(
