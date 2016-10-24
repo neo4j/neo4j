@@ -713,12 +713,35 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @Test
+    public void shouldRunProcedureWithMatchingWildcardAllowed() throws Throwable
+    {
+        neo.tearDown();
+        neo = setUpNeoServer( stringMap( SecuritySettings.procedure_roles.name(), "test.*:role1" ) );
+        reSetUp();
+
+        userManager.newRole( "role1", "noneSubject" );
+        assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "3" ) );
+    }
+
+    @Test
+    public void shouldNotRunProcedureWithMismatchingWildCardAllowed() throws Throwable
+    {
+        neo.tearDown();
+        neo = setUpNeoServer( stringMap( SecuritySettings.procedure_roles.name(), "tes.*:role1" ) );
+        reSetUp();
+
+        userManager.newRole( "role1", "noneSubject" );
+        Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
+
+        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
+        assertThat( Arrays.asList( numNodes.allowed() ), empty() );
+        assertFail( noneSubject, "CALL test.numNodes", "Read operations are not allowed" );
+    }
+
+    @Test
     public void shouldNotSetProcedureAllowedIfSettingNotSet() throws Throwable
     {
-        Procedures procedures = neo
-                .getLocalGraph()
-                .getDependencyResolver()
-                .resolveDependency( Procedures.class );
+        Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
 
         ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
         assertThat( Arrays.asList( numNodes.allowed() ), empty() );

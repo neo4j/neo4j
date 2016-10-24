@@ -43,6 +43,7 @@ import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES;
 
 /**
  * Settings for security module
@@ -294,4 +295,15 @@ public class SecuritySettings
                   "If this setting is the empty string (default), procedures will be executed according to the same " +
                   "security rules as normal Cypher statements." )
     public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
+
+    @Description( "The default role to assign to matching procedures with empty `allowed` annotation fields. " +
+                  "This provides a finer level of control over which roles are assigned to which procedures than the " +
+                  "`" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting. For example: `dbms.security.procedures" +
+                  ".roles=apoc.convert.*:reader,apoc.load.json:writer,apoc.trigger.add:TriggerHappy` will assign" +
+                  "the role `reader` to all procedures in the `apoc.convert` namespace, the role `writer` to " +
+                  "the `apoc.load.json` namespace and the role `TriggerHappy` to the the specific procedure " +
+                  "`apoc.trigger.add`. Procedures not matching any of these patterns will either be assigned the " +
+                  "role specified in `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` or be subject to the security " +
+                  "rules of normal Cypher statements." )
+    public static final Setting<String> procedure_roles = setting( PROC_ALLOWED_SETTING_ROLES, STRING, "" );
 }
