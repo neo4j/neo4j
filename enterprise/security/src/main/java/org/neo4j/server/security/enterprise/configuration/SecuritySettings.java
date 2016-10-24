@@ -115,11 +115,11 @@ public class SecuritySettings
     // LDAP settings
     //=========================================================================
 
-    @Description( "URL of LDAP server (with protocol, hostname and port) to use for authentication and authorization. " +
+    @Description( "URL of LDAP server to use for authentication and authorization. " +
                   "The format of the setting is `<protocol>://<hostname>:<port>`, where hostname is the only " +
                   "required field. The supported values for protocol are `ldap` (default) and `ldaps`. " +
                   "The default port for `ldap` is 389 and for `ldaps` 636. For example: " +
-                  "`ldaps://ldap.example.com:4444`.\n\n" +
+                  "`ldaps://ldap.example.com:10389`.\n\n" +
                   "NOTE: You may want to consider using STARTTLS (`dbms.security.ldap.use_starttls`) instead of LDAPS " +
                   "for secure connections, in which case the correct protocol is `ldap`." )
     public static final Setting<String> ldap_server =
@@ -268,7 +268,7 @@ public class SecuritySettings
     @Description( "Set to log successful authentication events to the security log. " +
                   "If this is set to `false` only failed authentication events will be logged, which " +
                   "could be useful if you find that the successful events spam the logs too much, " +
-                  "and you do not require full auditing capability" )
+                  "and you do not require full auditing capability." )
     public static final Setting<Boolean> security_log_successful_authentication =
             setting( "dbms.security.log_successful_authentication", BOOLEAN, "true" );
 
