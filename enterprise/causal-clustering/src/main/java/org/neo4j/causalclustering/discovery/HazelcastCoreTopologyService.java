@@ -36,11 +36,13 @@ import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.impl.MapListenerAdapter;
 
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.concurrent.Scheduler;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
@@ -60,22 +62,20 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final Log log;
     private final Log userLog;
     private final CoreTopologyListenerService listenerService;
-    private final JobScheduler scheduler;
     private String membershipRegistrationId;
     private String mapRegistrationId;
 
-    private JobScheduler.JobHandle jobHandle;
+    private Future<?> refreshJobHandle;
 
     private HazelcastInstance hazelcastInstance;
     private volatile ReadReplicaTopology latestReadReplicaTopology;
     private volatile CoreTopology latestCoreTopology;
 
-    HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider,
-            LogProvider userLogProvider )
+    HazelcastCoreTopologyService( Config config, MemberId myself, LogProvider logProvider,
+                                  LogProvider userLogProvider )
     {
         this.config = config;
         this.myself = myself;
-        this.scheduler = jobScheduler;
         this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
@@ -106,22 +106,14 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         refreshReadReplicaTopology();
         listenerService.notifyListeners( coreServers() );
 
-        try
-        {
-            scheduler.start();
-        }
-        catch ( Throwable throwable )
-        {
-            log.debug( "Failed to start job scheduler." );
-            return;
-        }
-
         JobScheduler.Group group = new JobScheduler.Group( "Scheduler", POOLED );
-        jobHandle = this.scheduler.scheduleRecurring( group, () ->
+        long refreshInteval = config.get( CausalClusteringSettings.cluster_topology_refresh );
+        Runnable refreshJob = () ->
         {
             refreshCoreTopology();
             refreshReadReplicaTopology();
-        }, config.get( CausalClusteringSettings.cluster_topology_refresh ), TimeUnit.MILLISECONDS );
+        };
+        refreshJobHandle = Scheduler.executeRecurring( refreshJob, 0, refreshInteval, TimeUnit.MILLISECONDS );
     }
 
     @Override
@@ -141,7 +133,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         }
         finally
         {
-            jobHandle.cancel( true );
+            refreshJobHandle.cancel( true );
         }
     }
 

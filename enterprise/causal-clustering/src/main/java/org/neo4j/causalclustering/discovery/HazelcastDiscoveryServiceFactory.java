@@ -33,7 +33,7 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
             LogProvider logProvider, LogProvider userLogProvider )
     {
         configureHazelcast( config );
-        return new HazelcastCoreTopologyService( config, myself, jobScheduler, logProvider, userLogProvider );
+        return new HazelcastCoreTopologyService( config, myself, logProvider, userLogProvider );
     }
 
     @Override
