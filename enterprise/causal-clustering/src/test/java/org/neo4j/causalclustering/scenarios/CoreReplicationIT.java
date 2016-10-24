@@ -125,7 +125,7 @@ public class CoreReplicationIT
         // given
         CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
         {
-            db.createNode( Label.label( "Person" ) );
+            db.createNode();
             tx.success();
         } );
 
@@ -137,7 +137,7 @@ public class CoreReplicationIT
         // when
         try ( Transaction tx = follower.beginTx() )
         {
-            follower.findNodes( Label.label( "Person" ) ).next().setProperty( "name", "Mark" );
+            follower.getAllNodes().iterator().next().setProperty( "name", "Mark" );
             tx.success();
             fail( "Should have thrown exception" );
         }
