@@ -28,7 +28,6 @@ import org.apache.directory.server.core.annotations.ContextEntry;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.annotations.LoadSchema;
-import org.apache.directory.server.core.api.DirectoryService;
 import org.apache.directory.server.core.api.filtering.EntryFilteringCursor;
 import org.apache.directory.server.core.api.interceptor.BaseInterceptor;
 import org.apache.directory.server.core.api.interceptor.Interceptor;
@@ -38,6 +37,7 @@ import org.apache.directory.server.ldap.handlers.extended.StartTlsHandler;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.File;
@@ -72,6 +72,10 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE;
+import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_READ_TIMEOUT_CLIENT_MESSAGE;
+
+interface TimeoutTests { /* Category marker */ };
 
 @RunWith( FrameworkRunner.class )
 @CreateDS(
@@ -521,6 +525,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
+    @Category( TimeoutTests.class )
     public void shouldTimeoutIfInvalidLdapServer() throws Throwable
     {
         // When
@@ -529,10 +534,12 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.ldap_connection_timeout, "1s" );
         } ) );
 
-        assertAuthFail( "neo", "abc123" );
+        assertConnectionTimeout( authToken( "neo", "abc123", null ),
+                LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE );
     }
 
     @Test
+    @Category( TimeoutTests.class )
     public void shouldTimeoutIfLdapServerDoesNotRespond() throws Throwable
     {
         try ( DirectoryServiceWaitOnSearch ignore = new DirectoryServiceWaitOnSearch( 5000 ) )
@@ -547,6 +554,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
+    @Category( TimeoutTests.class )
     public void shouldTimeoutIfLdapServerDoesNotRespondWithLdapUserContext() throws Throwable
     {
         try ( DirectoryServiceWaitOnSearch ignore = new DirectoryServiceWaitOnSearch( 5000 ) )
@@ -557,7 +565,8 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
                 settings.put( SecuritySettings.ldap_read_timeout, "1s" );
             } ) );
 
-            assertAuthFail( "neo", "abc123" );
+            assertConnectionTimeout( authToken( "neo", "abc123", null ),
+                    LDAP_READ_TIMEOUT_CLIENT_MESSAGE );
         }
     }
 
@@ -902,8 +911,18 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         // Then
         assertThat( client, eventuallyReceives(
-                msgFailure( Status.Security.Timeout,
-                        String.format( "LDAP response read timed out" ) ) ) );
+                msgFailure( Status.Security.Timeout, LDAP_READ_TIMEOUT_CLIENT_MESSAGE ) ) );
+    }
+
+    private void assertConnectionTimeout( Map<String,Object> authToken, String message ) throws Exception
+    {
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", authToken ) ) );
+
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Timeout, message ) ) );
     }
 
     private void testClearAuthCache() throws Exception
@@ -972,6 +991,12 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         {
             waitOnSearchInterceptor = new BaseInterceptor()
             {
+                @Override
+                public String getName()
+                {
+                    return getClass().getName();
+                }
+
                 @Override
                 public EntryFilteringCursor search( SearchOperationContext searchContext ) throws LdapException
                 {

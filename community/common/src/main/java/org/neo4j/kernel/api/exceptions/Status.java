@@ -413,7 +413,7 @@ public interface Status
         EncryptionRequired( ClientError, "A TLS encrypted connection is required." ),
         Forbidden( ClientError, "An attempt was made to perform an unauthorized action." ),
         AuthorizationExpired( ClientError, "The stored authorization info has expired. Please reconnect." ),
-        Timeout( TransientError, "An authorization request timed out." );
+        Timeout( TransientError, "An auth provider request timed out." );
 
         private final Code code;
 

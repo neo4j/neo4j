@@ -81,6 +81,9 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
 
     private static final String JNDI_LDAP_CONNECT_TIMEOUT = "com.sun.jndi.ldap.connect.timeout";
     private static final String JNDI_LDAP_READ_TIMEOUT = "com.sun.jndi.ldap.read.timeout";
+    private static final String JNDI_LDAP_READ_TIMEOUT_MESSAGE_PART = "LDAP response read timed out";
+    public static final String LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE = "LDAP connection timed out.";
+    public static final String LDAP_READ_TIMEOUT_CLIENT_MESSAGE = "LDAP response timed out.";
 
     private Boolean authenticationEnabled;
     private Boolean authorizationEnabled;
@@ -148,6 +151,15 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
             {
                 securityLog.error( withRealm( "Failed to authenticate user '%s' against %s: %s",
                         token.getPrincipal(), serverString, e.getMessage() ) );
+                if ( e instanceof CommunicationException )
+                {
+                    throw new AuthTimeoutException( LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE, e );
+                }
+                else if (e instanceof NamingException &&
+                         e.getMessage().contains( JNDI_LDAP_READ_TIMEOUT_MESSAGE_PART ) )
+                {
+                    throw new AuthTimeoutException( LDAP_READ_TIMEOUT_CLIENT_MESSAGE, e );
+                }
                 throw e;
             }
         }
@@ -340,11 +352,13 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
         {
             securityLog.error( withRealm( "Failed to get authorization info: '%s' caused by '%s'",
                     e.getMessage(), e.getCause().getMessage() ) );
-            if ( e.getCause().getMessage().contains( "LDAP response read timed out" ) )
+            // Shiro's doGetAuthorizationInfo() wraps a NamingException in an AuthorizationException
+            if ( e.getCause() != null && e.getCause() instanceof NamingException &&
+                 e.getCause().getMessage().contains( JNDI_LDAP_READ_TIMEOUT_MESSAGE_PART ) )
             {
-                throw new AuthTimeoutException( e.getCause().getMessage(), e );
+                throw new AuthTimeoutException( LDAP_READ_TIMEOUT_CLIENT_MESSAGE, e );
             }
-            // TODO: We should define a Neo4j exception with a status for this so it doesn't become Unknown Error
+            // TODO: Should we define a Neo4j exception with a status for this so it doesn't become Unknown Error?
             throw e;
         }
     }
