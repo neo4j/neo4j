@@ -28,14 +28,6 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  test("should fail if columnAs refers to unknown column") {
-    val n1 = createNode()
-    val n2 = createNode()
-    val r = relate(n1, n2)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n)-[r]->() RETURN n, r")
-    a[NotFoundException] should be thrownBy result.columnAs("m")
-  }
-
   // Not TCK material -- only one integer type
   test("comparing numbers should work nicely") {
     val n1 = createNode(Map("x" -> 50))
@@ -66,7 +58,6 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   // Not TCK material -- shortestPath(), allShortestPaths()
-
   test("should return shortest path") {
     createNodes("A", "B")
     val r1 = relate("A" -> "KNOWS" -> "B")
@@ -242,7 +233,7 @@ return p""")
 
     val result = executeWithAllPlannersAndCompatibilityMode(query, "0" -> node1.getId, "1" -> node2.getId)
     graph.inTx(
-      result.toSet should equal(Set(Map("paths" -> new PathImpl(node1, r, node2)), Map("paths" -> new PathImpl(node2, r, node1))))
+      result.toSet should equal(Set(Map("paths" -> PathImpl(node1, r, node2)), Map("paths" -> PathImpl(node2, r, node1))))
     )
   }
 
@@ -429,7 +420,7 @@ return p""")
     val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE exists(n.email) RETURN n")
 
     // then
-    result.toList should equal(List(Map("n" -> nodes(0)), Map("n" -> nodes(1))))
+    result.toList should equal(List(Map("n" -> nodes.head), Map("n" -> nodes(1))))
     result.executionPlanDescription().toString should include("NodeIndexScan")
   }
 
@@ -441,7 +432,7 @@ return p""")
     val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
 
     // then
-    result.toList should equal(List(Map("n" -> nodes(0))))
+    result.toList should equal(List(Map("n" -> nodes.head)))
     result.executionPlanDescription().toString should include("NodeIndexSeek")
     result.executionPlanDescription().toString should not include "NodeIndexScan"
   }

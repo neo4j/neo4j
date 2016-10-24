@@ -26,14 +26,14 @@ import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.mutable
 
-trait VarLenghtPredicate {
+trait VarLengthPredicate {
   def filterNode(row: ExecutionContext, state:QueryState)(node: Node): Boolean
   def filterRelationship(row: ExecutionContext, state:QueryState)(rel: Relationship): Boolean
 }
 
-object VarLenghtPredicate {
+object VarLengthPredicate {
 
-  val NONE = new VarLenghtPredicate {
+  val NONE = new VarLengthPredicate {
 
     override def filterNode(row: ExecutionContext, state:QueryState)(node: Node): Boolean = true
 
@@ -50,7 +50,7 @@ case class VarLengthExpandPipe(source: Pipe,
                                min: Int,
                                max: Option[Int],
                                nodeInScope: Boolean,
-                               filteringStep: VarLenghtPredicate = VarLenghtPredicate.NONE)
+                               filteringStep: VarLengthPredicate= VarLengthPredicate.NONE)
                               (val id: Id = new Id)
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
