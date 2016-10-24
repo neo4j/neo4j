@@ -42,6 +42,7 @@ import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
 
 /**
  * Settings for security module
@@ -281,4 +282,16 @@ public class SecuritySettings
     @Description( "Maximum number of history files for the security log." )
     public static final Setting<Integer> store_security_log_max_archives =
             setting( "dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
+
+    //=========================================================================
+    // Procedure security settings
+    //=========================================================================
+
+    @Description( "The default role to assign to each procedure and user-defined function with an empty `allowed` " +
+                  "annotation field. This can be used to enable fine grained permission " +
+                  "control over third-party procedures and functions for which modifying source code is not possible. " +
+                  "Procedures with non-empty `allowed` fields will be unaffected by this setting. " +
+                  "If this setting is the empty string (default), procedures will be executed according to the same " +
+                  "security rules as normal Cypher statements." )
+    public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
 }

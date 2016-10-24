@@ -66,7 +66,7 @@ public class ReflectiveProcedureTest
     public void setUp() throws Exception
     {
         components = new ComponentRegistry();
-        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance() );
+        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT );
     }
 
     @Test
@@ -271,7 +271,8 @@ public class ReflectiveProcedureTest
     {
         // Given
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, log );
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, log,
+                ProcedureAllowedConfig.DEFAULT );
 
         // When
         List<CallableProcedure> procs = procedureCompiler.compileProcedure( ProcedureWithDeprecation.class );

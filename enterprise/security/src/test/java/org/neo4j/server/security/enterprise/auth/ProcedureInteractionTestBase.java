@@ -665,6 +665,18 @@ public abstract class ProcedureInteractionTestBase<S>
         @Context
         public GraphDatabaseService db;
 
+        @UserFunction( name = "test.nonAllowedFunc" )
+        public String nonAllowedFunc()
+        {
+            return "success";
+        }
+
+        @UserFunction( name = "test.allowedFunc", allowed = {"role1"} )
+        public String allowedFunc()
+        {
+            return "success for role1";
+        }
+
         @UserFunction( name = "test.allowedFunction1", allowed = {"role1"} )
         public String allowedFunction1()
         {

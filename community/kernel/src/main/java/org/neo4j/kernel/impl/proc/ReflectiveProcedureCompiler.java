@@ -65,14 +65,17 @@ public class ReflectiveProcedureCompiler
     private final FieldInjections fieldInjections;
     private final Log log;
     private final TypeMappers typeMappers;
+    private final ProcedureAllowedConfig config;
 
-    public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Log log )
+    public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Log log,
+            ProcedureAllowedConfig config )
     {
         inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
         outputMappers = new OutputMappers( typeMappers );
         this.fieldInjections = new FieldInjections( components );
         this.log = log;
         this.typeMappers = typeMappers;
+        this.config = config;
     }
 
     public List<CallableUserFunction> compileFunction( Class<?> fcnDefinition ) throws KernelException
@@ -174,9 +177,10 @@ public class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
+        String[] allowed = procedure.allowed().length == 0 ? config.getDefaultValue() : procedure.allowed();
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
-                        mode, deprecated, procedure.allowed(), description );
+                        mode, deprecated, allowed, description );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
@@ -207,8 +211,10 @@ public class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @UserFunction(deprecatedBy) without @Deprecated in " + procName );
 
+        String[] allowed = function.allowed().length == 0 ? config.getDefaultValue() : function.allowed();
         UserFunctionSignature signature =
-                new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated, function.allowed(), description );
+                new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
+                        allowed, description );
 
         return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
     }
