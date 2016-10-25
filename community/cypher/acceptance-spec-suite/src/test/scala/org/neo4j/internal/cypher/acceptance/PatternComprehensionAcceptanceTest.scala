@@ -259,4 +259,10 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
       Map("n" -> b, "list" -> Seq(0, 1))
     ))
   }
+
+  test("pattern comprehension in RETURN following a WITH") {
+    val query = """MATCH (e:X) WITH e LIMIT 5 RETURN [(e) --> (t) | t { .amount }]"""
+
+    executeWithCostPlannerOnly(query).toList //does not throw
+  }
 }
