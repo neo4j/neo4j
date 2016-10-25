@@ -43,7 +43,10 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
-import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
 public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
@@ -866,6 +869,26 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     }
 
     //---------- permissions -----------
+
+    @Test
+    public void shouldPrintUserAndRolesWhenPermissionDenied() throws Throwable
+    {
+        userManager.newUser( "mats", "foo", false );
+        userManager.newRole( "failer", "mats" );
+        S mats = neo.login( "mats", "foo" );
+
+        assertFail( noneSubject, "CALL test.numNodes",
+                "Read operations are not allowed for user 'noneSubject' with no roles." );
+        assertFail( readSubject, "CALL test.allowedWriteProcedure",
+                "Write operations are not allowed for user 'readSubject' with roles [reader]." );
+        assertFail( writeSubject, "CALL test.allowedSchemaProcedure",
+                "Schema operations are not allowed for user 'writeSubject' with roles [publisher]." );
+        assertFail( mats, "CALL test.numNodes",
+                "Read operations are not allowed for user 'mats' with roles [failer]." );
+        // UDFs
+        assertFail( mats, "RETURN test.allowedFunction1()",
+                "Read operations are not allowed for user 'mats' with roles [failer]." );
+    }
 
     @Test
     public void shouldSetCorrectUnAuthenticatedPermissions() throws Throwable
