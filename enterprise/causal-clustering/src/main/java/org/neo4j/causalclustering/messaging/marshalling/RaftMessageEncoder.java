@@ -117,7 +117,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Clu
         }
         else
         {
-            throw new IllegalArgumentException( "Unknown message type" );
+            throw new IllegalArgumentException( "Unknown message type: " + message );
         }
 
         list.add( channel.buffer() );
