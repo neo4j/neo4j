@@ -119,6 +119,8 @@ public class DataSourceModule
 
     public final AutoIndexing autoIndexing;
 
+    public final Guard guard;
+
     public DataSourceModule( final PlatformModule platformModule, EditionModule editionModule,
             Supplier<QueryExecutionEngine> queryExecutionEngineSupplier )
     {
@@ -159,7 +161,7 @@ public class DataSourceModule
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
         Clock clock = getClock();
-        Guard guard = createGuard( deps, clock, logging );
+        guard = createGuard( deps, clock, logging );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 

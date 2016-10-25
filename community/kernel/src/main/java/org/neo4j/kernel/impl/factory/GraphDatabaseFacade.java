@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -69,6 +70,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -88,6 +90,7 @@ import org.neo4j.kernel.impl.coreapi.StandardNodeActions;
 import org.neo4j.kernel.impl.coreapi.StandardRelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -100,6 +103,7 @@ import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.function.Suppliers.*;
 import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
@@ -197,11 +201,29 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     /**
      * Create a new Core API facade, backed by the given SPI.
+     *
+     * Any required dependencies are resolved using the resolver obtained from the SPI.
      */
-    public void init( SPI spi, ThreadToStatementContextBridge txBridge, Config config )
+    public final void init( SPI spi, Config config )
+    {
+        DependencyResolver resolver = spi.resolver();
+        init(
+            spi,
+            resolver.resolveDependency( Guard.class ),
+            resolver.resolveDependency( ThreadToStatementContextBridge.class ),
+            config
+        );
+    }
+
+    /**
+     * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
+     */
+    public void init( SPI spi, Guard guard, ThreadToStatementContextBridge txBridge, Config config )
     {
         this.spi = spi;
         this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
+
+        // TODO: Initialize these fields lazily, esp for Procedures this makes sense
         this.schema = new SchemaImpl( spi::currentStatement );
 
         this.relActions = new StandardRelationshipActions( spi::currentStatement, spi::currentTransaction,
@@ -220,9 +242,41 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                 spi.autoIndexing().relationships() );
         this.indexManager = new IndexManagerImpl( spi::currentStatement, idxProvider, nodeAutoIndexer, relAutoIndexer );
 
-        this.contextFactory = new Neo4jTransactionalContextFactory(
-            spi::queryService, spi::currentStatement, txBridge, locker
-        );
+        this.contextFactory = new Neo4jTransactionalContextFactory( new Neo4jTransactionalContext.Dependencies()
+        {
+            // We cache this since existing SPIs implement this via dependency resolution at runtime
+            private final Supplier<GraphDatabaseQueryService> queryService = lazySingleton( spi::queryService );
+
+            @Override
+            public GraphDatabaseQueryService queryService()
+            {
+                return queryService.get();
+            }
+
+            @Override
+            public Statement currentStatement()
+            {
+                return spi.currentStatement();
+            }
+
+            @Override
+            public void check( KernelStatement statement )
+            {
+                guard.check( statement );
+            }
+
+            @Override
+            public ThreadToStatementContextBridge txBridge()
+            {
+                return txBridge;
+            }
+
+            @Override
+            public PropertyContainerLocker locker()
+            {
+                return locker;
+            }
+        } );
     }
 
     @Override
