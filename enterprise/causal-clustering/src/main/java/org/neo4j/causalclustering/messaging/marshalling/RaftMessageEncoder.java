@@ -19,10 +19,10 @@
  */
 package org.neo4j.causalclustering.messaging.marshalling;
 
-import java.util.List;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
+
+import java.util.List;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
@@ -108,6 +108,10 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Clu
             channel.putLong( heartbeat.leaderTerm() );
             channel.putLong( heartbeat.commitIndexTerm() );
             channel.putLong( heartbeat.commitIndex() );
+        }
+        else if ( message instanceof RaftMessages.HeartbeatResponse )
+        {
+            //Heartbeat Response does not have any data attached to it.
         }
         else if ( message instanceof RaftMessages.LogCompactionInfo )
         {

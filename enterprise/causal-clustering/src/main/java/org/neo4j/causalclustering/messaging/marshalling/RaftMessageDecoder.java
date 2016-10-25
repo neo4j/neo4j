@@ -19,12 +19,12 @@
  */
 package org.neo4j.causalclustering.messaging.marshalling;
 
-import java.io.IOException;
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
+
+import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
@@ -38,6 +38,7 @@ import org.neo4j.storageengine.api.ReadableChannel;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.APPEND_ENTRIES_RESPONSE;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.HEARTBEAT;
+import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.HEARTBEAT_RESPONSE;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.LOG_COMPACTION_INFO;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.NEW_ENTRY_REQUEST;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.VOTE_REQUEST;
@@ -73,8 +74,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long lastLogIndex = channel.getLong();
             long lastLogTerm = channel.getLong();
 
-            result = new RaftMessages.Vote.Request(
-                    from, term, candidate, lastLogIndex, lastLogTerm );
+            result = new RaftMessages.Vote.Request( from, term, candidate, lastLogIndex, lastLogTerm );
         }
         else if ( messageType.equals( VOTE_RESPONSE ) )
         {
@@ -126,6 +126,10 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long commitIndex = channel.getLong();
 
             result = new RaftMessages.Heartbeat( from, leaderTerm, commitIndex, commitIndexTerm );
+        }
+        else if ( messageType.equals( HEARTBEAT_RESPONSE ) )
+        {
+            result = new RaftMessages.HeartbeatResponse( from );
         }
         else if ( messageType.equals( LOG_COMPACTION_INFO ) )
         {
