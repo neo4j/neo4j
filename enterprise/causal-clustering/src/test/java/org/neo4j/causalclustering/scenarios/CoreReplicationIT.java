@@ -23,8 +23,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
@@ -32,8 +34,10 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -43,6 +47,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.function.Predicates.await;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class CoreReplicationIT
@@ -120,7 +125,7 @@ public class CoreReplicationIT
     }
 
     @Test
-    public void shouldNotAllowTokenCreationFromAFollower() throws Exception
+    public void shouldNotAllowTokenCreationFromAFollowerWithNoInitialTokens() throws Exception
     {
         // given
         CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
@@ -138,6 +143,48 @@ public class CoreReplicationIT
         try ( Transaction tx = follower.beginTx() )
         {
             follower.getAllNodes().iterator().next().setProperty( "name", "Mark" );
+            tx.success();
+            fail( "Should have thrown exception" );
+        }
+        catch ( WriteOperationsNotAllowedException ignored )
+        {
+            // expected
+            assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowTokenCreationFromAFollower() throws Exception
+    {
+        // given
+        Label personLabel = Label.label( "Person" );
+
+        CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
+        {
+            db.createNode( personLabel );
+            tx.success();
+        } );
+
+        awaitForDataToBeApplied( leader );
+        dataMatchesEventually( leader, cluster.coreMembers() );
+
+        CoreClusterMember followerMember = cluster.getDbWithRole( Role.FOLLOWER );
+        CoreGraphDatabase follower = followerMember.database();
+
+        try(Transaction tx = follower.beginTx())
+        {
+            System.out.println( "all labels = " + asList( follower.getAllLabels() ) );
+
+            for ( Node node : follower.getAllNodes() )
+            {
+                System.out.println( "node = " + node + ", " + node.getLabels().toString());
+            }
+        }
+
+        // when
+        try ( Transaction tx = follower.beginTx() )
+        {
+            follower.findNodes(personLabel).next().setProperty( "name", "Mark" );
             tx.success();
             fail( "Should have thrown exception" );
         }
