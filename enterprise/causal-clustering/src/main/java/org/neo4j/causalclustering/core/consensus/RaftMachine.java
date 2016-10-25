@@ -148,7 +148,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         handle( new RaftMessages.Timeout.Election( myself ) );
     }
 
-    public void stopTimers()
+    public void panic()
     {
         heartbeatTimer.cancel();
         electionTimer.cancel();
