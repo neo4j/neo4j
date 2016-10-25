@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -92,11 +91,11 @@ public class GraphDatabaseFacadeTest
     {
         graphDatabaseFacade.execute( "create (n)", 157L, TimeUnit.SECONDS );
         verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
-                TimeUnit.SECONDS.toMillis( 157L ) );
+            TimeUnit.SECONDS.toMillis( 157L ) );
 
         graphDatabaseFacade.execute( "create (n)", new HashMap<>(), 247L, TimeUnit.MINUTES );
         verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
-                TimeUnit.MINUTES.toMillis( 247L ) );
+            TimeUnit.MINUTES.toMillis( 247L ) );
     }
 
     @Test
@@ -106,7 +105,7 @@ public class GraphDatabaseFacadeTest
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, null );
 
         when( queryService.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
-                .thenReturn( transaction );
+            .thenReturn( transaction );
 
         graphDatabaseFacade.execute( "create (n)" );
         graphDatabaseFacade.execute( "create (n)", new HashMap<>() );

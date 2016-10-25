@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -55,7 +56,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionIdTracker transactionIdTracker;
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
-    private final Neo4jTransactionalContextFactory contextFactory;
+    private final TransactionalContextFactory contextFactory;
     private final GraphDatabaseQueryService queryService;
     private final Clock clock;
 
@@ -70,7 +71,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
         this.txBridge = txBridge;
         this.queryExecutionEngine = queryExecutionEngine;
         this.transactionIdTracker = new TransactionIdTracker( transactionIdStoreSupplier );
-        this.contextFactory = new Neo4jTransactionalContextFactory( queryService, locker );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( queryService, locker );
         this.queryService = queryService;
 
         this.clock = clock;

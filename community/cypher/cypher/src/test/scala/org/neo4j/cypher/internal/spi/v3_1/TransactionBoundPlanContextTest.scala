@@ -35,9 +35,8 @@ import org.neo4j.test.TestGraphDatabaseFactory
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
-
   private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
-    val contextFactory = new Neo4jTransactionalContextFactory(graphDatabaseCypherService, new PropertyContainerLocker)
+    val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
     contextFactory.newContext(QuerySource.UNKNOWN, transaction, "no query", Collections.emptyMap())
   }
 
@@ -93,5 +92,4 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     transaction.close()
   }
-
 }

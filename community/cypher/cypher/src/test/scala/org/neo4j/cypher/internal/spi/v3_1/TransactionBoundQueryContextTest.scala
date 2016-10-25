@@ -32,16 +32,13 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.factory.CanWrite
 import org.neo4j.kernel.impl.proc.Procedures
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext.Dependencies
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory, QuerySource}
 import org.neo4j.storageengine.api.StorageStatement
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -73,22 +70,12 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graph.getGraphDatabaseService.shutdown()
   }
 
-  def dependencies(graph: GraphDatabaseCypherService, statement: Statement, locker: PropertyContainerLocker): Dependencies =
-    new Dependencies {
-      override def txBridge(): ThreadToStatementContextBridge = ???
-      override def locker(): PropertyContainerLocker = locker
-      override def currentStatement(): Statement = currentStatement
-      override def queryService(): GraphDatabaseQueryService = graph
-      override def check(statement: KernelStatement): Unit = ???
-    }
-
   test("should mark transaction successful if successful") {
     // GIVEN
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
-    val deps = dependencies(graph, statement, locker)
     when(outerTx.transactionType()).thenReturn(KernelTransaction.Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
-    val tc = new Neo4jTransactionalContext(deps, outerTx, statement, null)
+    val tc = new Neo4jTransactionalContext(graph, null, null, null, locker, outerTx, statement, null)
     val transactionalContext = TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -107,8 +94,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
     when(outerTx.transactionType()).thenReturn(KernelTransaction.Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
-    val deps = dependencies(graph, statement, locker)
-    val tc = new Neo4jTransactionalContext(deps, outerTx, statement, null)
+    val tc = new Neo4jTransactionalContext(graph, null, null, null, locker, outerTx, statement, null)
     val transactionalContext = TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -178,7 +164,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   }
 
   private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
-    val contextFactory = new Neo4jTransactionalContextFactory(graphDatabaseCypherService, new PropertyContainerLocker)
+    val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
     contextFactory.newContext(QuerySource.UNKNOWN, transaction, "no query", Collections.emptyMap())
   }
 

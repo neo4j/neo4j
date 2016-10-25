@@ -247,41 +247,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             return new IndexManagerImpl( statementSupplier, idxProvider, nodeAutoIndexer, relAutoIndexer );
         } );
 
-        this.contextFactory = new Neo4jTransactionalContextFactory( new Neo4jTransactionalContext.Dependencies()
-        {
-            // We cache this since existing SPIs implement this via dependency resolution at runtime
-            private final Supplier<GraphDatabaseQueryService> queryService = lazySingleton( spi::queryService );
-
-            @Override
-            public GraphDatabaseQueryService queryService()
-            {
-                return queryService.get();
-            }
-
-            @Override
-            public Statement currentStatement()
-            {
-                return spi.currentStatement();
-            }
-
-            @Override
-            public void check( KernelStatement statement )
-            {
-                guard.check( statement );
-            }
-
-            @Override
-            public ThreadToStatementContextBridge txBridge()
-            {
-                return txBridge;
-            }
-
-            @Override
-            public PropertyContainerLocker locker()
-            {
-                return locker;
-            }
-        } );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, guard, txBridge, locker );
     }
 
     @Override

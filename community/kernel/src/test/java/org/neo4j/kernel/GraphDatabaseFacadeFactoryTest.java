@@ -55,8 +55,7 @@ import static org.mockito.Mockito.when;
 public class GraphDatabaseFacadeFactoryTest
 {
     @Rule
-    public final TestDirectory dir =
-            TestDirectory.testDirectory( new EphemeralFileSystemAbstraction() );
+    public final TestDirectory dir = TestDirectory.testDirectory( new EphemeralFileSystemAbstraction() );
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final GraphDatabaseFacadeFactory.Dependencies deps =
