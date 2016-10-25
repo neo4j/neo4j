@@ -81,10 +81,10 @@ public class SchemaImpl implements Schema
     private final Supplier<Statement> statementContextSupplier;
     private final InternalSchemaActions actions;
 
-    public SchemaImpl( Supplier<Statement> statementContextSupplier )
+    public SchemaImpl( Supplier<Statement> statementSupplier )
     {
-        this.statementContextSupplier = statementContextSupplier;
-        this.actions = new GDBSchemaActions( statementContextSupplier );
+        this.statementContextSupplier = statementSupplier;
+        this.actions = new GDBSchemaActions( statementSupplier );
     }
 
     @Override
@@ -397,9 +397,10 @@ public class SchemaImpl implements Schema
     private static class GDBSchemaActions implements InternalSchemaActions
     {
         private final Supplier<Statement> ctxSupplier;
-        public GDBSchemaActions( Supplier<Statement> ctxSupplier )
+
+        public GDBSchemaActions( Supplier<Statement> statementSupplier )
         {
-            this.ctxSupplier = ctxSupplier;
+            this.ctxSupplier = statementSupplier;
         }
 
         @Override
