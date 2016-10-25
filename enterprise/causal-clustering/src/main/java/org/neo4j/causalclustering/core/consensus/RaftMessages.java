@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static java.lang.String.format;
+import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.HEARTBEAT_RESPONSE;
 
 public interface RaftMessages
 {
@@ -471,9 +472,15 @@ public interface RaftMessages
     class HeartbeatResponse extends BaseRaftMessage
     {
 
-        public HeartbeatResponse( MemberId from, Type type )
+        public HeartbeatResponse( MemberId from )
         {
-            super( from, type );
+            super( from, HEARTBEAT_RESPONSE );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "HeartbeatResponse{from=" + from + "}";
         }
     }
 
