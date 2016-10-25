@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
@@ -154,6 +155,48 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     }
 
     @Test
+    public void shouldSetWildcardRoleConfigOnlyIfNotAnnotated() throws Throwable
+    {
+        configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester" ) );
+
+        userManager.newRole( "tester", "noneSubject" );
+
+        assertFail( noneSubject, "CALL test.allowedReadProcedure", READ_OPS_NOT_ALLOWED );
+        assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "3" ) );
+    }
+
+    @Test
+    public void shouldSetAllMatchingWildcardRoleConfigs() throws Throwable
+    {
+        configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester,test.create*:other" ) );
+
+        userManager.newRole( "tester", "noneSubject" );
+        userManager.newRole( "other", "readSubject" );
+
+        assertFail( noneSubject, "CALL test.allowedReadProcedure", READ_OPS_NOT_ALLOWED );
+        assertSuccess( readSubject, "CALL test.allowedReadProcedure", itr -> assertKeyIs( itr, "value", "foo" ) );
+        assertSuccess( noneSubject, "CALL test.createNode", ResourceIterator::close );
+        assertSuccess( readSubject, "CALL test.createNode", ResourceIterator::close );
+        assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "5" ) );
+    }
+
+    @Test
+    public void shouldSetAllMatchingWildcardRoleConfigsWithDefaultForUDFs() throws Throwable
+    {
+        configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester,test.create*:other",
+                                    SecuritySettings.default_allowed.name(), "default" ) );
+
+        userManager.newRole( "tester", "noneSubject" );
+        userManager.newRole( "default", "noneSubject" );
+        userManager.newRole( "other", "readSubject" );
+
+        assertFail( noneSubject, "RETURN test.allowedFunction1()", READ_OPS_NOT_ALLOWED );
+        assertSuccess( noneSubject, "RETURN test.nonAllowedFunc() AS f", itr -> assertKeyIs( itr, "f", "success" ) );
+        assertSuccess( readSubject, "RETURN test.allowedFunction1() AS f", itr -> assertKeyIs( itr, "f", "foo" ) );
+        assertSuccess( readSubject, "RETURN test.nonAllowedFunc() AS f", itr -> assertKeyIs( itr, "f", "success" ) );
+    }
+
+    @Test
     public void shouldHandleWriteAfterAllowedReadProcedureWithAuthDisabled() throws Throwable
     {
         neo = setUpNeoServer( stringMap( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
@@ -164,5 +207,4 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         S subject = neo.login( "no_auth", "" );
         assertEmpty( subject, "CALL test.allowedReadProcedure() YIELD value CREATE (:NEWNODE {name:value})" );
     }
-
 }
