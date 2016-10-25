@@ -29,28 +29,17 @@ import org.junit.Test;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
-import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -63,13 +52,10 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.neo4j.bolt.v1.runtime.integration.TransactionIT.createHttpServer;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -615,14 +601,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldTerminateLongRunningProcedureThatChecksTheGuardRegularlyIfKilled() throws Throwable
     {
-        neo
-            .getLocalGraph()
-            .getDependencyResolver()
-            .resolveDependency( Procedures.class )
-            .registerProcedure( NeverEndingProcedure.class );
-
         final DoubleLatch latch = new DoubleLatch( 2 );
-        NeverEndingProcedure.testLatch = latch;
+        ClassWithProcedures.volatileLatch = latch;
 
         String loopQuery = "CALL test.loop";
 
@@ -655,157 +635,6 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertEmpty(
                 adminSubject,
                 "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
-    }
-
-    @Test
-    public void shouldTerminateLongRunningProcedureThatChecksTheGuardRegularlyOnTimeout() throws Throwable
-    {
-
-        neo.tearDown();
-        Map<String, String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.transaction_timeout.name(), "2s" );
-        neo = setUpNeoServer( config );
-        reSetUp();
-
-        neo
-           .getLocalGraph()
-           .getDependencyResolver()
-           .resolveDependency( Procedures.class )
-           .registerProcedure( NeverEndingProcedure.class );
-
-        assertFail( adminSubject, "CALL test.loop", "Transaction guard check failed" );
-
-        Result result = neo
-            .getLocalGraph()
-            .execute( "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
-
-        assertFalse( result.hasNext() );
-        result.close();
-    }
-
-    @Test
-    public void shouldSetAllowedToConfigSetting() throws Throwable
-    {
-        neo.tearDown();
-        neo = setUpNeoServer( stringMap( SecuritySettings.default_allowed.name(), "nonEmpty" ) );
-        Procedures procedures = neo
-                .getLocalGraph()
-                .getDependencyResolver()
-                .resolveDependency( Procedures.class );
-        procedures.registerProcedure( ClassWithProcedures.class );
-
-        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
-        assertThat( Arrays.asList( numNodes.allowed() ), containsInAnyOrder( "nonEmpty" ) );
-
-        ProcedureSignature allowedRead = procedures.procedure( new QualifiedName( new String[]{"test"}, "allowedReadProcedure" ) );
-        assertThat( Arrays.asList( allowedRead.allowed() ), containsInAnyOrder( "role1" ) );
-    }
-
-    @Test
-    public void shouldSetAllowedToDefaultValueAndRunningWorks() throws Throwable
-    {
-        neo.tearDown();
-        neo = setUpNeoServer( stringMap( SecuritySettings.default_allowed.name(), "role1" ) );
-        reSetUp();
-
-        userManager.newRole( "role1", "noneSubject" );
-        assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "3" ) );
-    }
-
-    @Test
-    public void shouldRunProcedureWithMatchingWildcardAllowed() throws Throwable
-    {
-        neo.tearDown();
-        neo = setUpNeoServer( stringMap( SecuritySettings.procedure_roles.name(), "test.*:role1" ) );
-        reSetUp();
-
-        userManager.newRole( "role1", "noneSubject" );
-        assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "3" ) );
-    }
-
-    @Test
-    public void shouldNotRunProcedureWithMismatchingWildCardAllowed() throws Throwable
-    {
-        neo.tearDown();
-        neo = setUpNeoServer( stringMap( SecuritySettings.procedure_roles.name(), "tes.*:role1" ) );
-        reSetUp();
-
-        userManager.newRole( "role1", "noneSubject" );
-        Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
-
-        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
-        assertThat( Arrays.asList( numNodes.allowed() ), empty() );
-        assertFail( noneSubject, "CALL test.numNodes", "Read operations are not allowed" );
-    }
-
-    @Test
-    public void shouldNotSetProcedureAllowedIfSettingNotSet() throws Throwable
-    {
-        Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
-
-        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
-        assertThat( Arrays.asList( numNodes.allowed() ), empty() );
-    }
-
-    @SuppressWarnings( "OptionalGetWithoutIsPresent" )
-    @Test
-    public void shouldSetAllowedToConfigSettingForUDF() throws Throwable
-    {
-        neo.tearDown();
-        neo = setUpNeoServer( stringMap( SecuritySettings.default_allowed.name(), "nonEmpty" ) );
-        Procedures procedures = neo
-                .getLocalGraph()
-                .getDependencyResolver()
-                .resolveDependency( Procedures.class );
-        procedures.registerFunction( ClassWithFunctions.class );
-
-        UserFunctionSignature funcSig = procedures.function(
-                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).get();
-        assertThat( Arrays.asList( funcSig.allowed() ), containsInAnyOrder( "nonEmpty" ) );
-
-        UserFunctionSignature f2 = procedures.function( new QualifiedName( new String[]{"test"}, "allowedFunc" ) ).get();
-        assertThat( Arrays.asList( f2.allowed() ), containsInAnyOrder( "role1" ) );
-    }
-
-    @Test
-    public void shouldSetAllowedToDefaultValueAndRunningWorksForUDF() throws Throwable
-    {
-        neo.tearDown();
-        neo = setUpNeoServer( stringMap( SecuritySettings.default_allowed.name(), "role1" ) );
-        reSetUp();
-
-        userManager.newRole( "role1", "noneSubject" );
-        assertSuccess( neo.login( "noneSubject", "abc" ), "RETURN test.allowedFunc() AS c",
-                itr -> assertKeyIs( itr, "c", "success for role1" ) );
-    }
-
-    @SuppressWarnings( "OptionalGetWithoutIsPresent" )
-    @Test
-    public void shouldNotSetProcedureAllowedIfSettingNotSetForUDF() throws Throwable
-    {
-        Procedures procedures = neo
-                .getLocalGraph()
-                .getDependencyResolver()
-                .resolveDependency( Procedures.class );
-
-        UserFunctionSignature funcSig = procedures.function(
-                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).get();
-        assertThat( Arrays.asList( funcSig.allowed() ), empty() );
-    }
-
-    @Test
-    public void shouldHandleWriteAfterAllowedReadProcedureWithAuthDisabled() throws Throwable
-    {
-        neo.tearDown();
-        neo = setUpNeoServer( stringMap( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
-        neo
-                .getLocalGraph()
-                .getDependencyResolver()
-                .resolveDependency( Procedures.class )
-                .registerProcedure( ClassWithProcedures.class );
-
-        S subject = neo.login( "no_auth", "" );
-        assertEmpty( subject, "CALL test.allowedReadProcedure() YIELD value CREATE (:NEWNODE {name:value})" );
     }
 
     @Test
@@ -1288,46 +1117,4 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         return threading;
     }
 
-    @SuppressWarnings( {"WeakerAccess", "unused"} )
-    public static class NeverEndingProcedure
-    {
-        public static volatile DoubleLatch testLatch = null;
-
-        @Context
-        public TerminationGuard guard;
-
-        @Procedure(name = "test.loop")
-        public void loop()
-        {
-            DoubleLatch latch = testLatch;
-
-            if ( latch != null )
-            {
-                latch.startAndWaitForAllToStart();
-            }
-            try
-            {
-                //noinspection InfiniteLoopStatement
-                while ( true )
-                {
-                    try
-                    {
-                        Thread.sleep( 250 );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.interrupted();
-                    }
-                    guard.check();
-                }
-            }
-            finally
-            {
-                if ( latch != null )
-                {
-                    latch.finish();
-                }
-            }
-        }
-    }
 }

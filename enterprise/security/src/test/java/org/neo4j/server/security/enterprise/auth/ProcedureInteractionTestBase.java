@@ -56,6 +56,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.procedure.UserFunction;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -120,7 +121,7 @@ public abstract class ProcedureInteractionTestBase<S>
     protected NeoInteractionLevel<S> neo;
     File securityLog;
 
-    private Map<String,String> configure() throws IOException
+    Map<String,String> defaultConfiguration() throws IOException
     {
         Path homeDir = Files.createTempDirectory( "logs" );
         securityLog = new File( homeDir.toFile(), "security.log" );
@@ -130,12 +131,12 @@ public abstract class ProcedureInteractionTestBase<S>
     @Before
     public void setUp() throws Throwable
     {
-        neo = setUpNeoServer( configure() );
-        reSetUp();
+        configuredSetup( defaultConfiguration() );
     }
 
-    void reSetUp() throws Exception
+    void configuredSetup( Map<String,String> config ) throws Throwable
     {
+        neo = setUpNeoServer( config );
         Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
         procedures.registerProcedure( ClassWithProcedures.class );
         procedures.registerFunction( ClassWithFunctions.class );
@@ -500,7 +501,7 @@ public abstract class ProcedureInteractionTestBase<S>
         }
     }
 
-    @SuppressWarnings( "unused" )
+    @SuppressWarnings( {"unused", "WeakerAccess"} )
     public static class ClassWithProcedures
     {
         @Context
@@ -512,6 +513,45 @@ public abstract class ProcedureInteractionTestBase<S>
         private static final AtomicReference<LatchedRunnables> testLatch = new AtomicReference<>();
 
         static DoubleLatch doubleLatch = null;
+
+        public static volatile DoubleLatch volatileLatch = null;
+
+        @Context
+        public TerminationGuard guard;
+
+        @Procedure(name = "test.loop")
+        public void loop()
+        {
+            DoubleLatch latch = volatileLatch;
+
+            if ( latch != null )
+            {
+                latch.startAndWaitForAllToStart();
+            }
+            try
+            {
+                //noinspection InfiniteLoopStatement
+                while ( true )
+                {
+                    try
+                    {
+                        Thread.sleep( 250 );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.interrupted();
+                    }
+                    guard.check();
+                }
+            }
+            finally
+            {
+                if ( latch != null )
+                {
+                    latch.finish();
+                }
+            }
+        }
 
         @Procedure( name = "test.neverEnding" )
         public void neverEndingWithLock()
