@@ -62,6 +62,12 @@ public class UnbindFromClusterCommand implements AdminCommand
         }
 
         @Override
+        public String summary()
+        {
+            return "Removes cluster state data from the specified database.";
+        }
+
+        @Override
         public String description()
         {
             return "Removes cluster state data from the specified database making it suitable for use in single " +

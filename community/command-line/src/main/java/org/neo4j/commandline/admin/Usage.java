@@ -37,14 +37,24 @@ public class Usage
 
     public void print( Consumer<String> output )
     {
-        output.accept( "Usage:" );
+        output.accept( format( "Usage: %s <command>", scriptName ) );
         output.accept( "" );
+        output.accept( "Available commands:" );
 
         for ( AdminCommand.Provider command : commands.getAllProviders() )
         {
             final CommandUsage commandUsage = new CommandUsage( command, scriptName );
-            commandUsage.print( output );
+            commandUsage.printIndentedSummary( output );
         }
+
+        output.accept( "" );
+        output.accept( format( "Use %s help <command> for more details.", scriptName ) );
+    }
+
+    public void printUsageForCommand( AdminCommand.Provider command, Consumer<String> output )
+    {
+        final CommandUsage commandUsage = new CommandUsage( command, scriptName );
+        commandUsage.printDetailed( output );
     }
 
     public static class CommandUsage
@@ -58,16 +68,22 @@ public class Usage
             this.scriptName = scriptName;
         }
 
-        public void print( Consumer<String> output )
+        public void printSummary( Consumer<String> output )
         {
-            String arguments = command.arguments().map( ( s ) -> " " + s ).orElse( "" );
-            output.accept( format( "%s %s%s", scriptName, command.name(), arguments ) );
+            output.accept( format( "%s", command.name() ) );
+            output.accept( "    " + command.summary() );
+        }
+
+        public void printIndentedSummary( Consumer<String> output )
+        {
+            printSummary( s -> output.accept( "    " + s ) );
+        }
+
+        public void printDetailed( Consumer<String> output )
+        {
+            output.accept( format( "%s %s %s", scriptName, command.name(), command.arguments().orElse( "" ) ) );
             output.accept( "" );
-            for ( String line : splitLongLine( command.description(), 80 ) )
-            {
-                output.accept( "    " + line );
-            }
-            output.accept( "" );
+            output.accept( command.description() );
         }
     }
 }

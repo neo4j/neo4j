@@ -76,6 +76,12 @@ public class DumpCommand implements AdminCommand
         }
 
         @Override
+        public String summary()
+        {
+            return "Dump a database into a single-file archive.";
+        }
+
+        @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new DumpCommand( homeDir, configDir, new Dumper() );

@@ -65,6 +65,12 @@ public class SetInitialPasswordCommand implements AdminCommand
         }
 
         @Override
+        public String summary()
+        {
+            return description();
+        }
+
+        @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new SetInitialPasswordCommand( homeDir, configDir, outsideWorld );

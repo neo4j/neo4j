@@ -20,8 +20,11 @@
 package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
+
+import static java.lang.String.format;
 
 public class HelpCommand implements AdminCommand
 {
@@ -38,34 +41,62 @@ public class HelpCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.empty();
+            return Optional.of( "[<command>]" );
         }
 
         @Override
         public String description()
         {
-            return "Display this help text.";
+            return "This help text, or help for the command specified in <command>.";
+        }
+
+        @Override
+        public String summary()
+        {
+            return description();
         }
 
         @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
-            return new HelpCommand( usage, outsideWorld::stdOutLine );
+            return new HelpCommand( usage, outsideWorld::stdOutLine, CommandLocator.fromServiceLocator() );
         }
     }
 
     private final Usage usage;
     private final Consumer<String> output;
+    private final CommandLocator locator;
 
-    public HelpCommand( Usage usage, Consumer<String> output )
+    public HelpCommand( Usage usage, Consumer<String> output, CommandLocator locator )
     {
         this.usage = usage;
         this.output = output;
+        this.locator = locator;
     }
 
     @Override
-    public void execute( String... args )
+    public void execute( String... args ) throws IncorrectUsage
     {
-        usage.print( output );
+        if ( args.length > 0 )
+        {
+            try
+            {
+                AdminCommand.Provider commandProvider = this.locator.findProvider( args[0] );
+                usage.printUsageForCommand( commandProvider, output );
+            }
+            catch ( NoSuchElementException e )
+            {
+                StringBuilder validCommands = new StringBuilder( "" );
+                locator.getAllProviders()
+                        .forEach( commandProvider -> validCommands.append( commandProvider.name() ).append( " " ) );
+
+                throw new IncorrectUsage(
+                        format( "Unknown command: %s. Available commands are: %s\n", args[0], validCommands ) );
+            }
+        }
+        else
+        {
+            usage.print( output );
+        }
     }
 }

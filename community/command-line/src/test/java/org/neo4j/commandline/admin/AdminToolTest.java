@@ -20,12 +20,14 @@
 package org.neo4j.commandline.admin;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import java.nio.file.Path;
 import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
 
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -55,7 +57,7 @@ public class AdminToolTest
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null, "help" );
-        verify( outsideWorld ).stdOutLine( "neo4j-admin help" );
+        verify( outsideWorld ).stdOutLine( "    help" );
     }
 
     @Test
@@ -64,7 +66,7 @@ public class AdminToolTest
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null );
         verify( outsideWorld ).stdErrLine( "you must provide a command" );
-        verify( outsideWorld ).stdErrLine( "Usage:" );
+        verify( outsideWorld ).stdErrLine( "Usage: neo4j-admin <command>" );
         verify( outsideWorld ).exit( 1 );
     }
 
@@ -76,8 +78,7 @@ public class AdminToolTest
         {
             throw new RuntimeException( "the-exception-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "unexpected error: the-exception-message" );
         verify( outsideWorld ).exit( 1 );
     }
@@ -91,8 +92,7 @@ public class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true ).execute( null, null, "exception" );
         verify( outsideWorld ).printStacktrace( exception );
     }
 
@@ -105,8 +105,7 @@ public class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
         verify( outsideWorld, never() ).printStacktrace( exception );
     }
 
@@ -118,8 +117,7 @@ public class AdminToolTest
         {
             throw new CommandFailed( "the-failure-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "command failed: the-failure-message" );
         verify( outsideWorld ).exit( 1 );
     }
@@ -133,8 +131,7 @@ public class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true ).execute( null, null, "exception" );
         verify( outsideWorld ).printStacktrace( exception );
     }
 
@@ -147,8 +144,7 @@ public class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
         verify( outsideWorld, never() ).printStacktrace( exception );
     }
 
@@ -160,10 +156,9 @@ public class AdminToolTest
         {
             throw new IncorrectUsage( "the-usage-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
-                .execute( null, null, "exception" );
-        verify( outsideWorld ).stdErrLine( "neo4j-admin exception" );
-        verify( outsideWorld ).stdErrLine( "the-usage-message" );
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false ).execute( null, null, "exception" );
+        InOrder inOrder = inOrder( outsideWorld );
+        inOrder.verify( outsideWorld ).stdErrLine( "the-usage-message" );
         verify( outsideWorld ).exit( 1 );
     }
 
@@ -179,6 +174,12 @@ public class AdminToolTest
 
             @Override
             public String description()
+            {
+                return "";
+            }
+
+            @Override
+            public String summary()
             {
                 return "";
             }
@@ -221,6 +222,12 @@ public class AdminToolTest
 
         @Override
         public String description()
+        {
+            return "";
+        }
+
+        @Override
+        public String summary()
         {
             return "";
         }

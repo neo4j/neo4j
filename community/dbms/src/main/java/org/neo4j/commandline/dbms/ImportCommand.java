@@ -83,6 +83,12 @@ public class ImportCommand implements AdminCommand
         }
 
         @Override
+        public String summary()
+        {
+            return "Import from a collection of CSV files or a pre-3.0 database.";
+        }
+
+        @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new ImportCommand( homeDir, configDir, outsideWorld );
