@@ -23,9 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.collection.FilteringIterable;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * In this scenario we disconnect the current leader and measure how long time it
@@ -65,11 +69,12 @@ public class DisconnectLeaderScenario
 
     private long oneIteration( long leaderStabilityMaxTimeMillis ) throws InterruptedException, TimeoutException
     {
-        MemberId oldLeader = ElectionUtil.waitForLeaderAgreement( fixture.rafts, leaderStabilityMaxTimeMillis );
+        List<RaftMachine> rafts = fixture.rafts.stream().map( Fixture.RaftFixture::raftMachine ).collect( toList() );
+        MemberId oldLeader = ElectionUtil.waitForLeaderAgreement( rafts, leaderStabilityMaxTimeMillis );
         long startTime = System.currentTimeMillis();
 
         fixture.net.disconnect( oldLeader );
-        MemberId newLeader = ElectionUtil.waitForLeaderAgreement( new FilteringIterable<>( fixture.rafts, raft -> !raft.identity().equals( oldLeader ) ), leaderStabilityMaxTimeMillis );
+        MemberId newLeader = ElectionUtil.waitForLeaderAgreement( new FilteringIterable<>( rafts, raft -> !raft.identity().equals( oldLeader ) ), leaderStabilityMaxTimeMillis );
         assert !newLeader.equals( oldLeader ); // this should be guaranteed by the waitForLeaderAgreement call
 
         return System.currentTimeMillis() - startTime;

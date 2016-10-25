@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -26,18 +27,23 @@ import java.util.Set;
 
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
-import org.neo4j.causalclustering.core.consensus.membership.RaftTestGroup;
-import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.causalclustering.messaging.LoggingOutbound;
-import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
+import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
+import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
-import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.causalclustering.messaging.Inbound;
+import org.neo4j.causalclustering.messaging.LoggingOutbound;
+import org.neo4j.causalclustering.messaging.Outbound;
 
 import static java.lang.String.format;
+
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftTestFixture
 {
@@ -75,11 +81,12 @@ public class RaftTestFixture
         return members;
     }
 
-    public void bootstrap( MemberId[] members ) throws RaftMachine.BootstrapException
+    public void bootstrap( MemberId[] members ) throws RaftMachine.BootstrapException, IOException
     {
         for ( MemberFixture member : members() )
         {
-            member.raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( members ) );
+            member.raftLog().append( new RaftLogEntry(0, new MemberIdSet(asSet( members ))) );
+            member.raftInstance().installCoreState( new RaftCoreState( new MembershipEntry( 0,  asSet( members )) ) );
         }
     }
 
