@@ -24,7 +24,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.OffsetDateTime;
@@ -42,7 +41,6 @@ import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -66,8 +64,6 @@ import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
 
 public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
 
     /*
     This surface is hidden in 3.1, to possibly be completely removed or reworked later
@@ -1109,12 +1105,6 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                             )
                         ).collect( Collectors.toList() )
                 ) );
-    }
-
-    @Override
-    protected ThreadingRule threading()
-    {
-        return threading;
     }
 
 }

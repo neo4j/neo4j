@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -31,7 +30,6 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -41,14 +39,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteractionTestBase<S>
 {
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
-
-    @Override
-    protected ThreadingRule threading()
-    {
-        return threading;
-    }
 
     @Override
     public void setUp() throws Throwable

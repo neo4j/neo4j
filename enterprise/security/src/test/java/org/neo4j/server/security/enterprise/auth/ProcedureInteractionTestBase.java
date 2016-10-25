@@ -23,6 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 
 import java.io.File;
 import java.io.IOException;
@@ -114,7 +115,13 @@ public abstract class ProcedureInteractionTestBase<S>
         "writeSubject", "pwdSubject", "noneSubject", "neo4j" };
     String[] initialRoles = { ADMIN, ARCHITECT, PUBLISHER, READER, EMPTY_ROLE };
 
-    protected abstract ThreadingRule threading();
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
+
+    private ThreadingRule threading()
+    {
+        return threading;
+    }
 
     EnterpriseUserManager userManager;
 

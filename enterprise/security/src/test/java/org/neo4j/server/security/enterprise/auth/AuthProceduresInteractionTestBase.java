@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Map;
@@ -27,7 +26,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,9 +49,6 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
     private static final String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
-
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
 
     //---------- General tests over all procedures -----------
 
@@ -997,11 +992,5 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
         testSuccessfulSchema( schemaSubject );
         testFailCreateUser( schemaSubject, PERMISSION_DENIED );
         assertEmpty( schemaSubject, "CALL dbms.security.changePassword( '321' )" );
-    }
-
-    @Override
-    protected ThreadingRule threading()
-    {
-        return threading;
     }
 }
