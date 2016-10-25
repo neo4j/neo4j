@@ -19,11 +19,11 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-
-import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
@@ -64,11 +64,10 @@ public class DefaultWinnerStrategyTest
 
         when( clusterContext.getLog( DefaultWinnerStrategy.class ) ).thenReturn( logProvider.getLog( DefaultWinnerStrategy.class ) );
 
-
         // when
         Collection<Vote> votes = Collections.emptyList();
 
-        DefaultWinnerStrategy strategy = DefaultWinnerStrategy.promotion( clusterContext );
+        DefaultWinnerStrategy strategy = new DefaultWinnerStrategy( clusterContext );
         strategy.pickWinner( votes );
 
         // then
@@ -107,7 +106,7 @@ public class DefaultWinnerStrategyTest
                 new Vote( instanceOne, new NotElectableElectionCredentials() ),
                 new Vote( instanceTwo, new NotElectableElectionCredentials() ) );
 
-        DefaultWinnerStrategy strategy = DefaultWinnerStrategy.promotion( clusterContext );
+        DefaultWinnerStrategy strategy = new DefaultWinnerStrategy( clusterContext );
         org.neo4j.cluster.InstanceId winner = strategy.pickWinner( votes );
 
         // then
@@ -146,11 +145,10 @@ public class DefaultWinnerStrategyTest
                 new Vote( instanceOne, new IntegerElectionCredentials(1) ),
                 new Vote( instanceTwo, new IntegerElectionCredentials(2) ) );
 
-        DefaultWinnerStrategy strategy = DefaultWinnerStrategy.promotion( clusterContext );
+        DefaultWinnerStrategy strategy = new DefaultWinnerStrategy( clusterContext );
         org.neo4j.cluster.InstanceId winner = strategy.pickWinner( votes );
 
         // then
         assertEquals( instanceTwo, winner );
     }
-
 }

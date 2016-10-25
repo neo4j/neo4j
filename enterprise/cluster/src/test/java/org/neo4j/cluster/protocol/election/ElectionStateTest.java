@@ -63,10 +63,10 @@ public class ElectionStateTest
     {
         ElectionContext context = mock( ElectionContext.class );
         ClusterContext clusterContextMock = mock( ClusterContext.class );
+        when( context.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
 
         when( context.electionOk() ).thenReturn( false );
         when( clusterContextMock.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
-//        when( context.getClusterContext() ).thenReturn( clusterContextMock );
 
         MessageHolder holder = mock( MessageHolder.class );
 
@@ -107,7 +107,6 @@ public class ElectionStateTest
         ClusterContext clusterContextMock = mock( ClusterContext.class );
 
         when( clusterContextMock.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
-//        when( context.getClusterContext() ).thenReturn( clusterContextMock );
         MessageHolder holder = mock( MessageHolder.class );
 
           // These mean the election can proceed normally, by us

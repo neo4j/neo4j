@@ -36,16 +36,6 @@ public class DefaultWinnerStrategy implements WinnerStrategy
         this.electionContext = electionContext;
     }
 
-    public static DefaultWinnerStrategy promotion( ClusterContext clusterContext )
-    {
-        return new DefaultWinnerStrategy( clusterContext );
-    }
-
-    public static DefaultWinnerStrategy demotion( ClusterContext clusterContext )
-    {
-        return new DefaultWinnerStrategy( clusterContext );
-    }
-
     @Override
     public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> votes )
     {

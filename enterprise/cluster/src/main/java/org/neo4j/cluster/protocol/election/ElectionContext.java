@@ -48,15 +48,9 @@ public interface ElectionContext
 
     Iterable<String> getRoles( InstanceId server );
 
-    void unelect( String roleName );
-
     boolean isElectionProcessInProgress( String role );
 
-    void startDemotionProcess( String role, final InstanceId demoteNode );
-
     void startElectionProcess( String role );
-
-    void startPromotionProcess( String role, final InstanceId promoteNode );
 
     boolean voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials,
                        long electionVersion );

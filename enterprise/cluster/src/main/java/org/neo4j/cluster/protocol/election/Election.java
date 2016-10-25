@@ -36,6 +36,4 @@ public interface Election
      * currently. It is allowed for the same instance to be reelected.
      */
     void performRoleElections();
-
-    void promote( InstanceId node, String role );
 }

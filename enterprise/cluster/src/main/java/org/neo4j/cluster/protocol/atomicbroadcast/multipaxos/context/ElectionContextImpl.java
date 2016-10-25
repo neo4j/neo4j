@@ -134,21 +134,9 @@ public class ElectionContextImpl
     }
 
     @Override
-    public void unelect( String roleName )
-    {
-        clusterContext.getConfiguration().removeElected( roleName );
-    }
-
-    @Override
     public boolean isElectionProcessInProgress( String role )
     {
         return elections.containsKey( role );
-    }
-
-    @Override
-    public void startDemotionProcess( String role, final org.neo4j.cluster.InstanceId demoteNode )
-    {
-        elections.put( role, new Election( DefaultWinnerStrategy.demotion( clusterContext ) ) );
     }
 
     @Override
@@ -160,12 +148,6 @@ public class ElectionContextImpl
             clusterContext.setLastElector( clusterContext.getMyId() );
         }
         elections.put( role, new Election( new DefaultWinnerStrategy( clusterContext ) ) );
-    }
-
-    @Override
-    public void startPromotionProcess( String role, final org.neo4j.cluster.InstanceId promoteNode )
-    {
-        elections.put( role, new Election( DefaultWinnerStrategy.promotion( clusterContext )  ) );
     }
 
     @Override
