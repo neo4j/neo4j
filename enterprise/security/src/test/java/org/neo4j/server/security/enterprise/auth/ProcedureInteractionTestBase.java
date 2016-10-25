@@ -70,7 +70,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
@@ -366,8 +366,7 @@ public abstract class ProcedureInteractionTestBase<S>
     private String assertCallEmpty( S subject, String call )
     {
         return neo.executeQuery( subject, call, null,
-                ( res ) -> assertFalse( "Expected no results", res.hasNext()
-            ) );
+                result -> assertTrue( "Expected no results", result.stream().collect( toList() ).isEmpty() ) );
     }
 
     private void executeQuery( S subject, String call )

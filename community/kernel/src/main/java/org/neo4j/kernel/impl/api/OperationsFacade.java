@@ -1601,7 +1601,7 @@ public class OperationsFacade
         if ( !tx.securityContext().mode().allowsReads() )
         {
             throw tx.securityContext().mode().onViolation(
-                    format( "Read operations are not allowed for '%s'.", tx.securityContext().mode().name() ) );
+                    format( "Read operations are not allowed for %s.", tx.securityContext().description() ) );
         }
         return callFunction( name, arguments,
                 new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
