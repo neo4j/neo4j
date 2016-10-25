@@ -1498,8 +1498,8 @@ public class OperationsFacade
         AccessMode accessMode = tx.securityContext().mode();
         if ( !accessMode.allowsReads() )
         {
-            throw accessMode.onViolation( format( "Read operations are not allowed for '%s'.",
-                    tx.securityContext().subject().username() ) );
+            throw accessMode.onViolation( format( "Read operations are not allowed for %s.",
+                    tx.securityContext().description() ) );
         }
         return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static
                 .READ ) );
@@ -1517,8 +1517,8 @@ public class OperationsFacade
         AccessMode accessMode = tx.securityContext().mode();
         if ( !accessMode.allowsWrites() )
         {
-            throw accessMode.onViolation( format( "Write operations are not allowed for '%s'.",
-                    tx.securityContext().subject().username() ) );
+            throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
+                    tx.securityContext().description() ) );
         }
         return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.WRITE ) );
     }
@@ -1535,8 +1535,8 @@ public class OperationsFacade
         AccessMode accessMode = tx.securityContext().mode();
         if ( !accessMode.allowsSchemaWrites() )
         {
-            throw accessMode.onViolation( format( "Schema operations are not allowed for '%s'.",
-                    tx.securityContext().subject().username() ) );
+            throw accessMode.onViolation( format( "Schema operations are not allowed for %s.",
+                    tx.securityContext().description() ) );
         }
         return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.FULL ) );
     }
