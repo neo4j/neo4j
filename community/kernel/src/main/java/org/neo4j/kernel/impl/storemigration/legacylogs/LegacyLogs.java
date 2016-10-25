@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.collection.Pair;
@@ -33,7 +34,6 @@ import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -118,10 +118,10 @@ public class LegacyLogs
         }
     }
 
-    public TransactionId getTransactionInformation( File storeDir, long transactionId ) throws IOException
+    public Optional<TransactionId> getTransactionInformation( File storeDir, long transactionId ) throws IOException
     {
         List<File> logFiles = Arrays.asList( fs.listFiles( storeDir, versionedLegacyLogFilesFilter ) );
-        Collections.sort( logFiles, NEWEST_FIRST );
+        logFiles.sort( NEWEST_FIRST );
         for ( File file : logFiles )
         {
             Pair<LogHeader, IOCursor<LogEntry>> pair = reader.openReadableChannel( file );
@@ -143,8 +143,8 @@ public class LegacyLogs
                         LogEntryCommit commitEntry = logEntry.as();
                         if ( commitEntry.getTxId() == transactionId )
                         {
-                            return new TransactionId( transactionId, startEntry.checksum(),
-                                    commitEntry.getTimeWritten() );
+                            return Optional.of( new TransactionId( transactionId, startEntry.checksum(),
+                                    commitEntry.getTimeWritten() ) );
                         }
                     }
                 }
@@ -155,7 +155,7 @@ public class LegacyLogs
                 break;
             }
         }
-        throw new NoSuchTransactionException( transactionId );
+        return Optional.empty();
     }
 
     public void operate( FileOperation op, File from, File to ) throws IOException

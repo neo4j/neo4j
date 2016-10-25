@@ -33,7 +33,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -78,7 +80,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -136,7 +137,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final SchemaIndexProvider schemaIndexProvider;
-    private final Log log;
 
     public StoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
             LogService logService, SchemaIndexProvider schemaIndexProvider )
@@ -154,7 +154,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         this.logService = logService;
         this.schemaIndexProvider = schemaIndexProvider;
         this.legacyLogs = legacyLogs;
-        this.log = logService.getInternalLog( StoreMigrator.class );
     }
 
     @Override
@@ -278,8 +277,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         return new File( migrationDir, "lastxlogposition" );
     }
 
-    // accessible for tests
-    TransactionId extractTransactionIdInformation( File neoStore, File storeDir, long txId )
+    TransactionId extractTransactionIdInformation( File neoStore, File storeDir, long lastTransactionId )
             throws IOException
     {
         long checksum = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
@@ -287,24 +285,35 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 Position.LAST_TRANSACTION_COMMIT_TIMESTAMP );
         if ( checksum != FIELD_NOT_PRESENT && commitTimestamp != FIELD_NOT_PRESENT )
         {
-            return new TransactionId( txId, checksum, commitTimestamp );
+            return new TransactionId( lastTransactionId, checksum, commitTimestamp );
         }
         // The legacy store we're migrating doesn't have this record in neostore so try to extract it from tx log
-        try
-        {
-            return legacyLogs.getTransactionInformation( storeDir, txId );
-        }
-        catch ( IOException ioe )
-        {
-            log.error( "Extraction of transaction " + txId + " from legacy logs failed.", ioe );
-            // OK, so we could not get the transaction information from the legacy store logs,
-            // so just generate a random new one. I don't think it matters since we know that in a
-            // multi-database scenario there can only be one of them upgrading, the other ones will have to
-            // copy that database.
-            return txId == TransactionIdStore.BASE_TX_ID
-                   ? new TransactionId( txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP )
-                   : new TransactionId( txId, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP );
-        }
+
+        Optional<TransactionId> transactionInformation = legacyLogs.getTransactionInformation( storeDir, lastTransactionId );
+        return transactionInformation.orElseGet( specificTransactionInformationSupplier( lastTransactionId ) );
+    }
+
+    /**
+     * In case if we can't find information about transaction in legacy logs we will create new transaction
+     * information record.
+     * Those should be used <b>only</b> in case if we do not have any transaction logs available during
+     * migration.
+     *
+     * Logs can be absent in two possible scenarios:
+     * <ol>
+     *     <li>We do not have any logs since there were not transaction.</li>
+     *     <li>Logs are missing.</li>
+     * </ol>
+     * For both of those cases specific informational records will be produced.
+     *
+     * @param lastTransactionId last committed transaction id
+     * @return supplier of custom id records.
+     */
+    private Supplier<TransactionId> specificTransactionInformationSupplier( long lastTransactionId )
+    {
+        return () -> lastTransactionId == TransactionIdStore.BASE_TX_ID
+                                          ? new TransactionId( lastTransactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP )
+                                          : new TransactionId( lastTransactionId, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP );
     }
 
     private LogPosition extractTransactionLogPosition( File neoStore, File storeDir, long lastTxId ) throws IOException

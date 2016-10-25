@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.ArrayIOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -50,12 +51,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.versionedLegacyLogFilesFilter;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
@@ -223,9 +224,39 @@ public class LegacyLogsTest
         LegacyLogEntryWriter writer = new LegacyLogEntryWriter( fs );
         LegacyLogs legacyLogs = new LegacyLogs( fs, reader, writer );
 
-        assertEquals( newTransactionId( 1 ), legacyLogs.getTransactionInformation( storeDir, 1 ) );
-        assertEquals( newTransactionId( 2 ), legacyLogs.getTransactionInformation( storeDir, 2 ) );
-        assertEquals( newTransactionId( 3 ), legacyLogs.getTransactionInformation( storeDir, 3 ) );
+        assertEquals( newTransactionId( 1 ), getTransactionInformation( legacyLogs, 1 ) );
+        assertEquals( newTransactionId( 2 ), getTransactionInformation( legacyLogs, 2 ) );
+        assertEquals( newTransactionId( 3 ), getTransactionInformation( legacyLogs, 3 ) );
+    }
+
+    @Test(expected = IOException.class)
+    @SuppressWarnings( "unchecked" )
+    public void ioExceptionsPropagatedWhenFailToReadLegacyLog() throws IOException
+    {
+        File logFile = new File( LegacyLogFilenames.getLegacyLogFilename( 1 ) );
+        when( fs.listFiles( any( File.class ), any( FilenameFilter.class ) ) )
+                .thenReturn( new File[]{logFile} );
+
+        when( reader.openReadableChannel( any( File.class ) ) ).thenThrow( IOException.class );
+
+        LegacyLogs legacyLogs = new LegacyLogs( fs, reader, writer );
+        getTransactionInformation( legacyLogs, 1 );
+    }
+
+    @Test
+    public void noTransactionalInformationWhenLogsNotPresent() throws IOException
+    {
+        when( fs.listFiles( any( File.class ), any( FilenameFilter.class ) ) )
+                .thenReturn( new File[]{} );
+
+        LegacyLogs legacyLogs = new LegacyLogs( fs, reader, writer );
+        assertFalse( "There are not logs. Nothing to return",
+                legacyLogs.getTransactionInformation( storeDir, 1 ).isPresent() );
+    }
+
+    private TransactionId getTransactionInformation( LegacyLogs legacyLogs, int transactionId ) throws IOException
+    {
+        return legacyLogs.getTransactionInformation( storeDir, transactionId ).orElseThrow( MissingLogDataException::new);
     }
 
     private String getLogFilenameForVersion( int version )
