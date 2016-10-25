@@ -20,10 +20,12 @@
 package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 
 /**
  * To create a command for {@code neo4j-admin}:
@@ -74,6 +76,31 @@ public interface AdminCommand
         public abstract String description();
 
         public abstract AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld );
+    }
+
+    abstract class Blocker extends Service
+    {
+        protected Blocker( String key, String... altKeys )
+        {
+            super( key, altKeys );
+        }
+
+        /**
+         * @param databaseName  the name of the database that the command applies to.
+         * @param config        a configuration object for the blocker to use when making its decision.
+         * @return Whether the command should be blocked from running or not.
+         */
+        public abstract boolean doesBlock( String databaseName, Config config );
+
+        /**
+         * @return              a list of the commands this blocker applies to.
+         */
+        public abstract List<String> commands();
+
+        /**
+         * @return explanation of why a command was blocked. This will be shown to the user.
+         */
+        public abstract String explanation();
     }
 
     void execute( String[] args ) throws IncorrectUsage, CommandFailed;
