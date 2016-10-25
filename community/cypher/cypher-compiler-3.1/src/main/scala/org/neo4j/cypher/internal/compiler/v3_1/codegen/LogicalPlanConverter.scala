@@ -45,6 +45,7 @@ object LogicalPlanConverter {
     case p: CartesianProduct => cartesianProductAsCodeGenPlan(p)
     case p: Selection => selectionAsCodeGenPlan(p)
     case p: plans.Limit => limitAsCodeGenPlan(p)
+    case p: plans.Skip => skipAsCodeGenPlan(p)
     case p: ProduceResult => produceResultsAsCodeGenPlan(p)
     case p: plans.Projection => projectionAsCodeGenPlan(p)
 
@@ -460,6 +461,22 @@ object LogicalPlanConverter {
 
       val (methodHandle, innerBlock) = context.popParent().consume(context, this)
       val instruction = DecreaseAndReturnWhenZero(opName, counterName, innerBlock, count)
+
+      (methodHandle, instruction)
+    }
+  }
+
+  private def skipAsCodeGenPlan(skip: plans.Skip) = new CodeGenPlan with SingleChildPlan {
+
+    override val logicalPlan: LogicalPlan = skip
+
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val opName = context.registerOperator(skip)
+      val numberToSkip = ExpressionConverter.createExpression(skip.count)(context)
+      val counterName = context.namer.newVarName()
+
+      val (methodHandle, innerBlock) = context.popParent().consume(context, this)
+      val instruction = SkipInstruction(opName, counterName, innerBlock, numberToSkip)
 
       (methodHandle, instruction)
     }

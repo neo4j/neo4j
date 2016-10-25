@@ -44,12 +44,14 @@ import static org.objectweb.asm.Opcodes.CASTORE;
 import static org.objectweb.asm.Opcodes.CHECKCAST;
 import static org.objectweb.asm.Opcodes.DADD;
 import static org.objectweb.asm.Opcodes.DASTORE;
+import static org.objectweb.asm.Opcodes.DCMPG;
 import static org.objectweb.asm.Opcodes.DCMPL;
 import static org.objectweb.asm.Opcodes.DLOAD;
 import static org.objectweb.asm.Opcodes.DMUL;
 import static org.objectweb.asm.Opcodes.DSUB;
 import static org.objectweb.asm.Opcodes.DUP;
 import static org.objectweb.asm.Opcodes.FASTORE;
+import static org.objectweb.asm.Opcodes.FCMPG;
 import static org.objectweb.asm.Opcodes.FCMPL;
 import static org.objectweb.asm.Opcodes.FLOAD;
 import static org.objectweb.asm.Opcodes.GETFIELD;
@@ -60,12 +62,18 @@ import static org.objectweb.asm.Opcodes.IASTORE;
 import static org.objectweb.asm.Opcodes.ICONST_0;
 import static org.objectweb.asm.Opcodes.ICONST_1;
 import static org.objectweb.asm.Opcodes.IFEQ;
+import static org.objectweb.asm.Opcodes.IFGE;
+import static org.objectweb.asm.Opcodes.IFGT;
 import static org.objectweb.asm.Opcodes.IFLE;
+import static org.objectweb.asm.Opcodes.IFLT;
 import static org.objectweb.asm.Opcodes.IFNE;
 import static org.objectweb.asm.Opcodes.IFNONNULL;
 import static org.objectweb.asm.Opcodes.IFNULL;
 import static org.objectweb.asm.Opcodes.IF_ACMPNE;
+import static org.objectweb.asm.Opcodes.IF_ICMPGE;
+import static org.objectweb.asm.Opcodes.IF_ICMPGT;
 import static org.objectweb.asm.Opcodes.IF_ICMPLE;
+import static org.objectweb.asm.Opcodes.IF_ICMPLT;
 import static org.objectweb.asm.Opcodes.IF_ICMPNE;
 import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
@@ -390,28 +398,45 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void gt( Expression lhs, Expression rhs, TypeReference type )
     {
+        numberOperation( type,
+                () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPLE ),
+                () -> compareLongOrFloatType( lhs, rhs, LCMP, IFLE ),
+                () -> compareLongOrFloatType( lhs, rhs, FCMPL, IFLE ),
+                () -> compareLongOrFloatType( lhs, rhs, DCMPL, IFLE )
+                );
+    }
 
-        switch ( type.simpleName() )
-        {
-        case "int":
-        case "byte":
-        case "short":
-        case "char":
-        case "boolean":
-            compareIntOrReferenceType( lhs, rhs, IF_ICMPLE );
-            break;
-        case "long":
-            compareLongOrFloatType( lhs, rhs, LCMP, IFLE );
-            break;
-        case "float":
-            compareLongOrFloatType( lhs, rhs, FCMPL, IFLE );
-            break;
-        case "double":
-            compareLongOrFloatType( lhs, rhs, DCMPL, IFLE );
-            break;
-        default:
-            throw new IllegalStateException( "Cannot compare reference types" );
-        }
+    @Override
+    public void gte( Expression lhs, Expression rhs, TypeReference type )
+    {
+        numberOperation( type,
+                () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPLT ),
+                () -> compareLongOrFloatType( lhs, rhs, LCMP, IFLT ),
+                () -> compareLongOrFloatType( lhs, rhs, FCMPL, IFLT ),
+                () -> compareLongOrFloatType( lhs, rhs, DCMPL, IFLT )
+        );
+    }
+
+    @Override
+    public void lt( Expression lhs, Expression rhs, TypeReference type )
+    {
+        numberOperation( type,
+                () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPGE ),
+                () -> compareLongOrFloatType( lhs, rhs, LCMP, IFGE ),
+                () -> compareLongOrFloatType( lhs, rhs, FCMPG, IFGE ),
+                () -> compareLongOrFloatType( lhs, rhs, DCMPG, IFGE )
+        );
+    }
+
+    @Override
+    public void lte( Expression lhs, Expression rhs, TypeReference type )
+    {
+        numberOperation( type,
+                () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPGT ),
+                () -> compareLongOrFloatType( lhs, rhs, LCMP, IFGT ),
+                () -> compareLongOrFloatType( lhs, rhs, FCMPG, IFGT ),
+                () -> compareLongOrFloatType( lhs, rhs, DCMPG, IFGT )
+        );
     }
 
     @Override
@@ -627,4 +652,31 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         onFalse.accept( this );
         methodVisitor.visitLabel( l1 );
     }
+
+    private void numberOperation( TypeReference type, Runnable onInt, Runnable onLong, Runnable onFloat, Runnable onDouble )
+    {
+
+        switch ( type.simpleName() )
+        {
+        case "int":
+        case "byte":
+        case "short":
+        case "char":
+        case "boolean":
+            onInt.run();
+            break;
+        case "long":
+            onLong.run();
+            break;
+        case "float":
+            onFloat.run();
+            break;
+        case "double":
+            onDouble.run();
+            break;
+        default:
+            throw new IllegalStateException( "Cannot compare reference types" );
+        }
+    }
+
 }

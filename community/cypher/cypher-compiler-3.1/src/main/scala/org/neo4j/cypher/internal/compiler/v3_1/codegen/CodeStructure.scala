@@ -77,9 +77,8 @@ trait MethodStructure[E] {
   def invokeMethod(resultType: JoinTableType, resultVar: String, methodName: String)(block: MethodStructure[E]=>Unit): Unit
   def coerceToBoolean(propertyExpression: E): E
 
-  // expressions
-  def decreaseCounterAndCheckForZero(name: String): E
-  def counterEqualsZero(variableName: String): E
+  def decrementCounter(name: String): Unit
+  def checkCounter(variableName: String, comparator: Comparator, value: Int): E
   def newTableValue(targetVar: String, structure: Map[String, CodeGenType]): E
   def constantExpression(value: Object): E
   def asMap(map: Map[String, E]): E
@@ -168,3 +167,10 @@ trait MethodStructure[E] {
   def visitorAccept(): Unit
   def setInRow(column: String, value: E): Unit
 }
+
+sealed trait Comparator
+case object Equal extends Comparator
+case object LessThan extends Comparator
+case object LessThanEqual extends Comparator
+case object GreaterThan extends Comparator
+case object GreaterThanEqual extends Comparator

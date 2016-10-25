@@ -627,6 +627,23 @@ return p""")
     result.columnAs[Long]("count(*)").next shouldBe 6
   }
 
+  test("should handle skip regardless of runtime") {
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN n SKIP 0") should have size 5
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN n SKIP 1") should have size 4
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN n SKIP 2") should have size 3
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN n SKIP 3") should have size 2
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN n SKIP 4") should have size 1
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN n SKIP 5") should have size 0
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN n SKIP 6") should have size 0
+
+  }
+
   // Not TCK material -- cardinality estimation
   test("aliasing node names should not change estimations but it should simply introduce a projection") {
     val b = createLabeledNode("B")

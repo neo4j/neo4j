@@ -215,6 +215,36 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
+    public void gte( Expression lhs, Expression rhs, TypeReference ignored )
+    {
+        result.append( "gt(" );
+        lhs.accept( this );
+        result.append( " >= " );
+        rhs.accept( this );
+        result.append( ")" );
+    }
+
+    @Override
+    public void lt( Expression lhs, Expression rhs, TypeReference ignored )
+    {
+        result.append( "lt(" );
+        lhs.accept( this );
+        result.append( " < " );
+        rhs.accept( this );
+        result.append( ")" );
+    }
+
+    @Override
+    public void lte( Expression lhs, Expression rhs, TypeReference ignored )
+    {
+        result.append( "gt(" );
+        lhs.accept( this );
+        result.append( " <= " );
+        rhs.accept( this );
+        result.append( ")" );
+    }
+
+    @Override
     public void subtractInts( Expression lhs, Expression rhs )
     {
         sub( lhs, rhs);

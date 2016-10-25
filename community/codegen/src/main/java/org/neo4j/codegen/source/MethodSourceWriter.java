@@ -371,25 +371,19 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void equal( Expression lhs, Expression rhs, TypeReference ignored )
     {
-        lhs.accept( this );
-        append( " == " );
-        rhs.accept( this );
+        binaryOperation( lhs, rhs, " == " );
     }
 
     @Override
     public void or( Expression lhs, Expression rhs )
     {
-        lhs.accept( this );
-        append( " || " );
-        rhs.accept( this );
+        binaryOperation( lhs, rhs, " || " );
     }
 
     @Override
     public void and( Expression lhs, Expression rhs )
     {
-        lhs.accept( this );
-        append( " && " );
-        rhs.accept( this );
+        binaryOperation( lhs, rhs, " && " );
 
     }
 
@@ -413,17 +407,31 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
 
     private void add( Expression lhs, Expression rhs )
     {
-        lhs.accept( this );
-        append( " + " );
-        rhs.accept( this );
+        binaryOperation( lhs, rhs, " + " );
     }
 
     @Override
     public void gt( Expression lhs, Expression rhs, TypeReference ignored )
     {
-        lhs.accept( this );
-        append( " > " );
-        rhs.accept( this );
+        binaryOperation( lhs, rhs, " > " );
+    }
+
+    @Override
+    public void gte( Expression lhs, Expression rhs, TypeReference ignored )
+    {
+        binaryOperation( lhs, rhs, " >= " );
+    }
+
+    @Override
+    public void lt( Expression lhs, Expression rhs, TypeReference ignored )
+    {
+        binaryOperation( lhs, rhs, " < " );
+    }
+
+    @Override
+    public void lte( Expression lhs, Expression rhs, TypeReference ignored )
+    {
+        binaryOperation( lhs, rhs, " <= " );
     }
 
     @Override
@@ -510,5 +518,12 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     public void pop( Expression expression )
     {
         expression.accept( this );
+    }
+
+    private void binaryOperation(Expression lhs, Expression rhs, String operator)
+    {
+        lhs.accept( this );
+        append( operator );
+        rhs.accept( this );
     }
 }

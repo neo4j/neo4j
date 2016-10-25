@@ -59,6 +59,12 @@ public interface ExpressionVisitor
 
     void gt( Expression lhs, Expression rhs, TypeReference type );
 
+    void gte( Expression lhs, Expression rhs, TypeReference type );
+
+    void lt( Expression lhs, Expression rhs, TypeReference type );
+
+    void lte( Expression lhs, Expression rhs, TypeReference type );
+
     void subtractInts( Expression lhs, Expression rhs );
 
     void subtractLongs( Expression lhs, Expression rhs );
