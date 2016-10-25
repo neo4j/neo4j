@@ -33,6 +33,9 @@ public class ProcedureAllowedConfig
     public static final String PROC_ALLOWED_SETTING_DEFAULT_NAME = "dbms.security.procedures.default_allowed";
     public static final String PROC_ALLOWED_SETTING_ROLES = "dbms.security.procedures.roles";
 
+    private static final String SETTING_DELIMITER = ";";
+    private static final String MAPPING_DELIMITER = ":";
+
     private final String defaultValue;
     private final List<ProcMatcher> matchers;
 
@@ -48,9 +51,9 @@ public class ProcedureAllowedConfig
         this.defaultValue = params.get( PROC_ALLOWED_SETTING_DEFAULT_NAME );
         if ( params.containsKey( PROC_ALLOWED_SETTING_ROLES ) )
         {
-            this.matchers = Stream.of( params.get( PROC_ALLOWED_SETTING_ROLES ).split( "," ) )
+            this.matchers = Stream.of( params.get( PROC_ALLOWED_SETTING_ROLES ).split( SETTING_DELIMITER ) )
                     .map( procToRoleSpec -> {
-                        String[] spec = procToRoleSpec.split( ":" );
+                        String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
                         return new ProcMatcher( spec[0].trim(), spec[1].trim() );
                     } ).collect( Collectors.toList() );
         }
@@ -60,7 +63,7 @@ public class ProcedureAllowedConfig
         }
     }
 
-    public String[] rolesFor( String procedureName )
+    String[] rolesFor( String procedureName )
     {
         String[] wildCardRoles =
                 matchers.stream().filter( matcher -> matcher.matches( procedureName ) ).map( ProcMatcher::role )

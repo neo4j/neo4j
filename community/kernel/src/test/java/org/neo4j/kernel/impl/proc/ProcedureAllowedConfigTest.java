@@ -91,7 +91,7 @@ public class ProcedureAllowedConfigTest
         Config config = Config.defaults()
                 .with( genericMap(
                         ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES,
-                        "apoc.convert.*:apoc_reader,apoc.load.json:apoc_writer,apoc.trigger.add:TriggerHappy"
+                        "apoc.convert.*:apoc_reader;apoc.load.json:apoc_writer;apoc.trigger.add:TriggerHappy"
                 ) );
         ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
         assertThat( procConfig.rolesFor( "xyz" ), equalTo( EMPTY ) );
@@ -113,7 +113,7 @@ public class ProcedureAllowedConfigTest
                 .with( genericMap(
                         ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME, "default",
                         ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES,
-                        "apoc.*:apoc,apoc.load.*:loader,apoc.trigger.*:trigger,apoc.trigger.add:TriggerHappy"
+                        "apoc.*:apoc;apoc.load.*:loader;apoc.trigger.*:trigger;apoc.trigger.add:TriggerHappy"
                 ) );
         ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
         assertThat( procConfig.rolesFor( "xyz" ), equalTo( arrayOf( "default" ) ) );

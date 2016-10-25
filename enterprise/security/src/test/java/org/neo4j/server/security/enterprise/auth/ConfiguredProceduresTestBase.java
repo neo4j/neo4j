@@ -168,7 +168,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     @Test
     public void shouldSetAllMatchingWildcardRoleConfigs() throws Throwable
     {
-        configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester,test.create*:other" ) );
+        configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester;test.create*:other" ) );
 
         userManager.newRole( "tester", "noneSubject" );
         userManager.newRole( "other", "readSubject" );
@@ -183,7 +183,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     @Test
     public void shouldSetAllMatchingWildcardRoleConfigsWithDefaultForUDFs() throws Throwable
     {
-        configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester,test.create*:other",
+        configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester;test.create*:other",
                                     SecuritySettings.default_allowed.name(), "default" ) );
 
         userManager.newRole( "tester", "noneSubject" );
