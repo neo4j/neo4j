@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.BlockerLocator;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.dbms.archive.Dumper;
@@ -328,9 +329,12 @@ public class DumpCommandTest
             add( blocker );
         }};
 
+        BlockerLocator blockerLocator = mock( BlockerLocator.class );
+        when(blockerLocator.findBlockersForCommand( "dump" )).thenReturn( blockers );
+
         try
         {
-            new DumpCommand( homeDir, configDir, dumper, blockers )
+            new DumpCommand( homeDir, configDir, dumper, blockerLocator )
                     .execute( new String[]{"--database=something", "--to=foobar"} );
             fail( "expected exception" );
         }
@@ -358,9 +362,12 @@ public class DumpCommandTest
             add( falseBlocker );
         }};
 
+        BlockerLocator blockerLocator = mock( BlockerLocator.class );
+        when(blockerLocator.findBlockersForCommand( "dump" )).thenReturn( blockers );
+
         try
         {
-            new DumpCommand( homeDir, configDir, dumper, blockers )
+            new DumpCommand( homeDir, configDir, dumper, blockerLocator )
                     .execute( new String[]{"--database=something", "--to=foobar"} );
             fail( "expected exception" );
         }

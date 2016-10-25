@@ -27,7 +27,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +35,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.BlockerLocator;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
@@ -58,7 +58,7 @@ import static org.neo4j.kernel.impl.util.Converters.mandatory;
 public class DumpCommand implements AdminCommand
 {
     private final StoreLockChecker storeLockChecker;
-    private final List<Blocker> blockers;
+    private final BlockerLocator blockerLocator;
 
     public static class Provider extends AdminCommand.Provider
     {
@@ -100,16 +100,16 @@ public class DumpCommand implements AdminCommand
 
     public DumpCommand( Path homeDir, Path configDir, Dumper dumper )
     {
-        this( homeDir, configDir, dumper, Collections.emptyList() );
+        this( homeDir, configDir, dumper, new BlockerLocator() );
     }
 
-    public DumpCommand( Path homeDir, Path configDir, Dumper dumper, List<Blocker> blockers )
+    public DumpCommand( Path homeDir, Path configDir, Dumper dumper, BlockerLocator blockerLocator )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.dumper = dumper;
         this.storeLockChecker = new StoreLockChecker();
-        this.blockers = blockers;
+        this.blockerLocator = blockerLocator;
     }
 
     @Override
@@ -120,7 +120,7 @@ public class DumpCommand implements AdminCommand
         Path databaseDirectory = toDatabaseDirectory( database );
         Config config = loadNeo4jConfig( homeDir, configDir, database, new HashMap<>() );
 
-        for ( AdminCommand.Blocker blocker : blockers )
+        for ( AdminCommand.Blocker blocker : blockerLocator.findBlockersForCommand( "dump" ) )
         {
             if ( blocker.doesBlock( database, config ) )
             {
