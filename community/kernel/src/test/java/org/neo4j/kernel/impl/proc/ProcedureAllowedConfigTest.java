@@ -26,6 +26,8 @@ import org.neo4j.kernel.configuration.Config;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES;
 
 public class ProcedureAllowedConfigTest
 {
@@ -48,7 +50,7 @@ public class ProcedureAllowedConfigTest
     public void shouldHaveConfigsWithDefaultProcedureAllowed()
     {
         Config config = Config.defaults()
-                .with( genericMap( ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1" ) );
+                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1" ) );
         ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
         assertThat( procConfig.rolesFor( "x" ), equalTo( arrayOf( "role1" ) ) );
     }
@@ -57,8 +59,8 @@ public class ProcedureAllowedConfigTest
     public void shouldHaveConfigsWithExactMatchProcedureAllowed()
     {
         Config config = Config.defaults()
-                .with( genericMap( ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1",
-                        ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES, "xyz:anotherRole" ) );
+                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1",
+                        PROC_ALLOWED_SETTING_ROLES, "xyz:anotherRole" ) );
         ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
         assertThat( procConfig.rolesFor( "xyz" ), equalTo( arrayOf( "anotherRole" ) ) );
         assertThat( procConfig.rolesFor( "abc" ), equalTo( arrayOf( "role1" ) ) );
@@ -68,8 +70,8 @@ public class ProcedureAllowedConfigTest
     public void shouldHaveConfigsWithWildcardProcedureAllowed()
     {
         Config config = Config.defaults()
-                .with( genericMap( ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1",
-                        ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES, "xyz*:anotherRole" ) );
+                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1",
+                        PROC_ALLOWED_SETTING_ROLES, "xyz*:anotherRole" ) );
         ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
         assertThat( procConfig.rolesFor( "xyzabc" ), equalTo( arrayOf( "anotherRole" ) ) );
         assertThat( procConfig.rolesFor( "abcxyz" ), equalTo( arrayOf( "role1" ) ) );
@@ -79,7 +81,7 @@ public class ProcedureAllowedConfigTest
     public void shouldHaveConfigsWithWildcardProcedureAllowedAndNoDefault()
     {
         Config config = Config.defaults()
-                .with( genericMap( ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES, "xyz*:anotherRole" ) );
+                .with( genericMap( PROC_ALLOWED_SETTING_ROLES, "xyz*:anotherRole" ) );
         ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
         assertThat( procConfig.rolesFor( "xyzabc" ), equalTo( arrayOf( "anotherRole" ) ) );
         assertThat( procConfig.rolesFor( "abcxyz" ), equalTo( EMPTY ) );
@@ -90,7 +92,7 @@ public class ProcedureAllowedConfigTest
     {
         Config config = Config.defaults()
                 .with( genericMap(
-                        ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES,
+                        PROC_ALLOWED_SETTING_ROLES,
                         "apoc.convert.*:apoc_reader;apoc.load.json:apoc_writer;apoc.trigger.add:TriggerHappy"
                 ) );
         ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
@@ -111,8 +113,8 @@ public class ProcedureAllowedConfigTest
     {
         Config config = Config.defaults()
                 .with( genericMap(
-                        ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME, "default",
-                        ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES,
+                        PROC_ALLOWED_SETTING_DEFAULT_NAME, "default",
+                        PROC_ALLOWED_SETTING_ROLES,
                         "apoc.*:apoc;apoc.load.*:loader;apoc.trigger.*:trigger;apoc.trigger.add:TriggerHappy"
                 ) );
         ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
@@ -122,5 +124,17 @@ public class ProcedureAllowedConfigTest
         assertThat( procConfig.rolesFor( "apoc.trigger.add" ), equalTo( arrayOf( "apoc", "trigger", "TriggerHappy" ) ) );
         assertThat( procConfig.rolesFor( "apoc.trigger.remove" ), equalTo( arrayOf( "apoc", "trigger" ) ) );
         assertThat( procConfig.rolesFor( "apoc.load-xml" ), equalTo( arrayOf( "apoc" ) ) );
+    }
+
+    @Test
+    public void shouldSupportSeveralRolesPerPattern()
+    {
+        Config config = Config.defaults().with( genericMap( PROC_ALLOWED_SETTING_ROLES,
+                "xyz*:role1,role2,  role3  ,    role4   ;    abc:  role3   ,role1" ) );
+        ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
+
+        assertThat( procConfig.rolesFor( "xyzabc" ), equalTo( arrayOf( "role1", "role2", "role3", "role4" ) ) );
+        assertThat( procConfig.rolesFor( "abc" ), equalTo( arrayOf( "role3", "role1" ) ) );
+        assertThat( procConfig.rolesFor( "abcxyz" ), equalTo( EMPTY ) );
     }
 }

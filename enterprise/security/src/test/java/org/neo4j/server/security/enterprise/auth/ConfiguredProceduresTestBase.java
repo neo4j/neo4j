@@ -205,6 +205,21 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 .registerProcedure( ClassWithProcedures.class );
 
         S subject = neo.login( "no_auth", "" );
-        assertEmpty( subject, "CALL test.allowedReadProcedure() YIELD value CREATE (:NEWNODE {name:value})" );
+        assertEmpty( subject, "CALL test.allowedReadProcedure() YIELD value CREATE (:NewNode {name: value})" );
+    }
+
+    @Test
+    public void shouldHandleMultipleRolesSpecifiedForMapping() throws Throwable
+    {
+        // Given
+        configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester, other" ) );
+
+        // When
+        userManager.newRole( "tester", "noneSubject" );
+        userManager.newRole( "other", "readSubject" );
+
+        // Then
+        assertSuccess( readSubject, "CALL test.createNode", ResourceIterator::close );
+        assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "4" ) );
     }
 }

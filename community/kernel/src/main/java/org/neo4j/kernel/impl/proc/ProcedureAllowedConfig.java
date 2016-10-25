@@ -28,11 +28,14 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.configuration.Config;
 
+import static java.util.Arrays.stream;
+
 public class ProcedureAllowedConfig
 {
     public static final String PROC_ALLOWED_SETTING_DEFAULT_NAME = "dbms.security.procedures.default_allowed";
     public static final String PROC_ALLOWED_SETTING_ROLES = "dbms.security.procedures.roles";
 
+    private static final String ROLES_DELIMITER = ",";
     private static final String SETTING_DELIMITER = ";";
     private static final String MAPPING_DELIMITER = ":";
 
@@ -52,9 +55,12 @@ public class ProcedureAllowedConfig
         if ( params.containsKey( PROC_ALLOWED_SETTING_ROLES ) )
         {
             this.matchers = Stream.of( params.get( PROC_ALLOWED_SETTING_ROLES ).split( SETTING_DELIMITER ) )
-                    .map( procToRoleSpec -> {
+                    .map( procToRoleSpec ->
+                    {
                         String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
-                        return new ProcMatcher( spec[0].trim(), spec[1].trim() );
+                        String[] roles = stream( spec[1].split( ROLES_DELIMITER ) )
+                                .map( String::trim ).toArray( String[]::new );
+                        return new ProcMatcher( spec[0].trim(), roles );
                     } ).collect( Collectors.toList() );
         }
         else
@@ -65,9 +71,9 @@ public class ProcedureAllowedConfig
 
     String[] rolesFor( String procedureName )
     {
-        String[] wildCardRoles =
-                matchers.stream().filter( matcher -> matcher.matches( procedureName ) ).map( ProcMatcher::role )
-                        .toArray( String[]::new );
+        String[] wildCardRoles = matchers.stream().filter( matcher -> matcher.matches( procedureName ) )
+                .map( ProcMatcher::roles ).reduce( new String[0],
+                        ( acc, next ) -> Stream.concat( stream( acc ), stream( next ) ).toArray( String[]::new ) );
         if ( wildCardRoles.length > 0 )
         {
             return wildCardRoles;
@@ -80,7 +86,7 @@ public class ProcedureAllowedConfig
 
     private String[] getDefaultValue()
     {
-        return defaultValue == null || defaultValue.isEmpty() ? new String[0]: new String[]{defaultValue};
+        return defaultValue == null || defaultValue.isEmpty() ? new String[0] : new String[]{defaultValue};
     }
 
     static final ProcedureAllowedConfig DEFAULT = new ProcedureAllowedConfig();
@@ -88,12 +94,12 @@ public class ProcedureAllowedConfig
     private static class ProcMatcher
     {
         private final Pattern pattern;
-        private final String role;
+        private final String[] roles;
 
-        private ProcMatcher(String procedurePattern, String role)
+        private ProcMatcher( String procedurePattern, String[] roles )
         {
             this.pattern = Pattern.compile( procedurePattern.replaceAll( "\\.", "\\\\." ).replaceAll( "\\*", ".*" ) );
-            this.role = role;
+            this.roles = roles;
         }
 
         boolean matches( String procedureName )
@@ -101,9 +107,9 @@ public class ProcedureAllowedConfig
             return pattern.matcher( procedureName ).matches();
         }
 
-        String role()
+        String[] roles()
         {
-            return role;
+            return roles;
         }
     }
 }
