@@ -19,16 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Rule;
-
 import java.util.Map;
-
-import org.neo4j.test.rule.SuppressOutput;
 
 public class BoltBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<BoltInteraction.BoltSubject>
 {
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     public BoltBuiltInProceduresInteractionTest()
     {

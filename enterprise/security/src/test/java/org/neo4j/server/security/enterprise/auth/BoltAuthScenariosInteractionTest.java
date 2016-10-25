@@ -19,17 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Rule;
-
 import java.util.Map;
-
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.test.rule.SuppressOutput;
 
 public class BoltAuthScenariosInteractionTest extends AuthScenariosInteractionTestBase<BoltInteraction.BoltSubject>
 {
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     public BoltAuthScenariosInteractionTest()
     {
