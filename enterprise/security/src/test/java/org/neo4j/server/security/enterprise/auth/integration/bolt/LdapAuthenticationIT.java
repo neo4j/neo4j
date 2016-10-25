@@ -63,7 +63,6 @@ import org.neo4j.test.DoubleLatch;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
@@ -911,7 +910,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         // Then
         assertThat( client, eventuallyReceives(
-                msgFailure( Status.Security.Timeout, LDAP_READ_TIMEOUT_CLIENT_MESSAGE ) ) );
+                msgFailure( Status.Security.AuthProviderTimeout, LDAP_READ_TIMEOUT_CLIENT_MESSAGE ) ) );
     }
 
     private void assertConnectionTimeout( Map<String,Object> authToken, String message ) throws Exception
@@ -922,7 +921,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
                         init( "TestClient/1.1", authToken ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Timeout, message ) ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.Security.AuthProviderTimeout, message ) ) );
     }
 
     private void testClearAuthCache() throws Exception

@@ -21,6 +21,8 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.util.Collection;
 
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpiredException;
+
 /**
  * An authorization provider plugin for the Neo4j enterprise security module.
  *
@@ -32,7 +34,7 @@ import java.util.Collection;
  *
  * @see AuthenticationPlugin
  * @see AuthPlugin
- * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpired
+ * @see AuthorizationExpiredException
  */
 public interface AuthorizationPlugin extends AuthProviderLifecycle
 {

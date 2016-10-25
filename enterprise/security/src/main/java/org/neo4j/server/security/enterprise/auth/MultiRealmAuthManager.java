@@ -43,7 +43,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.security.AuthTimeoutException;
+import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -120,11 +120,11 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         }
         catch ( AuthenticationException e )
         {
-            if ( e.getCause() != null && e.getCause() instanceof AuthTimeoutException )
+            if ( e.getCause() != null && e.getCause() instanceof AuthProviderTimeoutException )
             {
                 securityLog.error( "[%s]: failed to log in: auth server timeout",
                         escape( token.getPrincipal().toString() ) );
-                throw new AuthTimeoutException( e.getCause().getMessage(), e.getCause() );
+                throw new AuthProviderTimeoutException( e.getCause().getMessage(), e.getCause() );
             }
             securityContext = new StandardEnterpriseSecurityContext( this,
                     new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );

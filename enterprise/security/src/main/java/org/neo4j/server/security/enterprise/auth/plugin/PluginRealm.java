@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.security.AuthExpirationException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.Version;
@@ -45,8 +44,8 @@ import org.neo4j.server.security.enterprise.auth.SecureHasher;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthorizationInfoProvider;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
-import org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpired;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthProviderOperations;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpiredException;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
@@ -154,10 +153,10 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
             {
                  authorizationInfo = authorizationPlugin.authorize( getPrincipalAndProviderCollection( principals ) );
             }
-            catch ( AuthorizationExpired e )
+            catch ( AuthorizationExpiredException e )
             {
-                throw new AuthExpirationException(
-                        "Plugin '" + getName() + "' authorization info expired: " + e.getMessage() );
+                throw new org.neo4j.graphdb.security.AuthorizationExpiredException(
+                        "Plugin '" + getName() + "' authorization info expired: " + e.getMessage(), e );
             }
             if ( authorizationInfo != null )
             {
@@ -170,7 +169,8 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
             // Since we do not have the subject's credentials we cannot perform a new
             // authenticateAndAuthorize() to renew authorization info.
             // Instead we need to fail with a special status, so that the client can react by re-authenticating.
-            throw new AuthExpirationException( "Plugin '" + getName() + "' authorization info expired." );
+            throw new org.neo4j.graphdb.security.AuthorizationExpiredException(
+                    "Plugin '" + getName() + "' authorization info expired." );
         }
         return null;
     }
