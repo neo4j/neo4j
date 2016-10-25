@@ -91,18 +91,36 @@ public class ProcedureAllowedConfigTest
         Config config = Config.defaults()
                 .with( genericMap(
                         ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES,
-                        "apoc.convert.*:reader,apoc.load.json:writer,apoc.trigger.add:TriggerHappy"
+                        "apoc.convert.*:apoc_reader,apoc.load.json:apoc_writer,apoc.trigger.add:TriggerHappy"
                 ) );
         ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
         assertThat( procConfig.rolesFor( "xyz" ), equalTo( EMPTY ) );
-        assertThat( procConfig.rolesFor( "apoc.convert.xml" ), equalTo( arrayOf( "reader" ) ) );
-        assertThat( procConfig.rolesFor( "apoc.convert.json" ), equalTo( arrayOf( "reader" ) ) );
+        assertThat( procConfig.rolesFor( "apoc.convert.xml" ), equalTo( arrayOf( "apoc_reader" ) ) );
+        assertThat( procConfig.rolesFor( "apoc.convert.json" ), equalTo( arrayOf( "apoc_reader" ) ) );
         assertThat( procConfig.rolesFor( "apoc.load.xml" ), equalTo( EMPTY ) );
-        assertThat( procConfig.rolesFor( "apoc.load.json" ), equalTo( arrayOf( "writer" ) ) );
+        assertThat( procConfig.rolesFor( "apoc.load.json" ), equalTo( arrayOf( "apoc_writer" ) ) );
         assertThat( procConfig.rolesFor( "apoc.trigger.add" ), equalTo( arrayOf( "TriggerHappy" ) ) );
         assertThat( procConfig.rolesFor( "apoc.convert-json" ), equalTo( EMPTY ) );
         assertThat( procConfig.rolesFor( "apoc.load-xml" ), equalTo( EMPTY ) );
         assertThat( procConfig.rolesFor( "apoc.load-json" ), equalTo( EMPTY ) );
         assertThat( procConfig.rolesFor( "apoc.trigger-add" ), equalTo( EMPTY ) );
+    }
+
+    @Test
+    public void shouldHaveConfigsWithOverlappingMatchingWildcards()
+    {
+        Config config = Config.defaults()
+                .with( genericMap(
+                        ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME, "default",
+                        ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES,
+                        "apoc.*:apoc,apoc.load.*:loader,apoc.trigger.*:trigger,apoc.trigger.add:TriggerHappy"
+                ) );
+        ProcedureAllowedConfig procConfig = new ProcedureAllowedConfig( config );
+        assertThat( procConfig.rolesFor( "xyz" ), equalTo( arrayOf( "default" ) ) );
+        assertThat( procConfig.rolesFor( "apoc.convert.xml" ), equalTo( arrayOf( "apoc" ) ) );
+        assertThat( procConfig.rolesFor( "apoc.load.xml" ), equalTo( arrayOf( "apoc", "loader" ) ) );
+        assertThat( procConfig.rolesFor( "apoc.trigger.add" ), equalTo( arrayOf( "apoc", "trigger", "TriggerHappy" ) ) );
+        assertThat( procConfig.rolesFor( "apoc.trigger.remove" ), equalTo( arrayOf( "apoc", "trigger" ) ) );
+        assertThat( procConfig.rolesFor( "apoc.load-xml" ), equalTo( arrayOf( "apoc" ) ) );
     }
 }
