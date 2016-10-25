@@ -264,7 +264,7 @@ public class Neo4jPack
     public static class Unpacker extends PackStream.Unpacker
     {
 
-        private Optional<Neo4jError> error = Optional.empty();
+        private List<Neo4jError> errors = new ArrayList<>( 2 );
 
         public Unpacker( PackInput input )
         {
@@ -398,11 +398,12 @@ public class Neo4jPack
                             val = unpack();
                             if( map.put( key, val ) != null )
                             {
-                                error = Optional.of( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ));
+                                errors.add(
+                                        Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ) );
                             }
                             break;
                         case NULL:
-                            error = Optional.of( Neo4jError.from( Status.Request.Invalid,
+                            errors.add( Neo4jError.from( Status.Request.Invalid,
                                     "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
                             unpackNull();
                             val = unpack();
@@ -423,7 +424,7 @@ public class Neo4jPack
                     switch ( type )
                     {
                     case NULL:
-                        error = Optional.of( Neo4jError.from( Status.Request.Invalid,
+                        errors.add( Neo4jError.from( Status.Request.Invalid,
                                 "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
                         unpackNull();
                         key = null;
@@ -438,7 +439,7 @@ public class Neo4jPack
                     Object val = unpack();
                     if( map.put( key, val ) != null )
                     {
-                        error = Optional.of( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ));
+                        errors.add( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ));
                     }
                 }
             }
@@ -447,17 +448,17 @@ public class Neo4jPack
 
         public Optional<Neo4jError> consumeError()
         {
-            if (error.isPresent())
-            {
-                Neo4jError e = error.get();
-                error = Optional.empty();
-                return Optional.of( e );
-            } else
+            if ( errors.isEmpty() )
             {
                 return Optional.empty();
             }
+            else
+            {
+                Neo4jError combined = Neo4jError.combine( errors );
+                errors.clear();
+                return Optional.of( combined );
+            }
         }
-
     }
 
     private static class Error

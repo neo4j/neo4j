@@ -270,8 +270,10 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             fail( this, error );
             this.state = State.FAILED;
         }
-        finally { after(); }
-
+        finally
+        {
+            after();
+        }
     }
 
     public boolean isClosed()

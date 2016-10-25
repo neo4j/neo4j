@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -187,6 +188,33 @@ public class Neo4jError
     public static Neo4jError from( Throwable any )
     {
         return fromThrowable( any, false );
+    }
+
+    public static Neo4jError combine( List<Neo4jError> errors )
+    {
+        assert errors.size() >= 1;
+
+        if (errors.size() == 1)
+        {
+            return errors.get( 0 );
+        }
+        else
+        {
+            Neo4jError first = errors.get( 0 );
+            Status combinedStatus = first.status;
+            StringBuilder combinedMessage = new StringBuilder( String.format("The following errors has occurred:%n%n" ));
+            combinedMessage.append( first.message );
+            for (int i = 1; i < errors.size(); i++)
+            {
+                Neo4jError error = errors.get( i );
+                combinedStatus = error.status == combinedStatus ? error.status : Status.General.UnknownError;
+                combinedMessage
+                        .append( System.lineSeparator() )
+                        .append( error.message );
+            }
+
+            return from(combinedStatus, combinedMessage.toString());
+        }
     }
 
     public static Neo4jError fatalFrom( Throwable any )
