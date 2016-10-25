@@ -41,7 +41,7 @@ class Heart
         outcome.setLeader( request.from() );
         outcome.setLeaderCommit( request.commitIndex() );
         outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(),
-                new RaftMessages.HeartbeatResponse( state.myself(), RaftMessages.Type.HEARTBEAT_RESPONSE ) ) );
+                new RaftMessages.HeartbeatResponse( state.myself() ) ) );
 
         if ( !Follower.logHistoryMatches( state, request.commitIndex(), request.commitIndexTerm(), log ) )
         {

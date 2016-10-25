@@ -294,7 +294,7 @@ public class FollowerTest
         // then
         Collection<RaftMessages.Directed> outgoingMessages = outcome.getOutgoingMessages();
         assertTrue( outgoingMessages.contains( new RaftMessages.Directed( state.leader(),
-                new RaftMessages.HeartbeatResponse( myself, RaftMessages.Type.HEARTBEAT_RESPONSE ) ) ) );
+                new RaftMessages.HeartbeatResponse( myself ) ) ) );
     }
 
     private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend, int term, int firstIndex ) throws IOException
