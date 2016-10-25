@@ -317,4 +317,13 @@ public class SecuritySettings
                   "role specified in `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` or be subject to the security " +
                   "rules of normal Cypher statements." )
     public static final Setting<String> procedure_roles = setting( PROC_ALLOWED_SETTING_ROLES, STRING, "" );
+
+    //=========================================================================
+    // Misc settings
+    //=========================================================================
+
+    @Description( "Set to true if connection pooling should be used for authorization searches using the " +
+                  "system account." )
+    public static final Setting<Boolean> ldap_authorization_connection_pooling =
+            setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" );
 }

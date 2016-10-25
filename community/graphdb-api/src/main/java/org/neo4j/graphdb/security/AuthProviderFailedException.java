@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public class AuthProviderFailedException extends RuntimeException implements Status.HasStatus
 {
-    private final Status statusCode = Status.Security.AuthProviderFailed;
+    private static final Status statusCode = Status.Security.AuthProviderFailed;
 
     public AuthProviderFailedException( String msg )
     {

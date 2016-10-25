@@ -412,6 +412,7 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
         contextFactory.setReferral( config.get( SecuritySettings.ldap_referral ) );
         contextFactory.setSystemUsername( config.get( SecuritySettings.ldap_authorization_system_username ) );
         contextFactory.setSystemPassword( config.get( SecuritySettings.ldap_authorization_system_password ) );
+        contextFactory.setPoolingEnabled( config.get( SecuritySettings.ldap_authorization_connection_pooling ) );
 
         setContextFactory( contextFactory );
 

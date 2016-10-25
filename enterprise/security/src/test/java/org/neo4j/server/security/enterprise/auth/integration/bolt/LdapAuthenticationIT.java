@@ -20,6 +20,7 @@
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
 import org.apache.directory.api.ldap.model.exception.LdapException;
+import org.apache.directory.api.ldap.model.exception.LdapOperationErrorException;
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.annotations.SaslMechanism;
@@ -73,6 +74,7 @@ import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_READ_TIMEOUT_CLIENT_MESSAGE;
+import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE;
 
 interface TimeoutTests { /* Category marker */ };
 
@@ -159,6 +161,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
                     "500=reader;501=publisher;502=architect;503=admin" );
             settings.put( SecuritySettings.procedure_roles, "test.allowedReadProcedure:role1" );
+            settings.put( SecuritySettings.ldap_read_timeout, "1s" );
         } );
     }
 
@@ -524,7 +527,6 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
-    @Category( TimeoutTests.class )
     public void shouldTimeoutIfInvalidLdapServer() throws Throwable
     {
         // When
@@ -554,6 +556,37 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
     @Test
     @Category( TimeoutTests.class )
+    public void shouldTimeoutIfLdapServerDoesNotRespondWithoutConnectionPooling() throws Throwable
+    {
+        try ( DirectoryServiceWaitOnSearch ignore = new DirectoryServiceWaitOnSearch( 5000 ) )
+        {
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                // NOTE: Pooled connections from previous test runs will not be affected by this read timeout setting
+                settings.put( SecuritySettings.ldap_read_timeout, "1s" );
+                settings.put( SecuritySettings.ldap_authorization_connection_pooling, "false" );
+            } ) );
+
+            assertAuth( "neo", "abc123" );
+            assertLdapAuthorizationTimeout();
+        }
+    }
+
+    @Test
+    @Category( TimeoutTests.class )
+    public void shouldFailIfLdapSearchFails() throws Throwable
+    {
+        try ( DirectoryServiceFailOnSearch ignore = new DirectoryServiceFailOnSearch() )
+        {
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_read_timeout, "1s" );
+            } ) );
+
+            assertAuth( "neo", "abc123" );
+            assertLdapAuthorizationFailed();
+        }
+    }
+
+    @Test
     public void shouldTimeoutIfLdapServerDoesNotRespondWithLdapUserContext() throws Throwable
     {
         try ( DirectoryServiceWaitOnSearch ignore = new DirectoryServiceWaitOnSearch( 5000 ) )
@@ -913,6 +946,16 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
                 msgFailure( Status.Security.AuthProviderTimeout, LDAP_READ_TIMEOUT_CLIENT_MESSAGE ) ) );
     }
 
+    private void assertLdapAuthorizationFailed() throws IOException
+    {
+        // When
+        client.send( TransportTestUtil.chunk( run( "MATCH (n) RETURN n" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgFailure( Status.Security.AuthProviderFailed, LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE ) ) );
+    }
+
     private void assertConnectionTimeout( Map<String,Object> authToken, String message ) throws Exception
     {
         client.connect( address )
@@ -1025,6 +1068,44 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         public void close() throws Exception
         {
             getService().remove( waitOnSearchInterceptor.getName() );
+        }
+    }
+
+    private class DirectoryServiceFailOnSearch implements AutoCloseable
+    {
+        private final Interceptor failOnSearchInterceptor;
+
+        public DirectoryServiceFailOnSearch()
+        {
+            failOnSearchInterceptor = new BaseInterceptor()
+            {
+                @Override
+                public String getName()
+                {
+                    return getClass().getName();
+                }
+
+                @Override
+                public EntryFilteringCursor search( SearchOperationContext searchContext ) throws LdapException
+                {
+                    throw new LdapOperationErrorException();
+                }
+            };
+
+            try
+            {
+                getService().addFirst( failOnSearchInterceptor );
+            }
+            catch ( LdapException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            getService().remove( failOnSearchInterceptor.getName() );
         }
     }
 

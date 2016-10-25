@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public class AuthProviderTimeoutException extends RuntimeException implements Status.HasStatus
 {
-    private final Status statusCode = Status.Security.AuthProviderTimeout;
+    private static final Status statusCode = Status.Security.AuthProviderTimeout;
 
     public AuthProviderTimeoutException( String msg )
     {
