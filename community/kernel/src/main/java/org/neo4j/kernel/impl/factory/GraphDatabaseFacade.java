@@ -68,6 +68,7 @@ import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;

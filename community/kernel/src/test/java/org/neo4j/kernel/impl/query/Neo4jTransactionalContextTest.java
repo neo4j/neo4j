@@ -23,6 +23,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+
+import java.util.Collections;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutingQuery;
@@ -37,9 +40,10 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 
-import java.util.Collections;
-
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class Neo4jTransactionalContextTest
 {
@@ -51,6 +55,32 @@ public class Neo4jTransactionalContextTest
     public void setUp()
     {
         setUpMocks();
+    }
+
+    @Test
+    public void checkKernelStatementOnCheck() throws Exception
+    {
+        KernelTransaction.Type transactionType = null;
+        InternalTransaction initialTransaction = mock( InternalTransaction.class );
+        SecurityContext securityContext = null;
+        ExecutingQuery executingQuery = null;
+        ThreadToStatementContextBridge txBridge = null;
+
+        Neo4jTransactionalContext transactionalContext =
+            new Neo4jTransactionalContext(
+                databaseQueryService,
+                initialTransaction,
+                transactionType,
+                securityContext,
+                () -> statement,
+                executingQuery,
+                txBridge,
+                new PropertyContainerLocker()
+            );
+
+        transactionalContext.check();
+
+        verify( guard ).check( statement );
     }
 
     @SuppressWarnings( "ConstantConditions" )
@@ -129,9 +159,9 @@ public class Neo4jTransactionalContextTest
 
         when( statement.queryRegistration() ).thenReturn( queryRegistryOperations );
         when( databaseQueryService.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( databaseQueryService.getGuard() ).thenReturn( guard );
         when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) )
                 .thenReturn( statementContextBridge );
-        when( dependencyResolver.resolveDependency( Guard.class ) ).thenReturn( guard );
     }
 
     @SuppressWarnings( "ConstantConditions" )
@@ -149,7 +179,6 @@ public class Neo4jTransactionalContextTest
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         PropertyContainerLocker locker = null;
         ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
-        DbmsOperations dbmsOperations = null;
 
         KernelTransaction secondKTX = mock( KernelTransaction.class );
         InternalTransaction secondTransaction = mock( InternalTransaction.class );

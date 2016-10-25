@@ -23,24 +23,34 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.factory.*;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.rule.TestDirectory;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.impl.factory.DataSourceModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.rule.TestDirectory;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GraphDatabaseFacadeFactoryTest
 {
@@ -68,7 +78,7 @@ public class GraphDatabaseFacadeFactoryTest
         try
         {
             // When
-            db.initFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
+            db.initFacade( dir.graphDbDir(), Collections.emptyMap(), deps, mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
         catch ( RuntimeException exception )

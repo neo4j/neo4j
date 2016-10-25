@@ -26,6 +26,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;

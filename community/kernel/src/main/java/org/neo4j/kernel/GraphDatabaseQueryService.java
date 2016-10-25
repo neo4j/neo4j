@@ -27,6 +27,7 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
@@ -73,6 +74,8 @@ public interface GraphDatabaseQueryService
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 
     DbmsOperations getDbmsOperations();
+
+    Guard getGuard();
 
     ThreadToStatementContextBridge getTxBridge();
 }

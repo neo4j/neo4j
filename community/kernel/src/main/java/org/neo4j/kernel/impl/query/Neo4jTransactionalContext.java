@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.*;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -43,6 +44,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final Supplier<Statement> statementSupplier;
     private final ExecutingQuery executingQuery;
     private final PropertyContainerLocker locker;
+    private final Guard guard;
 
     private InternalTransaction transaction;
     private Statement statement;
@@ -65,6 +67,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.statementSupplier = statementSupplier;
         this.statement = statementSupplier.get();
         this.executingQuery = executingQuery;
+        this.guard = graph.getGuard();
         this.txBridge = txBridge;
         this.locker = locker;
     }
@@ -94,6 +97,11 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
+    public void check()
+    {
+        guard.check( (KernelStatement) statement );
+    }
+
     public void close( boolean success )
     {
         if ( isOpen )

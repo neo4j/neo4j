@@ -19,23 +19,29 @@
  */
 package org.neo4j.cypher.javacompat.internal;
 
-import org.neo4j.graphdb.*;
+import java.net.URL;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-
-import java.net.URL;
-import java.util.concurrent.TimeUnit;
 
 public class GraphDatabaseCypherService implements GraphDatabaseQueryService
 {
     private final GraphDatabaseFacade graph;
     private final DbmsOperations dbmsOperations;
+    private final Guard guard;
     private final ThreadToStatementContextBridge txBridge;
 
     public GraphDatabaseCypherService( GraphDatabaseService graph )
@@ -43,6 +49,7 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
         this.graph = (GraphDatabaseFacade) graph;
         DependencyResolver resolver = getDependencyResolver();
         this.dbmsOperations = resolver.resolveDependency( DbmsOperations.class );
+        this.guard = resolver.resolveDependency( Guard.class );
         this.txBridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
@@ -98,6 +105,12 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     @Override
     public DbmsOperations getDbmsOperations() {
         return dbmsOperations;
+    }
+
+    @Override
+    public Guard getGuard()
+    {
+        return guard;
     }
 
     @Override
