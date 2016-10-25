@@ -97,7 +97,7 @@ public class ImportToolNumericalFailureTests
     @Rule
     public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
     @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.values() );
+    public final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.StandardIO.values() );
 
     private int dataIndex;
 

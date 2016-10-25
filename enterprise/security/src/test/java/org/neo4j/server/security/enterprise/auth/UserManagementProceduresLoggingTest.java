@@ -28,15 +28,13 @@ import java.io.IOException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
@@ -84,7 +82,6 @@ public class UserManagementProceduresLoggingTest
                                             new InMemoryRoleRepository(),
                                             new BasicPasswordPolicy(),
                                             mock( AuthenticationStrategy.class ),
-                                            mock( JobScheduler.class ),
                                             new InMemoryUserRepository()
                                         );
         realm.start(); // creates default user and roles

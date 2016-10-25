@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -44,7 +43,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 public class MultiRealmAuthManagerRule implements TestRule
 {
@@ -75,7 +73,6 @@ public class MultiRealmAuthManagerRule implements TestRule
                         new InMemoryRoleRepository(),
                         new BasicPasswordPolicy(),
                         authStrategy,
-                        mock( JobScheduler.class ),
                         new InMemoryUserRepository()
                     );
 

@@ -93,6 +93,39 @@ public class WorkSync<Material, W extends Work<Material,W>>
         while ( !unit.isDone() );
     }
 
+    /**
+     * Schedule the given to be applied asynchronously, instead of immediately.
+     * The work will be delayed until the next {@link #apply(Work)} on this WorkSync,
+     * or the next {@link AsyncWork#tryComplete()} call on any non-completed
+     * {@link AsyncWork} instance produced by this WorkSync.
+     *
+     * The given unit of work may be done by this thread, or any other thread that is concurrently
+     * submitting work to the {@code WorkSync}. If this unit of work, or any of the other units of
+     * work, throws an exception, then the exception will surface in the thread that ends up doing
+     * the work. This may manifest itself as an {@link ExecutionException} thrown from one of the
+     * {@link AsyncWork#tryComplete()} method, or from the {@link #apply(Work)} method.
+     *
+     * @param work The work to be done.
+     * @return An {@link AsyncWork} instance that represent the eventual completion of the work.
+     */
+    public AsyncWork applyAsync( W work )
+    {
+        // Schedule our work on the stack.
+        WorkUnit<Material,W> unit = enqueueWork( work );
+
+        // But make no attempt at immediately completing the work.
+        return () ->
+        {
+            if ( unit.isDone() )
+            {
+                // Short-circuit tryDoWork and all that jazz if our unit is already done.
+                return true;
+            }
+            checkFailure( tryDoWork( unit, 1 ) );
+            return unit.isDone();
+        };
+    }
+
     private WorkUnit<Material,W> enqueueWork( W work )
     {
         WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread() );

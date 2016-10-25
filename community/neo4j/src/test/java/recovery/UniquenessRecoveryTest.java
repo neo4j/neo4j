@@ -80,7 +80,7 @@ public class UniquenessRecoveryTest
     }
 
     @Rule
-    public final SuppressOutput muted = suppress( SuppressOutput.System.out );
+    public final SuppressOutput muted = suppress( SuppressOutput.StandardIO.out );
     @Rule
     public final TestDirectory dir = TestDirectory.testDirectory();
     private final Configuration config;

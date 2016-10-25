@@ -61,7 +61,7 @@ import static org.neo4j.test.rule.SuppressOutput.suppress;
 public class ClusterIdentityIT
 {
     @Rule
-    public SuppressOutput suppressOutput = suppress( SuppressOutput.System.err );
+    public SuppressOutput suppressOutput = suppress( SuppressOutput.StandardIO.err );
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( ClusterIdentityIT.class )

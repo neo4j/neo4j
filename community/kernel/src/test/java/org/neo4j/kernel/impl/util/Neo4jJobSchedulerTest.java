@@ -25,9 +25,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
@@ -37,13 +35,11 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.THREAD_ID;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 public class Neo4jJobSchedulerTest
 {
@@ -153,32 +149,6 @@ public class Neo4jJobSchedulerTest
         {
             unblockThread.countDown();
         }
-    }
-
-    @Test
-    public void shouldRunWithDelay() throws Throwable
-    {
-        // Given
-        life.start();
-
-        final AtomicLong runTime = new AtomicLong();
-        final CountDownLatch latch = new CountDownLatch( 1 );
-
-        long time = System.nanoTime();
-
-        scheduler.schedule( new JobScheduler.Group( "group", POOLED ), new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                runTime.set( System.nanoTime() );
-                latch.countDown();
-            }
-        }, 100, TimeUnit.MILLISECONDS );
-
-        latch.await();
-
-        assertTrue( time + TimeUnit.MILLISECONDS.toNanos( 100 ) <= runTime.get() );
     }
 
     private List<String> threadNames()

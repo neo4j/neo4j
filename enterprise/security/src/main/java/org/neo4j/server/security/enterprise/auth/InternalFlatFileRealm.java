@@ -41,13 +41,14 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.concurrent.Scheduler;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.ListSnapshot;
@@ -73,7 +74,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
      * placed here because of user suspension not being a part of community edition
      */
-    private static int MAX_READ_ATTEMPTS = 10;
+    private static final int MAX_READ_ATTEMPTS = 10;
 
     static final String IS_SUSPENDED = "is_suspended";
 
@@ -84,21 +85,18 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
     private final boolean authorizationEnabled;
-    private final JobScheduler jobScheduler;
-    private volatile JobScheduler.JobHandle reloadJobHandle;
+    private volatile Future<?> reloadJobFuture;
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
-            JobScheduler jobScheduler, UserRepository initialUserRepository )
+                                  PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
+                                  UserRepository initialUserRepo )
     {
-        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true,
-                jobScheduler, initialUserRepository );
+        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true, initialUserRepo );
     }
 
     InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
-            boolean authenticationEnabled, boolean authorizationEnabled, JobScheduler jobScheduler,
-            UserRepository initialUserRepository )
+            boolean authenticationEnabled, boolean authorizationEnabled, UserRepository initialUserRepository )
     {
         super();
 
@@ -110,7 +108,6 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         this.authenticationStrategy = authenticationStrategy;
         this.authenticationEnabled = authenticationEnabled;
         this.authorizationEnabled = authorizationEnabled;
-        this.jobScheduler = jobScheduler;
         setAuthenticationCachingEnabled( false ); // NOTE: If this is ever changed to true it is not secure to use
                                                   // AllowAllCredentialsMatcher anymore
         setAuthorizationCachingEnabled( false );
@@ -140,12 +137,14 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         scheduleNextFileReload();
     }
 
-    protected void scheduleNextFileReload()
+    private void scheduleNextFileReload()
     {
-        reloadJobHandle = jobScheduler.schedule(
-                JobScheduler.Groups.nativeSecurity,
-                this::readFilesFromDisk,
-                10, TimeUnit.SECONDS );
+        schedule( this::readFilesFromDisk );
+    }
+
+    protected void schedule( Runnable readFilesFromDisk )
+    {
+        reloadJobFuture = Scheduler.executeRecurring( readFilesFromDisk, 0, 10, TimeUnit.SECONDS );
     }
 
     private void readFilesFromDisk()
@@ -154,9 +153,9 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         {
             readFilesFromDisk( MAX_READ_ATTEMPTS, new LinkedList<>() );
         }
-        finally
+        catch ( Throwable throwable )
         {
-            scheduleNextFileReload();
+            throwable.printStackTrace();
         }
     }
 
@@ -254,10 +253,10 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         userRepository.stop();
         roleRepository.stop();
 
-        if ( reloadJobHandle != null )
+        if ( reloadJobFuture != null )
         {
-            reloadJobHandle.cancel( true );
-            reloadJobHandle = null;
+            reloadJobFuture.cancel( true );
+            reloadJobFuture = null;
         }
     }
 

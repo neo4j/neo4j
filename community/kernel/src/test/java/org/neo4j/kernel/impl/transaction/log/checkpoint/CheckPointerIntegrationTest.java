@@ -84,7 +84,7 @@ public class CheckPointerIntegrationTest
             InterruptedException, IOException
     {
         GraphDatabaseService db = builder
-                .setConfig( GraphDatabaseSettings.check_point_interval_time, 0 + "ms" )
+                .setConfig( GraphDatabaseSettings.check_point_interval_time, 1 + "ms" )
                 .setConfig( GraphDatabaseSettings.check_point_interval_tx, "1" )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" )
                 .newGraphDatabase();

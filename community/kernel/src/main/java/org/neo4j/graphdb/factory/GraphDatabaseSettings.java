@@ -271,7 +271,7 @@ public abstract class GraphDatabaseSettings
                   "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
                   "the database places on the system, as each check-point implies a flushing and forcing of all the " +
                   "store files." )
-    public static final Setting<Long> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "5m" );
+    public static final Setting<Long> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "5m", min( 1L ) );
 
     @Description( "Limit the number of IOs the background checkpoint process will consume per second. " +
                   "This setting is advisory, is ignored in Neo4j Community Edition, and is followed to " +

@@ -26,10 +26,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -45,6 +45,7 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.checkPoint;
 
 public class CheckPointSchedulerTest
 {
+    private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private final CheckPointer checkPointer = mock( CheckPointer.class );
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
 
@@ -52,7 +53,7 @@ public class CheckPointSchedulerTest
     public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L, LOG_PROVIDER );
 
         assertNull( jobScheduler.getJob() );
 
@@ -61,38 +62,15 @@ public class CheckPointSchedulerTest
 
         // then
         assertNotNull( jobScheduler.getJob() );
-        verify( jobScheduler, times( 1 ) ).schedule( eq( checkPoint ), any( Runnable.class ),
-                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
-    }
-
-    @Test
-    public void shouldRescheduleTheJobAfterARun() throws Throwable
-    {
-        // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
-
-        assertNull( jobScheduler.getJob() );
-
-        scheduler.start();
-
-        Runnable scheduledJob = jobScheduler.getJob();
-        assertNotNull( scheduledJob );
-
-        // when
-        jobScheduler.runJob();
-
-        // then
-        verify( jobScheduler, times( 2 ) ).schedule( eq( checkPoint ), any( Runnable.class ),
-                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
-        verify( checkPointer, times( 1 ) ).checkPointIfNeeded( any( TriggerInfo.class ) );
-        assertEquals( scheduledJob, jobScheduler.getJob() );
+        verify( jobScheduler, times( 1 ) ).scheduleRecurring( eq( checkPoint ), any( Runnable.class ),
+                eq( 20L ), eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
     @Test
     public void shouldNotRescheduleAJobWhenStopped() throws Throwable
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L, LOG_PROVIDER );
 
         assertNull( jobScheduler.getJob() );
 
@@ -110,7 +88,7 @@ public class CheckPointSchedulerTest
     @Test
     public void stoppedJobCantBeInvoked() throws Throwable
     {
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 10L );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 10L, LOG_PROVIDER );
         scheduler.start();
         jobScheduler.runJob();
 
@@ -156,7 +134,7 @@ public class CheckPointSchedulerTest
             }
         };
 
-        final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
+        final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L, LOG_PROVIDER );
 
         // when
         scheduler.start();

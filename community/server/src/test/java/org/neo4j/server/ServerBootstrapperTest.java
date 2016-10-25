@@ -40,7 +40,7 @@ import static org.mockito.Mockito.mock;
 public class ServerBootstrapperTest
 {
     @Rule
-    public final SuppressOutput suppress = SuppressOutput.suppress( SuppressOutput.System.out );
+    public final SuppressOutput suppress = SuppressOutput.suppress( SuppressOutput.StandardIO.out );
 
     @Test
     public void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws Exception

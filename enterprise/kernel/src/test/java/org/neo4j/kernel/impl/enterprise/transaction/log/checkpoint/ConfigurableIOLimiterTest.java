@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.ObjLongConsumer;
@@ -60,7 +61,8 @@ public class ConfigurableIOLimiterTest
     @Test
     public void mustPutDefaultLimitOnIOWhenNoLimitIsConfigured() throws Exception
     {
-        createIOLimiter( Config.defaults() );
+        Config config = Config.defaults();
+        createIOLimiter( config );
 
         // Do 100*100 = 10000 IOs real quick, when we're limited to 1000 IOPS.
         long stamp = IOLimiter.INITIAL_STAMP;
@@ -69,6 +71,9 @@ public class ConfigurableIOLimiterTest
         // This should have led to about 10 seconds of pause, minus the time we spent in the loop.
         // So let's say 9 seconds - experiments indicate this gives us about a 10x margin.
         assertThat( pauseNanosCounter.get(), greaterThan( TimeUnit.SECONDS.toNanos( 9 ) ) );
+
+        Integer defaultLimit = config.get( GraphDatabaseSettings.check_point_iops_limit );
+        assertThat( limiter.getMaxIOPS(), is( Optional.of( defaultLimit ) ) );
     }
 
     @Test
@@ -76,6 +81,7 @@ public class ConfigurableIOLimiterTest
     {
         createIOLimiter( -1 );
         assertUnlimited();
+        assertThat( limiter.getMaxIOPS(), is( Optional.empty() ) );
     }
 
     private void assertUnlimited() throws IOException
