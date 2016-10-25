@@ -46,6 +46,42 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression gte( final Expression lhs, final Expression rhs, TypeReference type )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.gte( lhs, rhs, type );
+            }
+        };
+    }
+
+    public static Expression lt( final Expression lhs, final Expression rhs, TypeReference type )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.lt( lhs, rhs, type );
+            }
+        };
+    }
+
+    public static Expression lte( final Expression lhs, final Expression rhs, TypeReference type )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.lte( lhs, rhs, type );
+            }
+        };
+    }
+
     public static Expression and( final Expression lhs, final Expression rhs )
     {
         return new Expression()

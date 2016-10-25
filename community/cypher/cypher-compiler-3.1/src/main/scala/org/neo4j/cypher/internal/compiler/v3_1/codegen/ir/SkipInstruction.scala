@@ -20,29 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.CodeGenExpression
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, Equal, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, LessThan, MethodStructure}
 
-case class DecreaseAndReturnWhenZero(opName: String, variableName: String, action: Instruction, startValue: CodeGenExpression)
+case class SkipInstruction(opName: String, variableName: String, action: Instruction, numberToSkip: CodeGenExpression)
   extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
-    startValue.init(generator)
-    val expression = generator.box(startValue.generateExpression(generator), startValue.codeGenType)
+    numberToSkip.init(generator)
+    val expression = generator.box(numberToSkip.generateExpression(generator), numberToSkip.codeGenType)
     generator.declareCounter(variableName, expression)
-    generator.ifStatement(generator.checkCounter(variableName, Equal, 0)) { onTrue =>
-      onTrue.returnSuccessfully()
-    }
     action.init(generator)
   }
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
-    action.body(generator)
-
     generator.trace(opName) { l1 =>
       l1.incrementRows()
       l1.decrementCounter(variableName)
-      l1.ifStatement(l1.checkCounter(variableName, Equal, 0)) { l2 =>
-        l2.returnSuccessfully()
+      l1.ifStatement(l1.checkCounter(variableName, LessThan, 0)) { l2 =>
+        action.body(l2)
       }
     }
   }

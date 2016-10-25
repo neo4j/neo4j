@@ -84,6 +84,10 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
         PlanDescriptionImpl(id = idMap(plan), name = "Limit", children = SingleChild(apply(lhs, idMap)),
           Seq(Expression(count)), symbols)
 
+      case Skip(lhs, count) =>
+        PlanDescriptionImpl(id = idMap(plan), name = "Skip", children = SingleChild(apply(lhs, idMap)),
+                            Seq(Expression(count)), symbols)
+
       case row: SingleRow =>
         new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
 
