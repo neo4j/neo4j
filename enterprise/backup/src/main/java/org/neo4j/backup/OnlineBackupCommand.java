@@ -30,6 +30,9 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.MandatoryNamedArg;
+import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
@@ -51,6 +54,17 @@ import static org.neo4j.kernel.impl.util.Converters.withDefault;
 public class OnlineBackupCommand implements AdminCommand
 {
 
+    public static final Arguments arguments = new Arguments()
+            .withArgument( new OptionalNamedArg( "from", "address", "localhost:6362",
+                    "Host and port of Neo4j." ) )
+            .withArgument( new MandatoryNamedArg( "to", "backup-path",
+                    "Directory where the backup will be made; if there is already a backup present an " +
+                            "incremental backup will be attempted." ) )
+            .withArgument( new OptionalNamedArg( "check-consistency", "true|false", "true", "If a consistency" +
+                    " check should be made." ) )
+            .withAdditionalConfig()
+            .withArgument( new OptionalNamedArg( "timeout", "timeout", "20m",
+                    "Timeout in the form <time>[ms|s|m|h], where the default unit is seconds." ) );
     private static final String checkConsistencyArg = "check-consistency";
 
     public static class Provider extends AdminCommand.Provider
@@ -61,30 +75,17 @@ public class OnlineBackupCommand implements AdminCommand
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments arguments()
         {
-            return Optional.of( "[--from=<address>] --to=<backup-path> " +
-                    "[--check-consistency] [--cc-report-dir=<directory>] " +
-                    "[--additional-config=<config-file-path>] [--timeout=<timeout>]" );
+            return arguments;
         }
 
         @Override
         public String description()
         {
             return "Perform a backup, over the network, from a running Neo4j server into a local copy of the " +
-                    "database store (the backup). Neo4j Server must be configured to run a backup service. See " +
-                    "http://neo4j.com/docs/operations-manual/current/backup/ for more details." +
-                    "\n\n" +
-                    "<address> is a <host>:<port> pair like neo4j.example.com:1234; the host defaults to localhost " +
-                    "and the port defaults to 6362, the default backup service port." +
-                    "\n\n" +
-                    "<backup-path> is a directory where the backup will be made; if there is already a backup " +
-                    "present an incremental backup will be made." +
-                    "\n\n" +
-                    "Consistency checking is enabled by default. Report will be written into the working directory " +
-                    "by default." +
-                    "\n\n" +
-                    "<timeout> is in the from <time>[ms|s|m|h]; the default is 20m; the default unit is seconds.";
+                            "database store (the backup). Neo4j Server must be configured to run a backup service. " +
+                            "See http://neo4j.com/docs/operations-manual/current/backup/ for more details.";
         }
 
         @Override

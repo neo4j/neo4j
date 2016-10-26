@@ -26,30 +26,38 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
-import java.util.function.Function;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
+import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.commandline.dbms.Util.checkLock;
-import static org.neo4j.commandline.dbms.Util.wrapIOException;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.commandline.Util.canonicalPath;
+import static org.neo4j.commandline.Util.checkLock;
+import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.Converters.identity;
-import static org.neo4j.kernel.impl.util.Converters.mandatory;
 
 public class LoadCommand implements AdminCommand
 {
+
+    private static final Arguments arguments = new Arguments()
+            .withArgument( new MandatoryCanonicalPath( "from", "archive-path", "Path to archive created with the " +
+                    "dump command." ) )
+            .withDatabase()
+            .withArgument( new OptionalBooleanArg( "force", false, "If an existing database should be replaced." ) );
+
     public static class Provider extends AdminCommand.Provider
     {
         public Provider()
@@ -58,9 +66,9 @@ public class LoadCommand implements AdminCommand
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments arguments()
         {
-            return Optional.of( "--from=<archive-path> --database=<database> [--force]" );
+            return arguments;
         }
 
         @Override
@@ -90,6 +98,9 @@ public class LoadCommand implements AdminCommand
     private final Loader loader;
     public LoadCommand( Path homeDir, Path configDir, Loader loader )
     {
+        requireNonNull(homeDir);
+        requireNonNull( configDir );
+        requireNonNull( loader );
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.loader = loader;
@@ -98,26 +109,14 @@ public class LoadCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Path archive = parse( args, "from", Paths::get );
-        String database = parse( args, "database", identity() );
-        boolean force = Args.parse( args ).getBoolean( "force" );
+        Path archive = arguments.parseMandatoryPath( "from", args );
+        String database = arguments.parse( "database", args );
+        boolean force = arguments.parseBoolean( "force", args );
 
-        Path databaseDirectory = toDatabaseDirectory( database );
+        Path databaseDirectory = canonicalPath( toDatabaseDirectory( database ) );
 
         deleteIfNecessary( databaseDirectory, force );
         load( archive, database, databaseDirectory );
-    }
-
-    private <T> T parse( String[] args, String argument, Function<String, T> converter ) throws IncorrectUsage
-    {
-        try
-        {
-            return Args.parse( args ).interpretOption( argument, mandatory(), converter );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IncorrectUsage( e.getMessage() );
-        }
     }
 
     private Path toDatabaseDirectory( String databaseName )

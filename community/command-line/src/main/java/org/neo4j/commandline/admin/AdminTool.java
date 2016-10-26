@@ -115,6 +115,7 @@ public class AdminTool
     private void badUsage( AdminCommand.Provider command, IncorrectUsage e )
     {
         outsideWorld.stdErrLine( e.getMessage() );
+        outsideWorld.stdErrLine( "" );
         usage.printUsageForCommand( command, outsideWorld::stdErrLine );
         failure();
     }

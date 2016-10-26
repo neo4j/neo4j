@@ -21,8 +21,9 @@ package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.function.Consumer;
+
+import org.neo4j.commandline.arguments.Arguments;
 
 import static java.lang.String.format;
 
@@ -39,9 +40,9 @@ public class HelpCommand implements AdminCommand
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments arguments()
         {
-            return Optional.of( "[<command>]" );
+            return new Arguments().withOptionalPositionalArgument( 0, "command" );
         }
 
         @Override

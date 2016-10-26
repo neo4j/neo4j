@@ -22,12 +22,14 @@ package org.neo4j.commandline.admin.security;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.io.File;
+import java.util.function.Consumer;
 
+import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.Usage;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
@@ -40,6 +42,9 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -56,7 +61,7 @@ public class SetInitialPasswordCommandTest
     @Before
     public void setup()
     {
-        OutsideWorld mock = Mockito.mock( OutsideWorld.class );
+        OutsideWorld mock = mock( OutsideWorld.class );
         when(mock.fileSystem()).thenReturn( fileSystem );
         setPasswordCommand = new SetInitialPasswordCommand( testDir.directory( "home" ).toPath(),
                 testDir.directory( "conf" ).toPath(), mock );
@@ -118,18 +123,16 @@ public class SetInitialPasswordCommandTest
     }
 
     @Test
-    public void shouldDoNothingIfAuthFileExists() throws Throwable
+    public void shouldPrintNiceHelp() throws Throwable
     {
-        // Given
-        fileSystem.mkdirs( authFile.getParentFile() );
-        fileSystem.create( authFile );
+        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+        Consumer<String> out = mock( Consumer.class );
+        usage.printUsageForCommand( new SetInitialPasswordCommand.Provider(), out );
 
-        // When
-        String[] arguments = {"neo4j"};
-        setPasswordCommand.execute( arguments );
-
-        // Then
-        assertFalse( fileSystem.fileExists( authInitFile ) );
+        verify( out ).accept( "usage: neo4j-admin set-initial-password <password>" );
+        verify( out ).accept( "" );
+        verify( out ).accept( "Sets the initial password of the initial admin user ('neo4j')." );
+        verifyNoMoreInteractions( out );
     }
 
     private void assertAuthIniFile( String password ) throws Throwable

@@ -19,17 +19,21 @@
  */
 package org.neo4j.consistency;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.junit.Rule;
-import org.junit.Test;
+import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.commandline.admin.CommandLocator;
+import org.neo4j.commandline.admin.Usage;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -38,7 +42,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyObject;
@@ -46,32 +49,13 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class CheckConsistencyCommandTest
 {
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
-
-    @Test
-    public void requiresDatabaseArgument() throws Exception
-    {
-        OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
-                        outsideWorld );
-
-        String[] arguments = {""};
-        try
-        {
-            checkConsistencyCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "database" ) );
-        }
-    }
 
     @Test
     public void runsConsistencyChecker() throws Exception
@@ -217,5 +201,32 @@ public class CheckConsistencyCommandTest
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
                         anyBoolean(), eq( new File( "/bar" ) ) );
+    }
+
+    @Test
+    public void shouldPrintNiceHelp() throws Throwable
+    {
+        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+        Consumer<String> out = mock( Consumer.class );
+        usage.printUsageForCommand( new CheckConsistencyCommand.Provider(), out );
+
+        verify( out ).accept(
+                "usage: neo4j-admin check-consistency [--database=<name>]\n" +
+                        "                                     [--additional-config=<config-file-path>]\n" +
+                        "                                     [--verbose=<true|false>]\n" +
+                        "                                     [--report-dir=<directory>]" );
+        verify( out ).accept( "" );
+        verify( out ).accept( "Check the consistency of a database.\n" +
+                "\n" +
+                "options:\n" +
+                "  --database=<name>                        Name of database. [default:graph.db]\n" +
+                "  --additional-config=<config-file-path>   Configuration file to supply\n" +
+                "                                           additional configuration in.\n" +
+                "                                           [default:]\n" +
+                "  --verbose=<true|false>                   Enable verbose output.\n" +
+                "                                           [default:false]\n" +
+                "  --report-dir=<directory>                 Directory to write report file in.\n" +
+                "                                           [default:.]" );
+        verifyNoMoreInteractions( out );
     }
 }

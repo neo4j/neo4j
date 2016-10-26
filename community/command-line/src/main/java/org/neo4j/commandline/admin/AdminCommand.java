@@ -20,9 +20,9 @@
 package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.Set;
 
+import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 
@@ -60,9 +60,9 @@ public interface AdminCommand
         }
 
         /**
-         * @return A help string for the command's arguments, if any.
+         * @return The arguments this command accepts.
          */
-        public abstract Optional<String> arguments();
+        public abstract Arguments arguments();
 
         /**
          * @return A single-line summary for the command. Should be 70 characters or less.

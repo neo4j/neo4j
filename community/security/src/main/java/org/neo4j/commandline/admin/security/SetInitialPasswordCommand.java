@@ -29,6 +29,7 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
@@ -45,6 +46,10 @@ import static org.neo4j.server.security.auth.UserManager.INITIAL_USER_NAME;
 
 public class SetInitialPasswordCommand implements AdminCommand
 {
+
+    public static final Arguments arguments = new Arguments()
+            .withMandatoryPositionalArgument( 0, "password" );
+
     public static class Provider extends AdminCommand.Provider
     {
 
@@ -54,9 +59,9 @@ public class SetInitialPasswordCommand implements AdminCommand
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments arguments()
         {
-            return Optional.of( "<password>" );
+            return arguments;
         }
 
         @Override

@@ -29,10 +29,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.Usage;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -44,40 +47,16 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
 
 public class UnbindFromClusterCommandTest
 {
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
-
-    @Test
-    public void shouldFailIfDatabaseNotSpecified() throws Exception
-    {
-        // given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        fsa.mkdir( testDir.directory() );
-
-        UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
-                        mock( OutsideWorld.class ) );
-
-        try
-        {
-            // when
-            command.execute( noArgs() );
-            fail();
-        }
-        catch ( IncorrectUsage e )
-        {
-            // then
-            assertThat( e.getMessage(), containsString( "Missing argument 'database'" ) );
-        }
-    }
 
     @Test
     public void shouldFailIfSpecifiedDatabaseDoesNotExist() throws Exception
@@ -173,6 +152,23 @@ public class UnbindFromClusterCommandTest
         command.execute( databaseName( "graph.db" ) );
 
         verify( outsideWorld ).stdErrLine( startsWith( "No cluster state found in" ) );
+    }
+
+    @Test
+    public void shouldPrintNiceHelp() throws Throwable
+    {
+        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+        Consumer<String> out = mock( Consumer.class );
+        usage.printUsageForCommand( new UnbindFromClusterCommand.Provider(), out );
+
+        verify( out ).accept( "usage: neo4j-admin unbind [--database=<name>]" );
+        verify( out ).accept( "" );
+        verify( out ).accept( "Removes cluster state data from the specified database making it suitable for\n" +
+                "use in single instance database, or for seeding a new cluster.\n" +
+                "\n" +
+                "options:\n" +
+                "  --database=<name>   Name of database. [default:graph.db]" );
+        verifyNoMoreInteractions( out );
     }
 
     private String[] databaseName( String databaseName )

@@ -19,15 +19,16 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.nio.file.Path;
+
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
+import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.mockito.Matchers.any;
@@ -245,9 +246,9 @@ public class AdminToolTest
         return new CannedLocator( new AdminCommand.Provider( name )
         {
             @Override
-            public Optional<String> arguments()
+            public Arguments arguments()
             {
-                return Optional.empty();
+                return Arguments.NO_ARGS;
             }
 
             @Override
@@ -293,9 +294,9 @@ public class AdminToolTest
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments arguments()
         {
-            return Optional.empty();
+            return Arguments.NO_ARGS;
         }
 
         @Override

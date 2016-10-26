@@ -32,13 +32,12 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.server.configuration.ConfigLoader;
 
@@ -48,43 +47,10 @@ import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTE
 
 public class UnbindFromClusterCommand implements AdminCommand
 {
-    public static class Provider extends AdminCommand.Provider
-    {
-        public Provider()
-        {
-            super( "unbind" );
-        }
-
-        @Override
-        public Optional<String> arguments()
-        {
-            return Optional.of( "--database=<name> " );
-        }
-
-        @Override
-        public String summary()
-        {
-            return "Removes cluster state data from the specified database.";
-        }
-
-        @Override
-        public String description()
-        {
-            return "Removes cluster state data from the specified database making it suitable for use in single " +
-                    "instance database, or for seeding a new cluster";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new UnbindFromClusterCommand( homeDir, configDir, outsideWorld );
-        }
-    }
-
+    private static final Arguments arguments = new Arguments().withDatabase();
     private Path homeDir;
     private Path configDir;
     private OutsideWorld outsideWorld;
-
     UnbindFromClusterCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
@@ -92,14 +58,27 @@ public class UnbindFromClusterCommand implements AdminCommand
         this.outsideWorld = outsideWorld;
     }
 
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
+    {
+        ConfigLoader configLoader = new ConfigLoader( settings() );
+        Config config = configLoader.loadConfig( Optional.of( homeDir.toFile() ),
+                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
+        Map<String,String> additionalConfig = new HashMap<>();
+        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
+        return config.with( additionalConfig );
+    }
+
+    private static List<Class<?>> settings()
+    {
+        return Arrays.asList( GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
+    }
+
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Args parsedArgs = Args.parse( args );
-
         try
         {
-            Config config = loadNeo4jConfig( homeDir, configDir, databaseNameFrom( parsedArgs ) );
+            Config config = loadNeo4jConfig( homeDir, configDir, arguments.parse( "database", args ) );
             Path pathToSpecificDatabase = config.get( DatabaseManagementSystemSettings.database_path ).toPath();
 
             Validators.CONTAINS_EXISTING_DATABASE.validate( pathToSpecificDatabase.toFile() );
@@ -152,9 +131,37 @@ public class UnbindFromClusterCommand implements AdminCommand
         }
     }
 
-    private String databaseNameFrom( Args parsedArgs )
+    public static class Provider extends AdminCommand.Provider
     {
-        return parsedArgs.interpretOption( "database", Converters.mandatory(), s -> s );
+        public Provider()
+        {
+            super( "unbind" );
+        }
+
+        @Override
+        public Arguments arguments()
+        {
+            return arguments;
+        }
+
+        @Override
+        public String summary()
+        {
+            return "Removes cluster state data from the specified database.";
+        }
+
+        @Override
+        public String description()
+        {
+            return "Removes cluster state data from the specified database making it suitable for use in single " +
+                            "instance database, or for seeding a new cluster.";
+        }
+
+        @Override
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        {
+            return new UnbindFromClusterCommand( homeDir, configDir, outsideWorld );
+        }
     }
 
     private class UnbindFailureException extends Exception
@@ -168,20 +175,5 @@ public class UnbindFromClusterCommand implements AdminCommand
         {
             super( format( message, args ) );
         }
-    }
-
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
-    {
-        ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadConfig( Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
-        Map<String,String> additionalConfig = new HashMap<>();
-        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return config.with( additionalConfig );
-    }
-
-    private static List<Class<?>> settings()
-    {
-        return Arrays.asList( GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
     }
 }

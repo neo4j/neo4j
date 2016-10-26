@@ -23,7 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.function.Consumer;
 
+import org.neo4j.commandline.admin.CommandLocator;
+import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -40,6 +43,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreDatabaseCommandTest
@@ -159,6 +165,26 @@ public class RestoreDatabaseCommandTest
         }
 
         copiedDb.shutdown();
+    }
+
+    @Test
+    public void shouldPrintNiceHelp() throws Throwable
+    {
+        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+        Consumer<String> out = mock( Consumer.class );
+        usage.printUsageForCommand( new RestoreDatabaseCli.Provider(), out );
+
+        verify( out ).accept( "usage: neo4j-admin restore --from=<backup-directory> [--database=<name>]\n" +
+                "                           [--force=<true|false>]" );
+        verify( out ).accept( "" );
+        verify( out ).accept( "Restore a backed up database.\n" +
+                "\n" +
+                "options:\n" +
+                "  --from=<backup-directory>   Path to backup to restore from.\n" +
+                "  --database=<name>           Name of database. [default:graph.db]\n" +
+                "  --force=<true|false>        If an existing database should be replaced.\n" +
+                "                              [default:false]" );
+        verifyNoMoreInteractions( out );
     }
 
     public static Config configWith( Config config, String databaseName, String dataDirectory )
