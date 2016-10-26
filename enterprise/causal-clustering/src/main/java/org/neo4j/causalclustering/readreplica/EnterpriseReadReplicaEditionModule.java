@@ -99,7 +99,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
-        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
+        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class, true );
         procedures.register( new ReadReplicaRoleProcedure() );
     }
 

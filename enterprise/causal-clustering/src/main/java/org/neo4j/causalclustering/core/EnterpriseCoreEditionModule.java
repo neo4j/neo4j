@@ -107,7 +107,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
-        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
+        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class, true );
         procedures.register(
                 new GetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
         procedures.register(
