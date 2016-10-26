@@ -85,14 +85,10 @@ public class PrimitiveLongMapTest
         expectedEntries.put( 1433091763L, 35 );
 
         final Map<Long, Integer> visitedEntries = new HashMap<>();
-        map.visitEntries( new PrimitiveLongObjectVisitor<Integer, RuntimeException>()
+        map.visitEntries( ( key, value ) ->
         {
-            @Override
-            public boolean visited( long key, Integer value )
-            {
-                visitedEntries.put( key, value );
-                return false;
-            }
+            visitedEntries.put( key, value );
+            return false;
         } );
         assertEquals( expectedEntries, visitedEntries );
     }
@@ -892,14 +888,7 @@ public class PrimitiveLongMapTest
         final AtomicInteger counter = new AtomicInteger();
 
         // WHEN
-        map.visitEntries( new PrimitiveLongIntVisitor<RuntimeException>()
-        {
-            @Override
-            public boolean visited( long key, int value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+        map.visitEntries( ( key, value ) -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
@@ -938,14 +927,7 @@ public class PrimitiveLongMapTest
         final AtomicInteger counter = new AtomicInteger();
 
         // WHEN
-        map.visitEntries( new PrimitiveIntLongVisitor<RuntimeException>()
-        {
-            @Override
-            public boolean visited( int key, long value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+        map.visitEntries( ( key, value ) -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
@@ -956,14 +938,17 @@ public class PrimitiveLongMapTest
     public void longLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
-        PrimitiveLongLongMap map = Primitive.offHeapLongLongMap();
-        map.put( 1, 100 );
-        map.put( 2, 200 );
-        map.put( 3, 300 );
-        PrimitiveLongLongVisitor<RuntimeException> visitor = mock( PrimitiveLongLongVisitor.class );
+        PrimitiveLongLongVisitor<RuntimeException> visitor;
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        {
+            map.put( 1, 100 );
+            map.put( 2, 200 );
+            map.put( 3, 300 );
+            visitor = mock( PrimitiveLongLongVisitor.class );
 
-        // WHEN
-        map.visitEntries( visitor );
+            // WHEN
+            map.visitEntries( visitor );
+        }
 
         // THEN
         verify( visitor ).visited( 1, 100 );
@@ -976,22 +961,17 @@ public class PrimitiveLongMapTest
     public void longLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
-        PrimitiveLongLongMap map = Primitive.offHeapLongLongMap();
-        map.put( 1, 100 );
-        map.put( 2, 200 );
-        map.put( 3, 300 );
-        map.put( 4, 400 );
-        final AtomicInteger counter = new AtomicInteger();
-
-        // WHEN
-        map.visitEntries( new PrimitiveLongLongVisitor<RuntimeException>()
+        AtomicInteger counter = new AtomicInteger();
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
         {
-            @Override
-            public boolean visited( long key, long value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+            map.put( 1, 100 );
+            map.put( 2, 200 );
+            map.put( 3, 300 );
+            map.put( 4, 400 );
+
+            // WHEN
+            map.visitEntries( ( key, value ) -> counter.incrementAndGet() > 2 );
+        }
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
@@ -1030,14 +1010,7 @@ public class PrimitiveLongMapTest
         final AtomicInteger counter = new AtomicInteger();
 
         // WHEN
-        map.visitEntries( new PrimitiveLongObjectVisitor<Integer, RuntimeException>()
-        {
-            @Override
-            public boolean visited( long key, Integer value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+        map.visitEntries( ( key, value ) -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
@@ -1076,14 +1049,7 @@ public class PrimitiveLongMapTest
         final AtomicInteger counter = new AtomicInteger();
 
         // WHEN
-        map.visitEntries( new PrimitiveIntObjectVisitor<Integer, RuntimeException>()
-        {
-            @Override
-            public boolean visited( int key, Integer value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+        map.visitEntries( ( key, value ) -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
@@ -1122,14 +1088,7 @@ public class PrimitiveLongMapTest
         final AtomicInteger counter = new AtomicInteger();
 
         // WHEN
-        map.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
-        {
-            @Override
-            public boolean visited( long value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+        map.visitKeys( value -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
@@ -1140,14 +1099,16 @@ public class PrimitiveLongMapTest
     public void longLongKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
         // GIVEN
-        PrimitiveLongLongMap map = Primitive.offHeapLongLongMap();
-        map.put( 1, 100 );
-        map.put( 2, 200 );
-        map.put( 3, 300 );
         PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        {
+            map.put( 1, 100 );
+            map.put( 2, 200 );
+            map.put( 3, 300 );
 
-        // WHEN
-        map.visitKeys( visitor );
+            // WHEN
+            map.visitKeys( visitor );
+        }
 
         // THEN
         verify( visitor ).visited( 1 );
@@ -1160,22 +1121,17 @@ public class PrimitiveLongMapTest
     public void longLongKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
-        PrimitiveLongLongMap map = Primitive.offHeapLongLongMap();
-        map.put( 1, 100 );
-        map.put( 2, 200 );
-        map.put( 3, 300 );
-        map.put( 4, 400 );
-        final AtomicInteger counter = new AtomicInteger();
-
-        // WHEN
-        map.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
+        AtomicInteger counter = new AtomicInteger();
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
         {
-            @Override
-            public boolean visited( long value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+            map.put( 1, 100 );
+            map.put( 2, 200 );
+            map.put( 3, 300 );
+            map.put( 4, 400 );
+
+            // WHEN
+            map.visitKeys( value -> counter.incrementAndGet() > 2 );
+        }
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
@@ -1214,14 +1170,7 @@ public class PrimitiveLongMapTest
         final AtomicInteger counter = new AtomicInteger();
 
         // WHEN
-        map.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
-        {
-            @Override
-            public boolean visited( long value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+        map.visitKeys( value -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
@@ -1260,14 +1209,7 @@ public class PrimitiveLongMapTest
         final AtomicInteger counter = new AtomicInteger();
 
         // WHEN
-        map.visitKeys( new PrimitiveIntVisitor<RuntimeException>()
-        {
-            @Override
-            public boolean visited( int value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+        map.visitKeys( value -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );

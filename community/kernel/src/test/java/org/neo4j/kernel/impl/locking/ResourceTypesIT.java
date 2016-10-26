@@ -38,31 +38,37 @@ public class ResourceTypesIT
     @Test
     public void indexEntryHashing()
     {
-        PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( 35_000_000 );
         int collisions = 0;
-
-        int labelIdCount = 50;
-        int propertyKeyIdCount = 50;
-        int objectCount = 10000;
-        String[] values = precomputeValues( objectCount );
-
-        for ( int labelId = 0; labelId < labelIdCount; labelId++ )
-        for ( int propertyKeyId = 0; propertyKeyId < propertyKeyIdCount; propertyKeyId++ )
-        for ( int objectId = 0; objectId < objectCount; objectId++ )
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( 35_000_000 ) )
         {
-            String object = values[objectId];
-            long resourceId = indexEntryResourceId( labelId, propertyKeyId, object );
 
-            long newValue = packValue( labelId, propertyKeyId, objectId );
-            long oldValue = map.put( resourceId, newValue );
-            if ( oldValue != -1 )
+            int labelIdCount = 50;
+            int propertyKeyIdCount = 50;
+            int objectCount = 10000;
+            String[] values = precomputeValues( objectCount );
+
+            for ( int labelId = 0; labelId < labelIdCount; labelId++ )
             {
-                System.out.printf( "Collision on %s: %s ~= %s%n",
-                        resourceId, toValueString( newValue ), toValueString( oldValue ) );
-                collisions++;
-                if ( collisions > 100 )
+                for ( int propertyKeyId = 0; propertyKeyId < propertyKeyIdCount; propertyKeyId++ )
                 {
-                    fail( "This hashing is terrible!" );
+                    for ( int objectId = 0; objectId < objectCount; objectId++ )
+                    {
+                        String object = values[objectId];
+                        long resourceId = indexEntryResourceId( labelId, propertyKeyId, object );
+
+                        long newValue = packValue( labelId, propertyKeyId, objectId );
+                        long oldValue = map.put( resourceId, newValue );
+                        if ( oldValue != -1 )
+                        {
+                            System.out.printf( "Collision on %s: %s ~= %s%n", resourceId, toValueString( newValue ),
+                                    toValueString( oldValue ) );
+                            collisions++;
+                            if ( collisions > 100 )
+                            {
+                                fail( "This hashing is terrible!" );
+                            }
+                        }
+                    }
                 }
             }
         }

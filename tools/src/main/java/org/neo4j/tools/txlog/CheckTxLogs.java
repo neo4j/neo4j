@@ -122,31 +122,33 @@ public class CheckTxLogs
     {
         final long lowestLogVersion = logFiles.getLowestLogVersion();
         final long highestLogVersion = logFiles.getHighestLogVersion();
-        PrimitiveLongLongMap logFileSizes = Primitive.offHeapLongLongMap();
-        for ( long i = lowestLogVersion; i <= highestLogVersion; i++ )
-        {
-            logFileSizes.put( i, fs.getFileSize( logFiles.getLogFileForVersion( i ) ) );
-        }
-
         boolean success = true;
-        LogEntryCursor logEntryCursor = LogTestUtils.openLogs( fs, logFiles );
-        while ( logEntryCursor.next() )
+        try ( PrimitiveLongLongMap logFileSizes = Primitive.offHeapLongLongMap() )
         {
-            LogEntry logEntry = logEntryCursor.get();
-            if ( logEntry instanceof CheckPoint )
+            for ( long i = lowestLogVersion; i <= highestLogVersion; i++ )
             {
-                LogPosition logPosition = logEntry.<CheckPoint>as().getLogPosition();
-                // if the file has been pruned we cannot validate the check point
-                if ( logPosition.getLogVersion() >= lowestLogVersion )
-                {
-                    long size = logFileSizes.get( logPosition.getLogVersion() );
-                    if ( logPosition.getByteOffset() < 0 || size < 0 || logPosition.getByteOffset() > size )
-                    {
-                        long currentLogVersion = logEntryCursor.getCurrentLogVersion();
-                        handler.reportInconsistentCheckPoint( currentLogVersion, logPosition, size );
-                        success = false;
-                    }
+                logFileSizes.put( i, fs.getFileSize( logFiles.getLogFileForVersion( i ) ) );
+            }
 
+            LogEntryCursor logEntryCursor = LogTestUtils.openLogs( fs, logFiles );
+            while ( logEntryCursor.next() )
+            {
+                LogEntry logEntry = logEntryCursor.get();
+                if ( logEntry instanceof CheckPoint )
+                {
+                    LogPosition logPosition = logEntry.<CheckPoint>as().getLogPosition();
+                    // if the file has been pruned we cannot validate the check point
+                    if ( logPosition.getLogVersion() >= lowestLogVersion )
+                    {
+                        long size = logFileSizes.get( logPosition.getLogVersion() );
+                        if ( logPosition.getByteOffset() < 0 || size < 0 || logPosition.getByteOffset() > size )
+                        {
+                            long currentLogVersion = logEntryCursor.getCurrentLogVersion();
+                            handler.reportInconsistentCheckPoint( currentLogVersion, logPosition, size );
+                            success = false;
+                        }
+
+                    }
                 }
             }
         }
