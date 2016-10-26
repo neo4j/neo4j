@@ -49,6 +49,8 @@ import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static java.lang.String.format;
+
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 
 public class CheckConsistencyCommand implements AdminCommand
@@ -119,6 +121,7 @@ public class CheckConsistencyCommand implements AdminCommand
         String database;
         Boolean verbose;
         File additionalConfigFile;
+        File reportDir;
 
         Args parsedArgs = Args.parse( args );
         try
@@ -127,6 +130,15 @@ public class CheckConsistencyCommand implements AdminCommand
             verbose = parsedArgs.getBoolean( "verbose" );
             additionalConfigFile =
                     parsedArgs.interpretOption( "additional-config", Converters.optional(), Converters.toFile() );
+            try
+            {
+                reportDir = new File( "." ).getCanonicalFile();
+            }
+            catch ( IOException e )
+            {
+                throw new CommandFailed( format( "cannot read current directory: %s: %s",
+                        e.getClass().getSimpleName(), e.getMessage() ), e );
+            }
         }
         catch ( IllegalArgumentException e )
         {
@@ -141,12 +153,13 @@ public class CheckConsistencyCommand implements AdminCommand
             checkDbState( storeDir, config );
             ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                     .runFullConsistencyCheck( storeDir, config, ProgressMonitorFactory.textual( System.err ),
-                            FormattedLogProvider.toOutputStream( System.out ), this.fileSystemAbstraction, verbose );
+                            FormattedLogProvider.toOutputStream( System.out ), this.fileSystemAbstraction, verbose,
+                            reportDir );
 
             if ( !consistencyCheckResult.isSuccessful() )
             {
-                throw new CommandFailed( String.format( "Inconsistencies found. See '%s' for details.",
-                        consistencyCheckService.chooseReportPath( config, storeDir ).toString() ) );
+                throw new CommandFailed( format( "Inconsistencies found. See '%s' for details.",
+                        consistencyCheckService.chooseReportPath( reportDir ).toString() ) );
             }
         }
         catch ( ConsistencyCheckIncompleteException | IOException e )
@@ -169,7 +182,7 @@ public class CheckConsistencyCommand implements AdminCommand
         catch ( IOException e )
         {
             throw new IllegalArgumentException(
-                    String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
+                    format( "Could not read configuration file [%s]", additionalConfigFile ), e );
         }
     }
 

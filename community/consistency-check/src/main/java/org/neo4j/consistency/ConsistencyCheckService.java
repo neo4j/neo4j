@@ -91,6 +91,14 @@ public class ConsistencyCheckService
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
             boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
     {
+        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+                verbose, defaultReportDir( tuningConfiguration, storeDir ) );
+    }
+
+    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
+            boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException, IOException
+    {
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, tuningConfiguration, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ) );
@@ -98,8 +106,8 @@ public class ConsistencyCheckService
 
         try
         {
-            return runFullConsistencyCheck(
-                    storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose );
+            return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+                    pageCache, verbose, reportDir );
         }
         finally
         {
@@ -119,6 +127,15 @@ public class ConsistencyCheckService
             final FileSystemAbstraction fileSystem, final PageCache pageCache, final boolean verbose )
             throws ConsistencyCheckIncompleteException
     {
+        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+                pageCache, verbose, defaultReportDir( tuningConfiguration, storeDir ) );
+    }
+
+    public Result runFullConsistencyCheck( final File storeDir, Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory, final LogProvider logProvider,
+            final FileSystemAbstraction fileSystem, final PageCache pageCache, final boolean verbose, File reportDir )
+            throws ConsistencyCheckIncompleteException
+    {
         Log log = logProvider.getLog( getClass() );
         Config consistencyCheckerConfig = tuningConfiguration.with(
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
@@ -126,8 +143,7 @@ public class ConsistencyCheckService
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
 
         ConsistencySummaryStatistics summary;
-        // With the added neo4j_home config the logs directory will end up in db location
-        final File reportFile = chooseReportPath( tuningConfiguration, storeDir );
+        final File reportFile = chooseReportPath( reportDir );
         Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( () -> {
             try
             {
@@ -196,7 +212,12 @@ public class ConsistencyCheckService
         return Result.SUCCESS;
     }
 
-    public File chooseReportPath( Config tuningConfiguration, File storeDir )
+    public File chooseReportPath( File reportDir )
+    {
+        return new File( reportDir, defaultLogFileName( timestamp ) );
+    }
+
+    private File defaultReportDir( Config tuningConfiguration, File storeDir )
     {
         if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
         {
@@ -204,8 +225,7 @@ public class ConsistencyCheckService
                     stringMap( GraphDatabaseSettings.neo4j_home.name(), storeDir.getAbsolutePath() ) );
         }
 
-        final File reportPath = tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
-        return new File( reportPath, defaultLogFileName( timestamp ) );
+        return tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
     }
 
     public static String defaultLogFileName( Date date )
