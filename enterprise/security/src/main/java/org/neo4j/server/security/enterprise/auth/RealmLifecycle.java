@@ -17,30 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth.plugin;
+package org.neo4j.server.security.enterprise.auth;
 
-import java.util.Collection;
-import java.util.Collections;
-
-import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
-
-public class TestAuthorizationPlugin extends AuthorizationPlugin.Adapter
+public interface RealmLifecycle
 {
-    @Override
-    public String name()
-    {
-        return getClass().getSimpleName();
-    }
+    void initialize() throws Throwable;
+    void start() throws Throwable;
+    void stop() throws Throwable;
+    void shutdown() throws Throwable;
 
-    @Override
-    public AuthorizationInfo authorize( Collection<PrincipalAndProvider> principals )
+    class Adapter implements RealmLifecycle
     {
-        if ( principals.stream().anyMatch( p -> "neo4j".equals( p.principal() ) ) )
+        @Override
+        public void initialize() throws Throwable
         {
-            return (AuthorizationInfo) () -> Collections.singleton( PredefinedRoles.READER );
         }
-        return null;
+
+        @Override
+        public void start() throws Throwable
+        {
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
     }
 }

@@ -22,21 +22,11 @@ package org.neo4j.server.security.enterprise.auth.plugin;
 import org.junit.Test;
 
 import java.time.Clock;
-import java.util.Collection;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.enterprise.auth.SecureHasher;
-import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
-import org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthProviderOperations;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static java.lang.String.format;
@@ -45,8 +35,6 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class PluginRealmTest
 {
-    private static final RealmOperations IGNORED = null;
-
     private Config config = mock( Config.class );
     private AssertableLogProvider log = new AssertableLogProvider();
     private SecurityLog securityLog = new SecurityLog( log.getLog( this.getClass() ) );
@@ -56,7 +44,7 @@ public class PluginRealmTest
     {
         PluginRealm pluginRealm = new PluginRealm( new LoggingAuthPlugin(), config, securityLog, Clock.systemUTC(),
                 mock( SecureHasher.class ) );
-        pluginRealm.initialize( IGNORED );
+        pluginRealm.initialize();
         assertLogged( "LoggingAuthPlugin" );
     }
 
@@ -67,7 +55,7 @@ public class PluginRealmTest
                 new LoggingAuthenticationPlugin(),
                 null,
                 config, securityLog, Clock.systemUTC(), mock( SecureHasher.class ) );
-        pluginRealm.initialize( IGNORED );
+        pluginRealm.initialize( );
         assertLogged( "LoggingAuthenticationPlugin" );
     }
 
@@ -78,7 +66,7 @@ public class PluginRealmTest
                 null,
                 new LoggingAuthorizationPlugin(),
                 config, securityLog, Clock.systemUTC(), mock( SecureHasher.class ) );
-        pluginRealm.initialize( IGNORED );
+        pluginRealm.initialize();
         assertLogged( "LoggingAuthorizationPlugin" );
     }
 
@@ -94,33 +82,33 @@ public class PluginRealmTest
     private class LoggingAuthPlugin extends TestAuthPlugin
     {
         @Override
-        public void initialize( RealmOperations realmOperations ) throws Throwable
+        public void initialize( AuthProviderOperations api ) throws Throwable
         {
-            logLines( realmOperations );
+            logLines( api );
         }
     }
 
     private class LoggingAuthenticationPlugin extends TestAuthenticationPlugin
     {
         @Override
-        public void initialize( RealmOperations realmOperations ) throws Throwable
+        public void initialize( AuthProviderOperations api ) throws Throwable
         {
-            logLines( realmOperations );
+            logLines( api );
         }
     }
 
     private class LoggingAuthorizationPlugin extends TestAuthorizationPlugin
     {
         @Override
-        public void initialize( RealmOperations realmOperations ) throws Throwable
+        public void initialize( AuthProviderOperations api ) throws Throwable
         {
-            logLines( realmOperations );
+            logLines( api );
         }
     }
 
-    private static void logLines( RealmOperations realmOperations ) throws Throwable
+    private static void logLines( AuthProviderOperations api ) throws Throwable
     {
-        RealmOperations.Log log = realmOperations.log();
+        AuthProviderOperations.Log log = api.log();
         if ( log.isDebugEnabled() )
         {
             log.debug( "debug line" );

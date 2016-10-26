@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthProviderOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 
 /**
- * A simplified combined authentication and authorization plugin realm for the Neo4j enterprise security module.
+ * A simplified combined authentication and authorization provider plugin for the Neo4j enterprise security module.
  *
  * <p>If either the configuration setting <tt>dbms.security.plugin.authentication_enabled</tt> or
  * <tt>dbms.security.plugin.authorization_enabled</tt> is set to <tt>true</tt>,
@@ -33,17 +33,16 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
  *
  * @see AuthenticationPlugin
  * @see AuthorizationPlugin
-
  */
-public interface AuthPlugin extends RealmLifecycle
+public interface AuthPlugin extends AuthProviderLifecycle
 {
     /**
-     * The name of this realm.
+     * The name of this auth provider.
      *
      * <p>This name, prepended with the prefix "plugin-", can be used by a client to direct an auth token directly
-     * to this realm.
+     * to this auth provider.
      *
-     * @return the name of this realm
+     * @return the name of this auth provider
      */
     String name();
 
@@ -63,11 +62,11 @@ public interface AuthPlugin extends RealmLifecycle
      * @see AuthenticationInfo
      * @see CacheableAuthenticationInfo
      * @see CustomCacheableAuthenticationInfo
-     * @see RealmOperations#setAuthenticationCachingEnabled(boolean)
+     * @see AuthProviderOperations#setAuthenticationCachingEnabled(boolean)
      */
     AuthInfo authenticateAndAuthorize( AuthToken authToken ) throws AuthenticationException;
 
-    abstract class Adapter extends RealmLifecycle.Adapter implements AuthPlugin
+    abstract class Adapter extends AuthProviderLifecycle.Adapter implements AuthPlugin
     {
         @Override
         public String name()
@@ -76,7 +75,7 @@ public interface AuthPlugin extends RealmLifecycle
         }
     }
 
-    abstract class CachingEnabledAdapter extends RealmLifecycle.Adapter implements AuthPlugin
+    abstract class CachingEnabledAdapter extends AuthProviderLifecycle.Adapter implements AuthPlugin
     {
         @Override
         public String name()
@@ -85,9 +84,9 @@ public interface AuthPlugin extends RealmLifecycle
         }
 
         @Override
-        public void initialize( RealmOperations realmOperations ) throws Throwable
+        public void initialize( AuthProviderOperations authProviderOperations ) throws Throwable
         {
-            realmOperations.setAuthenticationCachingEnabled( true );
+            authProviderOperations.setAuthenticationCachingEnabled( true );
         }
     }
 }

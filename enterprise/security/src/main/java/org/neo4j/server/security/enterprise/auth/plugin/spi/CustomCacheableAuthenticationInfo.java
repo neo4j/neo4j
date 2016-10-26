@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthProviderOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * A cacheable object that can be returned as the result of successful authentication by an
  * <tt>AuthenticationPlugin</tt>.
  *
- * <p>This object can be cached by the authentication cache within the realm
- * that the authentication plugin is connected to.
+ * <p>This object can be cached by the Neo4j authentication cache.
  *
  * <p>This is an alternative to <tt>CacheableAuthenticationInfo</tt> to use if you want to manage your own way of
  * hashing and matching credentials. On authentication, when a cached authentication info from a previous successful
@@ -37,7 +37,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
  * <p>NOTE: Caching only occurs if it is explicitly enabled by the plugin.
  *
  * @see AuthenticationPlugin#authenticate(AuthToken)
- * @see org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations#setAuthenticationCachingEnabled(boolean)
+ * @see AuthProviderOperations#setAuthenticationCachingEnabled(boolean)
  * @see CacheableAuthenticationInfo
  */
 public interface CustomCacheableAuthenticationInfo extends AuthenticationInfo

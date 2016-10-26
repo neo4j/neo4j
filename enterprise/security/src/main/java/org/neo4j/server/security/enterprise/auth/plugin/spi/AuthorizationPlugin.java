@@ -22,7 +22,7 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 import java.util.Collection;
 
 /**
- * An authorization plugin realm for the Neo4j enterprise security module.
+ * An authorization provider plugin for the Neo4j enterprise security module.
  *
  * <p>If the configuration setting <tt>dbms.security.plugin.authorization_enabled</tt> is set to <tt>true</tt>,
  * all objects that implements this interface that exists in the class path at Neo4j startup, will be
@@ -34,20 +34,20 @@ import java.util.Collection;
  * @see AuthPlugin
  * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpired
  */
-public interface AuthorizationPlugin extends RealmLifecycle
+public interface AuthorizationPlugin extends AuthProviderLifecycle
 {
     /**
-     * An object containing a principal and its corresponding realm.
+     * An object containing a principal and its corresponding authentication provider.
      */
-    final class PrincipalAndRealm
+    final class PrincipalAndProvider
     {
         private final Object principal;
-        private final String realm;
+        private final String provider;
 
-        public PrincipalAndRealm( Object principal, String realm )
+        public PrincipalAndProvider( Object principal, String provider )
         {
             this.principal = principal;
-            this.realm = realm;
+            this.provider = provider;
         }
 
         public Object principal()
@@ -55,34 +55,34 @@ public interface AuthorizationPlugin extends RealmLifecycle
             return principal;
         }
 
-        public String realm()
+        public String provider()
         {
-            return realm;
+            return provider;
         }
-    };
+    }
 
     /**
-     * The name of this realm.
+     * The name of this authorization provider.
      *
      * <p>This name, prepended with the prefix "plugin-", can be used by a client to direct an auth token directly
-     * to this realm.
+     * to this authorization provider.
      *
-     * @return the name of this realm
+     * @return the name of this authorization provider
      */
     String name();
 
     /**
-     * Should perform authorization of the given collection of principals and their corresponding realms (that
-     * authenticated them), and return an <tt>AuthorizationInfo</tt> result that contains a collection of roles
+     * Should perform authorization of the given collection of principals and their corresponding authentication
+     * providers, and return an <tt>AuthorizationInfo</tt> result that contains a collection of roles
      * that are assigned to the given principals.
      *
-     * @param principals a collection of principals and their corresponding realms (that authenticated them)
+     * @param principals a collection of principals and their corresponding authentication providers
      *
-     * @return an <tt>AuthorizationInfo</tt> result that contains the roles that are assigned to the given principals.
+     * @return an <tt>AuthorizationInfo</tt> result that contains the roles that are assigned to the given principals
      */
-    AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals );
+    AuthorizationInfo authorize( Collection<PrincipalAndProvider> principals );
 
-    class Adapter extends RealmLifecycle.Adapter implements AuthorizationPlugin
+    class Adapter extends AuthProviderLifecycle.Adapter implements AuthorizationPlugin
     {
         @Override
         public String name()
@@ -91,7 +91,7 @@ public interface AuthorizationPlugin extends RealmLifecycle
         }
 
         @Override
-        public AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals )
+        public AuthorizationInfo authorize( Collection<PrincipalAndProvider> principals )
         {
             return null;
         }
