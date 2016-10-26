@@ -25,7 +25,6 @@ import java.util.Set;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.configuration.Config;
 
 /**
  * To create a command for {@code neo4j-admin}:
@@ -78,29 +77,24 @@ public interface AdminCommand
         public abstract AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld );
     }
 
-    abstract class Blocker extends Service
+    interface Blocker
     {
-        protected Blocker( String key, String... altKeys )
-        {
-            super( key, altKeys );
-        }
+        /**
+         * @param homeDir   the home of the Neo4j installation.
+         * @param configDir the directory where configuration files can be found.
+         * @return A boolean representing whether or not this command should be blocked from running.
+         */
+        boolean doesBlock( Path homeDir, Path configDir );
 
         /**
-         * @param databaseName  the name of the database that the command applies to.
-         * @param config        a configuration object for the blocker to use when making its decision.
-         * @return Whether the command should be blocked from running or not.
+         * @return A list of the commands this blocker applies to.
          */
-        public abstract boolean doesBlock( String databaseName, Config config );
+        Set<String> commands();
 
         /**
-         * @return              a list of the commands this blocker applies to.
+         * @return An explanation of why a command was blocked. This will be shown to the user.
          */
-        public abstract Set<String> commands();
-
-        /**
-         * @return explanation of why a command was blocked. This will be shown to the user.
-         */
-        public abstract String explanation();
+        String explanation();
     }
 
     void execute( String[] args ) throws IncorrectUsage, CommandFailed;

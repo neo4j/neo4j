@@ -26,16 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.BlockerLocator;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
@@ -44,7 +39,6 @@ import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.StoreLockException;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.server.configuration.ConfigLoader;
 
@@ -57,8 +51,8 @@ import static org.neo4j.kernel.impl.util.Converters.mandatory;
 
 public class DumpCommand implements AdminCommand
 {
+
     private final StoreLockChecker storeLockChecker;
-    private final BlockerLocator blockerLocator;
 
     public static class Provider extends AdminCommand.Provider
     {
@@ -100,16 +94,10 @@ public class DumpCommand implements AdminCommand
 
     public DumpCommand( Path homeDir, Path configDir, Dumper dumper )
     {
-        this( homeDir, configDir, dumper, new BlockerLocator() );
-    }
-
-    public DumpCommand( Path homeDir, Path configDir, Dumper dumper, BlockerLocator blockerLocator )
-    {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.dumper = dumper;
         this.storeLockChecker = new StoreLockChecker();
-        this.blockerLocator = blockerLocator;
     }
 
     @Override
@@ -118,15 +106,6 @@ public class DumpCommand implements AdminCommand
         String database = parse( args, "database", identity() );
         Path archive = calculateArchive( database, parse( args, "to", Paths::get ) );
         Path databaseDirectory = toDatabaseDirectory( database );
-        Config config = loadNeo4jConfig( homeDir, configDir, database, new HashMap<>() );
-
-        for ( AdminCommand.Blocker blocker : blockerLocator.findBlockersForCommand( "dump" ) )
-        {
-            if ( blocker.doesBlock( database, config ) )
-            {
-                throw new CommandFailed( blocker.explanation() );
-            }
-        }
 
         try ( Closeable ignored = storeLockChecker.withLock( databaseDirectory ) )
         {
@@ -208,20 +187,5 @@ public class DumpCommand implements AdminCommand
     {
         throw new CommandFailed(
                 format( "unable to dump database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
-    }
-
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
-            Map<String,String> additionalConfig )
-    {
-        ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadOfflineConfig( Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
-        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return config.with( additionalConfig );
-    }
-
-    private static List<Class<?>> settings()
-    {
-        return Arrays.asList( GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
     }
 }

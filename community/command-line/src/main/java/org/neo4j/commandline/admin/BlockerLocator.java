@@ -20,22 +20,27 @@
 package org.neo4j.commandline.admin;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.neo4j.helpers.Service;
 
-public class BlockerLocator
+public interface BlockerLocator
 {
-    public List<AdminCommand.Blocker> findBlockersForCommand( String command )
+    Iterable<AdminCommand.Blocker> findBlockers( String name ) throws NoSuchElementException;
+
+    static BlockerLocator fromServiceLocator()
     {
-        ArrayList<AdminCommand.Blocker> blockers = new ArrayList<>();
-        for ( AdminCommand.Blocker blocker : Service.load( AdminCommand.Blocker.class ) )
+        return commandName ->
         {
-            if ( blocker.commands().contains( command ) )
+            ArrayList<AdminCommand.Blocker> blockers = new ArrayList<>();
+            for ( AdminCommand.Blocker blocker : Service.load( AdminCommand.Blocker.class ) )
             {
-                blockers.add( blocker );
+                if ( blocker.commands().contains( commandName ) )
+                {
+                    blockers.add( blocker );
+                }
             }
-        }
-        return blockers;
+            return blockers;
+        };
     }
 }

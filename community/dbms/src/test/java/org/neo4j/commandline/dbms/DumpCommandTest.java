@@ -33,11 +33,8 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.function.Predicate;
 
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.BlockerLocator;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.dbms.archive.Dumper;
@@ -48,7 +45,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -60,7 +56,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
@@ -312,55 +307,6 @@ public class DumpCommandTest
         catch ( CommandFailed e )
         {
             assertThat( e.getMessage(), equalTo( "unable to dump database: IOException: the-message" ) );
-        }
-    }
-
-    @Test
-    public void shouldBlockDumpIfABlockerSaysSo() throws IncorrectUsage
-    {
-        AdminCommand.Blocker blocker = mock( AdminCommand.Blocker.class );
-        when( blocker.doesBlock( any(), any() ) ).thenReturn( true );
-        when( blocker.explanation() ).thenReturn( "blocked" );
-
-        BlockerLocator blockerLocator = mock( BlockerLocator.class );
-        when( blockerLocator.findBlockersForCommand( "dump" ) ).thenReturn( Arrays.asList( blocker ) );
-
-        try
-        {
-            new DumpCommand( homeDir, configDir, dumper, blockerLocator )
-                    .execute( new String[]{"--database=something", "--to=foobar"} );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed commandFailed )
-        {
-            assertThat( commandFailed.getMessage(), containsString( "blocked" ) );
-        }
-    }
-
-    @Test
-    public void shouldBlockDumpIfOneBlockerOutOfManySaysSo() throws IncorrectUsage
-    {
-        AdminCommand.Blocker trueBlocker = mock( AdminCommand.Blocker.class );
-        AdminCommand.Blocker falseBlocker = mock( AdminCommand.Blocker.class );
-
-        when( trueBlocker.doesBlock( any(), any() ) ).thenReturn( true );
-        when( trueBlocker.explanation() ).thenReturn( "trueBlocker explanation" );
-        when( falseBlocker.doesBlock( any(), any() ) ).thenReturn( false );
-        when( falseBlocker.explanation() ).thenReturn( "falseBlocker explanation" );
-
-        BlockerLocator blockerLocator = mock( BlockerLocator.class );
-        when( blockerLocator.findBlockersForCommand( "dump" ) ).thenReturn(
-                Arrays.asList( trueBlocker, falseBlocker, falseBlocker ) );
-
-        try
-        {
-            new DumpCommand( homeDir, configDir, dumper, blockerLocator )
-                    .execute( new String[]{"--database=something", "--to=foobar"} );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed commandFailed )
-        {
-            assertThat( commandFailed.getMessage(), containsString( "trueBlocker explanation" ) );
         }
     }
 
