@@ -174,7 +174,7 @@ public class BuiltInProcedures
     {
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
                 .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
-                .map( sig -> new ProcedureResult( sig, isAdmin() ) );
+                .map( sig -> new ProcedureResult( sig ) );
     }
 
     @SuppressWarnings( "WeakerAccess" )
@@ -185,33 +185,26 @@ public class BuiltInProcedures
         public final String description;
         public final List<String> roles;
 
-        public ProcedureResult( ProcedureSignature signature, boolean isAdmin )
+        public ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
-            if ( isAdmin )
+            roles = new ArrayList<>();
+            switch ( signature.mode() )
             {
-                roles = new ArrayList<>();
-                switch ( signature.mode() )
-                {
-                case DBMS:
-                    roles.add( "admin" );
-                    break;
-                case READ_ONLY:
-                    roles.add( "reader" );
-                case READ_WRITE:
-                    roles.add( "publisher" );
-                case SCHEMA_WRITE:
-                    roles.add( "architect" );
-                default:
-                    roles.add( "admin" );
-                    roles.addAll( Arrays.asList( signature.allowed() ) );
-                }
-            }
-            else
-            {
-                roles = Collections.emptyList();
+            case DBMS:
+                roles.add( "admin" );
+                break;
+            case READ_ONLY:
+                roles.add( "reader" );
+            case READ_WRITE:
+                roles.add( "publisher" );
+            case SCHEMA_WRITE:
+                roles.add( "architect" );
+            default:
+                roles.add( "admin" );
+                roles.addAll( Arrays.asList( signature.allowed() ) );
             }
         }
     }

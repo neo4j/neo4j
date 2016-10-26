@@ -253,7 +253,16 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 "dbms.procedures", newSet( ADMIN ),
                 "dbms.listQueries", newSet( ADMIN ),
                 "dbms.security.createUser", newSet( ADMIN ) );
-        assertSuccess( adminSubject, "CALL dbms.procedures", itr ->
+
+        assertListProceduresHasRoles( adminSubject, expected );
+        assertListProceduresHasRoles( schemaSubject, expected );
+        assertListProceduresHasRoles( writeSubject, expected );
+        assertListProceduresHasRoles( writeSubject, expected );
+    }
+
+    private void assertListProceduresHasRoles(S subject, Map<String,Set<String>> expected)
+    {
+        assertSuccess( subject, "CALL dbms.procedures", itr ->
         {
             List<String> failures = itr.stream().filter( record ->
             {
@@ -267,14 +276,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
             } ).collect( toList() );
 
             assertThat( "Expectations violated: " + failures.toString(), failures.isEmpty() );
-        } );
-
-        assertSuccess( schemaSubject, "CALL dbms.procedures", itr ->
-        {
-            List<String> failures = itr.stream().filter( record ->
-                    !((List<?>) record.get( "roles" )).isEmpty() ).map( record ->
-                    record.get( "name" ).toString() ).collect( toList() );
-            assertThat( "Some procedures listed roles: " + failures.toString(), failures.isEmpty() );
         } );
     }
 }
