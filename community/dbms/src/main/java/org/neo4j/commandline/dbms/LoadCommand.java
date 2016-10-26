@@ -41,6 +41,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.commandline.dbms.Util.canonicalPath;
 import static org.neo4j.commandline.dbms.Util.checkLock;
 import static org.neo4j.commandline.dbms.Util.wrapIOException;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
@@ -98,11 +99,11 @@ public class LoadCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Path archive = parse( args, "from", Paths::get );
+        Path archive = parse( args, "from", Util::canonicalPath );
         String database = parse( args, "database", identity() );
         boolean force = Args.parse( args ).getBoolean( "force" );
 
-        Path databaseDirectory = toDatabaseDirectory( database );
+        Path databaseDirectory = canonicalPath( toDatabaseDirectory( database ) );
 
         deleteIfNecessary( databaseDirectory, force );
         load( archive, database, databaseDirectory );

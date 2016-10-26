@@ -19,6 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -26,10 +31,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import java.nio.file.Paths;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -42,7 +44,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -53,7 +54,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 
 public class LoadCommandTest
@@ -93,6 +93,42 @@ public class LoadCommandTest
 
         execute( "foo.db" );
         verify( loader ).load( any(), eq( databaseDir ) );
+    }
+
+    @Test
+    public void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
+    {
+        Path symDir = testDirectory.directory( "path-to-links" ).toPath();
+        Path realDatabaseDir = symDir.resolve( "foo.db" );
+
+        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+
+        Files.createDirectories( realDatabaseDir );
+        Files.createDirectories( dataDir.resolve( "databases" ) );
+
+        Files.createSymbolicLink( databaseDir, realDatabaseDir );
+
+        Files.write( configDir.resolve( "neo4j.conf" ),
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
+
+        execute( "foo.db" );
+        verify( loader ).load( any(), eq( realDatabaseDir ) );
+    }
+
+    @Test
+    public void shouldMakeFromCanonical() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
+    {
+        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Files.createDirectories( databaseDir );
+        Files.write( configDir.resolve( "neo4j.conf" ),
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
+
+        new LoadCommand( homeDir, configDir, loader )
+                .execute( ArrayUtil.concat( new String[]{"--database=foo.db", "--from=foo.dump"} ) );
+
+        verify( loader ).load( eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
     }
 
     @Test
@@ -215,14 +251,13 @@ public class LoadCommandTest
         }
         catch ( CommandFailed e )
         {
-            assertThat( e.getMessage(), equalTo( "you do not have permission to load a database -- is Neo4j running " +
-                    "as a different user?" ) );
+            assertThat( e.getMessage(), equalTo(
+                    "you do not have permission to load a database -- is Neo4j running " + "as a different user?" ) );
         }
     }
 
     @Test
-    public void
-    shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+    public void shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectUsage, IncorrectFormat
     {
         doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any() );
