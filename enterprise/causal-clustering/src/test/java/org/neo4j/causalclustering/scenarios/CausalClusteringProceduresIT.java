@@ -23,6 +23,8 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.Optional;
+
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -65,8 +67,9 @@ public class CausalClusteringProceduresIT
 
         for ( String procedure : coreProcs )
         {
-            CoreClusterMember coreClusterMember = cluster.coreMembers().stream().findFirst().get();
-            CoreGraphDatabase database = coreClusterMember.database();
+            Optional<CoreClusterMember> firstCore = cluster.coreMembers().stream().findFirst();
+            assert firstCore.isPresent();
+            CoreGraphDatabase database = firstCore.get().database();
             InternalTransaction tx =
                     database.beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
             Result coreResult = database.execute( "CALL " + procedure + "()" );
@@ -90,9 +93,9 @@ public class CausalClusteringProceduresIT
         // when
         for ( String procedure : readReplicaProcs )
         {
-            ReadReplica readReplica = cluster.readReplicas().stream().findFirst().get();
-
-            ReadReplicaGraphDatabase database = readReplica.database();
+            Optional<ReadReplica> firstReadReplica = cluster.readReplicas().stream().findFirst();
+            assert firstReadReplica.isPresent();
+            ReadReplicaGraphDatabase database = firstReadReplica.get().database();
             InternalTransaction tx =
                     database.beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
             Result readReplicaResult = database.execute( "CALL " + procedure + "()" );
