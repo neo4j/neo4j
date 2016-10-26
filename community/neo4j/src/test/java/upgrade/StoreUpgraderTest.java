@@ -19,7 +19,6 @@
  */
 package upgrade;
 
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,12 +57,12 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -180,9 +179,13 @@ public class StoreUpgraderTest
             }
         };
 
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
+        prepareSampleDatabase( version, fs, storeDirectory, prepare );
         // and a state of the migration saying that it has done the actual migration
         PageCache pageCache = pageCacheRule.getPageCache( fs );
+        // remove metadata store record to force tx info lookup in tx logs
+        MetaDataStore.setRecord( pageCache, new File( storeDirectory, MetaDataStore.DEFAULT_NAME),
+                MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, MetaDataRecordFormat.FIELD_NOT_PRESENT );
+
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
                 new LegacyStoreVersionCheck( fs ), getRecordFormats() ) {
             @Override
@@ -203,7 +206,7 @@ public class StoreUpgraderTest
         expectedException.expectCause( instanceOf( IOException.class ) );
         expectedException.expectCause( hasMessage( containsString( "Enforced IO Exception Fail to open file" ) ) );
 
-        upgrader.migrateIfNeeded( dbDirectory );
+        upgrader.migrateIfNeeded( storeDirectory );
     }
 
     @Test
