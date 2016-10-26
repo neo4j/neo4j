@@ -99,11 +99,8 @@ public class ActiveDirectoryAuthenticationIT
     {
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            settings.put( SecuritySettings.native_authentication_enabled, "false" );
-            settings.put( SecuritySettings.native_authorization_enabled, "false" );
-            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
-            settings.put( SecuritySettings.ldap_server, "activedirectory.neohq.net:389" );
+            settings.put( SecuritySettings.auth_provider, "ldap" );
+            settings.put( SecuritySettings.ldap_server, "activedirectory.neohq.net" );
             settings.put( SecuritySettings.ldap_authentication_user_dn_template, "CN={0},CN=Users,DC=neo4j,DC=com" );
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
             settings.put( SecuritySettings.ldap_authorization_user_search_base, "cn=Users,dc=neo4j,dc=com" );
@@ -146,7 +143,7 @@ public class ActiveDirectoryAuthenticationIT
     {
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "'neo' with roles [reader]" );
     }
 
     @Test
@@ -156,7 +153,7 @@ public class ActiveDirectoryAuthenticationIT
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "'neo' with roles [reader]" );
     }
 
     @Test
@@ -179,7 +176,7 @@ public class ActiveDirectoryAuthenticationIT
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextOnEC2() throws Throwable
     {
         assertAuth( "smith", "ProudListingsMedia1" );
-        assertReadFails( "smith" );
+        assertReadFails( "'smith' with no roles" );
     }
 
     @Test
@@ -188,7 +185,7 @@ public class ActiveDirectoryAuthenticationIT
         restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings );
 
         assertAuth( "smith", "ProudListingsMedia1" );
-        assertReadFails( "smith" );
+        assertReadFails( "'smith' with no roles" );
     }
 
     //------------------------------------------------------------------
@@ -206,7 +203,7 @@ public class ActiveDirectoryAuthenticationIT
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "'neo' with roles [reader]" );
     }
 
     @Test
@@ -218,7 +215,7 @@ public class ActiveDirectoryAuthenticationIT
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "'neo' with roles [reader]" );
     }
 
     @Test
@@ -230,7 +227,7 @@ public class ActiveDirectoryAuthenticationIT
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "'neo' with roles [reader]" );
     }
 
     @Test
@@ -242,7 +239,7 @@ public class ActiveDirectoryAuthenticationIT
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
-        assertWriteFails( "neo" );
+        assertWriteFails( "'neo' with roles [reader]" );
     }
 
     @Test
@@ -335,7 +332,7 @@ public class ActiveDirectoryAuthenticationIT
         // Then
         assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
-                        String.format( "Read operations are not allowed for '%s'.", username ) ) ) );
+                        String.format( "Read operations are not allowed for user %s.", username ) ) ) );
     }
 
     protected void assertWriteSucceeds() throws Exception
@@ -359,7 +356,7 @@ public class ActiveDirectoryAuthenticationIT
         // Then
         assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
-                        String.format( "Write operations are not allowed for '%s'.", username ) ) ) );
+                        String.format( "Write operations are not allowed for user %s.", username ) ) ) );
     }
 
 }

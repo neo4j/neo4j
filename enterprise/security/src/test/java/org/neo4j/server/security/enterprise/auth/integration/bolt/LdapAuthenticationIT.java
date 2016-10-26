@@ -149,6 +149,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "gidnumber" );
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
                     "500=reader;501=publisher;502=architect;503=admin" );
+            settings.put( SecuritySettings.procedure_roles, "test.allowedReadProcedure:role1" );
         } );
     }
 
