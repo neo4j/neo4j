@@ -546,7 +546,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val querySource = new QuerySource("<--!oO!-->")
     val locker = new PropertyContainerLocker()
 
-    val contextFactory: Neo4jTransactionalContextFactory = new Neo4jTransactionalContextFactory(db, locker)
+    val contextFactory = Neo4jTransactionalContextFactory.create(db, locker)
 
     val (executionPlan: ExecutionPlan, extractedParams: Map[String, Any]) = db.withTx { tx =>
       val transactionalContext = contextFactory.newContext(querySource, tx, query, Collections.emptyMap())

@@ -67,7 +67,7 @@ public class TransitionalPeriodTransactionMessContainer
             String query,
             Map<String, Object> queryParameters)
     {
-        TransactionalContextFactory contextFactory = new Neo4jTransactionalContextFactory( service, locker );
+        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( service, locker );
         QuerySource querySource = ServerQuerySession.describe( request );
         InternalTransaction transaction = service.beginTransaction( type, securityContext );
         return contextFactory.newContext( querySource, transaction, query, queryParameters );

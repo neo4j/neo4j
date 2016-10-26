@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -77,7 +78,7 @@ public class ExecutionEngineTests
             String query )
     {
         PropertyContainerLocker locker = new PropertyContainerLocker();
-        Neo4jTransactionalContextFactory contextFactory = new Neo4jTransactionalContextFactory( graph, locker );
+        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( graph, locker );
         return contextFactory.newContext( QueryEngineProvider.describe(), tx, query, Collections.emptyMap() );
     }
 }

@@ -141,12 +141,18 @@ public class GraphDatabaseFacadeFactory
         EditionModule edition = editionFactory.apply( platform );
 
         AtomicReference<QueryExecutionEngine> queryEngine = new AtomicReference<>( noEngine() );
+
         final DataSourceModule dataSource = createDataSource( platform, edition, queryEngine::get );
         Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;
 
-        graphDatabaseFacade.init( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ),
-                platform.config );
+        ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard );
+        graphDatabaseFacade.init(
+            spi,
+            dataSource.guard,
+            dataSource.threadToTransactionBridge,
+            platform.config
+        );
 
         // Start it
         platform.dataSourceManager.addListener( new DataSourceManager.Listener()
@@ -159,7 +165,8 @@ public class GraphDatabaseFacadeFactory
                 if ( engine == null )
                 {
                     engine = QueryEngineProvider.initialize(
-                            platform.dependencies, platform.graphDatabaseFacade, dependencies.executionEngines() );
+                        platform.dependencies, platform.graphDatabaseFacade, dependencies.executionEngines()
+                    );
                 }
 
                 queryEngine.set( engine );
@@ -222,8 +229,10 @@ public class GraphDatabaseFacadeFactory
     /**
      * Create the datasource module. Override to replace with custom module.
      */
-    protected DataSourceModule createDataSource( final PlatformModule platformModule, EditionModule editionModule,
-            Supplier<QueryExecutionEngine> queryEngine )
+    protected DataSourceModule createDataSource(
+        PlatformModule platformModule,
+        EditionModule editionModule,
+        Supplier<QueryExecutionEngine> queryEngine )
     {
         return new DataSourceModule( platformModule, editionModule, queryEngine );
     }

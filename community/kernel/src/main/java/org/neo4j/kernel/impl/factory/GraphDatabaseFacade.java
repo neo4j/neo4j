@@ -24,9 +24,12 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Suppliers;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -68,11 +71,14 @@ import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.AutoIndexerFacade;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
@@ -86,6 +92,7 @@ import org.neo4j.kernel.impl.coreapi.StandardNodeActions;
 import org.neo4j.kernel.impl.coreapi.StandardRelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -98,8 +105,11 @@ import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.function.Suppliers.*;
 import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing.NODE_AUTO_INDEX;
+import static org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
@@ -113,7 +123,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
 
     private Schema schema;
-    private IndexManager indexManager;
+    private Supplier<IndexManager> indexManager;
     private NodeProxy.NodeActions nodeActions;
     private RelationshipProxy.RelationshipActions relActions;
     private SPI spi;
@@ -195,29 +205,49 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     /**
      * Create a new Core API facade, backed by the given SPI.
+     *
+     * Any required dependencies are resolved using the resolver obtained from the SPI.
      */
-    public void init( SPI spi, Config config )
+    public final void init( SPI spi, Config config )
+    {
+        DependencyResolver resolver = spi.resolver();
+        init(
+            spi,
+            resolver.resolveDependency( Guard.class ),
+            resolver.resolveDependency( ThreadToStatementContextBridge.class ),
+            config
+        );
+    }
+
+    /**
+     * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
+     */
+    public void init( SPI spi, Guard guard, ThreadToStatementContextBridge txBridge, Config config )
     {
         this.spi = spi;
         this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
-        this.schema = new SchemaImpl( spi::currentStatement );
 
-        this.relActions = new StandardRelationshipActions( spi::currentStatement, spi::currentTransaction,
-                this::assertTransactionOpen, ( id ) -> new NodeProxy( nodeActions, id ), this );
-        this.nodeActions = new StandardNodeActions( spi::currentStatement, spi::currentTransaction,
-                this::assertTransactionOpen, relActions, this );
+        Supplier<Statement> statementSupplier = spi::currentStatement;
+        Supplier<KernelTransaction> transactionSupplier = spi::currentTransaction;
+        ThrowingAction<RuntimeException> assertTransactionOpen = this::assertTransactionOpen;
 
-        IndexProviderImpl idxProvider = new IndexProviderImpl( this, spi::currentStatement );
-        AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
-                () -> new ReadOnlyIndexFacade<>(
-                        idxProvider.getOrCreateNodeIndex( InternalAutoIndexing.NODE_AUTO_INDEX, null ) ),
+        this.schema = new SchemaImpl( statementSupplier );
+        this.relActions = new StandardRelationshipActions( statementSupplier, transactionSupplier, assertTransactionOpen, ( id ) -> new NodeProxy( nodeActions, id ), this );
+        this.nodeActions = new StandardNodeActions( statementSupplier, transactionSupplier, assertTransactionOpen, relActions, this );
+
+        this.indexManager = Suppliers.lazySingleton( () -> {
+            IndexProviderImpl idxProvider = new IndexProviderImpl( this, statementSupplier );
+            AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
+                () -> new ReadOnlyIndexFacade<>( idxProvider.getOrCreateNodeIndex( NODE_AUTO_INDEX, null ) ),
                 spi.autoIndexing().nodes() );
-        RelationshipAutoIndexerFacade relAutoIndexer = new RelationshipAutoIndexerFacade(
-                () -> new ReadOnlyRelationshipIndexFacade( idxProvider
-                        .getOrCreateRelationshipIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, null ) ),
+            RelationshipAutoIndexerFacade relAutoIndexer = new RelationshipAutoIndexerFacade(
+                () -> new ReadOnlyRelationshipIndexFacade( idxProvider.getOrCreateRelationshipIndex( RELATIONSHIP_AUTO_INDEX, null ) ),
                 spi.autoIndexing().relationships() );
-        this.indexManager = new IndexManagerImpl( spi::currentStatement, idxProvider, nodeAutoIndexer, relAutoIndexer );
-        this.contextFactory = new Neo4jTransactionalContextFactory( spi, locker );
+
+            return new IndexManagerImpl( statementSupplier, idxProvider, nodeAutoIndexer, relAutoIndexer );
+        } );
+
+        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, guard, txBridge, locker );
     }
 
     @Override
@@ -313,7 +343,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public IndexManager index()
     {
-        return indexManager;
+        return indexManager.get();
     }
 
     @Override

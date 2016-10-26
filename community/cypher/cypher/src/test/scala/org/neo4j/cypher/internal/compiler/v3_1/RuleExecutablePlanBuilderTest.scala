@@ -121,7 +121,7 @@ class RuleExecutablePlanBuilderTest
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
         RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
 
-      val contextFactory = new Neo4jTransactionalContextFactory(graph, locker)
+      val contextFactory = Neo4jTransactionalContextFactory.create(graph, locker)
       val transactionalContext = TransactionalContextWrapperv3_1(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val pkId = queryContext.getPropertyKeyId("foo")
@@ -150,7 +150,7 @@ class RuleExecutablePlanBuilderTest
 
       val execPlanBuilder = new LegacyExecutablePlanBuilder(WrappedMonitors3_1(kernelMonitors), config,
                                                             RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
-      val contextFactory = new Neo4jTransactionalContextFactory(graph, locker)
+      val contextFactory = Neo4jTransactionalContextFactory.create(graph, locker)
       val transactionalContext = TransactionalContextWrapperv3_1(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")

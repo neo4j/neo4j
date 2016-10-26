@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.ServerQuerySession;
@@ -47,7 +48,7 @@ public class CypherExecutor extends LifecycleAdapter
     private final Database database;
     private final Log log;
     private ExecutionEngine executionEngine;
-    private Neo4jTransactionalContextFactory contextFactory;
+    private TransactionalContextFactory contextFactory;
 
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private GraphDatabaseQueryService service;
@@ -66,13 +67,10 @@ public class CypherExecutor extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        DependencyResolver dependencyResolver = database.getGraph().getDependencyResolver();
-        this.executionEngine = (ExecutionEngine) dependencyResolver.resolveDependency( QueryExecutionEngine.class );
-        this.contextFactory = new Neo4jTransactionalContextFactory(
-                dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ),
-                locker
-        );
-        this.service = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
+        DependencyResolver resolver = database.getGraph().getDependencyResolver();
+        this.executionEngine = (ExecutionEngine) resolver.resolveDependency( QueryExecutionEngine.class );
+        this.service = resolver.resolveDependency( GraphDatabaseQueryService.class );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( this.service, locker );
     }
 
     @Override
@@ -92,14 +90,15 @@ public class CypherExecutor extends LifecycleAdapter
     private InternalTransaction getInternalTransaction( HttpServletRequest request )
     {
         long customTimeout = getTransactionTimeout( request, log );
-        return customTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ? beginCustomTransaction( customTimeout ) :
-               beginDefaultTransaction();
+        return customTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ?
+           beginCustomTransaction( customTimeout ) : beginDefaultTransaction();
     }
 
     private InternalTransaction beginCustomTransaction( long customTimeout )
     {
-        return service.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
-                customTimeout, TimeUnit.MILLISECONDS );
+        return service.beginTransaction(
+            KernelTransaction.Type.implicit, AUTH_DISABLED, customTimeout, TimeUnit.MILLISECONDS
+        );
     }
 
     private InternalTransaction beginDefaultTransaction()

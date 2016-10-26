@@ -195,13 +195,14 @@ public class Start extends TransactionProvidingApp
         DependencyResolver dependencyResolver = getDependencyResolver();
         GraphDatabaseQueryService graph = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
         TransactionalContextFactory contextFactory =
-                new Neo4jTransactionalContextFactory( graph, new PropertyContainerLocker() );
+            Neo4jTransactionalContextFactory.create( graph, new PropertyContainerLocker() );
         InternalTransaction transaction =
-                graph.beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
-        return contextFactory.newContext( ShellQuerySession.describe( session ),
-                transaction,
-                queryText,
-                queryParameters
+            graph.beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
+        return contextFactory.newContext(
+            ShellQuerySession.describe( session ),
+            transaction,
+            queryText,
+            queryParameters
         );
     }
 

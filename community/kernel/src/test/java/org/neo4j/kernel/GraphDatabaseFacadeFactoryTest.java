@@ -55,8 +55,7 @@ import static org.mockito.Mockito.when;
 public class GraphDatabaseFacadeFactoryTest
 {
     @Rule
-    public final TestDirectory dir =
-            TestDirectory.testDirectory( new EphemeralFileSystemAbstraction() );
+    public final TestDirectory dir = TestDirectory.testDirectory( new EphemeralFileSystemAbstraction() );
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final GraphDatabaseFacadeFactory.Dependencies deps =
@@ -78,7 +77,7 @@ public class GraphDatabaseFacadeFactoryTest
         try
         {
             // When
-            db.initFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
+            db.initFacade( dir.graphDbDir(), Collections.emptyMap(), deps, mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
         catch ( RuntimeException exception )
@@ -138,7 +137,7 @@ public class GraphDatabaseFacadeFactoryTest
             protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
                     Supplier<QueryExecutionEngine> queryExecutionEngineSupplier )
             {
-                return null;
+                return mock( DataSourceModule.class );
             }
         };
     }

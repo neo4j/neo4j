@@ -105,7 +105,8 @@ trait GraphIcing {
     private def createTransactionalContext(txType: Type, queryText: String, params: Map[String, Any] = Map.empty): (InternalTransaction, TransactionalContext) = {
       val tx = graph.beginTransaction(txType, AUTH_DISABLED)
       val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
-      val contextFactory: Neo4jTransactionalContextFactory = new Neo4jTransactionalContextFactory(graphService, locker)
+      val contextFactory = Neo4jTransactionalContextFactory.create(graphService,
+        locker)
       val transactionalContext = contextFactory.newContext(QuerySource.UNKNOWN, tx, queryText, javaParams)
       (tx, transactionalContext)
     }

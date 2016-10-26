@@ -48,13 +48,12 @@ import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class CypherExecutorTest
 {
-
     private static final long CUSTOM_TRANSACTION_TIMEOUT = 1000L;
     private static final String QUERY = "create (n)";
 
     private Database database;
     private GraphDatabaseFacade databaseFacade;
-    private DependencyResolver dependencyResolver;
+    private DependencyResolver resolver;
     private QueryExecutionEngine executionEngine;
     private ThreadToStatementContextBridge statementBridge;
     private GraphDatabaseQueryService databaseQueryService;
@@ -138,7 +137,7 @@ public class CypherExecutorTest
     {
         database = mock( Database.class );
         databaseFacade = mock( GraphDatabaseFacade.class );
-        dependencyResolver = mock( DependencyResolver.class );
+        resolver = mock( DependencyResolver.class );
         executionEngine = mock( ExecutionEngine.class );
         statementBridge = mock( ThreadToStatementContextBridge.class );
         databaseQueryService = mock( GraphDatabaseQueryService.class );
@@ -156,17 +155,13 @@ public class CypherExecutorTest
         when( kernelTransaction.securityContext() ).thenReturn( securityContext );
         when( kernelTransaction.transactionType() ).thenReturn( type  );
         when( database.getGraph() ).thenReturn( databaseFacade );
-        when( databaseFacade.getDependencyResolver() ).thenReturn( dependencyResolver );
-        when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( executionEngine );
-        when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn(
-                statementBridge );
-        when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn(
-                databaseQueryService );
-        when( databaseQueryService.beginTransaction( type, securityContext ) )
-                .thenReturn( transaction );
+        when( databaseFacade.getDependencyResolver() ).thenReturn( resolver );
+        when( resolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( executionEngine );
+        when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( statementBridge );
+        when( resolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( databaseQueryService );
+        when( databaseQueryService.beginTransaction( type, securityContext ) ).thenReturn( transaction );
         when( databaseQueryService.beginTransaction( type, securityContext,
                 CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS ) ).thenReturn( transaction );
-        when( databaseQueryService.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( databaseQueryService.getDependencyResolver() ).thenReturn( resolver );
     }
-
 }

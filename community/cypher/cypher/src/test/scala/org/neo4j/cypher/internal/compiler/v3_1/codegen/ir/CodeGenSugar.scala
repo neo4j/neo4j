@@ -67,7 +67,7 @@ trait CodeGenSugar extends MockitoSugar {
     val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
     try {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
-      val contextFactory = new Neo4jTransactionalContextFactory(graphDb, locker)
+      val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
       val transactionalContext = TransactionalContextWrapperv3_1(contextFactory.newContext(QuerySource.UNKNOWN, tx,
         "no query text exists for this test", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
@@ -69,4 +70,6 @@ public interface GraphDatabaseQueryService
             TimeUnit unit);
 
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
+
+    DbmsOperations getDbmsOperations();
 }

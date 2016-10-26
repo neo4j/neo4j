@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -33,10 +32,12 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -45,25 +46,23 @@ import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class GraphDatabaseFacadeTest
 {
-    private GraphDatabaseFacade.SPI spi = Mockito.mock( GraphDatabaseFacade.SPI.class, Mockito.RETURNS_DEEP_STUBS );
+    private GraphDatabaseFacade.SPI spi = Mockito.mock( GraphDatabaseFacade.SPI.class, RETURNS_DEEP_STUBS );
     private GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
     private GraphDatabaseQueryService queryService;
-    private DependencyResolver dependencyResolver;
     private Config defaultConfig;
-    private Statement statement;
 
     @Before
     public void setUp()
     {
         queryService = mock( GraphDatabaseQueryService.class );
-        dependencyResolver = mock( DependencyResolver.class );
-        statement = mock( Statement.class, Mockito.RETURNS_DEEP_STUBS );
+        DependencyResolver resolver = mock( DependencyResolver.class );
+        Statement statement = mock( Statement.class, RETURNS_DEEP_STUBS );
         ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
 
         when( spi.queryService() ).thenReturn( queryService );
-        when( spi.resolver() ).thenReturn( dependencyResolver );
-        when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) )
-                .thenReturn( contextBridge );
+        when( spi.resolver() ).thenReturn( resolver );
+        when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( contextBridge );
+        when( resolver.resolveDependency( Guard.class ) ).thenReturn( mock( Guard.class ) );
         when( contextBridge.get() ).thenReturn( statement );
         defaultConfig = Config.defaults();
 
@@ -92,11 +91,11 @@ public class GraphDatabaseFacadeTest
     {
         graphDatabaseFacade.execute( "create (n)", 157L, TimeUnit.SECONDS );
         verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
-                TimeUnit.SECONDS.toMillis( 157L ) );
+            TimeUnit.SECONDS.toMillis( 157L ) );
 
         graphDatabaseFacade.execute( "create (n)", new HashMap<>(), 247L, TimeUnit.MINUTES );
         verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
-                TimeUnit.MINUTES.toMillis( 247L ) );
+            TimeUnit.MINUTES.toMillis( 247L ) );
     }
 
     @Test
@@ -106,7 +105,7 @@ public class GraphDatabaseFacadeTest
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, null );
 
         when( queryService.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
-                .thenReturn( transaction );
+            .thenReturn( transaction );
 
         graphDatabaseFacade.execute( "create (n)" );
         graphDatabaseFacade.execute( "create (n)", new HashMap<>() );
