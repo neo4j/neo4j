@@ -48,7 +48,6 @@ import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapContext;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
@@ -484,7 +483,7 @@ public class LdapRealmTest
         try
         {
             LdapRealm realm = new LdapRealm( config, securityLog, secureHasher );
-            realm.initialize( mock( RealmOperations.class ) );
+            realm.initialize();
         }
         catch ( Exception e )
         {

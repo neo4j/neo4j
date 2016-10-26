@@ -37,11 +37,11 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 public interface AuthInfo extends Serializable
 {
     /**
-     * Should return a principal that uniquely identifies the authenticated subject within this realm.
+     * Should return a principal that uniquely identifies the authenticated subject within this auth provider.
      *
      * <p>Typically this is the same as the principal within the auth token map.
      *
-     * @return a principal that uniquely identifies the authenticated subject within this realm.
+     * @return a principal that uniquely identifies the authenticated subject within this auth provider.
      */
     Object principal();
 

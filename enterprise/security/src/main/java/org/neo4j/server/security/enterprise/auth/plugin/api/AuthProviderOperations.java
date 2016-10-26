@@ -26,7 +26,7 @@ import java.util.Optional;
 /**
  * These are the methods that the plugin can perform on Neo4j.
  */
-public interface RealmOperations
+public interface AuthProviderOperations
 {
     /**
      * Returns the path to the Neo4j home directory.
@@ -50,14 +50,15 @@ public interface RealmOperations
     String neo4jVersion();
 
     /**
-     * Returns the clock that is used by the Neo4j security module within which this plugin realm is running.
+     * Returns the clock that is used by the Neo4j security module within which this auth provider plugin is running.
      *
      * @return the clock that is used by the Neo4j security module
      */
     Clock clock();
 
     /**
-     * Returns the security log that is used by the Neo4j security module within which this plugin realm is running.
+     * Returns the security log that is used by the Neo4j security module within which this auth provider plugin is
+     * running.
      *
      * @return the security log that is used by the Neo4j security module
      */

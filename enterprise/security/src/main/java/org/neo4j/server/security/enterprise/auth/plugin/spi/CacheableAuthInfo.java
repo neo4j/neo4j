@@ -21,14 +21,14 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.util.Collection;
 
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthProviderOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * A cacheable object that can be returned as the result of successful authentication by an
  * <tt>AuthPlugin</tt>.
  *
- * <p>This object can be cached by the authentication cache within the realm
- * that the authentication plugin is connected to.
+ * <p>This object can be cached by the Neo4j authentication cache.
  *
  * <p>This result type is used if you want Neo4j to manage secure hashing and matching of cached credentials.
  * If you instead want to manage this yourself you need to use the separate interfaces
@@ -42,7 +42,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
  * but will work fine with a regular <tt>AuthInfo</tt>.
  *
  * @see AuthPlugin#authenticateAndAuthorize(AuthToken)
- * @see org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations#setAuthenticationCachingEnabled(boolean)
+ * @see AuthProviderOperations#setAuthenticationCachingEnabled(boolean)
  * @see AuthInfo
  * @see AuthenticationPlugin
  * @see AuthorizationPlugin
@@ -51,12 +51,12 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 public interface CacheableAuthInfo extends AuthInfo
 {
     /**
-     * Should return a principal that uniquely identifies the authenticated subject within this realm.
+     * Should return a principal that uniquely identifies the authenticated subject within this auth provider.
      * This will be used as the cache key, and needs to be matcheable against a principal within the auth token map.
      *
      * <p>Typically this is the same as the principal within the auth token map.
      *
-     * @return a principal that uniquely identifies the authenticated subject within this realm
+     * @return a principal that uniquely identifies the authenticated subject within this auth provider
      *
      * @see AuthToken#principal()
      */

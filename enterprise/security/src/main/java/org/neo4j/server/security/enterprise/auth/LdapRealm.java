@@ -63,8 +63,6 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
@@ -536,7 +534,7 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     }
 
     @Override
-    public void initialize( RealmOperations realmOperations ) throws Throwable
+    public void initialize() throws Throwable
     {
         if ( authorizationEnabled )
         {

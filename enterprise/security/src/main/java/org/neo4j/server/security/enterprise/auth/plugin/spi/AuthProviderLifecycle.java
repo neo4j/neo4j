@@ -19,19 +19,19 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthProviderOperations;
 
-public interface RealmLifecycle
+public interface AuthProviderLifecycle
 {
-    void initialize( RealmOperations realmOperations ) throws Throwable;
+    void initialize( AuthProviderOperations authProviderOperations ) throws Throwable;
     void start() throws Throwable;
     void stop() throws Throwable;
     void shutdown() throws Throwable;
 
-    class Adapter implements RealmLifecycle
+    class Adapter implements AuthProviderLifecycle
     {
         @Override
-        public void initialize( RealmOperations realmOperations ) throws Throwable
+        public void initialize( AuthProviderOperations authProviderOperations ) throws Throwable
         {
         }
 

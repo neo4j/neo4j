@@ -57,7 +57,7 @@ public class TestCombinedAuthPlugin extends AuthenticationPlugin.Adapter impleme
     }
 
     @Override
-    public AuthorizationInfo authorize( Collection<PrincipalAndRealm> principals )
+    public AuthorizationInfo authorize( Collection<PrincipalAndProvider> principals )
     {
         if ( principals.stream().anyMatch( p -> "neo4j".equals( p.principal() ) ) )
         {

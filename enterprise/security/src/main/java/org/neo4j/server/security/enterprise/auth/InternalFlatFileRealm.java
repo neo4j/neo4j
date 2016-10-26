@@ -56,8 +56,6 @@ import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
-import org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static java.lang.String.format;
@@ -120,7 +118,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public void initialize( RealmOperations ignore ) throws Throwable
+    public void initialize() throws Throwable
     {
         initialUserRepository.init();
         userRepository.init();

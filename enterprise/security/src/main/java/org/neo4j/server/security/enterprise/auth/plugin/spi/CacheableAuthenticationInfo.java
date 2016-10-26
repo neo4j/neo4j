@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthProviderOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * A cacheable object that can be returned as the result of successful authentication by an
  * <tt>AuthenticationPlugin</tt>.
  *
- * <p>This object can be cached by the authentication cache within the realm
- * that the authentication plugin is connected to.
+ * <p>This object can be cached by the Neo4j authentication cache.
  *
  * <p>This is an alternative to <tt>CustomCacheableAuthenticationInfo</tt> if you want Neo4j to manage secure
  * hashing and matching of cached credentials.
@@ -34,18 +34,18 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
  * <p>NOTE: Caching only occurs if it is explicitly enabled by the plugin.
  *
  * @see AuthenticationPlugin#authenticate(AuthToken)
- * @see org.neo4j.server.security.enterprise.auth.plugin.api.RealmOperations#setAuthenticationCachingEnabled(boolean)
+ * @see AuthProviderOperations#setAuthenticationCachingEnabled(boolean)
  * @see CustomCacheableAuthenticationInfo
  */
 public interface CacheableAuthenticationInfo extends AuthenticationInfo
 {
     /**
-     * Should return a principal that uniquely identifies the authenticated subject within this realm.
+     * Should return a principal that uniquely identifies the authenticated subject within this authentication provider.
      * This will be used as the cache key, and needs to be matcheable against a principal within the auth token map.
      *
      * <p>Typically this is the same as the principal within the auth token map.
      *
-     * @return a principal that uniquely identifies the authenticated subject within this realm
+     * @return a principal that uniquely identifies the authenticated subject within this authentication provider
      *
      * @see AuthToken#principal()
      */
@@ -70,9 +70,10 @@ public interface CacheableAuthenticationInfo extends AuthenticationInfo
     /**
      * Creates a new <tt>CacheableAuthenticationInfo</tt>
      *
-     * @param principal a principal that uniquely identifies the authenticated subject within this realm
+     * @param principal a principal that uniquely identifies the authenticated subject within this authentication
+     *                  provider
      * @param credentials credentials that can be cached
-     * @return a new <tt>CacheableAuthenticationInfo</tt> containing the given parameters.
+     * @return a new <tt>CacheableAuthenticationInfo</tt> containing the given parameters
      */
     static CacheableAuthenticationInfo of( Object principal, byte[] credentials )
     {

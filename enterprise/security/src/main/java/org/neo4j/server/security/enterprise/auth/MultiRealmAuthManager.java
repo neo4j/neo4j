@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
-import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 
 import static org.neo4j.helpers.Strings.escape;
 
@@ -144,7 +143,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
             }
             if ( realm instanceof RealmLifecycle )
             {
-                ((RealmLifecycle) realm).initialize( null );
+                ((RealmLifecycle) realm).initialize();
             }
         }
     }
