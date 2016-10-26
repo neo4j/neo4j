@@ -53,7 +53,7 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
             return Iterables.concat( super.settingsClasses( settings ),
                     asList( HaSettings.class, ClusterSettings.class, SecuritySettings.class ) );
         }
-        if ( isCEMode( settings ) )
+        if ( isCCMode( settings ) )
         {
             return Iterables.concat( super.settingsClasses( settings ),
                     asList( CausalClusteringSettings.class, SecuritySettings.class ) );
@@ -69,9 +69,9 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
         return new Config( settings, EnterpriseServerSettings.class ).get( mode ).equals( "HA" );
     }
 
-    private boolean isCEMode( Map<String,String> settings )
+    private boolean isCCMode( Map<String,String> settings )
     {
         String mode = new Config( settings, EnterpriseServerSettings.class ).get( EnterpriseServerSettings.mode );
-        return mode.equals( "CORE" ) || mode.equals( "EDGE" );
+        return mode.equals( "CORE" ) || mode.equals( "READ_REPLICA" );
     }
 }
