@@ -24,6 +24,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,10 +45,12 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.enterprise.api.security.CouldBeAdmin;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -157,6 +162,58 @@ public class BuiltInProcedures
         assertAdminOrSelf( username );
 
         return terminateConnectionsForValidUser( graph.getDependencyResolver(), username );
+    }
+
+    /*
+    ==================================================================================
+     */
+
+    @Description( "List all procedures in the DBMS." )
+    @Procedure( name = "dbms.procedures", mode = DBMS )
+    public Stream<ProcedureResult> listProcedures()
+    {
+        return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
+                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .map( sig -> new ProcedureResult( sig, isAdmin() ) );
+    }
+
+    @SuppressWarnings( "WeakerAccess" )
+    public static class ProcedureResult
+    {
+        public final String name;
+        public final String signature;
+        public final String description;
+        public final List<String> roles;
+
+        public ProcedureResult( ProcedureSignature signature, boolean isAdmin )
+        {
+            this.name = signature.name().toString();
+            this.signature = signature.toString();
+            this.description = signature.description().orElse( "" );
+            if ( isAdmin )
+            {
+                roles = new ArrayList<>();
+                switch ( signature.mode() )
+                {
+                case DBMS:
+                    roles.add( "admin" );
+                    break;
+                case READ_ONLY:
+                    roles.add( "reader" );
+                case READ_WRITE:
+                    roles.add( "publisher" );
+                case SCHEMA_WRITE:
+                    roles.add( "architect" );
+                default:
+                    roles.add( "admin" );
+                    roles.addAll( Arrays.asList( signature.allowed() ) );
+                }
+            }
+            else
+            {
+                roles = Collections.emptyList();
+            }
+        }
     }
 
     /*

@@ -22,6 +22,10 @@ package org.neo4j.server.security.enterprise.auth;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -33,11 +37,18 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static org.hamcrest.CoreMatchers.not;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.internal.util.collections.Sets.newSet;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
 public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteractionTestBase<S>
 {
@@ -222,5 +233,48 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         // Then
         assertSuccess( readSubject, "CALL test.createNode", ResourceIterator::close );
         assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "4" ) );
+    }
+
+    @Test
+    public void shouldShowAllowedRolesWhenListingProcedures() throws Throwable
+    {
+        configuredSetup( stringMap(
+                SecuritySettings.procedure_roles.name(), "test.numNodes:counter,user",
+                SecuritySettings.default_allowed.name(), "default" ) );
+
+        Map<String,Set<String>> expected = genericMap(
+                "test.staticReadProcedure", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.staticWriteProcedure", newSet( "default", PUBLISHER, ARCHITECT, ADMIN ),
+                "test.staticSchemaProcedure", newSet( "default", ARCHITECT, ADMIN ),
+                "test.allowedWriteProcedure", newSet( "otherRole", "role1", PUBLISHER, ARCHITECT, ADMIN ),
+                "test.numNodes", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "db.labels", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.changePassword", newSet( ADMIN ),
+                "dbms.procedures", newSet( ADMIN ),
+                "dbms.listQueries", newSet( ADMIN ),
+                "dbms.security.createUser", newSet( ADMIN ) );
+        assertSuccess( adminSubject, "CALL dbms.procedures", itr ->
+        {
+            List<String> failures = itr.stream().filter( record ->
+            {
+                String name = record.get( "name" ).toString();
+                List<?> roles = (List<?>) record.get( "roles" );
+                return expected.containsKey( name ) && !expected.get( name ).equals( new HashSet<>( roles ) );
+            } ).map( record ->
+            {
+                String name = record.get( "name" ).toString();
+                return name + ": expected '" + expected.get( name ) + "' but was '" + record.get( "roles" ) + "'";
+            } ).collect( toList() );
+
+            assertThat( "Expectations violated: " + failures.toString(), failures.isEmpty() );
+        } );
+
+        assertSuccess( schemaSubject, "CALL dbms.procedures", itr ->
+        {
+            List<String> failures = itr.stream().filter( record ->
+                    !((List<?>) record.get( "roles" )).isEmpty() ).map( record ->
+                    record.get( "name" ).toString() ).collect( toList() );
+            assertThat( "Some procedures listed roles: " + failures.toString(), failures.isEmpty() );
+        } );
     }
 }

@@ -48,7 +48,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
-        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class );
+        procedures.registerProcedure( org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures.class, true );
     }
 
     public EnterpriseEditionModule( PlatformModule platformModule )
