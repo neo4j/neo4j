@@ -34,6 +34,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.WinnerStrategy;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.election.ElectionContext;
+import org.neo4j.cluster.protocol.election.ElectionCredentials;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
@@ -152,7 +153,7 @@ public class ElectionContextImpl
 
     @Override
     public boolean voted( String role, org.neo4j.cluster.InstanceId suggestedNode,
-                          Comparable<Object> suggestionCredentials, long electionVersion )
+                          ElectionCredentials suggestionCredentials, long electionVersion )
     {
         if ( !isElectionProcessInProgress( role ) ||
                 (electionVersion != -1 && electionVersion < clusterContext.getLastElectorVersion() ) )
@@ -179,7 +180,7 @@ public class ElectionContextImpl
     }
 
     @Override
-    public Comparable<Object> getCredentialsForRole( String role )
+    public ElectionCredentials getCredentialsForRole( String role )
     {
         return electionCredentialsProvider.getCredentials( role );
     }

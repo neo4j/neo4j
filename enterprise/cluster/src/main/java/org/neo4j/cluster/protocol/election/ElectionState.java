@@ -246,7 +246,7 @@ public enum ElectionState
                                 version = ((ElectionMessage.VersionedVotedData) data).getVersion();
                             }
                             boolean accepted =
-                                    context.voted( data.getRole(), data.getInstanceId(), data.getVoteCredentials(),
+                                    context.voted( data.getRole(), data.getInstanceId(), data.getElectionCredentials(),
                                             version );
 
                             String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";

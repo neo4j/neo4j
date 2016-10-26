@@ -154,14 +154,7 @@ public class ElectionStateTest
         final String role = "master";
         final InstanceId voter = new InstanceId( 2 );
 
-        Comparable<Object> voteCredentialComparable = new Comparable<Object>()
-        {
-            @Override
-            public int compareTo( Object o )
-            {
-                return 0;
-            }
-        };
+        ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
         Message vote = Message.internal( voted, new ElectionMessage.VersionedVotedData( role, voter,
                 voteCredentialComparable
         , 4 ) );
@@ -206,14 +199,7 @@ public class ElectionStateTest
         // Given
         String coordinatorRole = "coordinator";
         InstanceId votingInstance = new InstanceId( 2 );
-        Comparable<Object> voteCredentialComparable = new Comparable<Object>()
-        {
-            @Override
-            public int compareTo( Object o )
-            {
-                return 0;
-            }
-        };
+        ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
 
         ElectionContext context = mock( ElectionContext.class );
         when( context.getLog( Mockito.<Class>any() ) ).thenReturn( NullLog.getInstance() );
@@ -278,14 +264,7 @@ public class ElectionStateTest
                 messages.add( message );
             }
         };
-        Comparable<Object> voteCredentialComparable = new Comparable<Object>()
-        {
-            @Override
-            public int compareTo( Object o )
-            {
-                return 0;
-            }
-        };
+        ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
 
         ElectionContext electionContext = mock( ElectionContext.class );
         when( electionContext.voted( eq( COORDINATOR ), eq( new InstanceId( 1 ) ), eq( voteCredentialComparable ),

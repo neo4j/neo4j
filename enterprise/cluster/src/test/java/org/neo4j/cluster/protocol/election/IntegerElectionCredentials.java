@@ -29,9 +29,9 @@ public class IntegerElectionCredentials implements ElectionCredentials
     }
 
     @Override
-    public int compareTo( Object o )
+    public int compareTo( ElectionCredentials o )
     {
         return o instanceof IntegerElectionCredentials
-                ? Integer.valueOf(credential).compareTo(Integer.valueOf(( (IntegerElectionCredentials) o).credential)) : 0;
+               ? Integer.valueOf(credential).compareTo( ((IntegerElectionCredentials) o).credential ) : 0;
     }
 }

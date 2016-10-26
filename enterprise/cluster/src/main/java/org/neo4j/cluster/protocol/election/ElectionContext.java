@@ -52,12 +52,12 @@ public interface ElectionContext
 
     void startElectionProcess( String role );
 
-    boolean voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials,
+    boolean voted( String role, InstanceId suggestedNode, ElectionCredentials suggestionCredentials,
                        long electionVersion );
 
     InstanceId getElectionWinner( String role );
 
-    Comparable<Object> getCredentialsForRole( String role );
+    ElectionCredentials getCredentialsForRole( String role );
 
     int getVoteCount( String role );
 

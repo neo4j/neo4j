@@ -20,6 +20,7 @@
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.election.ElectionCredentials;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 
 /**
@@ -32,9 +33,9 @@ public class Vote
         implements Comparable<Vote>
 {
     private final InstanceId suggestedNode;
-    private final Comparable<Object> voteCredentials;
+    private final ElectionCredentials voteCredentials;
 
-    public Vote( InstanceId suggestedNode, Comparable<Object> voteCredentials )
+    public Vote( InstanceId suggestedNode, ElectionCredentials voteCredentials )
     {
         this.suggestedNode = suggestedNode;
         this.voteCredentials = voteCredentials;
@@ -45,7 +46,7 @@ public class Vote
         return suggestedNode;
     }
 
-    public Comparable<Object> getCredentials()
+    public Comparable<ElectionCredentials> getCredentials()
     {
         return voteCredentials;
     }

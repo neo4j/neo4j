@@ -44,7 +44,7 @@ public final class DefaultElectionCredentials implements ElectionCredentials, Ex
     }
 
     @Override
-    public int compareTo( Object o )
+    public int compareTo( ElectionCredentials o )
     {
         DefaultElectionCredentials other = (DefaultElectionCredentials) o;
         if ( this.latestTxId == other.latestTxId )

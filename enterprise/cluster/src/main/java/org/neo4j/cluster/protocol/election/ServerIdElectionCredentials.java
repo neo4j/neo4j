@@ -32,7 +32,7 @@ public class ServerIdElectionCredentials implements ElectionCredentials, Seriali
     }
 
     @Override
-    public int compareTo( Object o )
+    public int compareTo( ElectionCredentials o )
     {
         // Alphabetically lower URI means higher prio
         return -credentials.toString().compareTo( ((ServerIdElectionCredentials) o).credentials.toString() );
