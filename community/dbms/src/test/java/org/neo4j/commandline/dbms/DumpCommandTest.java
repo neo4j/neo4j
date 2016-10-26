@@ -33,8 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.function.Predicate;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -43,7 +42,6 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -324,13 +322,8 @@ public class DumpCommandTest
         when( blocker.doesBlock( any(), any() ) ).thenReturn( true );
         when( blocker.explanation() ).thenReturn( "blocked" );
 
-        List<AdminCommand.Blocker> blockers = new ArrayList<AdminCommand.Blocker>()
-        {{
-            add( blocker );
-        }};
-
         BlockerLocator blockerLocator = mock( BlockerLocator.class );
-        when(blockerLocator.findBlockersForCommand( "dump" )).thenReturn( blockers );
+        when( blockerLocator.findBlockersForCommand( "dump" ) ).thenReturn( Arrays.asList( blocker ) );
 
         try
         {
@@ -355,15 +348,9 @@ public class DumpCommandTest
         when( falseBlocker.doesBlock( any(), any() ) ).thenReturn( false );
         when( falseBlocker.explanation() ).thenReturn( "falseBlocker explanation" );
 
-        List<AdminCommand.Blocker> blockers = new ArrayList<AdminCommand.Blocker>()
-        {{
-            add( trueBlocker );
-            add( falseBlocker );
-            add( falseBlocker );
-        }};
-
         BlockerLocator blockerLocator = mock( BlockerLocator.class );
-        when(blockerLocator.findBlockersForCommand( "dump" )).thenReturn( blockers );
+        when( blockerLocator.findBlockersForCommand( "dump" ) ).thenReturn(
+                Arrays.asList( trueBlocker, falseBlocker, falseBlocker ) );
 
         try
         {

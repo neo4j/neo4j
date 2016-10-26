@@ -20,8 +20,8 @@
 package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
@@ -95,7 +95,7 @@ public interface AdminCommand
         /**
          * @return              a list of the commands this blocker applies to.
          */
-        public abstract List<String> commands();
+        public abstract Set<String> commands();
 
         /**
          * @return explanation of why a command was blocked. This will be shown to the user.
