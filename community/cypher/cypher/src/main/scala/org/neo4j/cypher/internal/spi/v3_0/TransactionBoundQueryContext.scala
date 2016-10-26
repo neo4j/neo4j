@@ -108,7 +108,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       if (nodeOps.isDeletedInThisTx(node))
         throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction", e)
       else
-        null
+        Iterator.empty
   }
 
   override def getPropertiesForNode(node: Long) =
