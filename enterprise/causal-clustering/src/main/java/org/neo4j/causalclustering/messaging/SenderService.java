@@ -101,6 +101,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 nonBlockingChannel.dispose();
                 nonBlockingChannel = existingNonBlockingChannel;
             }
+            else
+            {
+                log.info( "Creating channel to: [%s] ", to );
+            }
         }
 
         monitor.register( to.socketAddress() );

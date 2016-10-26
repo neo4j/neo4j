@@ -36,13 +36,14 @@ import org.neo4j.logging.Log;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 
-public class NonBlockingChannel
+class NonBlockingChannel
 {
     private static final int CONNECT_BACKOFF_IN_MS = 250;
     /* This pause is a maximum for retrying in case of a park/unpark race as well as for any other abnormal
     situations. */
     private static final int RETRY_DELAY_MS = 100;
     private final Thread messageSendingThread;
+    private final Log log;
     private Channel nettyChannel;
     private Bootstrap bootstrap;
     private InetSocketAddress destination;
@@ -50,16 +51,16 @@ public class NonBlockingChannel
     private volatile boolean stillRunning = true;
     private final MessageQueueMonitor monitor;
     private final int maxQueueSize;
-    FutureListener<Void> errorListener;
+    private FutureListener<Void> errorListener;
 
-    public NonBlockingChannel( Bootstrap bootstrap, final InetSocketAddress destination,
-                               final Log log, MessageQueueMonitor monitor,
-                               int maxQueueSize )
+    NonBlockingChannel( Bootstrap bootstrap, final InetSocketAddress destination,
+            final Log log, MessageQueueMonitor monitor, int maxQueueSize )
     {
         this.bootstrap = bootstrap;
         this.destination = destination;
         this.monitor = monitor;
         this.maxQueueSize = maxQueueSize;
+        this.log = log;
 
         this.errorListener = future -> {
             if ( !future.isSuccess() )
@@ -91,6 +92,7 @@ public class NonBlockingChannel
                  fresh one. */
                 if ( nettyChannel != null )
                 {
+                    log.warn( "Got exception for: " + nettyChannel + ". Will reconnect.", e );
                     nettyChannel.close();
                     nettyChannel = null;
                 }
@@ -141,7 +143,7 @@ public class NonBlockingChannel
         }
         else
         {
-            monitor.droppedMessage(destination);
+            monitor.droppedMessage( destination );
         }
     }
 
@@ -183,6 +185,7 @@ public class NonBlockingChannel
             {
                 channel.flush();
                 nettyChannel = channel;
+                log.info( "Connected: " + nettyChannel );
             }
             else
             {
