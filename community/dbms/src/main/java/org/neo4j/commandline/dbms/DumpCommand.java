@@ -44,6 +44,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.neo4j.commandline.dbms.Util.canonicalPath;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.identity;
@@ -104,8 +105,8 @@ public class DumpCommand implements AdminCommand
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
         String database = parse( args, "database", identity() );
-        Path archive = calculateArchive( database, parse( args, "to", Paths::get ) );
-        Path databaseDirectory = toDatabaseDirectory( database );
+        Path archive = calculateArchive( database, parse( args, "to", Util::canonicalPath ) );
+        Path databaseDirectory = canonicalPath( toDatabaseDirectory( database ) );
 
         try ( Closeable ignored = storeLockChecker.withLock( databaseDirectory ) )
         {

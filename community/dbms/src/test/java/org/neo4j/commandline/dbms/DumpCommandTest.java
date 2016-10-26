@@ -98,12 +98,41 @@ public class DumpCommandTest
     }
 
     @Test
+    public void shouldHandleDatabaseSymlink() throws IOException, CommandFailed, IncorrectUsage
+    {
+        Path symDir = testDirectory.directory( "path-to-links" ).toPath();
+        Path realDatabaseDir = symDir.resolve( "foo.db" );
+
+        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+
+        Files.createDirectories( realDatabaseDir );
+        Files.createDirectories( dataDir.resolve( "databases" ) );
+
+        Files.createSymbolicLink( databaseDir, realDatabaseDir );
+        Files.write( configDir.resolve( "neo4j.conf" ),
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
+
+        execute( "foo.db" );
+        verify( dumper ).dump( eq( realDatabaseDir ), any(), any() );
+    }
+
+    @Test
     public void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory()
             throws CommandFailed, IncorrectUsage, IOException
     {
         File to = testDirectory.directory( "some-dir" );
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo.db", "--to=" + to} );
         verify( dumper ).dump( any( Path.class ), eq( to.toPath().resolve( "foo.db.dump" ) ), any() );
+    }
+
+    @Test
+    public void shouldConvertToCanonicalPath()
+            throws CommandFailed, IncorrectUsage, IOException
+    {
+        new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo.db",
+                "--to=foo.dump"} );
+        verify( dumper ).dump( any( Path.class ), eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
     }
 
     @Test
