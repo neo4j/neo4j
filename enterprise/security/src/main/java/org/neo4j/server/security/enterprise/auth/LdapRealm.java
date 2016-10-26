@@ -369,7 +369,7 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     }
 
     // Unfortunately we need to identify timeouts by looking at the exception messages, which is not very robust.
-    // To make it slightly more robust we look for a key part the actual message
+    // To make it slightly more robust we look for a key part of the actual message
     private boolean isExceptionAnLdapReadTimeout( Exception e )
     {
         return e instanceof NamingException &&

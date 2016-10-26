@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public class AuthorizationExpiredException extends RuntimeException implements Status.HasStatus
 {
-    private final Status statusCode = Status.Security.AuthorizationExpired;
+    private static final Status statusCode = Status.Security.AuthorizationExpired;
 
     public AuthorizationExpiredException( String msg )
     {
