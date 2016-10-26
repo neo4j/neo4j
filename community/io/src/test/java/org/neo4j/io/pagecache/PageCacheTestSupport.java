@@ -106,7 +106,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
         if ( fs instanceof EphemeralFileSystemAbstraction )
         {
-            ((EphemeralFileSystemAbstraction) fs).shutdown();
+            ((EphemeralFileSystemAbstraction) fs).close();
         }
     }
 

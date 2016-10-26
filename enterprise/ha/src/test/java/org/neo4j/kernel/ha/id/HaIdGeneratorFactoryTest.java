@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.id;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -55,6 +57,23 @@ import static org.neo4j.kernel.ha.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
 public class HaIdGeneratorFactoryTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private Master master;
+    private DelegateInvocationHandler<Master> masterDelegate;
+    private EphemeralFileSystemAbstraction fs;
+    private HaIdGeneratorFactory fac;
+
+    @Before
+    public void before()
+    {
+        master = mock( Master.class );
+        masterDelegate = new DelegateInvocationHandler<>( Master.class );
+        fs = fileSystemRule.get();
+        fac  = new HaIdGeneratorFactory( masterDelegate, NullLogProvider.getInstance(),
+                mock( RequestContextFactory.class ), fs, new CommunityIdTypeConfigurationProvider()  );
+    }
+
     @Test
     public void slaveIdGeneratorShouldReturnFromAssignedRange() throws Exception
     {
@@ -237,21 +256,6 @@ public class HaIdGeneratorFactoryTest
             assertEquals( expectedId, id );
         }
         assertEquals( VALUE_REPRESENTING_NULL, iterartor.next() );
-    }
-
-    private Master master;
-    private DelegateInvocationHandler<Master> masterDelegate;
-    private EphemeralFileSystemAbstraction fs;
-    private HaIdGeneratorFactory fac;
-
-    @Before
-    public void before()
-    {
-        master = mock( Master.class );
-        masterDelegate = new DelegateInvocationHandler<>( Master.class );
-        fs = new EphemeralFileSystemAbstraction();
-        fac  = new HaIdGeneratorFactory( masterDelegate, NullLogProvider.getInstance(),
-                mock( RequestContextFactory.class ), fs, new CommunityIdTypeConfigurationProvider()  );
     }
 
     @SuppressWarnings( "unchecked" )

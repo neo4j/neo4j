@@ -46,7 +46,7 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
     @Override
     protected void after()
     {
-        fs.shutdown();
+        fs.close();
     }
 
     @Override
@@ -64,7 +64,7 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
         }
         finally
         {
-            fs.shutdown();
+            fs.close();
             fs = snapshot;
         }
         return fs;
@@ -72,7 +72,7 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
 
     public void clear()
     {
-        fs.shutdown();
+        fs.close();
         fs = new EphemeralFileSystemAbstraction();
     }
 
@@ -100,7 +100,7 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
 
     public void shutdown()
     {
-        fs.shutdown();
+        fs.close();
     }
 
     public void assertNoOpenFiles() throws Exception

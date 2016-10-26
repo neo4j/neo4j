@@ -194,7 +194,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         }
         subjects.clear();
         server.graphDatabaseService().shutdown();
-        fileSystem.shutdown();
+        fileSystem.close();
     }
 
     @Override

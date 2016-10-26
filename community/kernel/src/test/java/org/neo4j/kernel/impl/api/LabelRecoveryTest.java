@@ -34,6 +34,19 @@ import static org.neo4j.graphdb.Label.label;
 
 public class LabelRecoveryTest
 {
+    public final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private GraphDatabaseService database;
+
+    @After
+    public void tearDown()
+    {
+        if ( database != null )
+        {
+            database.shutdown();
+        }
+        fs.close();
+    }
+
     /**
      * Reading a node command might leave a node record which referred to
      * labels in one or more dynamic records as marked as heavy even if that
@@ -87,17 +100,4 @@ public class LabelRecoveryTest
             }
         }
     }
-
-    @After
-    public void tearDown()
-    {
-        if ( database != null )
-        {
-            database.shutdown();
-        }
-        fs.shutdown();
-    }
-
-    public final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-    private GraphDatabaseService database;
 }

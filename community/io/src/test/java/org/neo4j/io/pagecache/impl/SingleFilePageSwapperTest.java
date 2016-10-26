@@ -71,7 +71,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @After
     public void tearDown()
     {
-        fs.shutdown();
+        fs.close();
     }
 
     protected PageSwapperFactory swapperFactory()

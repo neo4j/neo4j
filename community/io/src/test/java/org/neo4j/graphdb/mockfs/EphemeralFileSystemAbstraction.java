@@ -76,7 +76,7 @@ import static java.lang.Math.min;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
 
-public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
+public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, AutoCloseable
 {
     private final Clock clock;
 
@@ -135,7 +135,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         files.values().forEach( EphemeralFileSystemAbstraction.EphemeralFileData::crash );
     }
 
-    public synchronized void shutdown()
+    @Override
+    public synchronized void close()
     {
         for ( EphemeralFileData file : files.values() )
         {
@@ -148,13 +149,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             thirdPartyFileSystem.close();
         }
         thirdPartyFileSystems.clear();
-    }
-
-    @Override
-    protected void finalize() throws Throwable
-    {
-        shutdown();
-        super.finalize();
     }
 
     public void assertNoOpenFiles() throws Exception

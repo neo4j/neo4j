@@ -421,7 +421,7 @@ public class RandomPageCacheTestHarness
 
             if ( this.fs instanceof EphemeralFileSystemAbstraction )
             {
-                ((EphemeralFileSystemAbstraction) this.fs).shutdown();
+                ((EphemeralFileSystemAbstraction) this.fs).close();
                 this.fs = new EphemeralFileSystemAbstraction();
             }
             else

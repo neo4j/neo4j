@@ -322,7 +322,7 @@ public class BatchingTransactionAppenderConcurrencyTest
             @Override
             public void shutdown() throws Throwable
             {
-                efs.shutdown();
+                efs.close();
             }
         };
     }

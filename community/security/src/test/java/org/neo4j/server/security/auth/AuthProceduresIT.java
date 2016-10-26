@@ -231,7 +231,7 @@ public class AuthProceduresIT
     public void cleanup() throws Exception
     {
         db.shutdown();
-        fs.shutdown();
+        fs.close();
     }
 
     private GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs ) throws IOException

@@ -261,6 +261,6 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
 
     public void shutdown()
     {
-        ephemeralFileSystem.shutdown();
+        ephemeralFileSystem.close();
     }
 }
