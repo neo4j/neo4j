@@ -24,31 +24,23 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
-import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -62,7 +54,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.neo4j.bolt.v1.runtime.integration.TransactionIT.createHttpServer;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -73,8 +64,6 @@ import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
 
 public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
 
     /*
     This surface is hidden in 3.1, to possibly be completely removed or reworked later
@@ -608,14 +597,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldTerminateLongRunningProcedureThatChecksTheGuardRegularlyIfKilled() throws Throwable
     {
-        neo
-            .getLocalGraph()
-            .getDependencyResolver()
-            .resolveDependency( Procedures.class )
-            .registerProcedure( NeverEndingProcedure.class );
-
         final DoubleLatch latch = new DoubleLatch( 2 );
-        NeverEndingProcedure.testLatch = latch;
+        ClassWithProcedures.volatileLatch = latch;
 
         String loopQuery = "CALL test.loop";
 
@@ -648,47 +631,6 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertEmpty(
                 adminSubject,
                 "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
-    }
-
-    @Test
-    public void shouldTerminateLongRunningProcedureThatChecksTheGuardRegularlyOnTimeout() throws Throwable
-    {
-
-        neo.tearDown();
-        Map<String, String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.transaction_timeout.name(), "2s" );
-        neo = setUpNeoServer( config );
-        reSetUp();
-
-        neo
-           .getLocalGraph()
-           .getDependencyResolver()
-           .resolveDependency( Procedures.class )
-           .registerProcedure( NeverEndingProcedure.class );
-
-        assertFail( adminSubject, "CALL test.loop", "Transaction guard check failed" );
-
-        Result result = neo
-            .getLocalGraph()
-            .execute( "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
-
-        assertFalse( result.hasNext() );
-        result.close();
-    }
-
-    @Test
-    public void shouldHandleWriteAfterAllowedReadProcedureWithAuthDisabled() throws Throwable
-    {
-        neo.tearDown();
-        neo = setUpNeoServer( stringMap( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
-        neo
-                .getLocalGraph()
-                .getDependencyResolver()
-                .resolveDependency( Procedures.class )
-                .registerProcedure( ClassWithProcedures.class );
-
-        S subject = neo.login( "no_auth", "" );
-        assertEmpty( subject, "CALL test.allowedReadProcedure() YIELD value CREATE (:NEWNODE {name:value})" );
     }
 
     @Test
@@ -1165,52 +1107,4 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 ) );
     }
 
-    @Override
-    protected ThreadingRule threading()
-    {
-        return threading;
-    }
-
-    @SuppressWarnings( {"WeakerAccess", "unused"} )
-    public static class NeverEndingProcedure
-    {
-        public static volatile DoubleLatch testLatch = null;
-
-        @Context
-        public TerminationGuard guard;
-
-        @Procedure(name = "test.loop")
-        public void loop()
-        {
-            DoubleLatch latch = testLatch;
-
-            if ( latch != null )
-            {
-                latch.startAndWaitForAllToStart();
-            }
-            try
-            {
-                //noinspection InfiniteLoopStatement
-                while ( true )
-                {
-                    try
-                    {
-                        Thread.sleep( 250 );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.interrupted();
-                    }
-                    guard.check();
-                }
-            }
-            finally
-            {
-                if ( latch != null )
-                {
-                    latch.finish();
-                }
-            }
-        }
-    }
 }

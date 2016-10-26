@@ -20,7 +20,6 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.commons.io.Charsets;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -34,21 +33,18 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
 public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
 
     //---------- User creation -----------
 
@@ -779,11 +775,5 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
                 r -> assertKeyIs( r, "c", "1" ) );
         assertSuccess( readSubject, "MATCH (n:MyNode) WHERE n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
                 r -> assertKeyIs( r, "c", "1" ) );
-    }
-
-    @Override
-    protected ThreadingRule threading()
-    {
-        return threading;
     }
 }

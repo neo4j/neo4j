@@ -42,6 +42,8 @@ import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES;
 
 /**
  * Settings for security module
@@ -53,8 +55,6 @@ public class SecuritySettings
     public static final String LDAP_REALM_NAME = "ldap";
     public static final String PLUGIN_REALM_NAME_PREFIX = "plugin-";
 
-    @SuppressWarnings( "unused" ) // accessed by reflection
-
     //=========================================================================
     // Realm settings
     //=========================================================================
@@ -63,13 +63,13 @@ public class SecuritySettings
                   "This can be one of the built-in `" + NATIVE_REALM_NAME + "` or `" + LDAP_REALM_NAME + "` providers, " +
                   "or it can be an externally provided plugin, with a custom name prefixed by `" +
                   PLUGIN_REALM_NAME_PREFIX + "`, i.e. `" + PLUGIN_REALM_NAME_PREFIX + "<AUTH_PROVIDER_NAME>`." )
-    public static Setting<String> auth_provider =
+    public static final Setting<String> auth_provider =
             setting( "dbms.security.auth_provider", STRING, NATIVE_REALM_NAME );
 
     @Description( "A list of security authentication and authorization providers containing the users and roles. " +
                   "They will be queried in the given order when login is attempted." )
     @Internal
-    public static Setting<List<String>> auth_providers =
+    public static final Setting<List<String>> auth_providers =
             derivedSetting( "dbms.security.auth_providers", auth_provider,
                     ( r ) -> Arrays.asList( r ), STRING_LIST );
 
@@ -211,18 +211,18 @@ public class SecuritySettings
     @Description( "The name of the base object or named context to search for user objects when " +
                   "LDAP authorization is enabled. A common case is that this matches the last part " +
                   "of `dbms.security.ldap.authentication.user_dn_template`." )
-    public static Setting<String> ldap_authorization_user_search_base =
+    public static final Setting<String> ldap_authorization_user_search_base =
             setting( "dbms.security.ldap.authorization.user_search_base", STRING, "ou=users,dc=example,dc=com" );
 
     @Description( "The LDAP search filter to search for a user principal when LDAP authorization is " +
                   "enabled. The filter should contain the placeholder token {0} which will be substituted for the " +
                   "user principal." )
-    public static Setting<String> ldap_authorization_user_search_filter =
+    public static final Setting<String> ldap_authorization_user_search_filter =
             setting( "dbms.security.ldap.authorization.user_search_filter", STRING, "(&(objectClass=*)(uid={0}))" );
 
     @Description( "A list of attribute names on a user object that contains groups to be used for mapping to roles " +
                   "when LDAP authorization is enabled." )
-    public static Setting<List<String>> ldap_authorization_group_membership_attribute_names =
+    public static final Setting<List<String>> ldap_authorization_group_membership_attribute_names =
             setting( "dbms.security.ldap.authorization.group_membership_attributes", STRING_LIST, "memberOf" );
 
     @Description( "An authorization mapping from LDAP group names to Neo4j role names. " +
@@ -235,7 +235,7 @@ public class SecuritySettings
                   "         \"cn=Neo4j Read-Write,cn=users,dc=example,dc=com\"     = publisher; \\\n" +
                   "         \"cn=Neo4j Schema Manager,cn=users,dc=example,dc=com\" = architect; \\\n" +
                   "         \"cn=Neo4j Administrator,cn=users,dc=example,dc=com\"  = admin" )
-    public static Setting<String> ldap_authorization_group_to_role_mapping =
+    public static final Setting<String> ldap_authorization_group_to_role_mapping =
             setting( "dbms.security.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
 
     //=========================================================================
@@ -244,11 +244,11 @@ public class SecuritySettings
 
     @Description( "The time to live (TTL) for cached authentication and authorization info when using " +
                   "external auth providers (LDAP or plugin). Setting the TTL to 0 will disable auth caching." )
-    public static Setting<Long> auth_cache_ttl =
+    public static final Setting<Long> auth_cache_ttl =
             setting( "dbms.security.auth_cache_ttl", DURATION, "10m" );
 
     @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
-    public static Setting<Integer> auth_cache_max_capacity =
+    public static final Setting<Integer> auth_cache_max_capacity =
             setting( "dbms.security.auth_cache_max_capacity", INTEGER, "10000" );
 
     //=========================================================================
@@ -283,4 +283,27 @@ public class SecuritySettings
     @Description( "Maximum number of history files for the security log." )
     public static final Setting<Integer> store_security_log_max_archives =
             setting( "dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
+
+    //=========================================================================
+    // Procedure security settings
+    //=========================================================================
+
+    @Description( "The default role to assign to each procedure and user-defined function with an empty `allowed` " +
+                  "annotation field. This can be used to enable fine grained permission " +
+                  "control over third-party procedures and functions for which modifying source code is not possible. " +
+                  "Procedures with non-empty `allowed` fields will be unaffected by this setting. " +
+                  "If this setting is the empty string (default), procedures will be executed according to the same " +
+                  "security rules as normal Cypher statements." )
+    public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
+
+    @Description( "The default role to assign to matching procedures with empty `allowed` annotation fields. " +
+                  "This provides a finer level of control over which roles are assigned to which procedures than the " +
+                  "`" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting. For example: `dbms.security.procedures" +
+                  ".roles=apoc.convert.*:reader,apoc.load.json:writer,apoc.trigger.add:TriggerHappy` will assign" +
+                  "the role `reader` to all procedures in the `apoc.convert` namespace, the role `writer` to " +
+                  "the `apoc.load.json` namespace and the role `TriggerHappy` to the the specific procedure " +
+                  "`apoc.trigger.add`. Procedures not matching any of these patterns will either be assigned the " +
+                  "role specified in `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` or be subject to the security " +
+                  "rules of normal Cypher statements." )
+    public static final Setting<String> procedure_roles = setting( PROC_ALLOWED_SETTING_ROLES, STRING, "" );
 }

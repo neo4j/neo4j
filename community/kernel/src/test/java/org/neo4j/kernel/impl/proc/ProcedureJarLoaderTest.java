@@ -57,7 +57,7 @@ public class ProcedureJarLoaderTest
 
     private final ProcedureJarLoader jarloader =
             new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(),
-                    NullLog.getInstance() ), NullLog.getInstance() );
+                    NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT ), NullLog.getInstance() );
 
     @Test
     public void shouldLoadProcedureFromJar() throws Throwable
