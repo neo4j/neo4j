@@ -22,6 +22,7 @@ package org.neo4j.kernel.builtinprocs;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -45,7 +46,29 @@ public class BuiltInDbmsProcedures
                 .map( ProcedureResult::new );
     }
 
-    @SuppressWarnings( "WeakerAccess" )
+    @Description( "List all user functions in the DBMS." )
+    @Procedure(name = "dbms.functions", mode = DBMS)
+    public Stream<FunctionResult> listFunctions()
+    {
+        return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
+                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .map( FunctionResult::new );
+    }
+
+    public static class FunctionResult
+    {
+        public final String name;
+        public final String signature;
+        public final String description;
+
+        private FunctionResult( UserFunctionSignature signature )
+        {
+            this.name = signature.name().toString();
+            this.signature = signature.toString();
+            this.description = signature.description().orElse( "" );
+        }
+    }
+
     public static class ProcedureResult
     {
         public final String name;
