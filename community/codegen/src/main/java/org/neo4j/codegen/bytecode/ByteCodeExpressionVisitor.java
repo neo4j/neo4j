@@ -184,7 +184,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         target.accept( this );
         methodVisitor
                 .visitFieldInsn( GETFIELD, byteCodeName( field.owner() ), field.name(), typeName( field.type() ) );
-}
+    }
 
     @Override
     public void constant( Object value )
@@ -271,7 +271,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
     {
-       ternaryExpression( IFNONNULL, test, onTrue, onFalse );
+        ternaryExpression( IFNONNULL, test, onTrue, onFalse );
     }
 
     @Override
@@ -281,9 +281,10 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void equal( Expression lhs, Expression rhs, TypeReference type )
+    public void equal( Expression lhs, Expression rhs )
     {
-        switch ( type.simpleName() )
+        assertSameType( lhs, rhs );
+        switch ( lhs.type().simpleName() )
         {
         case "int":
         case "byte":
@@ -396,20 +397,22 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs, TypeReference type )
+    public void gt( Expression lhs, Expression rhs )
     {
-        numberOperation( type,
+        assertSameType( lhs, rhs );
+        numberOperation( lhs.type(),
                 () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPLE ),
                 () -> compareLongOrFloatType( lhs, rhs, LCMP, IFLE ),
                 () -> compareLongOrFloatType( lhs, rhs, FCMPL, IFLE ),
                 () -> compareLongOrFloatType( lhs, rhs, DCMPL, IFLE )
-                );
+        );
     }
 
     @Override
-    public void gte( Expression lhs, Expression rhs, TypeReference type )
+    public void gte( Expression lhs, Expression rhs )
     {
-        numberOperation( type,
+        assertSameType( lhs, rhs );
+        numberOperation( lhs.type(),
                 () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPLT ),
                 () -> compareLongOrFloatType( lhs, rhs, LCMP, IFLT ),
                 () -> compareLongOrFloatType( lhs, rhs, FCMPL, IFLT ),
@@ -418,9 +421,10 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void lt( Expression lhs, Expression rhs, TypeReference type )
+    public void lt( Expression lhs, Expression rhs )
     {
-        numberOperation( type,
+        assertSameType( lhs, rhs );
+        numberOperation( lhs.type(),
                 () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPGE ),
                 () -> compareLongOrFloatType( lhs, rhs, LCMP, IFGE ),
                 () -> compareLongOrFloatType( lhs, rhs, FCMPG, IFGE ),
@@ -429,9 +433,10 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void lte( Expression lhs, Expression rhs, TypeReference type )
+    public void lte( Expression lhs, Expression rhs)
     {
-        numberOperation( type,
+        assertSameType( lhs, rhs );
+        numberOperation( lhs.type(),
                 () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPGT ),
                 () -> compareLongOrFloatType( lhs, rhs, LCMP, IFGT ),
                 () -> compareLongOrFloatType( lhs, rhs, FCMPG, IFGT ),
@@ -640,7 +645,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
     }
 
-    private void ternaryExpression(int op, Expression test, Expression onTrue, Expression onFalse)
+    private void ternaryExpression( int op, Expression test, Expression onTrue, Expression onFalse )
     {
         test.accept( this );
         Label l0 = new Label();
@@ -653,7 +658,8 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         methodVisitor.visitLabel( l1 );
     }
 
-    private void numberOperation( TypeReference type, Runnable onInt, Runnable onLong, Runnable onFloat, Runnable onDouble )
+    private void numberOperation( TypeReference type, Runnable onInt, Runnable onLong, Runnable onFloat,
+            Runnable onDouble )
     {
 
         switch ( type.simpleName() )
@@ -676,6 +682,14 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
             break;
         default:
             throw new IllegalStateException( "Cannot compare reference types" );
+        }
+    }
+
+    private void assertSameType( Expression lhs, Expression rhs )
+    {
+        if ( !lhs.type().equals( rhs.type() ) )
+        {
+            throw new IllegalArgumentException( "Can only compare values of the same type" );
         }
     }
 

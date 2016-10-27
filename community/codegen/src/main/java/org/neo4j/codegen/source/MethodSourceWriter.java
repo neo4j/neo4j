@@ -181,7 +181,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         Expression[] nulls = new Expression[tests.length];
         for ( int i = 0; i < tests.length; i++ )
         {
-            nulls[i] = Expression.equal(tests[i], Expression.constant( null ), TypeReference.OBJECT);
+            nulls[i] = Expression.equal(tests[i], Expression.constant( null ) );
         }
         beginIf(nulls);
     }
@@ -192,7 +192,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         Expression[] notNulls = new Expression[tests.length];
         for ( int i = 0; i < tests.length; i++ )
         {
-            notNulls[i] = Expression.not(Expression.equal(tests[i], Expression.constant( null ), TypeReference.OBJECT));
+            notNulls[i] = Expression.not(Expression.equal(tests[i], Expression.constant( null ) ));
         }
         beginIf(notNulls);
     }
@@ -356,7 +356,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
     {
-        ternary( Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT ),
+        ternary( Expression.equal( test, Expression.constant( null ) ),
                 onTrue, onFalse );
     }
 
@@ -364,12 +364,12 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
     {
         ternary( Expression.not(
-                Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT )),
+                Expression.equal( test, Expression.constant( null ) )),
                 onTrue, onFalse );
     }
 
     @Override
-    public void equal( Expression lhs, Expression rhs, TypeReference ignored )
+    public void equal( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " == " );
     }
@@ -411,25 +411,25 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs, TypeReference ignored )
+    public void gt( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " > " );
     }
 
     @Override
-    public void gte( Expression lhs, Expression rhs, TypeReference ignored )
+    public void gte( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " >= " );
     }
 
     @Override
-    public void lt( Expression lhs, Expression rhs, TypeReference ignored )
+    public void lt( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " < " );
     }
 
     @Override
-    public void lte( Expression lhs, Expression rhs, TypeReference ignored )
+    public void lte( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " <= " );
     }
