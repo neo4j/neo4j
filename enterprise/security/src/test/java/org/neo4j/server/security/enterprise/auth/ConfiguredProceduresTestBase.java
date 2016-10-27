@@ -254,15 +254,35 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 "dbms.listQueries", newSet( ADMIN ),
                 "dbms.security.createUser", newSet( ADMIN ) );
 
-        assertListProceduresHasRoles( adminSubject, expected );
-        assertListProceduresHasRoles( schemaSubject, expected );
-        assertListProceduresHasRoles( writeSubject, expected );
-        assertListProceduresHasRoles( readSubject, expected );
+        String call = "CALL dbms.procedures";
+        assertListProceduresHasRoles( adminSubject, expected, call );
+        assertListProceduresHasRoles( schemaSubject, expected, call );
+        assertListProceduresHasRoles( writeSubject, expected, call );
+        assertListProceduresHasRoles( readSubject, expected, call );
     }
 
-    private void assertListProceduresHasRoles( S subject, Map<String,Set<String>> expected )
+    @Test
+    public void shouldShowAllowedRolesWhenListingFunctions() throws Throwable
     {
-        assertSuccess( subject, "CALL dbms.procedures", itr ->
+        configuredSetup( stringMap(
+                SecuritySettings.procedure_roles.name(), "test.allowedFunc:counter,user",
+                SecuritySettings.default_allowed.name(), "default" ) );
+
+        Map<String,Set<String>> expected = genericMap(
+                "test.annotatedFunction", newSet( "annotated", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.allowedFunc", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.nonAllowedFunc", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ) );
+
+        String call = "CALL dbms.functions";
+        assertListProceduresHasRoles( adminSubject, expected, call );
+        assertListProceduresHasRoles( schemaSubject, expected, call );
+        assertListProceduresHasRoles( writeSubject, expected, call );
+        assertListProceduresHasRoles( readSubject, expected, call );
+    }
+
+    private void assertListProceduresHasRoles( S subject, Map<String,Set<String>> expected, String call )
+    {
+        assertSuccess( subject, call, itr ->
         {
             List<String> failures = itr.stream().filter( record ->
             {

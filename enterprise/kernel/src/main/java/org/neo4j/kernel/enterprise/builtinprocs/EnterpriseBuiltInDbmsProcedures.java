@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.enterprise.api.security.CouldBeAdmin;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -64,6 +65,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.function.ThrowingFunction.catchThrown;
 import static org.neo4j.function.ThrowingFunction.throwIfPresent;
@@ -167,13 +169,39 @@ public class EnterpriseBuiltInDbmsProcedures
     ==================================================================================
      */
 
+    @Description( "List all user functions in the DBMS." )
+    @Procedure(name = "dbms.functions", mode = DBMS)
+    public Stream<FunctionResult> listFunctions()
+    {
+        return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
+                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .map( FunctionResult::new );
+    }
+
+    public static class FunctionResult
+    {
+        public final String name;
+        public final String signature;
+        public final String description;
+        public final List<String> roles;
+
+        private FunctionResult( UserFunctionSignature signature )
+        {
+            this.name = signature.name().toString();
+            this.signature = signature.toString();
+            this.description = signature.description().orElse( "" );
+            roles = Stream.of( "admin", "reader", "publisher", "architect" ).collect( toList() );
+            roles.addAll( Arrays.asList( signature.allowed() ) );
+        }
+    }
+
     @Description( "List all procedures in the DBMS." )
     @Procedure( name = "dbms.procedures", mode = DBMS )
     public Stream<ProcedureResult> listProcedures()
     {
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
                 .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
-                .map( sig -> new ProcedureResult( sig ) );
+                .map( ProcedureResult::new );
     }
 
     @SuppressWarnings( "WeakerAccess" )
