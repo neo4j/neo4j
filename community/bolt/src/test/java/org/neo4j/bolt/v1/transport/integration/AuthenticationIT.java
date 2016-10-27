@@ -19,7 +19,10 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,8 +36,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
@@ -51,6 +56,9 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
@@ -241,6 +249,36 @@ public class AuthenticationIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication scheme 'unknown'." ) ) );
+    }
+
+    @Test
+    public void shouldFailDifferentlyIfTooManyFailedAuthAttempts() throws Exception
+    {
+        // Given
+        final long timeout = System.currentTimeMillis() + 30_000;
+        final FailureMsgMatcher failureMatcher = new FailureMsgMatcher();
+
+        // When
+        while ( System.currentTimeMillis() < timeout && !failureMatcher.gotSpecialMessage() )
+        {
+            // Done in a loop because we're racing with the clock to get enough failed requests in 5 seconds
+            client.connect( address )
+                    .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                    .send( TransportTestUtil.chunk(
+                            InitMessage.init( "TestClient/1.1",
+                                    map( "principal", "neo4j", "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN",
+                                            "scheme", "basic" ) ) ) );
+
+            assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+            assertThat( client, eventuallyReceives( failureMatcher ) );
+
+            reconnect();
+        }
+
+        // Then
+        assertThat( failureMatcher.specialMessage.status(), equalTo( Status.Security.AuthenticationRateLimit ) );
+        assertThat( failureMatcher.specialMessage.message(),
+                containsString( "The client has provided incorrect authentication details too many times in a row." ) );
     }
 
     @Test
@@ -471,5 +509,34 @@ public class AuthenticationIT
             client.disconnect();
         }
         this.client = cf.newInstance();
+    }
+
+    class FailureMsgMatcher extends TypeSafeMatcher<ResponseMessage>
+    {
+        FailureMessage specialMessage = null;
+
+        @Override
+        public void describeTo( Description description )
+        {
+            description.appendText( "FAILURE" );
+        }
+
+        @Override
+        protected boolean matchesSafely( ResponseMessage t )
+        {
+            Assert.assertThat( t, instanceOf( FailureMessage.class ) );
+            FailureMessage msg = (FailureMessage) t;
+            if ( !msg.status().equals( Status.Security.Unauthorized  ) ||
+                 !msg.message().contains( "The client is unauthorized due to authentication failure." ) )
+            {
+                specialMessage = msg;
+            }
+            return true;
+        }
+
+        public boolean gotSpecialMessage()
+        {
+            return specialMessage != null;
+        }
     }
 }
