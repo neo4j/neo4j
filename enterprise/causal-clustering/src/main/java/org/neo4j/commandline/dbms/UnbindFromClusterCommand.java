@@ -58,7 +58,7 @@ public class UnbindFromClusterCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "[--database=<name>] " );
+            return Optional.of( "--database=<name> " );
         }
 
         @Override
