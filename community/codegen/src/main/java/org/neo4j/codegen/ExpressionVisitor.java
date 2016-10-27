@@ -25,7 +25,7 @@ public interface ExpressionVisitor
 
     void invoke( MethodReference method, Expression[] arguments );
 
-    void load( LocalVariable variable);
+    void load( LocalVariable variable );
 
     void getField( Expression target, FieldReference field );
 
@@ -45,7 +45,7 @@ public interface ExpressionVisitor
 
     void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse );
 
-    void equal( Expression lhs, Expression rhs, TypeReference type );
+    void equal( Expression lhs, Expression rhs);
 
     void or( Expression lhs, Expression rhs );
 
@@ -57,13 +57,13 @@ public interface ExpressionVisitor
 
     void addDoubles( Expression lhs, Expression rhs );
 
-    void gt( Expression lhs, Expression rhs, TypeReference type );
+    void gt( Expression lhs, Expression rhs );
 
-    void gte( Expression lhs, Expression rhs, TypeReference type );
+    void gte( Expression lhs, Expression rhs );
 
-    void lt( Expression lhs, Expression rhs, TypeReference type );
+    void lt( Expression lhs, Expression rhs );
 
-    void lte( Expression lhs, Expression rhs, TypeReference type );
+    void lte( Expression lhs, Expression rhs );
 
     void subtractInts( Expression lhs, Expression rhs );
 

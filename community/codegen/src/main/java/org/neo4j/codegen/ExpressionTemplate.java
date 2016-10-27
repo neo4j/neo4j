@@ -241,4 +241,9 @@ public abstract class ExpressionTemplate
             }
         };
     }
+
+    public TypeReference type()
+    {
+        return type;
+    }
 }

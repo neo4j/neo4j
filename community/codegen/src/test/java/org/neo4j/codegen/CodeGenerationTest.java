@@ -1193,144 +1193,144 @@ public class CodeGenerationTest
     {
         // boolean
         assertTrue( compareForType( boolean.class, true, true,
-                ( a, b ) -> Expression.equal( a, b, typeReference( boolean.class ) ) ) );
+                Expression::equal ) );
         assertTrue( compareForType( boolean.class, false, false,
-                ( a, b ) -> Expression.equal( a, b, typeReference( boolean.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( boolean.class, true, false,
-                ( a, b ) -> Expression.equal( a, b, typeReference( boolean.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( boolean.class, false, true,
-                ( a, b ) -> Expression.equal( a, b, typeReference( boolean.class ) ) ) );
+                Expression::equal ) );
 
         // byte
         assertTrue( compareForType( byte.class, (byte) 42, (byte) 42,
-                ( a, b ) -> Expression.equal( a, b, typeReference( byte.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( byte.class, (byte) 43, (byte) 42,
-                ( a, b ) -> Expression.equal( a, b, typeReference( byte.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( byte.class, (byte) 42, (byte) 43,
-                ( a, b ) -> Expression.equal( a, b, typeReference( byte.class ) ) ) );
+                Expression::equal ) );
 
         // short
         assertTrue( compareForType( short.class, (short) 42, (short) 42,
-                ( a, b ) -> Expression.equal( a, b, typeReference( short.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( short.class, (short) 43, (short) 42,
-                ( a, b ) -> Expression.equal( a, b, typeReference( short.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( short.class, (short) 42, (short) 43,
-                ( a, b ) -> Expression.equal( a, b, typeReference( short.class ) ) ) );
+                Expression::equal ) );
 
         // char
         assertTrue( compareForType( char.class, (char) 42, (char) 42,
-                ( a, b ) -> Expression.equal( a, b, typeReference( char.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( char.class, (char) 43, (char) 42,
-                ( a, b ) -> Expression.equal( a, b, typeReference( char.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( char.class, (char) 42, (char) 43,
-                ( a, b ) -> Expression.equal( a, b, typeReference( char.class ) ) ) );
+                Expression::equal ) );
 
         //int
         assertTrue( compareForType( int.class, 42, 42,
-                ( a, b ) -> Expression.equal( a, b, typeReference( int.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( int.class, 43, 42,
-                ( a, b ) -> Expression.equal( a, b, typeReference( int.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( int.class, 42, 43,
-                ( a, b ) -> Expression.equal( a, b, typeReference( int.class ) ) ) );
+                Expression::equal ) );
 
         //long
         assertTrue( compareForType( long.class, 42L, 42L,
-                ( a, b ) -> Expression.equal( a, b, typeReference( long.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( long.class, 43L, 42L,
-                ( a, b ) -> Expression.equal( a, b, typeReference( long.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( long.class, 42L, 43L,
-                ( a, b ) -> Expression.equal( a, b, typeReference( long.class ) ) ) );
+                Expression::equal ) );
 
         //float
         assertTrue( compareForType( float.class, 42F, 42F,
-                ( a, b ) -> Expression.equal( a, b, typeReference( float.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( float.class, 43F, 42F,
-                ( a, b ) -> Expression.equal( a, b, typeReference( float.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( float.class, 42F, 43F,
-                ( a, b ) -> Expression.equal( a, b, typeReference( float.class ) ) ) );
+                Expression::equal ) );
 
         //double
         assertTrue( compareForType( double.class, 42D, 42D,
-                ( a, b ) -> Expression.equal( a, b, typeReference( double.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( double.class, 43D, 42D,
-                ( a, b ) -> Expression.equal( a, b, typeReference( double.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( double.class, 42D, 43D,
-                ( a, b ) -> Expression.equal( a, b, typeReference( double.class ) ) ) );
+                Expression::equal ) );
 
         //reference
         Object obj1 = new Object();
         Object obj2 = new Object();
         assertTrue( compareForType( Object.class, obj1, obj1,
-                ( a, b ) -> Expression.equal( a, b, typeReference( Object.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( Object.class, obj1, obj2,
-                ( a, b ) -> Expression.equal( a, b, typeReference( Object.class ) ) ) );
+                Expression::equal ) );
         assertFalse( compareForType( Object.class, obj2, obj1,
-                ( a, b ) -> Expression.equal( a, b, typeReference( Object.class ) ) ) );
+                Expression::equal ) );
     }
 
     @Test
     public void shouldHandleGreaterThan() throws Throwable
     {
         assertTrue( compareForType( float.class, 43F, 42F,
-                ( a, b ) -> Expression.gt( a, b, typeReference( float.class ) ) ) );
+                Expression::gt ) );
         assertTrue( compareForType( long.class, 43L, 42L,
-                ( a, b ) -> Expression.gt( a, b, typeReference( long.class ) ) ) );
+                Expression::gt ) );
 
         // byte
         assertTrue( compareForType( byte.class, (byte) 43, (byte) 42,
-                ( a, b ) -> Expression.gt( a, b, typeReference( byte.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( byte.class, (byte) 42, (byte) 42,
-                ( a, b ) -> Expression.gt( a, b, typeReference( byte.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( byte.class, (byte) 42, (byte) 43,
-                ( a, b ) -> Expression.gt( a, b, typeReference( byte.class ) ) ) );
+                Expression::gt ) );
 
         // short
         assertTrue( compareForType( short.class, (short) 43, (short) 42,
-                ( a, b ) -> Expression.gt( a, b, typeReference( short.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( short.class, (short) 42, (short) 42,
-                ( a, b ) -> Expression.gt( a, b, typeReference( short.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( short.class, (short) 42, (short) 43,
-                ( a, b ) -> Expression.gt( a, b, typeReference( short.class ) ) ) );
+                Expression::gt ) );
 
         // char
         assertTrue( compareForType( char.class, (char) 43, (char) 42,
-                ( a, b ) -> Expression.gt( a, b, typeReference( char.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( char.class, (char) 42, (char) 42,
-                ( a, b ) -> Expression.gt( a, b, typeReference( char.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( char.class, (char) 42, (char) 43,
-                ( a, b ) -> Expression.gt( a, b, typeReference( char.class ) ) ) );
+                Expression::gt ) );
 
         //int
         assertTrue(
-                compareForType( int.class, 43, 42, ( a, b ) -> Expression.gt( a, b, typeReference( int.class ) ) ) );
+                compareForType( int.class, 43, 42, Expression::gt ) );
         assertFalse(
-                compareForType( int.class, 42, 42, ( a, b ) -> Expression.gt( a, b, typeReference( int.class ) ) ) );
+                compareForType( int.class, 42, 42, Expression::gt ) );
         assertFalse(
-                compareForType( int.class, 42, 43, ( a, b ) -> Expression.gt( a, b, typeReference( int.class ) ) ) );
+                compareForType( int.class, 42, 43, Expression::gt ) );
 
         //long
         assertTrue( compareForType( long.class, 43L, 42L,
-                ( a, b ) -> Expression.gt( a, b, typeReference( long.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( long.class, 42L, 42L,
-                ( a, b ) -> Expression.gt( a, b, typeReference( long.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( long.class, 42L, 43L,
-                ( a, b ) -> Expression.gt( a, b, typeReference( long.class ) ) ) );
+                Expression::gt ) );
 
         //float
         assertTrue( compareForType( float.class, 43F, 42F,
-                ( a, b ) -> Expression.gt( a, b, typeReference( float.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( float.class, 42F, 42F,
-                ( a, b ) -> Expression.gt( a, b, typeReference( float.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( float.class, 42F, 43F,
-                ( a, b ) -> Expression.gt( a, b, typeReference( float.class ) ) ) );
+                Expression::gt ) );
 
         //double
         assertTrue( compareForType( double.class, 43D, 42D,
-                ( a, b ) -> Expression.gt( a, b, typeReference( double.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( double.class, 42D, 42D,
-                ( a, b ) -> Expression.gt( a, b, typeReference( double.class ) ) ) );
+                Expression::gt ) );
         assertFalse( compareForType( double.class, 42D, 43D,
-                ( a, b ) -> Expression.gt( a, b, typeReference( double.class ) ) ) );
+                Expression::gt ) );
     }
 
     @Test

@@ -46,50 +46,50 @@ public abstract class Expression extends ExpressionTemplate
         }
     };
 
-    public static Expression gt( final Expression lhs, final Expression rhs, TypeReference argType )
+    public static Expression gt( final Expression lhs, final Expression rhs )
     {
         return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.gt( lhs, rhs, argType );
+                visitor.gt( lhs, rhs );
             }
         };
     }
 
-    public static Expression gte( final Expression lhs, final Expression rhs, TypeReference argType )
+    public static Expression gte( final Expression lhs, final Expression rhs )
     {
         return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.gte( lhs, rhs, argType );
+                visitor.gte( lhs, rhs );
             }
         };
     }
 
-    public static Expression lt( final Expression lhs, final Expression rhs, TypeReference argType )
+    public static Expression lt( final Expression lhs, final Expression rhs)
     {
         return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.lt( lhs, rhs, argType );
+                visitor.lt( lhs, rhs);
             }
         };
     }
 
-    public static Expression lte( final Expression lhs, final Expression rhs, TypeReference argType )
+    public static Expression lte( final Expression lhs, final Expression rhs )
     {
         return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.lte( lhs, rhs, argType );
+                visitor.lte( lhs, rhs );
             }
         };
     }
@@ -118,14 +118,14 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression equal( final Expression lhs, final Expression rhs, TypeReference argType )
+    public static Expression equal( final Expression lhs, final Expression rhs )
     {
         return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.equal( lhs, rhs, argType );
+                visitor.equal( lhs, rhs );
             }
         };
     }

@@ -63,7 +63,7 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void load(  LocalVariable variable)
+    public void load( LocalVariable variable )
     {
         result.append( "load{type=" );
         if ( variable.type() == null )
@@ -125,9 +125,9 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "ternary{test=" );
         test.accept( this );
-        result.append(", onTrue=");
+        result.append( ", onTrue=" );
         onTrue.accept( this );
-        result.append(", onFalse=");
+        result.append( ", onFalse=" );
         onFalse.accept( this );
         result.append( "}" );
     }
@@ -135,7 +135,7 @@ class ExpressionToString implements ExpressionVisitor
     @Override
     public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
     {
-        ternary( Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT ),
+        ternary( Expression.equal( test, Expression.constant( null ) ),
                 onTrue, onFalse );
     }
 
@@ -143,12 +143,12 @@ class ExpressionToString implements ExpressionVisitor
     public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
     {
         ternary( Expression.not(
-                Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT )),
+                Expression.equal( test, Expression.constant( null ) ) ),
                 onTrue, onFalse );
     }
 
     @Override
-    public void equal( Expression lhs, Expression rhs, TypeReference ignored )
+    public void equal( Expression lhs, Expression rhs )
     {
         result.append( "equal(" );
         lhs.accept( this );
@@ -180,19 +180,19 @@ class ExpressionToString implements ExpressionVisitor
     @Override
     public void addInts( Expression lhs, Expression rhs )
     {
-        add(lhs, rhs);
+        add( lhs, rhs );
     }
 
     @Override
     public void addLongs( Expression lhs, Expression rhs )
     {
-        add(lhs, rhs);
+        add( lhs, rhs );
     }
 
     @Override
     public void addDoubles( Expression lhs, Expression rhs )
     {
-        add(lhs, rhs);
+        add( lhs, rhs );
     }
 
     private void add( Expression lhs, Expression rhs )
@@ -205,7 +205,7 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs, TypeReference ignored )
+    public void gt( Expression lhs, Expression rhs )
     {
         result.append( "gt(" );
         lhs.accept( this );
@@ -215,7 +215,7 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void gte( Expression lhs, Expression rhs, TypeReference ignored )
+    public void gte( Expression lhs, Expression rhs )
     {
         result.append( "gt(" );
         lhs.accept( this );
@@ -225,7 +225,7 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void lt( Expression lhs, Expression rhs, TypeReference ignored )
+    public void lt( Expression lhs, Expression rhs )
     {
         result.append( "lt(" );
         lhs.accept( this );
@@ -235,7 +235,7 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void lte( Expression lhs, Expression rhs, TypeReference ignored )
+    public void lte( Expression lhs, Expression rhs )
     {
         result.append( "gt(" );
         lhs.accept( this );
@@ -247,19 +247,19 @@ class ExpressionToString implements ExpressionVisitor
     @Override
     public void subtractInts( Expression lhs, Expression rhs )
     {
-        sub( lhs, rhs);
+        sub( lhs, rhs );
     }
 
     @Override
     public void subtractLongs( Expression lhs, Expression rhs )
     {
-        sub( lhs, rhs);
+        sub( lhs, rhs );
     }
 
     @Override
     public void subtractDoubles( Expression lhs, Expression rhs )
     {
-        sub( lhs, rhs);
+        sub( lhs, rhs );
     }
 
     private void sub( Expression lhs, Expression rhs )
@@ -274,13 +274,13 @@ class ExpressionToString implements ExpressionVisitor
     @Override
     public void multiplyLongs( Expression lhs, Expression rhs )
     {
-        mul( lhs, rhs);
+        mul( lhs, rhs );
     }
 
     @Override
     public void multiplyDoubles( Expression lhs, Expression rhs )
     {
-        mul( lhs, rhs);
+        mul( lhs, rhs );
     }
 
     private void mul( Expression lhs, Expression rhs )
