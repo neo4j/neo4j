@@ -32,10 +32,15 @@ package org.neo4j.server.security.enterprise.auth.plugin.api;
  *
  * @see org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin
  */
-public class AuthorizationExpired extends RuntimeException
+public class AuthorizationExpiredException extends RuntimeException
 {
-    public AuthorizationExpired( String message )
+    public AuthorizationExpiredException( String message )
     {
         super( message );
+    }
+
+    public AuthorizationExpiredException( String message, Throwable cause )
+    {
+        super( message, cause );
     }
 }

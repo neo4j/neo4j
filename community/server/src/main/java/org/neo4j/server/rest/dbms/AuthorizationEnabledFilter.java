@@ -34,10 +34,11 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.security.AuthProviderFailedException;
+import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.logging.Log;
@@ -138,6 +139,14 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         {
             requestAuthentication( request, invalidAuthToken( e.getMessage() ) ).accept( response );
         }
+        catch ( AuthProviderTimeoutException e )
+        {
+            authProviderTimeout.accept( response );
+        }
+        catch ( AuthProviderFailedException e )
+        {
+            authProviderFailed.accept( response );
+        }
     }
 
     private SecurityContext authenticate( String username, String password ) throws InvalidAuthTokenException
@@ -170,6 +179,18 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
                     map( "errors", singletonList( map(
                             "code", Status.Security.AuthenticationRateLimit.code().serialize(),
                             "message", "Too many failed authentication requests. Please wait 5 seconds and try again." ) ) ) );
+
+    private static final ThrowingConsumer<HttpServletResponse, IOException> authProviderFailed =
+            error(  502,
+                    map( "errors", singletonList( map(
+                            "code", Status.Security.AuthProviderFailed.code().serialize(),
+                            "message", "An auth provider request failed." ) ) ) );
+
+    private static final ThrowingConsumer<HttpServletResponse, IOException> authProviderTimeout =
+            error(  504,
+                    map( "errors", singletonList( map(
+                            "code", Status.Security.AuthProviderTimeout.code().serialize(),
+                            "message", "An auth provider request timed out." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> invalidAuthToken( final String message )
     {

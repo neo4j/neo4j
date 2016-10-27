@@ -35,6 +35,7 @@ import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.util.CollectionUtils;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,7 +59,9 @@ import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.StartTlsRequest;
 import javax.naming.ldap.StartTlsResponse;
 
-import org.neo4j.graphdb.security.AuthExpirationException;
+import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.graphdb.security.AuthProviderFailedException;
+import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -77,6 +80,15 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     private static final String KEY_VALUE_DELIMITER = "=";
     private static final String ROLE_DELIMITER = ",";
     public static final String LDAP_REALM = "ldap";
+
+    private static final String JNDI_LDAP_CONNECT_TIMEOUT = "com.sun.jndi.ldap.connect.timeout";
+    private static final String JNDI_LDAP_READ_TIMEOUT = "com.sun.jndi.ldap.read.timeout";
+    private static final String JNDI_LDAP_CONNECTION_TIMEOUT_MESSAGE_PART = "timed out"; // "connect timed out"
+    private static final String JNDI_LDAP_READ_TIMEOUT_MESSAGE_PART = "timed out"; // "LDAP response read timed out"
+
+    public static final String LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE = "LDAP connection timed out.";
+    public static final String LDAP_READ_TIMEOUT_CLIENT_MESSAGE = "LDAP response timed out.";
+    public static final String LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE = "LDAP authorization request failed.";
 
     private Boolean authenticationEnabled;
     private Boolean authorizationEnabled;
@@ -144,6 +156,18 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
             {
                 securityLog.error( withRealm( "Failed to authenticate user '%s' against %s: %s",
                         token.getPrincipal(), serverString, e.getMessage() ) );
+
+                if ( isExceptionAnLdapConnectionTimeout( e ) )
+                {
+                    securityLog.error( withRealm( "LDAP connection to %s timed out.", serverString ) );
+                    throw new AuthProviderTimeoutException( LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE, e );
+                }
+                else if ( isExceptionAnLdapReadTimeout( e ) )
+                {
+                    securityLog.error( withRealm( "LDAP response from %s timed out.", serverString ) );
+                    throw new AuthProviderTimeoutException( LDAP_READ_TIMEOUT_CLIENT_MESSAGE, e );
+                }
+                // This exception will be caught and rethrown by Shiro, and then by us, so we do not need to wrap it here
                 throw e;
             }
         }
@@ -255,7 +279,7 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
                         // Since we do not have the subject's credentials we cannot perform a new LDAP search
                         // for authorization info. Instead we need to fail with a special status,
                         // so that the client can react by re-authenticating.
-                        throw new AuthExpirationException( "LDAP authorization info expired." );
+                        throw new AuthorizationExpiredException( "LDAP authorization info expired." );
                     }
                     return authorizationInfo;
                 }
@@ -336,8 +360,35 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
         {
             securityLog.error( withRealm( "Failed to get authorization info: '%s' caused by '%s'",
                     e.getMessage(), e.getCause().getMessage() ) );
-            throw e;
+            if ( isAuthorizationExceptionAnLdapReadTimeout( e ) )
+            {
+                throw new AuthProviderTimeoutException( LDAP_READ_TIMEOUT_CLIENT_MESSAGE, e );
+            }
+            throw new AuthProviderFailedException( LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE, e );
         }
+    }
+
+    // Unfortunately we need to identify timeouts by looking at the exception messages, which is not very robust.
+    // To make it slightly more robust we look for a key part of the actual message
+    private boolean isExceptionAnLdapReadTimeout( Exception e )
+    {
+        return e instanceof NamingException &&
+               e.getMessage().contains( JNDI_LDAP_READ_TIMEOUT_MESSAGE_PART );
+    }
+
+    private boolean isExceptionAnLdapConnectionTimeout( Exception e )
+    {
+        return e instanceof CommunicationException &&
+               (((CommunicationException) e).getRootCause() instanceof SocketTimeoutException ||
+                ((CommunicationException) e).getRootCause().getMessage().contains(
+                        JNDI_LDAP_CONNECTION_TIMEOUT_MESSAGE_PART ) );
+    }
+
+    private boolean isAuthorizationExceptionAnLdapReadTimeout( AuthorizationException e )
+    {
+        // Shiro's doGetAuthorizationInfo() wraps a NamingException in an AuthorizationException
+        return e.getCause() != null && e.getCause() instanceof NamingException &&
+               e.getCause().getMessage().contains( JNDI_LDAP_READ_TIMEOUT_MESSAGE_PART );
     }
 
     private void cacheAuthorizationInfo( String username, Set<String> roleNames )
@@ -350,11 +401,18 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     private void configureRealm( Config config )
     {
         JndiLdapContextFactory contextFactory = new JndiLdapContextFactory();
+        Map<String,Object> environment = contextFactory.getEnvironment();
+        Long connectionTimeoutMillis = config.get( SecuritySettings.ldap_connection_timeout );
+        Long readTimeoutMillis = config.get( SecuritySettings.ldap_read_timeout );
+        environment.put( JNDI_LDAP_CONNECT_TIMEOUT, connectionTimeoutMillis.toString() );
+        environment.put( JNDI_LDAP_READ_TIMEOUT, readTimeoutMillis.toString() );
+        contextFactory.setEnvironment( environment );
         contextFactory.setUrl( parseLdapServerUrl( config.get( SecuritySettings.ldap_server ) ) );
         contextFactory.setAuthenticationMechanism( config.get( SecuritySettings.ldap_authentication_mechanism ) );
         contextFactory.setReferral( config.get( SecuritySettings.ldap_referral ) );
         contextFactory.setSystemUsername( config.get( SecuritySettings.ldap_authorization_system_username ) );
         contextFactory.setSystemPassword( config.get( SecuritySettings.ldap_authorization_system_password ) );
+        contextFactory.setPoolingEnabled( config.get( SecuritySettings.ldap_authorization_connection_pooling ) );
 
         setContextFactory( contextFactory );
 

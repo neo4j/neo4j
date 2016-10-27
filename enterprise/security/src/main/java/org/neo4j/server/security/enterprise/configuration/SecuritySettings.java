@@ -139,6 +139,17 @@ public class SecuritySettings
     public static final Setting<String> ldap_referral =
             setting( "dbms.security.ldap.referral", STRING, "follow" );
 
+    @Description( "The timeout for establishing an LDAP connection. If a connection with the LDAP server cannot be " +
+                  "established within the given time the attempt is aborted. " +
+                  "A value of 0 means to use the network protocol's (i.e., TCP's) timeout value." )
+    public static Setting<Long> ldap_connection_timeout =
+            setting( "dbms.security.ldap.connection_timeout", DURATION, "30s" );
+
+    @Description( "The timeout for an LDAP read request (i.e. search). If the LDAP server does not respond within " +
+                  "the given time the request will be aborted. A value of 0 means wait for a response indefinitely." )
+    public static Setting<Long> ldap_read_timeout =
+            setting( "dbms.security.ldap.read_timeout", DURATION, "30s" );
+
     //-----------------------------------------------------
     // LDAP authentication settings
     //-----------------------------------------------------
@@ -306,4 +317,13 @@ public class SecuritySettings
                   "role specified in `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` or be subject to the security " +
                   "rules of normal Cypher statements." )
     public static final Setting<String> procedure_roles = setting( PROC_ALLOWED_SETTING_ROLES, STRING, "" );
+
+    //=========================================================================
+    // Misc settings
+    //=========================================================================
+
+    @Description( "Set to true if connection pooling should be used for authorization searches using the " +
+                  "system account." )
+    public static final Setting<Boolean> ldap_authorization_connection_pooling =
+            setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" );
 }

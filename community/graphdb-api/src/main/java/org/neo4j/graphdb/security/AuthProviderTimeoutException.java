@@ -22,15 +22,20 @@ package org.neo4j.graphdb.security;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
- * Thrown when needed authorization or authentication info has expired in the neo4j auth cache
+ * Thrown when a request for authentication or authorization against an external server timed out.
  */
-public class AuthExpirationException extends RuntimeException implements Status.HasStatus
+public class AuthProviderTimeoutException extends RuntimeException implements Status.HasStatus
 {
-    private Status statusCode = Status.Security.AuthorizationExpired;
+    private static final Status statusCode = Status.Security.AuthProviderTimeout;
 
-    public AuthExpirationException( String msg )
+    public AuthProviderTimeoutException( String msg )
     {
         super( msg );
+    }
+
+    public AuthProviderTimeoutException( String msg, Throwable cause )
+    {
+        super( msg, cause );
     }
 
     /** The Neo4j status code associated with this exception type. */

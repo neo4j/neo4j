@@ -28,7 +28,7 @@ import java.util.Collections;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.security.AuthExpirationException;
+import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Collections.emptyMap;
@@ -425,7 +425,7 @@ public class BoltStateMachineTest
     {
         // Given
         TransactionStateMachine.SPI transactionSPI = mock( TransactionStateMachine.SPI.class );
-        doThrow( new AuthExpirationException( "Auth expired!" ) ).when( transactionSPI ).beginTransaction( any() );
+        doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( transactionSPI ).beginTransaction( any() );
 
         BoltStateMachine machine = newMachineWithTransactionSPI( transactionSPI );
         machine.state = READY;
@@ -441,7 +441,7 @@ public class BoltStateMachineTest
     {
         // Given
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-        doThrow( new AuthExpirationException( "Auth expired!" ) ).when( responseHandler )
+        doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( responseHandler )
                 .onRecords( any(), anyBoolean() );
         BoltStateMachine machine = newMachine( STREAMING );
         // We assume the only implementation of statement processor is TransactionStateMachine
