@@ -190,7 +190,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def decrementCounter(name: String) = {
     val local = locals(name)
-    generator.assign(local, subtractExpression(local, constant(1)))
+    generator.assign(local, subtract(local, constant(1)))
   }
 
   override def checkCounter(name: String, comparator: Comparator, value: Int): Expression = {

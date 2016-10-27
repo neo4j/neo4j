@@ -63,9 +63,7 @@ public interface ExpressionVisitor
 
     void subtract( Expression lhs, Expression rhs );
 
-    void multiplyLongs( Expression lhs, Expression rhs );
-
-    void multiplyDoubles( Expression lhs, Expression rhs );
+    void multiply( Expression lhs, Expression rhs );
 
     void cast( TypeReference type, Expression expression );
 
