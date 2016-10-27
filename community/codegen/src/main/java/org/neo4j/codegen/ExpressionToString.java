@@ -238,18 +238,7 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void multiplyLongs( Expression lhs, Expression rhs )
-    {
-        mul( lhs, rhs );
-    }
-
-    @Override
-    public void multiplyDoubles( Expression lhs, Expression rhs )
-    {
-        mul( lhs, rhs );
-    }
-
-    private void mul( Expression lhs, Expression rhs )
+    public void multiply( Expression lhs, Expression rhs )
     {
         result.append( "mul(" );
         lhs.accept( this );

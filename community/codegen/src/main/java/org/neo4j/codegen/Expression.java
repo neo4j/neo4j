@@ -36,7 +36,6 @@ public abstract class Expression extends ExpressionTemplate
 
     public abstract void accept( ExpressionVisitor visitor );
 
-
     static final Expression SUPER = new Expression( OBJECT )
     {
         @Override
@@ -147,7 +146,7 @@ public abstract class Expression extends ExpressionTemplate
         if ( !lhs.type.equals( rhs.type ) )
         {
             throw new IllegalArgumentException(
-                    String.format( "Cannot add variable with different types. LHS %s, RHS %s", lhs.type.simpleName(),
+                    String.format( "Cannot add variables with different types. LHS %s, RHS %s", lhs.type.simpleName(),
                             rhs.type.simpleName() ));
         }
 
@@ -166,7 +165,7 @@ public abstract class Expression extends ExpressionTemplate
         if ( !lhs.type.equals( rhs.type ) )
         {
             throw new IllegalArgumentException(
-                    String.format( "Cannot subtract variable with different types. LHS %s, RHS %s", lhs.type.simpleName(),
+                    String.format( "Cannot subtract variables with different types. LHS %s, RHS %s", lhs.type.simpleName(),
                             rhs.type.simpleName() ));
         }
         return new Expression( lhs.type )
@@ -179,26 +178,20 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression multiplyLongs( final Expression lhs, final Expression rhs )
+    public static Expression multiply( final Expression lhs, final Expression rhs )
     {
-        return new Expression( LONG )
+        if ( !lhs.type.equals( rhs.type ) )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Cannot multiply variables with different types. LHS %s, RHS %s", lhs.type.simpleName(),
+                            rhs.type.simpleName() ));
+        }
+        return new Expression( lhs.type )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.multiplyLongs( lhs, rhs );
-            }
-        };
-    }
-
-    public static Expression multiplyDoubles( final Expression lhs, final Expression rhs )
-    {
-        return new Expression( DOUBLE )
-        {
-            @Override
-            public void accept( ExpressionVisitor visitor )
-            {
-                visitor.multiplyDoubles( lhs, rhs );
+                visitor.multiply( lhs, rhs );
             }
         };
     }

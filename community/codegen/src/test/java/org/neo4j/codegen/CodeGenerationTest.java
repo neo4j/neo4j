@@ -60,6 +60,7 @@ import static org.neo4j.codegen.Expression.add;
 import static org.neo4j.codegen.Expression.and;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.invoke;
+import static org.neo4j.codegen.Expression.multiply;
 import static org.neo4j.codegen.Expression.newArray;
 import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.not;
@@ -1346,8 +1347,17 @@ public class CodeGenerationTest
     @Test
     public void shouldHandleSubtraction() throws Throwable
     {
+        assertThat( subtractForType( int.class, 19, 18 ), equalTo( 1 ) );
         assertThat( subtractForType( long.class, 19L, 18L ), equalTo( 1L ) );
         assertThat( subtractForType( double.class, 19D, 18D ), equalTo( 1D ) );
+    }
+
+    @Test
+    public void shouldHandleMultiplication() throws Throwable
+    {
+        assertThat( multiplyForType( int.class, 17, 18 ), equalTo( 306 ) );
+        assertThat( multiplyForType( long.class, 17L, 18L ), equalTo( 306L ) );
+        assertThat( multiplyForType( double.class, 17D, 18D ), equalTo( 306D ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -1395,6 +1405,31 @@ public class CodeGenerationTest
         // when
         MethodHandle sub =
                 instanceMethod( handle.newInstance(), "sub", clazz, clazz );
+
+        // then
+        return (T) sub.invoke( lhs, rhs );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <T> T multiplyForType( Class<T> clazz, T lhs, T rhs ) throws Throwable
+    {
+        // given
+        createGenerator();
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock block = simple.generateMethod( clazz, "multiply",
+                    param( clazz, "a" ), param( clazz, "b" ) ) )
+            {
+                block.returns( multiply( block.load( "a" ), block.load( "b" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle sub =
+                instanceMethod( handle.newInstance(), "multiply", clazz, clazz );
 
         // then
         return (T) sub.invoke( lhs, rhs );

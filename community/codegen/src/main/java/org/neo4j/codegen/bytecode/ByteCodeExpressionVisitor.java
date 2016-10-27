@@ -55,6 +55,7 @@ import static org.objectweb.asm.Opcodes.FASTORE;
 import static org.objectweb.asm.Opcodes.FCMPG;
 import static org.objectweb.asm.Opcodes.FCMPL;
 import static org.objectweb.asm.Opcodes.FLOAD;
+import static org.objectweb.asm.Opcodes.FMUL;
 import static org.objectweb.asm.Opcodes.FSUB;
 import static org.objectweb.asm.Opcodes.GETFIELD;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
@@ -78,6 +79,7 @@ import static org.objectweb.asm.Opcodes.IF_ICMPLE;
 import static org.objectweb.asm.Opcodes.IF_ICMPLT;
 import static org.objectweb.asm.Opcodes.IF_ICMPNE;
 import static org.objectweb.asm.Opcodes.ILOAD;
+import static org.objectweb.asm.Opcodes.IMUL;
 import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
@@ -439,6 +441,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void subtract( Expression lhs, Expression rhs )
     {
+        assertSameType( lhs, rhs, "subtract" );
         lhs.accept( this );
         rhs.accept( this );
         numberOperation( lhs.type(),
@@ -449,19 +452,16 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void multiplyDoubles( Expression lhs, Expression rhs )
+    public void multiply( Expression lhs, Expression rhs )
     {
+        assertSameType( lhs, rhs, "multiply" );
         lhs.accept( this );
         rhs.accept( this );
-        methodVisitor.visitInsn( DMUL );
-    }
-
-    @Override
-    public void multiplyLongs( Expression lhs, Expression rhs )
-    {
-        lhs.accept( this );
-        rhs.accept( this );
-        methodVisitor.visitInsn( LMUL );
+        numberOperation( lhs.type(),
+                () -> methodVisitor.visitInsn( IMUL ),
+                () -> methodVisitor.visitInsn( LMUL ),
+                () -> methodVisitor.visitInsn( FMUL ),
+                () -> methodVisitor.visitInsn( DMUL ) );
     }
 
     @Override
