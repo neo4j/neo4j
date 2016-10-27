@@ -24,7 +24,6 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
-import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
@@ -33,7 +32,6 @@ import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.GroupProperty;
-import com.hazelcast.map.impl.MapListenerAdapter;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +48,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP_NAME;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
@@ -62,7 +59,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final CoreTopologyListenerService listenerService;
     private final JobScheduler scheduler;
     private String membershipRegistrationId;
-    private String mapRegistrationId;
 
     private JobScheduler.JobHandle jobHandle;
 
@@ -100,8 +96,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
         membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
-        mapRegistrationId = hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME )
-                .addEntryListener( new OurEntryListener(), true );
         refreshCoreTopology();
         refreshReadReplicaTopology();
         listenerService.notifyListeners( coreServers() );
@@ -132,7 +126,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         try
         {
             hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
-            hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME ).removeEntryListener( mapRegistrationId );
             hazelcastInstance.getLifecycleService().terminate();
         }
         catch ( Throwable e )
@@ -227,15 +220,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     {
         latestReadReplicaTopology = HazelcastClusterTopology.getReadReplicaTopology( hazelcastInstance, log );
         log.info( "Current read replica topology is %s", latestReadReplicaTopology );
-    }
-
-    private class OurEntryListener extends MapListenerAdapter
-    {
-        @Override
-        public void onEntryEvent( EntryEvent event )
-        {
-            refreshReadReplicaTopology();
-        }
     }
 
     private class OurMembershipListener implements MembershipListener
