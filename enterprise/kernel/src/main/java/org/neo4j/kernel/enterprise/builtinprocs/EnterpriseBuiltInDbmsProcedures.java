@@ -26,7 +26,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +73,7 @@ import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( "unused" )
-public class BuiltInProcedures
+public class EnterpriseBuiltInDbmsProcedures
 {
     private static Clock clock = Clocks.systemClock();
     private static final int HARD_CHAR_LIMIT = 2048;

@@ -246,7 +246,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 "test.staticReadProcedure", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
                 "test.staticWriteProcedure", newSet( "default", PUBLISHER, ARCHITECT, ADMIN ),
                 "test.staticSchemaProcedure", newSet( "default", ARCHITECT, ADMIN ),
-                "test.allowedWriteProcedure", newSet( "otherRole", "role1", PUBLISHER, ARCHITECT, ADMIN ),
+                "test.annotatedProcedure", newSet( "annotated", READER, PUBLISHER, ARCHITECT, ADMIN ),
                 "test.numNodes", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
                 "db.labels", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.changePassword", newSet( ADMIN ),
@@ -257,10 +257,10 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         assertListProceduresHasRoles( adminSubject, expected );
         assertListProceduresHasRoles( schemaSubject, expected );
         assertListProceduresHasRoles( writeSubject, expected );
-        assertListProceduresHasRoles( writeSubject, expected );
+        assertListProceduresHasRoles( readSubject, expected );
     }
 
-    private void assertListProceduresHasRoles(S subject, Map<String,Set<String>> expected)
+    private void assertListProceduresHasRoles( S subject, Map<String,Set<String>> expected )
     {
         assertSuccess( subject, "CALL dbms.procedures", itr ->
         {

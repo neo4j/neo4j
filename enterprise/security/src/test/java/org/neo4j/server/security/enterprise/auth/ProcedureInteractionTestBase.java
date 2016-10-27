@@ -50,7 +50,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures;
+import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
@@ -462,8 +462,8 @@ public abstract class ProcedureInteractionTestBase<S>
 
     private Map<String,Long> countTransactionsByUsername()
     {
-        return BuiltInProcedures.countTransactionByUsername(
-                    BuiltInProcedures.getActiveTransactions(
+        return EnterpriseBuiltInDbmsProcedures.countTransactionByUsername(
+                    EnterpriseBuiltInDbmsProcedures.getActiveTransactions(
                             neo.getLocalGraph().getDependencyResolver()
                     ).stream()
                             .filter( tx -> !tx.terminationReason().isPresent() )
@@ -473,9 +473,9 @@ public abstract class ProcedureInteractionTestBase<S>
 
     Map<String,Long> countBoltConnectionsByUsername()
     {
-        BoltConnectionTracker boltConnectionTracker = BuiltInProcedures.getBoltConnectionTracker(
+        BoltConnectionTracker boltConnectionTracker = EnterpriseBuiltInDbmsProcedures.getBoltConnectionTracker(
                 neo.getLocalGraph().getDependencyResolver() );
-        return BuiltInProcedures.countConnectionsByUsername(
+        return EnterpriseBuiltInDbmsProcedures.countConnectionsByUsername(
                 boltConnectionTracker
                         .getActiveConnections()
                         .stream()
