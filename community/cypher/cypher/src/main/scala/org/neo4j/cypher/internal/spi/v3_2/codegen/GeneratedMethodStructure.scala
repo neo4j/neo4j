@@ -189,7 +189,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def decrementCounter(name: String) = {
     val local = locals(name)
-    generator.assign(local, subtractInts(local, constant(1)))
+    generator.assign(local, subtract(local, constant(1)))
   }
 
   override def checkCounter(name: String, comparator: Comparator, value: Int): Expression = {
@@ -374,15 +374,15 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def loadVariable(varName: String) = generator.load(varName)
 
-  override def add(lhs: Expression, rhs: Expression) = math(Methods.mathAdd, lhs, rhs)
+  override def addExpression(lhs: Expression, rhs: Expression) = math(Methods.mathAdd, lhs, rhs)
 
-  override def subtract(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
+  override def subtractExpression(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
 
-  override def multiply(lhs: Expression, rhs: Expression) = math(Methods.mathMul, lhs, rhs)
+  override def multiplyExpression(lhs: Expression, rhs: Expression) = math(Methods.mathMul, lhs, rhs)
 
-  override def divide(lhs: Expression, rhs: Expression) = math(Methods.mathDiv, lhs, rhs)
+  override def divideExpression(lhs: Expression, rhs: Expression) = math(Methods.mathDiv, lhs, rhs)
 
-  override def modulus(lhs: Expression, rhs: Expression) = math(Methods.mathMod, lhs, rhs)
+  override def modulusExpression(lhs: Expression, rhs: Expression) = math(Methods.mathMod, lhs, rhs)
 
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     invoke(method, lhs, rhs)
@@ -472,8 +472,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
           invoke(generator.load(tableVar), countingTablePut, generator.load(keyVar),
                  ternary(
                    equal(generator.load(countName), get(staticField[LongKeyIntValueTable, Int]("NULL"))),
-                   constant(1),
-                   addInts(generator.load(countName), constant(1))))))
+                   constant(1), add(generator.load(countName), constant(1))))))
 
     case LongsToCountTable =>
       val countName = context.namer.newVarName()
@@ -493,7 +492,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                  ternaryOnNull(generator.load(countName),
                                invoke(boxInteger,
                                       constant(1)), invoke(boxInteger,
-                                                           addInts(
+                                                           add(
                                                              invoke(generator.load(countName),
                                                                     unboxInteger),
                                                              constant(1)))))))
@@ -508,7 +507,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       generator.assign(times, invoke(generator.load(tableVar), countingTableGet, generator.load(keyVar)))
       using(generator.whileLoop(gt(times, constant(0)))) { body =>
         block(copy(generator = body))
-        body.assign(times, subtractInts(times, constant(1)))
+        body.assign(times, subtract(times, constant(1)))
       }
     case LongsToCountTable =>
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
@@ -528,7 +527,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
       using(generator.whileLoop(gt(times, constant(0)))) { body =>
         block(copy(generator = body))
-        body.assign(times, subtractInts(times, constant(1)))
+        body.assign(times, subtract(times, constant(1)))
       }
 
     case tableType@LongToListTable(structure, localVars) =>

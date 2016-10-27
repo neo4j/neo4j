@@ -189,8 +189,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def decreaseCounterAndCheckForZero(name: String): Expression = {
     val local = locals(name)
-    generator.assign(local, subtractInts(local, constant(1)))
-
+    generator.assign(local, subtract(local, constant(1)))
     equal(constant(0), local)
   }
 
@@ -468,8 +467,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
           invoke(generator.load(tableVar), countingTablePut, generator.load(keyVar),
                  ternary(
                    equal(generator.load(countName), get(staticField[LongKeyIntValueTable, Int]("NULL"))),
-                   constant(1),
-                   Expression.add(generator.load(countName), constant(1))))))
+                   constant(1), add(generator.load(countName), constant(1))))))
 
     case LongsToCountTable =>
       val countName = context.namer.newVarName()
@@ -489,7 +487,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                  ternaryOnNull(generator.load(countName),
                                invoke(boxInteger,
                                       constant(1)), invoke(boxInteger,
-                                                           Expression.add(
+                                                           add(
                                                              invoke(generator.load(countName),
                                                                     unboxInteger),
                                                              constant(1)))))))
@@ -504,7 +502,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       generator.assign(times, invoke(generator.load(tableVar), countingTableGet, generator.load(keyVar)))
       using(generator.whileLoop(gt(times, constant(0)))) { body =>
         block(copy(generator = body))
-        body.assign(times, subtractInts(times, constant(1)))
+        body.assign(times, subtract(times, constant(1)))
       }
     case LongsToCountTable =>
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
@@ -524,7 +522,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
       using(generator.whileLoop(gt(times, constant(0)))) { body =>
         block(copy(generator = body))
-        body.assign(times, subtractInts(times, constant(1)))
+        body.assign(times, subtract(times, constant(1)))
       }
 
     case tableType@LongToListTable(structure, localVars) =>

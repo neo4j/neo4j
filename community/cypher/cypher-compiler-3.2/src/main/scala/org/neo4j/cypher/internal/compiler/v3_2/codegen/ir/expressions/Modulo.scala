@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class Modulo(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with BinaryOperator {
 
-  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.modulus
+  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.modulusExpression
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
   override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTFloat, ReferenceType)

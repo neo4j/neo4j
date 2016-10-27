@@ -161,38 +161,20 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression subtractInts( final Expression lhs, final Expression rhs )
+    public static Expression subtract( final Expression lhs, final Expression rhs )
     {
-        return new Expression( INT )
+        if ( !lhs.type.equals( rhs.type ) )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Cannot subtract variable with different types. LHS %s, RHS %s", lhs.type.simpleName(),
+                            rhs.type.simpleName() ));
+        }
+        return new Expression( lhs.type )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.subtractInts( lhs, rhs );
-            }
-        };
-    }
-
-    public static Expression subtractLongs( final Expression lhs, final Expression rhs )
-    {
-        return new Expression( LONG )
-        {
-            @Override
-            public void accept( ExpressionVisitor visitor )
-            {
-                visitor.subtractLongs( lhs, rhs );
-            }
-        };
-    }
-
-    public static Expression subtractDoubles( final Expression lhs, final Expression rhs )
-    {
-        return new Expression( DOUBLE )
-        {
-            @Override
-            public void accept( ExpressionVisitor visitor )
-            {
-                visitor.subtractDoubles( lhs, rhs );
+                visitor.subtract( lhs, rhs );
             }
         };
     }

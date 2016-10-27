@@ -55,6 +55,7 @@ import static org.objectweb.asm.Opcodes.FASTORE;
 import static org.objectweb.asm.Opcodes.FCMPG;
 import static org.objectweb.asm.Opcodes.FCMPL;
 import static org.objectweb.asm.Opcodes.FLOAD;
+import static org.objectweb.asm.Opcodes.FSUB;
 import static org.objectweb.asm.Opcodes.GETFIELD;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.GOTO;
@@ -424,7 +425,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void lte( Expression lhs, Expression rhs)
+    public void lte( Expression lhs, Expression rhs )
     {
         assertSameType( lhs, rhs, "compare" );
         numberOperation( lhs.type(),
@@ -436,27 +437,15 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void subtractInts( Expression lhs, Expression rhs )
+    public void subtract( Expression lhs, Expression rhs )
     {
         lhs.accept( this );
         rhs.accept( this );
-        methodVisitor.visitInsn( ISUB );
-    }
-
-    @Override
-    public void subtractLongs( Expression lhs, Expression rhs )
-    {
-        lhs.accept( this );
-        rhs.accept( this );
-        methodVisitor.visitInsn( LSUB );
-    }
-
-    @Override
-    public void subtractDoubles( Expression lhs, Expression rhs )
-    {
-        lhs.accept( this );
-        rhs.accept( this );
-        methodVisitor.visitInsn( DSUB );
+        numberOperation( lhs.type(),
+                () -> methodVisitor.visitInsn( ISUB ),
+                () -> methodVisitor.visitInsn( LSUB ),
+                () -> methodVisitor.visitInsn( FSUB ),
+                () -> methodVisitor.visitInsn( DSUB ) );
     }
 
     @Override
@@ -680,7 +669,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     {
         if ( !lhs.type().equals( rhs.type() ) )
         {
-            throw new IllegalArgumentException( String.format( "Can only %s values of the same type", operation ));
+            throw new IllegalArgumentException( String.format( "Can only %s values of the same type", operation ) );
         }
     }
 

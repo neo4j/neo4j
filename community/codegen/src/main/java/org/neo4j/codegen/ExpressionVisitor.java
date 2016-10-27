@@ -61,11 +61,7 @@ public interface ExpressionVisitor
 
     void lte( Expression lhs, Expression rhs );
 
-    void subtractInts( Expression lhs, Expression rhs );
-
-    void subtractLongs( Expression lhs, Expression rhs );
-
-    void subtractDoubles( Expression lhs, Expression rhs );
+    void subtract( Expression lhs, Expression rhs );
 
     void multiplyLongs( Expression lhs, Expression rhs );
 
