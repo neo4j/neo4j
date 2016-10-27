@@ -51,7 +51,7 @@ public class Util
         }
         catch ( IOException e )
         {
-            throw new IllegalArgumentException( "Unable to parse path: " + file );
+            throw new IllegalArgumentException( "Unable to parse path: " + file, e );
         }
     }
 
