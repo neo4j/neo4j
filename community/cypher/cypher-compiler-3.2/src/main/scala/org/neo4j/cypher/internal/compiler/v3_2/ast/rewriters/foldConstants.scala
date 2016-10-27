@@ -101,5 +101,14 @@ case object foldConstants extends Rewriter {
       SignedDecimalIntegerLiteral((-rhs.value).toString)(e.position)
     case e: UnarySubtract =>
       Subtract(SignedDecimalIntegerLiteral("0")(e.position), e.rhs)(e.position)
+
+    case e@Equals(lhs: IntegerLiteral, rhs: IntegerLiteral) if lhs.value == rhs.value => True()(e.position)
+    case e@Equals(lhs: IntegerLiteral, rhs: IntegerLiteral) if lhs.value != rhs.value => False()(e.position)
+    case e@Equals(lhs: DoubleLiteral, rhs: DoubleLiteral) if lhs.value == rhs.value => True()(e.position)
+    case e@Equals(lhs: DoubleLiteral, rhs: DoubleLiteral) if lhs.value != rhs.value => False()(e.position)
+    case e@Equals(lhs: IntegerLiteral, rhs: DoubleLiteral) if lhs.value.doubleValue() == rhs.value => True()(e.position)
+    case e@Equals(lhs: IntegerLiteral, rhs: DoubleLiteral) if lhs.value.doubleValue() != rhs.value => False()(e.position)
+    case e@Equals(lhs: DoubleLiteral, rhs: IntegerLiteral) if lhs.value == rhs.value.doubleValue() => True()(e.position)
+    case e@Equals(lhs: DoubleLiteral, rhs: IntegerLiteral) if lhs.value != rhs.value.doubleValue() => False()(e.position)
   })
 }
