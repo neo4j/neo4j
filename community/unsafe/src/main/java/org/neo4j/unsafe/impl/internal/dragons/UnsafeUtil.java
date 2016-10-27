@@ -32,9 +32,9 @@ import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -406,7 +406,7 @@ public final class UnsafeUtil
         }
     }
 
-    private static final ConcurrentSkipListMap<Long, Long> pointers = new ConcurrentSkipListMap<>();
+    private static final AllocationRecords pointers = new AllocationRecords();
     private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS? new FreeTrace[4096] : null;
     private static final AtomicLong freeTraceCounter = new AtomicLong();
 
@@ -414,7 +414,7 @@ public final class UnsafeUtil
     {
         if ( CHECK_NATIVE_ACCESS )
         {
-            pointers.put( pointer, sizeInBytes );
+            pointers.add( new AllocationRecord( pointer, sizeInBytes ) );
         }
     }
 
@@ -428,16 +428,14 @@ public final class UnsafeUtil
 
     private static void doCheckFree( long pointer )
     {
-        Long size = pointers.remove( pointer );
-        if ( size == null )
+        AllocationRecord record = pointers.remove( pointer );
+        if ( record == null )
         {
-            StringBuilder sb = new StringBuilder( format( "Bad free: 0x%x, valid pointers are:", pointer ) );
-            pointers.forEach( (k,v) -> sb.append( '\n' ).append( k ) );
-            throw new AssertionError( sb.toString() );
+            throw new AssertionError( format( "Bad free: 0x%x, valid pointers are: %s", pointer, pointers ) );
         }
         long count = freeTraceCounter.getAndIncrement();
         int idx = (int) (count & 4095);
-        freeTraces[idx] = new FreeTrace( pointer, size, count );
+        freeTraces[idx] = new FreeTrace( pointer, record.getSizeInBytes(), count );
     }
 
     private static void checkAccess( long pointer, int size )
@@ -450,38 +448,46 @@ public final class UnsafeUtil
 
     private static void doCheckAccess( long pointer, int size )
     {
-        long now = System.nanoTime();
-        Map.Entry<Long,Long> fentry = pointers.floorEntry( pointer + size );
-        Map.Entry<Long,Long> centry = pointers.ceilingEntry( pointer );
-        if ( fentry == null || fentry.getKey() + fentry.getValue() < pointer + size )
+        long start = System.nanoTime();
+        long maxRequestedAddress = pointer + size;
+        AllocationRecord floorRecord = pointers.floorRecord( maxRequestedAddress );
+        if ( (floorRecord == null) || ((floorRecord.getAddress() + floorRecord.getSizeInBytes()) < maxRequestedAddress) )
         {
-            long faddr = fentry == null? 0 : fentry.getKey();
-            long fsize = fentry == null? 0 : fentry.getValue();
-            long foffset = pointer - (faddr + fsize);
-            long caddr = centry == null? 0 : centry.getKey();
-            long csize = centry == null? 0 : centry.getValue();
-            long coffset = caddr - (pointer + size);
-            boolean floorIsNearest = foffset < coffset;
-            long naddr = floorIsNearest? faddr : caddr;
-            long nsize = floorIsNearest? fsize : csize;
-            long noffset = floorIsNearest? foffset : coffset;
-            List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
-                                                .filter( trace -> trace != null )
-                                                .filter( trace -> trace.contains( pointer ) )
-                                                .sorted()
-                                                .collect( Collectors.toList() );
-            AssertionError error = new AssertionError( format(
-                    "Bad access at address 0x%x with size %s, nearest valid allocation is " +
-                    "0x%x (%s bytes, off by %s bytes). " +
-                    "Recent relevant frees (of %s) are attached as suppressed exceptions.",
-                    pointer, size, naddr, nsize, noffset, freeTraceCounter.get() ) );
-            for ( FreeTrace recentFree : recentFrees )
-            {
-                recentFree.referenceTime = now;
-                error.addSuppressed( recentFree );
-            }
-            throw error;
+            AllocationRecord ceilingRecord = pointers.ceilingRecord( pointer );
+            throwException( pointer, size, start, floorRecord, ceilingRecord );
+            return;
         }
+    }
+
+    private static void throwException( long pointer, int size, long start, AllocationRecord floorRecord,
+            AllocationRecord ceilEntry )
+    {
+        long faddr = floorRecord == null ? 0 : floorRecord.getAddress();
+        long fsize = floorRecord == null ? 0 : floorRecord.getSizeInBytes();
+        long foffset = pointer - (faddr + fsize);
+        long caddr = ceilEntry == null ? 0 : ceilEntry.getAddress();
+        long csize = ceilEntry == null ? 0 : ceilEntry.getSizeInBytes();
+        long coffset = caddr - (pointer + size);
+        boolean floorIsNearest = foffset < coffset;
+        long naddr = floorIsNearest? faddr : caddr;
+        long nsize = floorIsNearest? fsize : csize;
+        long noffset = floorIsNearest? foffset : coffset;
+        List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
+                                            .filter( Objects::nonNull )
+                                            .filter( trace -> trace.contains( pointer ) )
+                                            .sorted()
+                                            .collect( Collectors.toList() );
+        AssertionError error = new AssertionError( format(
+                "Bad access at address 0x%x with size %s, nearest valid allocation is " +
+                "0x%x (%s bytes, off by %s bytes). " +
+                "Recent relevant frees (of %s) are attached as suppressed exceptions.",
+                pointer, size, naddr, nsize, noffset, freeTraceCounter.get() ) );
+        for ( FreeTrace recentFree : recentFrees )
+        {
+            recentFree.referenceTime = start;
+            error.addSuppressed( recentFree );
+        }
+        throw error;
     }
 
     /**
@@ -1027,13 +1033,157 @@ public final class UnsafeUtil
      */
     public static void putLongByteWiseLittleEndian( long p, long value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value       ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
-        UnsafeUtil.putByte( p + 4, (byte)( value >> 32 ) );
-        UnsafeUtil.putByte( p + 5, (byte)( value >> 40 ) );
-        UnsafeUtil.putByte( p + 6, (byte)( value >> 48 ) );
-        UnsafeUtil.putByte( p + 7, (byte)( value >> 56 ) );
+        UnsafeUtil.putByte( p, (byte) (value) );
+        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
+        UnsafeUtil.putByte( p + 2, (byte) (value >> 16) );
+        UnsafeUtil.putByte( p + 3, (byte) (value >> 24) );
+        UnsafeUtil.putByte( p + 4, (byte) (value >> 32) );
+        UnsafeUtil.putByte( p + 5, (byte) (value >> 40) );
+        UnsafeUtil.putByte( p + 6, (byte) (value >> 48) );
+        UnsafeUtil.putByte( p + 7, (byte) (value >> 56) );
+    }
+
+    static class AllocationRecords
+    {
+        private volatile AllocationRecord[] allocationRecords = new AllocationRecord[0];
+        private final ReentrantLock lock = new ReentrantLock();
+
+        public void add( AllocationRecord allocationRecord )
+        {
+            lock.lock();
+            try
+            {
+                AllocationRecord[] records = allocationRecords;
+                int size = records.length;
+                int ceilingIndex = binarySearch( records, allocationRecord.address );
+                ceilingIndex = ceilingIndex > 0 ? ceilingIndex : Math.abs( ceilingIndex + 1 );
+                AllocationRecord[] newRecords = new AllocationRecord[size + 1];
+                System.arraycopy( records, 0, newRecords, 0, ceilingIndex );
+                System.arraycopy( records, ceilingIndex, newRecords, ceilingIndex + 1, size - ceilingIndex );
+                newRecords[ceilingIndex] = allocationRecord;
+                allocationRecords = newRecords;
+            }
+            finally
+            {
+                lock.unlock();
+            }
+        }
+
+        public AllocationRecord remove( long pointer )
+        {
+            lock.lock();
+            try
+            {
+                AllocationRecord[] records = this.allocationRecords;
+                int length = records.length;
+                int index = binarySearch( records, pointer );
+                if ( index >= 0 )
+                {
+                    AllocationRecord[] newRecords = new AllocationRecord[length - 1];
+                    System.arraycopy( records, 0, newRecords, 0, index );
+                    System.arraycopy( records, index + 1, newRecords, index, length - index - 1 );
+                    allocationRecords = newRecords;
+                    return records[index];
+                }
+                return null;
+            }
+            finally
+            {
+                lock.unlock();
+            }
+        }
+
+        AllocationRecord floorRecord( long pointer )
+        {
+            AllocationRecord[] records = allocationRecords;
+            int index = binarySearch( records, pointer );
+            return index >= 0 ? records[index] : (index == -1) ? null : records[Math.abs( index + 2 )];
+        }
+
+        AllocationRecord ceilingRecord( long pointer )
+        {
+            AllocationRecord[] records = allocationRecords;
+            int index = binarySearch( records, pointer );
+            if ( index >= 0 )
+            {
+                return records[index];
+            }
+            if ( index != -1 )
+            {
+                int ceilIndex = Math.abs( index + 1 );
+                return ceilIndex < records.length ? records[ceilIndex] : null;
+            }
+            return null;
+        }
+
+        AllocationRecord get( int index )
+        {
+            return allocationRecords[index];
+        }
+
+        public int size()
+        {
+            return allocationRecords.length;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "AllocationRecords{" + "records=" + Arrays.toString( allocationRecords ) + '}';
+        }
+
+        private int binarySearch(AllocationRecord[] records, long pointer )
+        {
+            int low = 0;
+            int high = records.length - 1;
+
+            while ( low <= high )
+            {
+                int middle = (low + high) >>> 1;
+                AllocationRecord middleRecord = records[middle];
+                int comparation = Long.compare( middleRecord.address, pointer );
+                if ( comparation < 0 )
+                {
+                    low = middle + 1;
+                }
+                else if ( comparation > 0 )
+                {
+                    high = middle - 1;
+                }
+                else
+                {
+                    return middle;
+                }
+            }
+            return -(low + 1);
+        }
+    }
+
+    static final class AllocationRecord
+    {
+        private final long address;
+        private final long sizeInBytes;
+
+        AllocationRecord( long address, long sizeInBytes )
+        {
+            this.address = address;
+            this.sizeInBytes = sizeInBytes;
+        }
+
+        long getSizeInBytes()
+        {
+            return sizeInBytes;
+        }
+
+        public long getAddress()
+        {
+            return address;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "AllocationRecord{" + "address=" + address + ", sizeInBytes=" + sizeInBytes + '}';
+        }
     }
 }
