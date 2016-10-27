@@ -138,10 +138,4 @@ public @interface Procedure
      * replacement procedure that clients might show in warnings
      */
     String deprecatedBy() default "";
-
-    /**
-     * @deprecated use configuration settings in enterprise.
-     */
-    String[] allowed() default {};
-
 }

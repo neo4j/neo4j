@@ -601,13 +601,6 @@ public abstract class ProcedureInteractionTestBase<S>
             return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "foo" ).toString() ) );
         }
 
-        @Procedure( name = "test.annotatedProcedure", mode = Mode.READ, allowed = {"annotated"} )
-        public Stream<AuthProceduresBase.StringResult> annotatedProcedure()
-        {
-            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
-            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "foo" ).toString() ) );
-        }
-
         @Procedure( name = "test.otherAllowedReadProcedure", mode = Mode.READ )
         public Stream<AuthProceduresBase.StringResult> otherAllowedProcedure()
         {
@@ -740,14 +733,7 @@ public abstract class ProcedureInteractionTestBase<S>
             return result.next().get( "foo" ).toString();
         }
 
-        @UserFunction( name = "test.annotatedFunction", allowed = {"annotated"} )
-        public String annotatedFunction()
-        {
-            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
-            return result.next().get( "foo" ).toString();
-        }
-
-        @UserFunction( name = "test.allowedFunction2", allowed = {"role2"} )
+        @UserFunction( name = "test.allowedFunction2" )
         public String allowedFunction2()
         {
             Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );

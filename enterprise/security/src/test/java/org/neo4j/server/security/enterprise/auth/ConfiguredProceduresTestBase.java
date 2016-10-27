@@ -81,10 +81,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
 
         ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
         assertThat( Arrays.asList( numNodes.allowed() ), containsInAnyOrder( "nonEmpty" ) );
-
-        ProcedureSignature allowedRead =
-                procedures.procedure( new QualifiedName( new String[]{"test"}, "annotatedProcedure" ) );
-        assertThat( Arrays.asList( allowedRead.allowed() ), not( containsInAnyOrder( "nonEmpty" ) ) );
     }
 
     @Test
@@ -138,10 +134,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         UserFunctionSignature funcSig = procedures.function(
                 new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).get();
         assertThat( Arrays.asList( funcSig.allowed() ), containsInAnyOrder( "nonEmpty" ) );
-
-        UserFunctionSignature f2 =
-                procedures.function( new QualifiedName( new String[]{"test"}, "annotatedFunction" ) ).get();
-        assertThat( Arrays.asList( f2.allowed() ), not( containsInAnyOrder( "nonEmpty" ) ) );
     }
 
     @Test
@@ -173,7 +165,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
 
         userManager.newRole( "tester", "noneSubject" );
 
-        assertFail( noneSubject, "CALL test.annotatedProcedure", READ_OPS_NOT_ALLOWED );
         assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "3" ) );
     }
 
@@ -185,7 +176,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         userManager.newRole( "tester", "noneSubject" );
         userManager.newRole( "other", "readSubject" );
 
-        assertFail( noneSubject, "CALL test.annotatedProcedure", READ_OPS_NOT_ALLOWED );
         assertSuccess( readSubject, "CALL test.allowedReadProcedure", itr -> assertKeyIs( itr, "value", "foo" ) );
         assertSuccess( noneSubject, "CALL test.createNode", ResourceIterator::close );
         assertSuccess( readSubject, "CALL test.createNode", ResourceIterator::close );
@@ -202,7 +192,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         userManager.newRole( "default", "noneSubject" );
         userManager.newRole( "other", "readSubject" );
 
-        assertFail( noneSubject, "RETURN test.annotatedFunction()", READ_OPS_NOT_ALLOWED );
         assertSuccess( noneSubject, "RETURN test.nonAllowedFunc() AS f", itr -> assertKeyIs( itr, "f", "success" ) );
         assertSuccess( readSubject, "RETURN test.allowedFunction1() AS f", itr -> assertKeyIs( itr, "f", "foo" ) );
         assertSuccess( readSubject, "RETURN test.nonAllowedFunc() AS f", itr -> assertKeyIs( itr, "f", "success" ) );
