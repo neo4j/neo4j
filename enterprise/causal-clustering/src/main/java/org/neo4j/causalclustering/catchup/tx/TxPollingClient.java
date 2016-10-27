@@ -137,7 +137,7 @@ public class TxPollingClient extends LifecycleAdapter
             switch ( catchupResult )
             {
             case SUCCESS:
-                log.info( "[" + Thread.currentThread() + "] Successfully completed transaction pull from " + lastAppliedTxId );
+                log.debug( "[" + Thread.currentThread() + "] Successfully completed transaction pull from " + lastAppliedTxId );
                 break;
             case E_TRANSACTION_PRUNED:
                 log.info( "[" + Thread.currentThread() + "] Tx pull unable to get transactions starting from " + lastAppliedTxId +
