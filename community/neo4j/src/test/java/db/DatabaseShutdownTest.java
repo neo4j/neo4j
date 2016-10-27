@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,20 +35,22 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -57,8 +60,8 @@ public class DatabaseShutdownTest
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory =
-            TargetDirectory.testDirForTestWithEphemeralFS( fs.get(), getClass() );
+    public final TestDirectory testDirectory =
+            TestDirectory.testDirectory( getClass(), fs.get() );
 
     @Test
     public void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails() throws Exception
@@ -85,13 +88,15 @@ public class DatabaseShutdownTest
         protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
                 GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            return new CommunityFacadeFactory()
+            return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
                 @Override
-                protected DataSourceModule createDataSource( Dependencies dependencies,
-                        PlatformModule platformModule, EditionModule editionModule )
+                protected DataSourceModule createDataSource(
+                        PlatformModule platformModule,
+                        EditionModule editionModule,
+                        Supplier<QueryExecutionEngine> queryEngine )
                 {
-                    DataSourceModule dataSource = new DataSourceModule( dependencies, platformModule, editionModule );
+                    DataSourceModule dataSource = new DataSourceModule( platformModule, editionModule, queryEngine );
                     neoStoreDataSource = dataSource.neoStoreDataSource;
                     return dataSource;
                 }
@@ -100,7 +105,7 @@ public class DatabaseShutdownTest
                 protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
                         Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade )
+                    return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
