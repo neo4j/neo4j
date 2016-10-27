@@ -388,24 +388,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void addInts( Expression lhs, Expression rhs )
-    {
-        add( lhs, rhs );
-    }
-
-    @Override
-    public void addLongs( Expression lhs, Expression rhs )
-    {
-        add( lhs, rhs );
-    }
-
-    @Override
-    public void addDoubles( Expression lhs, Expression rhs )
-    {
-        add( lhs, rhs );
-    }
-
-    private void add( Expression lhs, Expression rhs )
+    public void add( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " + " );
     }

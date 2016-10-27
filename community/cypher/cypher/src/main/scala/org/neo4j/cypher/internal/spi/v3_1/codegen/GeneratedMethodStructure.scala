@@ -469,7 +469,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                  ternary(
                    equal(generator.load(countName), get(staticField[LongKeyIntValueTable, Int]("NULL"))),
                    constant(1),
-                   addInts(generator.load(countName), constant(1))))))
+                   Expression.add(generator.load(countName), constant(1))))))
 
     case LongsToCountTable =>
       val countName = context.namer.newVarName()
@@ -489,7 +489,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                  ternaryOnNull(generator.load(countName),
                                invoke(boxInteger,
                                       constant(1)), invoke(boxInteger,
-                                                           addInts(
+                                                           Expression.add(
                                                              invoke(generator.load(countName),
                                                                     unboxInteger),
                                                              constant(1)))))))

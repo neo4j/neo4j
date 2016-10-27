@@ -70,14 +70,14 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression lt( final Expression lhs, final Expression rhs)
+    public static Expression lt( final Expression lhs, final Expression rhs )
     {
         return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.lt( lhs, rhs);
+                visitor.lt( lhs, rhs );
             }
         };
     }
@@ -142,38 +142,21 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression addInts( final Expression lhs, final Expression rhs )
+    public static Expression add( final Expression lhs, final Expression rhs )
     {
-        return new Expression( INT )
+        if ( !lhs.type.equals( rhs.type ) )
         {
-            @Override
-            public void accept( ExpressionVisitor visitor )
-            {
-                visitor.addInts( lhs, rhs );
-            }
-        };
-    }
+            throw new IllegalArgumentException(
+                    String.format( "Cannot add variable with different types. LHS %s, RHS %s", lhs.type.simpleName(),
+                            rhs.type.simpleName() ));
+        }
 
-    public static Expression addLongs( final Expression lhs, final Expression rhs )
-    {
-        return new Expression( LONG )
+        return new Expression( lhs.type )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.addLongs( lhs, rhs );
-            }
-        };
-    }
-
-    public static Expression addDoubles( final Expression lhs, final Expression rhs )
-    {
-        return new Expression( DOUBLE )
-        {
-            @Override
-            public void accept( ExpressionVisitor visitor )
-            {
-                visitor.addDoubles( lhs, rhs );
+                visitor.add( lhs, rhs );
             }
         };
     }
