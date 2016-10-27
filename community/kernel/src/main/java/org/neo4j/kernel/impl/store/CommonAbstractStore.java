@@ -851,18 +851,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public void close()
     {
-        if ( idGenerator == null || !storeOk )
-        {
-            try
-            {
-                closeStoreFile();
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFileName(), e );
-            }
-            return;
-        }
         try
         {
             closeStoreFile();

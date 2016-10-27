@@ -84,7 +84,6 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -143,6 +142,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -502,6 +502,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             throw Exceptions.launderedException( e );
         }
 
+        // NOTE: please make sure this is performed after having added everything to the life, in fact we would like
+        // to perform the checkpointing as first step when the life is shutdown.
+        life.add( lifecycleToTriggerCheckPointOnShutdown() );
+
         try
         {
             life.start();
@@ -851,8 +855,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             return;
         }
 
-        CheckPointer checkPointer = transactionLogModule.checkPointing();
-
         // First kindly await all committing transactions to close. Do this without interfering with the
         // log file monitor. Keep in mind that at this point the availability guard is raised and some time spent
         // awaiting active transaction to close, on a more coarse-grained level, so no new transactions
@@ -875,21 +877,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             // will be able to start committing at this point.
             awaitAllTransactionsClosed();
 
-            // Write new checkpoint in the log only if the kernel is healthy.
-            // We cannot throw here since we need to shutdown without exceptions.
-            if ( databaseHealth.isHealthy() )
-            {
-                try
-                {
-                    // Flushing of neo stores happens as part of the checkpoint
-                    checkPointer.forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( e );
-                }
-            }
-
+            // Checkpointing is now triggered as part of life.shutdown see lifecycleToTriggerCheckPointOnShutdown()
             // Shut down all services in here, effectively making the database unusable for anyone who tries.
             life.shutdown();
         }
@@ -909,6 +897,26 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         {
             LockSupport.parkNanos( 10_000_000 ); // 10 ms
         }
+    }
+
+    private Lifecycle lifecycleToTriggerCheckPointOnShutdown()
+    {
+        // Write new checkpoint in the log only if the kernel is healthy.
+        // We cannot throw here since we need to shutdown without exceptions,
+        // so let's make the checkpointing part of the life, so LifeSupport can handle exceptions properly
+        return  new LifecycleAdapter()
+        {
+            @Override
+            public void shutdown() throws Throwable
+            {
+                if ( databaseHealth.isHealthy() )
+                {
+                    // Flushing of neo stores happens as part of the checkpoint
+                    transactionLogModule.checkPointing()
+                            .forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
+                }
+            }
+        };
     }
 
     @Override
