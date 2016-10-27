@@ -1644,9 +1644,9 @@ public class CodeGenerationTest
         {
             simple.field( String.class, "foo" );
             simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( Object.class, "foo" ) )
-                    .invokeSuper( new ExpressionTemplate[]{load( "name" )},
+                    .invokeSuper( new ExpressionTemplate[]{load( "name", typeReference( String.class ) )},
                             new TypeReference[]{typeReference( String.class )} )
-                    .put( self(), String.class, "foo", cast( String.class, load( "foo" ) ) )
+                    .put( self(simple.handle()), String.class, "foo", cast( String.class, load( "foo", typeReference( Object.class ) ) ) )
                     .build() );
             handle = simple.handle();
         }
@@ -1752,10 +1752,10 @@ public class CodeGenerationTest
             FieldReference value = simple.field( clazz, "value" );
             simple.generate(MethodTemplate.constructor(  param( clazz, "value" ) )
                     .invokeSuper()
-                    .put( self(), value.type(), value.name(), load( "value" ) )
+                    .put( self(simple.handle()), value.type(), value.name(), load( "value", value.type() ) )
                     .build());
             simple.generate( MethodTemplate.method( clazz, "value" )
-                    .returns( ExpressionTemplate.get( self(), clazz, "value" ) )
+                    .returns( ExpressionTemplate.get( self(simple.handle()), clazz, "value" ) )
                     .build() );
             handle = simple.handle();
         }

@@ -94,6 +94,11 @@ public class TypeReference
         return new TypeReference( "", name, false, false, true, "", Modifier.PUBLIC );
     }
 
+    public static TypeReference arrayOf( TypeReference type )
+    {
+        return new TypeReference( type.packageName, type.simpleName + "[]", false, true, false, type.declaringClassName, type.modifiers );
+    }
+
     public static TypeReference parameterizedType( Class<?> base, Class<?>... parameters )
     {
         return parameterizedType( typeReference( base ), typeReferences( parameters ) );
@@ -141,8 +146,12 @@ public class TypeReference
     private final String declaringClassName;
     private final int modifiers;
 
-    public static final TypeReference VOID = new TypeReference( "", "void", true, false, false, "", void.class.getModifiers() ),
-            OBJECT = new TypeReference( "java.lang", "Object", false, false, false, "", Object.class.getModifiers() );
+    public static final TypeReference VOID = new TypeReference( "", "void", true, false, false, "", void.class.getModifiers() );
+    public static final TypeReference OBJECT = new TypeReference( "java.lang", "Object", false, false, false, "", Object.class.getModifiers() );
+    public static final TypeReference BOOLEAN = new TypeReference( "", "boolean", true, false, false, "", boolean.class.getModifiers() );
+    public static final TypeReference INT = new TypeReference( "", "int", true, false, false, "", int.class.getModifiers() );
+    public static final TypeReference LONG = new TypeReference( "", "long", true, false, false, "", long.class.getModifiers() );
+    public static final TypeReference DOUBLE = new TypeReference( "", "double", true, false, false, "", double.class.getModifiers() );
     static final TypeReference[] NO_TYPES = new TypeReference[0];
 
     TypeReference( String packageName, String simpleName, boolean isPrimitive, boolean isArray,
@@ -222,25 +231,43 @@ public class TypeReference
     public boolean equals( Object o )
     {
         if ( this == o )
-        {
-            return true;
-        }
-        if ( !(o instanceof TypeReference) )
-        {
-            return false;
-        }
-        TypeReference that = (TypeReference) o;
-        return simpleName.equals( that.simpleName ) &&
-               packageName.equals( that.packageName ) &&
-               Arrays.equals( parameters, that.parameters );
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+
+        TypeReference reference = (TypeReference) o;
+
+        if ( isPrimitive != reference.isPrimitive )
+        { return false; }
+        if ( isArray != reference.isArray )
+        { return false; }
+        if ( isTypeParameter != reference.isTypeParameter )
+        { return false; }
+        if ( modifiers != reference.modifiers )
+        { return false; }
+        if ( packageName != null ? !packageName.equals( reference.packageName ) : reference.packageName != null )
+        { return false; }
+        if ( simpleName != null ? !simpleName.equals( reference.simpleName ) : reference.simpleName != null )
+        { return false; }
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        if ( !Arrays.equals( parameters, reference.parameters ) )
+        { return false; }
+        return declaringClassName != null ? declaringClassName.equals( reference.declaringClassName )
+                                          : reference.declaringClassName == null;
+
     }
 
     @Override
     public int hashCode()
     {
-        int result = packageName.hashCode();
-        result = 31 * result + simpleName.hashCode();
+        int result = packageName != null ? packageName.hashCode() : 0;
+        result = 31 * result + (simpleName != null ? simpleName.hashCode() : 0);
         result = 31 * result + Arrays.hashCode( parameters );
+        result = 31 * result + (isPrimitive ? 1 : 0);
+        result = 31 * result + (isArray ? 1 : 0);
+        result = 31 * result + (isTypeParameter ? 1 : 0);
+        result = 31 * result + (declaringClassName != null ? declaringClassName.hashCode() : 0);
+        result = 31 * result + modifiers;
         return result;
     }
 

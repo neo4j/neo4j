@@ -21,19 +21,27 @@ package org.neo4j.codegen;
 
 import java.lang.reflect.Modifier;
 
+import static org.neo4j.codegen.TypeReference.OBJECT;
 import static org.neo4j.codegen.TypeReference.VOID;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
 public abstract class ExpressionTemplate
 {
-    public static ExpressionTemplate self()
+    protected final TypeReference type;
+
+    protected ExpressionTemplate( TypeReference type )
     {
-        return new ExpressionTemplate()
+        this.type = type;
+    }
+
+    public static ExpressionTemplate self( TypeReference type )
+    {
+        return new ExpressionTemplate( type )
         {
             @Override
             void templateAccept( CodeBlock method, ExpressionVisitor visitor )
             {
-                visitor.load( new LocalVariable( method.clazz.handle(), "this", 0) );
+                visitor.load( new LocalVariable( method.clazz.handle(), "this", 0 ) );
             }
         };
     }
@@ -48,7 +56,7 @@ public abstract class ExpressionTemplate
             return Expression.invoke( method, materialized );
         }
         // some part needs reference to the method context, so this expression will transitively need it
-        return new ExpressionTemplate()
+        return new ExpressionTemplate( method.returns() )
         {
             @Override
             protected void templateAccept( CodeBlock generator, ExpressionVisitor visitor )
@@ -70,7 +78,7 @@ public abstract class ExpressionTemplate
                 return Expression.invoke( (Expression) target, method, materialized );
             }
         }
-        return new ExpressionTemplate()
+        return new ExpressionTemplate( method.returns() )
         {
             @Override
             protected void templateAccept( CodeBlock generator, ExpressionVisitor visitor )
@@ -81,9 +89,9 @@ public abstract class ExpressionTemplate
     }
 
     /** load a local variable */
-    public static ExpressionTemplate load( final String name )
+    public static ExpressionTemplate load( final String name, final TypeReference type )
     {
-        return new ExpressionTemplate()
+        return new ExpressionTemplate( type )
         {
             @Override
             protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
@@ -101,7 +109,7 @@ public abstract class ExpressionTemplate
     /** instance field */
     public static ExpressionTemplate get( ExpressionTemplate target, TypeReference fieldType, String fieldName )
     {
-        return get( target, Lookup.field( fieldType, fieldName ) );
+        return get( target, Lookup.field( fieldType, fieldName ), fieldType );
     }
 
     /** instance field */
@@ -111,7 +119,7 @@ public abstract class ExpressionTemplate
         {
             return Expression.get( (Expression) target, field );
         }
-        return new ExpressionTemplate()
+        return new ExpressionTemplate( field.type() )
         {
             @Override
             void templateAccept( CodeBlock method, ExpressionVisitor visitor )
@@ -124,13 +132,14 @@ public abstract class ExpressionTemplate
     /** static field from the class that will host this expression */
     public static ExpressionTemplate get( TypeReference fieldType, String fieldName )
     {
-        return get( Lookup.field( fieldType, fieldName ) );
+        return get( Lookup.field( fieldType, fieldName ), fieldType );
     }
 
     /** instance field */
-    public static ExpressionTemplate get( final ExpressionTemplate target, final Lookup<FieldReference> field )
+    public static ExpressionTemplate get( final ExpressionTemplate target, final Lookup<FieldReference> field,
+            TypeReference type )
     {
-        return new ExpressionTemplate()
+        return new ExpressionTemplate( type )
         {
             @Override
             void templateAccept( CodeBlock method, ExpressionVisitor visitor )
@@ -141,9 +150,9 @@ public abstract class ExpressionTemplate
     }
 
     /** static field */
-    public static ExpressionTemplate get( final Lookup<FieldReference> field )
+    public static ExpressionTemplate get( final Lookup<FieldReference> field, TypeReference type )
     {
-        return new ExpressionTemplate()
+        return new ExpressionTemplate( type )
         {
             @Override
             void templateAccept( CodeBlock method, ExpressionVisitor visitor )
@@ -153,9 +162,9 @@ public abstract class ExpressionTemplate
         };
     }
 
-    Expression materialize( final CodeBlock method )
+    Expression materialize( final CodeBlock method)
     {
-        return new Expression()
+        return new Expression( type )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -167,19 +176,12 @@ public abstract class ExpressionTemplate
 
     public static ExpressionTemplate cast( Class<?> clazz, ExpressionTemplate expression )
     {
-        return new ExpressionTemplate()
-        {
-            @Override
-            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
-            {
-                visitor.cast( typeReference( clazz ), expression.materialize( method ) );
-            }
-        };
+        return cast( typeReference( clazz ), expression );
     }
 
     public static ExpressionTemplate cast( TypeReference type, ExpressionTemplate expression )
     {
-        return new ExpressionTemplate()
+        return new ExpressionTemplate( type )
         {
             @Override
             protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
@@ -223,16 +225,18 @@ public abstract class ExpressionTemplate
     }
 
     //TODO I am not crazy about the way type parameters are sent here
-    static ExpressionTemplate invokeSuperConstructor( final ExpressionTemplate[] parameters, final TypeReference[] parameterTypes )
+    static ExpressionTemplate invokeSuperConstructor( final ExpressionTemplate[] parameters,
+            final TypeReference[] parameterTypes )
     {
         assert parameters.length == parameterTypes.length;
-        return new ExpressionTemplate()
+        return new ExpressionTemplate( OBJECT )
         {
             @Override
             void templateAccept( CodeBlock method, ExpressionVisitor visitor )
             {
                 visitor.invoke( Expression.SUPER,
-                        new MethodReference( method.clazz.handle().parent(), "<init>", VOID, Modifier.PUBLIC, parameterTypes),
+                        new MethodReference( method.clazz.handle().parent(), "<init>", VOID, Modifier.PUBLIC,
+                                parameterTypes ),
                         materialize( method, parameters ) );
             }
         };

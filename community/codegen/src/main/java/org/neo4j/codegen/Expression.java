@@ -19,11 +19,25 @@
  */
 package org.neo4j.codegen;
 
+import static org.neo4j.codegen.TypeReference.BOOLEAN;
+import static org.neo4j.codegen.TypeReference.DOUBLE;
+import static org.neo4j.codegen.TypeReference.INT;
+import static org.neo4j.codegen.TypeReference.LONG;
+import static org.neo4j.codegen.TypeReference.OBJECT;
+import static org.neo4j.codegen.TypeReference.arrayOf;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
 public abstract class Expression extends ExpressionTemplate
 {
-    static final Expression SUPER = new Expression()
+    protected Expression( TypeReference type )
+    {
+        super( type );
+    }
+
+    public abstract void accept( ExpressionVisitor visitor );
+
+
+    static final Expression SUPER = new Expression( OBJECT )
     {
         @Override
         public void accept( ExpressionVisitor visitor )
@@ -32,59 +46,57 @@ public abstract class Expression extends ExpressionTemplate
         }
     };
 
-    public abstract void accept( ExpressionVisitor visitor );
-
-    public static Expression gt( final Expression lhs, final Expression rhs, TypeReference type )
+    public static Expression gt( final Expression lhs, final Expression rhs, TypeReference argType )
     {
-        return new Expression()
+        return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.gt( lhs, rhs, type );
+                visitor.gt( lhs, rhs, argType );
             }
         };
     }
 
-    public static Expression gte( final Expression lhs, final Expression rhs, TypeReference type )
+    public static Expression gte( final Expression lhs, final Expression rhs, TypeReference argType )
     {
-        return new Expression()
+        return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.gte( lhs, rhs, type );
+                visitor.gte( lhs, rhs, argType );
             }
         };
     }
 
-    public static Expression lt( final Expression lhs, final Expression rhs, TypeReference type )
+    public static Expression lt( final Expression lhs, final Expression rhs, TypeReference argType )
     {
-        return new Expression()
+        return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.lt( lhs, rhs, type );
+                visitor.lt( lhs, rhs, argType );
             }
         };
     }
 
-    public static Expression lte( final Expression lhs, final Expression rhs, TypeReference type )
+    public static Expression lte( final Expression lhs, final Expression rhs, TypeReference argType )
     {
-        return new Expression()
+        return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.lte( lhs, rhs, type );
+                visitor.lte( lhs, rhs, argType );
             }
         };
     }
 
     public static Expression and( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -96,7 +108,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression or( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -106,21 +118,21 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression equal( final Expression lhs, final Expression rhs, TypeReference type )
+    public static Expression equal( final Expression lhs, final Expression rhs, TypeReference argType )
     {
-        return new Expression()
+        return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.equal( lhs, rhs, type );
+                visitor.equal( lhs, rhs, argType );
             }
         };
     }
 
-    public static Expression load( final LocalVariable variable)
+    public static Expression load( final LocalVariable variable )
     {
-        return new Expression()
+        return new Expression( variable.type() )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -132,7 +144,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression addInts( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( INT )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -144,7 +156,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression addLongs( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( LONG )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -156,7 +168,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression addDoubles( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( DOUBLE )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -168,7 +180,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression subtractInts( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( INT )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -180,7 +192,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression subtractLongs( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( LONG )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -192,7 +204,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression subtractDoubles( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( DOUBLE )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -204,7 +216,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression multiplyLongs( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( LONG )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -216,7 +228,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression multiplyDoubles( final Expression lhs, final Expression rhs )
     {
-        return new Expression()
+        return new Expression( DOUBLE )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -228,16 +240,38 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression constant( final Object value )
     {
-        if ( !(value == null ||
-               value instanceof String ||
-               value instanceof Long ||
-               value instanceof Integer ||
-               value instanceof Double ||
-               value instanceof Boolean) )
+
+        TypeReference reference;
+        if ( value == null )
+        {
+            reference = OBJECT;
+        }
+        else if ( value instanceof String )
+        {
+            reference = TypeReference.typeReference( String.class );
+        }
+        else if ( value instanceof Long )
+        {
+            reference = LONG;
+        }
+        else if ( value instanceof Integer )
+        {
+            reference = INT;
+        }
+        else if ( value instanceof Double )
+        {
+            reference = DOUBLE;
+        }
+        else if ( value instanceof Boolean )
+        {
+            reference = BOOLEAN;
+        }
+        else
         {
             throw new IllegalArgumentException( "Not a valid constant!" );
         }
-        return new Expression()
+
+        return new Expression( reference )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -247,14 +281,15 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression newArray( TypeReference type, Expression...constants )
+    //TODO deduce type from constants
+    public static Expression newArray( TypeReference baseType, Expression... constants )
     {
-        return new Expression()
+        return new Expression( arrayOf( baseType ) )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.newArray( type, constants );
+                visitor.newArray( baseType, constants );
             }
         };
     }
@@ -262,7 +297,7 @@ public abstract class Expression extends ExpressionTemplate
     /** get instance field */
     public static Expression get( final Expression target, final FieldReference field )
     {
-        return new Expression()
+        return new Expression( field.type() )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -275,7 +310,7 @@ public abstract class Expression extends ExpressionTemplate
     /** get static field */
     public static Expression get( final FieldReference field )
     {
-        return new Expression()
+        return new Expression( field.type() )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -287,7 +322,8 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression ternaryOnNull( final Expression test, final Expression onTrue, final Expression onFalse )
     {
-        return new Expression()
+        TypeReference reference = onTrue.type.equals( onFalse.type ) ? onTrue.type : OBJECT;
+        return new Expression( reference )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -297,9 +333,11 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression ternaryOnNonNull( final Expression test, final Expression onTrue, final Expression onFalse )
+    public static Expression ternaryOnNonNull( final Expression test, final Expression onTrue,
+            final Expression onFalse )
     {
-        return new Expression()
+        TypeReference reference = onTrue.type.equals( onFalse.type ) ? onTrue.type : OBJECT;
+        return new Expression( reference )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -311,7 +349,8 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression ternary( final Expression test, final Expression onTrue, final Expression onFalse )
     {
-        return new Expression()
+        TypeReference reference = onTrue.type.equals( onFalse.type ) ? onTrue.type : OBJECT;
+        return new Expression( reference )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -324,7 +363,7 @@ public abstract class Expression extends ExpressionTemplate
     public static Expression invoke( final Expression target, final MethodReference method,
             final Expression... arguments )
     {
-        return new Expression()
+        return new Expression( method.returns() )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -336,7 +375,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression invoke( final MethodReference method, final Expression... parameters )
     {
-        return new Expression()
+        return new Expression( method.returns() )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -353,7 +392,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression cast( final TypeReference type, Expression expression )
     {
-        return new Expression()
+        return new Expression( type )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -370,7 +409,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression newInstance( final TypeReference type )
     {
-        return new Expression()
+        return new Expression( type )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -382,7 +421,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression not( final Expression expression )
     {
-        return new Expression()
+        return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -394,7 +433,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression toDouble( final Expression expression )
     {
-        return new Expression()
+        return new Expression( DOUBLE )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
@@ -406,7 +445,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression pop( Expression expression )
     {
-        return new Expression()
+        return new Expression( expression.type )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
