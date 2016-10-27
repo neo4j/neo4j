@@ -72,7 +72,7 @@ public class CoreTopology
     @Override
     public String toString()
     {
-        return String.format( "{coreMembers=%s, bootstrappable=%s}", coreMembers.keySet(), canBeBootstrapped() );
+        return String.format( "{coreMembers=%s, bootstrappable=%s}", coreMembers, canBeBootstrapped() );
     }
 
 }

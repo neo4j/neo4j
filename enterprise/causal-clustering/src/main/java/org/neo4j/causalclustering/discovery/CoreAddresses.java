@@ -49,4 +49,14 @@ public class CoreAddresses
     {
         return clientConnectorAddresses;
     }
+
+    @Override
+    public String toString()
+    {
+        return "CoreAddresses{" +
+                "raftServer=" + raftServer +
+                ", catchupServer=" + catchupServer +
+                ", clientConnectorAddresses=" + clientConnectorAddresses +
+                '}';
+    }
 }
