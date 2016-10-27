@@ -182,7 +182,7 @@ public class BatchingMessageHandlerTest
         // then
         verifyZeroInteractions( raftStateMachine );
         logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( BatchingMessageHandler.class )
-                .warn( "This handler has been stopped, dropping the message: %s", message ) );
+                .debug( "This handler has been stopped, dropping the message: %s", message ) );
     }
 
     @Test( timeout = 5_000 /* 5 seconds */)

@@ -87,8 +87,10 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
     private void sendFile( ChannelHandlerContext ctx, File file ) throws FileNotFoundException
     {
         ctx.writeAndFlush( ResponseMessageType.FILE );
-        ctx.writeAndFlush( new FileHeader( file.getName(), file.length() ) );
-        ctx.writeAndFlush( new ChunkedNioStream( new FileInputStream( file ).getChannel() ) );
+        long initialLength = file.length();
+        ctx.writeAndFlush( new FileHeader( file.getName(), initialLength ) );
+        ctx.writeAndFlush( new ChunkedNioStream( new LimitedLengthReadableByteChannel(
+                new FileInputStream( file ).getChannel(), initialLength ) ) );
     }
 
     private void endStoreCopy( Status status, ChannelHandlerContext ctx, long lastCommittedTxBeforeStoreCopy )

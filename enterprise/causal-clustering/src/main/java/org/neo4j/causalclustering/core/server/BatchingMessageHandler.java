@@ -68,7 +68,7 @@ class BatchingMessageHandler extends LifecycleAdapter
     {
         if ( stopped )
         {
-            log.warn( "This handler has been stopped, dropping the message: %s", message );
+            log.debug( "This handler has been stopped, dropping the message: %s", message );
             return;
         }
 

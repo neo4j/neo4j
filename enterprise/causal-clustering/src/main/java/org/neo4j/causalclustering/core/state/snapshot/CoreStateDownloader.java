@@ -112,6 +112,7 @@ public class CoreStateDownloader
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {
+                    log.info( "Failed to pull transactions from " + source + ". They may have been pruned away." );
                     localDatabase.delete();
                     new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
                         copyWholeStoreFrom( source, localStoreId, storeFetcher );
