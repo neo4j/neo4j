@@ -177,10 +177,9 @@ public class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
-        String[] allowed = procedure.allowed().length == 0 ? config.rolesFor( procName.toString() ) : procedure.allowed();
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
-                        mode, deprecated, allowed, description );
+                        mode, deprecated, config.rolesFor( procName.toString() ), description );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
@@ -211,10 +210,9 @@ public class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @UserFunction(deprecatedBy) without @Deprecated in " + procName );
 
-        String[] allowed = function.allowed().length == 0 ? config.rolesFor( procName.toString() ) : function.allowed();
         UserFunctionSignature signature =
                 new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
-                        allowed, description );
+                        config.rolesFor( procName.toString() ), description );
 
         return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
     }

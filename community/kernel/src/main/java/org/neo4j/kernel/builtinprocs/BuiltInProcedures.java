@@ -184,32 +184,6 @@ public class BuiltInProcedures
                 .onClose( statement::close );
     }
 
-    @Description( "List all procedures in the DBMS." )
-    @Procedure( name = "dbms.procedures", mode = READ )
-    public Stream<ProcedureResult> listProcedures()
-    {
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            return statement.readOperations().proceduresGetAll()
-                    .stream()
-                    .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
-                    .map( ProcedureResult::new );
-        }
-    }
-
-    @Description( "List all user functions in the DBMS." )
-    @Procedure(name = "dbms.functions", mode = READ)
-    public Stream<FunctionResult> listFunctions()
-    {
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            return statement.readOperations().functionsGetAll()
-                    .stream()
-                    .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
-                    .map( FunctionResult::new );
-        }
-    }
-
     private IndexProcedures indexProcedures()
     {
         return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
@@ -271,35 +245,6 @@ public class BuiltInProcedures
         private ConstraintResult( String description )
         {
             this.description = description;
-        }
-    }
-
-    public class ProcedureResult
-    {
-        public final String name;
-        public final String signature;
-        public final String description;
-
-        private ProcedureResult( ProcedureSignature signature )
-        {
-            this.name = signature.name().toString();
-            this.signature = signature.toString();
-            this.description = signature.description().orElse( "" );
-        }
-    }
-
-    @SuppressWarnings( "unused" )
-    public class FunctionResult
-    {
-        public final String name;
-        public final String signature;
-        public final String description;
-
-        private FunctionResult( UserFunctionSignature signature )
-        {
-            this.name = signature.name().toString();
-            this.signature = signature.toString();
-            this.description = signature.description().orElse( "" );
         }
     }
 

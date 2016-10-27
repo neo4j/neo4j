@@ -22,6 +22,10 @@ package org.neo4j.server.security.enterprise.auth;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -33,11 +37,18 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static org.hamcrest.CoreMatchers.not;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.internal.util.collections.Sets.newSet;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
 public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteractionTestBase<S>
 {
@@ -70,10 +81,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
 
         ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
         assertThat( Arrays.asList( numNodes.allowed() ), containsInAnyOrder( "nonEmpty" ) );
-
-        ProcedureSignature allowedRead =
-                procedures.procedure( new QualifiedName( new String[]{"test"}, "annotatedProcedure" ) );
-        assertThat( Arrays.asList( allowedRead.allowed() ), not( containsInAnyOrder( "nonEmpty" ) ) );
     }
 
     @Test
@@ -127,10 +134,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         UserFunctionSignature funcSig = procedures.function(
                 new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).get();
         assertThat( Arrays.asList( funcSig.allowed() ), containsInAnyOrder( "nonEmpty" ) );
-
-        UserFunctionSignature f2 =
-                procedures.function( new QualifiedName( new String[]{"test"}, "annotatedFunction" ) ).get();
-        assertThat( Arrays.asList( f2.allowed() ), not( containsInAnyOrder( "nonEmpty" ) ) );
     }
 
     @Test
@@ -162,7 +165,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
 
         userManager.newRole( "tester", "noneSubject" );
 
-        assertFail( noneSubject, "CALL test.annotatedProcedure", READ_OPS_NOT_ALLOWED );
         assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "3" ) );
     }
 
@@ -174,7 +176,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         userManager.newRole( "tester", "noneSubject" );
         userManager.newRole( "other", "readSubject" );
 
-        assertFail( noneSubject, "CALL test.annotatedProcedure", READ_OPS_NOT_ALLOWED );
         assertSuccess( readSubject, "CALL test.allowedReadProcedure", itr -> assertKeyIs( itr, "value", "foo" ) );
         assertSuccess( noneSubject, "CALL test.createNode", ResourceIterator::close );
         assertSuccess( readSubject, "CALL test.createNode", ResourceIterator::close );
@@ -191,7 +192,6 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         userManager.newRole( "default", "noneSubject" );
         userManager.newRole( "other", "readSubject" );
 
-        assertFail( noneSubject, "RETURN test.annotatedFunction()", READ_OPS_NOT_ALLOWED );
         assertSuccess( noneSubject, "RETURN test.nonAllowedFunc() AS f", itr -> assertKeyIs( itr, "f", "success" ) );
         assertSuccess( readSubject, "RETURN test.allowedFunction1() AS f", itr -> assertKeyIs( itr, "f", "foo" ) );
         assertSuccess( readSubject, "RETURN test.nonAllowedFunc() AS f", itr -> assertKeyIs( itr, "f", "success" ) );
@@ -222,5 +222,69 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         // Then
         assertSuccess( readSubject, "CALL test.createNode", ResourceIterator::close );
         assertSuccess( noneSubject, "CALL test.numNodes", itr -> assertKeyIs( itr, "count", "4" ) );
+    }
+
+    @Test
+    public void shouldShowAllowedRolesWhenListingProcedures() throws Throwable
+    {
+        configuredSetup( stringMap(
+                SecuritySettings.procedure_roles.name(), "test.numNodes:counter,user",
+                SecuritySettings.default_allowed.name(), "default" ) );
+
+        Map<String,Set<String>> expected = genericMap(
+                "test.staticReadProcedure", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.staticWriteProcedure", newSet( "default", PUBLISHER, ARCHITECT, ADMIN ),
+                "test.staticSchemaProcedure", newSet( "default", ARCHITECT, ADMIN ),
+                "test.annotatedProcedure", newSet( "annotated", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.numNodes", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "db.labels", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.changePassword", newSet( ADMIN ),
+                "dbms.procedures", newSet( ADMIN ),
+                "dbms.listQueries", newSet( ADMIN ),
+                "dbms.security.createUser", newSet( ADMIN ) );
+
+        String call = "CALL dbms.procedures";
+        assertListProceduresHasRoles( adminSubject, expected, call );
+        assertListProceduresHasRoles( schemaSubject, expected, call );
+        assertListProceduresHasRoles( writeSubject, expected, call );
+        assertListProceduresHasRoles( readSubject, expected, call );
+    }
+
+    @Test
+    public void shouldShowAllowedRolesWhenListingFunctions() throws Throwable
+    {
+        configuredSetup( stringMap(
+                SecuritySettings.procedure_roles.name(), "test.allowedFunc:counter,user",
+                SecuritySettings.default_allowed.name(), "default" ) );
+
+        Map<String,Set<String>> expected = genericMap(
+                "test.annotatedFunction", newSet( "annotated", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.allowedFunc", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.nonAllowedFunc", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ) );
+
+        String call = "CALL dbms.functions";
+        assertListProceduresHasRoles( adminSubject, expected, call );
+        assertListProceduresHasRoles( schemaSubject, expected, call );
+        assertListProceduresHasRoles( writeSubject, expected, call );
+        assertListProceduresHasRoles( readSubject, expected, call );
+    }
+
+    private void assertListProceduresHasRoles( S subject, Map<String,Set<String>> expected, String call )
+    {
+        assertSuccess( subject, call, itr ->
+        {
+            List<String> failures = itr.stream().filter( record ->
+            {
+                String name = record.get( "name" ).toString();
+                List<?> roles = (List<?>) record.get( "roles" );
+                return expected.containsKey( name ) && !expected.get( name ).equals( new HashSet<>( roles ) );
+            } ).map( record ->
+            {
+                String name = record.get( "name" ).toString();
+                return name + ": expected '" + expected.get( name ) + "' but was '" + record.get( "roles" ) + "'";
+            } ).collect( toList() );
+
+            assertThat( "Expectations violated: " + failures.toString(), failures.isEmpty() );
+        } );
     }
 }

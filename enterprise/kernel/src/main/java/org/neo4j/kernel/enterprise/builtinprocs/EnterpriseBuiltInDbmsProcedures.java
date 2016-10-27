@@ -24,6 +24,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,10 +44,13 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.enterprise.api.security.CouldBeAdmin;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -60,6 +65,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.function.ThrowingFunction.catchThrown;
 import static org.neo4j.function.ThrowingFunction.throwIfPresent;
@@ -69,7 +75,7 @@ import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( "unused" )
-public class BuiltInProcedures
+public class EnterpriseBuiltInDbmsProcedures
 {
     private static Clock clock = Clocks.systemClock();
     private static final int HARD_CHAR_LIMIT = 2048;
@@ -157,6 +163,77 @@ public class BuiltInProcedures
         assertAdminOrSelf( username );
 
         return terminateConnectionsForValidUser( graph.getDependencyResolver(), username );
+    }
+
+    /*
+    ==================================================================================
+     */
+
+    @Description( "List all user functions in the DBMS." )
+    @Procedure(name = "dbms.functions", mode = DBMS)
+    public Stream<FunctionResult> listFunctions()
+    {
+        return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
+                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .map( FunctionResult::new );
+    }
+
+    public static class FunctionResult
+    {
+        public final String name;
+        public final String signature;
+        public final String description;
+        public final List<String> roles;
+
+        private FunctionResult( UserFunctionSignature signature )
+        {
+            this.name = signature.name().toString();
+            this.signature = signature.toString();
+            this.description = signature.description().orElse( "" );
+            roles = Stream.of( "admin", "reader", "publisher", "architect" ).collect( toList() );
+            roles.addAll( Arrays.asList( signature.allowed() ) );
+        }
+    }
+
+    @Description( "List all procedures in the DBMS." )
+    @Procedure( name = "dbms.procedures", mode = DBMS )
+    public Stream<ProcedureResult> listProcedures()
+    {
+        return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
+                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .map( ProcedureResult::new );
+    }
+
+    @SuppressWarnings( "WeakerAccess" )
+    public static class ProcedureResult
+    {
+        public final String name;
+        public final String signature;
+        public final String description;
+        public final List<String> roles;
+
+        public ProcedureResult( ProcedureSignature signature )
+        {
+            this.name = signature.name().toString();
+            this.signature = signature.toString();
+            this.description = signature.description().orElse( "" );
+            roles = new ArrayList<>();
+            switch ( signature.mode() )
+            {
+            case DBMS:
+                roles.add( "admin" );
+                break;
+            case READ_ONLY:
+                roles.add( "reader" );
+            case READ_WRITE:
+                roles.add( "publisher" );
+            case SCHEMA_WRITE:
+                roles.add( "architect" );
+            default:
+                roles.add( "admin" );
+                roles.addAll( Arrays.asList( signature.allowed() ) );
+            }
+        }
     }
 
     /*

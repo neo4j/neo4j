@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -1072,39 +1073,49 @@ public class ProcedureIT
     @Test
     public void shouldIndicateDefaultValueWhenListingProcedures() throws Throwable
     {
-        //Given/When
-        Result res = db.execute( "CALL dbms.procedures()" );
-
-        while(res.hasNext())
-        {
-            Map<String,Object> result = res.next();
-            if ( result.get("name").equals( "org.neo4j.procedure.nodeWithDefault" ))
-            {
-                assertThat(result.get("signature"),
-                        equalTo("org.neo4j.procedure.nodeWithDefault(node = null :: NODE?) :: (node :: NODE?)"));
-            }
-        }
+        // Given/When
+        List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
+                record.get( "name" ).equals( "org.neo4j.procedure.nodeWithDefault" ) ).collect( Collectors.toList() );
         // Then
-        assertFalse( res.hasNext() );
+        assertFalse( "Expected to find test procedure", results.isEmpty() );
+        assertThat( results.get( 0 ).get( "signature" ),
+                equalTo( "org.neo4j.procedure.nodeWithDefault(node = null :: NODE?) :: (node :: NODE?)" ) );
     }
 
     @Test
     public void shouldShowDescriptionWhenListingProcedures() throws Throwable
     {
-        //Given/When
-        Result res = db.execute( "CALL dbms.procedures()" );
-
-        while(res.hasNext())
-        {
-            Map<String,Object> result = res.next();
-            if ( result.get("name").equals( "org.neo4j.procedure.nodeWithDescription" ))
-            {
-                assertThat(result.get("description"),
-                        equalTo("This is a description"));
-            }
-        }
+        // Given/When
+        List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
+                record.get( "name" ).equals( "org.neo4j.procedure.nodeWithDescription" ) )
+                .collect( Collectors.toList() );
         // Then
-        assertFalse( res.hasNext() );
+        assertFalse( "Expected to find test procedure", results.isEmpty() );
+        assertThat( results.get( 0 ).get( "description" ), equalTo( "This is a description" ) );
+    }
+
+    @Test
+    public void shouldIndicateDefaultValueWhenListingFunctions() throws Throwable
+    {
+        // Given/When
+        List<Map<String,Object>> results = db.execute( "CALL dbms.functions()" ).stream().filter( record ->
+                record.get( "name" ).equals( "org.neo4j.procedure.getNodeName" ) ).collect( Collectors.toList() );
+        // Then
+        assertFalse( "Expected to find test function", results.isEmpty() );
+        assertThat( results.get( 0 ).get( "signature" ),
+                equalTo( "org.neo4j.procedure.getNodeName(node = null :: NODE?) :: (STRING?)" ) );
+    }
+
+    @Test
+    public void shouldShowDescriptionWhenListingFunctions() throws Throwable
+    {
+        // Given/When
+        List<Map<String,Object>> results = db.execute( "CALL dbms.functions()" ).stream().filter( record ->
+                record.get( "name" ).equals( "org.neo4j.procedure.functionWithDescription" ) )
+                .collect( Collectors.toList() );
+        // Then
+        assertFalse( "Expected to find test function", results.isEmpty() );
+        assertThat( results.get( 0 ).get( "description" ), equalTo( "This is a description" ) );
     }
 
     @Test
@@ -1122,6 +1133,7 @@ public class ProcedureIT
     {
         exceptionsInProcedure.clear();
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
+        new JarBuilder().createJarFor( plugins.newFile( "myFunctions.jar" ), ClassWithFunctions.class );
         db = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
@@ -1609,6 +1621,22 @@ public class ProcedureIT
         {
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
             db.createNode();
+        }
+    }
+
+    public static class ClassWithFunctions
+    {
+        @UserFunction()
+        public String getNodeName( @Name( value = "node", defaultValue = "null") Node node )
+        {
+            return "nodeName";
+        }
+
+        @Description( "This is a description" )
+        @UserFunction()
+        public long functionWithDescription()
+        {
+            return 0;
         }
     }
 

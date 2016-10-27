@@ -50,7 +50,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures;
+import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
@@ -462,8 +462,8 @@ public abstract class ProcedureInteractionTestBase<S>
 
     private Map<String,Long> countTransactionsByUsername()
     {
-        return BuiltInProcedures.countTransactionByUsername(
-                    BuiltInProcedures.getActiveTransactions(
+        return EnterpriseBuiltInDbmsProcedures.countTransactionByUsername(
+                    EnterpriseBuiltInDbmsProcedures.getActiveTransactions(
                             neo.getLocalGraph().getDependencyResolver()
                     ).stream()
                             .filter( tx -> !tx.terminationReason().isPresent() )
@@ -473,9 +473,9 @@ public abstract class ProcedureInteractionTestBase<S>
 
     Map<String,Long> countBoltConnectionsByUsername()
     {
-        BoltConnectionTracker boltConnectionTracker = BuiltInProcedures.getBoltConnectionTracker(
+        BoltConnectionTracker boltConnectionTracker = EnterpriseBuiltInDbmsProcedures.getBoltConnectionTracker(
                 neo.getLocalGraph().getDependencyResolver() );
-        return BuiltInProcedures.countConnectionsByUsername(
+        return EnterpriseBuiltInDbmsProcedures.countConnectionsByUsername(
                 boltConnectionTracker
                         .getActiveConnections()
                         .stream()
@@ -596,13 +596,6 @@ public abstract class ProcedureInteractionTestBase<S>
 
         @Procedure( name = "test.allowedReadProcedure", mode = Mode.READ )
         public Stream<AuthProceduresBase.StringResult> allowedProcedure1()
-        {
-            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
-            return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "foo" ).toString() ) );
-        }
-
-        @Procedure( name = "test.annotatedProcedure", mode = Mode.READ, allowed = {"annotated"} )
-        public Stream<AuthProceduresBase.StringResult> annotatedProcedure()
         {
             Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
             return result.stream().map( r -> new AuthProceduresBase.StringResult( r.get( "foo" ).toString() ) );
@@ -740,14 +733,7 @@ public abstract class ProcedureInteractionTestBase<S>
             return result.next().get( "foo" ).toString();
         }
 
-        @UserFunction( name = "test.annotatedFunction", allowed = {"annotated"} )
-        public String annotatedFunction()
-        {
-            Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
-            return result.next().get( "foo" ).toString();
-        }
-
-        @UserFunction( name = "test.allowedFunction2", allowed = {"role2"} )
+        @UserFunction( name = "test.allowedFunction2" )
         public String allowedFunction2()
         {
             Result result = db.execute( "MATCH (:Foo) WITH count(*) AS c RETURN 'foo' AS foo" );
