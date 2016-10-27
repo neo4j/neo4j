@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup.storecopy;
+package org.neo4j.causalclustering.catchup;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,16 +25,14 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
-import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
+import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 
-public class GetStoreIdResponseDecoder extends ByteToMessageDecoder
+class GetStoreIdRequestDecoder extends ByteToMessageDecoder
 {
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        StoreId storeId = StoreIdMarshal.INSTANCE.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
-        out.add( new GetStoreIdResponse( storeId ) );
+        msg.readByte();
+        out.add( new GetStoreIdRequest() );
     }
 }

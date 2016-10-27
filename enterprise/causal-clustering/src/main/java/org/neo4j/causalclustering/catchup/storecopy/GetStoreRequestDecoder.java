@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
@@ -29,7 +30,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
-public class GetStoreRequestDecoder extends MessageToMessageDecoder<ByteBuf>
+public class GetStoreRequestDecoder extends ByteToMessageDecoder
 {
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception

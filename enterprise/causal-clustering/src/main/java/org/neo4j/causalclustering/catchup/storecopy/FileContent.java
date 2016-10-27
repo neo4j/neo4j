@@ -19,31 +19,21 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import io.netty.buffer.ByteBuf;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class FileContent implements AutoCloseable
+public class FileContent
 {
-    private final ByteBuf msg;
+    private final byte[] bytes;
 
-    FileContent( ByteBuf msg )
+    FileContent( byte[] bytes )
     {
-        msg.retain();
-        this.msg = msg;
+        this.bytes = bytes;
     }
 
     int writeTo( OutputStream stream ) throws IOException
     {
-        int bytes = msg.readableBytes();
-        msg.readBytes( stream, bytes );
-        return bytes;
-    }
-
-    @Override
-    public void close()
-    {
-        msg.release();
+        stream.write( bytes );
+        return bytes.length;
     }
 }

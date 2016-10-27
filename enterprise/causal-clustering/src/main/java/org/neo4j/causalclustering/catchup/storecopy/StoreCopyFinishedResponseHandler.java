@@ -32,8 +32,7 @@ public class StoreCopyFinishedResponseHandler extends SimpleChannelInboundHandle
     private final CatchupClientProtocol protocol;
     private CatchUpResponseHandler handler;
 
-    public StoreCopyFinishedResponseHandler( CatchupClientProtocol protocol,
-                                             CatchUpResponseHandler handler )
+    public StoreCopyFinishedResponseHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler )
     {
         this.protocol = protocol;
         this.handler = handler;

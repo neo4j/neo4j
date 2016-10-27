@@ -21,15 +21,17 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
-public class FileContentDecoder extends MessageToMessageDecoder<ByteBuf>
+public class FileContentDecoder extends ByteToMessageDecoder
 {
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        out.add( new FileContent( msg ) );
+        byte[] dst = new byte[msg.readableBytes()];
+        msg.readBytes( dst );
+        out.add( new FileContent( dst ) );
     }
 }

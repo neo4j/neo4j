@@ -30,8 +30,7 @@ public class TxPullResponseHandler extends SimpleChannelInboundHandler<TxPullRes
     private final CatchupClientProtocol protocol;
     private final CatchUpResponseHandler handler;
 
-    public TxPullResponseHandler( CatchupClientProtocol protocol,
-                                  CatchUpResponseHandler handler )
+    public TxPullResponseHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler )
     {
         this.protocol = protocol;
         this.handler = handler;

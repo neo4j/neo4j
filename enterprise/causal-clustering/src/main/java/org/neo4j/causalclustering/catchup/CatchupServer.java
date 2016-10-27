@@ -41,7 +41,6 @@ import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeaderEncoder;
-import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequestHandler;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestDecoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestHandler;
@@ -53,7 +52,6 @@ import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponseEncoder;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotEncoder;
-import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequestHandler;
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
@@ -195,8 +193,8 @@ public class CatchupServer extends LifecycleAdapter
                 new RequestDecoderDispatcher<>( protocol, logProvider );
         decoderDispatcher.register( State.TX_PULL, new TxPullRequestDecoder() );
         decoderDispatcher.register( State.GET_STORE, new GetStoreRequestDecoder() );
-        decoderDispatcher.register( State.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
-        decoderDispatcher.register( State.GET_CORE_SNAPSHOT, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
+        decoderDispatcher.register( State.GET_STORE_ID, new GetStoreIdRequestDecoder() );
+        decoderDispatcher.register( State.GET_CORE_SNAPSHOT, new CoreSnapshotRequestDecoder() );
         return decoderDispatcher;
     }
 

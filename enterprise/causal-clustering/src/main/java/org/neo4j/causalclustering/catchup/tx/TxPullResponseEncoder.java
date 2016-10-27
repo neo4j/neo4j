@@ -19,26 +19,21 @@
  */
 package org.neo4j.causalclustering.catchup.tx;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-import org.neo4j.com.CommittedTransactionSerializer;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
+import org.neo4j.com.CommittedTransactionSerializer;
 
-public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullResponse>
+public class TxPullResponseEncoder extends MessageToByteEncoder<TxPullResponse>
 {
-
     @Override
-    protected void encode( ChannelHandlerContext ctx, TxPullResponse response, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, TxPullResponse response, ByteBuf out ) throws Exception
     {
-        ByteBuf encoded = ctx.alloc().buffer();
-        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( encoded );
+        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( out );
         StoreIdMarshal.INSTANCE.marshal( response.storeId(), channel );
         new CommittedTransactionSerializer( channel ).visit( response.tx() );
-        out.add( encoded );
     }
 }
