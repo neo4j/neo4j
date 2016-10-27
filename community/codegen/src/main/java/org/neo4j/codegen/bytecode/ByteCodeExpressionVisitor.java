@@ -50,6 +50,7 @@ import static org.objectweb.asm.Opcodes.DLOAD;
 import static org.objectweb.asm.Opcodes.DMUL;
 import static org.objectweb.asm.Opcodes.DSUB;
 import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.FADD;
 import static org.objectweb.asm.Opcodes.FASTORE;
 import static org.objectweb.asm.Opcodes.FCMPG;
 import static org.objectweb.asm.Opcodes.FCMPL;
@@ -283,7 +284,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void equal( Expression lhs, Expression rhs )
     {
-        assertSameType( lhs, rhs );
+        assertSameType( lhs, rhs, "compare" );
         switch ( lhs.type().simpleName() )
         {
         case "int":
@@ -373,33 +374,23 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void addInts( Expression lhs, Expression rhs )
+    public void add( Expression lhs, Expression rhs )
     {
+        assertSameType( lhs, rhs, "add" );
         lhs.accept( this );
         rhs.accept( this );
-        methodVisitor.visitInsn( IADD );
-    }
 
-    @Override
-    public void addLongs( Expression lhs, Expression rhs )
-    {
-        lhs.accept( this );
-        rhs.accept( this );
-        methodVisitor.visitInsn( LADD );
-    }
-
-    @Override
-    public void addDoubles( Expression lhs, Expression rhs )
-    {
-        lhs.accept( this );
-        rhs.accept( this );
-        methodVisitor.visitInsn( DADD );
+        numberOperation( lhs.type(),
+                () -> methodVisitor.visitInsn( IADD ),
+                () -> methodVisitor.visitInsn( LADD ),
+                () -> methodVisitor.visitInsn( FADD ),
+                () -> methodVisitor.visitInsn( DADD ) );
     }
 
     @Override
     public void gt( Expression lhs, Expression rhs )
     {
-        assertSameType( lhs, rhs );
+        assertSameType( lhs, rhs, "compare" );
         numberOperation( lhs.type(),
                 () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPLE ),
                 () -> compareLongOrFloatType( lhs, rhs, LCMP, IFLE ),
@@ -411,7 +402,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void gte( Expression lhs, Expression rhs )
     {
-        assertSameType( lhs, rhs );
+        assertSameType( lhs, rhs, "compare" );
         numberOperation( lhs.type(),
                 () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPLT ),
                 () -> compareLongOrFloatType( lhs, rhs, LCMP, IFLT ),
@@ -423,7 +414,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void lt( Expression lhs, Expression rhs )
     {
-        assertSameType( lhs, rhs );
+        assertSameType( lhs, rhs, "compare" );
         numberOperation( lhs.type(),
                 () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPGE ),
                 () -> compareLongOrFloatType( lhs, rhs, LCMP, IFGE ),
@@ -435,7 +426,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void lte( Expression lhs, Expression rhs)
     {
-        assertSameType( lhs, rhs );
+        assertSameType( lhs, rhs, "compare" );
         numberOperation( lhs.type(),
                 () -> compareIntOrReferenceType( lhs, rhs, IF_ICMPGT ),
                 () -> compareLongOrFloatType( lhs, rhs, LCMP, IFGT ),
@@ -685,11 +676,11 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
     }
 
-    private void assertSameType( Expression lhs, Expression rhs )
+    private void assertSameType( Expression lhs, Expression rhs, String operation )
     {
         if ( !lhs.type().equals( rhs.type() ) )
         {
-            throw new IllegalArgumentException( "Can only compare values of the same type" );
+            throw new IllegalArgumentException( String.format( "Can only %s values of the same type", operation ));
         }
     }
 

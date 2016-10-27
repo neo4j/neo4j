@@ -51,11 +51,7 @@ public interface ExpressionVisitor
 
     void and( Expression lhs, Expression rhs );
 
-    void addInts( Expression lhs, Expression rhs );
-
-    void addLongs( Expression lhs, Expression rhs );
-
-    void addDoubles( Expression lhs, Expression rhs );
+    void add( Expression lhs, Expression rhs );
 
     void gt( Expression lhs, Expression rhs );
 

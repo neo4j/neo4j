@@ -46,7 +46,7 @@ import scala.collection.JavaConverters
 
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val generator = new CodeGenerator(GeneratedQueryStructure, CodeGenConfiguration(mode = SourceCodeMode))
+  private val generator = new CodeGenerator(GeneratedQueryStructure, CodeGenConfiguration(mode = ByteCodeMode))
 
   test("all nodes scan") { // MATCH a RETURN a
     //given

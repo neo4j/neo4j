@@ -56,9 +56,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.codegen.Expression.addDoubles;
-import static org.neo4j.codegen.Expression.addInts;
-import static org.neo4j.codegen.Expression.addLongs;
+import static org.neo4j.codegen.Expression.add;
 import static org.neo4j.codegen.Expression.and;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.invoke;
@@ -491,12 +489,12 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             try ( CodeBlock callEach = simple.generateMethod( void.class, "check",
-                    param( boolean.class, "a"), param( boolean.class, "b"), param(Runnable.class, "runner") ) )
+                    param( boolean.class, "a" ), param( boolean.class, "b" ), param( Runnable.class, "runner" ) ) )
             {
-                try ( CodeBlock loop = callEach.whileLoop( callEach.load("a"), callEach.load("b") ))
+                try ( CodeBlock loop = callEach.whileLoop( callEach.load( "a" ), callEach.load( "b" ) ) )
                 {
                     loop.expression( invoke(
-                            loop.load("runner"),
+                            loop.load( "runner" ),
                             methodReference( Runnable.class, void.class, "run" ) ) );
                     loop.returns();
                 }
@@ -510,11 +508,12 @@ public class CodeGenerationTest
         Runnable d = mock( Runnable.class );
 
         // when
-        MethodHandle callEach = instanceMethod( handle.newInstance(), "check", boolean.class, boolean.class, Runnable.class );
-        callEach.invoke( true, true, a);
-        callEach.invoke( true, false, b);
-        callEach.invoke( false, true, c);
-        callEach.invoke( false, false, d);
+        MethodHandle callEach =
+                instanceMethod( handle.newInstance(), "check", boolean.class, boolean.class, Runnable.class );
+        callEach.invoke( true, true, a );
+        callEach.invoke( true, false, b );
+        callEach.invoke( false, true, c );
+        callEach.invoke( false, false, d );
 
         // then
         verify( a ).run();
@@ -647,9 +646,11 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
-                    param( boolean.class, "test1" ),  param( boolean.class, "test2" ), param( Runnable.class, "runner" ) ) )
+                    param( boolean.class, "test1" ), param( boolean.class, "test2" ),
+                    param( Runnable.class, "runner" ) ) )
             {
-                try ( CodeBlock doStuff = conditional.ifStatement( conditional.load( "test1" ), conditional.load( "test2" ) ) )
+                try ( CodeBlock doStuff = conditional
+                        .ifStatement( conditional.load( "test1" ), conditional.load( "test2" ) ) )
                 {
                     doStuff.expression(
                             invoke( doStuff.load( "runner" ), RUN ) );
@@ -665,7 +666,8 @@ public class CodeGenerationTest
         Runnable runner4 = mock( Runnable.class );
 
         // when
-        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, Runnable.class );
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, Runnable.class );
         conditional.invoke( true, true, runner1 );
         conditional.invoke( false, true, runner2 );
         conditional.invoke( true, false, runner3 );
@@ -677,6 +679,7 @@ public class CodeGenerationTest
         verifyZeroInteractions( runner3 );
         verifyZeroInteractions( runner4 );
     }
+
     @Test
     public void shouldGenerateIfNotExpressionStatement() throws Throwable
     {
@@ -720,7 +723,7 @@ public class CodeGenerationTest
             try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
                     param( boolean.class, "test" ), param( Runnable.class, "runner" ) ) )
             {
-                try ( CodeBlock doStuff = conditional.ifNotStatement( conditional.load( "test" ) )  )
+                try ( CodeBlock doStuff = conditional.ifNotStatement( conditional.load( "test" ) ) )
                 {
                     doStuff.expression(
                             invoke( doStuff.load( "runner" ), RUN ) );
@@ -1359,22 +1362,7 @@ public class CodeGenerationTest
             try ( CodeBlock block = simple.generateMethod( clazz, "add",
                     param( clazz, "a" ), param( clazz, "b" ) ) )
             {
-                if ( clazz == int.class )
-                {
-                    block.returns( addInts( block.load( "a" ), block.load( "b" ) ) );
-                }
-                else if ( clazz == long.class )
-                {
-                    block.returns( addLongs( block.load( "a" ), block.load( "b" ) ) );
-                }
-                else if ( clazz == double.class )
-                {
-                    block.returns( addDoubles( block.load( "a" ), block.load( "b" ) ) );
-                }
-                else
-                {
-                    fail( "adding " + clazz.getSimpleName() + " is not supported" );
-                }
+                block.returns( add( block.load( "a" ), block.load( "b" ) ) );
             }
 
             handle = simple.handle();
@@ -1646,7 +1634,8 @@ public class CodeGenerationTest
             simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( Object.class, "foo" ) )
                     .invokeSuper( new ExpressionTemplate[]{load( "name", typeReference( String.class ) )},
                             new TypeReference[]{typeReference( String.class )} )
-                    .put( self(simple.handle()), String.class, "foo", cast( String.class, load( "foo", typeReference( Object.class ) ) ) )
+                    .put( self( simple.handle() ), String.class, "foo",
+                            cast( String.class, load( "foo", typeReference( Object.class ) ) ) )
                     .build() );
             handle = simple.handle();
         }
@@ -1750,12 +1739,12 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             FieldReference value = simple.field( clazz, "value" );
-            simple.generate(MethodTemplate.constructor(  param( clazz, "value" ) )
+            simple.generate( MethodTemplate.constructor( param( clazz, "value" ) )
                     .invokeSuper()
-                    .put( self(simple.handle()), value.type(), value.name(), load( "value", value.type() ) )
-                    .build());
+                    .put( self( simple.handle() ), value.type(), value.name(), load( "value", value.type() ) )
+                    .build() );
             simple.generate( MethodTemplate.method( clazz, "value" )
-                    .returns( ExpressionTemplate.get( self(simple.handle()), clazz, "value" ) )
+                    .returns( ExpressionTemplate.get( self( simple.handle() ), clazz, "value" ) )
                     .build() );
             handle = simple.handle();
         }
