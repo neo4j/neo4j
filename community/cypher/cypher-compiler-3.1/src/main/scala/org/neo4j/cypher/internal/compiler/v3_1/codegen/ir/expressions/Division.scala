@@ -25,7 +25,7 @@ case class Division(lhs: CodeGenExpression, rhs: CodeGenExpression)
   extends CodeGenExpression with BinaryOperator{
 
   override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.divide
+    structure.divideExpression
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 

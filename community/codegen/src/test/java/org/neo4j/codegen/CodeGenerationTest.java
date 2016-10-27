@@ -64,8 +64,7 @@ import static org.neo4j.codegen.Expression.newArray;
 import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.not;
 import static org.neo4j.codegen.Expression.or;
-import static org.neo4j.codegen.Expression.subtractDoubles;
-import static org.neo4j.codegen.Expression.subtractLongs;
+import static org.neo4j.codegen.Expression.subtract;
 import static org.neo4j.codegen.Expression.ternary;
 import static org.neo4j.codegen.ExpressionTemplate.cast;
 import static org.neo4j.codegen.ExpressionTemplate.load;
@@ -1387,18 +1386,7 @@ public class CodeGenerationTest
             try ( CodeBlock block = simple.generateMethod( clazz, "sub",
                     param( clazz, "a" ), param( clazz, "b" ) ) )
             {
-                if ( clazz == long.class )
-                {
-                    block.returns( subtractLongs( block.load( "a" ), block.load( "b" ) ) );
-                }
-                else if ( clazz == double.class )
-                {
-                    block.returns( subtractDoubles( block.load( "a" ), block.load( "b" ) ) );
-                }
-                else
-                {
-                    fail( "adding " + clazz.getSimpleName() + " is not supported" );
-                }
+                    block.returns( subtract( block.load( "a" ), block.load( "b" ) ) );
             }
 
             handle = simple.handle();
