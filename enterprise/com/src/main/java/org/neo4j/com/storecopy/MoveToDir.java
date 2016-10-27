@@ -20,10 +20,8 @@
 package org.neo4j.com.storecopy;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 
 import static org.neo4j.kernel.impl.util.StoreUtil.relevantDbFiles;

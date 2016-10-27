@@ -95,7 +95,9 @@ public class HaSettings
     @Description( "Push strategy of a transaction to a slave during commit." )
     public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_ascending.name() );
 
-    @Description( "Strategy for how to handle copying of the store from the master if branched data happens." )
+    @Description( "Strategy for how to order handling of branched data on slaves and copying of the store from the " +
+            "master. The default is branch_then_copy, which, when combined with the keep_last or keep_none branch" +
+            " handling strategies results in less space used during the store copy." )
     public static final Setting<BranchedDataCopyingStrategy> branched_data_copying_strategy =
             setting( "ha.branched_data_copying_strategy", options( BranchedDataCopyingStrategy.class ), branch_then_copy.name() );
 
@@ -111,10 +113,15 @@ public class HaSettings
 
     public enum BranchedDataCopyingStrategy
     {
-        @Description("Branches the store, copies down a new store from the master, and replaces it. ")
+        @Description("First handles the branched store, then copies down a new store from the master and replaces it." +
+                " This strategy, when combined with the keep_last or keep_none branch handling strategies results in " +
+                "less space used as the store is first removed and then the copy is fetched." )
         branch_then_copy,
 
-        @Description("Copies down a new store from the master, then branches the existing store and replaces it. ")
+        @Description("First copies down a new store from the master, then branches the existing store and replaces it" +
+                ". This strategy uses potentially more space than branch_then_copy but it allows for store copy " +
+                "failures to be recoverable as the original store is maintained until the store copy finishes " +
+                "successfully." )
         copy_then_branch;
     }
 
