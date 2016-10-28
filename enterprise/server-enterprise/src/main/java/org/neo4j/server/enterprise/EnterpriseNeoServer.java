@@ -118,7 +118,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
             throw new IllegalArgumentException( "The server cannot be started in ARBITER mode." );
         case CORE:
             return lifecycleManagingDatabase( CORE_FACTORY );
-        case EDGE:
+        case READ_REPLICA:
             return lifecycleManagingDatabase( EDGE_FACTORY );
         default: // Anything else gives community, including Mode.SINGLE
             return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
