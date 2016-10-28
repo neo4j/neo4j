@@ -29,6 +29,7 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
@@ -37,7 +38,9 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
+
 import static org.neo4j.kernel.impl.util.Converters.mandatory;
 import static org.neo4j.kernel.impl.util.Converters.optional;
 import static org.neo4j.kernel.impl.util.Converters.toFile;
@@ -60,7 +63,8 @@ public class OnlineBackupCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "[--from=<address>] --to=<backup-path> [--check-consistency] " +
+            return Optional.of( "[--from=<address>] --to=<backup-path> " +
+                    "[--check-consistency] [--cc-report-dir=<directory>] " +
                     "[--additional-config=<config-file-path>] [--timeout=<timeout>]" );
         }
 
@@ -77,7 +81,8 @@ public class OnlineBackupCommand implements AdminCommand
                     "<backup-path> is a directory where the backup will be made; if there is already a backup " +
                     "present an incremental backup will be made." +
                     "\n\n" +
-                    "Consistency checking is enabled by default." +
+                    "Consistency checking is enabled by default. Report will be written into the working directory " +
+                    "by default." +
                     "\n\n" +
                     "<timeout> is in the from <time>[ms|s|m|h]; the default is 20m; the default unit is seconds.";
         }
@@ -93,19 +98,22 @@ public class OnlineBackupCommand implements AdminCommand
         {
             return new OnlineBackupCommand(
                     new BackupTool( new BackupService( outsideWorld.errorStream() ), outsideWorld.errorStream() ),
-                    homeDir, configDir );
+                    homeDir, configDir, new ConsistencyCheckService() );
         }
     }
 
     private final BackupTool backupTool;
     private final Path homeDir;
     private final Path configDir;
+    private ConsistencyCheckService consistencyCheckService;
 
-    public OnlineBackupCommand( BackupTool backupTool, Path homeDir, Path configDir )
+    public OnlineBackupCommand( BackupTool backupTool, Path homeDir, Path configDir,
+                                ConsistencyCheckService consistencyCheckService )
     {
         this.backupTool = backupTool;
         this.homeDir = homeDir;
         this.configDir = configDir;
+        this.consistencyCheckService = consistencyCheckService;
     }
 
     @Override
@@ -152,9 +160,21 @@ public class OnlineBackupCommand implements AdminCommand
         return parsedArgs.interpretOption( "to", mandatory(), toFile() );
     }
 
-    private ConsistencyCheck parseConsistencyCheck( Args args )
+    private ConsistencyCheck parseConsistencyCheck( Args args ) throws CommandFailed
     {
-        return args.getBoolean( checkConsistencyArg, true, true ) ? ConsistencyCheck.FULL : ConsistencyCheck.NONE;
+        File reportDir;
+        try
+        {
+            reportDir = args.interpretOption( "cc-report-dir", withDefault( new File(".") ), File::new )
+                    .getCanonicalFile();
+        }
+        catch ( IOException e )
+        {
+            throw new CommandFailed( format( "cannot access report directory: %s: %s",
+                    e.getClass().getSimpleName(), e.getMessage() ), e );
+        }
+        return args.getBoolean( checkConsistencyArg, true, true ) ?
+                ConsistencyCheck.full( reportDir, consistencyCheckService ) : ConsistencyCheck.NONE;
     }
 
     private Optional<Path> parseAdditionalConfig( Args args )
