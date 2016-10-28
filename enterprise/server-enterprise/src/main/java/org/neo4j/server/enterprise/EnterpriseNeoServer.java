@@ -95,7 +95,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
-    private static final GraphFactory EDGE_FACTORY = ( config, dependencies ) -> {
+    private static final GraphFactory READ_REPLICA_FACTORY = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         return new ReadReplicaGraphDatabase( storeDir, config.getParams(), dependencies );
     };
@@ -119,7 +119,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         case CORE:
             return lifecycleManagingDatabase( CORE_FACTORY );
         case READ_REPLICA:
-            return lifecycleManagingDatabase( EDGE_FACTORY );
+            return lifecycleManagingDatabase( READ_REPLICA_FACTORY );
         default: // Anything else gives community, including Mode.SINGLE
             return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
         }
