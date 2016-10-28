@@ -52,6 +52,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 import static java.lang.String.format;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
+import static org.neo4j.kernel.impl.util.Converters.withDefault;
 
 public class CheckConsistencyCommand implements AdminCommand
 {
@@ -65,20 +66,23 @@ public class CheckConsistencyCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "--database=<database-name> [--additional-config=<config-file-path>] [--verbose]" );
+            return Optional.of( "--database=<database-name> [--additional-config=<config-file-path>] [--verbose] " +
+                    "[--report-dir=<directory>]" );
         }
 
         @Override
         public String description()
         {
-            return "Check the consistency of a database.\n" +
+            return "Check the consistency of a database. A detailed report file is written upon failure.\n" +
                     "\n" +
                     "--database=<database>\n" +
                     "        The name of the database to check the consistency of.\n" +
                     "--additional-config=<config-file-path>\n" +
                     "        Configuration file to supply additional configuration in.\n" +
                     "--verbose\n" +
-                    "        Enable verbose output.\n";
+                    "        Enable verbose output.\n" +
+                    "--report-dir=<directory>\n" +
+                    "        Directory into which the report will be written. Defaults to the working directory.";
         }
 
         @Override
@@ -132,11 +136,12 @@ public class CheckConsistencyCommand implements AdminCommand
                     parsedArgs.interpretOption( "additional-config", Converters.optional(), Converters.toFile() );
             try
             {
-                reportDir = new File( "." ).getCanonicalFile();
+                reportDir = parsedArgs
+                        .interpretOption( "report-dir", withDefault( new File( "." ) ), File::new ).getCanonicalFile();
             }
             catch ( IOException e )
             {
-                throw new CommandFailed( format( "cannot read current directory: %s: %s",
+                throw new CommandFailed( format( "cannot access report directory: %s: %s",
                         e.getClass().getSimpleName(), e.getMessage() ), e );
             }
         }

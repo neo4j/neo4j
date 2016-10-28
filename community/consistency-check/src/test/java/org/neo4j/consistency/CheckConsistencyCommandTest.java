@@ -172,4 +172,50 @@ public class CheckConsistencyCommandTest
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
                         anyBoolean(), eq( new File( "." ).getCanonicalFile() ) );
     }
+
+    @Test
+    public void shouldWriteReportFileToSpecifiedDirectory()
+            throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
+
+    {
+        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+
+        Path homeDir = testDir.directory( "home" ).toPath();
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        CheckConsistencyCommand checkConsistencyCommand =
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                        consistencyCheckService );
+
+        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
+                anyObject(), anyBoolean(), anyObject() ) ).toReturn( ConsistencyCheckService.Result.success( null ) );
+
+        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=/some-dir-or-other"} );
+
+        verify( consistencyCheckService )
+                .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
+                        anyBoolean(), eq( new File( "/some-dir-or-other" ) ) );
+    }
+
+    @Test
+    public void shouldCanonicalizeReportDirectory()
+            throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
+
+    {
+        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+
+        Path homeDir = testDir.directory( "home" ).toPath();
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        CheckConsistencyCommand checkConsistencyCommand =
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                        consistencyCheckService );
+
+        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
+                anyObject(), anyBoolean(), anyObject() ) ).toReturn( ConsistencyCheckService.Result.success( null ) );
+
+        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=/foo/../bar"} );
+
+        verify( consistencyCheckService )
+                .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
+                        anyBoolean(), eq( new File( "/bar" ) ) );
+    }
 }
