@@ -89,7 +89,7 @@ public class CheckConsistencyCommandTest
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject() ) )
-                .thenReturn( ConsistencyCheckService.Result.SUCCESS );
+                .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
 
@@ -114,7 +114,7 @@ public class CheckConsistencyCommandTest
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), anyObject() ) )
-                .thenReturn( ConsistencyCheckService.Result.SUCCESS );
+                .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--verbose"} );
 
@@ -138,9 +138,7 @@ public class CheckConsistencyCommandTest
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), anyObject() ) )
-                .thenReturn( ConsistencyCheckService.Result.FAILURE );
-        when( consistencyCheckService.chooseReportPath( new File(".").getCanonicalFile() ) )
-                .thenReturn( new File("/the/report/path") );
+                .thenReturn( ConsistencyCheckService.Result.failure( new File( "/the/report/path" ) ) );
 
         try
         {
@@ -166,7 +164,7 @@ public class CheckConsistencyCommandTest
                         consistencyCheckService );
 
         stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), anyObject() ) ).toReturn( ConsistencyCheckService.Result.SUCCESS );
+                anyObject(), anyBoolean(), anyObject() ) ).toReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
 

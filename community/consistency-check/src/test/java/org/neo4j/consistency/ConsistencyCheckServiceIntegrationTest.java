@@ -19,16 +19,17 @@
  */
 package org.neo4j.consistency;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -50,10 +51,12 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.consistency.ConsistencyCheckService.defaultLogFileName;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -92,8 +95,8 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
 
         // then
-        assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
-        File reportFile = new File( fixture.directory(), defaultLogFileName( timestamp ) );
+        assertTrue( result.isSuccessful() );
+        File reportFile = result.reportFile();
         assertFalse( "Unexpected generation of consistency check report file: " + reportFile, reportFile.exists() );
     }
 
@@ -104,19 +107,20 @@ public class ConsistencyCheckServiceIntegrationTest
         breakNodeStore();
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
+        String logsDir = testDirectory.directory().getPath();
         Config configuration = new Config(
-                settings( GraphDatabaseSettings.logs_directory.name(), testDirectory.directory().getPath() ),
+                settings( GraphDatabaseSettings.logs_directory.name(), logsDir ),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
 
         // then
-        assertEquals( ConsistencyCheckService.Result.FAILURE, result );
-        File reportFile = new File(
-                configuration.get( GraphDatabaseSettings.logs_directory ),
-                defaultLogFileName( timestamp ) );
-        assertTrue( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
+        assertFalse( result.isSuccessful() );
+        String reportFile = format( "inconsistencies-%s.report",
+                new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( timestamp ) );
+        assertEquals( new File( logsDir, reportFile ), result.reportFile() );
+        assertTrue( "Inconsistency report file not generated", result.reportFile().exists() );
     }
 
     @Test
@@ -148,7 +152,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Result result = runFullConsistencyCheck( service, configuration );
 
         // then
-        assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
+        assertTrue( result.isSuccessful() );
     }
 
     @Test
@@ -173,7 +177,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Result result = runFullConsistencyCheck( service, configuration );
 
         // then
-        assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
+        assertTrue( result.isSuccessful() );
     }
 
     private GraphDatabaseService getGraphDatabaseService()

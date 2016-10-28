@@ -62,6 +62,8 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
@@ -207,12 +209,12 @@ public class ConsistencyCheckService
         if ( !summary.isConsistent() )
         {
             log.warn( "See '%s' for a detailed consistency report.", reportFile.getPath() );
-            return Result.FAILURE;
+            return Result.failure( reportFile );
         }
-        return Result.SUCCESS;
+        return Result.success( reportFile );
     }
 
-    public File chooseReportPath( File reportDir )
+    private File chooseReportPath( File reportDir )
     {
         return new File( reportDir, defaultLogFileName( timestamp ) );
     }
@@ -228,27 +230,52 @@ public class ConsistencyCheckService
         return tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
     }
 
-    public static String defaultLogFileName( Date date )
+    private static String defaultLogFileName( Date date )
     {
-        final String formattedDate = new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( date );
-        return String.format( "inconsistencies-%s.report", formattedDate );
+        return format( "inconsistencies-%s.report", new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( date ) );
     }
 
-    public enum Result
+    public interface Result
     {
-        FAILURE( false ), SUCCESS( true );
-
-        private final boolean successful;
-
-        Result( boolean successful )
+        static Result failure( File reportFile )
         {
-            this.successful = successful;
+            return new Result()
+            {
+                @Override
+                public boolean isSuccessful()
+                {
+                    return false;
+                }
+
+                @Override
+                public File reportFile()
+                {
+                    return reportFile;
+                }
+            };
         }
 
-        public boolean isSuccessful()
+        static Result success( File reportFile )
         {
-            return this.successful;
+            return new Result()
+            {
+                @Override
+                public boolean isSuccessful()
+                {
+                    return true;
+                }
+
+                @Override
+                public File reportFile()
+                {
+                    return reportFile;
+                }
+            };
         }
+
+        boolean isSuccessful();
+
+        File reportFile();
     }
 
     public static int defaultConsistencyCheckThreadsNumber()

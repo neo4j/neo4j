@@ -159,7 +159,7 @@ public class CheckConsistencyCommand implements AdminCommand
             if ( !consistencyCheckResult.isSuccessful() )
             {
                 throw new CommandFailed( format( "Inconsistencies found. See '%s' for details.",
-                        consistencyCheckService.chooseReportPath( reportDir ).toString() ) );
+                        consistencyCheckResult.reportFile() ) );
             }
         }
         catch ( ConsistencyCheckIncompleteException | IOException e )
