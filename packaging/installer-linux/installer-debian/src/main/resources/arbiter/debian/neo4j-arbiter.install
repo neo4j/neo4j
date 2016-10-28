@@ -18,3 +18,4 @@ server/conf/neo4j.properties        etc/neo4j-arbiter
 server/conf/neo4j-server.properties etc/neo4j-arbiter
 server/conf/neo4j-wrapper.conf      etc/neo4j-arbiter
 server/neo4j-arbiter-service        etc/init.d
+server/default/* etc/default

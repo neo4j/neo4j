@@ -41,6 +41,10 @@
                      token="neo4j.ext.udc.source=tarball"
                      value="neo4j.ext.udc.source=debian"/>
 
+            <!-- Make the defaults file available to debuild -->
+            <copy file="${project.build.sourceDirectory}/../resources/common/default/neo4j"
+                  toFile="${project.build.outputDirectory}/@{name}/server/default/neo4j"/>
+
             <chmod perm="700">
                 <fileset dir="${project.build.outputDirectory}/@{name}">
                     <include name="**/server/bin/neo4j"/>

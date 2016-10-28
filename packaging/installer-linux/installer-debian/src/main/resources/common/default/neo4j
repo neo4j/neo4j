@@ -1,0 +1,6 @@
+# /etc/default/neo4j
+#
+# Number of seconds to wait for shutdown before killing the process.
+#NEO4J_SHUTDOWN_TIMEOUT=120
+#
+

@@ -13,3 +13,4 @@ server/system       usr/share/neo4j
 
 server/conf/*       etc/neo4j
 server/neo4j-service    etc/init.d
+server/default/* etc/default
