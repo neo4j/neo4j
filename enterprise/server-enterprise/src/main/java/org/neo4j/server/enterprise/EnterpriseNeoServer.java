@@ -65,7 +65,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         HA,
         ARBITER,
         CORE,
-        EDGE;
+        READ_REPLICA;
 
         public static Mode fromString( String value )
         {
