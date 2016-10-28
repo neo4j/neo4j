@@ -71,9 +71,9 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
      * placed here because of user suspension not being a part of community edition
      */
-    private static int MAX_READ_ATTEMPTS = 10;
-
     static final String IS_SUSPENDED = "is_suspended";
+
+    private static int MAX_READ_ATTEMPTS = 10;
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -425,6 +425,10 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         synchronized ( this )
         {
+            for ( String username : usernames )
+            {
+                getUser( username ); // assert that user exists
+            }
             roleRepository.create( role );
         }
 
