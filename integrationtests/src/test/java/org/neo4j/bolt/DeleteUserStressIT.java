@@ -71,7 +71,7 @@ public class DeleteUserStressIT
 
         String msg = String.join( System.lineSeparator(),
                 errors.stream().map( Throwable::getMessage ).collect( Collectors.toList() ) );
-        assertThat( msg, errors, empty());
+        assertThat( msg, errors, empty() );
     }
 
     @SuppressWarnings( "InfiniteLoopStatement" )
