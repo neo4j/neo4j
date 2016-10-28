@@ -37,4 +37,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     val literal: Expression = SignedDecimalIntegerLiteral(intValue.toString)(pos)
     Equals(prop, literal)(pos)
   }
+
+  def literalInt(intValue: Int): SignedDecimalIntegerLiteral =
+    SignedDecimalIntegerLiteral(intValue.toString)(pos)
 }
