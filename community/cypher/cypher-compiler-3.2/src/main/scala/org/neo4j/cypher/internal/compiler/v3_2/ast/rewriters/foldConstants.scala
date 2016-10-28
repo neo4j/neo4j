@@ -102,13 +102,21 @@ case object foldConstants extends Rewriter {
     case e: UnarySubtract =>
       Subtract(SignedDecimalIntegerLiteral("0")(e.position), e.rhs)(e.position)
 
-    case e@Equals(lhs: IntegerLiteral, rhs: IntegerLiteral) if lhs.value == rhs.value => True()(e.position)
-    case e@Equals(lhs: IntegerLiteral, rhs: IntegerLiteral) if lhs.value != rhs.value => False()(e.position)
-    case e@Equals(lhs: DoubleLiteral, rhs: DoubleLiteral) if lhs.value == rhs.value => True()(e.position)
-    case e@Equals(lhs: DoubleLiteral, rhs: DoubleLiteral) if lhs.value != rhs.value => False()(e.position)
-    case e@Equals(lhs: IntegerLiteral, rhs: DoubleLiteral) if lhs.value.doubleValue() == rhs.value => True()(e.position)
-    case e@Equals(lhs: IntegerLiteral, rhs: DoubleLiteral) if lhs.value.doubleValue() != rhs.value => False()(e.position)
-    case e@Equals(lhs: DoubleLiteral, rhs: IntegerLiteral) if lhs.value == rhs.value.doubleValue() => True()(e.position)
-    case e@Equals(lhs: DoubleLiteral, rhs: IntegerLiteral) if lhs.value != rhs.value.doubleValue() => False()(e.position)
+    case e@Equals(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value == rhs.value, e)
+    case e@Equals(lhs: DoubleLiteral, rhs: DoubleLiteral) => asAst(lhs.value == rhs.value, e)
+    case e@Equals(lhs: IntegerLiteral, rhs: DoubleLiteral) => asAst(lhs.value.doubleValue() == rhs.value, e)
+    case e@Equals(lhs: DoubleLiteral, rhs: IntegerLiteral) => asAst(lhs.value == rhs.value.doubleValue(), e)
+
+    case e@LessThan(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value < rhs.value, e)
+    case e@LessThan(lhs: DoubleLiteral, rhs: DoubleLiteral) => asAst(lhs.value < rhs.value, e)
+    case e@LessThan(lhs: IntegerLiteral, rhs: DoubleLiteral) => asAst(lhs.value.doubleValue() < rhs.value, e)
+    case e@LessThan(lhs: DoubleLiteral, rhs: IntegerLiteral) => asAst(lhs.value < rhs.value.doubleValue(), e)
+
+    case e@GreaterThan(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value > rhs.value, e)
+    case e@GreaterThan(lhs: DoubleLiteral, rhs: DoubleLiteral) => asAst(lhs.value > rhs.value, e)
+    case e@GreaterThan(lhs: IntegerLiteral, rhs: DoubleLiteral) => asAst(lhs.value.doubleValue() > rhs.value, e)
+    case e@GreaterThan(lhs: DoubleLiteral, rhs: IntegerLiteral) => asAst(lhs.value > rhs.value.doubleValue(), e)
   })
+
+  private def asAst(b: Boolean, e: Expression) = if (b) True()(e.position) else False()(e.position)
 }

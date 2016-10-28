@@ -164,6 +164,8 @@ case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expre
 
 sealed trait InequalityExpression extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   override val signatures = Vector(
+    ExpressionSignature(argumentTypes = Vector(CTFloat, CTInteger), outputType = CTBoolean),
+    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTBoolean),
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
     ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)

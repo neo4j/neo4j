@@ -42,7 +42,7 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) RETURN 12 * (n.prop * 5) AS r", "MATCH (n) RETURN n.prop * 60 AS r")
   }
 
-  test("solve comparisons between literals") {
+  test("solve equality comparisons between literals") {
     assertRewrite("MATCH (n) WHERE 1=1 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1=8 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.2=1.2 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
@@ -56,5 +56,31 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) WHERE 1.2=1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1+(5*4)/(3*4)=2 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
     assertIsNotRewritten("MATCH (n) WHERE 1=null RETURN n AS r")
+  }
+
+  test("solve greater than comparisons between literals") {
+    assertRewrite("MATCH (n) WHERE 2>1 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1>2 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1.2>2.4 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 2.0>1.0 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1.0>8.0 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 2>1.0 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1>8.0 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 2.0>1 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1.0>7 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1.2>1 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+  }
+
+  test("solve less than comparisons between literals") {
+    assertRewrite("MATCH (n) WHERE 2<1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1<2 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1.2<2.4 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 2.0<1.0 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1.0<8.0 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 2<1.0 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1<8.0 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 2.0<1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1.0<7 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
+    assertRewrite("MATCH (n) WHERE 1.2<1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
   }
 }
