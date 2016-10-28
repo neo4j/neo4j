@@ -55,11 +55,11 @@ public class MembershipWaiter
     private final JobScheduler jobScheduler;
     private final Supplier<DatabaseHealth> dbHealthSupplier;
     private final long maxCatchupLag;
-    private LeaderCommitWaiter<MEMBER> waiter;
+    private LeaderCommitWaiter waiter;
     private final Log log;
 
     public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, Supplier<DatabaseHealth> dbHealthSupplier,
-            long maxCatchupLag, LeaderCommitWaiter<MemberId> leaderCommitWaiter, LogProvider logProvider )
+            long maxCatchupLag, LeaderCommitWaiter leaderCommitWaiter, LogProvider logProvider )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
@@ -76,7 +76,7 @@ public class MembershipWaiter
         Evaluator evaluator = new Evaluator( raft, catchUpFuture, dbHealthSupplier );
 
         jobScheduler.schedule( new JobScheduler.Group( getClass().toString(), POOLED ), () -> {
-            while ( waiter.keepWaiting(raftState) )
+            while ( waiter.keepWaiting( raft.state() ) )
             {
                 waiter.waitMore();
             }
@@ -107,6 +107,7 @@ public class MembershipWaiter
             this.dbHealthSupplier = dbHealthSupplier;
         }
 
+        @Override
         public void run()
         {
             if ( !dbHealthSupplier.get().isHealthy() )
@@ -140,12 +141,6 @@ public class MembershipWaiter
             if ( lastLeaderCommit != -1 )
             {
                 caughtUpWithLeader = localCommit >= lastLeaderCommit;
-                log.info( "%s Caught up?: %b  %d => %d (%d behind)%n", myself, caughtUpWithLeader, localCommit,
-                        lastLeaderCommit, lastLeaderCommit - localCommit );
-            }
-            lastLeaderCommit = state.leaderCommit();
-            if ( lastLeaderCommit != -1 )
-            {
                 long gap = lastLeaderCommit - localCommit;
                 log.info( "%s Catchup: %d => %d (%d behind)", myself, localCommit, lastLeaderCommit, gap );
             }

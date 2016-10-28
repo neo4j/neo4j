@@ -17,20 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup;
+package org.neo4j.causalclustering.core.consensus.membership;
 
-public class ThreadSleeper implements Sleeper
+public interface Sleeper
 {
-    @Override
-    public void sleep( long millis )
-    {
-        try
-        {
-            Thread.sleep( millis );
-        }
-        catch ( InterruptedException ignored )
-        {
-            // ignore me
-        }
-    }
+    void sleep( long millis );
 }

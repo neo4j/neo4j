@@ -41,8 +41,10 @@ import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.consensus.log.pruning.PruningScheduler;
+import org.neo4j.causalclustering.core.consensus.membership.LeaderCommitWaiter;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipWaiter;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipWaiterLifecycle;
+import org.neo4j.causalclustering.core.consensus.membership.ThreadSleeper;
 import org.neo4j.causalclustering.core.state.ClusteringModule;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.core.state.CoreState;
@@ -181,7 +183,7 @@ public class CoreServerModule
 
         MembershipWaiter membershipWaiter =
                 new MembershipWaiter( identityModule.myself(), jobScheduler, dbHealthSupplier, electionTimeout * 4,
-                        logProvider );
+                        new LeaderCommitWaiter( new ThreadSleeper() ), logProvider );
         long joinCatchupTimeout = config.get( CausalClusteringSettings.join_catch_up_timeout );
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter,
                 joinCatchupTimeout, consensusModule.raftMachine(), logProvider );

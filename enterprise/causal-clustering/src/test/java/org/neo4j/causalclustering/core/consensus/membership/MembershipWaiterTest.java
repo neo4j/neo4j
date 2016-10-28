@@ -19,13 +19,12 @@
  */
 package org.neo4j.causalclustering.core.consensus.membership;
 
-import java.util.HashSet;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
@@ -38,10 +37,8 @@ import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
@@ -61,7 +58,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500,
-                new LeaderCommitWaiter<>( new NoSleepSleeper() ), NullLogProvider.getInstance() );
+                new LeaderCommitWaiter( new NoSleepSleeper() ), NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -86,23 +83,22 @@ public class MembershipWaiterTest
     public void shouldWaitUntilLeaderCommitIsAvailable() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 500,
-                NullLogProvider.getInstance(), new LeaderCommitWaiter<>( new NoSleepSleeper() ) );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500,
+                new LeaderCommitWaiter( new NoSleepSleeper() ), NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        raftLog.commit( 0 );
+        ExposedRaftState raftState = RaftStateBuilder.raftState()
+                .votingMembers( member( 0 ) )
+                .leaderCommit( 0 )
+                .entryLog( raftLog )
+                .commitIndex( 0L )
+                .build().copy();
 
-        RaftState<RaftTestMember> raftState = mock( RaftState.class );
-        when( raftState.leaderCommit() ).thenReturn( -1L, -1L, 0L, 0L );
+        RaftMachine raft = mock( RaftMachine.class );
+        when( raft.state() ).thenReturn( raftState );
 
-        when( raftState.entryLog() ).thenReturn( raftLog );
-
-        HashSet<RaftTestMember> members = new HashSet<>();
-        members.add( member( 0 ) );
-        when( raftState.votingMembers() ).thenReturn( members );
-
-        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raftState );
+        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raft );
         jobScheduler.runJob();
         jobScheduler.runJob();
 
@@ -113,8 +109,9 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfCaughtUpButNotMember() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
-                new LeaderCommitWaiter<>( new NoSleepSleeper() ), NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, new
+                LeaderCommitWaiter( new NoSleepSleeper() ),
+                NullLogProvider.getInstance() );
 
         ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 1 ) )
@@ -143,8 +140,9 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfMemberButNotCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
-                new LeaderCommitWaiter<>( new NoSleepSleeper() ), NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, new
+                LeaderCommitWaiter( new NoSleepSleeper() ),
+                NullLogProvider.getInstance() );
 
         ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ), member( 1 ) )
@@ -173,14 +171,17 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfLeaderCommitIsNeverKnown() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 1,
-                NullLogProvider.getInstance(), new LimitedTriesLeaderCommitWaiter<>( new NoSleepSleeper(), 1 ) );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth,  1,
+                new LimitedTriesLeaderCommitWaiter( new NoSleepSleeper(), 1 ), NullLogProvider.getInstance() );
 
-        RaftState<RaftTestMember> raftState = RaftStateBuilder.raftState()
-                .leaderCommit( -1L )
-                .build();
+        ExposedRaftState raftState = RaftStateBuilder.raftState()
+                .leaderCommit( -1 )
+                .build().copy();
 
-        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raftState );
+        RaftMachine raft = mock( RaftMachine.class );
+        when(raft.state()).thenReturn( raftState );
+
+        CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raft );
         jobScheduler.runJob();
 
         try
@@ -203,7 +204,7 @@ public class MembershipWaiterTest
         }
     }
 
-    class LimitedTriesLeaderCommitWaiter<MEMBER> extends LeaderCommitWaiter<MEMBER>
+    class LimitedTriesLeaderCommitWaiter extends LeaderCommitWaiter
     {
         private int attempts;
 
@@ -220,7 +221,7 @@ public class MembershipWaiterTest
         }
 
         @Override
-        public boolean keepWaiting( ReadableRaftState<MEMBER> raftState )
+        public boolean keepWaiting( ExposedRaftState raftState )
         {
             return super.keepWaiting( raftState ) && attempts > 0;
         }

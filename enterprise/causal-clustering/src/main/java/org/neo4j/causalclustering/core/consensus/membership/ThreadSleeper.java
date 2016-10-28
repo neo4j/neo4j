@@ -17,27 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.membership;
+package org.neo4j.causalclustering.core.consensus.membership;
 
-import org.neo4j.coreedge.catchup.Sleeper;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
-
-public class LeaderCommitWaiter<MEMBER>
+public class ThreadSleeper implements Sleeper
 {
-    private Sleeper sleeper;
-
-    public LeaderCommitWaiter( Sleeper sleeper )
+    @Override
+    public void sleep( long millis )
     {
-        this.sleeper = sleeper;
-    }
-
-    public void waitMore()
-    {
-        sleeper.sleep( 100 );
-    }
-
-    public boolean keepWaiting( ReadableRaftState<MEMBER> raftState )
-    {
-        return raftState.leaderCommit() == -1;
+        try
+        {
+            Thread.sleep( millis );
+        }
+        catch ( InterruptedException ignored )
+        {
+            // ignore me
+        }
     }
 }
