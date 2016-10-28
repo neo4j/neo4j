@@ -19,35 +19,20 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.util.function.Supplier;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
-import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
-import static org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
-
-public class GetStoreIdRequestHandler extends SimpleChannelInboundHandler<GetStoreIdRequest>
+public class GetStoreIdResponseEncoder extends MessageToByteEncoder<StoreId>
 {
-    private final CatchupServerProtocol protocol;
-    private final Supplier<StoreId> storeIdSupplier;
-
-    public GetStoreIdRequestHandler( CatchupServerProtocol protocol, Supplier<StoreId> storeIdSupplier )
-    {
-        this.protocol = protocol;
-        this.storeIdSupplier = storeIdSupplier;
-    }
-
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, GetStoreIdRequest msg ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, StoreId storeId, ByteBuf out ) throws Exception
     {
-        ctx.writeAndFlush( ResponseMessageType.STORE_ID );
-        ctx.writeAndFlush( storeIdSupplier.get() );
-        protocol.expect( State.MESSAGE_TYPE );
+        StoreIdMarshal.INSTANCE.marshal( storeId, new NetworkFlushableByteBuf( out ) );
     }
 }
