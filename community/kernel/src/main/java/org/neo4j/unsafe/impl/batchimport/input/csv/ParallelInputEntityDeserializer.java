@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.collection.ContinuableArrayCursor;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
-import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -47,6 +46,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.Deser
 import org.neo4j.unsafe.impl.batchimport.staging.TicketedProcessing;
 
 import static org.neo4j.csv.reader.Source.singleChunk;
+import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.impl.util.Validators.emptyValidator;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.noDecorator;
 
@@ -263,11 +263,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     @Override
     public void close()
     {
-        // At this point normally the "slurp" above will have called shutdown and so calling close
-        // before that has completed signals some sort of panic. Encode this knowledge in flags passed
-        // to shutdown
-        int flags = processingCompletion.isDone() ? 0 : TaskExecutor.SF_ABORT_QUEUED;
-        processing.shutdown( flags );
+        processing.shutdown();
         try
         {
             source.close();

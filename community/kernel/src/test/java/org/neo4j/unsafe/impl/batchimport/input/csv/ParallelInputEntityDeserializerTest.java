@@ -29,7 +29,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.RandomRule;
-import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
@@ -148,7 +147,7 @@ public class ParallelInputEntityDeserializerTest
                 deserializer.next();
             }
         }
-        catch ( TaskExecutionPanicException e )
+        catch ( IllegalStateException e )
         {
             // THEN it should be able to exit (this exception comes as a side effect)
         }

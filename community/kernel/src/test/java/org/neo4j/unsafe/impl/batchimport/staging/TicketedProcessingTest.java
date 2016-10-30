@@ -32,8 +32,6 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
 import org.neo4j.test.OtherThreadRule;
-import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -90,7 +88,8 @@ public class TicketedProcessingTest
         {
             processing.submit( i );
         }
-        processing.shutdown( TaskExecutor.SF_AWAIT_ALL_COMPLETED );
+        processing.endOfSubmissions();
+        processing.shutdown();
 
         // THEN
         assertions.get();
@@ -133,7 +132,7 @@ public class TicketedProcessingTest
         assertEquals( 3, processing.next().intValue() );
 
         // THEN
-        processing.shutdown( TaskExecutor.SF_AWAIT_ALL_COMPLETED );
+        processing.shutdown();
     }
 
     @Test( timeout = 10_000 )
