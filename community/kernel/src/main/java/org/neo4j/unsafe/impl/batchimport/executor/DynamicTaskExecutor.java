@@ -48,7 +48,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @SuppressWarnings( "unchecked" )
     private volatile Processor[] processors = (Processor[]) Array.newInstance( Processor.class, 0 );
     private volatile boolean shutDown;
-    private volatile boolean abortQueued;
     private volatile Throwable panic;
     private final Supplier<LOCAL> initialLocalState;
     private final int maxProcessorCount;
@@ -142,16 +141,13 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @Override
     public void assertHealthy()
     {
+        if ( panic != null )
+        {
+            throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
+        }
         if ( shutDown )
         {
-            if ( panic != null )
-            {
-                throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
-            }
-            if ( abortQueued )
-            {
-                throw new TaskExecutionPanicException( "Executor has been shut down, aborting queued" );
-            }
+            throw new IllegalStateException( "Executor has been shut down" );
         }
     }
 
@@ -164,30 +160,35 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     }
 
     @Override
-    public synchronized void shutdown( int flags )
+    public synchronized void shutdown()
     {
         if ( shutDown )
         {
-            // We're already shut down, although take the ABORT_QUEUED flag seriously as to abort all
-            // processors still working on tasks. This looks like a panic.
-            if ( (flags & TaskExecutor.SF_ABORT_QUEUED) != 0 )
-            {
-                this.abortQueued = true;
-            }
             return;
         }
 
-        boolean awaitAllCompleted = (flags & TaskExecutor.SF_AWAIT_ALL_COMPLETED) != 0;
-        while ( awaitAllCompleted && !queue.isEmpty() && panic == null /*all bets are off in the event of panic*/ )
+        // Await all tasks to go into processing
+        while ( !queue.isEmpty() && panic == null /*all bets are off in the event of panic*/ )
+        {
+            parkAWhile();
+        }
+        // Await all processing tasks to be completed
+        for ( Processor processor : processors )
+        {
+            processor.processorShutDown = true;
+        }
+        while ( anyAlive() && panic == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
         this.shutDown = true;
-        this.abortQueued = (flags & TaskExecutor.SF_ABORT_QUEUED) != 0;
-        while ( awaitAllCompleted && anyAlive() && panic == null /*all bets are off in the event of panic*/ )
-        {
-            parkAWhile();
-        }
+    }
+
+    @Override
+    public void panic( Throwable panic )
+    {
+        this.panic = panic;
+        shutdown();
     }
 
     @Override
@@ -250,8 +251,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                     }
                     catch ( Throwable e )
                     {
-                        panic = e;
-                        shutdown( TaskExecutor.SF_ABORT_QUEUED );
+                        panic( e );
                         throw launderedException( e );
                     }
                 }

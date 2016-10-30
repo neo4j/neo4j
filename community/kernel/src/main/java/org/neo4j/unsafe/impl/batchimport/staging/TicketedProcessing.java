@@ -30,9 +30,7 @@ import java.util.function.Supplier;
 import org.neo4j.unsafe.impl.batchimport.Parallelizable;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
-import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.helpers.FutureAdapter.future;
@@ -92,7 +90,6 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     };
     private final Runnable healthCheck;
     private volatile boolean done;
-    private volatile Throwable slurpFailure;
 
     public TicketedProcessing( String name, int maxProcessors, BiFunction<FROM,STATE,TO> processor,
             Supplier<STATE> threadLocalStateSupplier )
@@ -100,14 +97,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
         this.processor = processor;
         this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, maxProcessors, park, name,
                 threadLocalStateSupplier );
-        this.healthCheck = () ->
-        {
-            if ( slurpFailure != null )
-            {
-                throw new TaskExecutionPanicException( "Failure adding jobs for processing", slurpFailure );
-            }
-            executor.assertHealthy();
-        };
+        this.healthCheck = executor::assertHealthy;
         this.processed = new ArrayBlockingQueue<>( maxProcessors );
     }
 
@@ -151,17 +141,31 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     }
 
     /**
+     * Should be called after all calls to {@link #submit(Object)} and {@link #slurp(Iterator, boolean)}
+     * have been made. This is due to the async nature of this class where submitted jobs gets processed
+     * and put into result queue for pickup in {@link #next()}, which will not know when to return
+     * {@code null} (marking the end) otherwise. Then after all processed results have been retrieved
+     * a call to {@link #shutdown()} should be made.
+     */
+    public void endOfSubmissions()
+    {
+        done = true;
+    }
+
+    /**
      * Essentially starting a thread {@link #submit(Object) submitting} a stream of inputs which will
      * each be processed and asynchronically made available in order of processing ticket by later calling
      * {@link #next()}.
      *
+     * Failure reading from {@code input} or otherwise submitting jobs will fail the processing after that point.
+     *
      * @param input {@link Iterator} of input to process.
-     * @param shutdownAfterAllSubmitted will call {@link #shutdown(int)} after all jobs submitted if {@code true}.
+     * @param lastSubmissions will call {@link #endOfSubmissions()} after all jobs submitted if {@code true}.
      * @return {@link Future} representing the work of submitting the inputs to be processed. When the future
      * is completed all items from the {@code input} {@link Iterator} have been submitted, but some items
      * may still be queued and processed.
      */
-    public Future<Void> slurp( Iterator<FROM> input, boolean shutdownAfterAllSubmitted )
+    public Future<Void> slurp( Iterator<FROM> input, boolean lastSubmissions )
     {
         return future( () ->
         {
@@ -171,38 +175,34 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
                 {
                     submit( input.next() );
                 }
-                if ( shutdownAfterAllSubmitted )
+                if ( lastSubmissions )
                 {
-                    shutdown( TaskExecutor.SF_AWAIT_ALL_COMPLETED );
+                    endOfSubmissions();
                 }
                 return null;
             }
             catch ( Throwable e )
             {
-                slurpFailure = e;
-                shutdown( TaskExecutor.SF_ABORT_QUEUED );
+                executor.panic( e );
                 throw e;
             }
         } );
     }
 
     /**
-     * Tells this processor that there will be no more submissions and so {@link #next()} will stop blocking,
-     * waiting for new processed results.
-     *
-     * @param flags see {@link TaskExecutor}
+     * Shuts down processing. Normally this method gets called after an arbitrary amount of
+     * {@link #submit(Object)} / {@link #slurp(Iterator, boolean)} concluded with {@link #endOfSubmissions()}
+     * and after all processed results have been {@link #next() retrieved}.
+     * Shutdown can be called before everything has been processed in which case it causes jobs to be aborted.
      */
-    public void shutdown( int flags )
+    public void shutdown()
     {
-        // This also marks the end of input
-        done = true;
-
-        executor.shutdown( flags );
+        executor.shutdown();
     }
 
     /**
-     * @return next processed job (blocking call), or {@code null} if all jobs have been processed
-     * and {@link #shutdown(int)} has been called.
+     * @return next processed job (blocking call). If all submitted jobs have been processed and returned
+     * and {@link #endOfSubmissions()} have been called {@code null} will be returned.
      */
     public TO next()
     {
