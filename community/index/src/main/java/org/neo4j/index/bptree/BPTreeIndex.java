@@ -85,9 +85,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     {
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
-        this.bTreeNode = Knobs.PHYSICALLY_SORTED_ENTRIES
-                ? new TreeNodeV1<>( pageSize, layout )
-                : new TreeNodeV2<>( pageSize, layout );
+        this.bTreeNode = new TreeNode<>( pageSize, layout );
 
         this.modifier = new AtomicReference<>( new Inserter( new IndexModifier<>( this, bTreeNode, layout ) ) );
 
@@ -268,7 +266,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                     {
                         // Means we didn't really find it yet, the fromInclusive is still higher than where we are
                         // so go to this internal node's right sibling and continue
-                        if ( !Knobs.SPLIT_KEEPS_SOURCE_INTACT && bTreeNode.isNode( rightSibling ) )
+                        if ( bTreeNode.isNode( rightSibling ) )
                         {
                             childId = rightSibling;
                         }

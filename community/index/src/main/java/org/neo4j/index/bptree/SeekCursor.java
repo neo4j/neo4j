@@ -120,7 +120,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 if ( !currentContainsEnd || layout.compare( mutableKey, toExclusive ) < 0 )
                 {
                     if ( layout.compare( mutableKey, fromInclusive ) < 0 ||
-                            layout.compare( prevKey, mutableKey ) >= 0 )
+                         layout.compare( prevKey, mutableKey ) >= 0 )
                     {
                         // We've come across a bad read in the middle of a split
                         // This is outlined in IndexModifier, skip this value (it's fine)

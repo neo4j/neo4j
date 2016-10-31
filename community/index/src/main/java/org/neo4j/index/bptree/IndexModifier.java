@@ -139,11 +139,6 @@ public class IndexModifier<KEY,VALUE>
 
         if ( split != null )
         {
-            // update left child (key remains and pos is known by this very method)
-            if ( Knobs.SPLIT_KEEPS_SOURCE_INTACT )
-            {
-                bTreeNode.setChildAt( cursor, split.left, pos );
-            }
             return insertInInternal( cursor, currentId, keyCount, split.primKey, split.right, options, level );
         }
         return null;
@@ -206,7 +201,7 @@ public class IndexModifier<KEY,VALUE>
     {
         long current = cursor.getCurrentPageId();
         long oldLeft = bTreeNode.leftSibling( cursor );
-        long newLeft = Knobs.SPLIT_KEEPS_SOURCE_INTACT ? idProvider.acquireNewId() : current;
+        long newLeft = current;
         long oldRight = bTreeNode.rightSibling( cursor );
         long newRight = idProvider.acquireNewId();
 
@@ -245,50 +240,23 @@ public class IndexModifier<KEY,VALUE>
             layout.readKey( buffer, split.primKey );
         }
 
-        if ( Knobs.SPLIT_KEEPS_SOURCE_INTACT )
-        {   // Update new left
-            cursor.next( newLeft );
-            bTreeNode.initializeInternal( cursor );
-            bTreeNode.setRightSibling( cursor, newRight );
-            bTreeNode.setLeftSibling( cursor, oldLeft );
-            bTreeNode.writeKeys( cursor, tmp2, 0, 0, middle );
-            bTreeNode.writeChildren( cursor, tmp3, 0, 0, middle + 1 );
-            bTreeNode.setKeyCount( cursor, middle );
+        // Update left node
+        // Move cursor back to left
+        cursor.next( fullNode );
+        bTreeNode.setKeyCount( cursor, middle );
+        if ( pos < middle )
+        {
+            // Write keys to left
+            int arrayOffset = pos * bTreeNode.keySize();
+            cursor.setOffset( bTreeNode.keyOffset( pos ) );
+            cursor.putBytes( tmp2, arrayOffset, (middle - pos) * bTreeNode.keySize() );
 
-            if ( bTreeNode.isNode( oldRight ) )
-            {   // Update old right
-                cursor.next( oldRight );
-                bTreeNode.setLeftSibling( cursor, newRight );
-            }
-
-            if ( bTreeNode.isNode( oldLeft ) )
-            {   // Update old left
-                cursor.next( oldLeft );
-                bTreeNode.setRightSibling( cursor, newLeft );
-            }
-
-            // Move back to current TODO do we really need this?
-            cursor.next( current );
+            cursor.setOffset( bTreeNode.childOffset( pos + 1 ) );
+            arrayOffset = (pos + 1) * bTreeNode.childSize();
+            cursor.putBytes( tmp3, arrayOffset, (middle - pos) * bTreeNode.childSize() );
         }
-        else
-        {   // Update left node
-            // Move cursor back to left
-            cursor.next( fullNode );
-            bTreeNode.setKeyCount( cursor, middle );
-            if ( pos < middle )
-            {
-                // Write keys to left
-                int arrayOffset = pos * bTreeNode.keySize();
-                cursor.setOffset( bTreeNode.keyOffset( pos ) );
-                cursor.putBytes( tmp2, arrayOffset, (middle - pos) * bTreeNode.keySize() );
 
-                cursor.setOffset( bTreeNode.childOffset( pos + 1 ) );
-                arrayOffset = (pos + 1) * bTreeNode.childSize();
-                cursor.putBytes( tmp3, arrayOffset, (middle - pos) * bTreeNode.childSize() );
-            }
-
-            bTreeNode.setRightSibling( cursor, newRight );
-        }
+        bTreeNode.setRightSibling( cursor, newRight );
 
         return split;
     }
@@ -382,7 +350,7 @@ public class IndexModifier<KEY,VALUE>
 
         long current = cursor.getCurrentPageId();
         long oldLeft = bTreeNode.leftSibling( cursor );
-        long newLeft = Knobs.SPLIT_KEEPS_SOURCE_INTACT ? idProvider.acquireNewId() : current;
+        long newLeft = current;
         long oldRight = bTreeNode.rightSibling( cursor );
         long newRight = idProvider.acquireNewId();
 
@@ -467,42 +435,16 @@ public class IndexModifier<KEY,VALUE>
             bTreeNode.setKeyCount( cursor, keyCountAfterInsert - middle );
         }
 
-        if ( Knobs.SPLIT_KEEPS_SOURCE_INTACT )
-        {   // Update new left
-            cursor.next( newLeft );
-            bTreeNode.initializeLeaf( cursor );
-            bTreeNode.setRightSibling( cursor, newRight );
-            bTreeNode.setLeftSibling( cursor, oldLeft );
-            bTreeNode.writeKeys( cursor, tmp2, 0, 0, middle );
-            bTreeNode.writeValues( cursor, tmp3, 0, 0, middle );
-            bTreeNode.setKeyCount( cursor, middle );
-
-            if ( bTreeNode.isNode( oldRight ) )
-            {   // Update old right
-                cursor.next( oldRight );
-                bTreeNode.setLeftSibling( cursor, newRight );
-            }
-
-            if ( bTreeNode.isNode( oldLeft ) )
-            {   // Update old left
-                cursor.next( oldLeft );
-                bTreeNode.setRightSibling( cursor, newLeft );
-            }
-
-            cursor.next( current );
+        // Update left child
+        cursor.next( current );
+        bTreeNode.setKeyCount( cursor, middle );
+        // If pos < middle. Write shifted values to left node. Else, don't write anything.
+        if ( pos < middle )
+        {
+            bTreeNode.writeKeys( cursor, tmp2, pos, pos, middle - pos );
+            bTreeNode.writeValues( cursor, tmp3, pos, pos, middle - pos );
         }
-        else
-        {   // Update left child
-            cursor.next( current );
-            bTreeNode.setKeyCount( cursor, middle );
-            // If pos < middle. Write shifted values to left node. Else, don't write anything.
-            if ( pos < middle )
-            {
-                bTreeNode.writeKeys( cursor, tmp2, pos, pos, middle - pos );
-                bTreeNode.writeValues( cursor, tmp3, pos, pos, middle - pos );
-            }
-            bTreeNode.setRightSibling( cursor, newRight );
-        }
+        bTreeNode.setRightSibling( cursor, newRight );
 
         return split;
     }
