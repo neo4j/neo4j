@@ -62,6 +62,8 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
@@ -91,6 +93,14 @@ public class ConsistencyCheckService
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
             boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
     {
+        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+                verbose, defaultReportDir( tuningConfiguration, storeDir ) );
+    }
+
+    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
+            boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException, IOException
+    {
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, tuningConfiguration, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ) );
@@ -98,8 +108,8 @@ public class ConsistencyCheckService
 
         try
         {
-            return runFullConsistencyCheck(
-                    storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose );
+            return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+                    pageCache, verbose, reportDir );
         }
         finally
         {
@@ -119,6 +129,15 @@ public class ConsistencyCheckService
             final FileSystemAbstraction fileSystem, final PageCache pageCache, final boolean verbose )
             throws ConsistencyCheckIncompleteException
     {
+        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
+                pageCache, verbose, defaultReportDir( tuningConfiguration, storeDir ) );
+    }
+
+    public Result runFullConsistencyCheck( final File storeDir, Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory, final LogProvider logProvider,
+            final FileSystemAbstraction fileSystem, final PageCache pageCache, final boolean verbose, File reportDir )
+            throws ConsistencyCheckIncompleteException
+    {
         Log log = logProvider.getLog( getClass() );
         Config consistencyCheckerConfig = tuningConfiguration.with(
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
@@ -126,8 +145,7 @@ public class ConsistencyCheckService
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
 
         ConsistencySummaryStatistics summary;
-        // With the added neo4j_home config the logs directory will end up in db location
-        final File reportFile = chooseReportPath( tuningConfiguration, storeDir );
+        final File reportFile = chooseReportPath( reportDir );
         Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( () -> {
             try
             {
@@ -191,12 +209,17 @@ public class ConsistencyCheckService
         if ( !summary.isConsistent() )
         {
             log.warn( "See '%s' for a detailed consistency report.", reportFile.getPath() );
-            return Result.FAILURE;
+            return Result.failure( reportFile );
         }
-        return Result.SUCCESS;
+        return Result.success( reportFile );
     }
 
-    public File chooseReportPath( Config tuningConfiguration, File storeDir )
+    private File chooseReportPath( File reportDir )
+    {
+        return new File( reportDir, defaultLogFileName( timestamp ) );
+    }
+
+    private File defaultReportDir( Config tuningConfiguration, File storeDir )
     {
         if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
         {
@@ -204,31 +227,55 @@ public class ConsistencyCheckService
                     stringMap( GraphDatabaseSettings.neo4j_home.name(), storeDir.getAbsolutePath() ) );
         }
 
-        final File reportPath = tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
-        return new File( reportPath, defaultLogFileName( timestamp ) );
+        return tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
     }
 
-    public static String defaultLogFileName( Date date )
+    private static String defaultLogFileName( Date date )
     {
-        final String formattedDate = new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( date );
-        return String.format( "inconsistencies-%s.report", formattedDate );
+        return format( "inconsistencies-%s.report", new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( date ) );
     }
 
-    public enum Result
+    public interface Result
     {
-        FAILURE( false ), SUCCESS( true );
-
-        private final boolean successful;
-
-        Result( boolean successful )
+        static Result failure( File reportFile )
         {
-            this.successful = successful;
+            return new Result()
+            {
+                @Override
+                public boolean isSuccessful()
+                {
+                    return false;
+                }
+
+                @Override
+                public File reportFile()
+                {
+                    return reportFile;
+                }
+            };
         }
 
-        public boolean isSuccessful()
+        static Result success( File reportFile )
         {
-            return this.successful;
+            return new Result()
+            {
+                @Override
+                public boolean isSuccessful()
+                {
+                    return true;
+                }
+
+                @Override
+                public File reportFile()
+                {
+                    return reportFile;
+                }
+            };
         }
+
+        boolean isSuccessful();
+
+        File reportFile();
     }
 
     public static int defaultConsistencyCheckThreadsNumber()

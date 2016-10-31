@@ -20,39 +20,48 @@
 package org.neo4j.backup;
 
 import java.io.File;
-import java.util.Arrays;
 
+import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
-enum ConsistencyCheck
+interface ConsistencyCheck
 {
-    NONE
+    ConsistencyCheck NONE =
+            new ConsistencyCheck()
             {
                 @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration,
-                        ProgressMonitorFactory progressFactory, LogProvider logProvider,
-                        FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
+                public String name()
+                {
+                    return "none";
+                }
+
+                @Override
+                public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose ) throws ConsistencyCheckFailedException
                 {
                     return true;
                 }
-            },
-    FULL
+            };
+
+    ConsistencyCheck FULL =
+            new ConsistencyCheck()
             {
                 @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration,
-                        ProgressMonitorFactory progressFactory, LogProvider logProvider,
-                        FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
-                        throws ConsistencyCheckFailedException
+                public String name()
+                {
+                    return "full";
+                }
+
+                @Override
+                public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose ) throws ConsistencyCheckFailedException
                 {
                     try
                     {
-                        return new org.neo4j.consistency.ConsistencyCheckService().runFullConsistencyCheck( storeDir,
-                                tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose )
-                                .isSuccessful();
+                        return new ConsistencyCheckService().runFullConsistencyCheck( storeDir, tuningConfiguration,
+                                progressFactory, logProvider, fileSystem, pageCache, verbose ).isSuccessful();
                     }
                     catch ( org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException e )
                     {
@@ -61,20 +70,50 @@ enum ConsistencyCheck
                 }
             };
 
-    public abstract boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
-            LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
+    String name();
+
+    boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
+                     LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
             throws ConsistencyCheckFailedException;
 
-    public static ConsistencyCheck fromString( String name )
+    String toString();
+
+    static ConsistencyCheck fromString( String name )
     {
-        for ( ConsistencyCheck consistencyCheck : values() )
+        for ( ConsistencyCheck consistencyCheck : new ConsistencyCheck[]{NONE, FULL} )
         {
-            if ( consistencyCheck.toString().equalsIgnoreCase( name ) )
+            if ( consistencyCheck.name().equalsIgnoreCase( name ) )
             {
                 return consistencyCheck;
             }
         }
         throw new IllegalArgumentException( "Unknown consistency check name: " + name +
-                ". Supported values: " + Arrays.toString( values() ) );
+                ". Supported values: NONE, FULL" );
+    }
+
+    static ConsistencyCheck full( File reportDir, ConsistencyCheckService consistencyCheckService )
+    {
+        return new ConsistencyCheck()
+        {
+            @Override
+            public String name()
+            {
+                return "full";
+            }
+
+            @Override
+            public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose ) throws ConsistencyCheckFailedException
+            {
+                try
+                {
+                    return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
+                            progressFactory, logProvider, fileSystem, pageCache, verbose, reportDir ).isSuccessful();
+                }
+                catch ( org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException e )
+                {
+                    throw new ConsistencyCheckFailedException( e );
+                }
+            }
+        };
     }
 }

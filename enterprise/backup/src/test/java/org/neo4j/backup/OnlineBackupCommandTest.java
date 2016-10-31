@@ -32,6 +32,7 @@ import org.mockito.ArgumentCaptor;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -53,8 +54,10 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 
+import static org.neo4j.consistency.ConsistencyCheckService.Result.success;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_planner;
 
 public class OnlineBackupCommandTest
@@ -62,18 +65,13 @@ public class OnlineBackupCommandTest
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     private final BackupTool tool = mock( BackupTool.class );
-    private OnlineBackupCommand command;
     private Path configDir;
-
-    public OnlineBackupCommandTest()
-    {
-    }
+    private ConsistencyCheckService consistencyCheckService;
 
     @Before
     public void setUp() throws Exception
     {
         configDir = testDirectory.directory( "config-dir" ).toPath();
-        command = new OnlineBackupCommand( tool, Paths.get( "/some/path" ), configDir );
     }
 
     @Test
@@ -164,12 +162,38 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldAskForConsistencyCheckIfSpecified()
-            throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+    public void shouldAskForConsistencyCheckIfSpecified() throws Exception
+
     {
+        consistencyCheckService = mock( ConsistencyCheckService.class );
+        stub( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(), any(), anyBoolean(),
+                any() ) ).toReturn( success( null ) );
+        ArgumentCaptor<ConsistencyCheck> captor = ArgumentCaptor.forClass( ConsistencyCheck.class );
+        stub( tool.executeBackup( any(), any(), captor.capture(), any(), anyLong(), anyBoolean() ) ).toReturn( null );
+
         execute( "--check-consistency", "--to=/" );
 
-        verify( tool ).executeBackup( any(), any(), eq( ConsistencyCheck.FULL ), any(), anyLong(), anyBoolean() );
+        captor.getValue().runFull( null, null, null, null, null, null, false );
+
+        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(), any(),
+                anyBoolean(), eq( new File(".").getCanonicalFile()) );
+    }
+
+    @Test
+    public void shouldSpecifyReportDirIfSpecified() throws Exception
+    {
+        consistencyCheckService = mock( ConsistencyCheckService.class );
+        stub( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(), any(), anyBoolean(),
+                any() ) ).toReturn( success( null ) );
+        ArgumentCaptor<ConsistencyCheck> captor = ArgumentCaptor.forClass( ConsistencyCheck.class );
+        stub( tool.executeBackup( any(), any(), captor.capture(), any(), anyLong(), anyBoolean() ) ).toReturn( null );
+
+        execute( "--check-consistency", "--to=/", "--cc-report-dir=/some/dir" );
+
+        captor.getValue().runFull( null, null, null, null, null, null, false );
+
+        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(), any(),
+                anyBoolean(), eq( new File("/some/dir") ) );
     }
 
     @Test
@@ -253,6 +277,7 @@ public class OnlineBackupCommandTest
 
     private void execute( String... args ) throws IncorrectUsage, CommandFailed
     {
-        command.execute( args );
+        new OnlineBackupCommand( tool, Paths.get( "/some/path" ), configDir, consistencyCheckService )
+                .execute( args );
     }
 }

@@ -49,7 +49,10 @@ import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static java.lang.String.format;
+
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
+import static org.neo4j.kernel.impl.util.Converters.withDefault;
 
 public class CheckConsistencyCommand implements AdminCommand
 {
@@ -63,20 +66,23 @@ public class CheckConsistencyCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "--database=<database-name> [--additional-config=<config-file-path>] [--verbose]" );
+            return Optional.of( "--database=<database-name> [--additional-config=<config-file-path>] [--verbose] " +
+                    "[--report-dir=<directory>]" );
         }
 
         @Override
         public String description()
         {
-            return "Check the consistency of a database.\n" +
+            return "Check the consistency of a database. A detailed report file is written upon failure.\n" +
                     "\n" +
                     "--database=<database>\n" +
                     "        The name of the database to check the consistency of.\n" +
                     "--additional-config=<config-file-path>\n" +
                     "        Configuration file to supply additional configuration in.\n" +
                     "--verbose\n" +
-                    "        Enable verbose output.\n";
+                    "        Enable verbose output.\n" +
+                    "--report-dir=<directory>\n" +
+                    "        Directory into which the report will be written. Defaults to the working directory.";
         }
 
         @Override
@@ -119,6 +125,7 @@ public class CheckConsistencyCommand implements AdminCommand
         String database;
         Boolean verbose;
         File additionalConfigFile;
+        File reportDir;
 
         Args parsedArgs = Args.parse( args );
         try
@@ -127,6 +134,16 @@ public class CheckConsistencyCommand implements AdminCommand
             verbose = parsedArgs.getBoolean( "verbose" );
             additionalConfigFile =
                     parsedArgs.interpretOption( "additional-config", Converters.optional(), Converters.toFile() );
+            try
+            {
+                reportDir = parsedArgs
+                        .interpretOption( "report-dir", withDefault( new File( "." ) ), File::new ).getCanonicalFile();
+            }
+            catch ( IOException e )
+            {
+                throw new CommandFailed( format( "cannot access report directory: %s: %s",
+                        e.getClass().getSimpleName(), e.getMessage() ), e );
+            }
         }
         catch ( IllegalArgumentException e )
         {
@@ -141,12 +158,13 @@ public class CheckConsistencyCommand implements AdminCommand
             checkDbState( storeDir, config );
             ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                     .runFullConsistencyCheck( storeDir, config, ProgressMonitorFactory.textual( System.err ),
-                            FormattedLogProvider.toOutputStream( System.out ), this.fileSystemAbstraction, verbose );
+                            FormattedLogProvider.toOutputStream( System.out ), this.fileSystemAbstraction, verbose,
+                            reportDir );
 
             if ( !consistencyCheckResult.isSuccessful() )
             {
-                throw new CommandFailed( String.format( "Inconsistencies found. See '%s' for details.",
-                        consistencyCheckService.chooseReportPath( config, storeDir ).toString() ) );
+                throw new CommandFailed( format( "Inconsistencies found. See '%s' for details.",
+                        consistencyCheckResult.reportFile() ) );
             }
         }
         catch ( ConsistencyCheckIncompleteException | IOException e )
@@ -169,7 +187,7 @@ public class CheckConsistencyCommand implements AdminCommand
         catch ( IOException e )
         {
             throw new IllegalArgumentException(
-                    String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
+                    format( "Could not read configuration file [%s]", additionalConfigFile ), e );
         }
     }
 
