@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.BranchedStoreInfo;
 
-import static org.neo4j.kernel.ha.store.StoreUtil.getBranchedDataRootDirectory;
+import static org.neo4j.com.storecopy.StoreUtil.getBranchedDataRootDirectory;
 
 
 @Service.Implementation(ManagementBeanProvider.class)

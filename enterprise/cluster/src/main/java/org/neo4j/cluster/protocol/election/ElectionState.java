@@ -111,7 +111,7 @@ public enum ElectionState
                                         {
                                             log.debug( "Starting election process for role " + role );
 
-                                            context.startDemotionProcess( role, demoteNode );
+                                            context.startElectionProcess( role );
 
                                             // Allow other live nodes to vote which one should take over
                                             for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
@@ -141,6 +141,11 @@ public enum ElectionState
                         {
                             if ( !context.electionOk() )
                             {
+                                log.warn( "Context says election is not OK to proceed. " +
+                                        "Failed instances are: " +
+                                        context.getFailed() +
+                                        ", cluster members are: " +
+                                        context.getMembers()  );
                                 break;
                             }
                             if ( context.isInCluster() )
@@ -216,34 +221,6 @@ public enum ElectionState
                             break;
                         }
 
-                        case promote:
-                        {
-                            Object[] args = message.getPayload();
-                            InstanceId promoteNode = (InstanceId) args[0];
-                            String role = (String) args[1];
-
-                            // Start election process for coordinator role
-                            if ( context.isInCluster() && !context.isElectionProcessInProgress( role ) )
-                            {
-                                context.startPromotionProcess( role, promoteNode );
-
-                                // Allow other live nodes to vote which one should take over
-                                for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
-                                {
-                                    if ( !context.getFailed().contains( server.getKey() ) )
-                                    {
-
-                                        // This is a candidate - allow it to vote itself for promotion
-                                        outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(),
-                                                context.voteRequestForRole( new ElectionRole( role ) ) ) );
-                                    }
-                                }
-                                context.setTimeout( "election-" + role, Message.timeout( ElectionMessage
-                                                .electionTimeout, message, new ElectionTimeoutData( role, message ) ) );
-                            }
-                            break;
-                        }
-
                         case vote:
                         {
                             Object request = message.getPayload();
@@ -265,7 +242,7 @@ public enum ElectionState
                                 version = ((ElectionMessage.VersionedVotedData) data).getVersion();
                             }
                             boolean accepted =
-                                    context.voted( data.getRole(), data.getInstanceId(), data.getVoteCredentials(),
+                                    context.voted( data.getRole(), data.getInstanceId(), data.getElectionCredentials(),
                                             version );
 
                             String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";

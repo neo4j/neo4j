@@ -63,10 +63,10 @@ public class ElectionStateTest
     {
         ElectionContext context = mock( ElectionContext.class );
         ClusterContext clusterContextMock = mock( ClusterContext.class );
+        when( context.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
 
         when( context.electionOk() ).thenReturn( false );
         when( clusterContextMock.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
-//        when( context.getClusterContext() ).thenReturn( clusterContextMock );
 
         MessageHolder holder = mock( MessageHolder.class );
 
@@ -107,7 +107,6 @@ public class ElectionStateTest
         ClusterContext clusterContextMock = mock( ClusterContext.class );
 
         when( clusterContextMock.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
-//        when( context.getClusterContext() ).thenReturn( clusterContextMock );
         MessageHolder holder = mock( MessageHolder.class );
 
           // These mean the election can proceed normally, by us
@@ -155,14 +154,7 @@ public class ElectionStateTest
         final String role = "master";
         final InstanceId voter = new InstanceId( 2 );
 
-        Comparable<Object> voteCredentialComparable = new Comparable<Object>()
-        {
-            @Override
-            public int compareTo( Object o )
-            {
-                return 0;
-            }
-        };
+        ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
         Message vote = Message.internal( voted, new ElectionMessage.VersionedVotedData( role, voter,
                 voteCredentialComparable
         , 4 ) );
@@ -207,14 +199,7 @@ public class ElectionStateTest
         // Given
         String coordinatorRole = "coordinator";
         InstanceId votingInstance = new InstanceId( 2 );
-        Comparable<Object> voteCredentialComparable = new Comparable<Object>()
-        {
-            @Override
-            public int compareTo( Object o )
-            {
-                return 0;
-            }
-        };
+        ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
 
         ElectionContext context = mock( ElectionContext.class );
         when( context.getLog( Mockito.<Class>any() ) ).thenReturn( NullLog.getInstance() );
@@ -279,14 +264,7 @@ public class ElectionStateTest
                 messages.add( message );
             }
         };
-        Comparable<Object> voteCredentialComparable = new Comparable<Object>()
-        {
-            @Override
-            public int compareTo( Object o )
-            {
-                return 0;
-            }
-        };
+        ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
 
         ElectionContext electionContext = mock( ElectionContext.class );
         when( electionContext.voted( eq( COORDINATOR ), eq( new InstanceId( 1 ) ), eq( voteCredentialComparable ),

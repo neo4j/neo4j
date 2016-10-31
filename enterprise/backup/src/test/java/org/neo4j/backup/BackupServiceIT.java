@@ -34,8 +34,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreCopyServer;
+import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -359,7 +359,7 @@ public class BackupServiceIT
 
         // then
         assertFalse( "Temp directory was not removed as expected",
-                fileSystem.fileExists( new File( backupDir, StoreCopyClient.TEMP_COPY_DIRECTORY_NAME ) ) );
+                fileSystem.fileExists( new File( backupDir, StoreUtil.TEMP_COPY_DIRECTORY_NAME ) ) );
     }
 
     @Test

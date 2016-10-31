@@ -293,11 +293,11 @@ public class ElectionContextTest
         electionContext.startElectionProcess( role1 );
         electionContext.startElectionProcess( role2 );
 
-        electionContext.voted( role1, failingInstance, mock( Comparable.class ), 2 );
-        electionContext.voted( role2, failingInstance, mock( Comparable.class ), 2 );
+        electionContext.voted( role1, failingInstance, mock( ElectionCredentials.class ), 2 );
+        electionContext.voted( role2, failingInstance, mock( ElectionCredentials.class ), 2 );
 
-        electionContext.voted( role1, otherInstance, mock( Comparable.class ), 2 );
-        electionContext.voted( role2, otherInstance, mock( Comparable.class ), 2 );
+        electionContext.voted( role1, otherInstance, mock( ElectionCredentials.class ), 2 );
+        electionContext.voted( role2, otherInstance, mock( ElectionCredentials.class ), 2 );
 
         heartbeatContext.suspect( failingInstance );
 

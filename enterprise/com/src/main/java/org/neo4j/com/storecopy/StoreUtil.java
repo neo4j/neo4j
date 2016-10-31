@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.store;
+package org.neo4j.com.storecopy;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -38,6 +38,7 @@ public class StoreUtil
     // Branched directories will end up in <dbStoreDir>/branched/<timestamp>/
     public static final String BRANCH_SUBDIRECTORY = "branched";
     private static final String[] DONT_MOVE_DIRECTORIES = {"metrics", "logs", "certificates"};
+    public static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
 
     private static final FileFilter STORE_FILE_FILTER = file -> {
         for ( String directory : DONT_MOVE_DIRECTORIES )
@@ -47,7 +48,7 @@ public class StoreUtil
                 return false;
             }
         }
-        return !isBranchedDataRootDirectory( file );
+        return !isBranchedDataRootDirectory( file ) && !isTemporaryCopy( file );
     };
     private static final FileFilter DEEP_STORE_FILE_FILTER = file -> {
         for ( String directory : DONT_MOVE_DIRECTORIES )
@@ -127,7 +128,7 @@ public class StoreUtil
         return new File( getBranchedDataRootDirectory( storeDir ), "" + timestamp );
     }
 
-    private static File[] relevantDbFiles( File storeDir )
+    public static File[] relevantDbFiles( File storeDir )
     {
         if ( !storeDir.exists() )
         {
@@ -140,6 +141,11 @@ public class StoreUtil
     private static boolean isBranchedDataRootDirectory( File file )
     {
         return file.isDirectory() && BRANCH_SUBDIRECTORY.equals( file.getName() );
+    }
+
+    private static boolean isTemporaryCopy( File file )
+    {
+        return file.isDirectory() && file.getName().equals( TEMP_COPY_DIRECTORY_NAME );
     }
 
     private static boolean isPartOfBranchedDataRootDirectory( File file )

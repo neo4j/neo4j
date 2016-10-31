@@ -34,7 +34,7 @@ public final class NotElectableElectionCredentials implements ElectionCredential
     {}
 
     @Override
-    public int compareTo( Object o )
+    public int compareTo( ElectionCredentials o )
     {
         return -1;
     }

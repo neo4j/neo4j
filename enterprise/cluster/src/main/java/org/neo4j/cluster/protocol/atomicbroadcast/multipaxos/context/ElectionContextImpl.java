@@ -28,12 +28,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.BiasedWinnerStrategy;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.DefaultWinnerStrategy;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.Vote;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.WinnerStrategy;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.election.ElectionContext;
+import org.neo4j.cluster.protocol.election.ElectionCredentials;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
@@ -134,21 +135,9 @@ public class ElectionContextImpl
     }
 
     @Override
-    public void unelect( String roleName )
-    {
-        clusterContext.getConfiguration().removeElected( roleName );
-    }
-
-    @Override
     public boolean isElectionProcessInProgress( String role )
     {
         return elections.containsKey( role );
-    }
-
-    @Override
-    public void startDemotionProcess( String role, final org.neo4j.cluster.InstanceId demoteNode )
-    {
-        elections.put( role, new Election( BiasedWinnerStrategy.demotion( clusterContext, demoteNode ) ) );
     }
 
     @Override
@@ -159,43 +148,12 @@ public class ElectionContextImpl
         {
             clusterContext.setLastElector( clusterContext.getMyId() );
         }
-        elections.put( role, new Election( new WinnerStrategy()
-        {
-            @Override
-            public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
-            {
-                // Remove blank votes
-                List<Vote> filteredVoteList = removeBlankVotes( voteList );
-
-                // Sort based on credentials
-                // The most suited candidate should come out on top
-                Collections.sort( filteredVoteList );
-                Collections.reverse( filteredVoteList );
-
-                clusterContext.getLog( getClass() ).debug( "Election started with " + voteList +
-                        ", ended up with " + filteredVoteList );
-
-                // Elect this highest voted instance
-                for ( Vote vote : filteredVoteList )
-                {
-                    return vote.getSuggestedNode();
-                }
-
-                // No possible winner
-                return null;
-            }
-        } ) );
-    }
-
-    @Override
-    public void startPromotionProcess( String role, final org.neo4j.cluster.InstanceId promoteNode )
-    {
-        elections.put( role, new Election( BiasedWinnerStrategy.promotion( clusterContext, promoteNode )  ) );
+        elections.put( role, new Election( new DefaultWinnerStrategy( clusterContext ) ) );
     }
 
     @Override
     public boolean voted( String role, org.neo4j.cluster.InstanceId suggestedNode,
-                          Comparable<Object> suggestionCredentials, long electionVersion )
+                          ElectionCredentials suggestionCredentials, long electionVersion )
     {
         if ( !isElectionProcessInProgress( role ) ||
                 (electionVersion != -1 && electionVersion < clusterContext.getLastElectorVersion() ) )
@@ -222,7 +180,7 @@ public class ElectionContextImpl
     }
 
     @Override
-    public Comparable<Object> getCredentialsForRole( String role )
+    public ElectionCredentials getCredentialsForRole( String role )
     {
         return electionCredentialsProvider.getCredentials( role );
     }
