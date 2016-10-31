@@ -79,11 +79,13 @@ public class InternalFlatFileRealmIT
         final RoleRepository roleRepository = new FileRoleRepository( fs, roleStoreFile, logProvider );
         final UserRepository initialUserRepository = CommunitySecurityModule.getInitialUserRepository( Config
                 .defaults(), logProvider, fs );
+        final UserRepository defaultAdminRepository = EnterpriseSecurityModule.getDefaultAdminRepository( Config
+                .defaults(), logProvider, fs );
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
         AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
 
         realm = new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
-                        true, true, jobScheduler, initialUserRepository );
+                        true, true, jobScheduler, initialUserRepository, defaultAdminRepository );
         realm.init();
         realm.start();
     }

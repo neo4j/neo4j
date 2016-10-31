@@ -85,6 +85,7 @@ public class UserManagementProceduresLoggingTest
                                             new BasicPasswordPolicy(),
                                             mock( AuthenticationStrategy.class ),
                                             mock( JobScheduler.class ),
+                                            new InMemoryUserRepository(),
                                             new InMemoryUserRepository()
                                         );
         realm.start(); // creates default user and roles

@@ -87,7 +87,8 @@ abstract class FlatFileStressBase
                 new BasicPasswordPolicy(),
                 new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
                 jobScheduler,
-                CommunitySecurityModule.getInitialUserRepository( config, logProvider, getFileSystem() )
+                CommunitySecurityModule.getInitialUserRepository( config, logProvider, getFileSystem() ),
+                EnterpriseSecurityModule.getDefaultAdminRepository( config, logProvider, getFileSystem() )
             );
 
         flatFileRealm.init();

@@ -76,6 +76,7 @@ public class MultiRealmAuthManagerRule implements TestRule
                         new BasicPasswordPolicy(),
                         authStrategy,
                         mock( JobScheduler.class ),
+                        new InMemoryUserRepository(),
                         new InMemoryUserRepository()
                     );
 
