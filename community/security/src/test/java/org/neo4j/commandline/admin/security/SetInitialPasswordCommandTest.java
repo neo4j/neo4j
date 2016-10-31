@@ -26,7 +26,6 @@ import org.mockito.Mockito;
 
 import java.io.File;
 
-import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -48,6 +47,7 @@ public class SetInitialPasswordCommandTest
 {
     private SetInitialPasswordCommand setPasswordCommand;
     private File authInitFile;
+    private File authFile;
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 
     @Rule
@@ -61,6 +61,7 @@ public class SetInitialPasswordCommandTest
         setPasswordCommand = new SetInitialPasswordCommand( testDir.directory( "home" ).toPath(),
                 testDir.directory( "conf" ).toPath(), mock );
         authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );
+        authFile = CommunitySecurityModule.getUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );
     }
 
     @Test
@@ -114,6 +115,21 @@ public class SetInitialPasswordCommandTest
 
         // Then
         assertAuthIniFile( "neo4j" );
+    }
+
+    @Test
+    public void shouldDoNothingIfAuthFileExists() throws Throwable
+    {
+        // Given
+        fileSystem.mkdirs( authFile.getParentFile() );
+        fileSystem.create( authFile );
+
+        // When
+        String[] arguments = {"neo4j"};
+        setPasswordCommand.execute( arguments );
+
+        // Then
+        assertFalse( fileSystem.fileExists( authInitFile ) );
     }
 
     private void assertAuthIniFile( String password ) throws Throwable

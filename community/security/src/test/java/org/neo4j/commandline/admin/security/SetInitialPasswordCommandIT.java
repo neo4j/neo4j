@@ -69,8 +69,9 @@ public class SetInitialPasswordCommandIT
     public void shouldSetPassword() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
-        verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
         assertAuthIniFile( "abc" );
+
+        verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
     }
 
     @Test
@@ -79,8 +80,9 @@ public class SetInitialPasswordCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
         assertAuthIniFile( "abc" );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "muchBetter" );
-        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
         assertAuthIniFile( "muchBetter" );
+
+        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
     }
 
     @Test
@@ -89,8 +91,9 @@ public class SetInitialPasswordCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "neo4j" );
         assertAuthIniFile( "neo4j" );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "neo4j" );
-        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
         assertAuthIniFile( "neo4j" );
+
+        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
     }
 
     @Test
@@ -98,13 +101,33 @@ public class SetInitialPasswordCommandIT
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
+        assertNoAuthIniFile();
+
         verify( out, times( 2 ) ).stdErrLine( "neo4j-admin set-initial-password <password>" );
         verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
 
+    @Test
+    public void shouldDoNothingAndWarnIfRealUsersAlreadyExist() throws Throwable
+    {
+        // Given
+        File authFile = getAuthFile( "auth" );
+        fileSystem.mkdirs( authFile.getParentFile() );
+        fileSystem.create( authFile );
+
+        // When
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "will-be-ignored" );
+
+        // Then
+        assertNoAuthIniFile();
+        verify( out, times( 1 ) ).stdOutLine( "Warning: Initial password was not set because live Neo4j-users were " +
+                "detected, so the initial password has no effect." );
+        verify( out, times( 0 ) ).stdErrLine( anyString() );
+    }
+
     private void assertAuthIniFile(String password) throws Throwable
     {
-        File authIniFile = new File( new File( new File( homeDir, "data" ), "dbms" ), "auth.ini" );
+        File authIniFile = getAuthFile( "auth.ini" );
         assertTrue( fileSystem.fileExists( authIniFile ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, authIniFile, NullLogProvider.getInstance() );
         userRepository.start();
@@ -112,6 +135,16 @@ public class SetInitialPasswordCommandIT
         assertNotNull( neo4j );
         assertTrue( neo4j.credentials().matchesPassword( password ) );
         assertFalse( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
+    }
+
+    private void assertNoAuthIniFile()
+    {
+        assertFalse( fileSystem.fileExists( getAuthFile( "auth.ini" ) ) );
+    }
+
+    private File getAuthFile( String name )
+    {
+        return new File( new File( new File( homeDir, "data" ), "dbms" ), name );
     }
 
     private void resetOutsideWorldMock()
