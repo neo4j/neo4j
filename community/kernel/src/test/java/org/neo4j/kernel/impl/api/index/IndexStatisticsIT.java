@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -204,7 +205,7 @@ public class IndexStatisticsIT
     private void setupDb( EphemeralFileSystemAbstraction fs )
     {
         db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
-                                           .setFileSystem( fs )
+                                           .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                                            .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
                                            .newImpermanentDatabaseBuilder()
                                            .setConfig( index_background_sampling_enabled, "false" )

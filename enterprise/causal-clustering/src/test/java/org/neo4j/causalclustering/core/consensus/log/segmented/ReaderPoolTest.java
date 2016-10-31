@@ -58,7 +58,7 @@ public class ReaderPoolTest
     }
 
     @After
-    public void tearDown()
+    public void tearDown() throws Exception
     {
         fsa.close();
     }

@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -174,10 +175,12 @@ public class SchemaIndexAcceptanceTest
 
     private GraphDatabaseService newDb()
     {
-        return new TestGraphDatabaseFactory().setFileSystem( fsRule.get() ).newImpermanentDatabase();
+        return new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fsRule.get() ) )
+                .newImpermanentDatabase();
     }
 
-    private void crashAndRestart()
+    private void crashAndRestart() throws Exception
     {
         fsRule.snapshot( db::shutdown );
         db = newDb();

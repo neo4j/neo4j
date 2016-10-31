@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -65,6 +66,12 @@ public class SetInitialPasswordCommandIT
         out = mock( OutsideWorld.class );
         resetOutsideWorldMock();
         tool = new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), out, true );
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        fileSystem.close();
     }
 
     @Test

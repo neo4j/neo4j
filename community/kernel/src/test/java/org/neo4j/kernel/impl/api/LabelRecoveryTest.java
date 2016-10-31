@@ -38,7 +38,7 @@ public class LabelRecoveryTest
     private GraphDatabaseService database;
 
     @After
-    public void tearDown()
+    public void tearDown() throws Exception
     {
         if ( database != null )
         {

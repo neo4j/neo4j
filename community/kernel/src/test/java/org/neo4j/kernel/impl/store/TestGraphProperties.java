@@ -34,6 +34,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -65,7 +66,8 @@ public class TestGraphProperties
     @Before
     public void before() throws Exception
     {
-        factory = new TestGraphDatabaseFactory().setFileSystem( fs.get() );
+        factory = new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
     }
 
     @Test
@@ -226,7 +228,7 @@ public class TestGraphProperties
         worker1.close();
         worker2.close();
         db.shutdown();
-   }
+    }
 
     @Test
     public void twoUncleanInARow() throws Exception

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -67,6 +68,12 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
     {
         fs = new EphemeralFileSystemAbstraction();
         nextReadIsInconsistent = new AtomicBoolean();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        fs.close();
     }
 
     private NeoStores storeFixture()

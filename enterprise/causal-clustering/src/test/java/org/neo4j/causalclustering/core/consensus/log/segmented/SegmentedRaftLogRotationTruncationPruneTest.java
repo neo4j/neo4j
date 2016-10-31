@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
@@ -39,6 +40,15 @@ import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class SegmentedRaftLogRotationTruncationPruneTest
 {
+
+    private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+
+    @After
+    public void tearDown() throws Exception
+    {
+        fileSystem.close();
+    }
+
     @Test
     public void shouldPruneAwaySingleEntriesIfRotationHappenedEveryEntry() throws Exception
     {
@@ -117,8 +127,6 @@ public class SegmentedRaftLogRotationTruncationPruneTest
 
     private RaftLog createRaftLog() throws Exception
     {
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-
         File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 

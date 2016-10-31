@@ -258,9 +258,4 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
             return super.write( src, translateIncoming( position ) );
         }
     }
-
-    public void shutdown()
-    {
-        ephemeralFileSystem.close();
-    }
 }

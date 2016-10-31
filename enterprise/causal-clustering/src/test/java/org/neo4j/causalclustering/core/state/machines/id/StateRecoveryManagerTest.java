@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.state.machines.id;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,14 +35,19 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class StateRecoveryManagerTest
 {
+
+    private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDir );
 
     private final int NUMBER_OF_RECORDS_PER_FILE = 100;
     private final int NUMBER_OF_BYTES_PER_RECORD = 10;
@@ -56,7 +62,7 @@ public class StateRecoveryManagerTest
     public void shouldFailIfBothFilesAreEmpty() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         File fileA = fileA();
@@ -84,7 +90,7 @@ public class StateRecoveryManagerTest
     public void shouldReturnPreviouslyInactiveWhenOneFileFullAndOneEmpty() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         File fileA = fileA();
@@ -108,7 +114,7 @@ public class StateRecoveryManagerTest
     public void shouldReturnTheEmptyFileAsPreviouslyInactiveWhenActiveContainsCorruptEntry() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         File fileA = fileA();
@@ -137,7 +143,7 @@ public class StateRecoveryManagerTest
             throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         File fileA = fileA();
@@ -169,7 +175,7 @@ public class StateRecoveryManagerTest
     public void shouldRecoverFromPartiallyWrittenEntriesInBothFiles() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         StateRecoveryManager<Long> manager = new StateRecoveryManager<>( fsa, new LongMarshal() );

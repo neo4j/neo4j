@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -50,7 +51,9 @@ public class TestIndexImplOnNeo
     @Before
     public void createDb() throws Exception
     {
-        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( new File( "mydb" ) );
+        db = new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
+                .newImpermanentDatabase( new File( "mydb" ) );
     }
 
     private void restartDb() throws Exception
@@ -84,7 +87,7 @@ public class TestIndexImplOnNeo
         {
             assertTrue( indexExists( indexName ) );
             assertEquals( config, db.index().getConfiguration( index ) );
-            assertEquals( 0, Iterables.count( (Iterable<Node>) index.get( "key", "something else" ) ) );
+            assertEquals( 0, Iterables.count( index.get( "key", "something else" ) ) );
             tx.success();
         }
 

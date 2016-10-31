@@ -46,7 +46,14 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
     @Override
     protected void after()
     {
-        fs.close();
+        try
+        {
+            fs.close();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -55,7 +62,7 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
         return fs;
     }
 
-    public EphemeralFileSystemAbstraction snapshot( Runnable action )
+    public EphemeralFileSystemAbstraction snapshot( Runnable action ) throws Exception
     {
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         try
@@ -70,7 +77,7 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
         return fs;
     }
 
-    public void clear()
+    public void clear() throws Exception
     {
         fs.close();
         fs = new EphemeralFileSystemAbstraction();
@@ -96,11 +103,6 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
     public void crash()
     {
         fs.crash();
-    }
-
-    public void shutdown()
-    {
-        fs.close();
     }
 
     public void assertNoOpenFiles() throws Exception
@@ -271,5 +273,11 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
     public void deleteFileOrThrow( File file ) throws IOException
     {
         fs.deleteFileOrThrow( file );
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        fs.close();
     }
 }

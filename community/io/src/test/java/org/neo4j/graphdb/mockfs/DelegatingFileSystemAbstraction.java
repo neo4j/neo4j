@@ -180,4 +180,10 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     {
         delegate.copyRecursively( fromDirectory, toDirectory );
     }
+
+    @Override
+    public void close() throws Exception
+    {
+        delegate.close();
+    }
 }

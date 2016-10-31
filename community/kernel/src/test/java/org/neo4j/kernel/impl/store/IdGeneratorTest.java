@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -633,7 +634,7 @@ public class IdGeneratorTest
     {
         File storeDir = new File( "target/var/free-id-once" );
         deleteRecursively( storeDir );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
+        GraphDatabaseService db = createTestDatabase( storeDir );
         RelationshipType type = withName( "SOME_TYPE" );
 
         // This transaction will, if some commands may be executed more than
@@ -667,7 +668,7 @@ public class IdGeneratorTest
         // After a clean shutdown, create new nodes and relationships and see so
         // that
         // all ids are unique.
-        db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
+        db = createTestDatabase( storeDir );
         tx = db.beginTx();
         commonNode = db.getNodeById( commonNode.getId() );
         for ( int i = 0; i < 100; i++ )
@@ -751,5 +752,12 @@ public class IdGeneratorTest
                 assertTrue( file.delete() );
             }
         }
+    }
+
+    private GraphDatabaseService createTestDatabase( File storeDir )
+    {
+        return new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .newImpermanentDatabase( storeDir );
     }
 }

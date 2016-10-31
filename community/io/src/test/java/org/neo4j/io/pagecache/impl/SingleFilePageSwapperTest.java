@@ -69,7 +69,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @After
-    public void tearDown()
+    public void tearDown() throws Exception
     {
         fs.close();
     }

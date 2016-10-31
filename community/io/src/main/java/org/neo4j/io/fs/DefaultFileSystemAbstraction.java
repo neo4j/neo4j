@@ -39,6 +39,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.io.IOUtils;
+
 import static java.lang.String.format;
 
 /**
@@ -46,9 +48,6 @@ import static java.lang.String.format;
  */
 public class DefaultFileSystemAbstraction implements FileSystemAbstraction
 {
-    // Named this way for better readability when statically importing
-    public static final FileSystemAbstraction REAL_FS = new DefaultFileSystemAbstraction();
-
     static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to create directory path [%s] for Neo4j store.";
 
     @Override
@@ -215,5 +214,11 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )
     {
         return new StoreFileChannel( channel );
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        IOUtils.closeAll( thirdPartyFileSystems.values() );
     }
 }

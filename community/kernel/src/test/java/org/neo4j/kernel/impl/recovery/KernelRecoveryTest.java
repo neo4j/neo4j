@@ -23,10 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
@@ -90,12 +93,12 @@ public class KernelRecoveryTest
         );
     }
 
-    private GraphDatabaseService newDB( EphemeralFileSystemAbstraction fs )
+    private GraphDatabaseService newDB( FileSystemAbstraction fs ) throws IOException
     {
         fs.mkdirs( storeDir );
         return new TestGraphDatabaseFactory()
-                    .setFileSystem( fs )
-                    .newImpermanentDatabase( storeDir );
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .newImpermanentDatabase( storeDir );
     }
 
     private long createNode( GraphDatabaseService db )

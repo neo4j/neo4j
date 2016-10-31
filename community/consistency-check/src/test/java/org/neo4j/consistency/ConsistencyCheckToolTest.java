@@ -182,7 +182,7 @@ public class ConsistencyCheckToolTest
         runConsistencyCheckToolWith( fs.get(), storeDirectory.graphDbDir().getAbsolutePath() );
     }
 
-    private void createGraphDbAndKillIt()
+    private void createGraphDbAndKillIt() throws Exception
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )

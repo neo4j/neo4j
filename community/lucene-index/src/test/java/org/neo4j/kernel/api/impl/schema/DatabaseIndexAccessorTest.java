@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +37,6 @@ import java.util.concurrent.Future;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -62,6 +63,8 @@ public class DatabaseIndexAccessorTest
 {
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
+    @ClassRule
+    public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Parameterized.Parameter
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
@@ -78,7 +81,7 @@ public class DatabaseIndexAccessorTest
         return Arrays.asList(
                 arg( dirFactory1 -> {
                     SchemaIndex index = LuceneSchemaIndexBuilder.create()
-                            .withFileSystem( new EphemeralFileSystemAbstraction() )
+                            .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
                             .withIndexIdentifier( "1" )
@@ -91,7 +94,7 @@ public class DatabaseIndexAccessorTest
                 arg( dirFactory1 -> {
                     SchemaIndex index = LuceneSchemaIndexBuilder.create()
                             .uniqueIndex()
-                            .withFileSystem( new EphemeralFileSystemAbstraction() )
+                            .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
                             .withIndexIdentifier( "testIndex" )

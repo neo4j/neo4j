@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.state.storage;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +40,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -47,13 +49,17 @@ import static org.junit.Assert.fail;
 
 public class DurableStateStorageIT
 {
+
+    private final TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDir );
 
     @Test
     public void shouldRecoverAfterCrashUnderLoad() throws Exception
     {
-        EphemeralFileSystemAbstraction delegate = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction delegate = fileSystemRule.get();
         AdversarialFileSystemAbstraction fsa = new AdversarialFileSystemAbstraction(
                 new MethodGuardedAdversary( new CountingAdversary( 100, true ),
                         StoreChannel.class.getMethod( "writeAll", ByteBuffer.class ) ),
@@ -83,7 +89,7 @@ public class DurableStateStorageIT
     @Test
     public void shouldProperlyRecoveryAfterCrashOnFileCreationDuringRotation() throws Exception
     {
-        EphemeralFileSystemAbstraction normalFSA = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction normalFSA = fileSystemRule.get();
         /*
          * Magic number warning. For a rotation threshold of 14, 998 operations on file A falls on truncation of the
          * file during rotation. This has been discovered via experimentation. The end result is that there is a
@@ -122,7 +128,7 @@ public class DurableStateStorageIT
     @Test
     public void shouldProperlyRecoveryAfterCrashOnFileForceDuringWrite() throws Exception
     {
-        EphemeralFileSystemAbstraction normalFSA = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction normalFSA = fileSystemRule.get();
         /*
          * Magic number warning. For a rotation threshold of 14, 990 operations on file A falls on a force() of the
          * current active file. This has been discovered via experimentation. The end result is that there is a
@@ -165,7 +171,7 @@ public class DurableStateStorageIT
     @Test
     public void shouldProperlyRecoveryAfterCrashingDuringRecovery() throws Exception
     {
-        EphemeralFileSystemAbstraction normalFSA = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction normalFSA = fileSystemRule.get();
 
         long lastValue = 0;
 
@@ -205,7 +211,7 @@ public class DurableStateStorageIT
     @Test
     public void shouldProperlyRecoveryAfterCloseOnActiveFileDuringRotation() throws Exception
     {
-        EphemeralFileSystemAbstraction normalFSA = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction normalFSA = fileSystemRule.get();
         AdversarialFileSystemAbstraction breakingFSA = new AdversarialFileSystemAbstraction(
                 new MethodGuardedAdversary(
                         new CountingAdversary( 5, true ),

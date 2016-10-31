@@ -65,6 +65,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
@@ -76,7 +77,7 @@ import static java.lang.Math.min;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
 
-public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, AutoCloseable
+public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
     private final Clock clock;
 
@@ -136,7 +137,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Au
     }
 
     @Override
-    public synchronized void close()
+    public synchronized void close() throws Exception
     {
         for ( EphemeralFileData file : files.values() )
         {
@@ -144,10 +145,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Au
         }
         files.clear();
 
-        for ( ThirdPartyFileSystem thirdPartyFileSystem : thirdPartyFileSystems.values() )
-        {
-            thirdPartyFileSystem.close();
-        }
+        IOUtils.closeAll( thirdPartyFileSystems.values() );
         thirdPartyFileSystems.clear();
     }
 

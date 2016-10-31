@@ -58,6 +58,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -130,7 +131,6 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.fs.DefaultFileSystemAbstraction.REAL_FS;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -193,7 +193,7 @@ public class BatchInsertTest
         properties.put( "key18", new char[] {1,2,3,4,5,6,7,8,9} );
     }
 
-    private static final FileSystemAbstraction fs = REAL_FS;
+    private static final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Rule
     public TestDirectory storeDir = TestDirectory.testDirectory( getClass() );
@@ -220,9 +220,10 @@ public class BatchInsertTest
     }
 
     @AfterClass
-    public static void shutDownGlobalInserter()
+    public static void shutDownGlobalInserter() throws Exception
     {
         globalInserter.shutdown();
+        fs.close();
     }
 
     private Map<String, String> configuration()

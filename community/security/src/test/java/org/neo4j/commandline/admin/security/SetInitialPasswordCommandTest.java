@@ -22,6 +22,7 @@ package org.neo4j.commandline.admin.security;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -31,7 +32,6 @@ import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
@@ -39,6 +39,7 @@ import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserManager;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,16 +54,20 @@ public class SetInitialPasswordCommandTest
     private SetInitialPasswordCommand setPasswordCommand;
     private File authInitFile;
     private File authFile;
-    private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    private FileSystemAbstraction fileSystem;
+
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private final TestDirectory testDir = TestDirectory.testDirectory( fileSystemRule.get() );
 
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory(fileSystem);
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDir );
 
     @Before
     public void setup()
     {
+        fileSystem = fileSystemRule.get();
         OutsideWorld mock = mock( OutsideWorld.class );
-        when(mock.fileSystem()).thenReturn( fileSystem );
+        when( mock.fileSystem() ).thenReturn( fileSystem );
         setPasswordCommand = new SetInitialPasswordCommand( testDir.directory( "home" ).toPath(),
                 testDir.directory( "conf" ).toPath(), mock );
         authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );

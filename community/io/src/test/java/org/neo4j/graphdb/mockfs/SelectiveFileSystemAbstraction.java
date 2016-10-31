@@ -30,6 +30,7 @@ import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.util.function.Function;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
@@ -195,5 +196,11 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     private FileSystemAbstraction chooseFileSystem( File file )
     {
         return file.equals( specialFile ) ? specialFileSystem : defaultFileSystem;
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        IOUtils.closeAll( specialFileSystem, defaultFileSystem );
     }
 }

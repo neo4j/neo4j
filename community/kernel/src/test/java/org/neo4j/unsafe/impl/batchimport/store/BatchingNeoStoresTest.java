@@ -28,6 +28,7 @@ import java.io.File;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -44,8 +45,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
@@ -104,7 +103,8 @@ public class BatchingNeoStoresTest
 
     private void someDataInTheDatabase()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fsr.get() )
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fsr.get() ) )
                 .newImpermanentDatabase( storeDir );
         try ( Transaction tx = db.beginTx() )
         {

@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.mockfs.LimitedFilesystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -32,7 +33,8 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 {
-    private LimitedFilesystemAbstraction fs;
+    private FileSystemAbstraction fs;
+    private LimitedFilesystemAbstraction limitedFs;
 
     public LimitedFileSystemGraphDatabase( File storeDir )
     {
@@ -47,12 +49,14 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
             @Override
             protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade facade )
             {
-                return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, facade)
+                return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, facade )
                 {
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()
                     {
-                        return fs = new LimitedFilesystemAbstraction( super.createFileSystemAbstraction() );
+                        fs = super.createFileSystemAbstraction();
+                        limitedFs = new LimitedFilesystemAbstraction( new UncloseableDelegatingFileSystemAbstraction( fs ) );
+                        return limitedFs;
                     }
                 };
             }
@@ -61,15 +65,15 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 
     public void runOutOfDiskSpaceNao()
     {
-        this.fs.runOutOfDiskSpace( true );
+        this.limitedFs.runOutOfDiskSpace( true );
     }
 
     public void somehowGainMoreDiskSpace()
     {
-        this.fs.runOutOfDiskSpace( false );
+        this.limitedFs.runOutOfDiskSpace( false );
     }
 
-    public LimitedFilesystemAbstraction getFileSystem()
+    public FileSystemAbstraction getFileSystem()
     {
         return fs;
     }

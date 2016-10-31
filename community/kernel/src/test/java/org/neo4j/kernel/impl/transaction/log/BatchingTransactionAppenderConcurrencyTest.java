@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.Flushable;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
@@ -96,8 +98,11 @@ public class BatchingTransactionAppenderConcurrencyTest
         executor = null;
     }
 
+    private final LifeRule life = new LifeRule();
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Rule
-    public final LifeRule life = new LifeRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( life );
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final LogFile logFile = mock( LogFile.class );
@@ -260,7 +265,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         // GIVEN
         Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
                 failMethod( BatchingTransactionAppender.class, "force" ) );
-        EphemeralFileSystemAbstraction efs = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction efs = fileSystemRule.get();
         life.add( asLifecycle( efs ) ); // <-- so that it gets automatically shut down after the test
         File directory = new File( "dir" ).getCanonicalFile();
         efs.mkdirs( directory );

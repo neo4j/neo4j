@@ -31,6 +31,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -39,6 +40,9 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
 public class ReplicatedLockTokenStateMachineTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Test
     public void shouldStartWithInvalidTokenId() throws Exception
     {
@@ -181,7 +185,7 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldPersistAndRecoverState() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         StateMarshal<ReplicatedLockTokenState> marshal =
@@ -223,7 +227,7 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldBeIdempotent() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         StateMarshal<ReplicatedLockTokenState> marshal =

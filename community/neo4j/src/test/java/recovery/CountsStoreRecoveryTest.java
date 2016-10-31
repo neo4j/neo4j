@@ -106,7 +106,7 @@ public class CountsStoreRecoveryTest
         );
     }
 
-    private void crashAndRestart()
+    private void crashAndRestart() throws Exception
     {
         FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
         db = databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();

@@ -336,7 +336,7 @@ public class TestRecoveryScenarios
     }
 
     @SuppressWarnings("deprecation")
-    private void crashAndRestart( InMemoryIndexProvider indexProvider )
+    private void crashAndRestart( InMemoryIndexProvider indexProvider ) throws Exception
     {
         FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
         db = (GraphDatabaseAPI) databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
