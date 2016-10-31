@@ -879,4 +879,25 @@ public class PrimitiveLongCollections
                     " when adding items uniquely to a collection:" + collection );
         }
     }
+
+    /**
+     * Scans through an array and looks for a specific value.
+     *
+     * @param array long[] to look in.
+     * @param offset index in the array to start to scan.
+     * @param length number of indexes to scan, i.e. last index to scan is {@code offset + length - 1}.
+     * @param value value to look for.
+     * @return {@code true} if found in the specified region, otherwise {@code false}.
+     */
+    public static boolean contains( long[] array, int offset, int length, long value )
+    {
+        for ( int i = 0; i < length; i++ )
+        {
+            if ( array[offset + i] == value )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }

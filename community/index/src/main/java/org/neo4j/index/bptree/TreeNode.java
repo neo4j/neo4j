@@ -177,15 +177,15 @@ class TreeNode<KEY,VALUE>
         layout.writeKey( cursor, key );
     }
 
-    void removeKeyAt( PageCursor cursor, int pos, byte[] tmp )
+    void removeKeyAt( PageCursor cursor, int pos, int keyCount, byte[] tmp )
     {
-        removeSlotAt( cursor, pos, keyOffset( 0 ), keySize, tmp );
+        removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize, tmp );
     }
 
-    private void removeSlotAt( PageCursor cursor, int pos, int baseOffset, int itemSize, byte[] tmp )
+    private void removeSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize, byte[] tmp )
     {
         int from = pos + 1;
-        int count = keyCount( cursor ) - from;
+        int count = keyCount - from;
         copyItems( cursor, from, count, baseOffset, itemSize, tmp );
         writeItems( cursor, pos, count, baseOffset, itemSize, tmp );
     }
@@ -230,9 +230,9 @@ class TreeNode<KEY,VALUE>
         setValueAt( cursor, value, pos );
     }
 
-    void removeValueAt( PageCursor cursor, int pos, byte[] tmp )
+    void removeValueAt( PageCursor cursor, int pos, int keyCount, byte[] tmp )
     {
-        removeSlotAt( cursor, pos, valueOffset( 0 ), valueSize, tmp );
+        removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize, tmp );
     }
 
     void setValueAt( PageCursor cursor, VALUE value, int pos )

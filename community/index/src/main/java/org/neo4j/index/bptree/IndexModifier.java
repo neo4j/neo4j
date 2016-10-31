@@ -483,9 +483,9 @@ public class IndexModifier<KEY,VALUE>
         pos--;
 
         // Remove key/value
-        bTreeNode.removeKeyAt( cursor, pos, tmp );
+        bTreeNode.removeKeyAt( cursor, pos, keyCount, tmp );
         bTreeNode.valueAt( cursor, readValue, pos );
-        bTreeNode.removeValueAt( cursor, pos, tmp );
+        bTreeNode.removeValueAt( cursor, pos, keyCount, tmp );
 
         // Decrease key count
         bTreeNode.setKeyCount( cursor, keyCount - 1 );
