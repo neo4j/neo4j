@@ -827,6 +827,7 @@ public class ClusterManager
             // with all our behavior, but we don't know about the root directory until we evaluate the rule.
             commonConfig.put( ClusterSettings.heartbeat_interval.name(), constant("1") );
             commonConfig.put( ClusterSettings.leave_timeout.name(), constant( "5" ) );
+            commonConfig.put( GraphDatabaseSettings.pagecache_memory.name(), constant( "8m" ) );
         }
 
         @Override
