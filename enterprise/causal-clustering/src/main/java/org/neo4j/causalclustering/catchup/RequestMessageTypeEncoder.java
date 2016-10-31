@@ -19,19 +19,15 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-public class RequestMessageTypeEncoder extends MessageToMessageEncoder<RequestMessageType>
+public class RequestMessageTypeEncoder extends MessageToByteEncoder<RequestMessageType>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, RequestMessageType request, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, RequestMessageType request, ByteBuf out ) throws Exception
     {
-        ByteBuf encoded = ctx.alloc().buffer();
-        encoded.writeByte( request.messageType() );
-        out.add( encoded );
+        out.writeByte( request.messageType() );
     }
 }

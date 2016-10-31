@@ -25,6 +25,12 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
 
+/**
+ * This class does not consume bytes during the decode method. Instead, it puts a {@link FileContent} object with
+ * a reference to the buffer, to be consumed later. This is the reason it does not extend
+ * {@link io.netty.handler.codec.ByteToMessageDecoder}, since that class fails if an object is added in the out
+ * list but no bytes have been consumed.
+ */
 public class FileContentDecoder extends MessageToMessageDecoder<ByteBuf>
 {
     @Override

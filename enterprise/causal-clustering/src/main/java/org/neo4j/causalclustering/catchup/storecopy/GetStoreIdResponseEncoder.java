@@ -17,34 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup;
+package org.neo4j.causalclustering.catchup.storecopy;
+
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-import java.util.List;
+import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
-import org.neo4j.causalclustering.messaging.Message;
-import org.neo4j.function.Factory;
-
-/**
- * This class extends {@link MessageToMessageDecoder} because if it extended
- * {@link io.netty.handler.codec.ByteToMessageDecoder} instead the decode method would fail as no
- * bytes are consumed from the ByteBuf but an object is added in the out list.
- */
-class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
+public class GetStoreIdResponseEncoder extends MessageToByteEncoder<StoreId>
 {
-    private Factory<? extends Message> factory;
-
-    SimpleRequestDecoder( Factory<? extends Message> factory )
-    {
-        this.factory = factory;
-    }
-
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, StoreId storeId, ByteBuf out ) throws Exception
     {
-        out.add( factory.newInstance() );
+        StoreIdMarshal.INSTANCE.marshal( storeId, new NetworkFlushableByteBuf( out ) );
     }
 }

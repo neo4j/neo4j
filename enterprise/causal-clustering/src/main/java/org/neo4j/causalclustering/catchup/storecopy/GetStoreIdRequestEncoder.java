@@ -21,17 +21,13 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-import java.util.List;
-
-public class GetStoreIdRequestEncoder extends MessageToMessageEncoder<GetStoreIdRequest>
+public class GetStoreIdRequestEncoder extends MessageToByteEncoder<GetStoreIdRequest>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, GetStoreIdRequest msg, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, GetStoreIdRequest msg, ByteBuf out ) throws Exception
     {
-        ByteBuf buffer = ctx.alloc().buffer();
-        buffer.writeByte( 0 );
-        out.add( buffer );
+        out.writeByte( 0 );
     }
 }

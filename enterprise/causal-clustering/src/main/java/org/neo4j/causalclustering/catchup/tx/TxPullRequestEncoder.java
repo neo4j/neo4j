@@ -19,23 +19,19 @@
  */
 package org.neo4j.causalclustering.catchup.tx;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
-public class TxPullRequestEncoder extends MessageToMessageEncoder<TxPullRequest>
+public class TxPullRequestEncoder extends MessageToByteEncoder<TxPullRequest>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, TxPullRequest request, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, TxPullRequest request, ByteBuf out ) throws Exception
     {
-        ByteBuf encoded = ctx.alloc().buffer();
-        encoded.writeLong( request.previousTxId() );
-        StoreIdMarshal.INSTANCE.marshal( request.expectedStoreId(), new NetworkFlushableChannelNetty4( encoded ) );
-        out.add( encoded );
+        out.writeLong( request.previousTxId() );
+        StoreIdMarshal.INSTANCE.marshal( request.expectedStoreId(), new NetworkFlushableChannelNetty4( out ) );
     }
 }

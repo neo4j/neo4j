@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.catchup;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +49,12 @@ class RequestDecoderDispatcher<E extends Enum<E>> extends ChannelInboundHandlerA
         if ( delegate == null )
         {
             log.warn( "Unregistered handler for protocol %s", protocol );
+
+            /*
+             * Since we cannot process this message further we need to release the message as per netty doc
+             * see http://netty.io/wiki/reference-counted-objects.html#inbound-messages
+             */
+            ReferenceCountUtil.release( msg );
             return;
         }
         delegate.channelRead( ctx, msg );

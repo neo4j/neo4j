@@ -43,6 +43,7 @@ import org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeaderEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequestHandler;
+import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponseEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestDecoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestHandler;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponseEncoder;
@@ -147,6 +148,7 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( new TxPullResponseEncoder() );
                         pipeline.addLast( new CoreSnapshotEncoder() );
+                        pipeline.addLast( new GetStoreIdResponseEncoder() );
                         pipeline.addLast( new StoreCopyFinishedResponseEncoder() );
                         pipeline.addLast( new TxStreamFinishedResponseEncoder() );
                         pipeline.addLast( new FileHeaderEncoder() );
@@ -158,7 +160,8 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast(
                                 new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
                                         transactionIdStoreSupplier, logicalTransactionStoreSupplier, monitors,
-                                        logProvider ) ); pipeline.addLast( new ChunkedWriteHandler() );
+                                        logProvider ) );
+                        pipeline.addLast( new ChunkedWriteHandler() );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier ) );
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );

@@ -19,16 +19,14 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.util.function.Supplier;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
-import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
 import static org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
 
@@ -46,11 +44,8 @@ public class GetStoreIdRequestHandler extends SimpleChannelInboundHandler<GetSto
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreIdRequest msg ) throws Exception
     {
-        StoreId storeId = storeIdSupplier.get();
         ctx.writeAndFlush( ResponseMessageType.STORE_ID );
-        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
-        StoreIdMarshal.INSTANCE.marshal( storeId, channel );
-        ctx.writeAndFlush( channel.buffer() );
+        ctx.writeAndFlush( storeIdSupplier.get() );
         protocol.expect( State.MESSAGE_TYPE );
     }
 }

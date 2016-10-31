@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,7 +44,7 @@ import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.NEW_EN
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.VOTE_REQUEST;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.VOTE_RESPONSE;
 
-public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
+public class RaftMessageDecoder extends ByteToMessageDecoder
 {
     private final ChannelMarshal<ReplicatedContent> marshal;
 
