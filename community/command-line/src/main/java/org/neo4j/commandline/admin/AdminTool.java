@@ -35,22 +35,25 @@ public class AdminTool
         Path configDir = Paths.get( System.getenv().getOrDefault( "NEO4J_CONF", "" ) );
         boolean debug = System.getenv( "NEO4J_DEBUG" ) != null;
 
-        new AdminTool( CommandLocator.fromServiceLocator(), new RealOutsideWorld(), debug )
-                .execute( homeDir, configDir, args );
+        new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), new RealOutsideWorld(),
+                debug ).execute( homeDir, configDir, args );
     }
 
     private final String scriptName = "neo4j-admin";
-    private final CommandLocator locator;
+    private final CommandLocator commandLocator;
+    private final BlockerLocator blockerLocator;
     private final OutsideWorld outsideWorld;
     private final boolean debug;
     private final Usage usage;
 
-    public AdminTool( CommandLocator locator, OutsideWorld outsideWorld, boolean debug )
+    public AdminTool( CommandLocator commandLocator, BlockerLocator blockerLocator, OutsideWorld outsideWorld,
+            boolean debug )
     {
-        this.locator = CommandLocator.withAdditionalCommand( help(), locator );
+        this.commandLocator = CommandLocator.withAdditionalCommand( help(), commandLocator );
+        this.blockerLocator = blockerLocator;
         this.outsideWorld = outsideWorld;
         this.debug = debug;
-        this.usage = new Usage( scriptName, this.locator );
+        this.usage = new Usage( scriptName, this.commandLocator );
     }
 
     public void execute( Path homeDir, Path configDir, String... args )
@@ -68,7 +71,14 @@ public class AdminTool
             AdminCommand.Provider provider;
             try
             {
-                provider = locator.findProvider( name );
+                provider = commandLocator.findProvider( name );
+                for ( AdminCommand.Blocker blocker : blockerLocator.findBlockers( name ) )
+                {
+                    if ( blocker.doesBlock( homeDir, configDir ) )
+                    {
+                        commandFailed( new CommandFailed( blocker.explanation() ) );
+                    }
+                }
             }
             catch ( NoSuchElementException e )
             {

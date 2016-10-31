@@ -21,6 +21,7 @@ package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
@@ -74,6 +75,26 @@ public interface AdminCommand
         public abstract String description();
 
         public abstract AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld );
+    }
+
+    interface Blocker
+    {
+        /**
+         * @param homeDir   the home of the Neo4j installation.
+         * @param configDir the directory where configuration files can be found.
+         * @return A boolean representing whether or not this command should be blocked from running.
+         */
+        boolean doesBlock( Path homeDir, Path configDir );
+
+        /**
+         * @return A list of the commands this blocker applies to.
+         */
+        Set<String> commands();
+
+        /**
+         * @return An explanation of why a command was blocked. This will be shown to the user.
+         */
+        String explanation();
     }
 
     void execute( String[] args ) throws IncorrectUsage, CommandFailed;
