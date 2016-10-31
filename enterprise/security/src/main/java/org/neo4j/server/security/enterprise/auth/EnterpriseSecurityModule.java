@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,7 +47,9 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
+import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
+import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.enterprise.auth.plugin.PluginRealm;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
@@ -61,6 +64,7 @@ import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 public class EnterpriseSecurityModule extends SecurityModule
 {
     private static final String ROLE_STORE_FILENAME = "roles";
+    private static final String DEFAULT_ADMIN_STORE_FILENAME = SetDefaultAdminCommand.ADMIN_INI;
 
     public EnterpriseSecurityModule()
     {
@@ -187,7 +191,8 @@ public class EnterpriseSecurityModule extends SecurityModule
                 config.get( SecuritySettings.native_authentication_enabled ),
                 config.get( SecuritySettings.native_authorization_enabled ),
                 jobScheduler,
-                CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem )
+                CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem ),
+                getDefaultAdminRepository( config, logProvider, fileSystem )
             );
     }
 
@@ -272,8 +277,20 @@ public class EnterpriseSecurityModule extends SecurityModule
         return new FileRoleRepository( fileSystem, getRoleRepositoryFile( config ), logProvider );
     }
 
+    public static UserRepository getDefaultAdminRepository( Config config, LogProvider logProvider,
+            FileSystemAbstraction fileSystem )
+    {
+        return new FileUserRepository( fileSystem, getDefaultAdminRepositoryFile( config ), logProvider );
+    }
+
     public static File getRoleRepositoryFile( Config config )
     {
         return new File( config.get( DatabaseManagementSystemSettings.auth_store_directory ), ROLE_STORE_FILENAME );
+    }
+
+    public static File getDefaultAdminRepositoryFile( Config config )
+    {
+        return new File( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
+                DEFAULT_ADMIN_STORE_FILENAME );
     }
 }

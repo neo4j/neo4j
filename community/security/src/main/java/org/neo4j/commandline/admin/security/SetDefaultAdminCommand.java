@@ -45,13 +45,13 @@ import org.neo4j.server.security.auth.UserRepository;
 public class SetDefaultAdminCommand implements AdminCommand
 {
     public static final String ADMIN_INI = "admin.ini";
+    public static final String COMMAND_NAME = "set-default-admin";
 
     public static class Provider extends AdminCommand.Provider
     {
-
         public Provider()
         {
-            super( "set-default-admin" );
+            super( COMMAND_NAME );
         }
 
         @Override

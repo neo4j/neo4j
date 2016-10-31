@@ -74,6 +74,7 @@ public class InternalFlatFileRealmTest
                         new BasicPasswordPolicy(),
                         new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
                         mock( JobScheduler.class ),
+                        new InMemoryUserRepository(),
                         new InMemoryUserRepository()
                     );
 
@@ -136,6 +137,7 @@ public class InternalFlatFileRealmTest
         final UserRepository userRepository = mock( UserRepository.class );
         final RoleRepository roleRepository = mock( RoleRepository.class );
         final UserRepository initialUserRepository = mock( UserRepository.class );
+        final UserRepository defaultAdminRepository = mock( UserRepository.class );
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
         AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
         InternalFlatFileRealmIT.TestJobScheduler jobScheduler = new InternalFlatFileRealmIT.TestJobScheduler();
@@ -146,7 +148,8 @@ public class InternalFlatFileRealmTest
                         passwordPolicy,
                         authenticationStrategy,
                         jobScheduler,
-                        initialUserRepository
+                        initialUserRepository,
+                        defaultAdminRepository
                     );
 
         when( userRepository.getPersistedSnapshot() ).thenReturn(
@@ -172,9 +175,10 @@ public class InternalFlatFileRealmTest
 
         public TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
                 AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler,
-                UserRepository initialUserRepository )
+                UserRepository initialUserRepository, UserRepository defaultAdminRepository )
         {
-            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler, initialUserRepository );
+            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler,
+                    initialUserRepository, defaultAdminRepository );
         }
 
         boolean takeAuthenticationFlag()

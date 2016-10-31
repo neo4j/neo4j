@@ -22,10 +22,13 @@ package org.neo4j.server.security.enterprise.auth;
 import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 
+import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -40,11 +43,15 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
+import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.InitialUserTests;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
+import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
@@ -67,6 +74,9 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
     private AssertableLogProvider logProvider;
+
+    @Rule
+    public ExpectedException expect = ExpectedException.none();
 
     @Before
     public void setUp() throws Throwable
@@ -92,6 +102,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
                         authStrategy,
                         mock( JobScheduler.class ),
                         CommunitySecurityModule.getInitialUserRepository(
+                                config, NullLogProvider.getInstance(), fsRule.get() ),
+                        EnterpriseSecurityModule.getDefaultAdminRepository(
                                 config, NullLogProvider.getInstance(), fsRule.get() )
                     );
 
@@ -107,6 +119,72 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
     {
         manager.stop();
         manager.shutdown();
+    }
+
+    @Test
+    public void shouldMakeOnlyUserAdminIfNoRolesFile() throws Throwable
+    {
+        // Given
+        users.create( newUser( "jake", "abc123" , false ) );
+
+        // When
+        manager.start();
+
+        // Then
+        assertThat( manager.getUserManager().getRoleNamesForUser( "jake" ), contains( PredefinedRoles.ADMIN ) );
+    }
+
+    @Test
+    public void shouldMakeNeo4jUserAdminIfNoRolesFileButManyUsers() throws Throwable
+    {
+        // Given
+        users.create( newUser( "jake", "abc123" , false ) );
+        users.create( newUser( "neo4j", "neo4j" , false ) );
+
+        // When
+        manager.start();
+
+        // Then
+        assertThat( manager.getUserManager().getRoleNamesForUser( "neo4j" ), contains( PredefinedRoles.ADMIN ) );
+        assertThat( manager.getUserManager().getRoleNamesForUser( "jake" ).size(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldFailIfNoRolesFileButManyUsersAndNoDefaultAdminOrNeo4j() throws Throwable
+    {
+        // Given
+        users.create( newUser( "jake", "abc123" , false ) );
+        users.create( newUser( "jane", "123abc" , false ) );
+
+        expect.expect( InvalidArgumentsException.class );
+        expect.expectMessage( "No roles defined, and cannot determine which user should be admin. " +
+                              "Please use `" + SetDefaultAdminCommand.COMMAND_NAME + "` to select an admin." );
+
+        manager.start();
+    }
+
+    @Test
+    public void shouldFailIfNoRolesFileButManyUsersAndNonExistingDefaultAdmin() throws Throwable
+    {
+        // Given
+        UserRepository defaultAdminRepository =
+                EnterpriseSecurityModule.getDefaultAdminRepository( config, NullLogProvider.getInstance(), fsRule.get() );
+        defaultAdminRepository.start();
+        defaultAdminRepository.create(
+                new User.Builder( "foo", Credential.INACCESSIBLE)
+                        .withRequiredPasswordChange( false )
+                        .build()
+        );
+        defaultAdminRepository.shutdown();
+
+        users.create( newUser( "jake", "abc123" , false ) );
+        users.create( newUser( "jane", "123abc" , false ) );
+
+        expect.expect( InvalidArgumentsException.class );
+        expect.expectMessage( "No roles defined, and default admin user 'foo' does not exist. " +
+                              "Please use `" + SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
+
+        manager.start();
     }
 
     @Test
@@ -244,7 +322,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
     {
         // Given
         final User user = newUser( "jake", "abc123" , true );
-        final User user2 = newUser( "craig", "321cba" , true );
+        final User user2 = newUser( "neo4j", "321cba" , true );
         users.create( user );
         users.create( user2 );
         manager.start();
@@ -254,7 +332,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
 
         // Then
         assertNull( users.getUserByName( "jake" ) );
-        assertNotNull( users.getUserByName( "craig" ) );
+        assertNotNull( users.getUserByName( "neo4j" ) );
     }
 
     @Test

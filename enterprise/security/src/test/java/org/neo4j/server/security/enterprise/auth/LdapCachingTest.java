@@ -72,6 +72,7 @@ public class LdapCachingTest
                 new BasicPasswordPolicy(),
                 new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
                 mock( JobScheduler.class ),
+                new InMemoryUserRepository(),
                 new InMemoryUserRepository()
             );
 
