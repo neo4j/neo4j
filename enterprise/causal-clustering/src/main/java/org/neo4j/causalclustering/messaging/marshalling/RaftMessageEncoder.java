@@ -19,10 +19,9 @@
  */
 package org.neo4j.causalclustering.messaging.marshalling;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
-
-import java.util.List;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
@@ -31,7 +30,7 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 
-public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.ClusterIdAwareMessage>
+public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.ClusterIdAwareMessage>
 {
     private final ChannelMarshal<ReplicatedContent> marshal;
 
@@ -43,13 +42,13 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Clu
     @Override
     protected synchronized void encode( ChannelHandlerContext ctx,
             RaftMessages.ClusterIdAwareMessage decoratedMessage,
-            List<Object> list ) throws Exception
+            ByteBuf out ) throws Exception
     {
         RaftMessages.RaftMessage message = decoratedMessage.message();
         ClusterId clusterId = decoratedMessage.clusterId();
         MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
-        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
+        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( out );
         ClusterId.Marshal.INSTANCE.marshal( clusterId, channel );
         channel.putInt( message.type().ordinal() );
         memberMarshal.marshal( message.from(), channel );
@@ -123,7 +122,5 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Clu
         {
             throw new IllegalArgumentException( "Unknown message type: " + message );
         }
-
-        list.add( channel.buffer() );
     }
 }

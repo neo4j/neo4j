@@ -26,16 +26,15 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.UUID;
 
-import org.neo4j.causalclustering.core.consensus.roles.AppendEntriesRequestBuilder;
-import org.neo4j.causalclustering.core.consensus.roles.AppendEntriesResponseBuilder;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
+import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.roles.AppendEntriesRequestBuilder;
+import org.neo4j.causalclustering.core.consensus.roles.AppendEntriesResponseBuilder;
 import org.neo4j.causalclustering.core.consensus.vote.VoteRequestBuilder;
 import org.neo4j.causalclustering.core.consensus.vote.VoteResponseBuilder;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -96,8 +95,6 @@ public class RaftMessageEncodingDecodingTest
         RaftMessageEncoder encoder = new RaftMessageEncoder( marshal );
         RaftMessageDecoder decoder = new RaftMessageDecoder( marshal );
 
-        // Netty puts buffers with serialized content in this list
-        LinkedList<Object> resultingBuffers = new LinkedList<>();
         // Deserialization adds read objects in this list
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
@@ -105,17 +102,27 @@ public class RaftMessageEncodingDecodingTest
         MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.ClusterIdAwareMessage message = new RaftMessages.ClusterIdAwareMessage( clusterId,
         new RaftMessages.Heartbeat( sender, 1, 2, 3 ) );
-        encoder.encode( setupContext(), message, resultingBuffers );
+        ChannelHandlerContext ctx = setupContext();
+        ByteBuf buffer = null;
+        try
+        {
+            buffer = ctx.alloc().buffer();
+            encoder.encode( ctx, message, buffer );
 
-        // Then
-        assertEquals( 1, resultingBuffers.size() );
+            // When
+            decoder.decode( null, buffer, thingsRead );
 
-        // When
-        decoder.decode( null, (ByteBuf) resultingBuffers.get( 0 ), thingsRead );
-
-        // Then
-        assertEquals( 1, thingsRead.size() );
-        assertEquals( message, thingsRead.get( 0 ) );
+            // Then
+            assertEquals( 1, thingsRead.size() );
+            assertEquals( message, thingsRead.get( 0 ) );
+        }
+        finally
+        {
+            if ( buffer != null )
+            {
+                buffer.release();
+            }
+        }
     }
 
     @Test
@@ -150,25 +157,33 @@ public class RaftMessageEncodingDecodingTest
         RaftMessageEncoder encoder = new RaftMessageEncoder( marshal );
         RaftMessageDecoder decoder = new RaftMessageDecoder( marshal );
 
-        // Netty puts buffers with serialized content in this list
-        LinkedList<Object> resultingBuffers = new LinkedList<>();
         // Deserialization adds read objects in this list
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
         RaftMessages.ClusterIdAwareMessage decoratedMessage =
                 new RaftMessages.ClusterIdAwareMessage( clusterId, message );
-        encoder.encode( setupContext(), decoratedMessage, resultingBuffers );
+        ChannelHandlerContext ctx = setupContext();
+        ByteBuf buffer = null;
+        try
+        {
+            buffer = ctx.alloc().buffer();
+            encoder.encode( ctx, decoratedMessage, buffer );
 
-        // Then
-        assertEquals( 1, resultingBuffers.size() );
+            // When
+            decoder.decode( null, buffer, thingsRead );
 
-        // When
-        decoder.decode( null, (ByteBuf) resultingBuffers.get( 0 ), thingsRead );
-
-        // Then
-        assertEquals( 1, thingsRead.size() );
-        assertEquals( decoratedMessage, thingsRead.get( 0 ) );
+            // Then
+            assertEquals( 1, thingsRead.size() );
+            assertEquals( decoratedMessage, thingsRead.get( 0 ) );
+        }
+        finally
+        {
+            if ( buffer != null )
+            {
+                buffer.release();
+            }
+        }
     }
 
     private static ChannelHandlerContext setupContext()

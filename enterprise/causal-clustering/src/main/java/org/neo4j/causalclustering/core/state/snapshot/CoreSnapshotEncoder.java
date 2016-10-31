@@ -19,21 +19,17 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 
-public class CoreSnapshotEncoder extends MessageToMessageEncoder<CoreSnapshot>
+public class CoreSnapshotEncoder extends MessageToByteEncoder<CoreSnapshot>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot, ByteBuf out ) throws Exception
     {
-        ByteBuf encoded = ctx.alloc().buffer();
-        new CoreSnapshot.Marshal().marshal( coreSnapshot, new NetworkFlushableByteBuf( encoded ) );
-        out.add( encoded );
+        new CoreSnapshot.Marshal().marshal( coreSnapshot, new NetworkFlushableByteBuf( out ) );
     }
 }

@@ -19,25 +19,19 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-public class FileHeaderEncoder extends MessageToMessageEncoder<FileHeader>
+public class FileHeaderEncoder extends MessageToByteEncoder<FileHeader>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, FileHeader msg, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, FileHeader msg, ByteBuf out ) throws Exception
     {
-        ByteBuf buffer = ctx.alloc().buffer();
-
         String name = msg.fileName();
 
-        buffer.writeInt( name.length() );
-        buffer.writeBytes( name.getBytes() );
-        buffer.writeLong( msg.fileLength() );
-
-        out.add( buffer );
+        out.writeInt( name.length() );
+        out.writeBytes( name.getBytes() );
+        out.writeLong( msg.fileLength() );
     }
 }

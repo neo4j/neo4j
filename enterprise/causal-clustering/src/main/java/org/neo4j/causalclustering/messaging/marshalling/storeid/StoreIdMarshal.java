@@ -51,7 +51,6 @@ public final class StoreIdMarshal extends SafeChannelMarshal<StoreId>
 
     protected StoreId unmarshal0( ReadableChannel channel ) throws IOException
     {
-
         byte exists = channel.get();
         if ( exists == 0 )
         {
@@ -59,7 +58,7 @@ public final class StoreIdMarshal extends SafeChannelMarshal<StoreId>
         }
         else if ( exists != 1 )
         {
-            throw new DecoderException( "Unexpected value" );
+            throw new DecoderException( "Unexpected value: " + exists );
         }
 
         long creationTime = channel.getLong();
