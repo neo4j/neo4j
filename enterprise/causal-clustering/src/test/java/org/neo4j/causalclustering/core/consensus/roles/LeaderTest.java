@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.core.consensus.roles;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -33,22 +32,22 @@ import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
-import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.core.consensus.outcome.AppendLogEntry;
 import org.neo4j.causalclustering.core.consensus.outcome.BatchAppendLogEntries;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.outcome.ShipCommand;
-import org.neo4j.causalclustering.core.consensus.state.RaftState;
-import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerState;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
+import org.neo4j.causalclustering.core.consensus.state.RaftState;
+import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -58,13 +57,14 @@ import static org.neo4j.causalclustering.core.consensus.MessageUtils.messageFor;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.appendEntriesResponse;
 import static org.neo4j.causalclustering.core.consensus.roles.Role.FOLLOWER;
+import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.raftState;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class LeaderTest
 {
     private MemberId myself = member( 0 );
@@ -72,12 +72,6 @@ public class LeaderTest
     /* A few members that we use at will in tests. */
     private MemberId member1 = member( 1 );
     private MemberId member2 = member( 2 );
-
-    @Mock
-    private Inbound inbound;
-
-    @Mock
-    private Outbound outbound;
 
     private LogProvider logProvider = NullLogProvider.getInstance();
 
@@ -113,8 +107,8 @@ public class LeaderTest
 
         // when
         // that leader is asked to handle a response from that follower that says that the follower is up to date
-        RaftMessages.AppendEntries.Response response = appendEntriesResponse().success()
-                .matchIndex( 90 ).term( 4 ).from( instance2 ).build();
+        RaftMessages.AppendEntries.Response response =
+                appendEntriesResponse().success().matchIndex( 90 ).term( 4 ).from( instance2 ).build();
 
         Outcome outcome = leader.handle( response, state, mock( Log.class ) );
 
@@ -155,8 +149,8 @@ public class LeaderTest
 
         // when
         // that leader is asked to handle a response from that follower that says that the follower is up to date
-        RaftMessages.AppendEntries.Response response = appendEntriesResponse().success()
-                .matchIndex( 100 ).term( 4 ).from( instance2 ).build();
+        RaftMessages.AppendEntries.Response response =
+                appendEntriesResponse().success().matchIndex( 100 ).term( 4 ).from( instance2 ).build();
 
         Outcome outcome = leader.handle( response, state, mock( Log.class ) );
 
@@ -169,8 +163,8 @@ public class LeaderTest
     }
 
     @Test
-    public void leaderShouldRespondToSuccessResponseThatIndicatesLaggingFollowerWithJustWhatItsMissing() throws
-            Exception
+    public void leaderShouldRespondToSuccessResponseThatIndicatesLaggingFollowerWithJustWhatItsMissing()
+            throws Exception
     {
         // given
         /*
@@ -362,13 +356,51 @@ public class LeaderTest
                 .build();
 
         Leader leader = new Leader();
+        leader.handle( new RaftMessages.HeartbeatResponse( member1 ), state, log() ); // make sure it has quorum.
 
         // when
-        Outcome outcome = leader.handle( new Heartbeat( member1 ), state, log() );
+        Outcome outcome = leader.handle( new Heartbeat( myself ), state, log() );
 
         // then
         assertTrue( messageFor( outcome, member1 ) instanceof RaftMessages.Heartbeat );
         assertTrue( messageFor( outcome, member2 ) instanceof RaftMessages.Heartbeat );
+    }
+
+    @Test
+    public void leaderShouldStepDownWhenLackingHeartbeatResponses() throws Exception
+    {
+        // given
+        RaftState state = raftState()
+                .votingMembers( asSet( myself, member1, member2 ) )
+                .build();
+
+        Leader leader = new Leader();
+        leader.handle( new RaftMessages.HeartbeatResponse( myself ), state, log() );
+        leader.handle( new RaftMessages.Timeout.Election( myself ), state, log() );
+
+        // when
+        Outcome outcome = leader.handle( new RaftMessages.Timeout.Election( myself ), state, log() );
+
+        // then
+        assertThat( outcome.getRole(), not( LEADER ) );
+    }
+
+    @Test
+    public void leaderShouldNotStepDownWhenReceivedQuorumOfHeartbeatResponses() throws Exception
+    {
+        // given
+        RaftState state = raftState()
+                .votingMembers( asSet( myself, member1, member2 ) )
+                .build();
+
+        Leader leader = new Leader();
+
+        // when
+        leader.handle( new RaftMessages.HeartbeatResponse( member1 ), state, log() ); //Now we have quorum.
+        Outcome outcome = leader.handle( new RaftMessages.Timeout.Election( myself ), state, log() );
+
+        // then
+        assertThat( outcome.getRole(), is( LEADER ) );
     }
 
     @Test
@@ -382,8 +414,7 @@ public class LeaderTest
 
         Leader leader = new Leader();
 
-        RaftMessages.NewEntry.Request newEntryRequest = new RaftMessages.NewEntry.Request(
-                member( 9 ), CONTENT );
+        RaftMessages.NewEntry.Request newEntryRequest = new RaftMessages.NewEntry.Request( member( 9 ), CONTENT );
 
         // when
         Outcome outcome = leader.handle( newEntryRequest, state, log() );
@@ -396,7 +427,8 @@ public class LeaderTest
 
         ShipCommand.NewEntries shipCommand = (ShipCommand.NewEntries) single( outcome.getShipCommands() );
 
-        assertEquals( shipCommand, new ShipCommand.NewEntries( -1, -1, new RaftLogEntry[]{ new RaftLogEntry( 0, CONTENT ) } ) );
+        assertEquals( shipCommand,
+                new ShipCommand.NewEntries( -1, -1, new RaftLogEntry[]{new RaftLogEntry( 0, CONTENT )} ) );
     }
 
     @Test
@@ -410,8 +442,7 @@ public class LeaderTest
         Leader leader = new Leader();
 
         int BATCH_SIZE = 3;
-        RaftMessages.NewEntry.BatchRequest batchRequest =
-                new RaftMessages.NewEntry.BatchRequest( BATCH_SIZE );
+        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( BATCH_SIZE );
         batchRequest.add( valueOf( 0 ) );
         batchRequest.add( valueOf( 1 ) );
         batchRequest.add( valueOf( 2 ) );
@@ -426,7 +457,7 @@ public class LeaderTest
         for ( int i = 0; i < BATCH_SIZE; i++ )
         {
             assertEquals( 0, logCommand.entries[i].term() );
-            assertEquals( i, ((ReplicatedInteger)logCommand.entries[i].content()).get() );
+            assertEquals( i, ((ReplicatedInteger) logCommand.entries[i].content()).get() );
         }
 
         ShipCommand.NewEntries shipCommand = (ShipCommand.NewEntries) single( outcome.getShipCommands() );
@@ -445,7 +476,8 @@ public class LeaderTest
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, new ReplicatedString( "lalalala" ) ) );
 
-        RaftState state = raftState().votingMembers( member1, member2 )
+        RaftState state = raftState()
+                .votingMembers( member1, member2 )
                 .term( 0 )
                 .lastLogIndexBeforeWeBecameLeader( -1 )
                 .leader( myself )
@@ -458,9 +490,8 @@ public class LeaderTest
         Leader leader = new Leader();
 
         // when a single instance responds (plus self == 2 out of 3 instances)
-        Outcome outcome = leader.handle(
-                new RaftMessages.AppendEntries.Response( member1, 0, true, 0, 0 ),
-                state, log() );
+        Outcome outcome =
+                leader.handle( new RaftMessages.AppendEntries.Response( member1, 0, true, 0, 0 ), state, log() );
 
         // then
         assertEquals( 0L, outcome.getCommitIndex() );
@@ -479,7 +510,8 @@ public class LeaderTest
 
         RaftState state = raftState()
                 .votingMembers( myself, member1, member2 )
-                .term( 0 ).entryLog( raftLog )
+                .term( 0 )
+                .entryLog( raftLog )
                 .messagesSentToFollower( member1, raftLog.appendIndex() + 1 )
                 .messagesSentToFollower( member2, raftLog.appendIndex() + 1 )
                 .build();
@@ -487,9 +519,7 @@ public class LeaderTest
         Leader leader = new Leader();
 
         // when
-        Outcome outcome =
-                leader.handle( new AppendEntries.Response( member1, 0, true, 2, 2 ),
-                        state, log() );
+        Outcome outcome = leader.handle( new AppendEntries.Response( member1, 0, true, 2, 2 ), state, log() );
 
         state.update( outcome );
 

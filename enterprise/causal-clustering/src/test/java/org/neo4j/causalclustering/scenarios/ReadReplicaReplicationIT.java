@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -39,15 +40,14 @@ import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -63,7 +63,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Log;
-import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -78,7 +77,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
@@ -105,22 +103,19 @@ public class ReadReplicaReplicationIT
 
         ReadReplicaGraphDatabase readReplica = cluster.findAnyReadReplica().database();
 
-        // when (write should fail)
-        boolean transactionFailed = false;
+        // when
         try ( Transaction tx = readReplica.beginTx() )
         {
             Node node = readReplica.createNode();
             node.setProperty( "foobar", "baz_bat" );
             node.addLabel( Label.label( "Foo" ) );
             tx.success();
+            fail( "should have thrown" );
         }
         catch ( WriteOperationsNotAllowedException e )
         {
-            // expected
-            transactionFailed = true;
+            // then all good
         }
-
-        assertTrue( transactionFailed );
     }
 
     @Test
@@ -145,16 +140,20 @@ public class ReadReplicaReplicationIT
         int nodesBeforeReadReplicaStarts = 1;
 
         // when
-        executeOnLeaderWithRetry( db -> createData( db, nodesBeforeReadReplicaStarts ), cluster );
+        cluster.coreTx( ( db, tx ) ->
+        {
+            createData( db, nodesBeforeReadReplicaStarts );
+            tx.success();
+        } );
 
         cluster.addReadReplicaWithId( 0 ).start();
 
         // when
-        executeOnLeaderWithRetry( db ->
+        cluster.coreTx( ( db, tx ) ->
         {
-            Node node = db.createNode();
-            node.setProperty( "foobar", "baz_bat" );
-        }, cluster );
+            db.createNode().setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } );
 
         // then
         for ( final ReadReplica server : cluster.readReplicas() )
@@ -183,7 +182,7 @@ public class ReadReplicaReplicationIT
     {
         Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
 
-        executeOnLeaderWithRetry( this::createData, cluster );
+        cluster.coreTx( createSomeData );
 
         CoreClusterMember follower = cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 2, TimeUnit.SECONDS );
         // Shutdown server before copying its data, because Windows can't copy open files.
@@ -215,18 +214,18 @@ public class ReadReplicaReplicationIT
         int readReplicaId = 4;
         Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
 
-        executeOnLeaderWithRetry( this::createData, cluster );
+        cluster.coreTx( createSomeData );
 
         cluster.addReadReplicaWithId( readReplicaId ).start();
 
         // let's spend some time by adding more data
-        executeOnLeaderWithRetry( this::createData, cluster );
+        cluster.coreTx( createSomeData );
 
         awaitEx( () -> readReplicasUpToDateAsTheLeader( cluster.awaitLeader(), cluster.readReplicas() ), 1, TimeUnit.MINUTES );
         cluster.removeReadReplicaWithMemberId( readReplicaId );
 
         // let's spend some time by adding more data
-        executeOnLeaderWithRetry( this::createData, cluster );
+        cluster.coreTx( createSomeData );
 
         cluster.addReadReplicaWithId( readReplicaId ).start();
 
@@ -415,7 +414,7 @@ public class ReadReplicaReplicationIT
         Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).withRecordFormat( HighLimit.NAME ).startCluster();
 
         // when
-        executeOnLeaderWithRetry( this::createData, cluster );
+        cluster.coreTx( createSomeData );
 
         try
         {
@@ -488,33 +487,11 @@ public class ReadReplicaReplicationIT
         return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
     }
 
-    private void executeOnLeaderWithRetry( Workload workload, Cluster cluster ) throws Exception
+    private final BiConsumer<CoreGraphDatabase,Transaction> createSomeData = ( db, tx ) ->
     {
-        assertEventually( "Executed on leader", () ->
-        {
-            try
-            {
-                CoreGraphDatabase coreDB = cluster.awaitLeader( 5L, SECONDS ).database();
-                try ( Transaction tx = coreDB.beginTx() )
-                {
-                    workload.doWork( coreDB );
-                    tx.success();
-                    return true;
-                }
-            }
-            catch ( AcquireLockTimeoutException | TransactionFailureException e )
-            {
-                // print the stack trace for diagnostic purposes, but retry as this is most likely a transient failure
-                e.printStackTrace();
-                return false;
-            }
-        }, is( true ), 30, SECONDS );
-    }
-
-    private interface Workload
-    {
-        void doWork( GraphDatabaseService database );
-    }
+        createData( db );
+        tx.success();
+    };
 
     private void createData( GraphDatabaseService db )
     {
