@@ -17,21 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.protocol.election;
+package org.neo4j.com.storecopy;
 
-public class IntegerElectionCredentials implements ElectionCredentials
+import java.io.File;
+import java.io.IOException;
+
+public interface PostStoreCopyOperation
 {
-    private final int credential;
-
-    public  IntegerElectionCredentials( int credential )
-    {
-        this.credential = credential;
-    }
-
-    @Override
-    public int compareTo( ElectionCredentials o )
-    {
-        return o instanceof IntegerElectionCredentials
-               ? Integer.valueOf(credential).compareTo( ((IntegerElectionCredentials) o).credential ) : 0;
-    }
+    void move( File from, File to ) throws Throwable;
 }

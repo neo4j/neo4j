@@ -152,12 +152,6 @@ public class ClusterClient
     }
 
     @Override
-    public void promote( InstanceId node, String role )
-    {
-        election.promote( node, role );
-    }
-
-    @Override
     public void setSnapshotProvider( SnapshotProvider snapshotProvider )
     {
         snapshot.setSnapshotProvider( snapshotProvider );

@@ -119,7 +119,8 @@ public class StoreCopyClientTest
         StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( originalDir, original );
 
         // when
-        copier.copyStore( storeCopyRequest, cancellationRequest );
+        File copyOfStore = copier.copyStore( storeCopyRequest, cancellationRequest );
+        new MoveToDir().move( copyOfStore, copyDir );
 
         // Then
         GraphDatabaseService copy = startDatabase( copyDir );
@@ -254,7 +255,8 @@ public class StoreCopyClientTest
                 initialDatabase );
 
         // WHEN
-        copier.copyStore( storeCopyRequest, falseCancellationRequest );
+        File copyOfStore = copier.copyStore( storeCopyRequest, falseCancellationRequest );
+        new MoveToDir().move( copyOfStore, backupStore );
 
         // THEN
         long updatedTransactionOffset =

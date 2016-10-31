@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -144,17 +145,6 @@ public class StoreCopyClient
         void done();
     }
 
-    public static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
-    private static final FileFilter STORE_FILE_FILTER = new FileFilter()
-    {
-        @Override
-        public boolean accept( File file )
-        {
-            // Skip log files and tx files from temporary database
-            return !file.getName().startsWith( "metrics" )
-                   && !file.getName().startsWith( "debug." );
-        }
-    };
     private final File storeDir;
     private final Config config;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
@@ -178,11 +168,10 @@ public class StoreCopyClient
         this.forensics = forensics;
     }
 
-    public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest )
-            throws Exception
+    public File copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest ) throws Exception
     {
         // Create a temp directory (or clean if present)
-        File tempStore = new File( storeDir, TEMP_COPY_DIRECTORY_NAME );
+        File tempStore = new File( storeDir, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
         cleanDirectory( tempStore );
 
         // Request store files and transactions that will need recovery
@@ -209,14 +198,8 @@ public class StoreCopyClient
         graphDatabaseService.shutdown();
         monitor.finishRecoveringStore();
 
-        // All is well, move the streamed files to the real store directory
-        for ( File candidate : tempStore.listFiles( STORE_FILE_FILTER ) )
-        {
-            FileUtils.moveFileToDirectory( candidate, storeDir );
-        }
+        return tempStore;
 
-        // All done, delete temp directory
-        FileUtils.deleteRecursively( tempStore );
     }
 
     private void writeTransactionsToActiveLogFile( File tempStoreDir, Response<?> response ) throws Exception

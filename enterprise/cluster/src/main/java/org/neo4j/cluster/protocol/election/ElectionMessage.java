@@ -31,7 +31,7 @@ public enum ElectionMessage
     implements MessageType
 {
     created,join,leave,
-    demote, performRoleElections, promote, vote, electionTimeout, voted;
+    demote, performRoleElections, vote, electionTimeout, voted;
 
     public static class VotedData
         implements Serializable
@@ -40,13 +40,13 @@ public enum ElectionMessage
 
         private String role;
         private InstanceId instanceId;
-        private Comparable<Object> voteCredentials;
+        private ElectionCredentials voteCredentials;
 
-        public VotedData( String role, InstanceId instanceId, Comparable<Object> voteCredentials )
+        public VotedData( String role, InstanceId instanceId, ElectionCredentials electionCredentials )
         {
             this.role = role;
             this.instanceId = instanceId;
-            this.voteCredentials = voteCredentials;
+            this.voteCredentials = electionCredentials;
         }
 
         public String getRole()
@@ -59,7 +59,7 @@ public enum ElectionMessage
             return instanceId;
         }
 
-        public Comparable<Object> getVoteCredentials()
+        public ElectionCredentials getElectionCredentials()
         {
             return voteCredentials;
         }
@@ -83,9 +83,9 @@ public enum ElectionMessage
 
         private long version;
 
-        public VersionedVotedData( String role, InstanceId instanceId, Comparable<Object> voteCredentials, long version )
+        public VersionedVotedData( String role, InstanceId instanceId, ElectionCredentials electionCredentials, long version )
         {
-            super( role, instanceId, voteCredentials );
+            super( role, instanceId, electionCredentials );
             this.version = version;
         }
 
