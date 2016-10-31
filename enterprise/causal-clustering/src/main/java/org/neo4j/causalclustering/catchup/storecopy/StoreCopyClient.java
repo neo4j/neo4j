@@ -59,12 +59,10 @@ public class StoreCopyClient
                         public boolean onFileContent( CompletableFuture<Long> signal, FileContent fileContent )
                                 throws IOException
                         {
-                            try ( FileContent content = fileContent;
-                                  OutputStream outputStream = storeFileStreams.createStream( destination ) )
+                            try ( OutputStream outputStream = storeFileStreams.createStream( destination ) )
                             {
-                                expectedBytes -= content.writeTo( outputStream );
+                                expectedBytes -= fileContent.writeTo( outputStream );
                             }
-
                             return expectedBytes <= 0;
                         }
 

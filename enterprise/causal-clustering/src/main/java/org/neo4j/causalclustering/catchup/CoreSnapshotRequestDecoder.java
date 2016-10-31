@@ -21,25 +21,18 @@ package org.neo4j.causalclustering.catchup;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
-import org.neo4j.causalclustering.messaging.Message;
-import org.neo4j.function.Factory;
+import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequest;
 
-class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
+class CoreSnapshotRequestDecoder extends ByteToMessageDecoder
 {
-    private Factory<? extends Message> factory;
-
-    SimpleRequestDecoder( Factory<? extends Message> factory )
-    {
-        this.factory = factory;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        out.add( factory.newInstance() );
+        msg.readByte();
+        out.add( new CoreSnapshotRequest() );
     }
 }

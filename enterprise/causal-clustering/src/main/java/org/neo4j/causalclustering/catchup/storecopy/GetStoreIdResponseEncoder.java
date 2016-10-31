@@ -19,22 +19,20 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
-
-import java.util.List;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
-public class GetStoreIdResponseDecoder extends ByteToMessageDecoder
+public class GetStoreIdResponseEncoder extends MessageToByteEncoder<StoreId>
 {
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, StoreId storeId, ByteBuf out ) throws Exception
     {
-        StoreId storeId = StoreIdMarshal.INSTANCE.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
-        out.add( new GetStoreIdResponse( storeId ) );
+        StoreIdMarshal.INSTANCE.marshal( storeId, new NetworkFlushableByteBuf( out ) );
     }
 }

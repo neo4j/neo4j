@@ -46,11 +46,8 @@ public class GetStoreIdRequestHandler extends SimpleChannelInboundHandler<GetSto
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreIdRequest msg ) throws Exception
     {
-        StoreId storeId = storeIdSupplier.get();
         ctx.writeAndFlush( ResponseMessageType.STORE_ID );
-        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
-        StoreIdMarshal.INSTANCE.marshal( storeId, channel );
-        ctx.writeAndFlush( channel.buffer() );
+        ctx.writeAndFlush( storeIdSupplier.get() );
         protocol.expect( State.MESSAGE_TYPE );
     }
 }
