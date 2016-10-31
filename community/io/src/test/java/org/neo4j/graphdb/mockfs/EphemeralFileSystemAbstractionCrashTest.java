@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphdb.mockfs;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -31,24 +34,48 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.Test;
-
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.ByteBuffer.allocateDirect;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class EphemeralFileSystemAbstractionCrashTest
 {
+
+    private EphemeralFileSystemAbstraction fs;
+
+    @Before
+    public void setUp()
+    {
+        fs = new EphemeralFileSystemAbstraction();
+    }
+
+    @Test
+    public void allowStoreThatExceedPredefinedSizes() throws IOException
+    {
+        File aFile = new File( "test" );
+        StoreChannel channel = fs.open( aFile, "rw" );
+
+        ByteBuffer buffer = allocateDirect( Long.BYTES );
+        int mebiBytes = (int) ByteUnit.mebiBytes( 1 );
+        for ( int position = mebiBytes + 42; position < 10_000_000; position += mebiBytes )
+        {
+            buffer.putLong( 1 );
+            buffer.flip();
+            channel.write( buffer, position );
+            buffer.clear();
+        }
+        channel.close();
+    }
+
     @Test
     public void shouldNotLoseDataForcedBeforeFileSystemCrashes() throws Exception
     {
         // given
         int numberOfBytesForced = 8;
 
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         File aFile = new File( "yo" );
 
         StoreChannel channel = fs.open( aFile, "rw" );
@@ -69,7 +96,6 @@ public class EphemeralFileSystemAbstractionCrashTest
     @Test
     public void shouldBeConsistentAfterConcurrentWritesAndCrashes() throws Exception
     {
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         File aFile = new File( "contendedFile" );
 
         ExecutorService executorService = Executors.newCachedThreadPool();

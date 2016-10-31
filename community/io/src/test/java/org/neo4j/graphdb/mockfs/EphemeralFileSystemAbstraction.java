@@ -1184,8 +1184,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
          */
         private ByteBuffer allocate( int sizeIndex )
         {
-            int capacity = (sizeIndex < SIZES.length) ?
-                           SIZES[sizeIndex] : ((sizeIndex - SIZES.length + 1) * SIZES[SIZES.length - 1]);
+            int capacity = capacity( sizeIndex );
             try
             {
                 return ByteBuffer.allocateDirect( capacity );
@@ -1202,6 +1201,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                     throw oom;
                 }
             }
+        }
+
+        private int capacity( int sizeIndex )
+        {
+            return (sizeIndex < SIZES.length) ?
+                           SIZES[sizeIndex] : ((sizeIndex - SIZES.length + 1) * SIZES[SIZES.length - 1]);
         }
 
         void free()
@@ -1269,7 +1274,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             // Double size each time, but after 1M only increase by 1M at a time, until required amount is reached.
             int newSize = buf.capacity();
             int sizeIndex = sizeIndexFor( newSize );
-            while ( newSize < totalAmount )
+            while ( capacity( sizeIndex ) < totalAmount )
             {
                 newSize += Math.min( newSize, 1024 * 1024 );
                 sizeIndex++;
