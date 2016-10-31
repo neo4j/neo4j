@@ -57,8 +57,7 @@ public class MembershipWaiterTest
     public void shouldReturnImmediatelyIfMemberAndCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500,
-                new LeaderCommitWaiter( new NoSleepSleeper() ), NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500, NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -83,8 +82,7 @@ public class MembershipWaiterTest
     public void shouldWaitUntilLeaderCommitIsAvailable() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500,
-                new LeaderCommitWaiter( new NoSleepSleeper() ), NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500, NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -100,7 +98,6 @@ public class MembershipWaiterTest
 
         CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raft );
         jobScheduler.runJob();
-        jobScheduler.runJob();
 
         future.get( 1, TimeUnit.SECONDS );
     }
@@ -109,9 +106,7 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfCaughtUpButNotMember() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, new
-                LeaderCommitWaiter( new NoSleepSleeper() ),
-                NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, NullLogProvider.getInstance() );
 
         ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 1 ) )
@@ -140,9 +135,7 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfMemberButNotCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, new
-                LeaderCommitWaiter( new NoSleepSleeper() ),
-                NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, NullLogProvider.getInstance() );
 
         ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ), member( 1 ) )
@@ -171,8 +164,7 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfLeaderCommitIsNeverKnown() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth,  1,
-                new LimitedTriesLeaderCommitWaiter( new NoSleepSleeper(), 1 ), NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth,  1, NullLogProvider.getInstance() );
 
         ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .leaderCommit( -1 )
@@ -194,37 +186,4 @@ public class MembershipWaiterTest
             // expected
         }
     }
-
-    private class NoSleepSleeper implements Sleeper
-    {
-        @Override
-        public void sleep( long millis )
-        {
-            // no need to sleep, only for tests
-        }
-    }
-
-    class LimitedTriesLeaderCommitWaiter extends LeaderCommitWaiter
-    {
-        private int attempts;
-
-        public LimitedTriesLeaderCommitWaiter( Sleeper sleeper, int attempts )
-        {
-            super( sleeper );
-            this.attempts = attempts;
-        }
-
-        @Override
-        public void waitMore()
-        {
-            attempts--;
-        }
-
-        @Override
-        public boolean keepWaiting( ExposedRaftState raftState )
-        {
-            return super.keepWaiting( raftState ) && attempts > 0;
-        }
-    }
-
 }

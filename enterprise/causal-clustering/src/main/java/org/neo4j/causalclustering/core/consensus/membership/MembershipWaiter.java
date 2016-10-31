@@ -32,6 +32,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
@@ -55,17 +56,17 @@ public class MembershipWaiter
     private final JobScheduler jobScheduler;
     private final Supplier<DatabaseHealth> dbHealthSupplier;
     private final long maxCatchupLag;
-    private LeaderCommitWaiter waiter;
+    private long currentCatchupDelayInMs;
     private final Log log;
 
     public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, Supplier<DatabaseHealth> dbHealthSupplier,
-            long maxCatchupLag, LeaderCommitWaiter leaderCommitWaiter, LogProvider logProvider )
+            long maxCatchupLag, LogProvider logProvider )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
         this.dbHealthSupplier = dbHealthSupplier;
         this.maxCatchupLag = maxCatchupLag;
-        this.waiter = leaderCommitWaiter;
+        this.currentCatchupDelayInMs = maxCatchupLag;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -75,17 +76,11 @@ public class MembershipWaiter
 
         Evaluator evaluator = new Evaluator( raft, catchUpFuture, dbHealthSupplier );
 
-        jobScheduler.schedule( new JobScheduler.Group( getClass().toString(), POOLED ), () -> {
-            while ( waiter.keepWaiting( raft.state() ) )
-            {
-                waiter.waitMore();
-            }
-            JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
-                    new JobScheduler.Group( getClass().toString(), POOLED ),
-                    evaluator, maxCatchupLag, MILLISECONDS );
+        JobScheduler.JobHandle jobHandle = jobScheduler.schedule(
+                new JobScheduler.Group( getClass().toString(), POOLED ),
+                evaluator, currentCatchupDelayInMs, MILLISECONDS );
 
-            catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
-        } );
+        catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
 
         return catchUpFuture;
     }
@@ -118,6 +113,13 @@ public class MembershipWaiter
             {
                 catchUpFuture.complete( true );
             }
+            else
+            {
+                currentCatchupDelayInMs += SECONDS.toMillis( 1 );
+                long longerDelay = currentCatchupDelayInMs < maxCatchupLag ? currentCatchupDelayInMs : maxCatchupLag;
+                jobScheduler.schedule( new JobScheduler.Group( MembershipWaiter.class.toString(), POOLED ), this,
+                        longerDelay, MILLISECONDS );
+            }
         }
 
         private boolean iAmAVotingMember()
@@ -136,11 +138,11 @@ public class MembershipWaiter
             boolean caughtUpWithLeader = false;
 
             ExposedRaftState state = raft.state();
-
             long localCommit = state.commitIndex();
+            lastLeaderCommit = state.leaderCommit();
             if ( lastLeaderCommit != -1 )
             {
-                caughtUpWithLeader = localCommit >= lastLeaderCommit;
+                caughtUpWithLeader = localCommit == lastLeaderCommit;
                 long gap = lastLeaderCommit - localCommit;
                 log.info( "%s Catchup: %d => %d (%d behind)", myself, localCommit, lastLeaderCommit, gap );
             }
@@ -148,7 +150,6 @@ public class MembershipWaiter
             {
                 log.info( "Leader commit unknown" );
             }
-
             return caughtUpWithLeader;
         }
     }
