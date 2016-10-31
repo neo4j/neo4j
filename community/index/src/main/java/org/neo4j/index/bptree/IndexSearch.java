@@ -58,17 +58,17 @@ public class IndexSearch
 
         // Compare key with lower and higher and sort out special cases
         Comparator<KEY> comparator = bTreeNode.keyComparator();
-        int comparedHigher = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) );
-        if ( comparedHigher >= 0 )
+        int comparison;
+        if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) ) > 0 )
         {
             pos = keyCount;
-            if ( comparedHigher == 0 )
+        }
+        else if ( (comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower ) )) <= 0 )
+        {
+            if ( comparison == 0 )
             {
                 hit = true;
             }
-        }
-        else if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower ) ) < 0 )
-        {
             pos = 0;
         }
         else
@@ -82,12 +82,11 @@ public class IndexSearch
                 pos = (lower + higher) / 2;
                 switch ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) )
                 {
+                case 0:
+                    // fall-through
                 case -1:
                     higher = pos;
                     break;
-                case 0:
-                    hit = true;
-                    // fall-through
                 case 1:
                     lower = pos+1;
                     break;
@@ -101,6 +100,8 @@ public class IndexSearch
                                                  "unexpected way." );
             }
             pos = lower;
+
+            hit = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) == 0;
         }
         return searchResult( pos, hit );
     }
