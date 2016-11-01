@@ -25,13 +25,10 @@ import org.junit.Test;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DoubleLatch;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -106,7 +103,8 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         neo.getLocalGraph().shutdown();
 
         // assert on log content
-        FullLog log = new FullLog();
+        SecurityLog log = new SecurityLog();
+        log.load();
 
         log.assertHasLine( "mats", "logged in" );
         log.assertHasLine( "adminSubject", "created user `mats`" );
@@ -119,25 +117,6 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         log.assertHasLine( "mats", "changed password");
         log.assertHasLine( "adminSubject", "removed role `reader` from user `mats`");
         log.assertHasLine( "adminSubject", "deleted user `mats`");
-    }
-
-    private class FullLog
-    {
-        List<String> lines;
-
-        FullLog() throws IOException
-        {
-            lines = new ArrayList<>();
-            BufferedReader bufferedReader = new BufferedReader(
-                    neo.fileSystem().openAsReader( new File( securityLog.getAbsolutePath() ), Charsets.UTF_8 ) );
-            lines.add( bufferedReader.readLine() );
-            bufferedReader.lines().forEach( lines::add );
-        }
-
-        void assertHasLine( String subject, String msg )
-        {
-            assertThat( lines, hasItem( containsString( "[" + subject + "]: " + msg ) ) );
-        }
     }
 
     /*
@@ -775,5 +754,26 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
                 r -> assertKeyIs( r, "c", "1" ) );
         assertSuccess( readSubject, "MATCH (n:MyNode) WHERE n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
                 r -> assertKeyIs( r, "c", "1" ) );
+    }
+
+    private class SecurityLog
+    {
+        List<String> lines;
+
+        void load() throws IOException
+        {
+            File securityLog = new File( AuthScenariosInteractionTestBase.this.securityLog.getAbsolutePath() );
+            try ( BufferedReader bufferedReader = new BufferedReader(
+                    neo.fileSystem().openAsReader( securityLog, Charsets.UTF_8 ) ) )
+            {
+                lines = bufferedReader.lines().collect( java.util.stream.Collectors.toList() );
+            }
+        }
+
+        void assertHasLine( String subject, String msg )
+        {
+            Objects.requireNonNull( lines );
+            assertThat( lines, hasItem( containsString( "[" + subject + "]: " + msg ) ) );
+        }
     }
 }

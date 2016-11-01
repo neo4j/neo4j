@@ -43,6 +43,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
@@ -85,7 +86,8 @@ public class QueryLoggerIT
         logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
         logFilename = new File( logsDirectory, "query.log" );
         AssertableLogProvider inMemoryLog = new AssertableLogProvider();
-        databaseBuilder = new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystem.get() )
+        databaseBuilder = new TestEnterpriseGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem.get() ) )
                 .setInternalLogProvider( inMemoryLog )
                 .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() );
     }
