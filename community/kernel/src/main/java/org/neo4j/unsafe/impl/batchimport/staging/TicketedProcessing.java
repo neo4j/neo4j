@@ -31,7 +31,6 @@ import org.neo4j.unsafe.impl.batchimport.Parallelizable;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.helpers.FutureAdapter.future;
@@ -128,7 +127,13 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
             await( myTurnToAddToProcessedQueue, ticket, healthCheck, park );
 
             // OK now it's my turn to add this result to the result queue which user will pull from later on
-            while ( !processed.offer( result, 10, MILLISECONDS ) );
+            boolean offered;
+            do
+            {
+                healthCheck.run();
+                offered = processed.offer( result, 10, MILLISECONDS );
+            }
+            while ( !offered );
 
             // Signal that this ticket has been processed and added to the result queue
             processedTicket.incrementAndGet();
@@ -136,48 +141,68 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     }
 
     /**
+     * Should be called after all calls to {@link #submit(Object)} and {@link #slurp(Iterator, boolean)}
+     * have been made. This is due to the async nature of this class where submitted jobs gets processed
+     * and put into result queue for pickup in {@link #next()}, which will not know when to return
+     * {@code null} (marking the end) otherwise. Then after all processed results have been retrieved
+     * a call to {@link #shutdown()} should be made.
+     */
+    public void endOfSubmissions()
+    {
+        done = true;
+    }
+
+    /**
      * Essentially starting a thread {@link #submit(Object) submitting} a stream of inputs which will
      * each be processed and asynchronically made available in order of processing ticket by later calling
      * {@link #next()}.
      *
+     * Failure reading from {@code input} or otherwise submitting jobs will fail the processing after that point.
+     *
      * @param input {@link Iterator} of input to process.
-     * @param shutdownAfterAllSubmitted will call {@link #shutdown(boolean)} after all jobs submitted if {@code true}.
+     * @param lastSubmissions will call {@link #endOfSubmissions()} after all jobs submitted if {@code true}.
      * @return {@link Future} representing the work of submitting the inputs to be processed. When the future
      * is completed all items from the {@code input} {@link Iterator} have been submitted, but some items
      * may still be queued and processed.
      */
-    public Future<Void> slurp( Iterator<FROM> input, boolean shutdownAfterAllSubmitted )
+    public Future<Void> slurp( Iterator<FROM> input, boolean lastSubmissions )
     {
         return future( () ->
         {
-            while ( input.hasNext() )
+            try
             {
-                submit( input.next() );
+                while ( input.hasNext() )
+                {
+                    submit( input.next() );
+                }
+                if ( lastSubmissions )
+                {
+                    endOfSubmissions();
+                }
+                return null;
             }
-            if ( shutdownAfterAllSubmitted )
+            catch ( Throwable e )
             {
-                shutdown( true );
+                executor.panic( e );
+                throw e;
             }
-            return null;
         } );
     }
 
     /**
-     * Tells this processor that there will be no more submissions and so {@link #next()} will stop blocking,
-     * waiting for new processed results.
-     *
-     * @param awaitAllProcessed if {@code true} will block until all submitted jobs have been processed,
-     * otherwise if {@code false} will return immediately, where processing will still commence and complete.
+     * Shuts down processing. Normally this method gets called after an arbitrary amount of
+     * {@link #submit(Object)} / {@link #slurp(Iterator, boolean)} concluded with {@link #endOfSubmissions()}
+     * and after all processed results have been {@link #next() retrieved}.
+     * Shutdown can be called before everything has been processed in which case it causes jobs to be aborted.
      */
-    public void shutdown( boolean awaitAllProcessed )
+    public void shutdown()
     {
-        done = true;
-        executor.shutdown( awaitAllProcessed ? TaskExecutor.SF_AWAIT_ALL_COMPLETED : 0 );
+        executor.shutdown();
     }
 
     /**
-     * @return next processed job (blocking call), or {@code null} if all jobs have been processed
-     * and {@link #shutdown(boolean)} has been called.
+     * @return next processed job (blocking call). If all submitted jobs have been processed and returned
+     * and {@link #endOfSubmissions()} have been called {@code null} will be returned.
      */
     public TO next()
     {
