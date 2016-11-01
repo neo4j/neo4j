@@ -26,22 +26,24 @@ import org.neo4j.io.pagecache.PageCursor;
 public class IndexSearch
 {
     /**
-     * Leaves cursor on same page as when called. No guarantees on offset.
-     *
-     * Search for keyAtPos such that key <= keyAtPos. Return first position of keyAtPos (not offset),
-     * or key count if no such key exist.
-     *
+     * Search for left most pos such that keyAtPos obeys key <= keyAtPos.
+     * Return pos (not offset) of keyAtPos, or key count if no such key exist.
+     * <p>
      * On insert, key should be inserted at pos.
      * On seek in internal, child at pos should be followed from internal node.
      * On seek in leaf, value at pos is correct if keyAtPos is equal to key.
+     * <p>
+     * Implemented as binary search.
+     * <p>
+     * Leaves cursor on same page as when called. No guarantees on offset.
      *
-     * Simple implementation, linear search.
-     *
-     * //TODO: Implement binary search
-     *
-     * @param cursor    {@link PageCursor} pinned to page with node (internal or leaf does not matter)
-     * @param key       long[] of length 2 where key[0] is id and key[1] is property value
-     * @return          first position i for which Node.KEY_COMPARATOR.compare( key, Node.keyAt( i ) <= 0;
+     * @param cursor {@link PageCursor} pinned to page with node (internal or leaf does not matter)
+     * @param bTreeNode {@link TreeNode} that knows how to operate on KEY and VALUE
+     * @param key KEY to search for
+     * @param readKey KEY to use as temporary storage during calculation.
+     * @param keyCount number of keys in node when starting search
+     * @return first position i for which bTreeNode.keyComparator().compare( key, bTreeNode.keyAt( i ) <= 0,
+     * or keyCount if no such key exists.
      */
     public static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY key,
             KEY readKey, int keyCount )
@@ -59,10 +61,13 @@ public class IndexSearch
         // Compare key with lower and higher and sort out special cases
         Comparator<KEY> comparator = bTreeNode.keyComparator();
         int comparison;
+
+        // key greater than greatest key in node
         if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) ) > 0 )
         {
             pos = keyCount;
         }
+        // key smaller than or equal to smallest key in node
         else if ( (comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower ) )) <= 0 )
         {
             if ( comparison == 0 )
@@ -80,8 +85,8 @@ public class IndexSearch
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                int compare = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) );
-                if ( compare <= 0 )
+                comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) );
+                if ( comparison <= 0 )
                 {
                     higher = pos;
                 }
@@ -92,8 +97,9 @@ public class IndexSearch
             }
             if ( lower != higher )
             {
-                throw new IllegalStateException( "Something went terribly wrong. The binary search terminated in an " +
-                                                 "unexpected way." );
+                throw new IllegalStateException( "The binary search terminated in an unexpected way. " +
+                                                 "Expected lower and higher to be equal but was " +
+                                                 "lower=" + lower + ", higher=" + higher );
             }
             pos = lower;
 
