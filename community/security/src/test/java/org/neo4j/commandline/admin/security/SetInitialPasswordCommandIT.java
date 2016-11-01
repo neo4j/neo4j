@@ -43,6 +43,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class SetInitialPasswordCommandIT
@@ -98,13 +99,34 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments() throws Throwable
+    public void shouldGetUsageOnWrongArguments1() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
+        assertNoAuthIniFile();
+
+        verify( out ).stdErrLine( "No password specified." );
+        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
+        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
+        verify( out ).exit( 1 );
+        verifyNoMoreInteractions( out );
+        verify( out, times( 0 ) ).stdOutLine( anyString() );
+    }
+
+    @Test
+    public void shouldGetUsageOnWrongArguments2() throws Throwable
+    {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
         assertNoAuthIniFile();
 
-        verify( out, times( 2 ) ).stdErrLine( "neo4j-admin set-initial-password <password>" );
+        verify( out ).stdErrLine( "Too many arguments." );
+        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
+        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
+        verify( out ).exit( 1 );
+        verifyNoMoreInteractions( out );
         verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
 

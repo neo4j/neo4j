@@ -22,13 +22,15 @@ package org.neo4j.commandline.admin.security;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Consumer;
 
+import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.Usage;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -45,6 +47,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -62,7 +67,7 @@ public class SetDefaultAdminCommandTest
     @Before
     public void setup() throws IOException, InvalidArgumentsException
     {
-        OutsideWorld mock = Mockito.mock( OutsideWorld.class );
+        OutsideWorld mock = mock( OutsideWorld.class );
         when( mock.fileSystem() ).thenReturn( fileSystem );
         setDefaultAdmin = new SetDefaultAdminCommand( testDir.directory( "home" ).toPath(),
                 testDir.directory( "conf" ).toPath(), mock );
@@ -116,6 +121,20 @@ public class SetDefaultAdminCommandTest
 
         // Then
         assertAdminIniFile( "noName" );
+    }
+
+    @Test
+    public void shouldPrintNiceHelp() throws Throwable
+    {
+        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+        Consumer<String> out = mock( Consumer.class );
+        usage.printUsageForCommand( new SetDefaultAdminCommand.Provider(), out );
+
+        verify( out ).accept( "usage: neo4j-admin set-default-admin <username>" );
+        verify( out ).accept( "" );
+        verify( out ).accept( "Sets the user to become admin if users but no roles are present, for example\n" +
+                "when upgrading to neo4j 3.1 enterprise." );
+        verifyNoMoreInteractions( out );
     }
 
     private void assertAdminIniFile( String username ) throws Throwable

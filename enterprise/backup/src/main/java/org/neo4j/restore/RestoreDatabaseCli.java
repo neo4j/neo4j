@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -22,7 +21,6 @@ package org.neo4j.restore;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,20 +30,81 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.MandatoryNamedArg;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreDatabaseCli implements AdminCommand
 {
+    private static final Arguments arguments = new Arguments()
+            .withArgument( new MandatoryNamedArg( "from", "backup-directory", "Path to backup to restore from." ) )
+            .withDatabase()
+            .withArgument( new OptionalBooleanArg( "force", false, "If an existing database should be replaced." ) );
     private final Path homeDir;
     private final Path configDir;
+
+    public RestoreDatabaseCli( Path homeDir, Path configDir )
+    {
+        this.homeDir = homeDir;
+        this.configDir = configDir;
+    }
+
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
+    {
+        ConfigLoader configLoader = new ConfigLoader( settings() );
+        Config config = configLoader.loadOfflineConfig( Optional.of( homeDir.toFile() ),
+                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
+
+        return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
+    }
+
+    private static List<Class<?>> settings()
+    {
+        List<Class<?>> settings = new ArrayList<>();
+        settings.add( GraphDatabaseSettings.class );
+        settings.add( DatabaseManagementSystemSettings.class );
+        return settings;
+    }
+
+    @Override
+    public void execute( String[] incomingArguments ) throws IncorrectUsage, CommandFailed
+    {
+        String databaseName;
+        String fromPath;
+        boolean forceOverwrite;
+
+        try
+        {
+            databaseName = arguments.parse( "database", incomingArguments );
+            fromPath = arguments.parse("from", incomingArguments);
+            forceOverwrite = arguments.parseBoolean("force", incomingArguments);
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IncorrectUsage( e.getMessage() );
+        }
+
+        Config config = loadNeo4jConfig( homeDir, configDir, databaseName );
+
+        RestoreDatabaseCommand restoreDatabaseCommand = new RestoreDatabaseCommand( new DefaultFileSystemAbstraction(),
+                new File( fromPath ), config, databaseName, forceOverwrite );
+
+        try
+        {
+            restoreDatabaseCommand.execute();
+        }
+        catch ( IOException e )
+        {
+            throw new CommandFailed( "Failed to restore database", e );
+        }
+    }
 
     public static class Provider extends AdminCommand.Provider
     {
@@ -55,9 +114,9 @@ public class RestoreDatabaseCli implements AdminCommand
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments allArguments()
         {
-            return Optional.of( "--from=<backup-directory> --database=<database-name> [--force]" );
+            return arguments;
         }
 
         @Override
@@ -77,84 +136,5 @@ public class RestoreDatabaseCli implements AdminCommand
         {
             return new RestoreDatabaseCli( homeDir, configDir );
         }
-    }
-
-    public RestoreDatabaseCli( Path homeDir, Path configDir )
-    {
-
-        this.homeDir = homeDir;
-        this.configDir = configDir;
-    }
-
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
-    {
-        ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadOfflineConfig(
-                Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ));
-
-        return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
-    }
-
-    @Override
-    public void execute( String[] incomingArguments ) throws IncorrectUsage, CommandFailed
-    {
-        String databaseName;
-        String fromPath;
-        boolean forceOverwrite;
-
-        Args args = Args.parse( incomingArguments );
-        try
-        {
-            databaseName = args.interpretOption( "database", Converters.mandatory(), s -> s );
-            fromPath = args.interpretOption( "from", Converters.mandatory(), s -> s );
-            forceOverwrite = args.getBoolean( "force", Boolean.FALSE, true );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IncorrectUsage( e.getMessage() );
-        }
-
-        Config config = loadNeo4jConfig( homeDir, configDir, databaseName );
-
-        RestoreDatabaseCommand restoreDatabaseCommand = new RestoreDatabaseCommand(
-                new DefaultFileSystemAbstraction(),
-                new File( fromPath ),
-                config,
-                databaseName,
-                forceOverwrite );
-
-        try
-        {
-            restoreDatabaseCommand.execute();
-        }
-        catch ( IOException e )
-        {
-            throw new CommandFailed( "Failed to restore database", e );
-        }
-    }
-
-    private static List<Class<?>> settings()
-    {
-        List<Class<?>> settings = new ArrayList<>();
-        settings.add( GraphDatabaseSettings.class );
-        settings.add( DatabaseManagementSystemSettings.class );
-        return settings;
-    }
-
-    private static void printUsage( PrintStream out )
-    {
-        out.println( "Neo4j Restore Tool" );
-        for ( String line : Args.splitLongLine( "The restore tool is used to restore a backed up database", 80 ) )
-        {
-            out.println( "\t" + line );
-        }
-
-        out.println( "Usage:" );
-        out.println("--home-dir <path-to-neo4j>");
-        out.println("--from <path-to-backup-directory>");
-        out.println("--database <database-name>");
-        out.println("--config <path-to-config-directory>");
-        out.println("--force");
     }
 }

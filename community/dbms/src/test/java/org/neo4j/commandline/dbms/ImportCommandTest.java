@@ -23,17 +23,21 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
+import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.NullOutsideWorld;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.commandline.admin.Usage;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
@@ -43,6 +47,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class ImportCommandTest
@@ -116,7 +121,7 @@ public class ImportCommandTest
         ImportCommand importCommand =
                 new ImportCommand( homeDir, testDir.directory( "conf" ).toPath(), new NullOutsideWorld() );
 
-        putStoreInDirectory( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "existing.db" ).toFile() );
+        putStoreInDirectory( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "existing.db" ) );
         String[] arguments = {"--mode=csv", "--database=existing.db"};
         try
         {
@@ -129,26 +134,69 @@ public class ImportCommandTest
         }
     }
 
-    private File putStoreInDirectory( File storeDir )
+    @Test
+    public void shouldPrintNiceHelp() throws Throwable
     {
-        GraphDatabaseService db = null;
-        try
-        {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-            try ( Transaction transaction = db.beginTx() )
-            {
-                db.createNode();
-                transaction.success();
-            }
-        }
-        finally
-        {
-            if ( db != null )
-            {
-                db.shutdown();
-            }
-        }
+        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+        Consumer<String> out = mock( Consumer.class );
+        usage.printUsageForCommand( new ImportCommand.Provider(), out );
 
-        return storeDir;
+        verify( out ).accept( "usage: neo4j-admin import [--mode=csv] [--database=<name>]\n" +
+                "                          [--additional-config=<config-file-path>]\n" +
+                "                          [--report-file=<filename>]\n" +
+                "                          [--nodes[:Label1:Label2]=<\"file1,file2,...\">]\n" +
+                "                          [--relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">]\n" +
+                "                          [--id-type=<STRING|INTEGER|ACTUAL>]\n" +
+                "                          [--input-encoding=<character-set>]" );
+        verify( out ).accept( "usage: neo4j-admin import --mode=database [--database=<name>]\n" +
+                "                          [--additional-config=<config-file-path>]\n" +
+                "                          [--from=<source-directory>]" );
+        verify( out ).accept( "" );
+        verify( out ).accept( "Import a collection of CSV files with --mode=csv (default), or a database from a\n" +
+                "pre-3.0 installation with --mode=database.\n" +
+                "\n" +
+                "options:\n" +
+                "  --database=<name>\n" +
+                "      Name of database. [default:graph.db]\n" +
+                "  --additional-config=<config-file-path>\n" +
+                "      Configuration file to supply additional configuration in. [default:]\n" +
+                "  --mode=<database|csv>\n" +
+                "      Import a collection of CSV files or a pre-3.0 installation. [default:csv]\n" +
+                "  --from=<source-directory>\n" +
+                "      The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db).\n" +
+                "      [default:]\n" +
+                "  --report-file=<filename>\n" +
+                "      File in which to store the report of the csv-import.\n" +
+                "      [default:import.report]\n" +
+                "  --nodes[:Label1:Label2]=<\"file1,file2,...\">\n" +
+                "      Node CSV header and data. Multiple files will be logically seen as one big\n" +
+                "      file from the perspective of the importer. The first line must contain the\n" +
+                "      header. Multiple data sources like these can be specified in one import,\n" +
+                "      where each data source has its own header. Note that file groups must be\n" +
+                "      enclosed in quotation marks. [default:]\n" +
+                "  --relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">\n" +
+                "      Relationship CSV header and data. Multiple files will be logically seen as\n" +
+                "      one big file from the perspective of the importer. The first line must\n" +
+                "      contain the header. Multiple data sources like these can be specified in\n" +
+                "      one import, where each data source has its own header. Note that file\n" +
+                "      groups must be enclosed in quotation marks. [default:]\n" +
+                "  --id-type=<STRING|INTEGER|ACTUAL>\n" +
+                "      Each node must provide a unique id. This is used to find the correct nodes\n" +
+                "      when creating relationships. Possible values are STRING: arbitrary strings\n" +
+                "      for identifying nodes, INTEGER: arbitrary integer values for identifying\n" +
+                "      nodes, ACTUAL: (advanced) actual node ids. For more information on id\n" +
+                "      handling, please see the Neo4j Manual:\n" +
+                "      http://neo4j.com/docs/operations-manual/current/deployment/#import-tool\n" +
+                "      [default:STRING]\n" +
+                "  --input-encoding=<character-set>\n" +
+                "      Character set that input data is encoded in. [default:UTF-8]" );
+        verifyNoMoreInteractions( out );
+    }
+
+    private void putStoreInDirectory( Path storeDir ) throws IOException
+    {
+        Files.createDirectories( storeDir );
+        Path storeFile = storeDir.resolve( StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) );
+        Files.createFile( storeFile );
     }
 }

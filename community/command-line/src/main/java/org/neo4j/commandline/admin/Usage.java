@@ -21,8 +21,9 @@ package org.neo4j.commandline.admin;
 
 import java.util.function.Consumer;
 
+import org.neo4j.commandline.arguments.Arguments;
+
 import static java.lang.String.format;
-import static org.neo4j.helpers.Args.splitLongLine;
 
 public class Usage
 {
@@ -37,9 +38,9 @@ public class Usage
 
     public void print( Consumer<String> output )
     {
-        output.accept( format( "Usage: %s <command>", scriptName ) );
+        output.accept( format( "usage: %s <command>", scriptName ) );
         output.accept( "" );
-        output.accept( "Available commands:" );
+        output.accept( "available commands:" );
 
         for ( AdminCommand.Provider command : commands.getAllProviders() )
         {
@@ -81,9 +82,16 @@ public class Usage
 
         public void printDetailed( Consumer<String> output )
         {
-            output.accept( format( "%s %s %s", scriptName, command.name(), command.arguments().orElse( "" ) ) );
+            for (Arguments arguments: command.possibleArguments())
+            {
+                //Arguments arguments = command.arguments();
+
+                String left = format( "usage: %s %s", scriptName, command.name() );
+
+                output.accept( Arguments.rightColumnFormatted( left, arguments.usage(), left.length() + 1 ) );
+            }
             output.accept( "" );
-            output.accept( command.description() );
+            output.accept( command.allArguments().description( command.description() ) );
         }
     }
 }

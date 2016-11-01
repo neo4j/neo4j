@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.lang.String.format;
-import static org.neo4j.commandline.dbms.Util.checkLock;
+import static org.neo4j.commandline.Util.checkLock;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 
 public class RestoreDatabaseCommand

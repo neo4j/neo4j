@@ -19,6 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -26,13 +31,13 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import java.nio.file.Paths;
+import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.helpers.ArrayUtil;
@@ -42,7 +47,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -53,7 +57,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 
 public class LoadCommandTest
@@ -93,6 +97,42 @@ public class LoadCommandTest
 
         execute( "foo.db" );
         verify( loader ).load( any(), eq( databaseDir ) );
+    }
+
+    @Test
+    public void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
+    {
+        Path symDir = testDirectory.directory( "path-to-links" ).toPath();
+        Path realDatabaseDir = symDir.resolve( "foo.db" );
+
+        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+
+        Files.createDirectories( realDatabaseDir );
+        Files.createDirectories( dataDir.resolve( "databases" ) );
+
+        Files.createSymbolicLink( databaseDir, realDatabaseDir );
+
+        Files.write( configDir.resolve( "neo4j.conf" ),
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
+
+        execute( "foo.db" );
+        verify( loader ).load( any(), eq( realDatabaseDir ) );
+    }
+
+    @Test
+    public void shouldMakeFromCanonical() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
+    {
+        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Files.createDirectories( databaseDir );
+        Files.write( configDir.resolve( "neo4j.conf" ),
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
+
+        new LoadCommand( homeDir, configDir, loader )
+                .execute( ArrayUtil.concat( new String[]{"--database=foo.db", "--from=foo.dump"} ) );
+
+        verify( loader ).load( eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
     }
 
     @Test
@@ -146,28 +186,24 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldObjectIfTheDatabaseArgumentIsMissing() throws CommandFailed
+    public void shouldDefaultToGraphDb() throws Exception
     {
-        try
-        {
-            new LoadCommand( null, null, null ).execute( new String[]{"--from=something"} );
-            fail( "expected exception" );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), equalTo( "Missing argument 'database'" ) );
-        }
+        Path databaseDir = homeDir.resolve( "data/databases/graph.db" );
+        Files.createDirectories( databaseDir );
+
+        new LoadCommand( homeDir, configDir, loader ).execute( new String[]{"--from=something"} );
+        verify( loader ).load( any(), eq( databaseDir ) );
     }
 
     @Test
-    public void shouldObjectIfTheArchiveArgumentIsMissing() throws CommandFailed
+    public void shouldObjectIfTheArchiveArgumentIsMissing() throws Exception
     {
         try
         {
-            new LoadCommand( homeDir, configDir, null ).execute( new String[]{"--database=something"} );
+            new LoadCommand( homeDir, configDir, loader ).execute( new String[]{"--database=something"} );
             fail( "expected exception" );
         }
-        catch ( IncorrectUsage e )
+        catch ( IllegalArgumentException e )
         {
             assertThat( e.getMessage(), equalTo( "Missing argument 'from'" ) );
         }
@@ -215,14 +251,13 @@ public class LoadCommandTest
         }
         catch ( CommandFailed e )
         {
-            assertThat( e.getMessage(), equalTo( "you do not have permission to load a database -- is Neo4j running " +
-                    "as a different user?" ) );
+            assertThat( e.getMessage(), equalTo(
+                    "you do not have permission to load a database -- is Neo4j running " + "as a different user?" ) );
         }
     }
 
     @Test
-    public void
-    shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+    public void shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectUsage, IncorrectFormat
     {
         doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any() );
@@ -251,6 +286,29 @@ public class LoadCommandTest
             assertThat( e.getMessage(), containsString( archive.toString() ) );
             assertThat( e.getMessage(), containsString( "valid Neo4j archive" ) );
         }
+    }
+
+    @Test
+    public void shouldPrintNiceHelp() throws Throwable
+    {
+        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+        Consumer<String> out = mock( Consumer.class );
+        usage.printUsageForCommand( new LoadCommand.Provider(), out );
+
+        verify( out ).accept( "usage: neo4j-admin load --from=<archive-path> [--database=<name>]\n" +
+                "                        [--force[=<true|false>]]" );
+        verify( out ).accept( "" );
+        verify( out ).accept( "Load a database from an archive. <archive-path> must be an archive created with\n" +
+                "the dump command. <database> is the name of the database to create. Existing\n" +
+                "databases can be replaced by specifying --force. It is not possible to replace a\n" +
+                "database that is mounted in a running Neo4j server.\n" +
+                "\n" +
+                "options:\n" +
+                "  --from=<archive-path>   Path to archive created with the dump command.\n" +
+                "  --database=<name>       Name of database. [default:graph.db]\n" +
+                "  --force=<true|false>    If an existing database should be replaced.\n" +
+                "                          [default:false]" );
+        verifyNoMoreInteractions( out );
     }
 
     private void execute( String database, String... otherArgs ) throws IncorrectUsage, CommandFailed

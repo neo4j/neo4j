@@ -19,20 +19,23 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.function.Consumer;
+
 import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.commandline.admin.Usage;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -43,7 +46,6 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -58,6 +60,7 @@ import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 
 import static org.neo4j.consistency.ConsistencyCheckService.Result.success;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_planner;
 
 public class OnlineBackupCommandTest
@@ -273,6 +276,44 @@ public class OnlineBackupCommandTest
         execute( "--timeout=10h", "--to=/" );
 
         verify( tool ).executeBackup( any(), any(), any(), any(), eq( HOURS.toMillis( 10 ) ), anyBoolean() );
+    }
+
+    @Test
+    public void shouldPrintNiceHelp() throws Throwable
+    {
+        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+        Consumer<String> out = mock( Consumer.class );
+        usage.printUsageForCommand( new OnlineBackupCommand.Provider(), out );
+
+        verify( out ).accept( "usage: neo4j-admin backup [--from=<address>] --to=<backup-path>\n" +
+                "                          [--check-consistency[=<true|false>]]\n" +
+                "                          [--cc-report-dir=<directory>]\n" +
+                "                          [--additional-config=<config-file-path>]\n" +
+                "                          [--timeout=<timeout>]" );
+        verify( out ).accept( "" );
+        verify( out ).accept( "Perform a backup, over the network, from a running Neo4j server into a local\n" +
+                "copy of the database store (the backup). Neo4j Server must be configured to run\n" +
+                "a backup service. See http://neo4j.com/docs/operations-manual/current/backup/\n" +
+                "for more details.\n" +
+                "\n" +
+                "options:\n" +
+                "  --from=<address>                         Host and port of Neo4j.\n" +
+                "                                           [default:localhost:6362]\n" +
+                "  --to=<backup-path>                       Directory where the backup will be\n" +
+                "                                           made; if there is already a backup\n" +
+                "                                           present an incremental backup will be\n" +
+                "                                           attempted.\n" +
+                "  --check-consistency=<true|false>         If a consistency check should be\n" +
+                "                                           made. [default:true]\n" +
+                "  --cc-report-dir=<directory>              Directory where consistency report\n" +
+                "                                           will be written. [default:.]\n" +
+                "  --additional-config=<config-file-path>   Configuration file to supply\n" +
+                "                                           additional configuration in.\n" +
+                "                                           [default:]\n" +
+                "  --timeout=<timeout>                      Timeout in the form <time>[ms|s|m|h],\n" +
+                "                                           where the default unit is seconds.\n" +
+                "                                           [default:20m]" );
+        verifyNoMoreInteractions( out );
     }
 
     private void execute( String... args ) throws IncorrectUsage, CommandFailed

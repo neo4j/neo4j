@@ -28,30 +28,32 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Args;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.neo4j.commandline.Util.canonicalPath;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.Converters.identity;
-import static org.neo4j.kernel.impl.util.Converters.mandatory;
 
 public class DumpCommand implements AdminCommand
 {
 
+    private static final Arguments arguments = new Arguments()
+            .withDatabase()
+            .withTo( "Destination (file or folder) of database dump." );
     private final StoreLockChecker storeLockChecker;
 
     public static class Provider extends AdminCommand.Provider
@@ -62,9 +64,9 @@ public class DumpCommand implements AdminCommand
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments allArguments()
         {
-            return Optional.of( "--database=<database> --to=<destination-path>" );
+            return arguments;
         }
 
         @Override
@@ -103,9 +105,18 @@ public class DumpCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        String database = parse( args, "database", identity() );
-        Path archive = calculateArchive( database, parse( args, "to", Paths::get ) );
-        Path databaseDirectory = toDatabaseDirectory( database );
+        String database = arguments.parse( "database", args );
+        Path archive = calculateArchive( database, arguments.parseMandatoryPath( "to", args ) );
+        Path databaseDirectory = canonicalPath( toDatabaseDirectory( database ) );
+
+        try
+        {
+            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseDirectory.toFile() );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new CommandFailed( "database does not exist: " + database, e );
+        }
 
         try ( Closeable ignored = storeLockChecker.withLock( databaseDirectory ) )
         {
@@ -124,18 +135,6 @@ public class DumpCommand implements AdminCommand
             throw new CommandFailed(
                     "you do not have permission to dump the database -- is Neo4j running as a " + "different user?",
                     e );
-        }
-    }
-
-    private <T> T parse( String[] args, String argument, Function<String,T> converter ) throws IncorrectUsage
-    {
-        try
-        {
-            return Args.parse( args ).interpretOption( argument, mandatory(), converter );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IncorrectUsage( e.getMessage() );
         }
     }
 

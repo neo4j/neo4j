@@ -19,15 +19,16 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.function.Consumer;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.nio.file.Path;
+import java.util.function.Consumer;
+
+import org.neo4j.commandline.arguments.Arguments;
 
 import static org.mockito.Mockito.inOrder;
 
@@ -47,17 +48,16 @@ public class UsageTest
         AdminCommand.Provider[] commands = new AdminCommand.Provider[]
                 {
                         new StubProvider( "restore",
-                                Optional.of( "---from <backup-directory> --database=<database-name> [--force]" ),
                                 "Restores a database backed up using the neo4j-backup tool." ),
-                        new StubProvider( "bam", Optional.empty(), "A summary" )
+                        new StubProvider( "bam", "A summary" )
                 };
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
         usage.print( out );
 
         InOrder ordered = inOrder( out );
-        ordered.verify( out ).accept( "Usage: neo4j-admin <command>" );
+        ordered.verify( out ).accept( "usage: neo4j-admin <command>" );
         ordered.verify( out ).accept( "" );
-        ordered.verify( out ).accept( "Available commands:" );
+        ordered.verify( out ).accept( "available commands:" );
         ordered.verify( out )
                 .accept( "    restore" );
         ordered.verify( out ).accept( "        Restores a database backed up using the neo4j-backup tool." );
@@ -70,20 +70,18 @@ public class UsageTest
 
     private static class StubProvider extends AdminCommand.Provider
     {
-        private final Optional<String> arguments;
         private final String summary;
 
-        public StubProvider( String name, Optional<String> arguments, String summary )
+        public StubProvider( String name, String summary )
         {
             super( name );
-            this.arguments = arguments;
             this.summary = summary;
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments allArguments()
         {
-            return arguments;
+            return Arguments.NO_ARGS;
         }
 
         @Override

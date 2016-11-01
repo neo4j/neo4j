@@ -71,7 +71,7 @@ public class ConsistencyCheckServiceIntegrationTest
             try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
             {
                 Node node1 = set( graphDb.createNode() );
-                Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
+                Node node2 = set( graphDb.createNode(), property( "key", "exampleValue" ) );
                 node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
                 tx.success();
             }

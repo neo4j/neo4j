@@ -29,6 +29,7 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
@@ -46,6 +47,8 @@ public class SetDefaultAdminCommand implements AdminCommand
 {
     public static final String ADMIN_INI = "admin.ini";
     public static final String COMMAND_NAME = "set-default-admin";
+    public static final Arguments arguments = new Arguments()
+            .withMandatoryPositionalArgument( 0, "username" );
 
     public static class Provider extends AdminCommand.Provider
     {
@@ -55,9 +58,9 @@ public class SetDefaultAdminCommand implements AdminCommand
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments allArguments()
         {
-            return Optional.of( "<username>" );
+            return arguments;
         }
 
         @Override
@@ -70,7 +73,7 @@ public class SetDefaultAdminCommand implements AdminCommand
         @Override
         public String summary()
         {
-            return description();
+            return "Sets the default admin user when no roles are present.";
         }
 
         @Override

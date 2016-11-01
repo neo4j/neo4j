@@ -26,8 +26,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
+import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.mockito.Matchers.any;
@@ -72,7 +72,7 @@ public class AdminToolTest
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), new NullBlockerLocator(), outsideWorld, false ).execute( null, null );
         verify( outsideWorld ).stdErrLine( "you must provide a command" );
-        verify( outsideWorld ).stdErrLine( "Usage: neo4j-admin <command>" );
+        verify( outsideWorld ).stdErrLine( "usage: neo4j-admin <command>" );
         verify( outsideWorld ).exit( 1 );
     }
 
@@ -245,9 +245,9 @@ public class AdminToolTest
         return new CannedLocator( new AdminCommand.Provider( name )
         {
             @Override
-            public Optional<String> arguments()
+            public Arguments allArguments()
             {
-                return Optional.empty();
+                return Arguments.NO_ARGS;
             }
 
             @Override
@@ -293,9 +293,9 @@ public class AdminToolTest
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments allArguments()
         {
-            return Optional.empty();
+            return Arguments.NO_ARGS;
         }
 
         @Override

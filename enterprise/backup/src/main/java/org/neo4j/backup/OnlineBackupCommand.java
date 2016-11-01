@@ -29,6 +29,11 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.MandatoryNamedArg;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
+import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -38,20 +43,25 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigLoader;
 
-import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
-import static org.neo4j.kernel.impl.util.Converters.mandatory;
-import static org.neo4j.kernel.impl.util.Converters.optional;
-import static org.neo4j.kernel.impl.util.Converters.toFile;
 import static org.neo4j.kernel.impl.util.Converters.toHostnamePort;
-import static org.neo4j.kernel.impl.util.Converters.toPath;
-import static org.neo4j.kernel.impl.util.Converters.withDefault;
 
 public class OnlineBackupCommand implements AdminCommand
 {
 
-    private static final String checkConsistencyArg = "check-consistency";
+    public static final Arguments arguments = new Arguments()
+            .withArgument( new OptionalNamedArg( "from", "address", "localhost:6362",
+                    "Host and port of Neo4j." ) )
+            .withArgument( new MandatoryNamedArg( "to", "backup-path",
+                    "Directory where the backup will be made; if there is already a backup present an " +
+                            "incremental backup will be attempted." ) )
+            .withArgument( new OptionalBooleanArg( "check-consistency", true,
+                    "If a consistency check should be made." ) )
+            .withArgument( new OptionalCanonicalPath( "cc-report-dir", "directory", ".",
+                    "Directory where consistency report will be written.") )
+            .withAdditionalConfig()
+            .withArgument( new OptionalNamedArg( "timeout", "timeout", "20m",
+                    "Timeout in the form <time>[ms|s|m|h], where the default unit is seconds." ) );
 
     public static class Provider extends AdminCommand.Provider
     {
@@ -61,30 +71,17 @@ public class OnlineBackupCommand implements AdminCommand
         }
 
         @Override
-        public Optional<String> arguments()
+        public Arguments allArguments()
         {
-            return Optional.of( "[--from=<address>] --to=<backup-path> " +
-                    "[--check-consistency] [--cc-report-dir=<directory>] " +
-                    "[--additional-config=<config-file-path>] [--timeout=<timeout>]" );
+            return arguments;
         }
 
         @Override
         public String description()
         {
             return "Perform a backup, over the network, from a running Neo4j server into a local copy of the " +
-                    "database store (the backup). Neo4j Server must be configured to run a backup service. See " +
-                    "http://neo4j.com/docs/operations-manual/current/backup/ for more details." +
-                    "\n\n" +
-                    "<address> is a <host>:<port> pair like neo4j.example.com:1234; the host defaults to localhost " +
-                    "and the port defaults to 6362, the default backup service port." +
-                    "\n\n" +
-                    "<backup-path> is a directory where the backup will be made; if there is already a backup " +
-                    "present an incremental backup will be made." +
-                    "\n\n" +
-                    "Consistency checking is enabled by default. Report will be written into the working directory " +
-                    "by default." +
-                    "\n\n" +
-                    "<timeout> is in the from <time>[ms|s|m|h]; the default is 20m; the default unit is seconds.";
+                            "database store (the backup). Neo4j Server must be configured to run a backup service. " +
+                            "See http://neo4j.com/docs/operations-manual/current/backup/ for more details.";
         }
 
         @Override
@@ -119,19 +116,25 @@ public class OnlineBackupCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Args parsedArgs = Args.withFlags( checkConsistencyArg ).parse( args );
         HostnamePort address;
         File destination;
-        ConsistencyCheck consistencyCheck;
+        ConsistencyCheck consistencyCheck = ConsistencyCheck.NONE;
         Optional<Path> additionalConfig;
         long timeout;
         try
         {
-            address = parseAddress( parsedArgs );
-            destination = parseDestination( parsedArgs );
-            consistencyCheck = parseConsistencyCheck( parsedArgs );
-            additionalConfig = parseAdditionalConfig( parsedArgs );
-            timeout = parseTimeout( parsedArgs );
+            address = toHostnamePort( new HostnamePort( "localhost", 6362 ) )
+                    .apply( arguments.parse( "from", args ) );
+            destination = arguments.parseMandatoryPath( "to", args ).toFile();
+            timeout = parseTimeout( args );
+            additionalConfig = arguments.parseOptionalPath( "additional-config", args );
+            if ( arguments.parseBoolean( "check-consistency", args ) )
+            {
+                Path reportDir = arguments.parseOptionalPath( "cc-report-dir", args )
+                        .orElseThrow( () ->
+                        new IllegalArgumentException( "cc-report-dir must be a path" ) );
+                consistencyCheck = ConsistencyCheck.full( reportDir.toFile(), consistencyCheckService );
+            }
         }
         catch ( IllegalArgumentException e )
         {
@@ -149,42 +152,9 @@ public class OnlineBackupCommand implements AdminCommand
         }
     }
 
-    private HostnamePort parseAddress( Args args )
+    private long parseTimeout( String[] args )
     {
-        HostnamePort defaultAddress = new HostnamePort( "localhost", 6362 );
-        return args.interpretOption( "from", withDefault( defaultAddress ), toHostnamePort( defaultAddress ) );
-    }
-
-    private File parseDestination( Args parsedArgs )
-    {
-        return parsedArgs.interpretOption( "to", mandatory(), toFile() );
-    }
-
-    private ConsistencyCheck parseConsistencyCheck( Args args ) throws CommandFailed
-    {
-        File reportDir;
-        try
-        {
-            reportDir = args.interpretOption( "cc-report-dir", withDefault( new File(".") ), File::new )
-                    .getCanonicalFile();
-        }
-        catch ( IOException e )
-        {
-            throw new CommandFailed( format( "cannot access report directory: %s: %s",
-                    e.getClass().getSimpleName(), e.getMessage() ), e );
-        }
-        return args.getBoolean( checkConsistencyArg, true, true ) ?
-                ConsistencyCheck.full( reportDir, consistencyCheckService ) : ConsistencyCheck.NONE;
-    }
-
-    private Optional<Path> parseAdditionalConfig( Args args )
-    {
-        return Optional.ofNullable( args.interpretOption( "additional-config", optional(), toPath() ) );
-    }
-
-    private long parseTimeout( Args parsedArgs )
-    {
-        return parsedArgs.getDuration( "timeout", TimeUnit.MINUTES.toMillis( 20 ) );
+        return Args.parse( args ).getDuration( "timeout", TimeUnit.MINUTES.toMillis( 20 ) );
     }
 
     private Config loadConfig( Optional<Path> additionalConfig ) throws CommandFailed
