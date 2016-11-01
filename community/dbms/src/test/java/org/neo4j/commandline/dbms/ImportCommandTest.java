@@ -161,8 +161,7 @@ public class ImportCommandTest
                 "  --additional-config=<config-file-path>\n" +
                 "      Configuration file to supply additional configuration in. [default:]\n" +
                 "  --mode=<database|csv>\n" +
-                "      Import a collection of CSV files or a pre-3.0 installation.\n" +
-                "      [default:csv]\n" +
+                "      Import a collection of CSV files or a pre-3.0 installation. [default:csv]\n" +
                 "  --from=<source-directory>\n" +
                 "      The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db).\n" +
                 "      [default:]\n" +
@@ -170,23 +169,23 @@ public class ImportCommandTest
                 "      File in which to store the report of the csv-import.\n" +
                 "      [default:import.report]\n" +
                 "  --nodes[:Label1:Label2]=<\"file1,file2,...\">\n" +
-                "      Node CSV header and data. Multiple files will be logically seen as one\n" +
-                "      big file from the perspective of the importer. The first line must\n" +
+                "      Node CSV header and data. Multiple files will be logically seen as one big\n" +
+                "      file from the perspective of the importer. The first line must contain the\n" +
+                "      header. Multiple data sources like these can be specified in one import,\n" +
+                "      where each data source has its own header. Note that file groups must be\n" +
+                "      enclosed in quotation marks. [default:]\n" +
+                "  --relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">\n" +
+                "      Relationship CSV header and data. Multiple files will be logically seen as\n" +
+                "      one big file from the perspective of the importer. The first line must\n" +
                 "      contain the header. Multiple data sources like these can be specified in\n" +
                 "      one import, where each data source has its own header. Note that file\n" +
                 "      groups must be enclosed in quotation marks. [default:]\n" +
-                "  --relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">\n" +
-                "      Relationship CSV header and data. Multiple files will be logically seen\n" +
-                "      as one big file from the perspective of the importer. The first line\n" +
-                "      must contain the header. Multiple data sources like these can be\n" +
-                "      specified in one import, where each data source has its own header. Note\n" +
-                "      that file groups must be enclosed in quotation marks. [default:]\n" +
                 "  --id-type=<STRING|INTEGER|ACTUAL>\n" +
-                "      Each node must provide a unique id. This is used to find the correct\n" +
-                "      nodes when creating relationships. Possible values are STRING: arbitrary\n" +
-                "      strings for identifying nodes, INTEGER: arbitrary integer values for\n" +
-                "      identifying nodes, ACTUAL: (advanced) actual node ids. For more\n" +
-                "      information on id handling, please see the Neo4j Manual:\n" +
+                "      Each node must provide a unique id. This is used to find the correct nodes\n" +
+                "      when creating relationships. Possible values are STRING: arbitrary strings\n" +
+                "      for identifying nodes, INTEGER: arbitrary integer values for identifying\n" +
+                "      nodes, ACTUAL: (advanced) actual node ids. For more information on id\n" +
+                "      handling, please see the Neo4j Manual:\n" +
                 "      http://neo4j.com/docs/operations-manual/current/deployment/#import-tool\n" +
                 "      [default:STRING]\n" +
                 "  --input-encoding=<character-set>\n" +

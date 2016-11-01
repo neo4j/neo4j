@@ -43,6 +43,7 @@ public class Arguments
 {
     public static final Arguments NO_ARGS = new Arguments();
     public static final int LINE_LENGTH = 80;
+    public static final int MIN_RIGHT_COL_WIDTH = 30;
     private final Map<String,NamedArgument> namedArgs;
     private final ArrayList<PositionalArgument> positionalArgs;
 
@@ -143,22 +144,24 @@ public class Arguments
         {
             right = argument.description();
         }
+        // 5 = 2 leading spaces in left + 3 spaces as distance between columns
         return rightColumnFormatted( left, right, longestAlignmentLength + 5 );
     }
 
     public static String rightColumnFormatted( final String leftText, final String rightText, int rightAlignIndex )
     {
+        final int newLineIndent = 6;
         int rightWidth = Arguments.LINE_LENGTH - rightAlignIndex;
         boolean startOnNewLine = false;
-        if ( rightWidth < 30 )
+        if ( rightWidth < MIN_RIGHT_COL_WIDTH )
         {
             startOnNewLine = true;
-            rightWidth = 72;
+            rightWidth = LINE_LENGTH - newLineIndent;
         }
 
         final String[] rightLines = WordUtils.wrap( rightText, rightWidth ).split( "\n" );
 
-        final String fmt = "%-" + (startOnNewLine ? 6 : rightAlignIndex) + "s%s";
+        final String fmt = "%-" + (startOnNewLine ? newLineIndent : rightAlignIndex) + "s%s";
         String firstLine = String.format( fmt, leftText, startOnNewLine ? "" : rightLines[0] );
 
         String rest = Arrays.stream( rightLines )
