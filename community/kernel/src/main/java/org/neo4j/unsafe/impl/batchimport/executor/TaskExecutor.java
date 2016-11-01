@@ -58,7 +58,8 @@ public interface TaskExecutor<LOCAL> extends Parallelizable
     void panic( Throwable panic );
 
     /**
-     * @return {@code true} if {@link #shutdown()} has been called, otherwise {@code false}.
+     * @return {@code true} if {@link #shutdown()} or {@link #panic(Throwable)} has been called,
+     * otherwise {@code false}.
      */
     boolean isShutdown();
 
