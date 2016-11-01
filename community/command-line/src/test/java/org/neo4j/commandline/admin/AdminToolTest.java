@@ -245,7 +245,7 @@ public class AdminToolTest
         return new CannedLocator( new AdminCommand.Provider( name )
         {
             @Override
-            public Arguments arguments()
+            public Arguments allArguments()
             {
                 return Arguments.NO_ARGS;
             }
@@ -293,7 +293,7 @@ public class AdminToolTest
         }
 
         @Override
-        public Arguments arguments()
+        public Arguments allArguments()
         {
             return Arguments.NO_ARGS;
         }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.commandline.arguments;
 
-import org.apache.commons.lang3.text.WordUtils;
-
 import org.neo4j.helpers.Args;
 
 import static org.neo4j.kernel.impl.util.Converters.identity;
@@ -53,16 +51,15 @@ public class OptionalNamedArg implements NamedArgument
     }
 
     @Override
-    public int alignmentLength()
+    public String optionsListing()
     {
-        // length of "--NAME=<VALUE>"
-        return 5 + name.length() + exampleValue.length();
+        return String.format( "--%s=<%s>", name, exampleValue );
     }
 
     @Override
     public String usage()
     {
-        return WordUtils.wrap( String.format( "[--%s=<%s>]", name, exampleValue ), 60 );
+        return String.format( "[--%s=<%s>]", name, exampleValue );
     }
 
     @Override

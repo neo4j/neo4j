@@ -139,7 +139,7 @@ public class UnbindFromClusterCommand implements AdminCommand
         }
 
         @Override
-        public Arguments arguments()
+        public Arguments allArguments()
         {
             return arguments;
         }

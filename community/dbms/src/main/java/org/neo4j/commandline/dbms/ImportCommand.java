@@ -32,6 +32,7 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -45,15 +46,61 @@ public class ImportCommand implements AdminCommand
 {
     public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
     private static final String[] allowedModes = {"database", "csv"};
-    private static final Arguments arguments = new Arguments()
+    private static final Arguments databaseArguments = new Arguments()
+            .withArgument( new MandatoryNamedArg( "mode", "database", "Import a pre-3.0 installation." ) {
+                @Override
+                public String usage()
+                {
+                    return String.format( "--%s=%s", name(), exampleValue() );
+                }
+            } )
+            .withDatabase()
+            .withAdditionalConfig()
+            .withArgument( new OptionalNamedArg( "from", "source-directory", "",
+                    "The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db)." ) );
+    private static final Arguments csvArguments = new Arguments()
+            .withArgument( new OptionalNamedArg( "mode", "csv", "csv", "Import a collection of CSV files." ) {
+                @Override
+                public String usage()
+                {
+                    return String.format( "[--%s=%s]", name(), exampleValue() );
+                }
+            } )
+            .withDatabase()
+            .withAdditionalConfig()
+            .withArgument( new OptionalNamedArg( "report-file", "filename", DEFAULT_REPORT_FILE_NAME,
+                    "File in which to store the report of the csv-import." ) )
+            .withArgument( new OptionalNamedArg( "nodes[:Label1:Label2]", "\"file1,file2,...\"", "",
+                    "Node CSV header and data. Multiple files will be logically seen as " +
+                            "one big file from the perspective of the importer. The first line " +
+                            "must contain the header. Multiple data sources like these can be " +
+                            "specified in one import, where each data source has its own header. " +
+                            "Note that file groups must be enclosed in quotation marks." ) )
+            .withArgument( new OptionalNamedArg( "relationships[:RELATIONSHIP_TYPE]", "\"file1,file2,...\"", "",
+                    "Relationship CSV header and data. Multiple files will be logically " +
+                            "seen as one big file from the perspective of the importer. The first " +
+                            "line must contain the header. Multiple data sources like these can be " +
+                            "specified in one import, where each data source has its own header. " +
+                            "Note that file groups must be enclosed in quotation marks." ) )
+            .withArgument( new OptionalNamedArg( "id-type", new String[]{"STRING", "INTEGER", "ACTUAL"},
+                    "STRING", "Each node must provide a unique id. This is used to find the correct " +
+                    "nodes when creating relationships. Possible values are " +
+                    "STRING: arbitrary strings for identifying nodes, " +
+                    "INTEGER: arbitrary integer values for identifying nodes, " +
+                    "ACTUAL: (advanced) actual node ids. " +
+                    "For more information on id handling, please see the Neo4j Manual: " +
+                    "http://neo4j.com/docs/operations-manual/current/deployment/#import-tool" ) )
+            .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
+                    "Character set that input data is encoded in." ) );
+    private static final Arguments allArguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig()
             .withArgument( new OptionalNamedArg( "mode", allowedModes, "csv",
                     "Import a collection of CSV files or a pre-3.0 installation." ) )
             .withArgument( new OptionalNamedArg( "from", "source-directory", "",
                     "The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db)." ) )
-            .withArgument( new OptionalNamedArg( "report-file", "filename", ImportCommand.DEFAULT_REPORT_FILE_NAME,
-                    "File in which to store the report of the import." ) )
+            .withArgument( new OptionalNamedArg( "report-file", "filename", DEFAULT_REPORT_FILE_NAME,
+                    "File in which to store the report of the csv-import." ) )
             .withArgument( new OptionalNamedArg( "nodes[:Label1:Label2]", "\"file1,file2,...\"", "",
                     "Node CSV header and data. Multiple files will be logically seen as " +
                             "one big file from the perspective of the importer. The first line " +
@@ -85,9 +132,15 @@ public class ImportCommand implements AdminCommand
         }
 
         @Override
-        public Arguments arguments()
+        public Arguments allArguments()
         {
-            return arguments;
+            return allArguments;
+        }
+
+        @Override
+        public List<Arguments> possibleArguments()
+        {
+            return Arrays.asList( csvArguments, databaseArguments );
         }
 
         @Override
@@ -137,9 +190,9 @@ public class ImportCommand implements AdminCommand
 
         try
         {
-            mode = arguments.parse("mode", args);
-            database = arguments.parse( "database", args );
-            additionalConfigFile = arguments.parseOptionalPath( "additional-config", args );
+            mode = allArguments.parse("mode", args);
+            database = allArguments.parse( "database", args );
+            additionalConfigFile = allArguments.parseOptionalPath( "additional-config", args );
         }
         catch ( IllegalArgumentException e )
         {

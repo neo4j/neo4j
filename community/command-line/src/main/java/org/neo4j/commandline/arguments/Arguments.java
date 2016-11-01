@@ -120,8 +120,9 @@ public class Arguments
         wrappedText = String.join( "\n\n", wrappedText, "options:" );
 
         //noinspection OptionalGetWithoutIsPresent handled by if-statement above
-        final int alignLength = namedArgs.values().stream().map( NamedArgument::alignmentLength ).reduce( 0,
-                Integer::max );
+        final int alignLength = namedArgs.values().stream()
+                .map( a -> a.optionsListing().length() )
+                .reduce( 0, Integer::max );
 
         return String.join( "\n", wrappedText,
                 namedArgs.values().stream()
@@ -131,7 +132,7 @@ public class Arguments
 
     public String formatArgumentDescription( final int longestAlignmentLength, final NamedArgument argument )
     {
-        final String left = String.format( "  --%s=<%s>", argument.name(), argument.exampleValue() );
+        final String left = String.format( "  %s", argument.optionsListing() );
         final String right;
         if ( argument instanceof OptionalNamedArg )
         {

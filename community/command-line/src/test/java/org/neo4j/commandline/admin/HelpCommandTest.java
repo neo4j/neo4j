@@ -107,7 +107,9 @@ public class HelpCommandTest
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
         when( commandProvider.name() ).thenReturn( "foobar" );
         //when( commandProvider.arguments() ).thenReturn( Optional.of( "--baz --qux" ) );
-        when( commandProvider.arguments() ).thenReturn( new Arguments().withDatabase() );
+        Arguments arguments = new Arguments().withDatabase();
+        when( commandProvider.allArguments() ).thenReturn( arguments );
+        when( commandProvider.possibleArguments() ).thenReturn( Collections.singletonList( arguments ) );
         when( commandProvider.description() ).thenReturn( "This is a description of the foobar command." );
         when( commandLocator.findProvider( "foobar" ) ).thenReturn( commandProvider );
 

@@ -40,7 +40,7 @@ public class HelpCommand implements AdminCommand
         }
 
         @Override
-        public Arguments arguments()
+        public Arguments allArguments()
         {
             return new Arguments().withOptionalPositionalArgument( 0, "command" );
         }

@@ -141,14 +141,16 @@ public class ImportCommandTest
         Consumer<String> out = mock( Consumer.class );
         usage.printUsageForCommand( new ImportCommand.Provider(), out );
 
-        verify( out ).accept( "usage: neo4j-admin import [--database=<name>]\n" +
+        verify( out ).accept( "usage: neo4j-admin import [--mode=csv] [--database=<name>]\n" +
                 "                          [--additional-config=<config-file-path>]\n" +
-                "                          [--mode=<database|csv>] [--from=<source-directory>]\n" +
                 "                          [--report-file=<filename>]\n" +
                 "                          [--nodes[:Label1:Label2]=<\"file1,file2,...\">]\n" +
                 "                          [--relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">]\n" +
                 "                          [--id-type=<STRING|INTEGER|ACTUAL>]\n" +
                 "                          [--input-encoding=<character-set>]" );
+        verify( out ).accept( "usage: neo4j-admin import --mode=database [--database=<name>]\n" +
+                "                          [--additional-config=<config-file-path>]\n" +
+                "                          [--from=<source-directory>]" );
         verify( out ).accept( "" );
         verify( out ).accept( "Import a collection of CSV files with --mode=csv (default), or a database from a\n" +
                 "pre-3.0 installation with --mode=database.\n" +
@@ -165,7 +167,8 @@ public class ImportCommandTest
                 "      The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db).\n" +
                 "      [default:]\n" +
                 "  --report-file=<filename>\n" +
-                "      File in which to store the report of the import. [default:import.report]\n" +
+                "      File in which to store the report of the csv-import.\n" +
+                "      [default:import.report]\n" +
                 "  --nodes[:Label1:Label2]=<\"file1,file2,...\">\n" +
                 "      Node CSV header and data. Multiple files will be logically seen as one\n" +
                 "      big file from the perspective of the importer. The first line must\n" +

@@ -82,13 +82,16 @@ public class Usage
 
         public void printDetailed( Consumer<String> output )
         {
-            Arguments arguments = command.arguments();
+            for (Arguments arguments: command.possibleArguments())
+            {
+                //Arguments arguments = command.arguments();
 
-            String left = format( "usage: %s %s", scriptName, command.name() );
+                String left = format( "usage: %s %s", scriptName, command.name() );
 
-            output.accept( Arguments.rightColumnFormatted( left, arguments.usage(), left.length() + 1 ) );
+                output.accept( Arguments.rightColumnFormatted( left, arguments.usage(), left.length() + 1 ) );
+            }
             output.accept( "" );
-            output.accept( arguments.description( command.description() ) );
+            output.accept( command.allArguments().description( command.description() ) );
         }
     }
 }

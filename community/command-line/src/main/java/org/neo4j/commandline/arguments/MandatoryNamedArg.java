@@ -39,10 +39,9 @@ public class MandatoryNamedArg implements NamedArgument
     }
 
     @Override
-    public int alignmentLength()
+    public String optionsListing()
     {
-        // length of "--NAME=<VALUE>"
-        return 5 + name.length() + exampleValue.length();
+        return usage();
     }
 
     @Override

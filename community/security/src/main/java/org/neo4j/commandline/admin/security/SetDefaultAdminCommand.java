@@ -58,7 +58,7 @@ public class SetDefaultAdminCommand implements AdminCommand
         }
 
         @Override
-        public Arguments arguments()
+        public Arguments allArguments()
         {
             return arguments;
         }

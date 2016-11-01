@@ -21,15 +21,33 @@ package org.neo4j.commandline.arguments;
 
 public interface NamedArgument
 {
-    int alignmentLength();
+    /**
+     * Represents the option in the options list.
+     */
+    String optionsListing();
 
+    /**
+     * Represents the option in the usage string.
+     */
     String usage();
 
+    /**
+     * An explanation of the option in the options list.
+     */
     String description();
 
+    /**
+     * Name of the option as in '--name=<value>'
+     */
     String name();
 
+    /**
+     * Example value listed in usage between brackets like '--name=<example-value>'
+     */
     String exampleValue();
 
+    /**
+     * Parses the option (or possible default value) out of program arguments.
+     */
     String parse( String... args );
 }

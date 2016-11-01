@@ -20,6 +20,8 @@
 package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.commandline.arguments.Arguments;
@@ -62,7 +64,16 @@ public interface AdminCommand
         /**
          * @return The arguments this command accepts.
          */
-        public abstract Arguments arguments();
+        public abstract Arguments allArguments();
+
+        /**
+         *
+         * @return A list of possibly mutually-exclusive argument sets for this command.
+         */
+        public List<Arguments> possibleArguments()
+        {
+            return Arrays.asList( allArguments() );
+        }
 
         /**
          * @return A single-line summary for the command. Should be 70 characters or less.

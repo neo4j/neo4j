@@ -21,7 +21,13 @@ package org.neo4j.commandline.arguments;
 
 public interface PositionalArgument
 {
+    /**
+     * Index of the argument in arguments listing.
+     */
     int position();
 
+    /**
+     * Represents the option in the usage string.
+     */
     String usage();
 }

@@ -79,7 +79,7 @@ public class UsageTest
         }
 
         @Override
-        public Arguments arguments()
+        public Arguments allArguments()
         {
             return Arguments.NO_ARGS;
         }

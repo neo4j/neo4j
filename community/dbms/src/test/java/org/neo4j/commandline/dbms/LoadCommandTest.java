@@ -296,7 +296,7 @@ public class LoadCommandTest
         usage.printUsageForCommand( new LoadCommand.Provider(), out );
 
         verify( out ).accept( "usage: neo4j-admin load --from=<archive-path> [--database=<name>]\n" +
-                "                        [--force=<true|false>]" );
+                "                        [--force[=<true|false>]]" );
         verify( out ).accept( "" );
         verify( out ).accept( "Load a database from an archive. <archive-path> must be an archive created with\n" +
                 "the dump command. <database> is the name of the database to create. Existing\n" +
