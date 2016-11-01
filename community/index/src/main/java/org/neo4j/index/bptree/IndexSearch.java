@@ -80,18 +80,14 @@ public class IndexSearch
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                switch ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) )
+                int compare = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) );
+                if ( compare <= 0 )
                 {
-                case 0:
-                    // fall-through
-                case -1:
                     higher = pos;
-                    break;
-                case 1:
+                }
+                else
+                {
                     lower = pos+1;
-                    break;
-                default:
-                    throw new IllegalArgumentException( "Unexpected compare value" );
                 }
             }
             if ( lower != higher )
