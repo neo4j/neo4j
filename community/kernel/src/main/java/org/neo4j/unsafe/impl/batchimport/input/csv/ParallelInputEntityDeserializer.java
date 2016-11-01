@@ -24,7 +24,6 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
@@ -46,7 +45,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.Deser
 import org.neo4j.unsafe.impl.batchimport.staging.TicketedProcessing;
 
 import static org.neo4j.csv.reader.Source.singleChunk;
-import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.impl.util.Validators.emptyValidator;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.noDecorator;
 
@@ -67,7 +65,6 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     private final TicketedProcessing<CharSeeker,Header,ENTITY[]> processing;
     private final ContinuableArrayCursor<ENTITY> cursor;
     private SourceTraceability last = SourceTraceability.EMPTY;
-    private final Future<Void> processingCompletion;
 
     @SuppressWarnings( "unchecked" )
     public ParallelInputEntityDeserializer( Data<ENTITY> data, Header.Factory headerFactory, Configuration config,
@@ -122,7 +119,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             cursor = new ContinuableArrayCursor<>( batchSupplier );
 
             // Start an asynchronous slurp of the chunks fed directly into the processors
-            processingCompletion = processing.slurp( seekers( firstSeeker, source, config ), true );
+            processing.slurp( seekers( firstSeeker, source, config ), true );
         }
         catch ( IOException e )
         {
@@ -263,7 +260,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     @Override
     public void close()
     {
-        processing.shutdown();
+        processing.shutdown( true );
         try
         {
             source.close();
