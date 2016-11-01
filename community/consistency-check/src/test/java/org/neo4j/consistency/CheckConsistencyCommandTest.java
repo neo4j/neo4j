@@ -213,7 +213,7 @@ public class CheckConsistencyCommandTest
         verify( out ).accept(
                 "usage: neo4j-admin check-consistency [--database=<name>]\n" +
                         "                                     [--additional-config=<config-file-path>]\n" +
-                        "                                     [--verbose=<true|false>]\n" +
+                        "                                     [--verbose[=<true|false>]]\n" +
                         "                                     [--report-dir=<directory>]" );
         verify( out ).accept( "" );
         verify( out ).accept( "Check the consistency of a database.\n" +

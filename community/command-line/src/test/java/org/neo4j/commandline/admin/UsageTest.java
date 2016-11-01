@@ -26,7 +26,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.commandline.arguments.Arguments;
@@ -49,9 +48,8 @@ public class UsageTest
         AdminCommand.Provider[] commands = new AdminCommand.Provider[]
                 {
                         new StubProvider( "restore",
-                                Optional.of( "---from <backup-directory> --database=<database-name> [--force]" ),
                                 "Restores a database backed up using the neo4j-backup tool." ),
-                        new StubProvider( "bam", Optional.empty(), "A summary" )
+                        new StubProvider( "bam", "A summary" )
                 };
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
         usage.print( out );
@@ -72,13 +70,11 @@ public class UsageTest
 
     private static class StubProvider extends AdminCommand.Provider
     {
-        private final Optional<String> arguments;
         private final String summary;
 
-        public StubProvider( String name, Optional<String> arguments, String summary )
+        public StubProvider( String name, String summary )
         {
             super( name );
-            this.arguments = arguments;
             this.summary = summary;
         }
 

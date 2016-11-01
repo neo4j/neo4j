@@ -175,7 +175,7 @@ public class RestoreDatabaseCommandTest
         usage.printUsageForCommand( new RestoreDatabaseCli.Provider(), out );
 
         verify( out ).accept( "usage: neo4j-admin restore --from=<backup-directory> [--database=<name>]\n" +
-                "                           [--force=<true|false>]" );
+                "                           [--force[=<true|false>]]" );
         verify( out ).accept( "" );
         verify( out ).accept( "Restore a backed up database.\n" +
                 "\n" +

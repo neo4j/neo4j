@@ -19,10 +19,9 @@
  */
 package org.neo4j.commandline.arguments;
 
-import org.neo4j.helpers.Args;
+import org.apache.commons.lang3.text.WordUtils;
 
-import static org.neo4j.kernel.impl.util.Converters.identity;
-import static org.neo4j.kernel.impl.util.Converters.withDefault;
+import org.neo4j.helpers.Args;
 
 public class OptionalBooleanArg extends OptionalNamedArg
 {
@@ -33,27 +32,16 @@ public class OptionalBooleanArg extends OptionalNamedArg
     }
 
     @Override
+    public String usage()
+    {
+        return WordUtils.wrap( String.format( "[--%s[=<%s>]]", name, exampleValue ), 60 );
+    }
+
+    @Override
     public String parse( String... args )
     {
-        String value = Args.parse( args ).interpretOption( name, withDefault( defaultValue ), identity() );
-
-        if ( value == null || value.isEmpty() )
-        {
-            return Boolean.toString( true );
-        }
-
-        if ( allowedValues.length > 0 )
-        {
-            for ( String allowedValue : allowedValues )
-            {
-                if ( allowedValue.equalsIgnoreCase( value ) )
-                {
-                    return value;
-                }
-            }
-            throw new IllegalArgumentException( String.format( "'%s' must be one of [%s], not: %s", name,
-                    String.join( ",", allowedValues ), value ) );
-        }
-        return value;
+        return Boolean.toString( Args.withFlags( name() )
+                .parse( args )
+                .getBoolean( name, Boolean.parseBoolean( defaultValue ) ) );
     }
 }
