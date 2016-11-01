@@ -20,7 +20,6 @@
 package org.neo4j.index.bptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,9 +28,9 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.contains;
 import static org.neo4j.index.bptree.ByteArrayPageCursor.wrap;
+import static org.neo4j.index.bptree.IndexSearch.search;
 
 public class IndexSearchTest
 {
@@ -42,83 +41,400 @@ public class IndexSearchTest
     private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
     private final byte[] tmp = new byte[PAGE_SIZE];
     private final MutableLong readKey = layout.newKey();
+    private final MutableLong searchKey = layout.newKey();
+    private final MutableLong insertKey = layout.newKey();
 
     @Rule
     public final RandomRule random = new RandomRule();
 
-    @Before
-    public void setup()
+    @Test
+    public void searchEmptyLeaf() throws Exception
     {
-        // [2,4,8,16,32,64,128,512,1024,2048]
+        // given
         node.initializeLeaf( cursor );
-        MutableLong key = layout.newKey();
-        for ( int i = 0; i < KEY_COUNT; i++ )
-        {
-            key.setValue( key( i ) );
-            node.insertKeyAt( cursor, key, i, i, tmp );
-        }
-        node.setKeyCount( cursor, KEY_COUNT );
+        int keyCount = node.keyCount( cursor );
+
+        // then
+        int result = search( cursor, node, searchKey, readKey, keyCount );
+        assertSearchResult( false, 0, result );
     }
 
-    private int key( int i )
+    @Test
+    public void searchEmptyInternal() throws Exception
     {
-        return 2 << i;
+        // given
+        node.initializeInternal( cursor );
+        int keyCount = node.keyCount( cursor );
+
+        // then
+        final int result = search( cursor, node, searchKey, readKey, keyCount );
+        assertSearchResult( false, 0, result );
     }
+
+    @Test
+    public void searchNoHitLessThanWithOneKeyInLeaf() throws Exception
+    {
+        // given
+        node.initializeLeaf( cursor );
+        appendKey( 1L );
+
+        // then
+        int result = searchKey( 0L );
+        assertSearchResult( false, 0, result );
+    }
+
+    @Test
+    public void searchNoHitLessThanWithOneKeyInInternal() throws Exception
+    {
+        // given
+        node.initializeInternal( cursor );
+        appendKey( 1L );
+
+        // then
+        int result = searchKey( 0L );
+        assertSearchResult( false, 0, result );
+    }
+
+    @Test
+    public void searchHitWithOneKeyInLeaf() throws Exception
+    {
+        // given
+        long key = 1L;
+        node.initializeLeaf( cursor );
+        appendKey( key );
+
+        // then
+        int result = searchKey( key );
+        assertSearchResult( true, 0, result );
+    }
+
+    @Test
+    public void searchHitWithOneKeyInInternal() throws Exception
+    {
+        // given
+        long key = 1L;
+        node.initializeInternal( cursor );
+        appendKey( key );
+
+        // then
+        int result = searchKey( key );
+        assertSearchResult( true, 0, result );
+    }
+
+    @Test
+    public void searchNoHitGreaterThanWithOneKeyInLeaf() throws Exception
+    {
+        // given
+        node.initializeLeaf( cursor );
+        appendKey( 1L );
+
+        // then
+        int result = searchKey( 2L );
+        assertSearchResult( false, 1, result );
+    }
+
+    @Test
+    public void searchNoHitGreaterThanWithOneKeyInInternal() throws Exception
+    {
+        // given
+        node.initializeInternal( cursor );
+        appendKey( 1L );
+
+        // then
+        int result = searchKey( 2L );
+        assertSearchResult( false, 1, result );
+    }
+
+    @Test
+    public void searchNoHitGreaterThanWithFullLeaf() throws Exception
+    {
+        // given
+        node.initializeLeaf( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i );
+        }
+
+        // then
+        int result = searchKey( KEY_COUNT );
+        assertSearchResult( false, KEY_COUNT, result );
+    }
+
+    @Test
+    public void searchNoHitGreaterThanWithFullInternal() throws Exception
+    {
+        // given
+        node.initializeInternal( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i );
+        }
+
+        // then
+        int result = searchKey( KEY_COUNT );
+        assertSearchResult( false, KEY_COUNT, result );
+    }
+
+    @Test
+    public void searchHitOnLastWithFullLeaf() throws Exception
+    {
+        // given
+        node.initializeLeaf( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i );
+        }
+
+        // then
+        int result = searchKey( KEY_COUNT - 1 );
+        assertSearchResult( true, KEY_COUNT - 1, result );
+    }
+
+    @Test
+    public void searchHitOnLastWithFullInternal() throws Exception
+    {
+        // given
+        node.initializeInternal( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i );
+        }
+
+        // then
+        int result = searchKey( KEY_COUNT - 1 );
+        assertSearchResult( true, KEY_COUNT - 1, result );
+    }
+
+    @Test
+    public void searchHitOnFirstWithFullLeaf() throws Exception
+    {
+        // given
+        node.initializeLeaf( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i );
+        }
+
+        // then
+        int result = searchKey( 0 );
+        assertSearchResult( true, 0, result );
+    }
+
+    @Test
+    public void searchHitOnFirstWithFullInternal() throws Exception
+    {
+        // given
+        node.initializeInternal( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i );
+        }
+
+        // then
+        int result = searchKey( 0 );
+        assertSearchResult( true, 0, result );
+    }
+
+    @Test
+    public void searchNoHitLessThanWithFullLeaf() throws Exception
+    {
+        // given
+        node.initializeLeaf( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i + 1 );
+        }
+
+        // then
+        int result = searchKey( 0 );
+        assertSearchResult( false, 0, result );
+    }
+
+    @Test
+    public void searchNoHitLessThanWithFullInternal() throws Exception
+    {
+        // given
+        node.initializeInternal( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i + 1 );
+        }
+
+        // then
+        int result = searchKey( 0 );
+        assertSearchResult( false, 0, result );
+    }
+
+    @Test
+    public void searchHitOnMiddleWithFullLeaf() throws Exception
+    {
+        // given
+        node.initializeLeaf( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i );
+        }
+
+        // then
+        int middle = KEY_COUNT / 2;
+        int result = searchKey( middle );
+        assertSearchResult( true, middle, result );
+    }
+
+    @Test
+    public void searchHitOnMiddleWithFullInternal() throws Exception
+    {
+        // given
+        node.initializeInternal( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i );
+        }
+
+        // then
+        int middle = KEY_COUNT / 2;
+        int result = searchKey( middle );
+        assertSearchResult( true, middle, result );
+    }
+
+    @Test
+    public void searchNoHitInMiddleWithFullLeaf() throws Exception
+    {
+        // given
+        node.initializeLeaf( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i * 2 );
+        }
+
+        // then
+        int middle = KEY_COUNT / 2;
+        int result = searchKey( (middle * 2) - 1 );
+        assertSearchResult( false, middle, result );
+    }
+
+    @Test
+    public void searchNoHitInMiddleWithFullInternal() throws Exception
+    {
+        // given
+        node.initializeInternal( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            appendKey( i * 2 );
+        }
+
+        // then
+        int middle = KEY_COUNT / 2;
+        int result = searchKey( (middle * 2) - 1 );
+        assertSearchResult( false, middle, result );
+    }
+
+    @Test
+    public void searchHitOnFirstNonUniqueKeysLeaf() throws Exception
+    {
+        // given
+        long first = 1L;
+        long second = 2L;
+        node.initializeLeaf( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            long key = i < KEY_COUNT / 2 ? first : second;
+            appendKey( key );
+        }
+
+        // then
+        int result = searchKey( first );
+        assertSearchResult( true, 0, result );
+    }
+
+    @Test
+    public void searchHitOnFirstNonUniqueKeysInternal() throws Exception
+    {
+        // given
+        long first = 1L;
+        long second = 2L;
+        node.initializeInternal( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            long key = i < KEY_COUNT / 2 ? first : second;
+            appendKey( key );
+        }
+
+        // then
+        int result = searchKey( first );
+        assertSearchResult( true, 0, result );
+    }
+
+    @Test
+    public void searchHitOnMiddleNonUniqueKeysLeaf() throws Exception
+    {
+        // given
+        long first = 1L;
+        long second = 2L;
+        int middle = KEY_COUNT / 2;
+        node.initializeLeaf( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            long key = i < middle ? first : second;
+            appendKey( key );
+        }
+
+        // then
+        int result = searchKey( second );
+        assertSearchResult( true, middle, result );
+    }
+
+    @Test
+    public void searchHitOnMiddleNonUniqueKeysInternal() throws Exception
+    {
+        // given
+        long first = 1L;
+        long second = 2L;
+        int middle = KEY_COUNT / 2;
+        node.initializeInternal( cursor );
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            long key = i < middle ? first : second;
+            appendKey( key );
+        }
+
+        // then
+        int result = searchKey( second );
+        assertSearchResult( true, middle, result );
+    }
+
+    /* Below are more thorough tests that look at all keys in node */
 
     @Test
     public void shouldFindExistingKey() throws Exception
     {
+        // GIVEN
+        fullLeafWithUniqueKeys();
+
         // WHEN
         MutableLong key = layout.newKey();
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            int result = IndexSearch.search( cursor, node, key, readKey, KEY_COUNT );
+            int result = search( cursor, node, key, readKey, KEY_COUNT );
 
             // THEN
-            // IndexSearch caters for children as well and so even if there's a hit on, say key:0
-            // it will return 1. We can parry for this in the index code in general by checking isHit method
             assertSearchResult( true, i, result );
         }
     }
 
     @Test
-    public void shouldReturnFirstPositionOnLesserThen() throws Exception
-    {
-        // GIVEN
-        MutableLong key = layout.newKey();
-        key.setValue( 0 );
-
-        // WHEN
-        int result = IndexSearch.search( cursor, node, key, readKey, KEY_COUNT );
-
-        // THEN
-        assertSearchResult( false, 0, result );
-    }
-
-    @Test
-    public void shouldReturnLastPositionOnGreaterThan() throws Exception
-    {
-        // GIVEN
-        MutableLong key = layout.newKey();
-        key.setValue( key( KEY_COUNT + 1 ) );
-
-        // WHEN
-        int result = IndexSearch.search( cursor, node, key, readKey, KEY_COUNT );
-
-        // THEN
-        assertSearchResult( false, KEY_COUNT, result );
-    }
-
-    @Test
     public void shouldReturnCorrectIndexesForKeysInBetweenExisting() throws Exception
     {
+        // GIVEN
+        fullLeafWithUniqueKeys();
+
         // WHEN
         MutableLong key = layout.newKey();
         for ( int i = 1; i < KEY_COUNT - 1; i++ )
         {
             key.setValue( key( i ) - 1 );
-            int result = IndexSearch.search( cursor, node, key, readKey, KEY_COUNT );
+            int result = search( cursor, node, key, readKey, KEY_COUNT );
 
             // THEN
             assertSearchResult( false, i, result );
@@ -126,75 +442,10 @@ public class IndexSearchTest
     }
 
     @Test
-    public void searchNoKeys()
-    {
-        // GIVEM
-        MutableLong key = layout.newKey();
-        key.setValue( 1 );
-
-        // WHEN
-        int result = IndexSearch.search( cursor, node, key, layout.newKey(), 0 );
-
-        // THEN
-        assertSearchResult( false, 0, result );
-    }
-
-    @Test
-    public void searchEqualSingleKey()
-    {
-        // GIVEN
-        MutableLong key = layout.newKey();
-        key.setValue( 1 );
-        node.insertKeyAt( cursor, key, 0, 0, tmp );
-        node.setKeyCount( cursor, 1 );
-
-        // WHEN
-        int result = IndexSearch.search( cursor, node, key, readKey, 1 );
-
-        // THEN
-        assertSearchResult( true, 0, result );
-    }
-
-    @Test
-    public void searchSingleKeyWithKeyCountZero()
-    {
-        // GIVEN
-        MutableLong key = layout.newKey();
-        key.setValue( 1 );
-        node.insertKeyAt( cursor, key, 0, 0, tmp );
-        node.setKeyCount( cursor, 0 );
-
-        // WHEN
-        int result = IndexSearch.search( cursor, node, key, readKey, 0 );
-
-        // THEN
-        assertSearchResult( false, 0, result );
-    }
-
-    @Test
-    public void searchEqualMultipleKeys()
-    {
-        // GIVEN [1,2,2]
-        MutableLong key = layout.newKey();
-        key.setValue( 0 );
-        node.insertKeyAt( cursor, key, 0, 0, tmp );
-        key.setValue( 1 );
-        node.insertKeyAt( cursor, key, 1, 1, tmp );
-        node.insertKeyAt( cursor, key, 2, 2, tmp );
-        node.setKeyCount( cursor, 3 );
-
-        // WHEN
-        int result = IndexSearch.search( cursor, node, key, readKey, 3 );
-
-        // THEN find [1,2,2]
-        //              ^
-        assertSearchResult( true, 1, result );
-    }
-
-    @Test
     public void shouldSearchAndFindOnRandomData() throws Exception
     {
         // GIVEN a leaf node with random, although sorted (as of course it must be to binary-search), data
+        node.initializeLeaf( cursor );
         int internalMaxKeyCount = node.internalMaxKeyCount();
         int half = internalMaxKeyCount / 2;
         int keyCount = random.nextInt( half ) + half;
@@ -215,7 +466,7 @@ public class IndexSearchTest
         {
             long searchKey = random.nextInt( currentKey + 10 );
             key.setValue( searchKey );
-            int searchResult = IndexSearch.search( cursor, node, key, readKey, keyCount );
+            int searchResult = search( cursor, node, key, readKey, keyCount );
 
             // THEN position should be as expected
             boolean exists = contains( keys, 0, keyCount, searchKey );
@@ -243,9 +494,44 @@ public class IndexSearchTest
         }
     }
 
+    /* Helper */
+
+    private int searchKey( long key )
+    {
+        int keyCount = node.keyCount( cursor );
+        searchKey.setValue( key );
+        return search( cursor, node, searchKey, readKey, keyCount );
+    }
+
+    private void appendKey( long key )
+    {
+        insertKey.setValue( key );
+        int keyCount = node.keyCount( cursor );
+        node.insertKeyAt( cursor, insertKey, keyCount, keyCount, tmp );
+        node.setKeyCount( cursor, keyCount + 1 );
+    }
+
     private void assertSearchResult( boolean hit, int position, int searchResult )
     {
         assertEquals( hit, IndexSearch.isHit( searchResult ) );
         assertEquals( position, IndexSearch.positionOf( searchResult ) );
+    }
+
+    private void fullLeafWithUniqueKeys()
+    {
+        // [2,4,8,16,32,64,128,512,1024,2048]
+        node.initializeLeaf( cursor );
+        MutableLong key = layout.newKey();
+        for ( int i = 0; i < KEY_COUNT; i++ )
+        {
+            key.setValue( key( i ) );
+            node.insertKeyAt( cursor, key, i, i, tmp );
+        }
+        node.setKeyCount( cursor, KEY_COUNT );
+    }
+
+    private int key( int i )
+    {
+        return 2 << i;
     }
 }
