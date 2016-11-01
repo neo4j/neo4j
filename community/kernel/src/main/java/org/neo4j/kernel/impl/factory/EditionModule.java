@@ -177,7 +177,7 @@ public abstract class EditionModule
                     } );
                     return;
                 }
-                catch ( KernelException e )
+                catch ( Exception e )
                 {
                     String errorMessage = "Failed to load security module.";
                     log.error( errorMessage );
