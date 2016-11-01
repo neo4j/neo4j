@@ -199,7 +199,7 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
         IOUtils.closeAll( specialFileSystem, defaultFileSystem );
     }

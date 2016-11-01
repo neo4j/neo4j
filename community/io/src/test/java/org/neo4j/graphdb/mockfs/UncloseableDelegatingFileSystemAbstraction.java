@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.mockfs;
 
+import java.io.IOException;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
@@ -33,7 +35,7 @@ public class UncloseableDelegatingFileSystemAbstraction extends DelegatingFileSy
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
         // do nothing
     }

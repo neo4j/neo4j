@@ -239,7 +239,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
         adversary.injectFailure( IOException.class, SecurityException.class );
         delegate.close();

@@ -54,6 +54,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 public class DelegateFileSystemAbstraction implements FileSystemAbstraction
 {
     private final FileSystem fs;
+    private final Map<Class<?>, ThirdPartyFileSystem> thirdPartyFs = new HashMap<>();
 
     public DelegateFileSystemAbstraction( FileSystem fs )
     {
@@ -253,8 +254,6 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
         }
     }
 
-    private final Map<Class<?>, ThirdPartyFileSystem> thirdPartyFs = new HashMap<>();
-
     @Override
     public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
             Class<K> clazz, Function<Class<K>,K> creator )
@@ -291,10 +290,11 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
-        ArrayList<Closeable> fsToClose = new ArrayList<>( thirdPartyFs.values() );
+        ArrayList<Closeable> fsToClose = new ArrayList<>( thirdPartyFs.size() + 1 );
         fsToClose.add( fs );
+        fsToClose.addAll( thirdPartyFs.values() );
         IOUtils.closeAll( fsToClose );
     }
 }

@@ -137,16 +137,25 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public synchronized void close() throws Exception
+    public synchronized void close() throws IOException
+    {
+        closeFiles();
+        closeFileSystems();
+    }
+
+    private void closeFileSystems() throws IOException
+    {
+        IOUtils.closeAll( thirdPartyFileSystems.values() );
+        thirdPartyFileSystems.clear();
+    }
+
+    private void closeFiles()
     {
         for ( EphemeralFileData file : files.values() )
         {
             file.free();
         }
         files.clear();
-
-        IOUtils.closeAll( thirdPartyFileSystems.values() );
-        thirdPartyFileSystems.clear();
     }
 
     public void assertNoOpenFiles() throws Exception

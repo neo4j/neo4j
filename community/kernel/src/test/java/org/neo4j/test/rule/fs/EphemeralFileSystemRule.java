@@ -276,7 +276,7 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
         fs.close();
     }

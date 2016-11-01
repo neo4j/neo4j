@@ -217,7 +217,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
         IOUtils.closeAll( thirdPartyFileSystems.values() );
     }

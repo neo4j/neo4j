@@ -32,7 +32,7 @@ import java.nio.file.CopyOption;
 import java.util.function.Function;
 import java.util.zip.ZipOutputStream;
 
-public interface FileSystemAbstraction extends AutoCloseable
+public interface FileSystemAbstraction extends Closeable
 {
     StoreChannel open( File fileName, String mode ) throws IOException;
 
