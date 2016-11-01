@@ -26,7 +26,6 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.enterprise.api.security.CouldBeAdmin;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
@@ -345,13 +344,9 @@ class PersonalUserManager implements EnterpriseUserManager
 
     private void assertAdmin() throws AuthorizationViolationException
     {
-        if ( securityContext instanceof CouldBeAdmin )
+        if ( !securityContext.isAdmin() )
         {
-            if ( ((CouldBeAdmin) securityContext).isAdmin() )
-            {
-                return;
-            }
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
-        throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 }

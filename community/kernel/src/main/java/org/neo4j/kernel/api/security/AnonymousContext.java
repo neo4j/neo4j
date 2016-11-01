@@ -56,6 +56,12 @@ public class AnonymousContext implements SecurityContext
     }
 
     @Override
+    public boolean isAdmin()
+    {
+        return false;
+    }
+
+    @Override
     public SecurityContext freeze()
     {
         return this;

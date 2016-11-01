@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.security.SecurityContext;
 /**
  * A logged in user.
  */
-public interface EnterpriseSecurityContext extends SecurityContext, CouldBeAdmin
+public interface EnterpriseSecurityContext extends SecurityContext
 {
     @Override
     EnterpriseSecurityContext freeze();
