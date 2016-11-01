@@ -19,8 +19,10 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -31,6 +33,28 @@ import static java.lang.String.format;
 
 public class Util
 {
+    public static Path canonicalPath( Path path ) throws IllegalArgumentException
+    {
+        return canonicalPath( path.toFile() );
+    }
+
+    public static Path canonicalPath( String path ) throws IllegalArgumentException
+    {
+        return canonicalPath( new File( path ) );
+    }
+
+    public static Path canonicalPath( File file ) throws IllegalArgumentException
+    {
+        try
+        {
+            return Paths.get( file.getCanonicalPath() );
+        }
+        catch ( IOException e )
+        {
+            throw new IllegalArgumentException( "Unable to parse path: " + file, e );
+        }
+    }
+
     public static void checkLock( Path databaseDirectory ) throws CommandFailed
     {
         try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
