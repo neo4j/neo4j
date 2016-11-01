@@ -196,7 +196,7 @@ public class OnlineBackupCommandTest
         captor.getValue().runFull( null, null, null, null, null, null, false );
 
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File("/some/dir") ) );
+                anyBoolean(), eq( new File("/some/dir").getCanonicalFile() ) );
     }
 
     @Test
