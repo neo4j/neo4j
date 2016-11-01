@@ -26,16 +26,13 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.contains;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class EnterpriseSecurityModuleTest
@@ -52,21 +49,20 @@ public class EnterpriseSecurityModuleTest
         Log mockLog = mock( Log.class );
         when( mockLogProvider.getLog( anyString() ) ).thenReturn( mockLog );
         when( mockLog.isDebugEnabled() ).thenReturn( true );
-        when( config.get( SecuritySettings.native_authentication_enabled ) ).thenReturn( true );
-        when( config.get( SecuritySettings.native_authorization_enabled ) ).thenReturn( true );
-        when( config.get( SecuritySettings.ldap_authentication_enabled ) ).thenReturn( true );
-        when( config.get( SecuritySettings.ldap_authorization_enabled ) ).thenReturn( true );
-        when( config.get( SecuritySettings.plugin_authentication_enabled ) ).thenReturn( true );
-        when( config.get( SecuritySettings.plugin_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.native_authentication_enabled    ) ).thenReturn( true );
+        when( config.get( SecuritySettings.native_authorization_enabled     ) ).thenReturn( true );
+        when( config.get( SecuritySettings.ldap_authentication_enabled      ) ).thenReturn( true );
+        when( config.get( SecuritySettings.ldap_authorization_enabled       ) ).thenReturn( true );
+        when( config.get( SecuritySettings.plugin_authentication_enabled    ) ).thenReturn( false );
+        when( config.get( SecuritySettings.plugin_authorization_enabled     ) ).thenReturn( false );
         when( config.get( SecuritySettings.auth_providers ) ).thenReturn( Arrays.asList( "this-realm-does-not-exist" ) );
+
+        // Then
         thrown.expect( IllegalArgumentException.class );
+        thrown.expectMessage( "Illegal configuration: No valid auth provider is active." );
 
         // When
         new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
-
-        // Then
-        verify( mockLog, atLeastOnce() ).debug( anyString(),
-                contains( "Illegal configuration: No valid security realm is active." ), anyString() );
     }
 
     @Test
@@ -78,24 +74,57 @@ public class EnterpriseSecurityModuleTest
         Log mockLog = mock( Log.class );
         when( mockLogProvider.getLog( anyString() ) ).thenReturn( mockLog );
         when( mockLog.isDebugEnabled() ).thenReturn( true );
-        when( config.get( SecuritySettings.native_authentication_enabled ) ).thenReturn( false );
-        when( config.get( SecuritySettings.native_authorization_enabled ) ).thenReturn( false );
-        when( config.get( SecuritySettings.ldap_authentication_enabled ) ).thenReturn( false );
-        when( config.get( SecuritySettings.ldap_authorization_enabled ) ).thenReturn( false );
-        when( config.get( SecuritySettings.plugin_authentication_enabled ) ).thenReturn( true );
-        when( config.get( SecuritySettings.plugin_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.native_authentication_enabled    ) ).thenReturn( false );
+        when( config.get( SecuritySettings.native_authorization_enabled     ) ).thenReturn( false );
+        when( config.get( SecuritySettings.ldap_authentication_enabled      ) ).thenReturn( false );
+        when( config.get( SecuritySettings.ldap_authorization_enabled       ) ).thenReturn( false );
+        when( config.get( SecuritySettings.plugin_authentication_enabled    ) ).thenReturn( true );
+        when( config.get( SecuritySettings.plugin_authorization_enabled     ) ).thenReturn( true );
         when( config.get( SecuritySettings.auth_providers ) ).thenReturn(
                 Arrays.asList(
                         SecuritySettings.NATIVE_REALM_NAME,
                         SecuritySettings.LDAP_REALM_NAME )
         );
+
+        // Then
         thrown.expect( IllegalArgumentException.class );
+        thrown.expectMessage( "Illegal configuration: No valid auth provider is active." );
 
         // When
         new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
+    }
+
+    @Test
+    public void shouldFailOnNotLoadedPluginAuthProvider()
+    {
+        // Given
+        Config config = mock( Config.class );
+        LogProvider mockLogProvider = mock( LogProvider.class );
+        Log mockLog = mock( Log.class );
+        when( mockLogProvider.getLog( anyString() ) ).thenReturn( mockLog );
+        when( mockLog.isDebugEnabled() ).thenReturn( true );
+        when( config.get( SecuritySettings.auth_cache_ttl ) ).thenReturn( 0L );
+        when( config.get( SecuritySettings.auth_cache_max_capacity ) ).thenReturn( 10 );
+        when( config.get( SecuritySettings.security_log_successful_authentication ) ).thenReturn( false );
+
+        when( config.get( SecuritySettings.native_authentication_enabled    ) ).thenReturn( false );
+        when( config.get( SecuritySettings.native_authorization_enabled     ) ).thenReturn( false );
+        when( config.get( SecuritySettings.ldap_authentication_enabled      ) ).thenReturn( false );
+        when( config.get( SecuritySettings.ldap_authorization_enabled       ) ).thenReturn( false );
+        when( config.get( SecuritySettings.plugin_authentication_enabled    ) ).thenReturn( true );
+        when( config.get( SecuritySettings.plugin_authorization_enabled     ) ).thenReturn( true );
+        when( config.get( SecuritySettings.auth_providers ) ).thenReturn(
+                Arrays.asList(
+                        SecuritySettings.PLUGIN_REALM_NAME_PREFIX + "TestAuthenticationPlugin",
+                        SecuritySettings.PLUGIN_REALM_NAME_PREFIX + "IllConfiguredAuthorizationPlugin"
+                ) );
 
         // Then
-        verify( mockLog, atLeastOnce() ).debug( anyString(),
-                contains( "Illegal configuration: No valid security realm is active." ), anyString() );
+        thrown.expect( IllegalArgumentException.class );
+        thrown.expectMessage( "Illegal configuration: No plugin authorization provider loaded even though required by " +
+                "configuration." );
+
+        // When
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
     }
 }

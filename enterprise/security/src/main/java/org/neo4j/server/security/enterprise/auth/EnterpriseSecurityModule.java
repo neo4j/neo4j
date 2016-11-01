@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -58,6 +59,7 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.time.Clocks;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 @Service.Implementation( SecurityModule.class )
@@ -147,16 +149,18 @@ public class EnterpriseSecurityModule extends SecurityModule
             realms.add( new LdapRealm( config, securityLog, secureHasher ) );
         }
 
-        // Load plugin realms if we have any
-        realms.addAll( createPluginRealms( config, securityLog, secureHasher ) );
+        // Load plugin realms if a plugin provider in configured
+        if ( configuredRealms.stream().anyMatch( ( r ) -> r.startsWith( SecuritySettings.PLUGIN_REALM_NAME_PREFIX ) ) )
+        {
+            realms.addAll( createPluginRealms( config, securityLog, secureHasher, configuredRealms ) );
+        }
 
         // Select the active realms in the order they are configured
         List<Realm> orderedActiveRealms = selectOrderedActiveRealms( configuredRealms, realms );
 
         if ( orderedActiveRealms.isEmpty() )
         {
-            String message = "Illegal configuration: No valid security realm is active.";
-            throw new IllegalArgumentException( message );
+            throw new IllegalArgumentException( "Illegal configuration: No valid auth provider is active." );
         }
 
         return new MultiRealmAuthManager( internalRealm, orderedActiveRealms, createCacheManager( config ),
@@ -203,9 +207,10 @@ public class EnterpriseSecurityModule extends SecurityModule
         return new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity );
     }
 
-    private static List<Realm> createPluginRealms( Config config, SecurityLog securityLog, SecureHasher secureHasher )
+    private static List<PluginRealm> createPluginRealms(
+            Config config, SecurityLog securityLog, SecureHasher secureHasher, List<String> configuredRealms )
     {
-        List<Realm> realms = new ArrayList<>();
+        List<PluginRealm> availablePluginRealms = new ArrayList<>();
         Set<Class> excludedClasses = new HashSet<>();
 
         Boolean pluginAuthenticationEnabled = config.get( SecuritySettings.plugin_authentication_enabled );
@@ -220,7 +225,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             {
                 PluginRealm pluginRealm =
                         new PluginRealm( plugin, config, securityLog, Clocks.systemClock(), secureHasher );
-                realms.add( pluginRealm );
+                availablePluginRealms.add( pluginRealm );
             }
         }
 
@@ -248,7 +253,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                     pluginRealm =
                             new PluginRealm( plugin, null, config, securityLog, Clocks.systemClock(), secureHasher );
                 }
-                realms.add( pluginRealm );
+                availablePluginRealms.add( pluginRealm );
             }
         }
 
@@ -263,9 +268,28 @@ public class EnterpriseSecurityModule extends SecurityModule
                 {
                     PluginRealm pluginRealm =
                             new PluginRealm( null, plugin, config, securityLog, Clocks.systemClock(), secureHasher );
-                    realms.add( pluginRealm );
+                    availablePluginRealms.add( pluginRealm );
                 }
             }
+        }
+
+        List<PluginRealm> realms =
+                availablePluginRealms.stream()
+                        .filter( realm -> configuredRealms.contains( realm.getName() ) )
+                        .collect( Collectors.toList() );
+        boolean missingAuthenticationRealm = pluginAuthenticationEnabled &&
+                !realms.stream().anyMatch( PluginRealm::canAuthenticate );
+        boolean missingAuthorizingRealm = pluginAuthorizationEnabled &&
+                !realms.stream().anyMatch( PluginRealm::canAuthorize );
+
+        if ( missingAuthenticationRealm || missingAuthorizingRealm )
+        {
+            String missingProvider =
+                    ( missingAuthenticationRealm && missingAuthorizingRealm ) ? "authentication or authorization" :
+                    ( missingAuthenticationRealm ) ? "authentication" : "authorization";
+
+            throw new IllegalArgumentException( format( "Illegal configuration: No plugin %s provider loaded even " +
+                    "though required by configuration.", missingProvider ) );
         }
 
         return realms;
