@@ -40,11 +40,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder;
+import org.neo4j.server.security.enterprise.auth.RealmLifecycle;
 import org.neo4j.server.security.enterprise.auth.SecureHasher;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthorizationInfoProvider;
-import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthProviderOperations;
+import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpiredException;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
@@ -52,7 +53,6 @@ import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CustomCacheableAuthenticationInfo;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
-import org.neo4j.server.security.enterprise.auth.RealmLifecycle;
 
 import static org.neo4j.server.security.enterprise.configuration.SecuritySettings.PLUGIN_REALM_NAME_PREFIX;
 
@@ -224,6 +224,22 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
         authorizationCache.put( key, authInfo );
     }
 
+    public boolean canAuthenticate()
+    {
+        return authPlugin != null || authenticationPlugin !=null;
+    }
+
+    public boolean canAuthorize()
+    {
+        return authPlugin != null || authorizationPlugin != null;
+    }
+
+    @Override
+    public AuthorizationInfo getAuthorizationInfoSnapshot( PrincipalCollection principalCollection )
+    {
+        return getAuthorizationInfo( principalCollection );
+    }
+
     @Override
     protected Object getAuthorizationCacheKey( PrincipalCollection principals )
     {
@@ -329,12 +345,6 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
             return ((CustomCredentialsMatcherSupplier) info).getCredentialsMatcher();
         }
         return null;
-    }
-
-    @Override
-    public AuthorizationInfo getAuthorizationInfoSnapshot( PrincipalCollection principalCollection )
-    {
-        return getAuthorizationInfo( principalCollection );
     }
 
     private class CredentialsMatcher implements org.apache.shiro.authc.credential.CredentialsMatcher
