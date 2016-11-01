@@ -35,8 +35,6 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -97,13 +95,11 @@ public class BackupTool
 
     private final BackupService backupService;
     private final PrintStream systemOut;
-    private final FileSystemAbstraction fs;
 
     BackupTool( BackupService backupService, PrintStream systemOut )
     {
         this.backupService = backupService;
         this.systemOut = systemOut;
-        this.fs = new DefaultFileSystemAbstraction();
     }
 
     BackupOutcome run( String[] args ) throws ToolFailureException

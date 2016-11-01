@@ -31,6 +31,7 @@ import java.util.Properties;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -142,7 +143,8 @@ public class BackupToolTest
     {
         String[] args = new String[]{"-full", "-host", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
-        when( service.directoryContainsDb( eq( new File( "my_backup" ) ) ) ).thenReturn( true );
+        when( service.directoryContainsDb( any( FileSystemAbstraction.class), eq( new File( "my_backup" ) ) ) )
+                .thenReturn( true );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when

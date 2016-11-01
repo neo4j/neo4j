@@ -24,6 +24,7 @@ import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -46,8 +47,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -90,6 +91,7 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -131,30 +133,32 @@ public class BackupServiceIT
         }
     }
 
-    @Rule
-    public final TestDirectory target = TestDirectory.testDirectory();
     private static final String NODE_STORE = StoreFactory.NODE_STORE_NAME;
     private static final String RELATIONSHIP_STORE = StoreFactory.RELATIONSHIP_STORE_NAME;
     private static final String BACKUP_HOST = "localhost";
 
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private final Monitors monitors = new Monitors();
     private final IOLimiter limiter = IOLimiter.unlimited();
+    private FileSystemAbstraction fileSystem;
     private File storeDir;
     private File backupDir;
     public int backupPort = 8200;
 
-    @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final TestDirectory target = TestDirectory.testDirectory();
+    private final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( dbRule )
+                                                .around( pageCacheRule ).around( fileSystemRule )
+                                                .around( target ).around( suppressOutput );
 
     @Before
     public void setup()
     {
+        fileSystem = fileSystemRule.get();
         backupPort = backupPort + 1;
         storeDir = dbRule.getStoreDirFile();
         backupDir = target.directory( "backup_dir" );
@@ -162,12 +166,14 @@ public class BackupServiceIT
 
     private BackupService backupService()
     {
-        return new BackupService( fileSystem, FormattedLogProvider.toOutputStream( System.out ), new Monitors() );
+        return new BackupService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
+                FormattedLogProvider.toOutputStream( System.out ), new Monitors() );
     }
 
     private BackupService backupService( LogProvider logProvider )
     {
-        return new BackupService( fileSystem, logProvider, new Monitors() );
+        return new BackupService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
+                logProvider, new Monitors() );
     }
 
     @Test

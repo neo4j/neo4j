@@ -41,9 +41,9 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
@@ -200,8 +201,9 @@ public class BackupServiceStressTestingBuilder
                 final AtomicInteger inconsistentDbs = new AtomicInteger( 0 );
                 executor.submit( new Callable<Void>()
                 {
-                    private final BackupService backupService = new BackupService( fileSystem,
-                            NullLogProvider.getInstance(), new Monitors() );
+                    private final BackupService backupService =
+                            new BackupService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystem ),
+                                               NullLogProvider.getInstance(), new Monitors() );
 
                     @Override
                     public Void call() throws IOException

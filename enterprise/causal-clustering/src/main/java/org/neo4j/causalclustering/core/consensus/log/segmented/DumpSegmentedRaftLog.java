@@ -101,8 +101,12 @@ class DumpSegmentedRaftLog
             for ( String fileAsString : arguments.orphans() )
             {
                 System.out.println( "Reading file " + fileAsString );
-                new DumpSegmentedRaftLog( new DefaultFileSystemAbstraction(), new CoreReplicatedContentMarshal() )
-                        .dump( fileAsString, printer.getFor( fileAsString ) );
+
+                try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+                {
+                    new DumpSegmentedRaftLog( fileSystem, new CoreReplicatedContentMarshal() )
+                            .dump( fileAsString, printer.getFor( fileAsString ) );
+                }
             }
         }
     }
