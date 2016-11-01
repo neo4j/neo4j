@@ -220,8 +220,6 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         int keyCount = 0; // initialized to satisfy compiler
         long childId = 0; // initialized to satisfy compiler
         int pos;
-        int level = 0;
-        long rightSibling;
         do
         {
             do
@@ -230,13 +228,16 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 // Find the left-most key within from-range
                 keyCount = bTreeNode.keyCount( cursor );
                 pos = 0;
-                rightSibling = bTreeNode.rightSibling( cursor );
                 int search = IndexSearch.search( cursor, bTreeNode, fromInclusive, key, keyCount );
                 pos = IndexSearch.positionOf( search );
-                if ( IndexSearch.isHit( search ) )
+
+                // TODO: if we don't have unique keys we cannot make this assumption,
+                // but instead we'd need to go to the previous child
+                if ( isInternal && IndexSearch.isHit( search ) )
                 {
-                    pos--;
+                    pos++;
                 }
+
                 if ( isInternal )
                 {
                     childId = bTreeNode.childAt( cursor, pos );
@@ -252,40 +253,14 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             }
             if ( isInternal )
             {
-                if ( pos == keyCount && layout.compare( key, fromInclusive ) < 0 )
-                {
-                    if ( level == 0 )
-                    {   // At root level here, let's see if we've got a new root since we started our seek
-                        long newLocalRootId = rootId;
-                        if ( newLocalRootId != localRootId )
-                        {
-                            childId = localRootId = newLocalRootId;
-                        }
-                    }
-                    else
-                    {
-                        // Means we didn't really find it yet, the fromInclusive is still higher than where we are
-                        // so go to this internal node's right sibling and continue
-                        if ( bTreeNode.isNode( rightSibling ) )
-                        {
-                            childId = rightSibling;
-                        }
-                        // else it's fine, we can go down to this sibling with the assumption that
-                        // it'll have data relevant to us
-                        if ( !bTreeNode.isNode( childId ) )
-                        {
-                            keyCount = 0; // just to let an empty cursor be returned
-                            break;
-                        }
-                    }
-                }
+                // TODO perhaps detect being too far to the left and so follow right siblings,
+                // to reduce unnecessary seek in leafs (concurrent splits would be the cause)
 
                 if ( !cursor.next( childId ) )
                 {
                     throw new IllegalStateException( "Couldn't go to child " + childId );
                 }
             }
-            level++;
         }
         while ( isInternal && keyCount > 0 );
 

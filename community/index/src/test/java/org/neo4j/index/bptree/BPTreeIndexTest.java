@@ -52,6 +52,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -72,6 +73,8 @@ public class BPTreeIndexTest
 {
     @Rule
     public final TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
+    @Rule
+    public final RandomRule random = new RandomRule();
     private PageCache pageCache;
     private File indexFile;
     private final SCIndexDescription description = new SCIndexDescription( "a", "b", "c", OUTGOING, "d", null );
@@ -120,12 +123,10 @@ public class BPTreeIndexTest
         Index<TwoLongs,TwoLongs> index = createIndex( 1024 );
         Comparator<TwoLongs> keyComparator = layout;
         Map<TwoLongs,TwoLongs> data = new TreeMap<>( keyComparator );
-        long seed = currentTimeMillis();
-        Random random = new Random( seed );
         int count = 1000;
         for ( int i = 0; i < count; i++ )
         {
-            data.put( randomTreeThing( random ), randomTreeThing( random ) );
+            data.put( randomTreeThing( random.random() ), randomTreeThing( random.random() ) );
         }
 
         // WHEN
@@ -142,8 +143,8 @@ public class BPTreeIndexTest
             // THEN
             for ( int i = 0; i < count; i++ )
             {
-                TwoLongs first = randomTreeThing( random );
-                TwoLongs second = randomTreeThing( random );
+                TwoLongs first = randomTreeThing( random.random() );
+                TwoLongs second = randomTreeThing( random.random() );
                 TwoLongs from, to;
                 if ( first.first < second.first )
                 {
@@ -177,7 +178,7 @@ public class BPTreeIndexTest
                 }
             }
 
-            randomlyModifyIndex( index, data, random );
+            randomlyModifyIndex( index, data, random.random() );
         }
     }
 
