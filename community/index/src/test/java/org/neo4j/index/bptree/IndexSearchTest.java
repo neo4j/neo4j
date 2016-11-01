@@ -21,11 +21,11 @@ package org.neo4j.index.bptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Random;
-
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -42,6 +42,9 @@ public class IndexSearchTest
     private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
     private final byte[] tmp = new byte[PAGE_SIZE];
     private final MutableLong readKey = layout.newKey();
+
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     @Before
     public void setup()
@@ -192,7 +195,6 @@ public class IndexSearchTest
     public void shouldSearchAndFindOnRandomData() throws Exception
     {
         // GIVEN a leaf node with random, although sorted (as of course it must be to binary-search), data
-        Random random = new Random();
         int internalMaxKeyCount = node.internalMaxKeyCount();
         int half = internalMaxKeyCount / 2;
         int keyCount = random.nextInt( half ) + half;
@@ -219,20 +221,13 @@ public class IndexSearchTest
             boolean exists = contains( keys, 0, keyCount, searchKey );
             int position = IndexSearch.positionOf( searchResult );
             assertEquals( exists, IndexSearch.isHit( searchResult ) );
-            if ( searchKey < keys[0] )
+            if ( searchKey <= keys[0] )
             {   // Our search key was lower than any of our keys, expect 0
                 assertEquals( 0, position );
             }
             else
             {   // step backwards through our expected keys and see where it should fit, assert that fact
                 boolean found = false;
-                for ( int j = 0; j < keyCount; j++ )
-                {
-                    if ( searchKey >= keys[j] )
-                    {
-
-                    }
-                }
                 for ( int j = keyCount - 1; j >= 0; j-- )
                 {
                     if ( searchKey > keys[j] )
@@ -242,6 +237,7 @@ public class IndexSearchTest
                         break;
                     }
                 }
+
                 assertTrue( found );
             }
         }

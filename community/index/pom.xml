@@ -75,5 +75,12 @@ the relevant Commercial Agreement.
       <type>test-jar</type>
       <scope>tests</scope>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>tests</scope>
+    </dependency>
   </dependencies>
 </project>

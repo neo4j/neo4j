@@ -20,11 +20,11 @@
 package org.neo4j.index.bptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Random;
-
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,6 +40,9 @@ public class TreeNodeTest
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
     private final byte[] tmp = new byte[PAGE_SIZE];
+
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     @Test
     public void shouldInitializeLeaf() throws Exception
@@ -342,8 +345,6 @@ public class TreeNodeTest
         long[] expectedKeys = new long[maxKeyCount + 1];
         long[] expectedValues = new long[maxKeyCount + 1];
         int expectedKeyCount = 0;
-        long seed = 1;
-        Random random = new Random( seed );
         MutableLong key = layout.newKey();
         MutableLong value = layout.newValue();
 
