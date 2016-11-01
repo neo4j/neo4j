@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.StoreLocker;
 
@@ -57,7 +58,8 @@ public class Util
 
     public static void checkLock( Path databaseDirectory ) throws CommandFailed
     {
-        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker storeLocker = new StoreLocker( fileSystem ) )
         {
             storeLocker.checkLock( databaseDirectory.toFile() );
         }

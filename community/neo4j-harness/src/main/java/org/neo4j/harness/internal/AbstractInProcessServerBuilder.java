@@ -62,7 +62,6 @@ import static org.neo4j.test.Digests.md5Hex;
 
 public abstract class AbstractInProcessServerBuilder implements TestServerBuilder
 {
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private File serverFolder;
     private final Extensions extensions = new Extensions();
     private final HarnessRegisteredProcs procedures = new HarnessRegisteredProcs();
@@ -113,39 +112,44 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     @Override
     public ServerControls newServer()
     {
-        final OutputStream logOutputStream;
-        try
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            logOutputStream = createOrOpenAsOuputStream( fileSystem, new File( serverFolder, "neo4j.log" ), true );
+            final OutputStream logOutputStream;
+            try
+            {
+                logOutputStream = createOrOpenAsOuputStream( fileSystem, new File( serverFolder, "neo4j.log" ), true );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "Unable to create log file", e );
+            }
+
+            config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( extensions.toList() ) );
+
+            final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
+            GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
+            dependencies = dependencies.kernelExtensions( append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() ) )
+                    .userLogProvider( userLogProvider );
+
+            AbstractNeoServer neoServer = createNeoServer( config, dependencies, userLogProvider );
+            InProcessServerControls controls = new InProcessServerControls( serverFolder, neoServer, logOutputStream );
+            controls.start();
+
+            try
+            {
+                fixtures.applyTo( controls );
+            }
+            catch ( Exception e )
+            {
+                controls.close();
+                throw Exceptions.launderedException( e );
+            }
+            return controls;
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Unable to create log file", e );
-        }
-
-        config.put( ServerSettings.third_party_packages.name(),
-                toStringForThirdPartyPackageProperty( extensions.toList() ) );
-
-        final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
-        GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
-        dependencies = dependencies.kernelExtensions(
-                append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() ) )
-                .userLogProvider( userLogProvider );
-
-        AbstractNeoServer neoServer = createNeoServer( config, dependencies, userLogProvider );
-        InProcessServerControls controls = new InProcessServerControls( serverFolder, neoServer, logOutputStream );
-        controls.start();
-
-        try
-        {
-            fixtures.applyTo( controls );
-        }
-        catch ( Exception e )
-        {
-            controls.close();
             throw Exceptions.launderedException( e );
         }
-        return controls;
     }
 
     protected abstract AbstractNeoServer createNeoServer( Map<String,String> config,

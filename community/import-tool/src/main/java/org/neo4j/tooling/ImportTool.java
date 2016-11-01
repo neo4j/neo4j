@@ -74,7 +74,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.lang.Math.toIntExact;
 import static java.nio.charset.Charset.defaultCharset;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
@@ -355,7 +354,6 @@ public class ImportTool
             return;
         }
 
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir;
         Collection<Option<File[]>> nodesFiles, relationshipsFiles;
         boolean enableStacktrace;
@@ -374,7 +372,7 @@ public class ImportTool
         File badFile;
 
         boolean success = false;
-        try
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
