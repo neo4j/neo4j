@@ -122,12 +122,28 @@ public class EnterpriseSecurityModuleTest
         authProviders(
                 SecuritySettings.PLUGIN_REALM_NAME_PREFIX + "TestAuthenticationPlugin",
                 SecuritySettings.PLUGIN_REALM_NAME_PREFIX + "IllConfiguredAuthorizationPlugin"
-            );
+        );
 
         // Then
         thrown.expect( IllegalArgumentException.class );
-        thrown.expectMessage( "Illegal configuration: No plugin authorization provider loaded even though required by " +
-                "configuration." );
+        thrown.expectMessage(
+                "Illegal configuration: Failed to load auth plugin 'plugin-IllConfiguredAuthorizationPlugin'." );
+
+        // When
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
+    }
+
+    @Test
+    public void shouldNotFailNativeWithPluginAuthorizationProvider()
+    {
+        // Given
+        nativeAuth( true, true );
+        ldapAuth( false, false );
+        pluginAuth( true, true );
+        authProviders(
+                SecuritySettings.NATIVE_REALM_NAME,
+                SecuritySettings.PLUGIN_REALM_NAME_PREFIX + "TestAuthorizationPlugin"
+        );
 
         // When
         new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );

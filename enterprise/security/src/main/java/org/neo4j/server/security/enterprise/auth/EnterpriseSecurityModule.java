@@ -146,7 +146,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             realms.add( new LdapRealm( config, securityLog, secureHasher ) );
         }
 
-        if ( securityConfig.hasPluginProvider )
+        if ( !securityConfig.pluginAuthProviders.isEmpty() )
         {
             realms.addAll( createPluginRealms( config, securityLog, secureHasher, securityConfig ) );
         }
@@ -156,7 +156,7 @@ public class EnterpriseSecurityModule extends SecurityModule
 
         if ( orderedActiveRealms.isEmpty() )
         {
-            throw illegalConf( "No valid auth provider is active." );
+            throw illegalConfiguration( "No valid auth provider is active." );
         }
 
         return new MultiRealmAuthManager( internalRealm, orderedActiveRealms, createCacheManager( config ),
@@ -257,15 +257,23 @@ public class EnterpriseSecurityModule extends SecurityModule
             }
         }
 
+        for ( String pluginRealmName : securityConfig.pluginAuthProviders )
+        {
+            if ( !availablePluginRealms.stream().anyMatch( r -> r.getName().equals( pluginRealmName ) ) )
+            {
+                throw illegalConfiguration( format( "Failed to load auth plugin '%s'.", pluginRealmName ) );
+            }
+        }
+
         List<PluginRealm> realms =
                 availablePluginRealms.stream()
-                        .filter( realm -> securityConfig.authProviders.contains( realm.getName() ) )
+                        .filter( realm -> securityConfig.pluginAuthProviders.contains( realm.getName() ) )
                         .collect( Collectors.toList() );
 
         boolean missingAuthenticatingRealm =
-                securityConfig.pluginAuthentication && !realms.stream().anyMatch( PluginRealm::canAuthenticate );
+                securityConfig.onlyPluginAuthentication() && !realms.stream().anyMatch( PluginRealm::canAuthenticate );
         boolean missingAuthorizingRealm =
-                securityConfig.pluginAuthorization && !realms.stream().anyMatch( PluginRealm::canAuthorize );
+                securityConfig.onlyPluginAuthorization() && !realms.stream().anyMatch( PluginRealm::canAuthorize );
 
         if ( missingAuthenticatingRealm || missingAuthorizingRealm )
         {
@@ -273,7 +281,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                     ( missingAuthenticatingRealm && missingAuthorizingRealm ) ? "authentication or authorization" :
                     ( missingAuthenticatingRealm ) ? "authentication" : "authorization";
 
-            throw illegalConf( format(
+            throw illegalConfiguration( format(
                     "No plugin %s provider loaded even though required by configuration.", missingProvider ) );
         }
 
@@ -303,7 +311,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                 DEFAULT_ADMIN_STORE_FILENAME );
     }
 
-    private static IllegalArgumentException illegalConf( String message )
+    private static IllegalArgumentException illegalConfiguration( String message )
     {
         return new IllegalArgumentException( "Illegal configuration: " + message );
     }
@@ -313,7 +321,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         final List<String> authProviders;
         final boolean hasNativeProvider;
         final boolean hasLdapProvider;
-        final boolean hasPluginProvider;
+        final List<String> pluginAuthProviders;
         final boolean nativeAuthentication;
         final boolean nativeAuthorization;
         final boolean ldapAuthentication;
@@ -326,8 +334,9 @@ public class EnterpriseSecurityModule extends SecurityModule
             authProviders = config.get( SecuritySettings.auth_providers );
             hasNativeProvider = authProviders.contains( SecuritySettings.NATIVE_REALM_NAME );
             hasLdapProvider = authProviders.contains( SecuritySettings.LDAP_REALM_NAME );
-            hasPluginProvider = authProviders.stream()
-                    .anyMatch( ( r ) -> r.startsWith( SecuritySettings.PLUGIN_REALM_NAME_PREFIX ) );
+            pluginAuthProviders = authProviders.stream()
+                    .filter( ( r ) -> r.startsWith( SecuritySettings.PLUGIN_REALM_NAME_PREFIX ) )
+                    .collect( Collectors.toList() );
 
             nativeAuthentication = config.get( SecuritySettings.native_authentication_enabled );
             nativeAuthorization = config.get( SecuritySettings.native_authorization_enabled );
@@ -341,31 +350,41 @@ public class EnterpriseSecurityModule extends SecurityModule
         {
             if ( !nativeAuthentication && !ldapAuthentication && !pluginAuthentication )
             {
-                throw illegalConf( "All authentication providers are disabled." );
+                throw illegalConfiguration( "All authentication providers are disabled." );
             }
 
             if ( !nativeAuthorization && !ldapAuthorization && !pluginAuthorization )
             {
-                throw illegalConf( "All authorization providers are disabled." );
+                throw illegalConfiguration( "All authorization providers are disabled." );
             }
 
             if ( hasNativeProvider && !nativeAuthentication && !nativeAuthorization )
             {
-                throw illegalConf(
+                throw illegalConfiguration(
                         "Native auth provider configured, but both authentication and authorization are disabled." );
             }
 
             if ( hasLdapProvider && !ldapAuthentication && !ldapAuthorization )
             {
-                throw illegalConf(
+                throw illegalConfiguration(
                         "LDAP auth provider configured, but both authentication and authorization are disabled." );
             }
 
-            if ( hasPluginProvider && !pluginAuthentication && !pluginAuthorization )
+            if ( !pluginAuthProviders.isEmpty() && !pluginAuthentication && !pluginAuthorization )
             {
-                throw illegalConf(
+                throw illegalConfiguration(
                         "Plugin auth provider configured, but both authentication and authorization are disabled." );
             }
+        }
+
+        public boolean onlyPluginAuthentication()
+        {
+            return !nativeAuthentication && !ldapAuthentication && pluginAuthentication;
+        }
+
+        public boolean onlyPluginAuthorization()
+        {
+            return !nativeAuthorization && !ldapAuthorization && pluginAuthorization;
         }
     }
 }
