@@ -28,6 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -37,11 +38,14 @@ public class LuceneLabelScanIndexBuilderTest
 
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void readOnlyIndexCreation() throws Exception
     {
         try ( LabelScanIndex index = LuceneLabelScanIndexBuilder.create()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.graphDbDir() )
                 .withConfig( getReadOnlyConfig() )
                 .withOperationalMode( OperationalMode.single )
@@ -55,6 +59,7 @@ public class LuceneLabelScanIndexBuilderTest
     public void writableIndexCreation() throws Exception
     {
         try ( LabelScanIndex index = LuceneLabelScanIndexBuilder.create()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.graphDbDir() )
                 .withConfig( getDefaultConfig() )
                 .withOperationalMode( OperationalMode.single )

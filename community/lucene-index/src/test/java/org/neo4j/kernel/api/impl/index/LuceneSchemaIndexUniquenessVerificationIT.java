@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.instanceOf;
@@ -67,6 +68,8 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Parameter
     public int nodesToCreate;
@@ -95,6 +98,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 
         index = LuceneSchemaIndexBuilder.create()
                 .uniqueIndex()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "uniquenessVerification" ) )
                 .withIndexIdentifier( "index" )
                 .build();

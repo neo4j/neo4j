@@ -78,7 +78,10 @@ public class StoreMigration
         File storeDir = parseDir( arguments );
 
         FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
-        new StoreMigration().run( new DefaultFileSystemAbstraction(), storeDir, getMigrationConfig(), userLogProvider );
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            new StoreMigration().run( fileSystem, storeDir, getMigrationConfig(), userLogProvider );
+        }
     }
 
     private static Config getMigrationConfig()

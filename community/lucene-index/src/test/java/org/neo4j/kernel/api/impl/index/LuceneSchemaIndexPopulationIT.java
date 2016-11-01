@@ -42,6 +42,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,6 +54,9 @@ public class LuceneSchemaIndexPopulationIT
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     private int affectedNodes;
 
     @Before
@@ -82,6 +86,7 @@ public class LuceneSchemaIndexPopulationIT
     public void partitionedIndexPopulation() throws Exception
     {
         try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create().uniqueIndex()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "partitionIndex" + affectedNodes ) )
                 .withIndexIdentifier( "uniqueIndex" + affectedNodes )
                 .build() )

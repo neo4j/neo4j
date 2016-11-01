@@ -135,7 +135,10 @@ class RebuildFromLogs
             }
         }
 
-        new RebuildFromLogs( new DefaultFileSystemAbstraction() ).rebuild( source, target, txId );
+        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction())
+        {
+            new RebuildFromLogs( fileSystem ).rebuild( source, target, txId );
+        }
     }
 
     private static boolean directoryContainsDb( Path path )

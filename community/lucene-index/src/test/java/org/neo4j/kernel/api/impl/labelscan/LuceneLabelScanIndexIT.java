@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 
@@ -44,6 +45,9 @@ public class LuceneLabelScanIndexIT
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     private int affectedNodes;
 
     @Before
@@ -73,6 +77,7 @@ public class LuceneLabelScanIndexIT
     public void readFromPartitionedIndex() throws IOException
     {
         try ( LabelScanIndex labelScanIndex = LuceneLabelScanIndexBuilder.create()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexIdentifier( "partitionedIndex" + affectedNodes )
                 .withIndexRootFolder( testDir.directory( "partitionedIndexFolder" + affectedNodes ) )
                 .build() )

@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.core.HttpContext;
 import org.apache.commons.configuration.Configuration;
 import org.bouncycastle.operator.OperatorCreationException;
 
@@ -43,7 +42,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
@@ -56,8 +55,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ClientConnectorSettings;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;
@@ -91,7 +90,6 @@ import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_size;
@@ -340,7 +338,7 @@ public abstract class AbstractNeoServer implements NeoServer
         }
 
         AsyncRequestLog requestLog = new AsyncRequestLog(
-                new DefaultFileSystemAbstraction(),
+                dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
                 new File( config.get( GraphDatabaseSettings.logs_directory ), "http.log" ).toString(),
                 config.get( http_logging_rotation_size ),
                 config.get( http_logging_rotation_keep_number ) );

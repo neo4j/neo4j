@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -57,6 +58,8 @@ public class LuceneSchemaIndexIT
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Before
     public void before() throws Exception
@@ -118,6 +121,7 @@ public class LuceneSchemaIndexIT
     public void updateMultiplePartitionedIndex() throws IOException, IndexEntryConflictException
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory() )
                 .withIndexIdentifier( "partitionedIndexForUpdates" )
                 .build() )
@@ -140,6 +144,7 @@ public class LuceneSchemaIndexIT
     {
         File crudOperation = testDir.directory( "indexCRUDOperation" );
         try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( crudOperation )
                 .withIndexIdentifier( "crudIndex" )
                 .build() )
@@ -163,6 +168,7 @@ public class LuceneSchemaIndexIT
     public void createFailPartitionedIndex() throws Exception
     {
         try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "failedIndexFolder" ) )
                 .withIndexIdentifier( "failedIndex" )
                 .build() )
@@ -187,6 +193,7 @@ public class LuceneSchemaIndexIT
         try
         {
             reopenIndex = LuceneSchemaIndexBuilder.create()
+                    .withFileSystem( fileSystemRule.get() )
                     .withIndexRootFolder( testDir.directory( "reopenIndexFolder" ) )
                     .withIndexIdentifier( "reopenIndex" )
                     .build();
@@ -239,6 +246,7 @@ public class LuceneSchemaIndexIT
     private LuceneIndexAccessor createDefaultIndexAccessor() throws IOException
     {
         SchemaIndex index = LuceneSchemaIndexBuilder.create()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory() )
                 .withIndexIdentifier( "testIndex" )
                 .build();
