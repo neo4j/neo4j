@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -70,11 +69,6 @@ public class StoreAccess
     {
         this.neoStores = store;
         this.counts = store.getCounts();
-    }
-
-    public StoreAccess( PageCache pageCache, File storeDir )
-    {
-        this( new DefaultFileSystemAbstraction(), pageCache, storeDir );
     }
 
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )

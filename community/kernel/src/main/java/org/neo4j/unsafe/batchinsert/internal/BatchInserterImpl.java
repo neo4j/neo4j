@@ -48,8 +48,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -214,16 +214,6 @@ public class BatchInserterImpl implements BatchInserter
     private final long maxNodeId;
     private final RecordCursors cursors;
 
-    BatchInserterImpl( File storeDir,
-                       Map<String, String> stringParams ) throws IOException
-    {
-        this( storeDir,
-              new DefaultFileSystemAbstraction(),
-              stringParams,
-              Collections.emptyList()
-        );
-    }
-
     public BatchInserterImpl( final File storeDir, final FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
@@ -234,6 +224,7 @@ public class BatchInserterImpl implements BatchInserter
 
         life = new LifeSupport();
         this.storeDir = storeDir;
+        life.add( new FileSystemLifecycleAdapter( fileSystem ) );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, NullLog.getInstance() );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();

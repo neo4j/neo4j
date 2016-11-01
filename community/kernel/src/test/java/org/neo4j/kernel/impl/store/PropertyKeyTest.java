@@ -29,6 +29,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -49,7 +50,7 @@ public class PropertyKeyTest
         // Given
         FileSystemAbstraction fileSystem = fs.get();
         File dir = new File( "dir" ).getAbsoluteFile();
-        BatchInserter inserter = BatchInserters.inserter( dir, fileSystem );
+        BatchInserter inserter = BatchInserters.inserter( dir, new UncloseableDelegatingFileSystemAbstraction( fileSystem ) );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
@@ -76,7 +77,9 @@ public class PropertyKeyTest
     {
         Map<String, Object> properties = new HashMap<String, Object>();
         for ( int i = 0; i < count; i++ )
+        {
             properties.put( "key:" + i, "value" );
+        }
         return properties;
     }
 }

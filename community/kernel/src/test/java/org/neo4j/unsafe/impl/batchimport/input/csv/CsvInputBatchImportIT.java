@@ -83,11 +83,24 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisi
 
 public class CsvInputBatchImportIT
 {
+    /** Don't support these counts at the moment so don't compute them */
+    private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
+    private String nameOf( InputNode node )
+    {
+        return (String) node.properties()[1];
+    }
+
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory();
+    private final long seed = currentTimeMillis();
+    private final Random random = new Random( seed );
+
     @Test
     public void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
-        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(),
+        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fs,
                 smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), Config.empty() );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
@@ -478,16 +491,4 @@ public class CsvInputBatchImportIT
         }
     }
 
-    /** Don't support these counts at the moment so don't compute them */
-    private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
-    private String nameOf( InputNode node )
-    {
-        return (String) node.properties()[1];
-    }
-
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
-    private final long seed = currentTimeMillis();
-    private final Random random = new Random( seed );
 }

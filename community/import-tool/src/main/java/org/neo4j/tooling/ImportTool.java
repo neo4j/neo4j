@@ -450,7 +450,7 @@ public class ImportTool
         LogService logService = life.add( StoreLogService.inLogsDirectory( fs, logsDir ) );
 
         life.start();
-        BatchImporter importer = new ParallelBatchImporter( storeDir,
+        BatchImporter importer = new ParallelBatchImporter( storeDir, fs,
                 configuration,
                 logService,
                 ExecutionMonitors.defaultVisible(),
