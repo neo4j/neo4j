@@ -32,18 +32,19 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * Waits until member has "fully joined" the raft membership.
  * We consider a member fully joined where:
  * <ul>
- *     <li>It is a member of the voting group
- *     (its opinion will count towards leader elections and committing entries), and</li>
- *     <li>It is sufficiently caught up with the leader,
- *     so that long periods of unavailability are unlikely, should the leader fail.</li>
+ * <li>It is a member of the voting group
+ * (its opinion will count towards leader elections and committing entries), and</li>
+ * <li>It is sufficiently caught up with the leader,
+ * so that long periods of unavailability are unlikely, should the leader fail.</li>
  * </ul>
- *
+ * <p>
  * To determine whether the member is sufficiently caught up, we check periodically how far behind we are,
  * once every {@code maxCatchupLag}. If the leader is always moving forwards we will never fully catch up,
  * so all we look for is that we have caught up with where the leader was the <i>previous</i> time
@@ -55,6 +56,7 @@ public class MembershipWaiter
     private final JobScheduler jobScheduler;
     private final Supplier<DatabaseHealth> dbHealthSupplier;
     private final long maxCatchupLag;
+    private long currentCatchupDelayInMs;
     private final Log log;
 
     public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, Supplier<DatabaseHealth> dbHealthSupplier,
@@ -64,6 +66,7 @@ public class MembershipWaiter
         this.jobScheduler = jobScheduler;
         this.dbHealthSupplier = dbHealthSupplier;
         this.maxCatchupLag = maxCatchupLag;
+        this.currentCatchupDelayInMs = maxCatchupLag;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -73,9 +76,9 @@ public class MembershipWaiter
 
         Evaluator evaluator = new Evaluator( raft, catchUpFuture, dbHealthSupplier );
 
-        JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
+        JobScheduler.JobHandle jobHandle = jobScheduler.schedule(
                 new JobScheduler.Group( getClass().toString(), POOLED ),
-                evaluator, maxCatchupLag, MILLISECONDS );
+                evaluator, currentCatchupDelayInMs, MILLISECONDS );
 
         catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
 
@@ -99,6 +102,7 @@ public class MembershipWaiter
             this.dbHealthSupplier = dbHealthSupplier;
         }
 
+        @Override
         public void run()
         {
             if ( !dbHealthSupplier.get().isHealthy() )
@@ -108,6 +112,13 @@ public class MembershipWaiter
             else if ( iAmAVotingMember() && caughtUpWithLeader() )
             {
                 catchUpFuture.complete( true );
+            }
+            else
+            {
+                currentCatchupDelayInMs += SECONDS.toMillis( 1 );
+                long longerDelay = currentCatchupDelayInMs < maxCatchupLag ? currentCatchupDelayInMs : maxCatchupLag;
+                jobScheduler.schedule( new JobScheduler.Group( MembershipWaiter.class.toString(), POOLED ), this,
+                        longerDelay, MILLISECONDS );
             }
         }
 
@@ -127,15 +138,11 @@ public class MembershipWaiter
             boolean caughtUpWithLeader = false;
 
             ExposedRaftState state = raft.state();
-
             long localCommit = state.commitIndex();
-            if ( lastLeaderCommit != -1 )
-            {
-                caughtUpWithLeader = localCommit >= lastLeaderCommit;
-            }
             lastLeaderCommit = state.leaderCommit();
             if ( lastLeaderCommit != -1 )
             {
+                caughtUpWithLeader = localCommit == lastLeaderCommit;
                 long gap = lastLeaderCommit - localCommit;
                 log.info( "%s Catchup: %d => %d (%d behind)", myself, localCommit, lastLeaderCommit, gap );
             }
@@ -143,8 +150,8 @@ public class MembershipWaiter
             {
                 log.info( "Leader commit unknown" );
             }
-
             return caughtUpWithLeader;
         }
     }
+
 }
