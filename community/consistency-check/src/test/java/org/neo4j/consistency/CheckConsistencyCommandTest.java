@@ -193,7 +193,7 @@ public class CheckConsistencyCommandTest
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
-                        anyBoolean(), eq( new File( "/some-dir-or-other" ) ) );
+                        anyBoolean(), eq( new File( "/some-dir-or-other" ).getCanonicalFile() ) );
     }
 
     @Test
@@ -216,6 +216,6 @@ public class CheckConsistencyCommandTest
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
-                        anyBoolean(), eq( new File( "/bar" ) ) );
+                        anyBoolean(), eq( new File( "/bar" ).getCanonicalFile() ) );
     }
 }
