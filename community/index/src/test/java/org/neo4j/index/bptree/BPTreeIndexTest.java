@@ -101,6 +101,8 @@ public class BPTreeIndexTest
         pageCache.close();
     }
 
+    /* Meta data tests */
+
     @Test
     public void shouldReadWrittenMetaData() throws Exception
     {
@@ -114,123 +116,6 @@ public class BPTreeIndexTest
 
         // THEN being able to open validates that the same meta data was read
         // the test also closes the index afterwards
-    }
-
-    @Test
-    public void shouldStayCorrectAfterRandomModifications() throws Exception
-    {
-        // GIVEN
-        Index<TwoLongs,TwoLongs> index = createIndex( 1024 );
-        Comparator<TwoLongs> keyComparator = layout;
-        Map<TwoLongs,TwoLongs> data = new TreeMap<>( keyComparator );
-        int count = 1000;
-        for ( int i = 0; i < count; i++ )
-        {
-            data.put( randomTreeThing( random.random() ), randomTreeThing( random.random() ) );
-        }
-
-        // WHEN
-        try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
-        {
-            for ( Map.Entry<TwoLongs,TwoLongs> entry : data.entrySet() )
-            {
-                inserter.insert( entry.getKey(), entry.getValue() );
-            }
-        }
-
-        for ( int round = 0; round < 10; round++ )
-        {
-            // THEN
-            for ( int i = 0; i < count; i++ )
-            {
-                TwoLongs first = randomTreeThing( random.random() );
-                TwoLongs second = randomTreeThing( random.random() );
-                TwoLongs from, to;
-                if ( first.first < second.first )
-                {
-                    from = first;
-                    to = second;
-                }
-                else
-                {
-                    from = second;
-                    to = first;
-                }
-                Map<TwoLongs,TwoLongs> expectedHits = expectedHits( data, from, to, keyComparator );
-                try ( RawCursor<Hit<TwoLongs,TwoLongs>,IOException> result = index.seek( from, to ) )
-                {
-                    while ( result.next() )
-                    {
-                        TwoLongs key = result.get().key();
-                        if ( expectedHits.remove( key ) == null )
-                        {
-                            fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
-                        }
-
-                        assertTrue( keyComparator.compare( key, from ) >= 0 );
-                        assertTrue( keyComparator.compare( key, to ) < 0 );
-                    }
-                    if ( !expectedHits.isEmpty() )
-                    {
-                        fail( "There were results which were expected to be returned, but weren't:" + expectedHits +
-                                " when searching range " + from + " - " + to );
-                    }
-                }
-            }
-
-            randomlyModifyIndex( index, data, random.random() );
-        }
-    }
-
-    @Test
-    public void shouldSplitCorrectly() throws Exception
-    {
-        // GIVEN
-        Index<TwoLongs,TwoLongs> index = createIndex( 128 );
-
-        // WHEN
-        long seed = currentTimeMillis();
-        Random random = new Random( seed );
-        int count = 1_000;
-        PrimitiveLongSet seen = Primitive.longSet( count );
-        try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
-        {
-            for ( int i = 0; i < count; i++ )
-            {
-                TwoLongs key = new TwoLongs( random.nextInt( 100_000 ), 0 );
-                TwoLongs value = new TwoLongs();
-                inserter.insert( key, value, overwrite() );
-                seen.add( key.first );
-            }
-        }
-
-        // THEN
-        try ( RawCursor<Hit<TwoLongs,TwoLongs>,IOException> cursor =
-                index.seek( new TwoLongs( 0, 0 ), new TwoLongs( Long.MAX_VALUE, 0 ) ) )
-        {
-            TwoLongs prev = new TwoLongs( -1, -1 );
-            while ( cursor.next() )
-            {
-                TwoLongs hit = cursor.get().key();
-                if ( hit.first < prev.first )
-                {
-                    fail( "Seed:" + seed + ", " + hit + " smaller than prev " + prev );
-                }
-                prev = new TwoLongs( hit.first, hit.other );
-                assertTrue( seen.remove( hit.first ) );
-            }
-
-            if ( !seen.isEmpty() )
-            {
-                fail( "Seed:" + seed + ", expected hits " +
-                        Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
-            }
-        }
-    }
-
-    private void printTree( Index<TwoLongs,TwoLongs> index ) throws IOException
-    {
-        ((BPTreeIndex)index).printTree();
     }
 
     @Test
@@ -343,6 +228,8 @@ public class BPTreeIndexTest
         }
     }
 
+    /* Insertion and read tests */
+
     @Test
     public void shouldSeeSimpleInsertions() throws Exception
     {
@@ -365,6 +252,120 @@ public class BPTreeIndexTest
                 assertEquals( new TwoLongs( i, i ), cursor.get().key() );
             }
             assertFalse( cursor.next() );
+        }
+    }
+
+    /* Randomized tests */
+
+    @Test
+    public void shouldStayCorrectAfterRandomModifications() throws Exception
+    {
+        // GIVEN
+        Index<TwoLongs,TwoLongs> index = createIndex( 1024 );
+        Comparator<TwoLongs> keyComparator = layout;
+        Map<TwoLongs,TwoLongs> data = new TreeMap<>( keyComparator );
+        int count = 1000;
+        for ( int i = 0; i < count; i++ )
+        {
+            data.put( randomTreeThing( random.random() ), randomTreeThing( random.random() ) );
+        }
+
+        // WHEN
+        try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
+        {
+            for ( Map.Entry<TwoLongs,TwoLongs> entry : data.entrySet() )
+            {
+                inserter.insert( entry.getKey(), entry.getValue() );
+            }
+        }
+
+        for ( int round = 0; round < 10; round++ )
+        {
+            // THEN
+            for ( int i = 0; i < count; i++ )
+            {
+                TwoLongs first = randomTreeThing( random.random() );
+                TwoLongs second = randomTreeThing( random.random() );
+                TwoLongs from, to;
+                if ( first.first < second.first )
+                {
+                    from = first;
+                    to = second;
+                }
+                else
+                {
+                    from = second;
+                    to = first;
+                }
+                Map<TwoLongs,TwoLongs> expectedHits = expectedHits( data, from, to, keyComparator );
+                try ( RawCursor<Hit<TwoLongs,TwoLongs>,IOException> result = index.seek( from, to ) )
+                {
+                    while ( result.next() )
+                    {
+                        TwoLongs key = result.get().key();
+                        if ( expectedHits.remove( key ) == null )
+                        {
+                            fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
+                        }
+
+                        assertTrue( keyComparator.compare( key, from ) >= 0 );
+                        assertTrue( keyComparator.compare( key, to ) < 0 );
+                    }
+                    if ( !expectedHits.isEmpty() )
+                    {
+                        fail( "There were results which were expected to be returned, but weren't:" + expectedHits +
+                              " when searching range " + from + " - " + to );
+                    }
+                }
+            }
+
+            randomlyModifyIndex( index, data, random.random() );
+        }
+    }
+
+    @Test
+    public void shouldSplitCorrectly() throws Exception
+    {
+        // GIVEN
+        Index<TwoLongs,TwoLongs> index = createIndex( 128 );
+
+        // WHEN
+        long seed = currentTimeMillis();
+        Random random = new Random( seed );
+        int count = 1_000;
+        PrimitiveLongSet seen = Primitive.longSet( count );
+        try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
+        {
+            for ( int i = 0; i < count; i++ )
+            {
+                TwoLongs key = new TwoLongs( random.nextInt( 100_000 ), 0 );
+                TwoLongs value = new TwoLongs();
+                inserter.insert( key, value, overwrite() );
+                seen.add( key.first );
+            }
+        }
+
+        // THEN
+        try ( RawCursor<Hit<TwoLongs,TwoLongs>,IOException> cursor =
+                      index.seek( new TwoLongs( 0, 0 ), new TwoLongs( Long.MAX_VALUE, 0 ) ) )
+        {
+            TwoLongs prev = new TwoLongs( -1, -1 );
+            while ( cursor.next() )
+            {
+                TwoLongs hit = cursor.get().key();
+                if ( hit.first < prev.first )
+                {
+                    fail( "Seed:" + seed + ", " + hit + " smaller than prev " + prev );
+                }
+                prev = new TwoLongs( hit.first, hit.other );
+                assertTrue( seen.remove( hit.first ) );
+            }
+
+            if ( !seen.isEmpty() )
+            {
+                fail( "Seed:" + seed + ", expected hits " +
+                      Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
+            }
         }
     }
 
