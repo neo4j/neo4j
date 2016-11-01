@@ -286,7 +286,8 @@ public class OnlineBackupCommandTest
         usage.printUsageForCommand( new OnlineBackupCommand.Provider(), out );
 
         verify( out ).accept( "usage: neo4j-admin backup [--from=<address>] --to=<backup-path>\n" +
-                "                          [--check-consistency=<true|false>]\n" +
+                "                          [--check-consistency[=<true|false>]]\n" +
+                "                          [--cc-report-dir=<directory>]\n" +
                 "                          [--additional-config=<config-file-path>]\n" +
                 "                          [--timeout=<timeout>]" );
         verify( out ).accept( "" );
@@ -304,6 +305,8 @@ public class OnlineBackupCommandTest
                 "                                           attempted.\n" +
                 "  --check-consistency=<true|false>         If a consistency check should be\n" +
                 "                                           made. [default:true]\n" +
+                "  --cc-report-dir=<directory>              Directory where consistency report\n" +
+                "                                           will be written. [default:.]\n" +
                 "  --additional-config=<config-file-path>   Configuration file to supply\n" +
                 "                                           additional configuration in.\n" +
                 "                                           [default:]\n" +
