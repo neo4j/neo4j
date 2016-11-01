@@ -316,6 +316,33 @@ public class DynamicTaskExecutorTest
         // shutdown() would hang, that's why we wait for 10 seconds here to cap it if there's an issue.
     }
 
+    @Test
+    public void shouldAddConsecutivePanicsAsSuppressed() throws Exception
+    {
+        // GIVEN
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
+        String firstMessage = "First";
+        String secondMessage = "Second";
+
+        // WHEN
+        executor.panic( new RuntimeException( firstMessage ) );
+        executor.panic( new RuntimeException( secondMessage ) );
+
+        // THEN
+        try
+        {
+            executor.submit( new EmptyTask() );
+            fail( "Should fail" );
+        }
+        catch ( TaskExecutionPanicException e )
+        {
+            Throwable first = e.getCause();
+            assertEquals( firstMessage, first.getMessage() );
+            assertEquals( 1, first.getSuppressed().length );
+            assertEquals( secondMessage, first.getSuppressed()[0].getMessage() );
+        }
+    }
+
     private void assertExceptionOnSubmit( TaskExecutor<Void> executor, IOException exception )
     {
         Exception submitException = null;

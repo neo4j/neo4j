@@ -89,10 +89,10 @@ public class TicketedProcessingTest
             processing.submit( i );
         }
         processing.endOfSubmissions();
-        processing.shutdown();
 
         // THEN
         assertions.get();
+        processing.shutdown();
     }
 
     @Test
