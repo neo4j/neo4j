@@ -39,7 +39,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<EnterpriseSecurityContext>
 {
@@ -55,7 +54,7 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
         GraphDatabaseFacade graph = neo.getLocalGraph();
 
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED ) )
+                .beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.none() ) )
         {
             Result result = graph.execute( tx, "CALL dbms.listQueries", Collections.emptyMap() );
             assertFalse( result.hasNext() );

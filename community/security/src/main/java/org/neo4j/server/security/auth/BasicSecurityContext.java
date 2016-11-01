@@ -119,6 +119,12 @@ public class BasicSecurityContext implements SecurityContext
     }
 
     @Override
+    public boolean isAdmin()
+    {
+        return true;
+    }
+
+    @Override
     public SecurityContext freeze()
     {
         return this;

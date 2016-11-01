@@ -47,7 +47,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.enterprise.api.security.CouldBeAdmin;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -405,11 +404,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     private boolean isAdmin()
     {
-        if ( securityContext instanceof CouldBeAdmin )
-        {
-            return ((CouldBeAdmin) securityContext).isAdmin();
-        }
-        return false;
+        return securityContext.isAdmin();
     }
 
     private void assertAdmin()

@@ -24,6 +24,7 @@ public interface SecurityContext
 {
     AccessMode mode();
     AuthSubject subject();
+    boolean isAdmin();
 
     SecurityContext freeze();
     SecurityContext withMode( AccessMode mode );
@@ -60,6 +61,12 @@ public interface SecurityContext
         public AuthSubject subject()
         {
             return AuthSubject.AUTH_DISABLED;
+        }
+
+        @Override
+        public boolean isAdmin()
+        {
+            return true;
         }
 
         @Override
@@ -108,6 +115,12 @@ public interface SecurityContext
         public AuthSubject subject()
         {
             return subject;
+        }
+
+        @Override
+        public boolean isAdmin()
+        {
+            return true;
         }
 
         @Override
