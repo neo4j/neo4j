@@ -91,14 +91,14 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldDumpTheDatabaseToTheArchive() throws CommandFailed, IncorrectUsage, IOException
+    public void shouldDumpTheDatabaseToTheArchive() throws Exception
     {
         execute( "foo.db" );
         verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ), eq( archive ), any() );
     }
 
     @Test
-    public void shouldCalculateTheDatabaseDirectoryFromConfig() throws IOException, CommandFailed, IncorrectUsage
+    public void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
@@ -111,7 +111,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldHandleDatabaseSymlink() throws IOException, CommandFailed, IncorrectUsage
+    public void shouldHandleDatabaseSymlink() throws Exception
     {
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
@@ -132,7 +132,7 @@ public class DumpCommandTest
 
     @Test
     public void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory()
-            throws CommandFailed, IncorrectUsage, IOException
+            throws Exception
     {
         File to = testDirectory.directory( "some-dir" );
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo.db", "--to=" + to} );
@@ -140,7 +140,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldConvertToCanonicalPath() throws CommandFailed, IncorrectUsage, IOException
+    public void shouldConvertToCanonicalPath() throws Exception
     {
         new DumpCommand( homeDir, configDir, dumper )
                 .execute( new String[]{"--database=" + "foo.db", "--to=foo.dump"} );
@@ -149,7 +149,7 @@ public class DumpCommandTest
 
     @Test
     public void shouldNotCalculateTheArchiveNameIfPassedAnExistingFile()
-            throws CommandFailed, IncorrectUsage, IOException
+            throws Exception
     {
         Files.createFile( archive );
         execute( "foo.db" );
@@ -157,7 +157,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldRespectTheStoreLock() throws IOException, IncorrectUsage, CommandFailed
+    public void shouldRespectTheStoreLock() throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
 
@@ -168,21 +168,21 @@ public class DumpCommandTest
             execute( "foo.db" );
             fail( "expected exception" );
         }
-        catch ( CommandFailed | IllegalArgumentException e )
+        catch ( CommandFailed e )
         {
             assertThat( e.getMessage(), equalTo( "the database is in use -- stop Neo4j and try again" ) );
         }
     }
 
     @Test
-    public void shouldReleaseTheStoreLockAfterDumping() throws IOException, IncorrectUsage, CommandFailed
+    public void shouldReleaseTheStoreLockAfterDumping() throws Exception
     {
         execute( "foo.db" );
         assertCanLockStore( databaseDirectory );
     }
 
     @Test
-    public void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws IOException, IncorrectUsage
+    public void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws Exception
     {
         doThrow( IOException.class ).when( dumper ).dump( any(), any(), any() );
 
@@ -190,7 +190,7 @@ public class DumpCommandTest
         {
             execute( "foo.db" );
         }
-        catch ( CommandFailed | IllegalArgumentException ignored )
+        catch ( CommandFailed ignored )
         {
         }
 
@@ -199,7 +199,7 @@ public class DumpCommandTest
 
     @Test
     public void shouldNotAccidentallyCreateTheDatabaseDirectoryAsASideEffectOfStoreLocking()
-            throws CommandFailed, IncorrectUsage, IOException
+            throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/accident.db" );
 
@@ -213,7 +213,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws IOException, IncorrectUsage
+    public void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
         assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
 
@@ -227,7 +227,7 @@ public class DumpCommandTest
                 execute( "foo.db" );
                 fail( "expected exception" );
             }
-            catch ( CommandFailed | IllegalArgumentException e )
+            catch ( CommandFailed e )
             {
                 assertThat( e.getMessage(), equalTo( "you do not have permission to dump the database -- is Neo4j " +
                         "running as a different user?" ) );
@@ -237,7 +237,7 @@ public class DumpCommandTest
 
     @Test
     public void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
-            throws CommandFailed, IncorrectUsage, IOException
+            throws Exception
     {
         doAnswer( invocation ->
         {
@@ -279,7 +279,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws IOException, IncorrectUsage
+    public void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception
     {
         doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any(), any() );
         try
@@ -287,28 +287,28 @@ public class DumpCommandTest
             execute( "foo.db" );
             fail( "expected exception" );
         }
-        catch ( CommandFailed | IllegalArgumentException e )
+        catch ( CommandFailed e )
         {
             assertThat( e.getMessage(), equalTo( "archive already exists: the-archive-path" ) );
         }
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheDatabaseDoesntExist() throws IOException, IncorrectUsage
+    public void shouldGiveAClearMessageIfTheDatabaseDoesntExist() throws Exception
     {
         try
         {
             execute( "bobo.db" );
             fail( "expected exception" );
         }
-        catch ( CommandFailed | IllegalArgumentException e )
+        catch ( CommandFailed e )
         {
             assertThat( e.getMessage(), equalTo( "database does not exist: bobo.db" ) );
         }
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws IOException, IncorrectUsage
+    public void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception
     {
         doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump( any(), any(), any() );
         try
@@ -316,7 +316,7 @@ public class DumpCommandTest
             execute( "foo.db" );
             fail( "expected exception" );
         }
-        catch ( CommandFailed | IllegalArgumentException e )
+        catch ( CommandFailed e )
         {
             assertThat( e.getMessage(),
                     equalTo( "unable to dump database: NoSuchFileException: " + archive.getParent() ) );
@@ -325,7 +325,7 @@ public class DumpCommandTest
 
     @Test
     public void shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
-            throws IOException, IncorrectUsage
+            throws Exception
     {
         doThrow( new IOException( "the-message" ) ).when( dumper ).dump( any(), any(), any() );
         try
@@ -340,7 +340,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    public void shouldPrintNiceHelp() throws Exception
     {
         Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
         Consumer<String> out = mock( Consumer.class );

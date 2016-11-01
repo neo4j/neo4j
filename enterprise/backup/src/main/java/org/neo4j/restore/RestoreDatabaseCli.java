@@ -80,7 +80,6 @@ public class RestoreDatabaseCli implements AdminCommand
         String fromPath;
         boolean forceOverwrite;
 
-        //Args args = Args.parse( incomingArguments );
         try
         {
             databaseName = arguments.parse( "database", incomingArguments );
