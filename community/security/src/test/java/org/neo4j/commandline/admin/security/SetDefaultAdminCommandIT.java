@@ -42,6 +42,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class SetDefaultAdminCommandIT
@@ -87,13 +88,36 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments() throws Throwable
+    public void shouldGetUsageOnWrongArguments1() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN );
+        assertNoAuthIniFile();
+
+        verify( out ).stdErrLine( "No username specified." );
+        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
+        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( "Sets the user to become admin if users but no roles are present, for example\n" +
+                "when upgrading to neo4j 3.1 enterprise." );
+        verify( out ).exit( 1 );
+        verifyNoMoreInteractions( out );
+        verify( out, times( 0 ) ).stdOutLine( anyString() );
+    }
+
+    @Test
+    public void shouldGetUsageOnWrongArguments2() throws Throwable
+    {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "foo", "bar" );
         assertNoAuthIniFile();
 
-        verify( out, times( 2 ) ).stdErrLine( "neo4j-admin set-default-admin <username>" );
+        verify( out ).stdErrLine( "Too many arguments." );
+        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
+        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( "Sets the user to become admin if users but no roles are present, for example\n" +
+                "when upgrading to neo4j 3.1 enterprise." );
+        verify( out ).exit( 1 );
+        verifyNoMoreInteractions( out );
         verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
 

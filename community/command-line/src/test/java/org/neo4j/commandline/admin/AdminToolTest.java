@@ -19,11 +19,10 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.nio.file.Path;
-
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.NoSuchElementException;
@@ -73,7 +72,7 @@ public class AdminToolTest
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), new NullBlockerLocator(), outsideWorld, false ).execute( null, null );
         verify( outsideWorld ).stdErrLine( "you must provide a command" );
-        verify( outsideWorld ).stdErrLine( "Usage: neo4j-admin <command>" );
+        verify( outsideWorld ).stdErrLine( "usage: neo4j-admin <command>" );
         verify( outsideWorld ).exit( 1 );
     }
 
