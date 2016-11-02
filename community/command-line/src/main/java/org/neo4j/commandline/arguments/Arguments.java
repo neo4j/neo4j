@@ -42,8 +42,9 @@ import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 public class Arguments
 {
     public static final Arguments NO_ARGS = new Arguments();
-    public static final int LINE_LENGTH = 80;
-    public static final int MIN_RIGHT_COL_WIDTH = 30;
+    private static final int LINE_LENGTH = 80;
+    private static final int MIN_RIGHT_COL_WIDTH = 30;
+    private final static String NEWLINE = System.getProperty( "line.separator" );
     private final Map<String,NamedArgument> namedArgs;
     private final ArrayList<PositionalArgument> positionalArgs;
 
@@ -118,17 +119,17 @@ public class Arguments
             return wrappedText;
         }
 
-        wrappedText = String.join( "\n\n", wrappedText, "options:" );
+        wrappedText = String.join( NEWLINE + NEWLINE, wrappedText, "options:" );
 
         //noinspection OptionalGetWithoutIsPresent handled by if-statement above
         final int alignLength = namedArgs.values().stream()
                 .map( a -> a.optionsListing().length() )
                 .reduce( 0, Integer::max );
 
-        return String.join( "\n", wrappedText,
+        return String.join( NEWLINE, wrappedText,
                 namedArgs.values().stream()
                         .map( c -> formatArgumentDescription( alignLength, c ) )
-                        .collect( Collectors.joining( "\n" ) ) );
+                        .collect( Collectors.joining( NEWLINE ) ) );
     }
 
     public String formatArgumentDescription( final int longestAlignmentLength, final NamedArgument argument )
@@ -159,7 +160,7 @@ public class Arguments
             rightWidth = LINE_LENGTH - newLineIndent;
         }
 
-        final String[] rightLines = WordUtils.wrap( rightText, rightWidth ).split( "\n" );
+        final String[] rightLines = WordUtils.wrap( rightText, rightWidth ).split( NEWLINE );
 
         final String fmt = "%-" + (startOnNewLine ? newLineIndent : rightAlignIndex) + "s%s";
         String firstLine = String.format( fmt, leftText, startOnNewLine ? "" : rightLines[0] );
@@ -167,7 +168,7 @@ public class Arguments
         String rest = Arrays.stream( rightLines )
                 .skip( startOnNewLine ? 0 : 1 )
                 .map( l -> String.format( fmt, "", l ) )
-                .collect( Collectors.joining( "\n" ) );
+                .collect( Collectors.joining( NEWLINE ) );
 
         if ( rest.isEmpty() )
         {
@@ -175,7 +176,7 @@ public class Arguments
         }
         else
         {
-            return String.join( "\n", firstLine, rest );
+            return String.join( NEWLINE, firstLine, rest );
         }
     }
 
