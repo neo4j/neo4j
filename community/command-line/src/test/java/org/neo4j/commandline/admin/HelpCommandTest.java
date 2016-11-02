@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.NoSuchElementException;
@@ -33,9 +35,8 @@ import org.neo4j.commandline.arguments.Arguments;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class HelpCommandTest
@@ -106,21 +107,27 @@ public class HelpCommandTest
         CommandLocator commandLocator = mock( CommandLocator.class );
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
         when( commandProvider.name() ).thenReturn( "foobar" );
-        //when( commandProvider.arguments() ).thenReturn( Optional.of( "--baz --qux" ) );
         Arguments arguments = new Arguments().withDatabase();
         when( commandProvider.allArguments() ).thenReturn( arguments );
         when( commandProvider.possibleArguments() ).thenReturn( Collections.singletonList( arguments ) );
         when( commandProvider.description() ).thenReturn( "This is a description of the foobar command." );
         when( commandLocator.findProvider( "foobar" ) ).thenReturn( commandProvider );
 
-        HelpCommand helpCommand = new HelpCommand( new Usage( "neo4j-admin", commandLocator ), out, commandLocator );
-        helpCommand.execute( "foobar" );
+        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
+        {
+            PrintStream ps = new PrintStream( baos );
 
-        verify( out ).accept( "usage: neo4j-admin foobar [--database=<name>]" );
-        verify( out ).accept( "" );
-        verify( out ).accept(
-                "This is a description of the foobar command.\n\noptions:\n" +
-                "  --database=<name>   Name of database. [default:graph.db]" );
-        verifyNoMoreInteractions( out );
+            HelpCommand helpCommand = new HelpCommand( new Usage( "neo4j-admin", commandLocator ),
+                    ps::println, commandLocator );
+            helpCommand.execute( "foobar" );
+
+            assertEquals( String.format( "usage: neo4j-admin foobar [--database=<name>]%n" +
+                            "%n" +
+                            "This is a description of the foobar command.%n" +
+                            "%n" +
+                            "options:%n" +
+                            "  --database=<name>   Name of database. [default:graph.db]%n" ),
+                    baos.toString() );
+        }
     }
 }
