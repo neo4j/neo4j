@@ -113,6 +113,8 @@ public class DumpCommandTest
     @Test
     public void shouldHandleDatabaseSymlink() throws Exception
     {
+        assumeFalse( "Can't reliably create symlinks on windows", SystemUtils.IS_OS_WINDOWS );
+
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
 
