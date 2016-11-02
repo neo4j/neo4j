@@ -33,11 +33,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -51,11 +51,12 @@ public class RestoreDatabaseCommandTest
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void forceShouldRespectStoreLock() throws Exception
     {
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
         Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
 
@@ -67,6 +68,7 @@ public class RestoreDatabaseCommandTest
         createDbAt( fromPath, fromNodeCount );
         createDbAt( toPath, toNodeCount );
 
+        FileSystemAbstraction fs = fileSystemRule.get();
         try ( StoreLocker storeLocker = new StoreLocker( fs ) )
         {
             storeLocker.checkLock( toPath );
@@ -84,7 +86,6 @@ public class RestoreDatabaseCommandTest
     public void shouldNotCopyOverAndExistingDatabase() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
         Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
 
@@ -98,7 +99,7 @@ public class RestoreDatabaseCommandTest
         {
             // when
 
-            new RestoreDatabaseCommand( fs, fromPath, config, databaseName, false ).execute();
+            new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, false ).execute();
             fail( "Should have thrown exception" );
         }
         catch ( IllegalArgumentException exception )
@@ -113,7 +114,6 @@ public class RestoreDatabaseCommandTest
     public void shouldThrowExceptionIfBackupDirectoryDoesNotExist() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
         Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
 
@@ -126,7 +126,7 @@ public class RestoreDatabaseCommandTest
         {
             // when
 
-            new RestoreDatabaseCommand( fs, fromPath, config, databaseName, false ).execute();
+            new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, false ).execute();
             fail( "Should have thrown exception" );
         }
         catch ( IllegalArgumentException exception )
@@ -140,7 +140,6 @@ public class RestoreDatabaseCommandTest
     public void shouldAllowForcedCopyOverAnExistingDatabase() throws Exception
     {
         // given
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
         Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
 
@@ -153,7 +152,7 @@ public class RestoreDatabaseCommandTest
         createDbAt( toPath, toNodeCount );
 
         // when
-        new RestoreDatabaseCommand( fs, fromPath, config, databaseName, true ).execute();
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, true ).execute();
 
         // then
         GraphDatabaseService copiedDb = new GraphDatabaseFactory().newEmbeddedDatabase( toPath );

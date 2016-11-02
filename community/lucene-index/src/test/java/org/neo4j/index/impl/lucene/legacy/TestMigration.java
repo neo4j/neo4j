@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -37,15 +38,19 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestMigration
 {
+
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Test
     public void canReadAndUpgradeOldIndexStoreFormat() throws Exception
     {
@@ -149,7 +154,7 @@ public class TestMigration
 
     private void removeProvidersFromIndexDbFile( File storeDir )
     {
-        IndexConfigStore indexStore = new IndexConfigStore( storeDir, new DefaultFileSystemAbstraction() );
+        IndexConfigStore indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
         for ( Class<? extends PropertyContainer> cls : new Class[] {Node.class, Relationship.class} )
         {
             for ( String name : indexStore.getNames( cls ) )

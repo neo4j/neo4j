@@ -51,6 +51,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -385,7 +386,8 @@ public class ReadReplicaReplicationIT
     private void changeStoreId( File storeDir ) throws IOException
     {
         File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
             MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
         }
@@ -484,12 +486,14 @@ public class ReadReplicaReplicationIT
         }
     }
 
-    private long versionBy( File storeDir, BinaryOperator<Long> operator )
+    private long versionBy( File storeDir, BinaryOperator<Long> operator ) throws IOException
     {
-        File raftLogDir = new File( new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME ), PHYSICAL_LOG_DIRECTORY_NAME );
-        SortedMap<Long,File> logs =
-                new FileNames( raftLogDir ).getAllFiles( new DefaultFileSystemAbstraction(), mock( Log.class ) );
-        return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            File raftLogDir = new File( new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME ), PHYSICAL_LOG_DIRECTORY_NAME );
+            SortedMap<Long,File> logs = new FileNames( raftLogDir ).getAllFiles( fileSystem, mock( Log.class ) );
+            return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
+        }
     }
 
     private final BiConsumer<CoreGraphDatabase,Transaction> createSomeData = ( db, tx ) ->

@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -63,9 +64,7 @@ public class ConvertNonCausalClusteringStoreIT
     @Parameterized.Parameters(name = "Record format {0}")
     public static Collection<Object> data()
     {
-        return Arrays.asList( new Object[]{
-                StandardV3_0.NAME, HighLimit.NAME
-        } );
+        return Arrays.asList( new Object[]{StandardV3_0.NAME, HighLimit.NAME} );
     }
 
     @Test
@@ -74,14 +73,16 @@ public class ConvertNonCausalClusteringStoreIT
         // given
         File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
         int classicNodeCount = 1024;
-        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        File classicNeo4jStore = createClassicNeo4jStore( dbDir, fileSystem, classicNodeCount, recordFormat );
+        File classicNeo4jStore = createNeoStore( dbDir, classicNodeCount );
 
         Cluster cluster = this.clusterRule.withRecordFormat( recordFormat ).createCluster();
 
-        for ( CoreClusterMember core : cluster.coreMembers() )
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            fileSystem.copyRecursively( classicNeo4jStore, core.storeDir() );
+            for ( CoreClusterMember core : cluster.coreMembers() )
+            {
+                fileSystem.copyRecursively( classicNeo4jStore, core.storeDir() );
+            }
         }
 
         cluster.start();
@@ -113,6 +114,14 @@ public class ConvertNonCausalClusteringStoreIT
 
                 tx.success();
             }
+        }
+    }
+
+    private File createNeoStore( File dbDir, int classicNodeCount ) throws IOException
+    {
+        try (DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction())
+        {
+            return createClassicNeo4jStore( dbDir, fileSystem, classicNodeCount, recordFormat );
         }
     }
 }

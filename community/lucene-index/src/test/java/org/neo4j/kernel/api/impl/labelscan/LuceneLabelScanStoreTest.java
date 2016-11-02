@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -53,7 +54,6 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
@@ -67,6 +67,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -88,10 +89,13 @@ import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 @RunWith( Parameterized.class )
 public class LuceneLabelScanStoreTest
 {
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final ExpectedException expectedException = ExpectedException.none();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( expectedException )
+            .around( fileSystemRule );
 
     private static final long[] NO_LABELS = new long[0];
     private final BitmapDocumentFormat documentFormat;
@@ -598,7 +602,7 @@ public class LuceneLabelScanStoreTest
         life = new LifeSupport();
         monitor = new TrackingMonitor();
 
-        indexStorage = new PartitionedIndexStorage( directoryFactory, new DefaultFileSystemAbstraction(), dir,
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), dir,
                 LuceneLabelScanIndexBuilder.DEFAULT_INDEX_IDENTIFIER, false );
         LabelScanIndex index = LuceneLabelScanIndexBuilder.create()
                                 .withDirectoryFactory( directoryFactory )

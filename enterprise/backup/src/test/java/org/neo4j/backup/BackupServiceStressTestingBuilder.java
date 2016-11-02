@@ -247,6 +247,7 @@ public class BackupServiceStressTestingBuilder
             finally
             {
                 db.shutdown();
+                fileSystem.close();
             }
         }
 

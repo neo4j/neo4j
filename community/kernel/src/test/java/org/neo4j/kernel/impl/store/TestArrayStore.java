@@ -43,6 +43,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -53,6 +54,8 @@ public class TestArrayStore
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private DynamicArrayStore arrayStore;
     private NeoStores neoStores;
@@ -61,7 +64,7 @@ public class TestArrayStore
     public void before() throws Exception
     {
         File dir = testDirectory.graphDbDir();
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory factory = new StoreFactory( dir, Config.empty(), idGeneratorFactory, pageCache, fs,

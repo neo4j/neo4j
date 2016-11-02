@@ -36,6 +36,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
@@ -169,10 +171,10 @@ public class DatabaseRebuildToolTest
 
     private long lastAppliedTx( File storeDir )
     {
-        try
+        try ( FileSystemAbstraction fileSyste = new DefaultFileSystemAbstraction();
+              PageCache pageCache = createPageCache( new DefaultFileSystemAbstraction() ) )
         {
-            return MetaDataStore.getRecord( createPageCache( new DefaultFileSystemAbstraction() ),
-                    new File( storeDir, MetaDataStore.DEFAULT_NAME ),
+            return MetaDataStore.getRecord( pageCache, new File( storeDir, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.LAST_TRANSACTION_ID );
         }
         catch ( IOException e )

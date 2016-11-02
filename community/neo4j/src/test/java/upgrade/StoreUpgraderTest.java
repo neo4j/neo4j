@@ -43,7 +43,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -79,6 +78,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
@@ -116,15 +116,17 @@ public class StoreUpgraderTest
 {
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final ExpectedException expectedException = ExpectedException.none();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( expectedException )
+                                                .around( fileSystemRule )
                                                 .around( pageCacheRule )
                                                 .around( directory );
 
     private File dbDirectory;
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private final FileSystemAbstraction fileSystem = fileSystemRule.get();
     private StoreVersionCheck check;
     private final String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();

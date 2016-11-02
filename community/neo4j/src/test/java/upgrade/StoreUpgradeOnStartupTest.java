@@ -23,6 +23,7 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -35,7 +36,6 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -63,14 +64,18 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFi
 @RunWith( Parameterized.class )
 public class StoreUpgradeOnStartupTest
 {
+    private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
+    public RuleChain ruleChain = RuleChain.outerRule( testDir )
+            .around( fileSystemRule ).around( pageCacheRule );
+
     @Parameterized.Parameter( 0 )
     public String version;
 
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private FileSystemAbstraction fileSystem;
     private File workingDirectory;
     private StoreVersionCheck check;
 
@@ -88,6 +93,7 @@ public class StoreUpgradeOnStartupTest
     @Before
     public void setup() throws IOException
     {
+        fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         workingDirectory = testDir.directory( "working_" + version );
         check = new StoreVersionCheck( pageCache );

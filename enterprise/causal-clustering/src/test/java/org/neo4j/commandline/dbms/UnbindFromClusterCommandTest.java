@@ -91,29 +91,31 @@ public class UnbindFromClusterCommandTest
     public void shouldFailToUnbindLiveDatabase() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = new DefaultFileSystemAbstraction(); // because locking
-        fsa.mkdir( testDir.directory() );
-
-        UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
-                        mock( OutsideWorld.class ) );
-
-        FileLock fileLock = createLockedFakeDbDir( testDir.directory().toPath() );
-
-        try
+        try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() ) // because locking
         {
-            // when
-            command.execute( databaseName( "graph.db" ) );
-            fail();
-        }
-        catch ( CommandFailed e )
-        {
-            // then
-            assertThat( e.getMessage(), containsString( "Database is currently locked. Please shutdown Neo4j." ) );
-        }
-        finally
-        {
-            fileLock.release();
+            fsa.mkdir( testDir.directory() );
+
+            UnbindFromClusterCommand command =
+                    new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
+                            mock( OutsideWorld.class ) );
+
+            FileLock fileLock = createLockedFakeDbDir( testDir.directory().toPath() );
+
+            try
+            {
+                // when
+                command.execute( databaseName( "graph.db" ) );
+                fail();
+            }
+            catch ( CommandFailed e )
+            {
+                // then
+                assertThat( e.getMessage(), containsString( "Database is currently locked. Please shutdown Neo4j." ) );
+            }
+            finally
+            {
+                fileLock.release();
+            }
         }
     }
 

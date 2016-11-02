@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,10 +29,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -43,10 +44,13 @@ import static org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper
 
 public class PerTypeRelationshipSplitterTest
 {
+    private final RandomRule random = new RandomRule();
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public final RandomRule random = new RandomRule().withSeed( 1460373085111L );
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    public RuleChain ruleChain = RuleChain.outerRule( random )
+                                          .around( directory ).around( fileSystemRule );
 
     @Test
     public void shouldReturnTypesOneByOne() throws Exception
@@ -54,7 +58,7 @@ public class PerTypeRelationshipSplitterTest
         // GIVEN
         Collection<InputRelationship> expected = randomRelationships();
         InputIterable<InputRelationship> relationships = wrap( "test", expected );
-        InputCache inputCache = new InputCache( new DefaultFileSystemAbstraction(), directory.directory(),
+        InputCache inputCache = new InputCache( fileSystemRule.get(), directory.directory(),
                 StandardV3_0.RECORD_FORMATS, Configuration.DEFAULT );
         PerTypeRelationshipSplitter perType = new PerTypeRelationshipSplitter( relationships.iterator(),
                 types( expected ), type -> false, type -> Integer.parseInt( type.toString() ), inputCache );

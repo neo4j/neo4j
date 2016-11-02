@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -31,7 +32,7 @@ import org.junit.runners.Parameterized.Parameters;
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.Collection;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.RelationshipGroupDefragmenter.Monitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
@@ -56,7 +58,6 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 @RunWith( Parameterized.class )
@@ -72,10 +73,12 @@ public class RelationshipGroupDefragmenterTest
                 new Object[] {new ForcedSecondaryUnitRecordFormats( StandardV3_0.RECORD_FORMATS ), 2} );
     }
 
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final RandomRule random = new RandomRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
-    @Rule
-    public final RandomRule random = new RandomRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( directory ).around( random ).around( fileSystemRule );
 
     @Parameter( 0 )
     public RecordFormats format;
@@ -87,7 +90,7 @@ public class RelationshipGroupDefragmenterTest
     @Before
     public void start()
     {
-        stores = new BatchingNeoStores( new DefaultFileSystemAbstraction(),
+        stores = new BatchingNeoStores( fileSystemRule.get(),
                 directory.absolutePath(), format, CONFIG, NullLogService.getInstance(),
                 AdditionalInitialIds.EMPTY, Config.defaults() );
     }

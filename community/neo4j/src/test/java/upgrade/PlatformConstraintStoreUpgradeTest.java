@@ -28,12 +28,11 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -43,16 +42,17 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSam
 public class PlatformConstraintStoreUpgradeTest
 {
     @Rule
-    public TestDirectory storeDir = TestDirectory.testDirectory();
+    public final TestDirectory storeDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    private FileSystemAbstraction fileSystem;
     private File prepareDir;
     private File workingDir;
 
     @Before
     public void setup()
     {
-        fileSystem = new DefaultFileSystemAbstraction();
+
         prepareDir = storeDir.directory( "prepare" );
         workingDir = storeDir.directory( "working" );
     }
@@ -60,7 +60,7 @@ public class PlatformConstraintStoreUpgradeTest
     @Test
     public void shouldFailToStartWithCustomIOConfigurationTest() throws IOException
     {
-        prepareSampleLegacyDatabase( StandardV2_2.STORE_VERSION, fileSystem, workingDir, prepareDir );
+        prepareSampleLegacyDatabase( StandardV2_2.STORE_VERSION, fileSystemRule.get(), workingDir, prepareDir );
         try
         {
             createGraphDatabaseService();

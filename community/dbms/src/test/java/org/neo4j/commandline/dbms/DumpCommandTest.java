@@ -44,6 +44,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.internal.StoreLocker;
@@ -164,7 +165,8 @@ public class DumpCommandTest
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
 
-        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker storeLocker = new StoreLocker( fileSystem ) )
         {
             storeLocker.checkLock( databaseDirectory.toFile() );
 
@@ -220,7 +222,8 @@ public class DumpCommandTest
     {
         assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
 
-        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker storeLocker = new StoreLocker( fileSystem ) )
         {
             storeLocker.checkLock( databaseDirectory.toFile() );
 
@@ -374,7 +377,8 @@ public class DumpCommandTest
 
     private void assertCanLockStore( Path databaseDirectory ) throws IOException
     {
-        try ( StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker storeLocker = new StoreLocker( fileSystem ) )
         {
             storeLocker.checkLock( databaseDirectory.toFile() );
         }

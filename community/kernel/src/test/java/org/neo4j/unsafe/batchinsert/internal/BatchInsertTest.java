@@ -58,8 +58,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -100,6 +98,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
@@ -193,12 +192,12 @@ public class BatchInsertTest
         properties.put( "key18", new char[] {1,2,3,4,5,6,7,8,9} );
     }
 
-    private static final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
-    @Rule
-    public TestDirectory storeDir = TestDirectory.testDirectory( getClass() );
     @ClassRule
     public static TestDirectory globalStoreDir = TestDirectory.testDirectory( BatchInsertTest.class );
+    @ClassRule
+    public static DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public TestDirectory storeDir = TestDirectory.testDirectory( getClass() );
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
@@ -210,7 +209,7 @@ public class BatchInsertTest
         // Global inserter can be used in tests which simply want to verify "local" behaviour,
         // e.g. create a node with some properties and read them back.
         globalInserter = BatchInserters.inserter(
-                globalStoreDir.directory( "global" ), fs, stringMap() );
+                globalStoreDir.directory( "global" ), fileSystemRule.get(), stringMap() );
     }
 
     @After
@@ -223,7 +222,6 @@ public class BatchInsertTest
     public static void shutDownGlobalInserter() throws Exception
     {
         globalInserter.shutdown();
-        fs.close();
     }
 
     private Map<String, String> configuration()
@@ -233,28 +231,28 @@ public class BatchInsertTest
 
     private BatchInserter newBatchInserter() throws Exception
     {
-        return BatchInserters.inserter( storeDir.absolutePath(), fs, configuration() );
+        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration() );
     }
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 provider, new InMemoryLabelScanStoreExtension() );
-        return BatchInserters.inserter( storeDir.absolutePath(), fs, configuration(), extensions );
+        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), extensions );
     }
 
     private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider ) throws Exception
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 new InMemoryIndexProviderFactory(), provider );
-        return BatchInserters.inserter( storeDir.absolutePath(), fs, configuration(), extensions );
+        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), extensions );
     }
 
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
     {
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs );
+        factory.setFileSystem( fileSystemRule.get() );
         GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( new File( inserter.getStoreDir() ) )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( configuration() )

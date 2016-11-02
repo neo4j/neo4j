@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -53,7 +54,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -63,6 +63,7 @@ import org.neo4j.test.Randoms;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
@@ -92,11 +93,12 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrat
 @RunWith( Parameterized.class )
 public class ParallelBatchImporterTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final RandomRule random = new RandomRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public final RandomRule random = new RandomRule();
+    public RuleChain ruleChain = RuleChain.outerRule( directory ).around( random ).around( fileSystemRule );
 
     private static final int NODE_COUNT = 10_000;
     private static final int RELATIONSHIPS_PER_NODE = 5;
@@ -161,7 +163,7 @@ public class ParallelBatchImporterTest
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         final BatchImporter inserter = new ParallelBatchImporter( directory.graphDbDir(),
-                new DefaultFileSystemAbstraction(), config, NullLogService.getInstance(),
+                fileSystemRule.get(), config, NullLogService.getInstance(),
                 processorAssigner, EMPTY, Config.empty(), getFormat() );
 
         boolean successful = false;

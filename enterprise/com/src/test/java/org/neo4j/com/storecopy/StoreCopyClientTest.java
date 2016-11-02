@@ -19,6 +19,7 @@
  */
 package org.neo4j.com.storecopy;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -36,7 +37,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -58,6 +58,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -76,14 +77,22 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreCopyClientTest
 {
-    private TestDirectory testDir = TestDirectory.testDirectory();
-    private PageCacheRule pageCacheRule = new PageCacheRule();
-    private CleanupRule cleanup = new CleanupRule();
+    private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final CleanupRule cleanup = new CleanupRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public TestRule rules = RuleChain.outerRule( testDir ).around( pageCacheRule ).around( cleanup );
+    public TestRule rules = RuleChain.outerRule( testDir ).around( fileSystemRule ).
+                                      around( pageCacheRule ).around( cleanup );
 
-    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private FileSystemAbstraction fileSystem;
+
+    @Before
+    public void setUp()
+    {
+        fileSystem = fileSystemRule.get();
+    }
 
     @Test
     public void shouldCopyStoreFilesAcrossIfACancellationRequestHappensAfterTheTempStoreHasBeenRecovered()
@@ -104,9 +113,10 @@ public class StoreCopyClientTest
             }
         };
 
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreCopyClient copier =
-                new StoreCopyClient( copyDir, Config.empty(), loadKernelExtensions(), NullLogProvider.getInstance(), fs,
+                new StoreCopyClient( copyDir, Config.empty(), loadKernelExtensions(), NullLogProvider.getInstance(),
+                        fileSystem,
                         pageCache, storeCopyMonitor, false );
 
         final GraphDatabaseAPI original =
@@ -119,7 +129,7 @@ public class StoreCopyClientTest
         }
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                spy( new LocalStoreCopyRequester( original, originalDir, fs ) );
+                spy( new LocalStoreCopyRequester( original, originalDir, fileSystem ) );
 
         // when
         copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
@@ -158,14 +168,15 @@ public class StoreCopyClientTest
     {
         final File copyDir = new File( testDir.directory(), "copy" );
         final File originalDir = new File( testDir.directory(), "original" );
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         Config config = Config.empty().augment( stringMap( record_format.name(), recordFormatsName ) );
         StoreCopyClient copier = new StoreCopyClient(
-                copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache,
+                copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
                 new StoreCopyClient.Monitor.Adapter(), false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, recordFormatsName );
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = new LocalStoreCopyRequester( original, originalDir, fs );
+        StoreCopyClient.StoreCopyRequester storeCopyRequest = new LocalStoreCopyRequester( original, originalDir,
+                fileSystem );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );
 
@@ -194,9 +205,9 @@ public class StoreCopyClientTest
             }
         };
 
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreCopyClient copier = new StoreCopyClient(
-                copyDir, Config.empty(), loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache,
+                copyDir, Config.empty(), loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
                 storeCopyMonitor, false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir );
@@ -208,7 +219,7 @@ public class StoreCopyClientTest
         }
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                spy( new LocalStoreCopyRequester( original, originalDir, fs ) );
+                spy( new LocalStoreCopyRequester( original, originalDir, fileSystem ) );
 
         // when
         copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
@@ -235,8 +246,10 @@ public class StoreCopyClientTest
         File initialStore = testDir.directory( "initialStore" );
         File backupStore = testDir.directory( "backupStore" );
 
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
+
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         createInitialDatabase( initialStore );
+
         long originalTransactionOffset =
                 MetaDataStore.getRecord( pageCache, new File( initialStore, MetaDataStore.DEFAULT_NAME ),
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
@@ -244,10 +257,10 @@ public class StoreCopyClientTest
 
         StoreCopyClient copier =
                 new StoreCopyClient( backupStore, Config.empty(), loadKernelExtensions(), NullLogProvider
-                        .getInstance(), fs, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
+                        .getInstance(), fileSystem, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                new LocalStoreCopyRequester( (GraphDatabaseAPI) initialDatabase, initialStore, fs );
+                new LocalStoreCopyRequester( (GraphDatabaseAPI) initialDatabase, initialStore, fileSystem );
 
         // WHEN
         copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting() );
@@ -268,16 +281,16 @@ public class StoreCopyClientTest
         File initialStore = testDir.directory( "initialStore" );
         File backupStore = testDir.directory( "backupStore" );
 
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         GraphDatabaseService initialDatabase = createInitialDatabase( initialStore );
         StoreCopyClient copier =
                 new StoreCopyClient( backupStore, Config.empty(), loadKernelExtensions(), NullLogProvider
-                        .getInstance(), fs, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
+                        .getInstance(), fileSystem, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
 
         RuntimeException exception = new RuntimeException( "Boom!" );
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                new LocalStoreCopyRequester( (GraphDatabaseAPI) initialDatabase, initialStore, fs )
+                new LocalStoreCopyRequester( (GraphDatabaseAPI) initialDatabase, initialStore, fileSystem )
                 {
                     @Override
                     public void done()

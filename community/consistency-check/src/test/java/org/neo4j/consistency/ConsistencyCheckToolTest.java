@@ -208,6 +208,9 @@ public class ConsistencyCheckToolTest
     private void runConsistencyCheckToolWith( ConsistencyCheckService
             consistencyCheckService, PrintStream systemError, String... args ) throws ToolFailureException, IOException
     {
-        new ConsistencyCheckTool( consistencyCheckService, new DefaultFileSystemAbstraction(), systemError ).run( args );
+        try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction() )
+        {
+            new ConsistencyCheckTool( consistencyCheckService, fileSystemAbstraction, systemError ).run( args );
+        }
     }
 }

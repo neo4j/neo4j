@@ -26,9 +26,9 @@ import org.junit.runners.Suite;
 
 import java.io.File;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
 @RunWith( ParameterizedSuiteRunner.class )
@@ -42,13 +42,17 @@ import org.neo4j.test.runner.ParameterizedSuiteRunner;
 public abstract class IndexProviderCompatibilityTestSuite
 {
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public final TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+
     protected File graphDbDir;
-    protected FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    protected FileSystemAbstraction fs = fileSystemRule.get();
 
     @Before
     public void setup()
     {
+        fs = fileSystemRule.get();
         graphDbDir = testDir.graphDbDir();
     }
 

@@ -28,6 +28,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -81,7 +82,8 @@ public class BatchInserterImplTest
     {
         // Given
         File parent = testDirectory.graphDbDir();
-        try ( StoreLocker lock = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+              StoreLocker lock = new StoreLocker( fileSystemAbstraction ) )
         {
             lock.checkLock( parent );
 

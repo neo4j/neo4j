@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -72,6 +73,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -84,10 +86,13 @@ import static org.neo4j.upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirI
 @RunWith( Parameterized.class )
 public class StoreMigratorFrom20IT
 {
+    private final TestDirectory storeDir = TestDirectory.testDirectory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public final TestDirectory storeDir = TestDirectory.testDirectory();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    public RuleChain ruleChain = RuleChain.outerRule( storeDir )
+                                          .around( fileSystemRule ).around( pageCacheRule );
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();

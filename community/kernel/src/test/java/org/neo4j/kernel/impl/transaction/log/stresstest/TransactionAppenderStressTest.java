@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -44,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
@@ -111,9 +109,9 @@ public class TransactionAppenderStressTest
 
         public long parseAllTxLogs() throws IOException
         {
-            FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
             long txId = -1;
-            try ( ReadableLogChannel channel = openLogFile( fs, 0 ) )
+            try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+                  ReadableLogChannel channel = openLogFile( fs, 0 ) )
             {
                 LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
                 LogEntry logEntry = reader.readLogEntry( channel );

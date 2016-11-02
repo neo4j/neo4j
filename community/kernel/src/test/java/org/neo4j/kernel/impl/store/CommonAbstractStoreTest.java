@@ -31,7 +31,6 @@ import java.nio.file.OpenOption;
 import java.util.Arrays;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -57,6 +56,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.hamcrest.Matchers.empty;
@@ -100,12 +100,12 @@ public class CommonAbstractStoreTest
     private final RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
     private final IdType idType = IdType.RELATIONSHIP; // whatever
 
-    private static final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private static final TestDirectory dir = testDirectory( fs );
+    private static final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private static final TestDirectory dir = testDirectory( fileSystemRule.get() );
     private static final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @ClassRule
-    public static final RuleChain ruleChain = RuleChain.outerRule( dir ).around( pageCacheRule );
+    public static final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( dir ).around( pageCacheRule );
 
     @Before
     public void setUpMocks() throws IOException
@@ -158,9 +158,9 @@ public class CommonAbstractStoreTest
     {
         File storeFile = dir.file( "a" );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer( Pin.class );
-        PageCache pageCache = pageCacheRule.getPageCache( fs, tracer, Config.empty() );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), tracer, Config.empty() );
 
-        try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fs ),
+        try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCache, NullLogProvider.getInstance(), null, StandardV3_0.RECORD_FORMATS ) )
         {
             store.initialise( true );
@@ -271,6 +271,7 @@ public class CommonAbstractStoreTest
         // GIVEN
         File file = dir.file( "store" ).getAbsoluteFile();
         File idFile = new File( file.getParentFile(), StoreFileType.ID.augment( file.getName() ) );
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs, PageCacheTracer.NULL, Config.empty() );
         TheStore store = new TheStore( file, config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
                 NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );

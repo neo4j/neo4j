@@ -33,7 +33,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -54,6 +53,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -65,6 +65,8 @@ public class NonUniqueIndexTests
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory( getClass() );
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws IOException
@@ -152,7 +154,7 @@ public class NonUniqueIndexTests
     private List<Long> nodeIdsInIndex( int indexId, String value ) throws IOException
     {
         Config config = Config.empty();
-        SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
+        SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( fileSystemRule.get(),
                 DirectoryFactory.PERSISTENT, directory.graphDbDir(), NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
         IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );

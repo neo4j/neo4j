@@ -30,8 +30,6 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -51,6 +49,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -72,16 +71,16 @@ public class TransactionLogAppendAndRotateIT
 {
     private final LifeRule life = new LifeRule( true );
     private final TestDirectory directory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public final RuleChain chain = outerRule( directory ).around( life );
+    public final RuleChain chain = outerRule( directory ).around( life ).around( fileSystemRule );
 
     @Test
     public void shouldKeepTransactionsIntactWhenConcurrentlyRotationAndAppending() throws Throwable
     {
         // GIVEN
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory().getAbsoluteFile(), fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory().getAbsoluteFile(), fileSystemRule.get() );
         long rotationThreshold = mebiBytes( 1 );
         LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
         final AtomicBoolean end = new AtomicBoolean();
@@ -89,7 +88,7 @@ public class TransactionLogAppendAndRotateIT
         TransactionIdStore txIdStore = new DeadSimpleTransactionIdStore();
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
         LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, rotationThreshold,
+        LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, rotationThreshold,
                 () -> txIdStore.getLastCommittedTransactionId(), logVersionRepository, monitoring, logHeaderCache ) );
         monitoring.setLogFile( logFile );
         DatabaseHealth health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );

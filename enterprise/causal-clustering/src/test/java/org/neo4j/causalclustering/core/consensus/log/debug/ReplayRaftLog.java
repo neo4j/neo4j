@@ -58,27 +58,28 @@ public class ReplayRaftLog
         System.out.println( "logDirectory = " + logDirectory );
         Config config = new Config( stringMap() );
 
-        LogProvider logProvider = getInstance();
-        CoreLogPruningStrategy pruningStrategy =
-                new CoreLogPruningStrategyFactory( config.get( raft_log_pruning_strategy ), logProvider )
-                        .newInstance();
-        SegmentedRaftLog log = new SegmentedRaftLog( new DefaultFileSystemAbstraction(), logDirectory,
-                config.get( raft_log_rotation_size ), new CoreReplicatedContentMarshal(), logProvider,
-                config.get( raft_log_reader_pool_size ), Clocks.systemClock(), new OnDemandJobScheduler(),
-                pruningStrategy );
-
-        long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index
-        for ( int i = 0; i <= totalCommittedEntries; i++ )
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            ReplicatedContent content = readLogEntry( log, i ).content();
-            if ( content instanceof ReplicatedTransaction )
+            LogProvider logProvider = getInstance();
+            CoreLogPruningStrategy pruningStrategy =
+                    new CoreLogPruningStrategyFactory( config.get( raft_log_pruning_strategy ), logProvider ).newInstance();
+            SegmentedRaftLog log = new SegmentedRaftLog( fileSystem, logDirectory, config.get( raft_log_rotation_size ),
+                    new CoreReplicatedContentMarshal(), logProvider, config.get( raft_log_reader_pool_size ), Clocks.systemClock(), new OnDemandJobScheduler(),
+                    pruningStrategy );
+
+            long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index
+            for ( int i = 0; i <= totalCommittedEntries; i++ )
             {
-                ReplicatedTransaction tx = (ReplicatedTransaction) content;
-                ReplicatedTransactionFactory.extractTransactionRepresentation( tx, new byte[0] ).accept(
-                        element -> {
-                            System.out.println(element);
-                            return false;
-                        } );
+                ReplicatedContent content = readLogEntry( log, i ).content();
+                if ( content instanceof ReplicatedTransaction )
+                {
+                    ReplicatedTransaction tx = (ReplicatedTransaction) content;
+                    ReplicatedTransactionFactory.extractTransactionRepresentation( tx, new byte[0] ).accept( element ->
+                    {
+                        System.out.println( element );
+                        return false;
+                    } );
+                }
             }
         }
     }

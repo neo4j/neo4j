@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -171,25 +172,27 @@ public class IdGeneratorImplTest
     public void shouldForceStickyMark() throws Exception
     {
         // GIVEN
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File dir = new File( "target/test-data/" + getClass().getName() );
-        fs.mkdirs( dir );
-        File file = new File( dir, "ids" );
-        fs.deleteFile( file );
-        IdGeneratorImpl.createGenerator( fs, file, 0, false );
-
-        // WHEN opening the id generator, where the jvm crashes right after
-        executeSubProcess( getClass(), 1, MINUTES, file.getAbsolutePath() );
-
-        // THEN
-        try
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            IdGeneratorImpl.readHighId( fs, file );
-            fail( "Should have thrown, saying something with sticky generator" );
-        }
-        catch ( InvalidIdGeneratorException e )
-        {
-            // THEN Good
+            File dir = new File( "target/test-data/" + getClass().getName() );
+            fs.mkdirs( dir );
+            File file = new File( dir, "ids" );
+            fs.deleteFile( file );
+            IdGeneratorImpl.createGenerator( fs, file, 0, false );
+
+            // WHEN opening the id generator, where the jvm crashes right after
+            executeSubProcess( getClass(), 1, MINUTES, file.getAbsolutePath() );
+
+            // THEN
+            try
+            {
+                IdGeneratorImpl.readHighId( fs, file );
+                fail( "Should have thrown, saying something with sticky generator" );
+            }
+            catch ( InvalidIdGeneratorException e )
+            {
+                // THEN Good
+            }
         }
     }
 
@@ -245,10 +248,13 @@ public class IdGeneratorImplTest
         assertEquals( 30, idGenerator.nextId() );
     }
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         // Leave it opened
-        new IdGeneratorImpl( new DefaultFileSystemAbstraction(), new File( args[0] ), 100, 100, false, 42 );
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            new IdGeneratorImpl( fileSystem, new File( args[0] ), 100, 100, false, 42 );
+        }
         System.exit( 0 );
     }
 }

@@ -30,12 +30,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -47,12 +47,14 @@ import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
 public class StoreLockerTest
 {
     @Rule
-    public TestDirectory target = TestDirectory.testDirectory();
+    public final TestDirectory target = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void shouldObtainLockWhenStoreFileNotLocked() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
             @Override
             public boolean fileExists( File fileName )
@@ -76,7 +78,7 @@ public class StoreLockerTest
     @Test
     public void shouldCreateStoreDirAndObtainLockWhenStoreDirDoesNotExist() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
             @Override
             public boolean fileExists( File fileName )
@@ -95,7 +97,7 @@ public class StoreLockerTest
     @Test
     public void shouldNotObtainLockWhenStoreDirCannotBeCreated() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
             @Override
             public void mkdirs( File fileName ) throws IOException
@@ -129,7 +131,7 @@ public class StoreLockerTest
     @Test
     public void shouldNotObtainLockWhenUnableToOpenLockFile() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
             @Override
             public StoreChannel open( File fileName, String mode ) throws IOException
@@ -164,7 +166,7 @@ public class StoreLockerTest
     @Test
     public void shouldNotObtainLockWhenStoreAlreadyInUse() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
             @Override
             public boolean fileExists( File fileName )

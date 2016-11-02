@@ -57,37 +57,41 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
 
     private void readAndWrite( int nReaders, int time, TimeUnit unit ) throws Throwable
     {
-        DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
-        T raftLog = createRaftLog( fsa, dir.directory() );
-
-        try
+        try ( DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )
         {
-            ExecutorService es = Executors.newCachedThreadPool();
+            T raftLog = createRaftLog( fsa, dir.directory() );
 
-            Collection<Future<Long>> futures = new ArrayList<>();
-
-            futures.add( es.submit( new TimedTask( () -> {
-                write( raftLog );
-            }, time, unit ) ) );
-
-            for ( int i = 0; i < nReaders; i++ )
+            try
             {
-                futures.add( es.submit( new TimedTask( () -> {
-                    read( raftLog );
+                ExecutorService es = Executors.newCachedThreadPool();
+
+                Collection<Future<Long>> futures = new ArrayList<>();
+
+                futures.add( es.submit( new TimedTask( () ->
+                {
+                    write( raftLog );
                 }, time, unit ) ) );
-            }
 
-            for ( Future<Long> f : futures )
+                for ( int i = 0; i < nReaders; i++ )
+                {
+                    futures.add( es.submit( new TimedTask( () ->
+                    {
+                        read( raftLog );
+                    }, time, unit ) ) );
+                }
+
+                for ( Future<Long> f : futures )
+                {
+                    long iterations = f.get();
+                }
+
+                es.shutdown();
+            }
+            finally
             {
-                long iterations = f.get();
+                //noinspection ThrowFromFinallyBlock
+                raftLog.shutdown();
             }
-
-            es.shutdown();
-        }
-        finally
-        {
-            //noinspection ThrowFromFinallyBlock
-            raftLog.shutdown();
         }
     }
 

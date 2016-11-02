@@ -52,6 +52,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final Log log;
     private Config config;
     private OperationalMode operationalMode;
+    private FileSystemAbstraction fileSystem;
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
                                       File storeDir, LogProvider logging, Config config,
@@ -60,6 +61,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         File schemaIndexStoreFolder = getSchemaIndexStoreDirectory( storeDir );
         this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory, schemaIndexStoreFolder );
+        this.fileSystem = fileSystem;
         this.config = config;
         this.operationalMode = operationalMode;
         this.log = logging.getLog( getClass() );
@@ -80,6 +82,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             IndexConfiguration indexConfiguration, IndexSamplingConfig samplingConfig )
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+                                        .withFileSystem( fileSystem )
                                         .withIndexConfig( indexConfiguration )
                                         .withConfig( config )
                                         .withOperationalMode( operationalMode )

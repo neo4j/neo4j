@@ -27,16 +27,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
+import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -160,20 +161,23 @@ public class RestartIT
         cluster.addCoreMemberWithId( 2 ).start();
         cluster.shutdown();
 
-        for ( CoreClusterMember core : cluster.coreMembers() )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    core.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
-                    FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction(), false );
-            assertTrue( "Inconsistent: " + core, result.isSuccessful() );
-        }
+            for ( CoreClusterMember core : cluster.coreMembers() )
+            {
+                ConsistencyCheckService.Result result = new ConsistencyCheckService()
+                        .runFullConsistencyCheck( core.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
+                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false );
+                assertTrue( "Inconsistent: " + core, result.isSuccessful() );
+            }
 
-        for ( ReadReplica readReplica : cluster.readReplicas() )
-        {
-            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    readReplica.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
-                    FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction(), false );
-            assertTrue( "Inconsistent: " + readReplica, result.isSuccessful() );
+            for ( ReadReplica readReplica : cluster.readReplicas() )
+            {
+                ConsistencyCheckService.Result result = new ConsistencyCheckService()
+                        .runFullConsistencyCheck( readReplica.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
+                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false );
+                assertTrue( "Inconsistent: " + readReplica, result.isSuccessful() );
+            }
         }
     }
 }

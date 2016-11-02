@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,11 +33,11 @@ import java.io.IOException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
@@ -44,10 +45,14 @@ import static org.junit.Assert.assertSame;
 
 public class WritableIndexReferenceFactoryTest
 {
+
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final CleanupRule cleanupRule = new CleanupRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public CleanupRule cleanupRule = new CleanupRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory )
+            .around( cleanupRule ).around( fileSystemRule );
 
     private static final String INDEX_NAME = "testIndex";
 
@@ -116,9 +121,8 @@ public class WritableIndexReferenceFactoryTest
 
     private void setupIndexInfrastructure() throws IOException
     {
-        DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         File storeDir = getStoreDir();
-        indexStore = new IndexConfigStore( storeDir, fileSystemAbstraction );
+        indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
         indexStore.set( Node.class, INDEX_NAME, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
     }
 

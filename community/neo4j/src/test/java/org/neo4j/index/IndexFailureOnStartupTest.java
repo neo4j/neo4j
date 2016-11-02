@@ -121,17 +121,19 @@ public class IndexFailureOnStartupTest
         assertThat( archiveFile(), notNullValue() );
     }
 
-    private File archiveFile()
+    private File archiveFile() throws IOException
     {
-        File indexDir = soleIndexDir( new DefaultFileSystemAbstraction(), new File( db.getStoreDir() ) );
-        File[] files = indexDir.getParentFile().listFiles(
-                pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
-        if ( files == null || files.length == 0 )
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            return null;
+            File indexDir = soleIndexDir( fs, new File( db.getStoreDir() ) );
+            File[] files = indexDir.getParentFile().listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
+            if ( files == null || files.length == 0 )
+            {
+                return null;
+            }
+            assertEquals( 1, files.length );
+            return files[0];
         }
-        assertEquals( 1, files.length );
-        return files[0];
     }
 
     private void awaitIndexesOnline( int timeout, TimeUnit unit )

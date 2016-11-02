@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -29,10 +30,9 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -48,6 +48,9 @@ public class LogHeaderReaderTest
 {
     private final long expectedLogVersion = CURRENT_LOG_VERSION;
     private final long expectedTxId = 42;
+
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void shouldReadALogHeaderFromAByteChannel() throws IOException
@@ -99,20 +102,19 @@ public class LogHeaderReaderTest
     public void shouldReadALogHeaderFromAFile() throws IOException
     {
         // given
-        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         final File file = File.createTempFile( "ReadLogHeader", getClass().getSimpleName() );
 
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         buffer.putLong( encodeLogVersion( expectedLogVersion ) );
         buffer.putLong( expectedTxId );
 
-        try ( OutputStream stream = fs.openAsOutputStream( file, false ) )
+        try ( OutputStream stream = fileSystemRule.get().openAsOutputStream( file, false ) )
         {
             stream.write( buffer.array() );
         }
 
         // when
-        final LogHeader result = readLogHeader( fs, file );
+        final LogHeader result = readLogHeader( fileSystemRule.get(), file );
 
         // then
         assertEquals( new LogHeader( CURRENT_LOG_VERSION, expectedLogVersion, expectedTxId ), result );
@@ -123,12 +125,11 @@ public class LogHeaderReaderTest
     public void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException
     {
         // given
-        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         final File file = File.createTempFile( "ReadLogHeaderFail", getClass().getSimpleName() );
         try
         {
             // when
-            readLogHeader( fs, file );
+            readLogHeader( fileSystemRule.get(), file );
             fail( "should have thrown" );
         }
         catch ( IncompleteLogHeaderException ex )

@@ -23,12 +23,12 @@ import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.nio.file.Files;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -46,10 +47,12 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CsvOutputTest
 {
+    private final LifeRule life = new LifeRule();
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public final LifeRule life = new LifeRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( life );
 
     private KernelContext kernelContext;
 
@@ -57,7 +60,7 @@ public class CsvOutputTest
     public void setup()
     {
         File storeDir = directory.directory();
-        kernelContext = new SimpleKernelContext( new DefaultFileSystemAbstraction(), storeDir,
+        kernelContext = new SimpleKernelContext( fileSystemRule.get(), storeDir,
                 DatabaseInfo.UNKNOWN, new Dependencies() );
     }
 

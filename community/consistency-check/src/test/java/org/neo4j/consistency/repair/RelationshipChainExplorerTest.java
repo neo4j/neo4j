@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 
@@ -33,7 +34,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -50,10 +51,14 @@ public class RelationshipChainExplorerTest
 {
     private static final int NDegreeTwoNodes = 10;
 
+    private final TestDirectory storeLocation = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
-    public TestDirectory storeLocation = TestDirectory.testDirectory();
+    public RuleChain ruleChain = RuleChain.outerRule( storeLocation ).around( fileSystemRule );
+
     private StoreAccess store;
 
     @Before
@@ -141,8 +146,8 @@ public class RelationshipChainExplorerTest
             transaction.success();
         }
         database.shutdown();
-        PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        StoreAccess storeAccess = new StoreAccess( new DefaultFileSystemAbstraction(), pageCache, storeDirectory,
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
+        StoreAccess storeAccess = new StoreAccess( fileSystemRule.get(), pageCache, storeDirectory,
                 Config.empty() );
         return storeAccess.initialize();
     }

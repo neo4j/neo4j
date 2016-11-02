@@ -73,7 +73,7 @@ public class CheckPointingLogRotationStressTesting
         String pageSize = fromEnv( "CHECK_POINT_LOG_ROTATION_PAGE_SIZE", DEFAULT_PAGE_SIZE );
 
         System.out.println( "1/6\tBuilding initial store..." );
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction())
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
             new ParallelBatchImporter( ensureExistsAndEmpty( storeDir ), fileSystem, DEFAULT,
                     NullLogService.getInstance(), ExecutionMonitors.defaultVisible(), Config.defaults() )

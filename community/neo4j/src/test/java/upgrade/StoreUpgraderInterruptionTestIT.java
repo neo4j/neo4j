@@ -21,6 +21,7 @@ package upgrade;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -35,7 +36,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -74,6 +75,15 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoSt
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
 {
+
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( directory )
+                                          .around( fileSystemRule ).around( pageCacheRule );
+
     @Parameterized.Parameter
     public String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
@@ -91,11 +101,7 @@ public class StoreUpgraderInterruptionTestIT
         );
     }
 
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final FileSystemAbstraction fs = fileSystemRule.get();
 
     @Test
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration()

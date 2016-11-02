@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -49,7 +50,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
@@ -57,7 +57,8 @@ public class PhysicalLogFileTest
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore =
             new DeadSimpleTransactionIdStore( 5L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
@@ -68,6 +69,7 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LifeSupport life = new LifeSupport();
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore::getLastCommittedTransactionId,
                 logVersionRepository, mock( Monitor.class ), new LogHeaderCache( 10 ) ) );
@@ -89,6 +91,7 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LifeSupport life = new LifeSupport();
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         Monitor monitor = mock( Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
@@ -128,6 +131,7 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LifeSupport life = new LifeSupport();
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
                 transactionIdStore::getLastCommittedTransactionId, logVersionRepository, mock( Monitor.class ),
@@ -180,6 +184,7 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LifeSupport life = new LifeSupport();
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
                 transactionIdStore::getLastCommittedTransactionId, logVersionRepository, mock( Monitor.class ),

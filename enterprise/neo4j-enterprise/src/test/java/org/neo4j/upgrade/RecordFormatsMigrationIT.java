@@ -21,6 +21,7 @@ package org.neo4j.upgrade;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -32,8 +33,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -60,10 +60,11 @@ public class RecordFormatsMigrationIT
     private static final String PROPERTY = "legs";
     private static final int VALUE = 42;
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule.get() );
 
     @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory( fs );
+    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule );
 
     @Test
     public void migrateLatestStandardToLatestHighLimit() throws IOException
@@ -134,7 +135,7 @@ public class RecordFormatsMigrationIT
 
     private GraphDatabaseService startDb( String recordFormatName )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
                 .newGraphDatabase();
@@ -153,10 +154,10 @@ public class RecordFormatsMigrationIT
     private void assertStoreFormat( RecordFormats expected ) throws IOException
     {
         Config config = new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, config ) )
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystemRule.get(), config ) )
         {
-            RecordFormats actual = RecordFormatSelector.selectForStoreOrConfig( config, testDir.graphDbDir(), fs,
-                    pageCache, NullLogProvider.getInstance() );
+            RecordFormats actual = RecordFormatSelector.selectForStoreOrConfig( config, testDirectory.graphDbDir(),
+                    fileSystemRule.get(), pageCache, NullLogProvider.getInstance() );
             assertNotNull( actual );
             assertEquals( expected.storeVersion(), actual.storeVersion() );
         }

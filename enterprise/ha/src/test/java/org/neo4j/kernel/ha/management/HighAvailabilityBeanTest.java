@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.ha.management;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.function.Predicate;
-
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.cluster.InstanceId;
@@ -53,15 +54,13 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
@@ -79,8 +78,8 @@ public class HighAvailabilityBeanTest
     private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
     private final ClusterDatabaseInfoProvider dbInfoProvider =
             new ClusterDatabaseInfoProvider( clusterMembers, lastTxIdGetter, lastUpdateTime );
-    private final KernelData kerneData = new HighlyAvailableKernelData( db, clusterMembers, dbInfoProvider,
-            new DefaultFileSystemAbstraction(), null, new File( "storeDir" ), Config.empty() )
+    private DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private final KernelData kerneData = new HighlyAvailableKernelData( db, clusterMembers, dbInfoProvider, fileSystem, null, new File( "storeDir" ), Config.empty() )
     {
         @Override
         public Version version()
@@ -102,6 +101,12 @@ public class HighAvailabilityBeanTest
     {
         when( db.getDependencyResolver() ).thenReturn( dependencies );
         haBean = (HighAvailability) new HighAvailabilityBean().createMBean( data );
+    }
+
+    @After
+    public void tearDown() throws IOException
+    {
+        fileSystem.close();
     }
 
     @Test

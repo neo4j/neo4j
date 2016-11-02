@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration.participant;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -29,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -64,12 +65,15 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_T
 @RunWith( Parameterized.class )
 public class StoreMigratorIT
 {
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( pageCacheRule );
+
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final FileSystemAbstraction fs = fileSystemRule.get();
 
     @Parameterized.Parameter( 0 )
     public String version;
