@@ -11,7 +11,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>3.0.7-SNAPSHOT</version>
+  <version>3.0.8-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>Neo4j</name>
