@@ -23,6 +23,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import static org.junit.Assert.assertEquals;
 
 public class DatabaseTest
@@ -30,15 +33,15 @@ public class DatabaseTest
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
-    Database arg = new Database();
+    private Database arg = new Database();
 
     @Test
     public void parseDatabaseShouldThrowOnPath() throws Exception
     {
+        Path path = Paths.get( "data", "databases", "graph.db" );
         expected.expect( IllegalArgumentException.class );
-        expected.expectMessage(
-                "'database' should be a name but you seem to have specified a path: /data/databases/graph.db" );
-        arg.parse( "--database=/data/databases/graph.db" );
+        expected.expectMessage( "'database' should be a name but you seem to have specified a path: " + path );
+        arg.parse( "--database=" + path );
     }
 
     @Test
