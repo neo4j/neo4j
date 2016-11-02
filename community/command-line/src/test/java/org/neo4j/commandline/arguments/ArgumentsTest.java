@@ -19,9 +19,10 @@
  */
 package org.neo4j.commandline.arguments;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class ArgumentsTest
 {
@@ -37,40 +38,40 @@ public class ArgumentsTest
     @Test
     public void withDatabaseUsage() throws Exception
     {
-        Assert.assertEquals( "[--database=<name>]", builder.withDatabase().usage() );
+        assertEquals( "[--database=<name>]", builder.withDatabase().usage() );
     }
 
     @Test
     public void withDatabaseDescription() throws Exception
     {
-        Assert.assertEquals( "How to use\n\noptions:\n" +
-                        "  --database=<name>   Name of database. [default:graph.db]",
+        assertEquals( String.format( "How to use%n%noptions:%n" +
+                        "  --database=<name>   Name of database. [default:graph.db]" ),
                 builder.withDatabase().description( "How to use" ) );
     }
 
     @Test
     public void withDatabaseToUsage() throws Exception
     {
-        Assert.assertEquals( "[--database=<name>] --to=<destination-path>", builder.withDatabase().withTo(
+        assertEquals( "[--database=<name>] --to=<destination-path>", builder.withDatabase().withTo(
                 "Destination file." ).usage() );
     }
 
     @Test
     public void withDatabaseToDescription() throws Exception
     {
-        Assert.assertEquals( "How to use\n\noptions:\n" +
-                        "  --database=<name>         Name of database. [default:graph.db]\n" +
-                        "  --to=<destination-path>   Destination file.",
+        assertEquals( String.format( "How to use%n%noptions:%n" +
+                        "  --database=<name>         Name of database. [default:graph.db]%n" +
+                        "  --to=<destination-path>   Destination file." ),
                 builder.withDatabase().withTo( "Destination file." ).description( "How to use" ) );
     }
 
     @Test
     public void withDatabaseToMultilineDescription() throws Exception
     {
-        Assert.assertEquals( "How to use\n\noptions:\n" +
-                        "  --database=<name>         Name of database. [default:graph.db]\n" +
-                        "  --to=<destination-path>   This is a long string which should wrap on right\n" +
-                        "                            col.",
+        assertEquals( String.format( "How to use%n%noptions:%n" +
+                        "  --database=<name>         Name of database. [default:graph.db]%n" +
+                        "  --to=<destination-path>   This is a long string which should wrap on right%n" +
+                        "                            col." ),
                 builder.withDatabase()
                         .withTo( "This is a long string which should wrap on right col." )
                         .description( "How to use" ) );
@@ -79,14 +80,14 @@ public class ArgumentsTest
     @Test
     public void longNamesTriggerNewLineFormatting() throws Exception
     {
-        Assert.assertEquals( "How to use\n\noptions:\n" +
-                        "  --database=<name>\n" +
-                        "      Name of database. [default:graph.db]\n" +
-                        "  --to=<destination-path>\n" +
-                        "      This is a long string which should not wrap on right col.\n" +
-                        "  --loooooooooooooong-variable-name=<loooooooooooooong-variable-value>\n" +
-                        "      This is also a long string which should be printed on a new line because\n" +
-                        "      of long names.",
+        assertEquals( String.format( "How to use%n%noptions:%n" +
+                        "  --database=<name>%n" +
+                        "      Name of database. [default:graph.db]%n" +
+                        "  --to=<destination-path>%n" +
+                        "      This is a long string which should not wrap on right col.%n" +
+                        "  --loooooooooooooong-variable-name=<loooooooooooooong-variable-value>%n" +
+                        "      This is also a long string which should be printed on a new line because%n" +
+                        "      of long names." ),
                 builder.withDatabase()
                         .withTo( "This is a long string which should not wrap on right col." )
                         .withArgument( new MandatoryNamedArg( "loooooooooooooong-variable-name",

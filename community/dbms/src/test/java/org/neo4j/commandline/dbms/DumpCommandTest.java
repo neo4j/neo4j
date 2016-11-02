@@ -25,16 +25,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.neo4j.commandline.admin.CommandFailed;
@@ -53,6 +54,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -62,7 +64,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
@@ -344,20 +345,25 @@ public class DumpCommandTest
     @Test
     public void shouldPrintNiceHelp() throws Exception
     {
-        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-        Consumer<String> out = mock( Consumer.class );
-        usage.printUsageForCommand( new DumpCommand.Provider(), out );
+        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
+        {
+            PrintStream ps = new PrintStream( baos );
 
-        verify( out ).accept( "usage: neo4j-admin dump [--database=<name>] --to=<destination-path>" );
-        verify( out ).accept( "" );
-        verify( out ).accept( "Dump a database into a single-file archive. The archive can be used by the load\n" +
-                "command. <destination-path> can be a file or directory (in which case a file\n" +
-                "called <database>.dump will be created). It is not possible to dump a database\n" +
-                "that is mounted in a running Neo4j server.\n" +
-                "\noptions:\n" +
-                "  --database=<name>         Name of database. [default:graph.db]\n" +
-                "  --to=<destination-path>   Destination (file or folder) of database dump." );
-        verifyNoMoreInteractions( out );
+            Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+            usage.printUsageForCommand( new DumpCommand.Provider(), ps::println );
+
+            assertEquals( String.format( "usage: neo4j-admin dump [--database=<name>] --to=<destination-path>%n" +
+                            "%n" +
+                            "Dump a database into a single-file archive. The archive can be used by the load%n" +
+                            "command. <destination-path> can be a file or directory (in which case a file%n" +
+                            "called <database>.dump will be created). It is not possible to dump a database%n" +
+                            "that is mounted in a running Neo4j server.%n" +
+                            "%n" +
+                            "options:%n" +
+                            "  --database=<name>         Name of database. [default:graph.db]%n" +
+                            "  --to=<destination-path>   Destination (file or folder) of database dump.%n" ),
+                    baos.toString() );
+        }
     }
 
     private void execute( final String database ) throws IncorrectUsage, CommandFailed, AccessDeniedException

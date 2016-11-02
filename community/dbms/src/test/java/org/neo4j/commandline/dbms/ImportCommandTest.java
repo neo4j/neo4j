@@ -22,11 +22,12 @@ package org.neo4j.commandline.dbms;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -41,13 +42,13 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class ImportCommandTest
@@ -137,60 +138,64 @@ public class ImportCommandTest
     @Test
     public void shouldPrintNiceHelp() throws Throwable
     {
-        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-        Consumer<String> out = mock( Consumer.class );
-        usage.printUsageForCommand( new ImportCommand.Provider(), out );
+        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
+        {
+            PrintStream ps = new PrintStream( baos );
 
-        verify( out ).accept( "usage: neo4j-admin import [--mode=csv] [--database=<name>]\n" +
-                "                          [--additional-config=<config-file-path>]\n" +
-                "                          [--report-file=<filename>]\n" +
-                "                          [--nodes[:Label1:Label2]=<\"file1,file2,...\">]\n" +
-                "                          [--relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">]\n" +
-                "                          [--id-type=<STRING|INTEGER|ACTUAL>]\n" +
-                "                          [--input-encoding=<character-set>]" );
-        verify( out ).accept( "usage: neo4j-admin import --mode=database [--database=<name>]\n" +
-                "                          [--additional-config=<config-file-path>]\n" +
-                "                          [--from=<source-directory>]" );
-        verify( out ).accept( "" );
-        verify( out ).accept( "Import a collection of CSV files with --mode=csv (default), or a database from a\n" +
-                "pre-3.0 installation with --mode=database.\n" +
-                "\n" +
-                "options:\n" +
-                "  --database=<name>\n" +
-                "      Name of database. [default:graph.db]\n" +
-                "  --additional-config=<config-file-path>\n" +
-                "      Configuration file to supply additional configuration in. [default:]\n" +
-                "  --mode=<database|csv>\n" +
-                "      Import a collection of CSV files or a pre-3.0 installation. [default:csv]\n" +
-                "  --from=<source-directory>\n" +
-                "      The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db).\n" +
-                "      [default:]\n" +
-                "  --report-file=<filename>\n" +
-                "      File in which to store the report of the csv-import.\n" +
-                "      [default:import.report]\n" +
-                "  --nodes[:Label1:Label2]=<\"file1,file2,...\">\n" +
-                "      Node CSV header and data. Multiple files will be logically seen as one big\n" +
-                "      file from the perspective of the importer. The first line must contain the\n" +
-                "      header. Multiple data sources like these can be specified in one import,\n" +
-                "      where each data source has its own header. Note that file groups must be\n" +
-                "      enclosed in quotation marks. [default:]\n" +
-                "  --relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">\n" +
-                "      Relationship CSV header and data. Multiple files will be logically seen as\n" +
-                "      one big file from the perspective of the importer. The first line must\n" +
-                "      contain the header. Multiple data sources like these can be specified in\n" +
-                "      one import, where each data source has its own header. Note that file\n" +
-                "      groups must be enclosed in quotation marks. [default:]\n" +
-                "  --id-type=<STRING|INTEGER|ACTUAL>\n" +
-                "      Each node must provide a unique id. This is used to find the correct nodes\n" +
-                "      when creating relationships. Possible values are STRING: arbitrary strings\n" +
-                "      for identifying nodes, INTEGER: arbitrary integer values for identifying\n" +
-                "      nodes, ACTUAL: (advanced) actual node ids. For more information on id\n" +
-                "      handling, please see the Neo4j Manual:\n" +
-                "      http://neo4j.com/docs/operations-manual/current/deployment/#import-tool\n" +
-                "      [default:STRING]\n" +
-                "  --input-encoding=<character-set>\n" +
-                "      Character set that input data is encoded in. [default:UTF-8]" );
-        verifyNoMoreInteractions( out );
+            Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+            usage.printUsageForCommand( new ImportCommand.Provider(), ps::println );
+
+            assertEquals( String.format( "usage: neo4j-admin import [--mode=csv] [--database=<name>]%n" +
+                            "                          [--additional-config=<config-file-path>]%n" +
+                            "                          [--report-file=<filename>]%n" +
+                            "                          [--nodes[:Label1:Label2]=<\"file1,file2,...\">]%n" +
+                            "                          [--relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">]%n" +
+                            "                          [--id-type=<STRING|INTEGER|ACTUAL>]%n" +
+                            "                          [--input-encoding=<character-set>]%n" +
+                            "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
+                            "                          [--additional-config=<config-file-path>]%n" +
+                            "                          [--from=<source-directory>]%n" +
+                            "%n" +
+                            "Import a collection of CSV files with --mode=csv (default), or a database from a%n" +
+                            "pre-3.0 installation with --mode=database.%n" +
+                            "%n" +
+                            "options:%n" +
+                            "  --database=<name>%n" +
+                            "      Name of database. [default:graph.db]%n" +
+                            "  --additional-config=<config-file-path>%n" +
+                            "      Configuration file to supply additional configuration in. [default:]%n" +
+                            "  --mode=<database|csv>%n" +
+                            "      Import a collection of CSV files or a pre-3.0 installation. [default:csv]%n" +
+                            "  --from=<source-directory>%n" +
+                            "      The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db).%n" +
+                            "      [default:]%n" +
+                            "  --report-file=<filename>%n" +
+                            "      File in which to store the report of the csv-import.%n" +
+                            "      [default:import.report]%n" +
+                            "  --nodes[:Label1:Label2]=<\"file1,file2,...\">%n" +
+                            "      Node CSV header and data. Multiple files will be logically seen as one big%n" +
+                            "      file from the perspective of the importer. The first line must contain the%n" +
+                            "      header. Multiple data sources like these can be specified in one import,%n" +
+                            "      where each data source has its own header. Note that file groups must be%n" +
+                            "      enclosed in quotation marks. [default:]%n" +
+                            "  --relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">%n" +
+                            "      Relationship CSV header and data. Multiple files will be logically seen as%n" +
+                            "      one big file from the perspective of the importer. The first line must%n" +
+                            "      contain the header. Multiple data sources like these can be specified in%n" +
+                            "      one import, where each data source has its own header. Note that file%n" +
+                            "      groups must be enclosed in quotation marks. [default:]%n" +
+                            "  --id-type=<STRING|INTEGER|ACTUAL>%n" +
+                            "      Each node must provide a unique id. This is used to find the correct nodes%n" +
+                            "      when creating relationships. Possible values are STRING: arbitrary strings%n" +
+                            "      for identifying nodes, INTEGER: arbitrary integer values for identifying%n" +
+                            "      nodes, ACTUAL: (advanced) actual node ids. For more information on id%n" +
+                            "      handling, please see the Neo4j Manual:%n" +
+                            "      http://neo4j.com/docs/operations-manual/current/deployment/#import-tool%n" +
+                            "      [default:STRING]%n" +
+                            "  --input-encoding=<character-set>%n" +
+                            "      Character set that input data is encoded in. [default:UTF-8]%n" ),
+                    baos.toString() );
+        }
     }
 
     private void putStoreInDirectory( Path storeDir ) throws IOException
