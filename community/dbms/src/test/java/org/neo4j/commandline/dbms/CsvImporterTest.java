@@ -31,6 +31,7 @@ import java.util.List;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
@@ -39,6 +40,8 @@ public class CsvImporterTest
 {
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void writesReportToSpecifiedReportFile() throws Exception
