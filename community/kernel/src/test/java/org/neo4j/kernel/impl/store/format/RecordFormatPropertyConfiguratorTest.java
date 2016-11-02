@@ -104,6 +104,12 @@ public class RecordFormatPropertyConfiguratorTest
         }
 
         @Override
+        public String neo4jVersion()
+        {
+            return null;
+        }
+
+        @Override
         public int generation()
         {
             return 0;

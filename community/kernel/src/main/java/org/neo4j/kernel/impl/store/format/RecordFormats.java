@@ -49,6 +49,12 @@ public interface RecordFormats
     String storeVersion();
 
     /**
+     * @return the neo4j version where this format was introduced. It is almost certainly NOT the only version of
+     * neo4j where this format is used.
+     */
+    String neo4jVersion();
+
+    /**
      * Generation of this format, format family local int value which should be incrementing along with
      * releases, e.g. store version, e.g. official versions of the product. Use to determine generation of particular
      * format and to be able to find newest of among them.

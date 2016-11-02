@@ -61,6 +61,12 @@ public class HighLimit extends BaseRecordFormats
     }
 
     @Override
+    public String neo4jVersion()
+    {
+        return "3.1.0";
+    }
+
+    @Override
     public RecordFormat<NodeRecord> node()
     {
         return new NodeRecordFormat();

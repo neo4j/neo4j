@@ -54,6 +54,12 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     }
 
     @Override
+    public String neo4jVersion()
+    {
+        return actual.neo4jVersion();
+    }
+
+    @Override
     public int generation()
     {
         return actual.generation();

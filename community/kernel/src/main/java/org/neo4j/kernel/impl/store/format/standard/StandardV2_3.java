@@ -45,6 +45,12 @@ public class StandardV2_3 extends BaseRecordFormats
     }
 
     @Override
+    public String neo4jVersion()
+    {
+        return "2.3.0";
+    }
+
+    @Override
     public RecordFormat<NodeRecord> node()
     {
         return new NodeRecordFormat();

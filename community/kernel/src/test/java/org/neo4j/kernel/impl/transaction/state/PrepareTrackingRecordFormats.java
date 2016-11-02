@@ -69,6 +69,12 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
+    public String neo4jVersion()
+    {
+        return actual.neo4jVersion();
+    }
+
+    @Override
     public PrepareTrackingRecordFormat<NodeRecord> node()
     {
         return new PrepareTrackingRecordFormat<>( actual.node(), nodePrepare );
