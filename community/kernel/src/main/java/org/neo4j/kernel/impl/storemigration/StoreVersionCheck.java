@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -38,32 +39,45 @@ public class StoreVersionCheck
         this.pageCache = pageCache;
     }
 
+    public Optional<String> getVersion( File neostoreFile ) throws IOException
+    {
+        long record = MetaDataStore.getRecord( pageCache, neostoreFile, STORE_VERSION );
+        if ( record == MetaDataRecordFormat.FIELD_NOT_PRESENT )
+        {
+            return Optional.empty();
+        }
+        return Optional.of( MetaDataStore.versionLongToString( record ) );
+    }
+
     public Result hasVersion( File neostoreFile, String expectedVersion )
     {
-        long record;
+        Optional<String> storeVersion;
 
         try
         {
-            record = MetaDataStore.getRecord( pageCache, neostoreFile, STORE_VERSION );
+            storeVersion = getVersion( neostoreFile );
         }
-        catch ( IOException ex )
+        catch ( IOException e )
         {
             // since we cannot read let's assume the file is not there
             return new Result( Outcome.missingStoreFile, null, neostoreFile.getName() );
         }
 
-        if ( record == MetaDataRecordFormat.FIELD_NOT_PRESENT )
+        if ( storeVersion.isPresent() )
+        {
+            if ( expectedVersion.equals( storeVersion.get() ) )
+            {
+                return new Result( Outcome.ok, null, neostoreFile.getName() );
+            }
+            else
+            {
+                return new Result( Outcome.unexpectedStoreVersion, storeVersion.get(), neostoreFile.getName() );
+            }
+        }
+        else
         {
             return new Result( Outcome.storeVersionNotFound, null, neostoreFile.getName() );
         }
-
-        String storeVersion = MetaDataStore.versionLongToString( record );
-        if ( !expectedVersion.equals( storeVersion ) )
-        {
-            return new Result( Outcome.unexpectedStoreVersion, storeVersion, neostoreFile.getName() );
-        }
-
-        return new Result( Outcome.ok, null, neostoreFile.getName() );
     }
 
     public static class Result
