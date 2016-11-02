@@ -34,6 +34,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -128,7 +129,8 @@ public class VersionCommand implements AdminCommand
 
         for ( RecordFormats candidate : RecordFormatSelector.allFormats() )
         {
-            if ( candidate.generation() <= format.generation() )
+            if ( !(FormatFamily.isSameFamily( format, candidate )) ||
+                    candidate.generation() <= format.generation() )
             {
                 continue;
             }
