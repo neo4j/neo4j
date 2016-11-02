@@ -26,8 +26,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.cluster.member.ClusterMemberAvailability;
-import org.neo4j.com.storecopy.MoveToDir;
-import org.neo4j.com.storecopy.PostStoreCopyOperation;
+import org.neo4j.com.storecopy.MoveAfterCopy;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
@@ -184,21 +183,22 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
     void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy, URI masterUri, URI me,
                                              CancellationRequest cancellationRequest ) throws Throwable
     {
-        copyStore( masterUri, me, cancellationRequest, (from, to) ->
+        MoveAfterCopy moveWithCopyThenBranch = ( moves, fromDirectory, toDirectory ) ->
         {
             stopServices();
 
             msgLog.debug( "Branching store: " + storeDir );
             branchPolicy.handle( storeDir, pageCache, logService );
 
-            msgLog.debug( "Moving downloaded store from " + from + " to " + to );
-            new MoveToDir().move( from, to );
-            msgLog.debug( "Moved downloaded store from " + from + " to " + to );
-        } );
+            msgLog.debug( "Moving downloaded store from " + fromDirectory + " to " + toDirectory );
+            MoveAfterCopy.moveReplaceExisting().move( moves, fromDirectory, toDirectory );
+            msgLog.debug( "Moved downloaded store from " + fromDirectory + " to " + toDirectory );
+        };
+        copyStore( masterUri, me, cancellationRequest, moveWithCopyThenBranch );
     }
 
     private void copyStore( URI masterUri, URI me, CancellationRequest cancellationRequest,
-                            PostStoreCopyOperation postStoreCopyOperation ) throws Throwable
+                            MoveAfterCopy moveAfterCopy ) throws Throwable
     {
         boolean success = false;
         monitor.storeCopyStarted();
@@ -216,7 +216,7 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
             }
             else
             {
-                copyStoreFromMaster( masterClient, cancellationRequest, postStoreCopyOperation );
+                copyStoreFromMaster( masterClient, cancellationRequest, moveAfterCopy );
                 success = true;
             }
         }

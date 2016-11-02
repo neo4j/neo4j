@@ -19,7 +19,6 @@
  */
 package org.neo4j.com.storecopy;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -123,8 +122,7 @@ public class StoreCopyClientTest
                 spy( new LocalStoreCopyRequester( original, originalDir, fs ) );
 
         // when
-        File copyOfStore = copier.copyStore( storeCopyRequest, cancelStoreCopy::get );
-        new MoveToDir().move( copyOfStore, copyDir );
+        copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
 
         // Then
         GraphDatabaseService copy = startDatabase( copyDir );
@@ -169,8 +167,7 @@ public class StoreCopyClientTest
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, recordFormatsName );
         StoreCopyClient.StoreCopyRequester storeCopyRequest = new LocalStoreCopyRequester( original, originalDir, fs );
 
-        File copyOfStore = copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED );
-        new MoveToDir().move( copyOfStore, copyDir );
+        copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );
 
         assertFalse( new File( copyDir, TEMP_COPY_DIRECTORY_NAME ).exists() );
 
@@ -214,8 +211,7 @@ public class StoreCopyClientTest
                 spy( new LocalStoreCopyRequester( original, originalDir, fs ) );
 
         // when
-        File copyOfStore = copier.copyStore( storeCopyRequest, cancelStoreCopy::get );
-        new MoveToDir().move( copyOfStore, copyDir );
+        copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
 
         // Then
         GraphDatabaseService copy = startDatabase( copyDir );
@@ -254,8 +250,7 @@ public class StoreCopyClientTest
                 new LocalStoreCopyRequester( (GraphDatabaseAPI) initialDatabase, initialStore, fs );
 
         // WHEN
-        File copyOfStore = copier.copyStore( storeCopyRequest, falseCancellationRequest );
-        new MoveToDir().move( copyOfStore, backupStore );
+        copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting() );
 
         // THEN
         long updatedTransactionOffset =
@@ -267,7 +262,6 @@ public class StoreCopyClientTest
     }
 
     @Test
-    @Ignore
     public void shouldDeleteTempCopyFolderOnFailures() throws Exception
     {
         // GIVEN
@@ -295,7 +289,7 @@ public class StoreCopyClientTest
         // WHEN
         try
         {
-            copier.copyStore( storeCopyRequest, falseCancellationRequest );
+            copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting() );
             fail( "should have thrown " );
         }
         catch ( RuntimeException ex )

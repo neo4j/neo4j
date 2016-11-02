@@ -168,38 +168,49 @@ public class StoreCopyClient
         this.forensics = forensics;
     }
 
-    public File copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest ) throws Exception
+    public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest,
+                           MoveAfterCopy moveAfterCopy ) throws Exception
     {
         // Create a temp directory (or clean if present)
         File tempStore = new File( storeDir, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
-        List<FileMoveAction> fileMoveActions = new ArrayList<>();
-        cleanDirectory( tempStore );
-
-        // Request store files and transactions that will need recovery
-        monitor.startReceivingStoreFiles();
-        try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
-                new ToFileStoreWriter( tempStore, monitor, pageCache, fileMoveActions ) ) ) )
+        try
         {
-            monitor.finishReceivingStoreFiles();
-            // Update highest archived log id
-            // Write transactions that happened during the copy to the currently active logical log
-            writeTransactionsToActiveLogFile( tempStore, response );
+            List<FileMoveAction> fileMoveActions = new ArrayList<>();
+            cleanDirectory( tempStore );
+
+            // Request store files and transactions that will need recovery
+            monitor.startReceivingStoreFiles();
+            try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
+                    new ToFileStoreWriter( tempStore, monitor, pageCache, fileMoveActions ) ) ) )
+            {
+                monitor.finishReceivingStoreFiles();
+                // Update highest archived log id
+                // Write transactions that happened during the copy to the currently active logical log
+                writeTransactionsToActiveLogFile( tempStore, response );
+            }
+            finally
+            {
+                requester.done();
+            }
+
+            // This is a good place to check if the switch has been cancelled
+            checkCancellation( cancellationRequest, tempStore );
+
+            // Run recovery, so that the transactions we just wrote into the active log will be applied.
+            monitor.startRecoveringStore();
+            GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
+            graphDatabaseService.shutdown();
+            monitor.finishRecoveringStore();
+
+            // All is well, move the streamed files to the real store directory
+            // Start with the files written through the page cache. Should only be record store files
+            moveAfterCopy.move( fileMoveActions, tempStore, storeDir );
         }
         finally
         {
-            requester.done();
+            // All done, delete temp directory
+            FileUtils.deleteRecursively( tempStore );
         }
-
-        // This is a good place to check if the switch has been cancelled
-        checkCancellation( cancellationRequest, tempStore );
-
-        // Run recovery, so that the transactions we just wrote into the active log will be applied.
-        monitor.startRecoveringStore();
-        GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
-        graphDatabaseService.shutdown();
-        monitor.finishRecoveringStore();
-
-        return tempStore;
     }
 
     private void writeTransactionsToActiveLogFile( File tempStoreDir, Response<?> response ) throws Exception

@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -39,6 +40,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.MoveAfterCopy;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
@@ -90,6 +92,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -117,8 +120,10 @@ public class SwitchToSlaveCopyThenBranchTest
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
 
-        when( storeCopyClient.copyStore( any( StoreCopyClient.StoreCopyRequester.class ), any( CancellationRequest.class )
-                )).thenThrow( new RuntimeException() ).thenReturn( new File("tmp") );
+        doThrow( new RuntimeException() ).doNothing().when( storeCopyClient ).copyStore(
+                any( StoreCopyClient.StoreCopyRequester.class ),
+                any( CancellationRequest.class ),
+                any( MoveAfterCopy.class ) );
 
         SwitchToSlaveCopyThenBranch switchToSlave = newSwitchToSlaveSpy( pageCacheMock, storeCopyClient );
 
@@ -222,9 +227,15 @@ public class SwitchToSlaveCopyThenBranchTest
     {
         // Given
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
-        when( storeCopyClient.copyStore( any( StoreCopyClient.StoreCopyRequester.class ),
-                any( CancellationRequest.class ) ))
-                .thenReturn( new File("tmp") );
+        doAnswer( invocation ->
+        {
+            MoveAfterCopy moveAfterCopy = invocation.getArgumentAt( 2, MoveAfterCopy.class );
+            moveAfterCopy.move( Collections.emptyList(), new File( "" ), new File( "" ) );
+            return null;
+        } ).when( storeCopyClient ).copyStore(
+                any( StoreCopyClient.StoreCopyRequester.class ),
+                any( CancellationRequest.class ),
+                any( MoveAfterCopy.class ) );
 
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
@@ -246,13 +257,13 @@ public class SwitchToSlaveCopyThenBranchTest
 
         // When
         BranchedDataPolicy branchPolicy = mock( BranchedDataPolicy.class );
-        switchToSlave.stopServicesAndHandleBranchedStore(branchPolicy, masterUri, me, cancellationRequest);
+        switchToSlave.stopServicesAndHandleBranchedStore( branchPolicy, masterUri, me, cancellationRequest );
 
         // Then
-        InOrder inOrder = Mockito.inOrder(storeCopyClient, branchPolicy);
+        InOrder inOrder = Mockito.inOrder( storeCopyClient, branchPolicy );
 
-        inOrder.verify(storeCopyClient).copyStore( any( StoreCopyClient.StoreCopyRequester.class ),
-                any( CancellationRequest.class ) ) ;
+        inOrder.verify( storeCopyClient ).copyStore( any( StoreCopyClient.StoreCopyRequester.class ),
+                any( CancellationRequest.class ), any( MoveAfterCopy.class ) ) ;
         inOrder.verify( branchPolicy ).handle( new File(""), pageCacheMock, NullLogService.getInstance() );
     }
 
@@ -319,8 +330,6 @@ public class SwitchToSlaveCopyThenBranchTest
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
-        when( storeCopyClient.copyStore( any( StoreCopyClient.StoreCopyRequester.class),
-                any( CancellationRequest.class ) )).thenReturn( new File( "tmp" ) );
         Stream mockStream = mock( Stream.class );
         when( mockStream.filter( any( Predicate.class ) ) ).thenReturn( mock( Stream.class ) );
         when( pageCacheMock.streamFilesRecursive( any( File.class) ) ).thenReturn( mockStream );

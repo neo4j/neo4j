@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -27,17 +31,12 @@ import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.MoveAfterCopy;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
@@ -82,7 +81,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -91,13 +89,13 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
-
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -119,8 +117,10 @@ public class SwitchToSlaveBranchThenCopyTest
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
 
-        when( storeCopyClient.copyStore( any( StoreCopyClient.StoreCopyRequester.class ), any( CancellationRequest.class )
-                ) ).thenThrow( new RuntimeException() ).thenReturn( new File("tmp") );
+        doThrow( new RuntimeException() ).doNothing().when( storeCopyClient ).copyStore(
+                any( StoreCopyClient.StoreCopyRequester.class ),
+                any( CancellationRequest.class ),
+                any( MoveAfterCopy.class ) );
 
         SwitchToSlaveBranchThenCopy switchToSlave = newSwitchToSlaveSpy( pageCacheMock, storeCopyClient );
 
@@ -283,8 +283,6 @@ public class SwitchToSlaveBranchThenCopyTest
         when( pageCacheMock.streamFilesRecursive( any( File.class ) ) ).thenReturn( Stream.empty() );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
-        when(storeCopyClient.copyStore( any( StoreCopyClient.StoreCopyRequester.class),
-                any(CancellationRequest.class) )).thenReturn( new File( "tmp" ) );
 
         return newSwitchToSlaveSpy( pageCacheMock, storeCopyClient );
     }
