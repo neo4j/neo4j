@@ -262,7 +262,8 @@ public class RecordFormatSelector
         }
     }
 
-    private static Iterable<RecordFormats> allFormats()
+    @Nonnull
+    public static Iterable<RecordFormats> allFormats()
     {
         Iterable<RecordFormats.Factory> loadableFormatFactories = Service.load( RecordFormats.Factory.class );
         Iterable<RecordFormats> loadableFormats = map( RecordFormats.Factory::newInstance, loadableFormatFactories );
