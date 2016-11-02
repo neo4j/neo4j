@@ -191,12 +191,12 @@ public class OnlineBackupCommandTest
         ArgumentCaptor<ConsistencyCheck> captor = ArgumentCaptor.forClass( ConsistencyCheck.class );
         stub( tool.executeBackup( any(), any(), captor.capture(), any(), anyLong(), anyBoolean() ) ).toReturn( null );
 
-        execute( "--check-consistency", "--to=/", "--cc-report-dir=/some/dir" );
+        execute( "--check-consistency", "--to=/", "--cc-report-dir=" + Paths.get( "some", "dir" ) );
 
         captor.getValue().runFull( null, null, null, null, null, null, false );
 
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File("/some/dir").getCanonicalFile() ) );
+                anyBoolean(), eq( new File("some/dir").getCanonicalFile() ) );
     }
 
     @Test

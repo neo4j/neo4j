@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
@@ -173,11 +174,11 @@ public class CheckConsistencyCommandTest
         stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject() ) ).toReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=/some-dir-or-other"} );
+        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=some-dir-or-other"} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
-                        anyBoolean(), eq( new File( "/some-dir-or-other" ).getCanonicalFile() ) );
+                        anyBoolean(), eq( new File( "some-dir-or-other" ).getCanonicalFile() ) );
     }
 
     @Test
@@ -196,11 +197,11 @@ public class CheckConsistencyCommandTest
         stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject() ) ).toReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=/foo/../bar"} );
+        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=" + Paths.get( "..", "bar" )} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
-                        anyBoolean(), eq( new File( "/bar" ).getCanonicalFile() ) );
+                        anyBoolean(), eq( new File( "../bar" ).getCanonicalFile() ) );
     }
 
     @Test

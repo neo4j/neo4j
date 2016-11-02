@@ -44,7 +44,7 @@ public class Arguments
     public static final Arguments NO_ARGS = new Arguments();
     private static final int LINE_LENGTH = 80;
     private static final int MIN_RIGHT_COL_WIDTH = 30;
-    private final static String NEWLINE = System.getProperty( "line.separator" );
+    private static final String NEWLINE = System.getProperty( "line.separator" );
     private final Map<String,NamedArgument> namedArgs;
     private final ArrayList<PositionalArgument> positionalArgs;
 
