@@ -97,8 +97,9 @@ public class SetDefaultAdminCommandIT
         verify( out, times( 2 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
         verify( out, times( 2 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( "Sets the user to become admin if users but no roles are present, for example\n" +
-                "when upgrading to neo4j 3.1 enterprise." );
+        verify( out ).stdErrLine(
+                String.format( "Sets the user to become admin if users but no roles are present, for example%n" +
+                        "when upgrading to neo4j 3.1 enterprise." ) );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
         verify( out, times( 0 ) ).stdOutLine( anyString() );
@@ -114,8 +115,9 @@ public class SetDefaultAdminCommandIT
         verify( out, times( 2 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
         verify( out, times( 2 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( "Sets the user to become admin if users but no roles are present, for example\n" +
-                "when upgrading to neo4j 3.1 enterprise." );
+        verify( out ).stdErrLine(
+                String.format( "Sets the user to become admin if users but no roles are present, for example%n" +
+                        "when upgrading to neo4j 3.1 enterprise." ) );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
         verify( out, times( 0 ) ).stdOutLine( anyString() );

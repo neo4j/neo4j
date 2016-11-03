@@ -22,18 +22,19 @@ package org.neo4j.consistency;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
-
-import java.util.function.Consumer;
+import java.nio.file.Paths;
 
 import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -41,6 +42,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -49,7 +51,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class CheckConsistencyCommandTest
@@ -173,11 +174,11 @@ public class CheckConsistencyCommandTest
         stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject() ) ).toReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=/some-dir-or-other"} );
+        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=some-dir-or-other"} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
-                        anyBoolean(), eq( new File( "/some-dir-or-other" ).getCanonicalFile() ) );
+                        anyBoolean(), eq( new File( "some-dir-or-other" ).getCanonicalFile() ) );
     }
 
     @Test
@@ -196,37 +197,40 @@ public class CheckConsistencyCommandTest
         stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject() ) ).toReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=/foo/../bar"} );
+        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=" + Paths.get( "..", "bar" )} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
-                        anyBoolean(), eq( new File( "/bar" ).getCanonicalFile() ) );
+                        anyBoolean(), eq( new File( "../bar" ).getCanonicalFile() ) );
     }
 
     @Test
     public void shouldPrintNiceHelp() throws Throwable
     {
-        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-        Consumer<String> out = mock( Consumer.class );
-        usage.printUsageForCommand( new CheckConsistencyCommand.Provider(), out );
+        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
+        {
+            PrintStream ps = new PrintStream( baos );
 
-        verify( out ).accept(
-                "usage: neo4j-admin check-consistency [--database=<name>]\n" +
-                        "                                     [--additional-config=<config-file-path>]\n" +
-                        "                                     [--verbose[=<true|false>]]\n" +
-                        "                                     [--report-dir=<directory>]" );
-        verify( out ).accept( "" );
-        verify( out ).accept( "Check the consistency of a database.\n" +
-                "\n" +
-                "options:\n" +
-                "  --database=<name>                        Name of database. [default:graph.db]\n" +
-                "  --additional-config=<config-file-path>   Configuration file to supply\n" +
-                "                                           additional configuration in.\n" +
-                "                                           [default:]\n" +
-                "  --verbose=<true|false>                   Enable verbose output.\n" +
-                "                                           [default:false]\n" +
-                "  --report-dir=<directory>                 Directory to write report file in.\n" +
-                "                                           [default:.]" );
-        verifyNoMoreInteractions( out );
+            Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+            usage.printUsageForCommand( new CheckConsistencyCommand.Provider(), ps::println );
+
+            assertEquals( String.format( "usage: neo4j-admin check-consistency [--database=<name>]%n" +
+                            "                                     [--additional-config=<config-file-path>]%n" +
+                            "                                     [--verbose[=<true|false>]]%n" +
+                            "                                     [--report-dir=<directory>]%n" +
+                            "%n" +
+                            "Check the consistency of a database.%n" +
+                            "%n" +
+                            "options:%n" +
+                            "  --database=<name>                        Name of database. [default:graph.db]%n" +
+                            "  --additional-config=<config-file-path>   Configuration file to supply%n" +
+                            "                                           additional configuration in.%n" +
+                            "                                           [default:]%n" +
+                            "  --verbose=<true|false>                   Enable verbose output.%n" +
+                            "                                           [default:false]%n" +
+                            "  --report-dir=<directory>                 Directory to write report file in.%n" +
+                            "                                           [default:.]%n" ),
+                    baos.toString() );
+        }
     }
 }

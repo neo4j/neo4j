@@ -19,12 +19,15 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
@@ -32,7 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
@@ -49,15 +51,16 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 
 public class LoadCommandTest
@@ -102,6 +105,8 @@ public class LoadCommandTest
     @Test
     public void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
+        assumeFalse( "Can't reliably create symlinks on windows", SystemUtils.IS_OS_WINDOWS );
+
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
 
@@ -291,24 +296,28 @@ public class LoadCommandTest
     @Test
     public void shouldPrintNiceHelp() throws Throwable
     {
-        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-        Consumer<String> out = mock( Consumer.class );
-        usage.printUsageForCommand( new LoadCommand.Provider(), out );
+        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
+        {
+            PrintStream ps = new PrintStream( baos );
 
-        verify( out ).accept( "usage: neo4j-admin load --from=<archive-path> [--database=<name>]\n" +
-                "                        [--force[=<true|false>]]" );
-        verify( out ).accept( "" );
-        verify( out ).accept( "Load a database from an archive. <archive-path> must be an archive created with\n" +
-                "the dump command. <database> is the name of the database to create. Existing\n" +
-                "databases can be replaced by specifying --force. It is not possible to replace a\n" +
-                "database that is mounted in a running Neo4j server.\n" +
-                "\n" +
-                "options:\n" +
-                "  --from=<archive-path>   Path to archive created with the dump command.\n" +
-                "  --database=<name>       Name of database. [default:graph.db]\n" +
-                "  --force=<true|false>    If an existing database should be replaced.\n" +
-                "                          [default:false]" );
-        verifyNoMoreInteractions( out );
+            Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+            usage.printUsageForCommand( new LoadCommand.Provider(), ps::println );
+
+            assertEquals( String.format( "usage: neo4j-admin load --from=<archive-path> [--database=<name>]%n" +
+                            "                        [--force[=<true|false>]]%n" +
+                            "%n" +
+                            "Load a database from an archive. <archive-path> must be an archive created with%n" +
+                            "the dump command. <database> is the name of the database to create. Existing%n" +
+                            "databases can be replaced by specifying --force. It is not possible to replace a%n" +
+                            "database that is mounted in a running Neo4j server.%n" +
+                            "%n" +
+                            "options:%n" +
+                            "  --from=<archive-path>   Path to archive created with the dump command.%n" +
+                            "  --database=<name>       Name of database. [default:graph.db]%n" +
+                            "  --force=<true|false>    If an existing database should be replaced.%n" +
+                            "                          [default:false]%n" ),
+                    baos.toString() );
+        }
     }
 
     private void execute( String database, String... otherArgs ) throws IncorrectUsage, CommandFailed

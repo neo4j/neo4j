@@ -23,8 +23,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.util.function.Consumer;
+import java.io.PrintStream;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -39,12 +40,11 @@ import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserManager;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -125,14 +125,18 @@ public class SetInitialPasswordCommandTest
     @Test
     public void shouldPrintNiceHelp() throws Throwable
     {
-        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-        Consumer<String> out = mock( Consumer.class );
-        usage.printUsageForCommand( new SetInitialPasswordCommand.Provider(), out );
+        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
+        {
+            PrintStream ps = new PrintStream( baos );
 
-        verify( out ).accept( "usage: neo4j-admin set-initial-password <password>" );
-        verify( out ).accept( "" );
-        verify( out ).accept( "Sets the initial password of the initial admin user ('neo4j')." );
-        verifyNoMoreInteractions( out );
+            Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+            usage.printUsageForCommand( new SetInitialPasswordCommand.Provider(), ps::println );
+
+            assertEquals( String.format( "usage: neo4j-admin set-initial-password <password>%n" +
+                            "%n" +
+                            "Sets the initial password of the initial admin user ('neo4j').%n" ),
+                    baos.toString() );
+        }
     }
 
     private void assertAuthIniFile( String password ) throws Throwable

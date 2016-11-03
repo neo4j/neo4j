@@ -22,14 +22,15 @@ package org.neo4j.commandline.dbms;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
@@ -50,7 +51,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
 
 public class UnbindFromClusterCommandTest
@@ -157,18 +157,22 @@ public class UnbindFromClusterCommandTest
     @Test
     public void shouldPrintNiceHelp() throws Throwable
     {
-        Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-        Consumer<String> out = mock( Consumer.class );
-        usage.printUsageForCommand( new UnbindFromClusterCommand.Provider(), out );
+        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
+        {
+            PrintStream ps = new PrintStream( baos );
 
-        verify( out ).accept( "usage: neo4j-admin unbind [--database=<name>]" );
-        verify( out ).accept( "" );
-        verify( out ).accept( "Removes cluster state data from the specified database making it suitable for\n" +
-                "use in single instance database, or for seeding a new cluster.\n" +
-                "\n" +
-                "options:\n" +
-                "  --database=<name>   Name of database. [default:graph.db]" );
-        verifyNoMoreInteractions( out );
+            Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
+            usage.printUsageForCommand( new UnbindFromClusterCommand.Provider(), ps::println );
+
+            assertEquals( String.format( "usage: neo4j-admin unbind [--database=<name>]%n" +
+                            "%n" +
+                            "Removes cluster state data from the specified database making it suitable for%n" +
+                            "use in single instance database, or for seeding a new cluster.%n" +
+                            "%n" +
+                            "options:%n" +
+                            "  --database=<name>   Name of database. [default:graph.db]%n" ),
+                    baos.toString() );
+        }
     }
 
     private String[] databaseName( String databaseName )
