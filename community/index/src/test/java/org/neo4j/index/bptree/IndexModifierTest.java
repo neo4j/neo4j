@@ -225,17 +225,27 @@ public class IndexModifierTest
         byte[] tmp = new byte[pageSize];
         newRootFromSplit( tmp, split );
 
+        // Assert child pointers and sibling pointers are intact after split in root
+        long child0 = node.childAt( cursor, 0 );
+        long child1 = node.childAt( cursor, 1 );
+        assertSiblingOrderAndPointers( child0, child1 );
+
+        // Insert until we have another split in leftmost leaf
         while ( node.keyCount( cursor ) == 1 )
         {
             insert( someLargeNumber - i, i );
             i++;
         }
-        // Leftmost leaf has now been split twice
+
+        // Just to be sure
         assertTrue( node.isInternal( cursor ) );
         assertThat( node.keyCount( cursor ), is( 2 ) );
-        long child0 = node.childAt( cursor, 0 );
-        long child1 = node.childAt( cursor, 1 );
-        long child2 = node.childAt( cursor, 2 );
+
+        // Assert child pointers and sibling pointers are intact
+        // AND that node not involved in split also has its left sibling pointer updated
+        child0 = node.childAt( cursor, 0 );
+        child1 = node.childAt( cursor, 1 );
+        long child2 = node.childAt( cursor, 2 ); // <- right sibling to split-node before split
 
         assertSiblingOrderAndPointers( child0, child1, child2 );
     }
@@ -271,6 +281,7 @@ public class IndexModifierTest
 
     private void assertSiblingOrderAndPointers( long... children ) throws IOException
     {
+        long currentPageId = cursor.getCurrentPageId();
         RightmostInChain<MutableLong> rightmost = new RightmostInChain<>( node );
         for ( long child : children )
         {
@@ -278,6 +289,7 @@ public class IndexModifierTest
             rightmost.assertNext( cursor );
         }
         rightmost.assertLast();
+        cursor.next( currentPageId );
     }
 
     private Long keyAt( int pos )
