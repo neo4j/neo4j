@@ -13,6 +13,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.Modifier.Options.DEFAULTS;
 import static org.neo4j.index.ValueAmenders.overwrite;
 
@@ -187,9 +188,42 @@ public class IndexModifierTest
     }
 
     @Test
+    public void modifierMustUpdatePointersInSiblingsToSplit() throws Exception
+    {
+        // given
+        int maxKeyCount = node.leafMaxKeyCount();
+        long someLargeNumber = maxKeyCount * 1000;
+        long i = 0;
+        while ( i < maxKeyCount )
+        {
+            insert( someLargeNumber - i, i );
+            i++;
+        }
+
+        // First split
+        SplitResult<MutableLong> split = insert( someLargeNumber - i, i );
+        i++;
+        byte[] tmp = new byte[pageSize];
+        newRootFromSplit( tmp, split );
+
+        while ( node.keyCount( cursor ) == 1 )
+        {
+            insert( someLargeNumber - i, i );
+            i++;
+        }
+        // Leftmost leaf has now been split twice
+        assertTrue( node.isInternal( cursor ) );
+        assertThat( node.keyCount( cursor ), is( 2 ) );
+        long child0 = node.childAt( cursor, 0 );
+        long child1 = node.childAt( cursor, 1 );
+        long child2 = node.childAt( cursor, 2 );
+
+        assertSiblingOrderAndPointers( child0, child1, child2 );
+    }
+
+    @Test
     public void modifierMustProduceConsistentTreeWithRandomInserts() throws Exception
     {
-        long rootId;
         byte[] tmp = new byte[pageSize];
 
         int numberOfEntries = 100_000;
@@ -198,22 +232,33 @@ public class IndexModifierTest
             SplitResult<MutableLong> split = insert( random.nextLong(), random.nextLong() );
             if ( split != null )
             {
-                // New root
-                long newRootId = id.acquireNewId();
-                cursor.next( newRootId );
-
-                node.initializeInternal( cursor );
-                node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
-                node.setKeyCount( cursor, 1 );
-                node.setChildAt( cursor, split.left, 0 );
-                node.setChildAt( cursor, split.right, 1 );
-                rootId = newRootId;
-                cursor.next( rootId );
+                newRootFromSplit( tmp, split );
             }
         }
 
         BPTreeConsistencyChecker<MutableLong> consistencyChecker = new BPTreeConsistencyChecker<>( node, layout );
         consistencyChecker.check( cursor );
+    }
+
+    private void newRootFromSplit( byte[] tmp, SplitResult<MutableLong> split ) throws IOException
+    {
+        cursor.next( id.acquireNewId() );
+        node.initializeInternal( cursor );
+        node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
+        node.setKeyCount( cursor, 1 );
+        node.setChildAt( cursor, split.left, 0 );
+        node.setChildAt( cursor, split.right, 1 );
+    }
+
+    private void assertSiblingOrderAndPointers( long... children ) throws IOException
+    {
+        RightmostInChain<MutableLong> rightmost = new RightmostInChain<>( node );
+        for ( long child : children )
+        {
+            cursor.next( child );
+            rightmost.assertNext( cursor );
+        }
+        rightmost.assertLast();
     }
 
     private Long keyAt( int pos )

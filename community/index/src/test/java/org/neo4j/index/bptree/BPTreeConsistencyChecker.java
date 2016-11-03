@@ -7,8 +7,6 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.neo4j.index.bptree.TreeNode.NO_NODE_FLAG;
-
 /**
  * Check order of keys in isolated nodes
  * Check keys fit inside range given by parent node
@@ -20,7 +18,7 @@ class BPTreeConsistencyChecker<KEY>
     private final KEY readKey;
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
-    private final List<Rightmost> rightmostPerLevel = new ArrayList<>();
+    private final List<RightmostInChain> rightmostPerLevel = new ArrayList<>();
 
     BPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout )
     {
@@ -36,7 +34,12 @@ class BPTreeConsistencyChecker<KEY>
         layout.minKey( leftSideOfRange );
         KEY rightSideOfRange = layout.newKey();
         layout.maxKey( rightSideOfRange );
-        return checkSubtree( cursor, new KeyRange( comparator, leftSideOfRange, rightSideOfRange, layout ), 0 );
+        KeyRange openRange = new KeyRange( comparator, leftSideOfRange, rightSideOfRange, layout );
+        boolean result = checkSubtree( cursor, openRange, 0 );
+
+        // Assert that rightmost node on each level has empty right sibling.
+        rightmostPerLevel.forEach( RightmostInChain::assertLast );
+        return result;
     }
 
     private boolean checkSubtree( PageCursor cursor, KeyRange range, int level ) throws IOException
@@ -64,30 +67,12 @@ class BPTreeConsistencyChecker<KEY>
         // If this is the first time on this level, we will add a new entry
         for ( int i = rightmostPerLevel.size(); i <= level; i++ )
         {
-            Rightmost first = new Rightmost();
-            first.currentRightmost = NO_NODE_FLAG;
-            first.expectedNextRightmost = NO_NODE_FLAG;
+            RightmostInChain<KEY> first = new RightmostInChain<>( node );
             rightmostPerLevel.add( i, first );
         }
-        Rightmost rightmost = rightmostPerLevel.get( level );
+        RightmostInChain rightmost = rightmostPerLevel.get( level );
 
-        long pageId = cursor.getCurrentPageId();
-        long leftSibling = node.leftSibling( cursor );
-        long rightSibling = node.rightSibling( cursor );
-
-        // Assert we have reached expected node and that we agree about being siblings
-        assert leftSibling == rightmost.currentRightmost :
-                "Sibling pointer does align with tree structure. Expected left sibling to be " +
-                rightmost.currentRightmost + " but was " + leftSibling;
-        assert pageId == rightmost.expectedNextRightmost ||
-               ( rightmost.expectedNextRightmost == NO_NODE_FLAG && rightmost.currentRightmost == NO_NODE_FLAG ) :
-                "Sibling pointer does not align with tree structure. Expected right sibling to be " +
-                rightmost.expectedNextRightmost + " but was " + rightSibling;
-
-        // Update rightmost
-        rightmost.currentRightmost = pageId;
-        rightmost.expectedNextRightmost = rightSibling;
-        return pageId;
+        return rightmost.assertNext( cursor );
     }
 
     private void assertKeyOrderAndSubtrees( PageCursor cursor, final long pageId, KeyRange range, int level )
@@ -203,9 +188,4 @@ class BPTreeConsistencyChecker<KEY>
         }
     }
 
-    private class Rightmost
-    {
-        long currentRightmost;
-        long expectedNextRightmost;
-    }
 }
