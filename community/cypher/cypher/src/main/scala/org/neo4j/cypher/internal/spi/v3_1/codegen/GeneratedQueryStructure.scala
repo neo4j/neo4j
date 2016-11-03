@@ -191,8 +191,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   }
 
   def nullValue(cType: CodeGenType) = cType match {
-    case CodeGenType(symbols.CTNode, IntType) => constant(-1L)
-    case CodeGenType(symbols.CTRelationship, IntType) => constant(-1L)
+    case CodeGenType(_, IntType) => constant(-1L)
     case _ => constant(null)
   }
 }

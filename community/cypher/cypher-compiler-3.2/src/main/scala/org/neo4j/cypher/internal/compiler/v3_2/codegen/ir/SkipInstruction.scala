@@ -36,8 +36,8 @@ case class SkipInstruction(opName: String, variableName: String, action: Instruc
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
     generator.trace(opName) { l1 =>
       l1.incrementRows()
-      l1.decrementCounter(variableName)
-      l1.ifStatement(l1.checkCounter(variableName, LessThan, 0)) { l2 =>
+      l1.decrementInteger(variableName)
+      l1.ifStatement(l1.checkInteger(variableName, LessThan, 0L)) { l2 =>
         action.body(l2)
       }
     }

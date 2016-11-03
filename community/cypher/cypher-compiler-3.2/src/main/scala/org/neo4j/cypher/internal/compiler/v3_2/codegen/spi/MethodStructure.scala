@@ -43,6 +43,7 @@ trait MethodStructure[E] {
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
+  def assign(varName: String, codeGenType: CodeGenType, value: E): Unit
   def declare(varName: String, codeGenType: CodeGenType): Unit
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
@@ -54,8 +55,9 @@ trait MethodStructure[E] {
   def invokeMethod(resultType: JoinTableType, resultVar: String, methodName: String)(block: MethodStructure[E]=>Unit): Unit
   def coerceToBoolean(propertyExpression: E): E
 
-  def decrementCounter(name: String): Unit
-  def checkCounter(variableName: String, comparator: Comparator, value: Int): E
+  def incrementInteger(name: String): Unit
+  def decrementInteger(name: String): Unit
+  def checkInteger(variableName: String, comparator: Comparator, value: Long): E
   def newTableValue(targetVar: String, structure: Map[String, CodeGenType]): E
   def constantExpression(value: Object): E
   def asMap(map: Map[String, E]): E
@@ -132,6 +134,7 @@ trait MethodStructure[E] {
   def forEach(varName: String, codeGenType: CodeGenType, iterable: E)(block: MethodStructure[E] => Unit): Unit
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ifNotStatement(test: E)(block: MethodStructure[E] => Unit): Unit
+  def ifNonNullStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ternaryOperator(test:E, onSuccess:E, onError: E): E
   def returnSuccessfully(): Unit
 

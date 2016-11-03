@@ -30,7 +30,7 @@ case class DecreaseAndReturnWhenZero(opName: String, variableName: String, actio
     startValue.init(generator)
     val expression = generator.box(startValue.generateExpression(generator), startValue.codeGenType)
     generator.declareCounter(variableName, expression)
-    generator.ifStatement(generator.checkCounter(variableName, Equal, 0)) { onTrue =>
+    generator.ifStatement(generator.checkInteger(variableName, Equal, 0L)) { onTrue =>
       onTrue.returnSuccessfully()
     }
     action.init(generator)
@@ -41,8 +41,8 @@ case class DecreaseAndReturnWhenZero(opName: String, variableName: String, actio
 
     generator.trace(opName) { l1 =>
       l1.incrementRows()
-      l1.decrementCounter(variableName)
-      l1.ifStatement(l1.checkCounter(variableName, Equal, 0)) { l2 =>
+      l1.decrementInteger(variableName)
+      l1.ifStatement(l1.checkInteger(variableName, Equal, 0L)) { l2 =>
         l2.returnSuccessfully()
       }
     }

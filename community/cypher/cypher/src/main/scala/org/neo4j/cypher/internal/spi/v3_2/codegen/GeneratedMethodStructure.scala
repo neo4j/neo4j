@@ -167,6 +167,12 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     }
   }
 
+  override def ifNonNullStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
+    using(generator.ifNonNullStatement(test)) { body =>
+      block(copy(generator = body))
+    }
+  }
+
   override def ternaryOperator(test: Expression, onTrue: Expression, onFalse: Expression): Expression =
     ternary(test, onTrue, onFalse)
 
@@ -183,17 +189,22 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   }
 
   override def declareCounter(name: String, initialValue: Expression): Unit = {
-    val variable = generator.declare(typeRef[Int], name)
+    val variable = generator.declare(typeRef[Long], name)
     locals += (name -> variable)
-    generator.assign(variable, invoke(mathCastToInt, initialValue))
+    generator.assign(variable, invoke(mathCastToLong, initialValue))
   }
 
-  override def decrementCounter(name: String) = {
+  override def decrementInteger(name: String) = {
     val local = locals(name)
-    generator.assign(local, subtract(local, constant(1)))
+    generator.assign(local, subtract(local, constant(1L)))
   }
 
-  override def checkCounter(name: String, comparator: Comparator, value: Int): Expression = {
+  override def incrementInteger(name: String) = {
+    val local = locals(name)
+    generator.assign(local, add(local, constant(1L)))
+  }
+
+  override def checkInteger(name: String, comparator: Comparator, value: Long): Expression = {
     val local = locals(name)
     comparator match {
       case Equal =>  equal(local, constant(value))
@@ -652,6 +663,16 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     val localVariable = generator.declare(lowerType(codeGenType), varName)
     locals += (varName -> localVariable)
     generator.assign(localVariable, nullValue(codeGenType))
+  }
+
+  override def assign(varName: String, codeGenType: CodeGenType, expression: Expression) = {
+    val maybeVariable: Option[LocalVariable] = locals.get(varName)
+    if (maybeVariable.nonEmpty) generator.assign(maybeVariable.get, expression)
+    else {
+      val variable = generator.declare(lowerType(codeGenType), varName)
+      locals += (varName -> variable)
+      generator.assign(variable, expression)
+    }
   }
 
   override def hasLabel(nodeVar: String, labelVar: String, predVar: String) = {

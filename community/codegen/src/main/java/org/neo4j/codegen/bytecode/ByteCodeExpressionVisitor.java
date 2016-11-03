@@ -89,6 +89,8 @@ import static org.objectweb.asm.Opcodes.L2D;
 import static org.objectweb.asm.Opcodes.LADD;
 import static org.objectweb.asm.Opcodes.LASTORE;
 import static org.objectweb.asm.Opcodes.LCMP;
+import static org.objectweb.asm.Opcodes.LCONST_0;
+import static org.objectweb.asm.Opcodes.LCONST_1;
 import static org.objectweb.asm.Opcodes.LLOAD;
 import static org.objectweb.asm.Opcodes.LMUL;
 import static org.objectweb.asm.Opcodes.LSUB;
@@ -211,7 +213,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
         else if ( value instanceof Long )
         {
-            methodVisitor.visitLdcInsn( value );
+            pushLong( (Long) value );
         }
         else if ( value instanceof Double )
         {
@@ -558,6 +560,22 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
     }
 
+    private void pushLong( long integer )
+    {
+        if ( integer == 0L )
+        {
+            methodVisitor.visitInsn( LCONST_0 );
+        }
+        else if ( integer == 1L )
+        {
+            methodVisitor.visitInsn( LCONST_1 );
+        }
+        else
+        {
+            methodVisitor.visitLdcInsn( integer );
+        }
+    }
+
     private void createArray( TypeReference reference )
     {
         switch ( reference.name() )
@@ -641,7 +659,6 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     private void numberOperation( TypeReference type, Runnable onInt, Runnable onLong, Runnable onFloat,
             Runnable onDouble )
     {
-
         switch ( type.simpleName() )
         {
         case "int":

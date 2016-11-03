@@ -182,10 +182,11 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   }
 
   override def declareCounter(name: String, initialValue: Expression): Unit = {
-    val variable = generator.declare(typeRef[Int], name)
+    val variable = generator.declare(typeRef[Long], name)
     locals += (name -> variable)
-    generator.assign(variable, invoke(mathCastToInt, initialValue))
+    generator.assign(variable, invoke(mathCastToLong, initialValue))
   }
+
 
   override def decreaseCounterAndCheckForZero(name: String): Expression = {
     val local = locals(name)

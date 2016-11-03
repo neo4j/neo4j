@@ -63,6 +63,11 @@ public class CodeBlock implements AutoCloseable
         return clazz;
     }
 
+    public CodeBlock parent()
+    {
+        return parent;
+    }
+
     @Override
     public void close()
     {

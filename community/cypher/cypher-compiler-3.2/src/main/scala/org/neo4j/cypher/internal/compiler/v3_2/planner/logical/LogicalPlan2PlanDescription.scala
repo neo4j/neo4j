@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, RangeQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
@@ -288,8 +289,17 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case _: ForeachApply =>
         PlanDescriptionImpl(id, "Foreach", children, Seq.empty, variables)
 
+<<<<<<< HEAD
       case LetSelectOrSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
+=======
+      case Aggregation(source, grouping, aggregation) =>
+        PlanDescriptionImpl(id = idMap(plan), name = "EagerAggregation", children = SingleChild(apply(source, idMap)),
+                            Seq(Arguments.KeyNames(grouping.keys.toSeq)), symbols)
+
+      case row: SingleRow =>
+        new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
+>>>>>>> Compiled runtime support for count with no grouping key
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
