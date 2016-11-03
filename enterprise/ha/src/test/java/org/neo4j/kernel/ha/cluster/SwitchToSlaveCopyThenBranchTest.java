@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -230,7 +229,7 @@ public class SwitchToSlaveCopyThenBranchTest
         doAnswer( invocation ->
         {
             MoveAfterCopy moveAfterCopy = invocation.getArgumentAt( 2, MoveAfterCopy.class );
-            moveAfterCopy.move( Collections.emptyList(), new File( "" ), new File( "" ) );
+            moveAfterCopy.move( Stream.empty(), new File( "" ), new File( "" ) );
             return null;
         } ).when( storeCopyClient ).copyStore(
                 any( StoreCopyClient.StoreCopyRequester.class ),

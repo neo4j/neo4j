@@ -236,11 +236,11 @@ public class StoreCopyClientTest
         File backupStore = testDir.directory( "backupStore" );
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        GraphDatabaseService initialDatabase = createInitialDatabase( initialStore );
+        createInitialDatabase( initialStore );
         long originalTransactionOffset =
                 MetaDataStore.getRecord( pageCache, new File( initialStore, MetaDataStore.DEFAULT_NAME ),
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
-        initialDatabase = startDatabase( initialStore );
+        GraphDatabaseService initialDatabase = startDatabase( initialStore );
 
         StoreCopyClient copier =
                 new StoreCopyClient( backupStore, Config.empty(), loadKernelExtensions(), NullLogProvider
