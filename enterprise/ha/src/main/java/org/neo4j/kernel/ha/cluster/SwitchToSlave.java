@@ -34,9 +34,9 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.storecopy.MoveToDir;
-import org.neo4j.com.storecopy.PostStoreCopyOperation;
+import org.neo4j.com.storecopy.MoveAfterCopy;
 import org.neo4j.com.storecopy.StoreCopyClient;
+import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
@@ -74,7 +74,6 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -428,7 +427,7 @@ public abstract class SwitchToSlave
                 }
                 else
                 {
-                    copyStoreFromMaster( masterClient, cancellationRequest, new MoveToDir() );
+                    copyStoreFromMaster( masterClient, cancellationRequest, MoveAfterCopy.moveReplaceExisting() );
                     success = true;
                 }
             }
@@ -475,44 +474,57 @@ public abstract class SwitchToSlave
         StoreUtil.cleanStoreDir( storeDir, pageCache );
     }
 
-    void stopServices() throws Throwable
+    void stopServices() throws Exception
     {
         msgLog.debug( "Stopping services to handle branched store" );
         for ( int i = SERVICES_TO_RESTART_FOR_STORE_COPY.length - 1; i >= 0; i-- )
         {
             Class<? extends Lifecycle> serviceClass = SERVICES_TO_RESTART_FOR_STORE_COPY[i];
-            resolver.resolveDependency( serviceClass ).stop();
-
+            try
+            {
+                resolver.resolveDependency( serviceClass ).stop();
+            }
+            catch ( Exception exception )
+            {
+                throw exception;
+            }
+            catch ( Throwable throwable )
+            {
+                throw new Exception( "Unexpected error while stopping services to handle branched data", throwable );
+            }
         }
     }
 
-    void copyStoreFromMaster( final MasterClient masterClient, CancellationRequest cancellationRequest,
-                              PostStoreCopyOperation postStoreCopyOperation )
+    void copyStoreFromMaster( MasterClient masterClient, CancellationRequest cancellationRequest,
+                              MoveAfterCopy moveAfterCopy )
             throws Throwable
     {
         try
         {
             userLog.info( "Copying store from master" );
-            File copyOfStore = storeCopyClient.copyStore(
-                    new StoreCopyClient.StoreCopyRequester()
-                    {
-                        @Override
-                        public Response<?> copyStore( StoreWriter writer )
-                        {
-                            return masterClient.copyStore( new RequestContext( 0,
+            StoreCopyClient.StoreCopyRequester requester = new StoreCopyClient.StoreCopyRequester()
+            {
+                @Override
+                public Response<?> copyStore( StoreWriter writer )
+                {
+                    return masterClient.copyStore( new RequestContext( 0,
                                     config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, BASE_TX_ID, 0 ),
-                                    writer );
-                        }
+                            writer );
+                }
 
-                        @Override
-                        public void done()
-                        {   // Nothing to clean up here
-                        }
-                    }, cancellationRequest );
-
-            userLog.info( "Copied store from master to " + copyOfStore );
-            msgLog.info( "Starting post copy operation to move store from " + copyOfStore + " to " + storeDir );
-            postStoreCopyOperation.move( copyOfStore, storeDir );
+                @Override
+                public void done()
+                {   // Nothing to clean up here
+                }
+            };
+            MoveAfterCopy moveAfterCopyWithLogging = (moves, fromDirectory, toDirectory) ->
+            {
+                userLog.info( "Copied store from master to " + fromDirectory );
+                msgLog.info( "Starting post copy operation to move store from " + fromDirectory + " to " + storeDir );
+                moveAfterCopy.move( moves, fromDirectory, toDirectory );
+            };
+            storeCopyClient.copyStore(
+                    requester, cancellationRequest, moveAfterCopyWithLogging );
 
             startServicesAgain();
             userLog.info( "Finished copying store from master" );

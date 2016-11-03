@@ -20,22 +20,22 @@
 package org.neo4j.com.storecopy;
 
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.StandardCopyOption;
+import java.util.stream.Stream;
 
-import org.neo4j.io.fs.FileUtils;
-
-import static org.neo4j.com.storecopy.StoreUtil.relevantDbFiles;
-
-public class MoveToDir implements PostStoreCopyOperation
+public interface MoveAfterCopy
 {
-    @Override
-    public void move( File from, File to ) throws IOException
-    {
-        for ( File candidate : relevantDbFiles( from ) )
-        {
-            FileUtils.moveFileToDirectory( candidate, to );
-        }
+    void move( Stream<FileMoveAction> moves, File fromDirectory, File toDirectory ) throws Exception;
 
-        FileUtils.deleteRecursively( from );
+    static MoveAfterCopy moveReplaceExisting()
+    {
+        return (moves, fromDirectory, toDirectory) ->
+        {
+            Iterable<FileMoveAction> itr = moves::iterator;
+            for ( FileMoveAction move : itr )
+            {
+                move.move( toDirectory, StandardCopyOption.REPLACE_EXISTING );
+            }
+        };
     }
 }

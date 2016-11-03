@@ -28,7 +28,6 @@ import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -82,6 +81,8 @@ public class ToFileStoreWriter implements StoreWriter
                         return written;
                     }
                 }
+                // We don't add file move actions for these files. The reason is that we will perform the file moves
+                // *after* we have done recovery on the store, and this may delete some files, and add other files.
                 return writeDataThroughFileSystem( file, data, temporaryBuffer, hasData );
             }
             finally
@@ -99,14 +100,7 @@ public class ToFileStoreWriter implements StoreWriter
     // the page cache later on when we want to move the files written through the page cache.
     private void addPageCacheMoveAction( File file )
     {
-        fileMoveActions.add( ( toDir, copyOptions ) ->
-        {
-            Optional<FileHandle> handle = pageCache.streamFilesRecursive( file ).findAny();
-            if ( handle.isPresent() )
-            {
-                handle.get().rename( new File( toDir, file.getName() ), copyOptions );
-            }
-        } );
+        fileMoveActions.add( FileMoveAction.copyViaPageCache( file, pageCache ) );
     }
 
     private int filePageSize( int alignment )
