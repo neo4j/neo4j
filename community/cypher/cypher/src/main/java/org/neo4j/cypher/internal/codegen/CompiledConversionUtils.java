@@ -26,8 +26,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException;
-import org.neo4j.cypher.internal.frontend.v3_1.IncomparableValuesException;
+import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException;
+import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.MathUtil;

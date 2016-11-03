@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, Intern
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_0, NormalMode => NormalModev3_0, ProfileMode => ProfileModev3_0, _}
-import org.neo4j.cypher.internal.compiler.v3_1.{CRS, Coordinate, Geometry, Point}
-import org.neo4j.cypher.internal.compiler.{v3_0, v3_1}
+import org.neo4j.cypher.internal.compiler.v3_2.{CRS, Coordinate, Geometry, Point}
+import org.neo4j.cypher.internal.compiler.{v3_0, v3_2}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
@@ -242,7 +242,7 @@ trait CompatibilityFor3_0 {
     new ParsedQuery {
       def isPeriodicCommit = preparedSyntacticQueryForV_3_0.map(_.isPeriodicCommit).getOrElse(false)
 
-      def plan(transactionalContext: TransactionalContextWrapperv3_1, tracer: v3_1.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor3_0.runSafely {
+      def plan(transactionalContext: TransactionalContextWrapperv3_1, tracer: v3_2.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor3_0.runSafely {
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext))
         val syntacticQuery = preparedSyntacticQueryForV_3_0.get
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, planContext, Some(as3_0(preParsedQuery.offset)), as3_0(tracer))

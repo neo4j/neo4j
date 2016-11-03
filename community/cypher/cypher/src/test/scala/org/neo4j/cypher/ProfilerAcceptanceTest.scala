@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_1
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, QualifiedName}
-import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.frontend.v3_1.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Argument, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, QualifiedName}
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.graphdb.QueryExecutionException
 
@@ -653,7 +653,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   def profileWithPlanner(planner: Planner, q: String, params: (String, Any)*): InternalExecutionResult = {
     val result = planner("profile " + q, params)
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    val planDescription: v3_1.planDescription.InternalPlanDescription = result.executionPlanDescription()
+    val planDescription: v3_2.planDescription.InternalPlanDescription = result.executionPlanDescription()
     planDescription.flatten.foreach {
       p =>
         if (!p.arguments.exists(_.isInstanceOf[DbHits])) {
@@ -672,11 +672,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecute(_,_:_*), q, params:_*)
 
-  private def getArgument[A <: Argument](plan: v3_1.planDescription.InternalPlanDescription)(implicit manifest: ClassTag[A]): A = plan.arguments.collectFirst {
+  private def getArgument[A <: Argument](plan: v3_2.planDescription.InternalPlanDescription)(implicit manifest: ClassTag[A]): A = plan.arguments.collectFirst {
     case x: A => x
   }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString()} but only found ${plan.arguments}"))
 
-  private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[v3_1.planDescription.InternalPlanDescription] = {
+  private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[v3_2.planDescription.InternalPlanDescription] = {
     result.toList
     val description = result.executionPlanDescription()
     if (names.isEmpty)

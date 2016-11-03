@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expander, KernelPredicate}
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_1.spi._
-import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_2.spi._
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_1.ExceptionTranslationSupport
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor

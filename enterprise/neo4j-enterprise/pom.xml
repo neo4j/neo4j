@@ -78,7 +78,7 @@
       <version>${project.version}</version>
     </dependency>
 
-    <!-- For the tests specified by this package -->
+    <!-- For the tests specified by this v3_2 -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

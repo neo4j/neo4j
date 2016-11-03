@@ -24,8 +24,8 @@ import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.frontend.v3_1.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper.RichString
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Configuration
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

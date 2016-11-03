@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_1.notification._
+import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_2.notification._
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Procedure
 

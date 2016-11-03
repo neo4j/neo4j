@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_1.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy, CypherVersion, InvalidArgumentException}
 
 import scala.annotation.tailrec

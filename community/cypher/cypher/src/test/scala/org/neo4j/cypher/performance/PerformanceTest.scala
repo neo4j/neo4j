@@ -23,7 +23,7 @@ import java.io.File
 import java.util.Collections
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.{GraphDatabaseService, Node, RelationshipType}
 

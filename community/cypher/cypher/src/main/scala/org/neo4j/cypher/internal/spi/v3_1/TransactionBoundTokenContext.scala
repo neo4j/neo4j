@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_1
 
-import org.neo4j.cypher.internal.compiler.v3_1.spi.TokenContext
+import org.neo4j.cypher.internal.compiler.v3_2.spi.TokenContext
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.exceptions.{LabelNotFoundKernelException, PropertyKeyNotFoundException, RelationshipTypeNotFoundException}
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations

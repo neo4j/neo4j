@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.codegen
 import java.util
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 
 class CompiledConversionUtilsTest extends CypherFunSuite {

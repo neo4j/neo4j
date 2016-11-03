@@ -23,10 +23,10 @@ import java.util
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, ExecutionResultWrapperFor3_1}
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.Rows
-import org.neo4j.cypher.internal.frontend.v3_1.InternalException
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.Rows
+import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor

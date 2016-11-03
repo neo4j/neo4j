@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.InvalidArgumentException
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class CypherStatementWithOptionsTest extends CypherFunSuite {
 

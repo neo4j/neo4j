@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.exceptionHandlerFor3_1
-import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
+import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService

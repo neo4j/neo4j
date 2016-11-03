@@ -23,9 +23,9 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhaseEvent
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerConfiguration => CypherCompilerConfiguration2_3}
-import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, CypherCompilerConfiguration}
+import org.neo4j.cypher.internal.compiler.v3_2.{CompilationPhaseTracer, CypherCompilerConfiguration}
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InputPosition2_3}
-import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 
 /**
   * Contains necessary wrappers for supporting 2.3 in 3.1
@@ -42,21 +42,21 @@ object wrappersFor2_3 {
       override def beginPhase(phase: v2_3.CompilationPhaseTracer.CompilationPhase) = {
         val wrappedPhase =
           if (phase == v2_3.CompilationPhaseTracer.CompilationPhase.AST_REWRITE)
-            org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+            org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
           else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase
             .CODE_GENERATION)
-            org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
+            org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
           else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase
             .LOGICAL_PLANNING)
-            org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+            org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
           else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase.PARSING)
-            org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.PARSING
+            org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PARSING
           else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase
             .PIPE_BUILDING)
-            org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
+            org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
           else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase
             .SEMANTIC_CHECK)
-            org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
+            org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
           else throw new InternalException(s"Cannot handle $phase in 2.3")
 
         val wrappedEvent = tracer.beginPhase(wrappedPhase)

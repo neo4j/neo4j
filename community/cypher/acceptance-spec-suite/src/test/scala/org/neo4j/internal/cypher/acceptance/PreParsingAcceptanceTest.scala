@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.ExecutionResult
 import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_1
-import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.scalatest.matchers.{MatchResult, Matcher}
 

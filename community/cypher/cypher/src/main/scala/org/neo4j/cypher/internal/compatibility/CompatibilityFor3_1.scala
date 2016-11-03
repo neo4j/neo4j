@@ -25,18 +25,18 @@ import java.util.Collections
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compiler.v3_1
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan => ExecutionPlan_v3_1, _}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor}
-import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
+import org.neo4j.cypher.internal.compiler.v3_2
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan => ExecutionPlan_v3_1, _}
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor}
+import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
-import org.neo4j.cypher.internal.frontend.v3_1.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.frontend.v3_2.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.frontend.v3_2.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
@@ -219,13 +219,13 @@ trait CompatibilityFor3_1 {
   val kernelAPI: KernelAPI
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
-    import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer._
+    import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer._
     import org.neo4j.helpers.Assertion._
 
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_1.CypherCompiler
+  protected val compiler: v3_2.CypherCompiler
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
@@ -415,7 +415,7 @@ class ExecutionResultWrapperFor3_1(val inner: InternalExecutionResult, val plann
     override def getString(key: String): String = row.getString(key)
   }
 
-  private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_1.InputPosition) {
+  private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_2.InputPosition) {
     def asInputPosition = new graphdb.InputPosition(pos.offset, pos.line, pos.column)
   }
 }

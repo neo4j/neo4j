@@ -26,15 +26,15 @@ import org.neo4j.codegen.CodeGeneratorOption._
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, _}
-import org.neo4j.cypher.internal.compiler.v3_1.codegen._
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{CodeGenType, FloatType, IntType, ReferenceType}
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_1.helpers._
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols
+import org.neo4j.cypher.internal.compiler.v3_2.codegen._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{CodeGenType, FloatType, IntType, ReferenceType}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_2.helpers._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultVisitor, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 

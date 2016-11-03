@@ -25,12 +25,12 @@ import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
-import org.neo4j.cypher.internal.compiler.v3_1.codegen._
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_1.CypherExecutionException
+import org.neo4j.cypher.internal.compiler.v3_2.codegen._
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v3_2.CypherExecutionException
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}

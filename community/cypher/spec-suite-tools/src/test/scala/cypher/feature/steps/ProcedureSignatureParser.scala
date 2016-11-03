@@ -20,9 +20,9 @@
 package cypher.feature.steps
 
 import cypher.feature.steps
-import org.neo4j.cypher.internal.frontend.v3_1.SyntaxException
-import org.neo4j.cypher.internal.frontend.v3_1.parser.{Base, Expressions, Literals}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
+import org.neo4j.cypher.internal.frontend.v3_2.parser.{Base, Expressions, Literals}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.parboiled.scala._
 
 /**

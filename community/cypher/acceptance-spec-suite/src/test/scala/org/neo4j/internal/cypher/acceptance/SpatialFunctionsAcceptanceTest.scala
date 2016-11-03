@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_1.{CRS, CartesianPoint, GeographicPoint}
+import org.neo4j.cypher.internal.compiler.v3_2.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, SyntaxException}
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {

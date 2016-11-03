@@ -20,9 +20,9 @@
 package org.neo4j.cypher
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.Counter
-import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.Counter
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc

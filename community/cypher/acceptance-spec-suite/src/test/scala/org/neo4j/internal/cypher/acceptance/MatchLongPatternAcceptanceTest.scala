@@ -23,9 +23,9 @@ import java.util
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_1
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.IDPSolverMonitor
-import org.neo4j.cypher.internal.compiler.v3_1.{IDPPlannerName, InterpretedRuntimeName}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.IDPSolverMonitor
+import org.neo4j.cypher.internal.compiler.v3_2.{IDPPlannerName, InterpretedRuntimeName}
 import org.neo4j.cypher.internal.{ExecutionEngine, PlanDescription}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting

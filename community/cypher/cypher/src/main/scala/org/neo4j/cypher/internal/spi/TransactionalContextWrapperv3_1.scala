@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryTransactionalContext
+import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable

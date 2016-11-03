@@ -21,7 +21,7 @@ package cypher.feature.reporting
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.{QueryTagger, QueryTags}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.{QueryTagger, QueryTags}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.codegen
 
-import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{Assertions, Matchers, PropSpec}
 

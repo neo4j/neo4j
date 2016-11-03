@@ -29,7 +29,7 @@ import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibra
 import cypher.feature.parser._
 import cypher.feature.parser.matchers.ResultWrapper
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, _}
 import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, Result, Transaction}
 import org.neo4j.kernel.api.KernelAPI

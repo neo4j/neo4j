@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 
 /**
   * These tests are testing the actual index implementation, thus they should all check the actual result.
   * If you only want to verify that plans using indexes are actually planned, please use
-  * [[org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LeafPlanningIntegrationTest]]
+  * [[org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LeafPlanningIntegrationTest]]
   */
 class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 

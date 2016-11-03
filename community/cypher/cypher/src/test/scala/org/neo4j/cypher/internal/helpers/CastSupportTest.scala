@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.neo4j.cypher.internal.compiler.v3_1.helpers
-import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_2.helpers
+import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class CastSupportTest extends CypherFunSuite {
 

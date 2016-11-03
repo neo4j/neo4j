@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
 import org.neo4j.kernel.impl.api.OperationsFacade
 

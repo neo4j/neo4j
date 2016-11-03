@@ -21,7 +21,7 @@ package cypher.feature.reporting
 
 
 import com.novus.salat.annotations.{Ignore, Key, Persist}
-import org.neo4j.cypher.internal.compiler.v3_1.ast.QueryTag
+import org.neo4j.cypher.internal.compiler.v3_2.ast.QueryTag
 
 import scala.annotation.meta.getter
 

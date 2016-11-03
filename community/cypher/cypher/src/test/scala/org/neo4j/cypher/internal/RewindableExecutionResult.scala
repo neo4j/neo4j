@@ -25,13 +25,13 @@ import java.util
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v2_3
-import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, READ_WRITE, _}
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription._
-import org.neo4j.cypher.internal.compiler.v3_1.spi.InternalResultVisitor
+import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, READ_WRITE, _}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
+import org.neo4j.cypher.internal.compiler.v3_2.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v2_3.{notification => notification_2_3}
-import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, notification}
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, notification}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 object RewindableExecutionResult {

@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_1
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.IdentityTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, InfoLogger, _}
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerFactory, InfoLogger, _}
 import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
 
 import scala.concurrent.duration._

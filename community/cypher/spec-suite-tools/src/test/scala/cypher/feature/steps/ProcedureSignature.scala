@@ -19,7 +19,7 @@
  */
 package cypher.feature.steps
 
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
 object ProcedureSignature {
   private val parser = new ProcedureSignatureParser

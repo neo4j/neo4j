@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.QueryGraphSolver
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport2, RegularPlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_1.Foldable.FoldableAny
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.QueryGraphSolver
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{LogicalPlanningTestSupport2, RegularPlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_2.Foldable.FoldableAny
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.scalacheck.Gen
 
 import scala.util.Random

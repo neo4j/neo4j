@@ -239,7 +239,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     try {
       updateWithBothPlannersAndCompatibilityMode("create (a {params1}), (b {params2})", "params1" -> maps1, "params2" -> maps2)
     } catch {
-      case e: CypherTypeException => e.getCause shouldBe a [org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException]
+      case e: CypherTypeException => e.getCause shouldBe a [org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException]
       case e: ParameterWrongTypeException => e.getCause shouldBe a [org.neo4j.cypher.internal.frontend.v2_3.ParameterWrongTypeException]
     }
   }

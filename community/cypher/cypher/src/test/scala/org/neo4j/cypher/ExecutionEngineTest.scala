@@ -23,8 +23,8 @@ import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService

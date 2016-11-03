@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {

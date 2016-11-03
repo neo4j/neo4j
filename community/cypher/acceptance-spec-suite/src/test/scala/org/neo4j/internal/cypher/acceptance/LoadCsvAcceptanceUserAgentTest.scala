@@ -20,8 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_1.spi.CSVResources
-import org.neo4j.cypher.internal.frontend.v3_1.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v3_2.spi.CSVResources
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper.RichString
 import org.scalatest.BeforeAndAfterAll
 import sun.net.www.protocol.http.HttpURLConnection
 
