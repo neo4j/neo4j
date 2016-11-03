@@ -79,9 +79,9 @@ public class IndexModifier<KEY,VALUE>
 {
     private final IdProvider idProvider;
     private final TreeNode<KEY,VALUE> bTreeNode;
-    private final byte[] tmp;
-    private final byte[] tmp2;
-    private final byte[] tmp3;
+    private final byte[] tmpForKeys;
+    private final byte[] tmpForValues;
+    private final byte[] tmpForChildren;
     private final SplitResult<KEY> internalSplitResult = new SplitResult<>();
     private final SplitResult<KEY> leafSplitResult = new SplitResult<>();
     private final Layout<KEY,VALUE> layout;
@@ -93,10 +93,10 @@ public class IndexModifier<KEY,VALUE>
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;
         this.layout = layout;
-        this.tmp = new byte[max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() ) *
-                            max( layout.keySize(), layout.valueSize() )];
-        this.tmp2 = new byte[tmp.length + layout.keySize()];
-        this.tmp3 = new byte[tmp.length + layout.valueSize()];
+        int maxKeyCount = max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() );
+        this.tmpForKeys = new byte[(maxKeyCount + 1) * layout.keySize()];
+        this.tmpForValues = new byte[(maxKeyCount + 1) * layout.valueSize()];
+        this.tmpForChildren = new byte[(maxKeyCount + 2) * Long.BYTES];
         this.internalSplitResult.primKey = layout.newKey();
         this.leafSplitResult.primKey = layout.newKey();
         this.readKey = layout.newKey();
@@ -167,10 +167,10 @@ public class IndexModifier<KEY,VALUE>
             // No overflow
             int pos = positionOf( search( cursor, bTreeNode, primKey, readKey, keyCount ) );
 
-            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, tmp );
+            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, tmpForKeys );
             // NOTE pos+1 since we never insert a new child before child(0) because its key is really
             // the one from the parent.
-            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, tmp );
+            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, tmpForChildren );
 
             // Increase key count
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
@@ -210,12 +210,12 @@ public class IndexModifier<KEY,VALUE>
 
         // Arrays to temporarily store keys and children in sorted order.
         bTreeNode.readKeysWithInsertRecordInPosition( cursor,
-                c -> layout.writeKey( c, primKey ), pos, keyCount+1, tmp2 );
+                c -> layout.writeKey( c, primKey ), pos, keyCount+1, tmpForKeys );
         bTreeNode.readChildrenWithInsertRecordInPosition( cursor,
-                c -> bTreeNode.writeChild( c, newRightChild ), pos+1, keyCount+2, tmp3 );
+                c -> bTreeNode.writeChild( c, newRightChild ), pos+1, keyCount+2, tmpForChildren );
 
         int keyCountAfterInsert = keyCount + 1;
-        int middle = middle( keyCountAfterInsert, options.splitLeftChildSize() );
+        int middlePos = middle( keyCountAfterInsert, options.splitLeftChildSize() );
 
         SplitResult<KEY> split = internalSplitResult;
         split.left = newLeft;
@@ -227,14 +227,14 @@ public class IndexModifier<KEY,VALUE>
             bTreeNode.initializeInternal( cursor );
             bTreeNode.setRightSibling( cursor, oldRight );
             bTreeNode.setLeftSibling( cursor, newLeft );
-            bTreeNode.writeKeys( cursor, tmp2, middle + 1, 0, keyCountAfterInsert - (middle + 1) );
-            bTreeNode.writeChildren( cursor, tmp3, middle + 1, 0,
-                    keyCountAfterInsert - middle /*there's one more child than key to copy*/ );
-            bTreeNode.setKeyCount( cursor, keyCount - middle );
+            bTreeNode.writeKeys( cursor, tmpForKeys, middlePos + 1, 0, keyCountAfterInsert - (middlePos + 1) );
+            bTreeNode.writeChildren( cursor, tmpForChildren, middlePos + 1, 0,
+                    keyCountAfterInsert - middlePos /*there's one more child than key to copy*/ );
+            bTreeNode.setKeyCount( cursor, keyCount - middlePos );
 
             // Extract middle key (prim key)
-            int arrayOffset = middle * bTreeNode.keySize();
-            PageCursor buffer = ByteArrayPageCursor.wrap( tmp2, arrayOffset, bTreeNode.keySize() );
+            int middleOffset = middlePos * bTreeNode.keySize();
+            PageCursor buffer = ByteArrayPageCursor.wrap( tmpForKeys, middleOffset, bTreeNode.keySize() );
 
             // Populate split result
             layout.readKey( buffer, split.primKey );
@@ -243,17 +243,17 @@ public class IndexModifier<KEY,VALUE>
         // Update left node
         // Move cursor back to left
         cursor.next( fullNode );
-        bTreeNode.setKeyCount( cursor, middle );
-        if ( pos < middle )
+        bTreeNode.setKeyCount( cursor, middlePos );
+        if ( pos < middlePos )
         {
             // Write keys to left
             int arrayOffset = pos * bTreeNode.keySize();
             cursor.setOffset( bTreeNode.keyOffset( pos ) );
-            cursor.putBytes( tmp2, arrayOffset, (middle - pos) * bTreeNode.keySize() );
+            cursor.putBytes( tmpForKeys, arrayOffset, (middlePos - pos) * bTreeNode.keySize() );
 
             cursor.setOffset( bTreeNode.childOffset( pos + 1 ) );
             arrayOffset = (pos + 1) * bTreeNode.childSize();
-            cursor.putBytes( tmp3, arrayOffset, (middle - pos) * bTreeNode.childSize() );
+            cursor.putBytes( tmpForChildren, arrayOffset, (middlePos - pos) * bTreeNode.childSize() );
         }
 
         bTreeNode.setRightSibling( cursor, newRight );
@@ -307,8 +307,8 @@ public class IndexModifier<KEY,VALUE>
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
             // No overflow, insert key and value
-            bTreeNode.insertKeyAt( cursor, key, pos, keyCount, tmp );
-            bTreeNode.insertValueAt( cursor, value, pos, keyCount, tmp );
+            bTreeNode.insertKeyAt( cursor, key, pos, keyCount, tmpForKeys );
+            bTreeNode.insertValueAt( cursor, value, pos, keyCount, tmpForValues );
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
 
             return null; // No split has occurred
@@ -398,12 +398,12 @@ public class IndexModifier<KEY,VALUE>
 
         // arrays to temporarily store all keys and values
         bTreeNode.readKeysWithInsertRecordInPosition( cursor,
-                c -> layout.writeKey( c, newKey ), pos, bTreeNode.leafMaxKeyCount() + 1, tmp2 );
+                c -> layout.writeKey( c, newKey ), pos, bTreeNode.leafMaxKeyCount() + 1, tmpForKeys );
         bTreeNode.readValuesWithInsertRecordInPosition( cursor,
-                c -> layout.writeValue( c, newValue ), pos, bTreeNode.leafMaxKeyCount() + 1, tmp3 );
+                c -> layout.writeValue( c, newValue ), pos, bTreeNode.leafMaxKeyCount() + 1, tmpForValues );
 
         int keyCountAfterInsert = keyCount + 1;
-        int middle = middle( keyCountAfterInsert, options.splitLeftChildSize() );
+        int middlePos = middle( keyCountAfterInsert, options.splitLeftChildSize() );
 
         // allKeysIncludingNewKey should now contain all keys in sorted order and
         // allValuesIncludingNewValue should now contain all values in same order as corresponding keys
@@ -416,13 +416,13 @@ public class IndexModifier<KEY,VALUE>
         split.left = newLeft;
         split.right = newRight;
 
-        if ( middle == pos )
+        if ( middlePos == pos )
         {
             layout.copyKey( newKey, split.primKey );
         }
         else
         {
-            bTreeNode.keyAt( cursor, split.primKey, pos < middle ? middle - 1 : middle );
+            bTreeNode.keyAt( cursor, split.primKey, pos < middlePos ? middlePos - 1 : middlePos );
         }
 
         {   // Update new right
@@ -430,19 +430,19 @@ public class IndexModifier<KEY,VALUE>
             bTreeNode.initializeLeaf( cursor );
             bTreeNode.setRightSibling( cursor, oldRight );
             bTreeNode.setLeftSibling( cursor, newLeft );
-            bTreeNode.writeKeys( cursor, tmp2, middle, 0, keyCountAfterInsert - middle );
-            bTreeNode.writeValues( cursor, tmp3, middle, 0, keyCountAfterInsert - middle );
-            bTreeNode.setKeyCount( cursor, keyCountAfterInsert - middle );
+            bTreeNode.writeKeys( cursor, tmpForKeys, middlePos, 0, keyCountAfterInsert - middlePos );
+            bTreeNode.writeValues( cursor, tmpForValues, middlePos, 0, keyCountAfterInsert - middlePos );
+            bTreeNode.setKeyCount( cursor, keyCountAfterInsert - middlePos );
         }
 
         // Update left child
         cursor.next( current );
-        bTreeNode.setKeyCount( cursor, middle );
+        bTreeNode.setKeyCount( cursor, middlePos );
         // If pos < middle. Write shifted values to left node. Else, don't write anything.
-        if ( pos < middle )
+        if ( pos < middlePos )
         {
-            bTreeNode.writeKeys( cursor, tmp2, pos, pos, middle - pos );
-            bTreeNode.writeValues( cursor, tmp3, pos, pos, middle - pos );
+            bTreeNode.writeKeys( cursor, tmpForKeys, pos, pos, middlePos - pos );
+            bTreeNode.writeValues( cursor, tmpForValues, pos, pos, middlePos - pos );
         }
         bTreeNode.setRightSibling( cursor, newRight );
 
@@ -483,9 +483,9 @@ public class IndexModifier<KEY,VALUE>
         pos--;
 
         // Remove key/value
-        bTreeNode.removeKeyAt( cursor, pos, keyCount, tmp );
+        bTreeNode.removeKeyAt( cursor, pos, keyCount, tmpForKeys );
         bTreeNode.valueAt( cursor, readValue, pos );
-        bTreeNode.removeValueAt( cursor, pos, keyCount, tmp );
+        bTreeNode.removeValueAt( cursor, pos, keyCount, tmpForValues );
 
         // Decrease key count
         bTreeNode.setKeyCount( cursor, keyCount - 1 );
