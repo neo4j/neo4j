@@ -39,9 +39,11 @@ import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class EphemeralFileSystemAbstractionCrashTest
+public class EphemeralFileSystemAbstractionTest
 {
 
     private EphemeralFileSystemAbstraction fs;
@@ -218,6 +220,31 @@ public class EphemeralFileSystemAbstractionCrashTest
         finally
         {
             executorService.shutdown();
+        }
+    }
+
+    @Test
+    public void releaseResourcesOnClose() throws IOException
+    {
+        try ( EphemeralFileSystemAbstraction fileSystemAbstraction = new EphemeralFileSystemAbstraction() )
+        {
+            CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
+            fileSystemAbstraction.getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
+                    closeTrackingFileSystemClass -> closeTrackingFileSystem );
+            File testDir = new File( "testDir" );
+            File testFile = new File( "testFile" );
+            fileSystemAbstraction.mkdir( testDir );
+            fileSystemAbstraction.create( testFile );
+
+            assertTrue( fileSystemAbstraction.fileExists( testFile ) );
+            assertTrue( fileSystemAbstraction.fileExists( testFile ) );
+            assertFalse( closeTrackingFileSystem.isClosed() );
+
+            fileSystemAbstraction.close();
+
+            assertTrue( closeTrackingFileSystem.isClosed() );
+            assertFalse( fileSystemAbstraction.fileExists( testFile ) );
+            assertFalse( fileSystemAbstraction.fileExists( testFile ) );
         }
     }
 

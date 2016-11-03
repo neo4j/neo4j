@@ -135,14 +135,7 @@ public abstract class DelegatingFileSystem extends FileSystem
     public PathMatcher getPathMatcher( String syntaxAndPattern )
     {
         final PathMatcher matcher = delegate.getPathMatcher( syntaxAndPattern );
-        return new PathMatcher()
-        {
-            @Override
-            public boolean matches( Path path )
-            {
-                return matcher.matches( DelegatingPath.getDelegate( path ) );
-            }
-        };
+        return path -> matcher.matches( DelegatingPath.getDelegate( path ) );
     }
 
     @Override

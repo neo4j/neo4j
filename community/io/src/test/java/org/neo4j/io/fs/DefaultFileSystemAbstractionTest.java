@@ -27,7 +27,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
+
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -115,4 +119,22 @@ public class DefaultFileSystemAbstractionTest
                     .UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) ) );
         }
     }
+
+    @Test
+    public void closeThirdPartyFileSystemsOnClose() throws IOException
+    {
+        CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
+
+        CloseTrackingFileSystem fileSystem = defaultFileSystemAbstraction
+                .getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
+                        thirdPartyFileSystemClass -> closeTrackingFileSystem );
+
+        assertSame( closeTrackingFileSystem, fileSystem );
+        assertFalse( closeTrackingFileSystem.isClosed() );
+
+        defaultFileSystemAbstraction.close();
+
+        assertTrue( closeTrackingFileSystem.isClosed() );
+    }
+
 }
