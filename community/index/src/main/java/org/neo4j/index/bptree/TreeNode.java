@@ -73,7 +73,7 @@ class TreeNode<KEY,VALUE>
 
     private static final byte LEAF_FLAG = 1;
     private static final byte INTERNAL_FLAG = 0;
-    private static final long NO_NODE_FLAG = -1;
+    static final long NO_NODE_FLAG = -1;
 
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;

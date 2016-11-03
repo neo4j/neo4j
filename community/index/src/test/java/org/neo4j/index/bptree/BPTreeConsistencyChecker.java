@@ -1,13 +1,18 @@
 package org.neo4j.index.bptree;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 
 import org.neo4j.io.pagecache.PageCursor;
+
+import static org.neo4j.index.bptree.TreeNode.NO_NODE_FLAG;
 
 /**
  * Check order of keys in isolated nodes
  * Check keys fit inside range given by parent node
+ * Check sibling pointers match
  */
 class BPTreeConsistencyChecker<KEY>
 {
@@ -15,6 +20,7 @@ class BPTreeConsistencyChecker<KEY>
     private final KEY readKey;
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
+    private final List<Rightmost> rightmostPerLevel = new ArrayList<>();
 
     BPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout )
     {
@@ -30,14 +36,16 @@ class BPTreeConsistencyChecker<KEY>
         layout.minKey( leftSideOfRange );
         KEY rightSideOfRange = layout.newKey();
         layout.maxKey( rightSideOfRange );
-        return checkSubtree( cursor, new KeyRange<>( comparator, leftSideOfRange, rightSideOfRange, layout ), 0 );
+        return checkSubtree( cursor, new KeyRange( comparator, leftSideOfRange, rightSideOfRange, layout ), 0 );
     }
 
-    private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, int level ) throws IOException
+    private boolean checkSubtree( PageCursor cursor, KeyRange range, int level ) throws IOException
     {
+        long pageId = assertSiblings( cursor, level );
+
         if ( node.isInternal( cursor ) )
         {
-            assertKeyOrderAndSubtrees( cursor, range, level );
+            assertKeyOrderAndSubtrees( cursor, pageId, range, level );
         }
         else if ( node.isLeaf( cursor ) )
         {
@@ -50,12 +58,44 @@ class BPTreeConsistencyChecker<KEY>
         return true;
     }
 
-    private void assertKeyOrderAndSubtrees( PageCursor cursor, KeyRange<KEY> range, int level ) throws IOException
+    // Assumption: We traverse the tree from left to right on every level
+    private long assertSiblings( PageCursor cursor, int level )
+    {
+        // If this is the first time on this level, we will add a new entry
+        for ( int i = rightmostPerLevel.size(); i <= level; i++ )
+        {
+            Rightmost first = new Rightmost();
+            first.currentRightmost = NO_NODE_FLAG;
+            first.expectedNextRightmost = NO_NODE_FLAG;
+            rightmostPerLevel.add( i, first );
+        }
+        Rightmost rightmost = rightmostPerLevel.get( level );
+
+        long pageId = cursor.getCurrentPageId();
+        long leftSibling = node.leftSibling( cursor );
+        long rightSibling = node.rightSibling( cursor );
+
+        // Assert we have reached expected node and that we agree about being siblings
+        assert leftSibling == rightmost.currentRightmost :
+                "Sibling pointer does align with tree structure. Expected left sibling to be " +
+                rightmost.currentRightmost + " but was " + leftSibling;
+        assert pageId == rightmost.expectedNextRightmost ||
+               ( rightmost.expectedNextRightmost == NO_NODE_FLAG && rightmost.currentRightmost == NO_NODE_FLAG ) :
+                "Sibling pointer does not align with tree structure. Expected right sibling to be " +
+                rightmost.expectedNextRightmost + " but was " + rightSibling;
+
+        // Update rightmost
+        rightmost.currentRightmost = pageId;
+        rightmost.expectedNextRightmost = rightSibling;
+        return pageId;
+    }
+
+    private void assertKeyOrderAndSubtrees( PageCursor cursor, final long pageId, KeyRange range, int level )
+            throws IOException
     {
         int keyCount = node.keyCount( cursor );
-        long pageId = cursor.getCurrentPageId();
         KEY prev = layout.newKey();
-        KeyRange<KEY> childRange;
+        KeyRange childRange;
 
         int pos = 0;
         while ( pos < keyCount )
@@ -72,13 +112,13 @@ class BPTreeConsistencyChecker<KEY>
 
             if ( pos == 0 )
             {
-                childRange = range.restrivtRight( readKey );
+                childRange = range.restrictRight( readKey );
             }
             else
             {
-                childRange = range.restrictLeft( prev ).restrivtRight( readKey );
+                childRange = range.restrictLeft( prev ).restrictRight( readKey );
             }
-            checkSubtree( cursor, childRange, level+1 );
+            checkSubtree( cursor, childRange, level + 1 );
             cursor.next( pageId );
 
             layout.copyKey( readKey, prev );
@@ -89,11 +129,11 @@ class BPTreeConsistencyChecker<KEY>
         long child = node.childAt( cursor, pos );
         cursor.next( child );
         childRange = range.restrictLeft( prev );
-        checkSubtree( cursor, childRange, level+1 );
+        checkSubtree( cursor, childRange, level + 1 );
         cursor.next( pageId );
     }
 
-    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range )
+    private void assertKeyOrder( PageCursor cursor, KeyRange range )
     {
         int keyCount = node.keyCount( cursor );
         KEY prev = layout.newKey();
@@ -114,7 +154,7 @@ class BPTreeConsistencyChecker<KEY>
         }
     }
 
-    private class KeyRange<KEY>
+    private class KeyRange
     {
         private final Comparator<KEY> comparator;
         private final KEY fromInclusive;
@@ -141,29 +181,31 @@ class BPTreeConsistencyChecker<KEY>
                 }
                 return comparator.compare( key, fromInclusive ) >= 0;
             }
-            if ( toExclusive != null )
-            {
-                return comparator.compare( key, toExclusive ) < 0;
-            }
-            return true;
+            return toExclusive == null || comparator.compare( key, toExclusive ) < 0;
         }
 
-        KeyRange<KEY> restrictLeft( KEY left )
+        KeyRange restrictLeft( KEY left )
         {
             if ( comparator.compare( fromInclusive, left ) < 0 )
             {
-                return new KeyRange<>( comparator, left, toExclusive, layout );
+                return new KeyRange( comparator, left, toExclusive, layout );
             }
-            return new KeyRange<>( comparator, fromInclusive, toExclusive, layout );
+            return new KeyRange( comparator, fromInclusive, toExclusive, layout );
         }
 
-        KeyRange<KEY> restrivtRight( KEY right )
+        KeyRange restrictRight( KEY right )
         {
             if ( comparator.compare( toExclusive, right ) > 0 )
             {
-                return new KeyRange<>( comparator, fromInclusive, right, layout );
+                return new KeyRange( comparator, fromInclusive, right, layout );
             }
-            return new KeyRange<>( comparator, fromInclusive, toExclusive, layout );
+            return new KeyRange( comparator, fromInclusive, toExclusive, layout );
         }
+    }
+
+    private class Rightmost
+    {
+        long currentRightmost;
+        long expectedNextRightmost;
     }
 }

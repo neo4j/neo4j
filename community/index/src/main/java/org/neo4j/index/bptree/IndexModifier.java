@@ -240,6 +240,13 @@ public class IndexModifier<KEY,VALUE>
             layout.readKey( buffer, split.primKey );
         }
 
+        // Update old right with new left sibling (newRight)
+        if ( oldRight != TreeNode.NO_NODE_FLAG )
+        {
+            cursor.next( oldRight );
+            bTreeNode.setLeftSibling( cursor, newRight );
+        }
+
         // Update left node
         // Move cursor back to left
         cursor.next( fullNode );
@@ -433,6 +440,13 @@ public class IndexModifier<KEY,VALUE>
             bTreeNode.writeKeys( cursor, tmpForKeys, middlePos, 0, keyCountAfterInsert - middlePos );
             bTreeNode.writeValues( cursor, tmpForValues, middlePos, 0, keyCountAfterInsert - middlePos );
             bTreeNode.setKeyCount( cursor, keyCountAfterInsert - middlePos );
+        }
+
+        // Update old right with new left sibling (newRight)
+        if ( oldRight != TreeNode.NO_NODE_FLAG )
+        {
+            cursor.next( oldRight );
+            bTreeNode.setLeftSibling( cursor, newRight );
         }
 
         // Update left child
