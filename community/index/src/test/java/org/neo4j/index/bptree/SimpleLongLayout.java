@@ -38,6 +38,20 @@ public class SimpleLongLayout implements Layout<MutableLong,MutableLong>
     }
 
     @Override
+    public MutableLong minKey( MutableLong into )
+    {
+        into.setValue( Long.MIN_VALUE );
+        return into;
+    }
+
+    @Override
+    public MutableLong maxKey( MutableLong into )
+    {
+        into.setValue( Long.MAX_VALUE );
+        return into;
+    }
+
+    @Override
     public void copyKey( MutableLong key, MutableLong into )
     {
         into.setValue( key.longValue() );

@@ -57,6 +57,22 @@ public class LabelScanLayout implements Layout<LabelScanKey,LabelScanValue>
     }
 
     @Override
+    public LabelScanKey minKey( LabelScanKey into )
+    {
+        into.labelId = Integer.MIN_VALUE;
+        into.idRange = Long.MIN_VALUE;
+        return into;
+    }
+
+    @Override
+    public LabelScanKey maxKey( LabelScanKey into )
+    {
+        into.labelId = Integer.MAX_VALUE;
+        into.idRange = Long.MAX_VALUE;
+        return into;
+    }
+
+    @Override
     public void copyKey( LabelScanKey key, LabelScanKey into )
     {
         into.labelId = key.labelId;

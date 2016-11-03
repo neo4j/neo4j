@@ -2,9 +2,12 @@ package org.neo4j.index.bptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+
+import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
@@ -15,7 +18,7 @@ import static org.neo4j.index.ValueAmenders.overwrite;
 
 public class IndexModifierTest
 {
-    private final int pageSize = 512;
+    private final int pageSize = 128;
 
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
@@ -29,12 +32,15 @@ public class IndexModifierTest
     private final MutableLong readKey = new MutableLong();
     private final MutableLong readValue = new MutableLong();
 
+    @Rule
+    public RandomRule random = new RandomRule();
+
     @Before
     public void setUp() throws IOException
     {
         id.reset();
         cursor.initialize();
-        cursor.next();
+        cursor.next( id.acquireNewId() );
         node.initializeLeaf( cursor );
     }
 
@@ -178,6 +184,36 @@ public class IndexModifierTest
 
         // then
         assertThat( cursor.getCurrentPageId(), is( pageId ) );
+    }
+
+    @Test
+    public void modifierMustProduceConsistentTreeWithRandomInserts() throws Exception
+    {
+        long rootId;
+        byte[] tmp = new byte[pageSize];
+
+        int numberOfEntries = 100_000;
+        for ( int i = 0; i < numberOfEntries; i++ )
+        {
+            SplitResult<MutableLong> split = insert( random.nextLong(), random.nextLong() );
+            if ( split != null )
+            {
+                // New root
+                long newRootId = id.acquireNewId();
+                cursor.next( newRootId );
+
+                node.initializeInternal( cursor );
+                node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
+                node.setKeyCount( cursor, 1 );
+                node.setChildAt( cursor, split.left, 0 );
+                node.setChildAt( cursor, split.right, 1 );
+                rootId = newRootId;
+                cursor.next( rootId );
+            }
+        }
+
+        BPTreeConsistencyChecker<MutableLong> consistencyChecker = new BPTreeConsistencyChecker<>( node, layout );
+        consistencyChecker.check( cursor );
     }
 
     private Long keyAt( int pos )

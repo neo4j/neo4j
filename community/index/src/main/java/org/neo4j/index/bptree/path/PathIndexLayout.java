@@ -51,6 +51,22 @@ public class PathIndexLayout implements Layout<TwoLongs,TwoLongs>
     }
 
     @Override
+    public TwoLongs minKey( TwoLongs into )
+    {
+        into.first = Long.MIN_VALUE;
+        into.other = Long.MIN_VALUE;
+        return into;
+    }
+
+    @Override
+    public TwoLongs maxKey( TwoLongs into )
+    {
+        into.first = Long.MAX_VALUE;
+        into.other = Long.MAX_VALUE;
+        return into;
+    }
+
+    @Override
     public TwoLongs newValue()
     {
         return new TwoLongs();

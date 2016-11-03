@@ -27,6 +27,10 @@ public interface Layout<KEY,VALUE> extends Comparator<KEY>
 {
     KEY newKey();
 
+    KEY minKey( KEY into );
+
+    KEY maxKey( KEY into );
+
     void copyKey( KEY key, KEY into );
 
     VALUE newValue();
