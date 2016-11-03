@@ -33,8 +33,8 @@
   </scm>
 
   <modules>
-    <module>frontend-3.1</module>
-    <module>cypher-compiler-3.1</module>
+    <module>frontend-3.2</module>
+    <module>cypher-compiler-3.2</module>
     <module>cypher</module>
     <module>spec-suite-tools</module>
     <module>acceptance-spec-suite</module>
@@ -132,6 +132,7 @@
                       <rules>
                           <requireFilesDontExist>
                               <files>
+                                  <file>cypher-compiler-3.1</file>
                                   <file>cypher-compiler-3.0</file>
                                   <file>cypher-compiler-2.3</file>
                               </files>
