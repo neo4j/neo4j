@@ -53,7 +53,7 @@ public class EphemeralFileSystemAbstractionCrashTest
     }
 
     @Test
-    public void allowStoreThatExceedPredefinedSizes() throws IOException
+    public void allowStoreThatExceedDefaultSize() throws IOException
     {
         File aFile = new File( "test" );
         StoreChannel channel = fs.open( aFile, "rw" );
@@ -68,6 +68,27 @@ public class EphemeralFileSystemAbstractionCrashTest
             buffer.clear();
         }
         channel.close();
+    }
+
+    @Test
+    public void growEphemeralFileBuffer()
+    {
+        EphemeralFileSystemAbstraction.DynamicByteBuffer byteBuffer =
+                new EphemeralFileSystemAbstraction.DynamicByteBuffer();
+
+        byte[] testBytes = {1, 2, 3, 4};
+        int length = testBytes.length;
+        byteBuffer.put( 0, testBytes, 0, length );
+        assertEquals( (int) ByteUnit.kibiBytes( 1 ), byteBuffer.buf().capacity() );
+
+        byteBuffer.put( (int) (ByteUnit.kibiBytes( 1 ) + 2), testBytes, 0, length );
+        assertEquals( (int) ByteUnit.kibiBytes( 2 ), byteBuffer.buf().capacity() );
+
+        byteBuffer.put( (int) (ByteUnit.kibiBytes( 5 ) + 2), testBytes, 0, length );
+        assertEquals( (int) ByteUnit.kibiBytes( 8 ), byteBuffer.buf().capacity() );
+
+        byteBuffer.put( (int) (ByteUnit.mebiBytes( 2 ) + 2), testBytes, 0, length );
+        assertEquals( (int) ByteUnit.mebiBytes( 4 ), byteBuffer.buf().capacity() );
     }
 
     @Test
