@@ -34,11 +34,12 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.util.Validators;
+
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
 
 public class VersionCommand implements AdminCommand
 {
@@ -117,29 +118,5 @@ public class VersionCommand implements AdminCommand
         {
             throw new CommandFailed( e.getMessage(), e );
         }
-    }
-
-    /**
-     * @param format to find successor to.
-     * @return the format with the lowest generation > format.generation, or None if no such format is known.
-     */
-    private Optional<RecordFormats> findSuccessor( final RecordFormats format )
-    {
-        RecordFormats successor = null;
-
-        for ( RecordFormats candidate : RecordFormatSelector.allFormats() )
-        {
-            if ( !(FormatFamily.isSameFamily( format, candidate )) ||
-                    candidate.generation() <= format.generation() )
-            {
-                continue;
-            }
-            if ( successor == null || candidate.generation() < successor.generation() )
-            {
-                successor = candidate;
-            }
-        }
-
-        return Optional.ofNullable( successor );
     }
 }

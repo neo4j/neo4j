@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -33,6 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v306.HighLimitV3_0_6;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
@@ -43,6 +44,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
@@ -55,6 +58,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
@@ -336,6 +340,24 @@ public class RecordFormatSelectorTest
         Config config = Config.empty();
 
         assertSame( defaultFormat(), selectNewestFormat( config, storeDir, fs, getPageCache(), LOG ) );
+    }
+
+    @Test
+    public void findSuccessorLatestVersion() throws Exception
+    {
+        assertFalse( findSuccessor( defaultFormat() ).isPresent() );
+    }
+
+    @Test
+    public void findSuccessorToOlderVersion() throws Exception
+    {
+        assertEquals( StandardV2_1.RECORD_FORMATS, findSuccessor( StandardV2_0.RECORD_FORMATS ).get() );
+        assertEquals( StandardV2_2.RECORD_FORMATS, findSuccessor( StandardV2_1.RECORD_FORMATS ).get() );
+        assertEquals( StandardV2_3.RECORD_FORMATS, findSuccessor( StandardV2_2.RECORD_FORMATS ).get() );
+        assertEquals( StandardV3_0.RECORD_FORMATS, findSuccessor( StandardV2_3.RECORD_FORMATS ).get() );
+
+        assertEquals( HighLimitV3_0_6.RECORD_FORMATS, findSuccessor( HighLimitV3_0_0.RECORD_FORMATS ).get() );
+        assertEquals( HighLimit.RECORD_FORMATS, findSuccessor( HighLimitV3_0_6.RECORD_FORMATS ).get() );
     }
 
     private PageCache getPageCache()
