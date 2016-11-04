@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.functions.functionConverter
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTBoolean, CTNode, CTRelationship}
-import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, ast}
 
 object ExpressionConverter {
 
@@ -96,7 +96,8 @@ object ExpressionConverter {
     variable.codeGenType.ct match {
       case CTNode => NodeProjection(variable)
       case CTRelationship => RelationshipProjection(variable)
-      case _ => throw new InternalException("The compiled runtime only handles variables pointing to rels and nodes at this time")
+      case _ =>
+        throw new CantCompileQueryException("The compiled runtime cannot handle results of type " + variable.codeGenType.ct)
     }
   }
 
