@@ -263,6 +263,20 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         ctx.statementProcessor.markCurrentTransactionForTermination();
     }
 
+    public void externalError( Neo4jError error, BoltResponseHandler handler ) throws BoltConnectionFatality
+    {
+        before( handler );
+        try
+        {
+            fail( this, error );
+            this.state = State.FAILED;
+        }
+        finally
+        {
+            after();
+        }
+    }
+
     public boolean isClosed()
     {
         return ctx.closed;

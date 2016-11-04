@@ -31,10 +31,12 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.util.Arrays.asList;
@@ -136,12 +138,15 @@ public class Neo4jPackTest
         }
         packer.packEndOfStream();
 
-        // Expect
-        exception.expect( BoltIOException.class );
-        exception.expectMessage( "Value `null` is not supported as key in maps, must be a non-nullable string." );
-
         // When
-        unpacked( output.bytes() );
+        PackedInputArray input = new PackedInputArray( output.bytes() );
+        Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
+        unpacker.unpack();
+
+        // Then
+        assertThat(unpacker.consumeError().get(), equalTo(
+                Neo4jError.from( Status.Request.Invalid,
+                        "Value `null` is not supported as key in maps, must be a non-nullable string." )));
     }
 
     @SuppressWarnings( "unchecked" )
@@ -187,11 +192,13 @@ public class Neo4jPackTest
         packer.pack( "key" );
         packer.pack( 2 );
 
-        // Expect
-        exception.expect( BoltIOException.class );
-
         // When
-        unpacked( output.bytes() );
+        PackedInputArray input = new PackedInputArray( output.bytes() );
+        Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
+        unpacker.unpack();
+
+        // Then
+        assertThat(unpacker.consumeError().get(), equalTo( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `key`." ) ));
     }
 
     @Test

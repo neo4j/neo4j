@@ -33,6 +33,7 @@ import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -111,7 +112,7 @@ public class Neo4jPack
                         error = Optional.of( new Error( Status.Request.Invalid,
                                 "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
                         packNull();
-                        return;
+                        pack( entry.getValue() );
                     }
                     else
                     {
@@ -262,7 +263,8 @@ public class Neo4jPack
 
     public static class Unpacker extends PackStream.Unpacker
     {
-        private PathPack.Unpacker pathUnpacker = new PathPack.Unpacker();
+
+        private List<Neo4jError> errors = new ArrayList<>( 2 );
 
         public Unpacker( PackInput input )
         {
@@ -396,11 +398,17 @@ public class Neo4jPack
                             val = unpack();
                             if( map.put( key, val ) != null )
                             {
-                                throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
+                                errors.add(
+                                        Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ) );
                             }
                             break;
                         case NULL:
-                            throw new BoltIOException( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." );
+                            errors.add( Neo4jError.from( Status.Request.Invalid,
+                                    "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
+                            unpackNull();
+                            val = unpack();
+                            map.put( null, val );
+                            break;
                         default:
                             throw new PackStream.PackStreamException( "Bad key type" );
                     }
@@ -416,7 +424,11 @@ public class Neo4jPack
                     switch ( type )
                     {
                     case NULL:
-                        throw new BoltIOException( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." );
+                        errors.add( Neo4jError.from( Status.Request.Invalid,
+                                "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
+                        unpackNull();
+                        key = null;
+                        break;
                     case STRING:
                         key = unpackString();
                         break;
@@ -427,11 +439,25 @@ public class Neo4jPack
                     Object val = unpack();
                     if( map.put( key, val ) != null )
                     {
-                        throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
+                        errors.add( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ));
                     }
                 }
             }
             return map;
+        }
+
+        public Optional<Neo4jError> consumeError()
+        {
+            if ( errors.isEmpty() )
+            {
+                return Optional.empty();
+            }
+            else
+            {
+                Neo4jError combined = Neo4jError.combine( errors );
+                errors.clear();
+                return Optional.of( combined );
+            }
         }
     }
 

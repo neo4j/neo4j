@@ -21,6 +21,7 @@
 package org.neo4j.bolt.v1.messaging;
 
 import org.neo4j.bolt.v1.messaging.message.*;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
 
 import java.util.Map;
 
@@ -69,4 +70,9 @@ public class BoltRequestMessageRecorder extends MessageRecorder<RequestMessage> 
         messages.add( pullAll() );
     }
 
+    @Override
+    public void onExternalError( Neo4jError error ) throws RuntimeException
+    {
+        //ignore
+    }
 }

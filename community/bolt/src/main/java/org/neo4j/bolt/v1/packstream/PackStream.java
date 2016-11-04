@@ -580,14 +580,6 @@ public class PackStream
             assert markerByte == END_OF_STREAM;
         }
 
-        private void discardRawBytes( int size ) throws IOException
-        {
-            for ( int i = 0; i < size; i++ )
-            {
-                in.readByte();
-            }
-        }
-
         private byte[] unpackRawBytes( int size ) throws IOException
         {
             if ( size == 0 )
