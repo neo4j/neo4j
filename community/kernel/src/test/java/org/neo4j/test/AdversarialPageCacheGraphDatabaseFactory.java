@@ -48,7 +48,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
 
     public static GraphDatabaseFactory create( FileSystemAbstraction fs, Adversary adversary )
     {
-        return new GraphDatabaseFactory()
+        return new TestGraphDatabaseFactory()
         {
             @Override
             protected GraphDatabaseService newDatabase( File dir, Map<String,String> config, Dependencies dependencies )
