@@ -20,12 +20,13 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 
 import static java.lang.Math.min;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
 
 /**
  * User controlled configuration for a {@link BatchImporter}.
@@ -64,7 +65,8 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         {
             // Get the upper bound of what we can get from the default config calculation
             // We even want to limit amount of memory a bit more since we don't need very much during import
-            return min( MAX_PAGE_CACHE_MEMORY, Config.defaults().get( pagecache_memory ) );
+            String defaultPageCacheMemory = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
+            return min( MAX_PAGE_CACHE_MEMORY, BYTES.apply( defaultPageCacheMemory ) );
         }
 
         @Override
@@ -124,7 +126,8 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         @Override
         public long pageCacheMemory()
         {
-            return min( MAX_PAGE_CACHE_MEMORY, config.get( pagecache_memory ) );
+            String defaultPageCacheMemory = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
+            return min( MAX_PAGE_CACHE_MEMORY, BYTES.apply( defaultPageCacheMemory ) );
         }
 
         @Override
