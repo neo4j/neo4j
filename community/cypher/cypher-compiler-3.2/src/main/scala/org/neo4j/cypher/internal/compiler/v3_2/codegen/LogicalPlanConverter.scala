@@ -510,7 +510,9 @@ object LogicalPlanConverter {
 
       def aggregateExpressionConverter(e: ast.Expression) = e match {
         case func: ast.FunctionInvocation => func.function match {
-          case ast.functions.Count  if !func.distinct => Count(createExpression(func.args(0)))
+          case ast.functions.Count =>
+            if (func.distinct) CountDistinct(createExpression(func.args(0)))
+            else Count(createExpression(func.args(0)))
           case f => throw new CantCompileQueryException(s"$f is not supported")
         }
         case _ => throw new CantCompileQueryException(s"$e is not supported")

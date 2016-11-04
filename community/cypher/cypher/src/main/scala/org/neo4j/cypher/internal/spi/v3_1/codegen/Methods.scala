@@ -66,6 +66,8 @@ object Methods {
   val mathCastToLong = method[CompiledMathHelper, Long]("transformToLong", typeRef[Object])
   val mapGet = method[util.Map[String, Object], Object]("get", typeRef[Object])
   val mapContains = method[util.Map[String, Object], Boolean]("containsKey", typeRef[Object])
+  val setContains = method[util.Set[Object], Boolean]("contains", typeRef[Object])
+  val setAdd = method[util.Set[Object], Boolean]("add", typeRef[Object])
   val labelGetForName = method[ReadOperations, Int]("labelGetForName", typeRef[String])
   val propertyKeyGetForName = method[ReadOperations, Int]("propertyKeyGetForName", typeRef[String])
   val coerceToPredicate = method[CompiledConversionUtils, Boolean]("coerceToPredicate", typeRef[Object])

@@ -409,6 +409,19 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def toSet(value: Expression) =
     createNewInstance(typeRef[util.HashSet[Object]], (typeRef[util.Collection[_]], value))
 
+  override def newSet(name: String) = {
+    val local = generator.declare(typeRef[util.HashSet[Object]], name)
+    generator.assign(local, createNewInstance(typeRef[util.HashSet[Object]]))
+  }
+
+  override def setContains(name: String, value: Expression) = {
+    invoke(generator.load(name), Methods.setContains, value)
+  }
+
+  override def addToSet(name: String, value: Expression) = {
+    generator.expression(pop(invoke(loadVariable(name), Methods.setAdd, value)))
+  }
+
   override def castToCollection(value: Expression) = invoke(Methods.toCollection, value)
 
   override def asMap(map: Map[String, Expression]) = {

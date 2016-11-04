@@ -64,6 +64,9 @@ trait MethodStructure[E] {
   def asList(values: Seq[E]): E
 
   def toSet(value: E): E
+  def newSet(name: String)
+  def setContains(name: String, value: E): E
+  def addToSet(name: String, value: E): Unit
 
   def castToCollection(value: E): E
 

@@ -20,15 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTInteger
 
 trait AggregateExpression extends CodeGenExpression {
+
   def initialValue[E](generator: MethodStructure[E])(implicit context: CodeGenContext): E
 }
 
 case class Count(expression: CodeGenExpression) extends AggregateExpression {
 
   private var name: String = null
+
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     expression.init(generator)
     name = context.namer.newVarName()
@@ -36,7 +38,7 @@ case class Count(expression: CodeGenExpression) extends AggregateExpression {
   }
 
   def initialValue[E](generator: MethodStructure[E])(implicit context: CodeGenContext): E =
-      generator.constantExpression(Long.box(0L))
+    generator.constantExpression(Long.box(0L))
 
   def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     structure.ifNonNullStatement(expression.generateExpression(structure)) { body =>
@@ -47,5 +49,39 @@ case class Count(expression: CodeGenExpression) extends AggregateExpression {
 
   override def nullable(implicit context: CodeGenContext) = false
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(symbols.CTInteger, IntType)
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTInteger, IntType)
+}
+
+case class CountDistinct(expression: CodeGenExpression) extends AggregateExpression {
+
+  private var name: String = null
+  private var setName: String = null
+
+  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    expression.init(generator)
+    name = context.namer.newVarName()
+    setName = context.namer.newVarName()
+    generator.assign(name, CodeGenType.primitiveInt, generator.constantExpression(Long.box(0L)))
+    generator.newSet(setName)
+  }
+
+  def initialValue[E](generator: MethodStructure[E])(implicit context: CodeGenContext): E =
+    generator.constantExpression(Long.box(0L))
+
+  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    val tmpName = context.namer.newVarName()
+    structure.assign(tmpName, CodeGenType.Any, expression.generateExpression(structure))
+    structure.ifNonNullStatement(structure.loadVariable(tmpName)) { body =>
+      body.ifNotStatement(body.setContains(setName, body.loadVariable(tmpName))) { inner => {
+          inner.addToSet(setName, inner.loadVariable(tmpName))
+          inner.incrementInteger(name)
+        }
+      }
+    }
+    structure.loadVariable(name)
+  }
+
+  override def nullable(implicit context: CodeGenContext) = false
+
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTInteger, IntType)
 }
