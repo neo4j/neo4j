@@ -38,22 +38,24 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     execute(s"CYPHER 2.3 $query").columnAs[Long]("count(*)").next() shouldBe 1
     execute(s"CYPHER 3.1 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
     execute(s"CYPHER 3.1 $query").columnAs[Long]("count(*)").next() shouldBe 1
+    execute(s"CYPHER 3.2 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
+    execute(s"CYPHER 3.2 $query").columnAs[Long]("count(*)").next() shouldBe 1
   }
 
   test("should be able to switch between versions") {
     runWithConfig() {
       db =>
         db.execute(s"CYPHER 2.3 $QUERY").asScala.toList shouldBe empty
-        db.execute(s"CYPHER 3.0 $QUERY").asScala.toList shouldBe empty
         db.execute(s"CYPHER 3.1 $QUERY").asScala.toList shouldBe empty
+        db.execute(s"CYPHER 3.2 $QUERY").asScala.toList shouldBe empty
     }
   }
 
   test("should be able to switch between versions2") {
     runWithConfig() {
       db =>
+        db.execute(s"CYPHER 3.2 $QUERY").asScala.toList shouldBe empty
         db.execute(s"CYPHER 3.1 $QUERY").asScala.toList shouldBe empty
-        db.execute(s"CYPHER 3.0 $QUERY").asScala.toList shouldBe empty
         db.execute(s"CYPHER 2.3 $QUERY").asScala.toList shouldBe empty
     }
   }
@@ -77,16 +79,15 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       db =>
         val result = db.execute(QUERY)
         result.asScala.toList shouldBe empty
-        result.getExecutionPlanDescription.getArguments.get("version") should equal("CYPHER 3.1")
+        result.getExecutionPlanDescription.getArguments.get("version") should equal("CYPHER 3.2")
     }
   }
 
-  //TODO fix this test
-  ignore("should handle profile in compiled runtime") {
+  test("should handle profile in compiled runtime") {
     runWithConfig() {
       db =>
-        assertProfiled(db, "CYPHER 2.3 runtime=compiled PROFILE MATCH (n) RETURN n")
-        assertProfiled(db, "CYPHER 3.0 runtime=compiled PROFILE MATCH (n) RETURN n")
+        assertProfiled(db, "CYPHER 3.1 runtime=compiled PROFILE MATCH (n) RETURN n")
+        assertProfiled(db, "CYPHER 3.2 runtime=compiled PROFILE MATCH (n) RETURN n")
     }
   }
 
@@ -94,8 +95,8 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     runWithConfig() {
       engine =>
         assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH (n) RETURN n")
-        assertProfiled(engine, "CYPHER 3.0 runtime=interpreted PROFILE MATCH (n) RETURN n")
         assertProfiled(engine, "CYPHER 3.1 runtime=interpreted PROFILE MATCH (n) RETURN n")
+        assertProfiled(engine, "CYPHER 3.2 runtime=interpreted PROFILE MATCH (n) RETURN n")
     }
   }
 
@@ -103,8 +104,8 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     runWithConfig() {
       engine =>
         assertExplained(engine, "CYPHER 2.3 EXPLAIN MATCH (n) RETURN n")
-        assertExplained(engine, "CYPHER 3.0 EXPLAIN MATCH (n) RETURN n")
         assertExplained(engine, "CYPHER 3.1 EXPLAIN MATCH (n) RETURN n")
+        assertExplained(engine, "CYPHER 3.2 EXPLAIN MATCH (n) RETURN n")
     }
   }
 

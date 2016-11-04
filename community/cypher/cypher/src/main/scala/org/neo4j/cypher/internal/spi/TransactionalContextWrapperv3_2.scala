@@ -19,23 +19,23 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryTransactionalContext
+import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
-import org.neo4j.kernel.api.security.{AccessMode, SecurityContext}
+import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.impl.query.TransactionalContext
 
-case class TransactionalContextWrapperv3_0(tc: TransactionalContext) extends QueryTransactionalContext {
+case class TransactionalContextWrapperv3_2(tc: TransactionalContext) extends QueryTransactionalContext {
 
   override type ReadOps = ReadOperations
 
   override type DbmsOps = DbmsOperations
 
-  def getOrBeginNewIfClosed(): TransactionalContextWrapperv3_0 = TransactionalContextWrapperv3_0(tc.getOrBeginNewIfClosed())
+  def getOrBeginNewIfClosed(): TransactionalContextWrapperv3_2 = TransactionalContextWrapperv3_2(tc.getOrBeginNewIfClosed())
 
   def isOpen: Boolean = tc.isOpen
 

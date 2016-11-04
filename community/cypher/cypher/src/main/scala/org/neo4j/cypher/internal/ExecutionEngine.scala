@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_2.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v3_2.{LFUCache => LRUCachev3_1, _}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.security.{AccessMode, SecurityContext}
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api, monitoring}
@@ -71,8 +71,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
 
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
-  private val preParsedQueries = new LRUCachev3_1[String, PreParsedQuery](getPlanCacheSize)
-  private val parsedQueries = new LRUCachev3_1[String, ParsedQuery](getPlanCacheSize)
+  private val preParsedQueries = new LFUCache[String, PreParsedQuery](getPlanCacheSize)
+  private val parsedQueries = new LFUCache[String, ParsedQuery](getPlanCacheSize)
 
   private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, identity)
@@ -126,14 +126,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
     preParsedQueries.getOrElseUpdate(queryText, compiler.preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapperv3_1) = {
+  protected def planQuery(transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapperv3_2) = {
     val executingQuery = transactionalContext.executingQuery()
     val queryText = executingQuery.queryText()
     executionMonitor.startQueryExecution(executingQuery)
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
 
-      val externalTransactionalContext = new TransactionalContextWrapperv3_1(transactionalContext)
+      val externalTransactionalContext = new TransactionalContextWrapperv3_2(transactionalContext)
       val preParsedQuery = try {
         preParseQuery(queryText)
       } catch {
@@ -157,7 +157,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
           // fetch plan cache
           val cache = getOrCreateFromSchemaState(tc.readOperations, {
             cacheMonitor.cacheFlushDetected(tc.statement)
-            val lruCache = new LRUCachev3_1[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+            val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
             new QueryCache(cacheAccessor, lruCache)
           })
 
@@ -223,7 +223,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
       queryService, GraphDatabaseSettings.forbid_exhaustive_shortestpath,
       GraphDatabaseSettings.forbid_exhaustive_shortestpath.getDefaultValue.toBoolean
     )
-    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_0) || (version != CypherVersion.v3_1)) &&
+    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_2)) &&
       (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"

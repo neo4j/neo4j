@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_0
+package org.neo4j.cypher.internal.spi.v3_2
 
 import java.net.URL
 import java.util.function.Predicate
@@ -25,18 +25,18 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
-import org.neo4j.cypher.internal.compiler.v3_0.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
-import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport._
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_0.spi._
-import org.neo4j.cypher.internal.frontend.v3_0.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection, spi => frontend}
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapperv3_0}
+import org.neo4j.cypher.internal.compiler.v3_2.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
+import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_2.spi._
+import org.neo4j.cypher.internal.frontend.v3_2.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
+import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapperv3_2}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -51,14 +51,14 @@ import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, Relati
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
-import org.neo4j.kernel.api.proc.QualifiedName
+import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
-final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapperv3_0)(implicit indexSearchMonitor: IndexSearchMonitor)
+final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapperv3_2)(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext {
 
   type EntityAccessor = NodeManager
@@ -290,14 +290,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def nodeIsDense(node: Long): Boolean = transactionalContext.statement.readOperations().nodeIsDense(node)
 
-  override def detachDeleteNode(node: Node): Int =
-    try {
-      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
-    } catch {
-      case _: exceptions.EntityNotFoundException => 0
-      // node has been deleted by another transaction, oh well...
-    }
-
   class NodeOperations extends BaseOperations[Node] {
     override def delete(obj: Node) {
       try {
@@ -307,20 +299,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    def propertyKeyIds(id: Long): Iterator[Int] = try {
-      // use the following when bumping 3.0.x dependency
-      // JavaConversionSupport.asScalaENFXSafe(tc.statement.readOperations().nodeGetPropertyKeys(id))
-      new Iterator[Int] {
-        val inner = transactionalContext.statement.readOperations().nodeGetPropertyKeys(id)
-
-        override def hasNext: Boolean = inner.hasNext
-
-        override def next(): Int = try {
-          inner.next()
-        } catch {
-          case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
-        }
-      }
+    override def propertyKeyIds(id: Long): Iterator[Int] = try {
+      JavaConversionSupport.asScalaENFXSafe(transactionalContext.statement.readOperations().nodeGetPropertyKeys(id))
     } catch {
       case _: exceptions.EntityNotFoundException => Iterator.empty
     }
@@ -342,7 +322,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int) {
-        try {
+      try {
         transactionalContext.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
@@ -351,7 +331,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
       try {
-      transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
+        transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
@@ -395,19 +375,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
-      // use the following when bumping the cypher 3.0.x version
-      //JavaConversionSupport.asScalaENFXSafe(statement.readOperations().relationshipGetPropertyKeys(id))
-      new Iterator[Int] {
-        val inner = transactionalContext.statement.readOperations().relationshipGetPropertyKeys(id)
-
-        override def hasNext: Boolean = inner.hasNext
-
-        override def next(): Int = try {
-          inner.next()
-        } catch {
-          case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
-        }
-      }
+      asScalaENFXSafe(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(id))
     } catch {
       case _: exceptions.EntityNotFoundException => Iterator.empty
     }
@@ -616,24 +584,71 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.statement.procedureCallOperations().procedureCallRead)
+  type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
+  type KernelFunctionCall = (KernelQualifiedName, Array[AnyRef]) => AnyRef
 
-  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.statement.procedureCallOperations().procedureCallWrite)
+  private def shouldElevate(allowed: Array[String]): Boolean = {
+    // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
+    // above the original allowed procedure mode. We enforce this by checking if mode is already an overridden mode.
+    val accessMode = transactionalContext.securityContext.mode()
+    allowed.nonEmpty && !accessMode.isOverridden && accessMode.allowsProcedureWith(allowed)
+  }
 
-  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+    val call: KernelProcedureCall =
+      if (shouldElevate(allowed))
+        transactionalContext.statement.procedureCallOperations.procedureCallReadOverride(_, _)
+      else
+        transactionalContext.statement.procedureCallOperations.procedureCallRead(_, _)
+    callProcedure(name, args, call)
+  }
+
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+    val call: KernelProcedureCall =
+      if (shouldElevate(allowed))
+        transactionalContext.statement.procedureCallOperations.procedureCallWriteOverride(_, _)
+      else
+        transactionalContext.statement.procedureCallOperations.procedureCallWrite(_, _)
+    callProcedure(name, args, call)
+  }
+
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+    val call: KernelProcedureCall =
+      if (shouldElevate(allowed))
+        transactionalContext.statement.procedureCallOperations.procedureCallSchemaOverride(_, _)
+      else
+        transactionalContext.statement.procedureCallOperations.procedureCallSchema(_, _)
+    callProcedure(name, args, call)
+  }
+
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.securityContext))
+  }
 
-  private def callProcedure(name: QualifiedProcedureName, args: Seq[Any],
-                            call: (QualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {
-    val kn = new QualifiedName(name.namespace.asJava, name.name)
+  private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    val read: RawIterator[Array[AnyRef], ProcedureException] = call(kn, toArray)
+    val read = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {
       override def hasNext: Boolean = read.hasNext
       override def next(): Array[AnyRef] = read.next
     }
+  }
+
+  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+    val call: KernelFunctionCall =
+      if (shouldElevate(allowed))
+        transactionalContext.statement.procedureCallOperations.functionCallOverride(_, _)
+      else
+        transactionalContext.statement.procedureCallOperations.functionCall(_, _)
+    callFunction(name, args, call)
+  }
+
+  private def callFunction(name: QualifiedName, args: Seq[Any],
+                           call: KernelFunctionCall) = {
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
+    call(kn, toArray)
   }
 
   override def isGraphKernelResultValue(v: Any): Boolean = internal.isGraphKernelResultValue(v)
@@ -670,6 +685,17 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         else null
     }
   }
+
+  override def detachDeleteNode(node: Node): Int = {
+    try {
+      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
+    }
+  }
+
+  override def assertSchemaWritesAllowed(): Unit =
+    transactionalContext.statement.schemaWriteOperations()
 }
 
 object TransactionBoundQueryContext {

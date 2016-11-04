@@ -33,7 +33,7 @@ class CypherStatementWithOptionsTest extends CypherFunSuite {
   }
 
   test("should not allow multiple versions") {
-    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER 2.3 CYPHER 3.0 RETURN 42"))
+    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER 2.3 CYPHER 3.1 RETURN 42"))
   }
 
   test("should not allow both EXPLAIN and PROFILE") {

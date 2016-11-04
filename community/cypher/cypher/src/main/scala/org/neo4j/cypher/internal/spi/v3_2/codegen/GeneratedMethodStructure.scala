@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_1.codegen
+package org.neo4j.cypher.internal.spi.v3_2.codegen
 
 import java.util
 
@@ -28,15 +28,15 @@ import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.compiler.v3_1.codegen._
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{Parameter => _, _}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers._
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CTNode, CTRelationship}
-import org.neo4j.cypher.internal.frontend.v3_1.{ParameterNotFoundException, SemanticDirection, symbols}
-import org.neo4j.cypher.internal.spi.v3_1.codegen.Methods._
-import org.neo4j.cypher.internal.spi.v3_1.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v3_2.codegen._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, ReferenceType}
+import org.neo4j.cypher.internal.compiler.v3_2.helpers._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, symbols}
+import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
+import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
@@ -187,16 +187,21 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     generator.assign(variable, invoke(mathCastToInt, initialValue))
   }
 
-  override def decreaseCounterAndCheckForZero(name: String): Expression = {
+
+  override def decrementCounter(name: String) = {
     val local = locals(name)
     generator.assign(local, subtractInts(local, constant(1)))
-
-    equal(constant(0), local, typeRef[Int])
   }
 
-  override def counterEqualsZero(name: String): Expression = {
+  override def checkCounter(name: String, comparator: Comparator, value: Int): Expression = {
     val local = locals(name)
-    equal(constant(0), local, typeRef[Int])
+    comparator match {
+      case Equal =>  equal(local, constant(value), typeRef[Int])
+      case LessThan => lt(local, constant(value), typeRef[Int])
+      case LessThanEqual => lte(local, constant(value), typeRef[Int])
+      case GreaterThan  => gt(local, constant(value), typeRef[Int])
+      case GreaterThanEqual  => gte(local, constant(value), typeRef[Int])
+    }
   }
 
   override def setInRow(column: String, value: Expression) =

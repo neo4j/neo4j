@@ -27,19 +27,20 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import helpers.wrappersFor2_3._
+import helpers.wrappersFor3_1._
 
 import scala.collection.mutable
 
 sealed trait PlannerSpec
 final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec
-final case class PlannerSpec_v3_0(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
 final case class PlannerSpec_v3_1(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
+
+final case class PlannerSpec_v3_2(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
 
 class PlannerFactory(graph: GraphDatabaseQueryService, kernelAPI: KernelAPI, kernelMonitors: KernelMonitors, log: Log,
                      config: CypherCompilerConfiguration) {
 
-  import helpers.wrappersFor2_3._
-  import helpers.wrappersFor3_0._
 
   def create(spec: PlannerSpec_v2_3) =  spec.planner match {
     case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI)
@@ -47,28 +48,30 @@ class PlannerFactory(graph: GraphDatabaseQueryService, kernelAPI: KernelAPI, ker
                                       Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime)
   }
 
-  def create(spec: PlannerSpec_v3_0) =  spec.planner match {
-    case CypherPlanner.rule => CompatibilityFor3_0Rule(graph, as3_0(config),CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
-    case _ => CompatibilityFor3_0Cost(graph, as3_0(config),
-                                      CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
-  }
-
   def create(spec: PlannerSpec_v3_1) = spec.planner match {
-    case CypherPlanner.rule => CompatibilityFor3_1Rule(graph, config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
-    case _ => CompatibilityFor3_1Cost(graph, config,
+    case CypherPlanner.rule => CompatibilityFor3_1Rule(graph, as3_1(config), CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
+    case _ => CompatibilityFor3_1Cost(graph, as3_1(config),
                                       CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime,
                                       spec.updateStrategy)
   }
+
+  def create(spec: PlannerSpec_v3_2) = spec.planner match {
+    case CypherPlanner.rule => CompatibilityFor3_2Rule(graph, config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
+    case _ => CompatibilityFor3_2Cost(graph, config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner,
+      spec.runtime, spec.updateStrategy)
+  }
+
 }
 
 class PlannerCache(factory: PlannerFactory)  {
   private val cache_v2_3 = new mutable.HashMap[PlannerSpec_v2_3, CompatibilityFor2_3]
-  private val cache_v3_0 = new mutable.HashMap[PlannerSpec_v3_0, CompatibilityFor3_0]
   private val cache_v3_1 = new mutable.HashMap[PlannerSpec_v3_1, CompatibilityFor3_1]
+  private val cache_v3_2 = new mutable.HashMap[PlannerSpec_v3_2, CompatibilityFor3_2]
 
   def apply(spec: PlannerSpec_v2_3) = cache_v2_3.getOrElseUpdate(spec, factory.create(spec))
-  def apply(spec: PlannerSpec_v3_0) = cache_v3_0.getOrElseUpdate(spec, factory.create(spec))
   def apply(spec: PlannerSpec_v3_1) = cache_v3_1.getOrElseUpdate(spec, factory.create(spec))
+
+  def apply(spec: PlannerSpec_v3_2) = cache_v3_2.getOrElseUpdate(spec, factory.create(spec))
 }
 
 class CachingValue[T]() {

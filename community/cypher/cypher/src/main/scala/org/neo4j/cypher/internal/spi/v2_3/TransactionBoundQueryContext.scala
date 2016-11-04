@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
-import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapperv3_1}
+import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapperv3_2}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.core.NodeManager
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
 
-final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
+final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_2)
   extends TransactionBoundTokenContext(tc.statement) with QueryContext {
 
   override val nodeOps = new NodeOperations

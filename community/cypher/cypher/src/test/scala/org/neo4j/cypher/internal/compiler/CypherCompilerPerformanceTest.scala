@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
-import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_1
+import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_2
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerFactory, InfoLogger, _}
-import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 
 import scala.concurrent.duration._
 
@@ -197,7 +197,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       ),
       clock = CLOCK,
       structure = GeneratedQueryStructure,
-      monitors = new WrappedMonitors3_1(kernelMonitors),
+      monitors = new WrappedMonitors3_2(kernelMonitors),
       logger = DEV_NULL,
       rewriterSequencer = RewriterStepSequencer.newPlain,
       plannerName = Some(IDPPlannerName),

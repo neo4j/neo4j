@@ -17,9 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_0
+package org.neo4j.cypher.internal.spi.v3_2.codegen
 
-//This class should live here, but until we have to touch
-//disk, let's have it in the compiler. Convenient.
-case object HardcodedGraphStatistics
-  extends org.neo4j.cypher.internal.compiler.v3_0.HardcodedGraphStatisticsValues
+import org.neo4j.codegen.{FieldReference, MethodReference}
+
+case class Fields(closer: FieldReference,
+                          ro: FieldReference,
+                          entityAccessor: FieldReference,
+                          executionMode: FieldReference,
+                          description: FieldReference,
+                          tracer: FieldReference,
+                          params: FieldReference,
+                          closeable: FieldReference,
+                          success: MethodReference,
+                          close: MethodReference)

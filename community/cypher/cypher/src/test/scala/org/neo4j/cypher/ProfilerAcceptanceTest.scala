@@ -137,8 +137,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.getExecutionPlanDescription.toString should include("DB Hits")
   }
 
-  test("PROFILE for Cypher 3,0") {
-    val result = graph.execute("cypher 3.0 profile match (n) where (n)-[:FOO]->() return *")
+  test("PROFILE for Cypher 3.1") {
+    val result = graph.execute("cypher 3.1 profile match (n) where (n)-[:FOO]->() return *")
 
     assert(result.getQueryExecutionType.requestedExecutionPlanDescription, "result not marked with planDescriptionRequested")
     result.getExecutionPlanDescription.toString should include("DB Hits")

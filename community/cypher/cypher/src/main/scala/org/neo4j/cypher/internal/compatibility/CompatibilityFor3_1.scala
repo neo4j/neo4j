@@ -25,23 +25,24 @@ import java.util.Collections
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compiler.v3_2
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan => ExecutionPlan_v3_1, _}
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor}
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
-import org.neo4j.cypher.internal.frontend.v3_2.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan => ExecutionPlan_v3_1, _}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.RuntimeTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor}
+import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
+import org.neo4j.cypher.internal.compiler.{v3_1, v3_2}
+import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.frontend.v3_1.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.helpers.wrappersFor3_1._
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1._
 import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.{TransactionalContextWrapperv3_1, TransactionalContextWrapperv3_2}
 import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
@@ -219,13 +220,13 @@ trait CompatibilityFor3_1 {
   val kernelAPI: KernelAPI
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
-    import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer._
+    import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer._
     import org.neo4j.helpers.Assertion._
 
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_2.CypherCompiler
+  protected val compiler: v3_1.CypherCompiler
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
@@ -236,20 +237,22 @@ trait CompatibilityFor3_1 {
         preParsedQuery.rawStatement,
         notificationLogger,
         preParsedQuery.planner.name,
-        Some(preParsedQuery.offset), tracer))
+        Some(as3_1(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       def isPeriodicCommit = preparedSyntacticQueryForV_3_1.map(_.isPeriodicCommit).getOrElse(false)
 
-      def plan(transactionalContext: TransactionalContextWrapperv3_1, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor3_1.runSafely {
-        val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
-        val syntacticQuery = preparedSyntacticQueryForV_3_1.get
-        val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(preParsedQuery.offset), tracer)
+      def plan(transactionalContext: TransactionalContextWrapperv3_2, tracer: v3_2.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) =
+        exceptionHandlerFor3_1.runSafely {
+          val tc = TransactionalContextWrapperv3_1(transactionalContext.tc)
+          val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
+          val syntacticQuery = preparedSyntacticQueryForV_3_1.get
+          val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(as3_1(preParsedQuery.offset)), as3_1(tracer))
 
-        // Log notifications/warnings from planning
-        planImpl.notifications(planContext).foreach(notificationLogger += _)
+          // Log notifications/warnings from planning
+          planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-        (new ExecutionPlanWrapper(planImpl), extractedParameters)
-      }
+          (new ExecutionPlanWrapper(planImpl), extractedParameters)
+        }
 
       override def hasErrors = preparedSyntacticQueryForV_3_1.isFailure
     }
@@ -259,12 +262,12 @@ trait CompatibilityFor3_1 {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
-    private def queryContext(transactionalContext: TransactionalContextWrapperv3_1) = {
-      val ctx = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
+    private def queryContext(transactionalContext: TransactionalContextWrapperv3_2) = {
+      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapperv3_1(transactionalContext.tc))(searchMonitor)
       new ExceptionTranslatingQueryContextFor3_1(ctx)
     }
 
-    def run(transactionalContext: TransactionalContextWrapperv3_1, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
+    def run(transactionalContext: TransactionalContextWrapperv3_2, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev3_1
         case CypherExecutionMode.profile => ProfileModev3_1
@@ -283,7 +286,7 @@ trait CompatibilityFor3_1 {
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperv3_1): Boolean =
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperv3_2): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
   }
 }
@@ -415,7 +418,7 @@ class ExecutionResultWrapperFor3_1(val inner: InternalExecutionResult, val plann
     override def getString(key: String): String = row.getString(key)
   }
 
-  private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_2.InputPosition) {
+  private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_1.InputPosition) {
     def asInputPosition = new graphdb.InputPosition(pos.offset, pos.line, pos.column)
   }
 }

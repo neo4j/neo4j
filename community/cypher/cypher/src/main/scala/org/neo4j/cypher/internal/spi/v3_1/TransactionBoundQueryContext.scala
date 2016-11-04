@@ -25,16 +25,16 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
-import org.neo4j.cypher.internal.compiler.v3_2.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
-import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport._
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_2.spi._
-import org.neo4j.cypher.internal.frontend.v3_2.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
+import org.neo4j.cypher.internal.compiler.v3_1.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
+import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
+import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapperv3_1}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -48,6 +48,7 @@ import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
@@ -58,25 +59,25 @@ import org.neo4j.kernel.impl.locking.ResourceTypes
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
-final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapperv3_1)(implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext {
+final class TransactionBoundQueryContext(txContext: TransactionalContextWrapperv3_1)(implicit indexSearchMonitor: IndexSearchMonitor)
+  extends TransactionBoundTokenContext(txContext.statement) with QueryContext {
 
   type EntityAccessor = NodeManager
 
   val nodeOps = new NodeOperations
   val relationshipOps = new RelationshipOperations
 
-  override lazy val entityAccessor = transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+  override lazy val entityAccessor = txContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
-    case (count, labelId) => if (transactionalContext.statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
+    case (count, labelId) => if (txContext.statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
   }
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = {
-    if (transactionalContext.isOpen) {
+    if (txContext.isOpen) {
       work(this)
     } else {
-      val context = transactionalContext.getOrBeginNewIfClosed()
+      val context = txContext.getOrBeginNewIfClosed()
       var success = false
       try {
         val result = work(new TransactionBoundQueryContext(context))
@@ -89,21 +90,21 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def createNode(): Node =
-    transactionalContext.graph.createNode()
+    txContext.graph.createNode()
 
   override def createRelationship(start: Node, end: Node, relType: String) =
     start.createRelationshipTo(end, withName(relType))
 
   override def createRelationship(start: Long, end: Long, relType: Int) = {
-    val relId = transactionalContext.statement.dataWriteOperations().relationshipCreate(relType, start, end)
+    val relId = txContext.statement.dataWriteOperations().relationshipCreate(relType, start, end)
     relationshipOps.getById(relId)
   }
 
   override def getOrCreateRelTypeId(relTypeName: String): Int =
-    transactionalContext.statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
+    txContext.statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
 
   override def getLabelsForNode(node: Long) = try {
-    JavaConversionSupport.asScala(transactionalContext.statement.readOperations().nodeGetLabels(node))
+    JavaConversionSupport.asScala(txContext.statement.readOperations().nodeGetLabels(node))
   } catch {
     case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
       if (nodeOps.isDeletedInThisTx(node))
@@ -113,30 +114,30 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def getPropertiesForNode(node: Long) =
-    JavaConversionSupport.asScala(transactionalContext.statement.readOperations().nodeGetPropertyKeys(node))
+    JavaConversionSupport.asScala(txContext.statement.readOperations().nodeGetPropertyKeys(node))
 
   override def getPropertiesForRelationship(relId: Long) =
-    JavaConversionSupport.asScala(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(relId))
+    JavaConversionSupport.asScala(txContext.statement.readOperations().relationshipGetPropertyKeys(relId))
 
   override def isLabelSetOnNode(label: Int, node: Long) =
-    transactionalContext.statement.readOperations().nodeHasLabel(node, label)
+    txContext.statement.readOperations().nodeHasLabel(node, label)
 
   override def getOrCreateLabelId(labelName: String) =
-    transactionalContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
+    txContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
   def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
     val relationships = types match {
       case None =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
+        txContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
       case Some(typeIds) =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
+        txContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
     }
     new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
   override def indexSeek(index: IndexDescriptor, value: Any) = {
     indexSearchMonitor.indexSeek(index, value)
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
   }
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
@@ -199,12 +200,12 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {
-    val indexedNodes = transactionalContext.statement.readOperations().nodesGetFromIndexRangeSeekByPrefix(index, prefix)
+    val indexedNodes = txContext.statement.readOperations().nodesGetFromIndexRangeSeekByPrefix(index, prefix)
     JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
   }
 
   private def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
-    val readOps = transactionalContext.statement.readOperations()
+    val readOps = txContext.statement.readOperations()
     val matchingNodes: PrimitiveLongIterator = (range match {
 
       case rangeLessThan: RangeLessThan[Number] =>
@@ -231,8 +232,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   private def indexSeekByStringRange(index: IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
-    val readOps = transactionalContext.statement.readOperations()
-    val propertyKeyId = index.getPropertyKeyId
+    val readOps = txContext.statement.readOperations()
     val matchingNodes: PrimitiveLongIterator = range match {
 
       case rangeLessThan: RangeLessThan[String] =>
@@ -260,53 +260,53 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def indexScan(index: IndexDescriptor) =
-    mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
+    mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
-    mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexContainsScan(index, value))(nodeOps.getById)
+    mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexContainsScan(index, value))(nodeOps.getById)
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
-    mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexEndsWithScan(index, value))(nodeOps.getById)
+    mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexEndsWithScan(index, value))(nodeOps.getById)
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
-    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
+    val nodeId = txContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) =>
-      if (transactionalContext.statement.dataWriteOperations().nodeRemoveLabel(node, labelId)) count + 1 else count
+      if (txContext.statement.dataWriteOperations().nodeRemoveLabel(node, labelId)) count + 1 else count
   }
 
   override def getNodesByLabel(id: Int): Iterator[Node] =
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
-    transactionalContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir))
+    txContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir))
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int =
-    transactionalContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir), relTypeId)
+    txContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir), relTypeId)
 
-  override def nodeIsDense(node: Long): Boolean = transactionalContext.statement.readOperations().nodeIsDense(node)
+  override def nodeIsDense(node: Long): Boolean = txContext.statement.readOperations().nodeIsDense(node)
 
   class NodeOperations extends BaseOperations[Node] {
     override def delete(obj: Node) {
       try {
-        transactionalContext.statement.dataWriteOperations().nodeDelete(obj.getId)
+        txContext.statement.dataWriteOperations().nodeDelete(obj.getId)
       } catch {
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
-      JavaConversionSupport.asScalaENFXSafe(transactionalContext.statement.readOperations().nodeGetPropertyKeys(id))
+      JavaConversionSupport.asScalaENFXSafe(txContext.statement.readOperations().nodeGetPropertyKeys(id))
     } catch {
       case _: exceptions.EntityNotFoundException => Iterator.empty
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId)
+      txContext.statement.readOperations().nodeGetProperty(id, propertyKeyId)
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
@@ -316,14 +316,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def hasProperty(id: Long, propertyKey: Int) = try {
-      transactionalContext.statement.readOperations().nodeHasProperty(id, propertyKey)
+      txContext.statement.readOperations().nodeHasProperty(id, propertyKey)
     } catch {
       case _: exceptions.EntityNotFoundException => false
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int) {
       try {
-        transactionalContext.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
+        txContext.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
@@ -331,57 +331,57 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
       try {
-        transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
+        txContext.statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
     }
 
     override def getById(id: Long) = try {
-      transactionalContext.graph.getNodeById(id)
+      txContext.graph.getNodeById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
 
     override def all: Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetAll())(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetAll())(getById)
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeLegacyIndexGet(name, key, value))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodeLegacyIndexGet(name, key, value))(getById)
 
     override def indexQuery(name: String, query: Any): Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeLegacyIndexQuery(name, query))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodeLegacyIndexQuery(name, query))(getById)
 
     override def isDeletedInThisTx(n: Node): Boolean = isDeletedInThisTx(n.getId)
 
     def isDeletedInThisTx(id: Long): Boolean =
-      transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().nodeIsDeletedInThisTx(id)
+      txContext.stateView.hasTxStateWithChanges && txContext.stateView.txState().nodeIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
-      transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
+      txContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
 
     override def releaseExclusiveLock(obj: Long) =
-      transactionalContext.statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
+      txContext.statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
 
     override def delete(obj: Relationship) {
       try {
-        transactionalContext.statement.dataWriteOperations().relationshipDelete(obj.getId)
+        txContext.statement.dataWriteOperations().relationshipDelete(obj.getId)
       } catch {
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
-      asScalaENFXSafe(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(id))
+      asScalaENFXSafe(txContext.statement.readOperations().relationshipGetPropertyKeys(id))
     } catch {
       case _: exceptions.EntityNotFoundException => Iterator.empty
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId)
+      txContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId)
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
@@ -391,14 +391,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def hasProperty(id: Long, propertyKey: Int) = try {
-      transactionalContext.statement.readOperations().relationshipHasProperty(id, propertyKey)
+      txContext.statement.readOperations().relationshipHasProperty(id, propertyKey)
     } catch {
       case _: exceptions.EntityNotFoundException => false
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int) {
       try {
-        transactionalContext.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
+        txContext.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
@@ -406,43 +406,43 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
       try {
-        transactionalContext.statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value))
+        txContext.statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value))
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
     }
 
     override def getById(id: Long) = try {
-      transactionalContext.graph.getRelationshipById(id)
+      txContext.graph.getRelationshipById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
 
     override def all: Iterator[Relationship] = {
-      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipsGetAll())(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipsGetAll())(getById)
     }
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipLegacyIndexGet(name, key, value, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipLegacyIndexGet(name, key, value, -1, -1))(getById)
 
     override def indexQuery(name: String, query: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
 
     override def isDeletedInThisTx(r: Relationship): Boolean =
       isDeletedInThisTx(r.getId)
 
     def isDeletedInThisTx(id: Long): Boolean =
-      transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().relationshipIsDeletedInThisTx(id)
+      txContext.stateView.hasTxStateWithChanges && txContext.stateView.txState().relationshipIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
-      transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
+      txContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
 
     override def releaseExclusiveLock(obj: Long) =
-      transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
+      txContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String) =
-    transactionalContext.statement.tokenWriteOperations().propertyKeyGetOrCreateForName(propertyKey)
+    txContext.statement.tokenWriteOperations().propertyKeyGetOrCreateForName(propertyKey)
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
     def primitiveLongIteratorToScalaIterator(primitiveIterator: PrimitiveLongIterator): Iterator[Long] =
@@ -457,55 +457,55 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val javaCreator = new java.util.function.Function[K, V]() {
       override def apply(key: K) = creator
     }
-    transactionalContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
+    txContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
   override def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = try {
-    IdempotentResult(transactionalContext.statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId))
+    IdempotentResult(txContext.statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId))
   } catch {
     case _: AlreadyIndexedException =>
-      val indexDescriptor = transactionalContext.statement.readOperations().indexGetForLabelAndPropertyKey(labelId, propertyKeyId)
-      if(transactionalContext.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
+      val indexDescriptor = txContext.statement.readOperations().indexGetForLabelAndPropertyKey(labelId, propertyKeyId)
+      if(txContext.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
         throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
      IdempotentResult(indexDescriptor, wasCreated = false)
   }
 
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    transactionalContext.statement.schemaWriteOperations().indexDrop(new IndexDescriptor(labelId, propertyKeyId))
+    txContext.statement.schemaWriteOperations().indexDrop(new IndexDescriptor(labelId, propertyKeyId))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
-    IdempotentResult(transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(labelId, propertyKeyId))
+    IdempotentResult(txContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(labelId, propertyKeyId))
   } catch {
     case existing: AlreadyConstrainedException =>
       IdempotentResult(existing.constraint().asInstanceOf[UniquenessConstraint], wasCreated = false)
   }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    transactionalContext.statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
+    txContext.statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] =
     try {
-      IdempotentResult(transactionalContext.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(labelId, propertyKeyId))
+      IdempotentResult(txContext.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(labelId, propertyKeyId))
     } catch {
       case existing: AlreadyConstrainedException =>
         IdempotentResult(existing.constraint().asInstanceOf[NodePropertyExistenceConstraint], wasCreated = false)
     }
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
-    transactionalContext.statement.schemaWriteOperations().constraintDrop(new NodePropertyExistenceConstraint(labelId, propertyKeyId))
+    txContext.statement.schemaWriteOperations().constraintDrop(new NodePropertyExistenceConstraint(labelId, propertyKeyId))
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint] =
     try {
-      IdempotentResult(transactionalContext.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(relTypeId, propertyKeyId))
+      IdempotentResult(txContext.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(relTypeId, propertyKeyId))
     } catch {
       case existing: AlreadyConstrainedException =>
         IdempotentResult(existing.constraint().asInstanceOf[RelationshipPropertyExistenceConstraint], wasCreated = false)
     }
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
-    transactionalContext.statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
+    txContext.statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def getImportURL(url: URL): Either[String,URL] = transactionalContext.graph match {
+  override def getImportURL(url: URL): Either[String,URL] = txContext.graph match {
     case db: GraphDatabaseQueryService =>
       try {
         Right(db.validateURLAccess(url))
@@ -518,7 +518,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def relationshipEndNode(rel: Relationship) = rel.getEndNode
 
-  private lazy val tokenNameLookup = new StatementTokenNameLookup(transactionalContext.statement.readOperations())
+  private lazy val tokenNameLookup = new StatementTokenNameLookup(txContext.statement.readOperations())
 
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(node: PatternNode,
@@ -536,7 +536,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     // The RULE compiler makes use of older kernel API capabilities for variable length expanding
     // TODO: Consider re-writing this using similar code to the COST var-length expand
-    val baseTraversalDescription: TraversalDescription = transactionalContext.graph.asInstanceOf[GraphDatabaseCypherService]
+    val baseTraversalDescription: TraversalDescription = txContext.graph.asInstanceOf[GraphDatabaseCypherService]
       .getGraphDatabaseService
       .traversalDescription()
       .evaluator(depthEval)
@@ -555,18 +555,18 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def nodeCountByCountStore(labelId: Int): Long = {
-    transactionalContext.statement.readOperations().countsForNode(labelId)
+    txContext.statement.readOperations().countsForNode(labelId)
   }
 
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long = {
-    transactionalContext.statement.readOperations().countsForRelationship(startLabelId, typeId, endLabelId)
+    txContext.statement.readOperations().countsForRelationship(startLabelId, typeId, endLabelId)
   }
 
   override def lockNodes(nodeIds: Long*) =
-    nodeIds.sorted.foreach(transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, _))
+    nodeIds.sorted.foreach(txContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, _))
 
   override def lockRelationships(relIds: Long*) =
-    relIds.sorted.foreach(transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, _))
+    relIds.sorted.foreach(txContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, _))
 
   override def singleShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander,
                                   pathPredicate: KernelPredicate[Path],
@@ -590,39 +590,39 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   private def shouldElevate(allowed: Array[String]): Boolean = {
     // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
     // above the original allowed procedure mode. We enforce this by checking if mode is already an overridden mode.
-    val accessMode = transactionalContext.securityContext.mode()
+    val accessMode = txContext.securityContext.mode()
     allowed.nonEmpty && !accessMode.isOverridden && accessMode.allowsProcedureWith(allowed)
   }
 
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        transactionalContext.statement.procedureCallOperations.procedureCallReadOverride(_, _)
+        txContext.statement.procedureCallOperations.procedureCallReadOverride(_, _)
       else
-        transactionalContext.statement.procedureCallOperations.procedureCallRead(_, _)
+        txContext.statement.procedureCallOperations.procedureCallRead(_, _)
     callProcedure(name, args, call)
   }
 
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        transactionalContext.statement.procedureCallOperations.procedureCallWriteOverride(_, _)
+        txContext.statement.procedureCallOperations.procedureCallWriteOverride(_, _)
       else
-        transactionalContext.statement.procedureCallOperations.procedureCallWrite(_, _)
+        txContext.statement.procedureCallOperations.procedureCallWrite(_, _)
     callProcedure(name, args, call)
   }
 
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        transactionalContext.statement.procedureCallOperations.procedureCallSchemaOverride(_, _)
+        txContext.statement.procedureCallOperations.procedureCallSchemaOverride(_, _)
       else
-        transactionalContext.statement.procedureCallOperations.procedureCallSchema(_, _)
+        txContext.statement.procedureCallOperations.procedureCallSchema(_, _)
     callProcedure(name, args, call)
   }
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.securityContext))
+    callProcedure(name, args, txContext.dbmsOperations.procedureCallDbms(_,_,txContext.securityContext))
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {
@@ -638,9 +638,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelFunctionCall =
       if (shouldElevate(allowed))
-        transactionalContext.statement.procedureCallOperations.functionCallOverride(_, _)
+        txContext.statement.procedureCallOperations.functionCallOverride(_, _)
       else
-        transactionalContext.statement.procedureCallOperations.functionCall(_, _)
+        txContext.statement.procedureCallOperations.functionCall(_, _)
     callFunction(name, args, call)
   }
 
@@ -688,14 +688,30 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def detachDeleteNode(node: Node): Int = {
     try {
-      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
+      txContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
     } catch {
       case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
     }
   }
 
   override def assertSchemaWritesAllowed(): Unit =
-    transactionalContext.statement.schemaWriteOperations()
+    txContext.statement.schemaWriteOperations()
+
+  override def transactionalContext: QueryTransactionalContext = new QueryTransactionalContext {
+    override type ReadOps = ReadOperations
+
+    override type DbmsOps = DbmsOperations
+
+    override def commitAndRestartTx(): Unit = txContext.commitAndRestartTx()
+
+    override def readOperations: ReadOps = txContext.tc.readOperations()
+
+    override def isTopLevelTx: Boolean = txContext.isTopLevelTx
+
+    override def dbmsOperations: DbmsOperations = txContext.tc.dbmsOperations()
+
+    override def close(success: Boolean): Unit = txContext.tc.close(success)
+  }
 }
 
 object TransactionBoundQueryContext {

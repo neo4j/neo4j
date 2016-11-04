@@ -24,7 +24,7 @@ import java.text.NumberFormat
 import java.time.Clock
 import java.util.{Collections, Date, Locale}
 
-import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_1
+import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_2
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
@@ -34,9 +34,9 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.spi.v3_1.{TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
+import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -294,7 +294,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   private def ronjaCompiler(plannerName: CostBasedPlannerName, metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseQueryService): CypherCompiler = {
     val kernelMonitors = new KernelMonitors()
-    val monitors = WrappedMonitors3_1(kernelMonitors)
+    val monitors = WrappedMonitors3_2(kernelMonitors)
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
@@ -329,7 +329,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   private def legacyCompiler(graph: GraphDatabaseQueryService): CypherCompiler = {
     val kernelMonitors = new KernelMonitors()
-    val monitors = WrappedMonitors3_1(kernelMonitors)
+    val monitors = WrappedMonitors3_2(kernelMonitors)
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
@@ -550,13 +550,13 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
     val (executionPlan: ExecutionPlan, extractedParams: Map[String, Any]) = db.withTx { tx =>
       val transactionalContext = contextFactory.newContext(querySource, tx, query, Collections.emptyMap())
-      val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext), devNullLogger)
+      val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_2(transactionalContext), devNullLogger)
       compiler.planQuery(query, planContext, devNullLogger)
     }
 
     db.withTx { tx =>
       val transactionalContext = contextFactory.newContext(querySource, tx, query, Collections.emptyMap())
-      val tcWrapper = TransactionalContextWrapperv3_1(transactionalContext)
+      val tcWrapper = TransactionalContextWrapperv3_2(transactionalContext)
       val queryContext = new TransactionBoundQueryContext(tcWrapper)(indexSearchMonitor)
       val result = executionPlan.run(queryContext, ProfileMode, extractedParams)
       (result.toList, result)

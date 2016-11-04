@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_1.codegen
+package org.neo4j.cypher.internal.spi.v3_2.codegen
 
 import org.neo4j.codegen.{CodeGenerator, TypeReference}
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.compiler.v3_1.helpers._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenType
+import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 
 import scala.collection.mutable
 

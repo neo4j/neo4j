@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.SingleStep
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{BOTH, OUTGOING}
-import org.neo4j.cypher.internal.spi.v3_1.{BidirectionalTraversalMatcher, MonoDirectionalTraversalMatcher}
+import org.neo4j.cypher.internal.spi.v3_2.{BidirectionalTraversalMatcher, MonoDirectionalTraversalMatcher}
 import org.neo4j.graphdb.{Node, Path}
 
 class TraversalMatcherTest extends GraphDatabaseFunSuite with QueryStateTestSupport {

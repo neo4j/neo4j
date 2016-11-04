@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {

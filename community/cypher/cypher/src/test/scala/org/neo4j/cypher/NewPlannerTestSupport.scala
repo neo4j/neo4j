@@ -21,20 +21,19 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
-import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
-import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_1}
+import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_1, ExecutionResultWrapperFor3_2}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Exceptions
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 object NewPlannerMonitor {
@@ -101,7 +100,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
   override def databaseConfig(): Map[Setting[_], String] =
-    Map(GraphDatabaseSettings.cypher_parser_version -> CypherVersion.v3_1.name,
+    Map(GraphDatabaseSettings.cypher_parser_version -> CypherVersion.v3_2.name, //TODO: This should not be specified here
       GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
 
   val newPlannerMonitor = new NewPlannerMonitor
@@ -286,6 +285,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   private def rewindableResult(result: ExecutionResult): InternalExecutionResult = {
     result match {
       case e: ClosingExecutionResult => e.inner match {
+        case _: ExecutionResultWrapperFor3_2 => RewindableExecutionResult(e)
         case _: ExecutionResultWrapperFor3_1 => RewindableExecutionResult(e)
         case _: ExecutionResultWrapperFor2_3 => RewindableExecutionResult(e)
       }

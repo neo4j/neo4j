@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_1
+import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_2
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.IDPSolverMonitor
 import org.neo4j.cypher.internal.compiler.v3_2.{IDPPlannerName, InterpretedRuntimeName}
@@ -162,7 +162,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   }
 
   private def assertMinExpandsAndJoins(plan: InternalPlanDescription, minCounts: Map[String, Int]): Map[String, Int] = {
-    val externalPlanDescription = CompatibilityPlanDescriptionFor3_1(plan, CypherVersion.v3_1, IDPPlannerName, InterpretedRuntimeName)
+    val externalPlanDescription = CompatibilityPlanDescriptionFor3_2(plan, CypherVersion.v3_2, IDPPlannerName, InterpretedRuntimeName)
     assertMinExpandsAndJoins(externalPlanDescription, minCounts)
   }
 
@@ -176,7 +176,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   }
 
   private def countExpandsAndJoins(plan: InternalPlanDescription): Map[String, Int] = {
-    val externalPlanDescription = CompatibilityPlanDescriptionFor3_1(plan, CypherVersion.v3_1, IDPPlannerName, InterpretedRuntimeName)
+    val externalPlanDescription = CompatibilityPlanDescriptionFor3_2(plan, CypherVersion.v3_2, IDPPlannerName, InterpretedRuntimeName)
     countExpandsAndJoins(externalPlanDescription)
   }
 

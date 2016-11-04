@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.spi.v3_1
 
-import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{EntityProducer, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.{EntityProducer, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Argument
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.graphdb.traversal.Uniqueness

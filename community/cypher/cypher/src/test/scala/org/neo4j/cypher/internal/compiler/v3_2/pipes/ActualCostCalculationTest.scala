@@ -32,9 +32,9 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType.{Label 
 import org.neo4j.cypher.internal.compiler.v3_2.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, SemanticDirection, ast}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_1.{TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
+import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -245,7 +245,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
     graph.withTx { tx =>
       val tc = transactionContext(graph, tx)
-      val tcWrapper = TransactionalContextWrapperv3_1(tc)
+      val tcWrapper = TransactionalContextWrapperv3_2(tc)
       val queryContext = new TransactionBoundQueryContext(tcWrapper)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
@@ -308,7 +308,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
-      val transactionalContext = TransactionalContextWrapperv3_1(transactionContext(graph, tx))
+      val transactionalContext = TransactionalContextWrapperv3_2(transactionContext(graph, tx))
       val ctx = new TransactionBoundPlanContext(transactionalContext, devNullLogger)
       val literal = Literal(42)
 
@@ -323,7 +323,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def indexScan(graph: GraphDatabaseQueryService): NodeIndexScanPipe = {
     graph.withTx { tx =>
-      val transactionalContext = TransactionalContextWrapperv3_1(transactionContext(graph, tx))
+      val transactionalContext = TransactionalContextWrapperv3_2(transactionContext(graph, tx))
       val ctx = new TransactionBoundPlanContext(transactionalContext, devNullLogger)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get

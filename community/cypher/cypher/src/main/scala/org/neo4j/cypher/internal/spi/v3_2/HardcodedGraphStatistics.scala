@@ -17,19 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.spi.v3_2
 
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.Statement
-
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
-
-trait ExecutionPlan {
-
-  def run(transactionalContext: TransactionalContextWrapperv3_2, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult
-
-  def isPeriodicCommit: Boolean
-
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperv3_2): Boolean
-}
+//This class should live here, but until we have to touch
+//disk, let's have it in the compiler. Convenient.
+case object HardcodedGraphStatistics
+  extends org.neo4j.cypher.internal.compiler.v3_2.HardcodedGraphStatisticsValues

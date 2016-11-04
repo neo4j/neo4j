@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_2
 import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.compatibility.{StringInfoLogger3_1, WrappedMonitors3_1}
+import org.neo4j.cypher.internal.compatibility.{StringInfoLogger3_2, WrappedMonitors3_2}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.AssertableLogProvider.inLog
@@ -53,8 +53,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         nonIndexedLabelWarningThreshold = 10000L
       ),
       clock, GeneratedQueryStructure,
-      new WrappedMonitors3_1(kernelMonitors),
-      new StringInfoLogger3_1(log),
+      new WrappedMonitors3_2(kernelMonitors),
+      new StringInfoLogger3_2(log),
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
       updateStrategy = None,

@@ -23,7 +23,7 @@ import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
+class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_2)
   extends TransactionBoundTokenContext(tc.statement) with PlanContext {
 
   @Deprecated

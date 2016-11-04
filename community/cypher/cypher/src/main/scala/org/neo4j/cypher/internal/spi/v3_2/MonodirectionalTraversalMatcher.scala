@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_0
+package org.neo4j.cypher.internal.spi.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.{EntityProducer, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.graphdb.traversal.Uniqueness
@@ -38,7 +38,7 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer
     def reverse() = this
   }
 
-  def baseTraversal(params: ExecutionContext, state:QueryState): TraversalDescription =
+  def baseTraversal(params: ExecutionContext, state: QueryState): TraversalDescription =
     new MonoDirectionalTraversalDescription()
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
       .evaluator(new MyEvaluator)

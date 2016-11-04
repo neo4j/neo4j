@@ -24,11 +24,7 @@ import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 import org.opencypher.tools.tck.TCKCucumberTemplate;
 
-import static cypher.SpecSuiteConstants.BLACKLIST_PLUGIN;
-import static cypher.SpecSuiteConstants.DB_CONFIG;
-import static cypher.SpecSuiteConstants.GLUE_PATH;
-import static cypher.SpecSuiteConstants.HTML_REPORT;
-import static cypher.SpecSuiteConstants.JSON_REPORT;
+import static cypher.SpecSuiteConstants.*;
 
 @RunWith( CompatibilitySpecSuiteResources.class )
 public class CompatibilitySpecSuiteTest
@@ -114,17 +110,17 @@ public class CompatibilitySpecSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    DB_CONFIG + "compatibility-30.json",
-                    HTML_REPORT + SUITE_NAME + "/compatibility-30",
-                    JSON_REPORT + SUITE_NAME + "/compatibility-30",
-                    BLACKLIST_PLUGIN + "compatibility-30.txt"
+                    DB_CONFIG + "compatibility-31.json",
+                    HTML_REPORT + SUITE_NAME + "/compatibility-31",
+                    JSON_REPORT + SUITE_NAME + "/compatibility-31",
+                    BLACKLIST_PLUGIN + "compatibility-31.txt"
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
             tags = { "~@pending" },
             strict = true
     )
-    public static class Compatibility30
+    public static class Compatibility31
     {
     }
 

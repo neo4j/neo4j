@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_0
+package org.neo4j.cypher.internal.spi.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
-import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, NameId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
+import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, NameId, PropertyKeyId, RelTypeId}
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.api.ReadOperations
 
 object TransactionBoundGraphStatistics {
   def apply(ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(ops))
@@ -35,11 +35,11 @@ object TransactionBoundGraphStatistics {
 
     def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = new IndexDescriptor(label, property)
-        val labeledNodes = operations.countsForNodeWithoutTxState(label).toDouble
+        val indexDescriptor = new IndexDescriptor( label, property )
+        val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a property with a given value
-        val indexEntrySelectivity = operations.indexUniqueValuesSelectivity(indexDescriptor)
+        val indexEntrySelectivity = operations.indexUniqueValuesSelectivity( indexDescriptor )
         val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
         val indexSelectivity = frequencyOfNodesWithSameValue / labeledNodes
 
@@ -51,11 +51,11 @@ object TransactionBoundGraphStatistics {
 
     def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = new IndexDescriptor(label, property)
-        val labeledNodes = operations.countsForNodeWithoutTxState(label).toDouble
+        val indexDescriptor = new IndexDescriptor( label, property )
+        val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a given property
-        val indexSize = operations.indexSize(indexDescriptor)
+        val indexSize = operations.indexSize( indexDescriptor )
         val indexSelectivity = indexSize / labeledNodes
 
         Selectivity.of(indexSelectivity)
@@ -67,21 +67,20 @@ object TransactionBoundGraphStatistics {
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
       atLeastOne(operations.countsForNodeWithoutTxState(labelId))
 
-    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId],
-                                               toLabel: Option[LabelId]): Cardinality =
+    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
       atLeastOne(operations.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
-  }
 
-  /**
-    * Due to the way cardinality calculations work, zero is a bit dangerous, as it cancels out
-    * any cost that it multiplies with. To avoid this pitfall, we determine that the least count
-    * available is one, not zero.
-    */
-  private def atLeastOne(count: Double): Cardinality = {
-    if (count < 1)
-      Cardinality.SINGLE
-    else
-      Cardinality(count)
+    /**
+      * Due to the way cardinality calculations work, zero is a bit dangerous, as it cancels out
+      * any cost that it multiplies with. To avoid this pitfall, we determine that the least count
+      * available is one, not zero.
+      */
+    private def atLeastOne(count: Double): Cardinality = {
+      if (count < 1)
+        Cardinality.SINGLE
+      else
+        Cardinality(count)
+    }
   }
 }
 

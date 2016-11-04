@@ -1,0 +1,5 @@
+// bugged in spec, awaiting update
+SKIP with an expression that depends on variables should fail
+LIMIT with an expression that depends on variables should fail
+Fail when returning type of deleted relationships
+Fail when returning properties of deleted relationships

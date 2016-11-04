@@ -250,9 +250,9 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
     verify(monitor, times(1)).endSuccess(context)
   }
 
-  test("triggering monitor in 3.0") {
+  test("triggering monitor in 3.1") {
     // given
-    val context = graph.transactionalContext(query = "CYPHER 3.0 RETURN [1, 2, 3, 4, 5]" -> Map.empty)
+    val context = graph.transactionalContext(query = "CYPHER 3.1 RETURN [1, 2, 3, 4, 5]" -> Map.empty)
 
     // when
     val result = engine.profile(context.queryText(), context.queryParameters(), context).javaIterator
@@ -266,9 +266,9 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
     verify(monitor, times(1)).endSuccess(context)
   }
 
-  test("monitor is called when iterator closes in 3.0") {
+  test("monitor is called when iterator closes in 3.1") {
     // given
-    val (query, result) = runQuery("CYPHER 3.0 RETURN 42")
+    val (query, result) = runQuery("CYPHER 3.1 RETURN 42")
 
     // when
     val iterator = result.javaIterator
@@ -279,9 +279,9 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  test("monitor is called when next on empty iterator in 3.0") {
+  test("monitor is called when next on empty iterator in 3.1") {
     // given
-    val (query, result) = runQuery("CYPHER 3.0 RETURN 42")
+    val (query, result) = runQuery("CYPHER 3.1 RETURN 42")
 
     // when
     val iterator = result.javaIterator
@@ -293,9 +293,9 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  test("monitor is called directly when return is empty in 3.0") {
+  test("monitor is called directly when return is empty in 3.1") {
     // given
-    val (query, result) = runQuery("CYPHER 3.0 CREATE()")
+    val (query, result) = runQuery("CYPHER 3.1 CREATE()")
 
     // when
     result.javaIterator
