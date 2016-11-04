@@ -31,8 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
-import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.GraphDatabaseService
@@ -68,7 +67,7 @@ trait CodeGenSugar extends MockitoSugar {
     try {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
       val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
-      val transactionalContext = TransactionalContextWrapperv3_2(contextFactory.newContext(QuerySource.UNKNOWN, tx,
+      val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(QuerySource.UNKNOWN, tx,
         "no query text exists for this test", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val result = plan.executionResultBuilder(queryContext, mode, tracer(mode), Map.empty, new TaskCloser)
@@ -131,7 +130,7 @@ trait CodeGenSugar extends MockitoSugar {
 
   private def mockQueryContext() = {
     val qc = mock[QueryContext]
-    val transactionalContext = mock[TransactionalContextWrapperv3_2]
+    val transactionalContext = mock[TransactionalContextWrapper]
     val statement = mock[Statement]
     when(qc.transactionalContext).thenReturn(transactionalContext)
     when(transactionalContext.statement).thenReturn(statement)

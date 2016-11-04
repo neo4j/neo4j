@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedPlannerNo
 import org.neo4j.cypher.internal.frontend.v3_2.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
@@ -240,7 +239,7 @@ trait CompatibilityFor3_2 {
     new ParsedQuery {
       def isPeriodicCommit = preparedSyntacticQueryForV_3_2.map(_.isPeriodicCommit).getOrElse(false)
 
-      def plan(transactionalContext: TransactionalContextWrapperv3_2, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor3_2.runSafely {
+      def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor3_2.runSafely {
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
         val syntacticQuery = preparedSyntacticQueryForV_3_2.get
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(preParsedQuery.offset), tracer)
@@ -259,12 +258,12 @@ trait CompatibilityFor3_2 {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
-    private def queryContext(transactionalContext: TransactionalContextWrapperv3_2) = {
+    private def queryContext(transactionalContext: TransactionalContextWrapper) = {
       val ctx = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
       new ExceptionTranslatingQueryContextFor3_2(ctx)
     }
 
-    def run(transactionalContext: TransactionalContextWrapperv3_2, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
+    def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev3_2
         case CypherExecutionMode.profile => ProfileModev3_2
@@ -283,7 +282,7 @@ trait CompatibilityFor3_2 {
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperv3_2): Boolean =
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
   }
 }

@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerConfiguration, devNullLogger}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
-import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundPlanContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
@@ -250,7 +249,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
   def planContext: PlanContext = {
-    val tc = mock[TransactionalContextWrapperv3_2]
+    val tc = mock[TransactionalContextWrapper]
     when(tc.statement).thenReturn(statement)
     when(tc.readOperations).thenReturn(statement.readOperations())
     when(tc.graph).thenReturn(graph)

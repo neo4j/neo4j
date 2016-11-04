@@ -25,7 +25,7 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_2.prettifier.Prettifier
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
+import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -126,14 +126,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
     preParsedQueries.getOrElseUpdate(queryText, compiler.preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapperv3_2) = {
+  protected def planQuery(transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapper) = {
     val executingQuery = transactionalContext.executingQuery()
     val queryText = executingQuery.queryText()
     executionMonitor.startQueryExecution(executingQuery)
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
 
-      val externalTransactionalContext = new TransactionalContextWrapperv3_2(transactionalContext)
+      val externalTransactionalContext = new TransactionalContextWrapper(transactionalContext)
       val preParsedQuery = try {
         preParseQuery(queryText)
       } catch {

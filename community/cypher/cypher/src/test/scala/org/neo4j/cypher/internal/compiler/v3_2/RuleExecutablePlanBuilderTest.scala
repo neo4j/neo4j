@@ -45,8 +45,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, Rewriter, Scope, SemanticTable}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
-import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.Label.label
 import org.neo4j.kernel.api.KernelTransaction
@@ -122,7 +121,7 @@ class RuleExecutablePlanBuilderTest
         RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
 
       val contextFactory = Neo4jTransactionalContextFactory.create(graph, locker)
-      val transactionalContext = TransactionalContextWrapperv3_2(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
+      val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedSemanticQuery(q)
@@ -151,7 +150,7 @@ class RuleExecutablePlanBuilderTest
       val execPlanBuilder = new LegacyExecutablePlanBuilder(WrappedMonitors3_2(kernelMonitors), config,
                                                             RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
       val contextFactory = Neo4jTransactionalContextFactory.create(graph, locker)
-      val transactionalContext = TransactionalContextWrapperv3_2(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
+      val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedSemanticQuery(q)

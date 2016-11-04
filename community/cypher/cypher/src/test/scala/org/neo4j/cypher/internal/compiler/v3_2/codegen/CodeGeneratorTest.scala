@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
+import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.kernel.api.ReadOperations
@@ -961,7 +961,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   })
 
   private val queryContext = mock[QueryContext]
-  private val transactionalContext = mock[TransactionalContextWrapperv3_2]
+  private val transactionalContext = mock[TransactionalContextWrapper]
   private val ro = mock[ReadOperations]
   when(queryContext.transactionalContext).thenReturn(transactionalContext)
   when(transactionalContext.readOperations).thenReturn(ro)

@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapperv3_1}
+import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
-final class TransactionBoundQueryContext(txContext: TransactionalContextWrapperv3_1)(implicit indexSearchMonitor: IndexSearchMonitor)
+final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(txContext.statement) with QueryContext {
 
   type EntityAccessor = NodeManager

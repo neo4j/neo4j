@@ -26,7 +26,6 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
@@ -76,7 +75,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.transactionType()).thenReturn(KernelTransaction.Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     val tc = new Neo4jTransactionalContext(graph, null, null, null, locker, outerTx, statement, null)
-    val transactionalContext = TransactionalContextWrapperv3_1(tc)
+    val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = true)
@@ -95,7 +94,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.transactionType()).thenReturn(KernelTransaction.Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     val tc = new Neo4jTransactionalContext(graph, null, null, null, locker, outerTx, statement, null)
-    val transactionalContext = TransactionalContextWrapperv3_1(tc)
+    val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = false)
@@ -114,7 +113,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val node = createMiniGraph(relTypeName)
 
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
-    val transactionalContext = TransactionalContextWrapperv3_1(createTransactionContext(graph, tx))
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
@@ -134,7 +133,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should deny non-whitelisted URL protocols for loading") {
     // GIVEN
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
-    val transactionalContext = TransactionalContextWrapperv3_1(createTransactionContext(graph, tx))
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN
@@ -152,7 +151,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val config = Map[Setting[_], String](GraphDatabaseSettings.allow_file_urls -> "false")
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
-    val transactionalContext = TransactionalContextWrapperv3_1(createTransactionContext(graph, tx))
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN

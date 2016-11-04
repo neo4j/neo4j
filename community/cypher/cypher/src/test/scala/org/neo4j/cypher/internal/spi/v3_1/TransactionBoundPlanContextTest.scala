@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.devNullLogger
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Cardinality
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api.KernelTransaction.Type._
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
@@ -44,7 +43,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     val graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, transaction)
-    val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext), devNullLogger)
+    val planContext = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
     val statistics = planContext.statistics
 
     // label stats
@@ -68,7 +67,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, transaction)
-    val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext), devNullLogger)
+    val planContext = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
     val statistics = planContext.statistics
 
     // label stats

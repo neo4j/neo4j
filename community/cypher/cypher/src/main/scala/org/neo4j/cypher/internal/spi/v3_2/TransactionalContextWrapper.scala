@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi
+package org.neo4j.cypher.internal.spi.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer}
@@ -29,13 +29,13 @@ import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.impl.query.TransactionalContext
 
-case class TransactionalContextWrapperv3_2(tc: TransactionalContext) extends QueryTransactionalContext {
+case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
 
   override type ReadOps = ReadOperations
 
   override type DbmsOps = DbmsOperations
 
-  def getOrBeginNewIfClosed(): TransactionalContextWrapperv3_2 = TransactionalContextWrapperv3_2(tc.getOrBeginNewIfClosed())
+  def getOrBeginNewIfClosed(): TransactionalContextWrapper = TransactionalContextWrapper(tc.getOrBeginNewIfClosed())
 
   def isOpen: Boolean = tc.isOpen
 

@@ -23,8 +23,7 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, UpdateCountingQueryContext}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_2
-import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -45,7 +44,7 @@ object QueryStateHelper {
   def queryStateFrom(db: GraphDatabaseQueryService, tx: InternalTransaction, params: Map[String, Any] = Map.empty): QueryState = {
     val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db, locker)
-    val transactionalContext = TransactionalContextWrapperv3_2(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
+    val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
     newWith(db = db, query = queryContext, params = params)
   }
