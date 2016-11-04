@@ -21,9 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.ExecutionResult
-import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_1
+import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_2
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.kernel.impl.query.TransactionalContext
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
@@ -87,17 +86,18 @@ class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
       // exhaust the iterator so we can collect the plan description
       result.length
       result.executionPlanDescription() match {
-        case CompatibilityPlanDescriptionFor3_1(_, _, actual, _) =>
+        case CompatibilityPlanDescriptionFor3_2(_, _, actual, _) =>
           MatchResult(
             matches = actual == expected,
             rawFailureMessage = s"PlannerName should be $expected, but was $actual",
             rawNegatedFailureMessage = s"PlannerName should not be $actual"
           )
         case planDesc =>
+          val s: String = s"Plan description should be of type ${classOf[CompatibilityPlanDescriptionFor3_2].getSimpleName}, but was ${planDesc.getClass.getSimpleName}"
           MatchResult(
             matches = false,
-            rawFailureMessage = s"Plan description should be of type CompatibilityPlanDescriptionFor2_3, but was ${planDesc.getClass.getSimpleName}",
-            rawNegatedFailureMessage = s"Plan description should be of type CompatibilityPlanDescriptionFor2_3, but was ${planDesc.getClass.getSimpleName}"
+            rawFailureMessage = s,
+            rawNegatedFailureMessage = s
           )
       }
     }

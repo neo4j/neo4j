@@ -28,14 +28,12 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.api.{proc, Statement}
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import Context.KERNEL_TRANSACTION
+import org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION
 import org.neo4j.kernel.api.proc._
+import org.neo4j.kernel.api.{Statement, proc}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.proc.Procedures
-import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.immutable.Map
@@ -47,24 +45,6 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
-    val service = new GraphDatabaseCypherService(db)
-
-    //when
-    val plan1 = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
-    val plan2 = service.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
-
-    //then
-    plan1.getArguments.get("planner") should equal("COST")
-    plan1.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
-    plan2.getArguments.get("planner") should equal("COST")
-    plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
-  }
-
-  test("by default when using cypher 3.0 some queries should default to COST") {
-    //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.0").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -96,28 +76,30 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
+  test("by default when using cypher 3.2 some queries should default to COST") {
+    //given
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.2").newGraphDatabase()
+    val service = new GraphDatabaseCypherService(db)
+
+    //when
+    val plan1 = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan2 = service.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
+
+    //then
+    plan1.getArguments.get("planner") should equal("COST")
+    plan1.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
+    plan2.getArguments.get("planner") should equal("COST")
+    plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
+  }
+
   test("should be able to set RULE as default when using cypher 2.3") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
-    val service = new GraphDatabaseCypherService(db)
-
-    //when
-    val plan = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
-
-    //then
-    plan.getArguments.get("planner") should equal("RULE")
-    plan.getArguments.get("planner-impl") should equal("RULE")
-  }
-
-  test("should be able to set RULE as default when using cypher 3.0") {
-    //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.0").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -144,6 +126,22 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("RULE")
   }
 
+  test("should be able to set RULE as default when using cypher 3.2") {
+    //given
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.2").newGraphDatabase()
+    val service = new GraphDatabaseCypherService(db)
+
+    //when
+    val plan = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+
+    //then
+    plan.getArguments.get("planner") should equal("RULE")
+    plan.getArguments.get("planner-impl") should equal("RULE")
+  }
+
   test("should be able to force COST as default when using cypher 2.3") {
     //given
     val db = new TestGraphDatabaseFactory()
@@ -160,12 +158,12 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
-  test("should be able to force COST as default when using cypher 3.0") {
+  test("should be able to force COST as default when using cypher 3.1") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.0").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -176,12 +174,12 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
-  test("should be able to force COST as default when using cypher 3.1") {
+  test("should be able to force COST as default when using cypher 3.2") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.2").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when

@@ -111,17 +111,17 @@ public class AcceptanceSpecSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    DB_CONFIG + "compatibility-30.json",
-                    HTML_REPORT + SUITE_NAME + "/compatibility-30",
-                    JSON_REPORT + SUITE_NAME + "/compatibility-30",
-                    BLACKLIST_PLUGIN + "compatibility-30.txt"
+                    DB_CONFIG + "compatibility-31.json",
+                    HTML_REPORT + SUITE_NAME + "/compatibility-31",
+                    JSON_REPORT + SUITE_NAME + "/compatibility-31",
+                    BLACKLIST_PLUGIN + "compatibility-31.txt"
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
             tags = { "~@pending" },
             strict = true
     )
-    public static class Compatibility30
+    public static class Compatibility31
     {
     }
 
