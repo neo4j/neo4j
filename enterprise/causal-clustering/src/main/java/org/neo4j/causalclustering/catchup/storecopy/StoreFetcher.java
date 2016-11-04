@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchupResult;
+import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
 public class StoreFetcher
@@ -68,19 +70,6 @@ public class StoreFetcher
         return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId );
     }
 
-    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId ) throws IOException, StoreCopyFailedException
-    {
-        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider ) )
-        {
-            log.info( "Pulling transactions from: %d", fromTxId );
-            return txPullClient.pullTransactions( from, expectedStoreId, fromTxId, writer );
-        }
-        catch ( CatchUpClientException e )
-        {
-            throw new StoreCopyFailedException( e );
-        }
-    }
-
     public void copyStore( MemberId from, StoreId expectedStoreId, File destDir )
             throws StoreCopyFailedException, StreamingTransactionsFailedException
     {
@@ -103,6 +92,31 @@ public class StoreFetcher
             }
         }
         catch ( IOException e )
+        {
+            throw new StoreCopyFailedException( e );
+        }
+    }
+
+    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId ) throws IOException, StoreCopyFailedException
+    {
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider ) )
+        {
+            log.info( "Pulling transactions from: %d", fromTxId );
+
+            long pullRequestTxId = fromTxId;
+
+            CatchupResult lastStatus;
+            do
+            {
+                TxPullRequestResult result = txPullClient.pullTransactions( from, expectedStoreId, pullRequestTxId, writer );
+                lastStatus = result.catchupResult();
+                pullRequestTxId = result.lastTxId();
+            }
+            while ( lastStatus == SUCCESS_END_OF_BATCH );
+
+            return lastStatus;
+        }
+        catch ( CatchUpClientException e )
         {
             throw new StoreCopyFailedException( e );
         }

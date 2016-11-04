@@ -185,8 +185,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         BatchingTxApplier batchingTxApplier = new BatchingTxApplier( maxBatchSize,
                 dependencies.provideDependency( TransactionIdStore.class ),
                 writableCommitProcess, databaseHealthSupplier, platformModule.monitors, logProvider );
-//        ContinuousJob txApplyJob = new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group(
-//                "tx-applier", NEW_THREAD ), batchingTxApplier, logProvider );
 
         DelayedRenewableTimeoutService txPullerTimeoutService =
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
@@ -215,7 +213,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         dependencies.satisfyDependencies( txPuller );
 
         txPulling.add( batchingTxApplier );
-//        txPulling.add( txApplyJob );
         txPulling.add( txPuller );
         txPulling.add( txPullerTimeoutService );
 
