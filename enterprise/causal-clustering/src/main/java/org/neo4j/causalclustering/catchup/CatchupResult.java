@@ -21,7 +21,8 @@ package org.neo4j.causalclustering.catchup;
 
 public enum CatchupResult
 {
-    SUCCESS,
+    SUCCESS_END_OF_BATCH,
+    SUCCESS_END_OF_STREAM,
     E_STORE_ID_MISMATCH,
     E_STORE_UNAVAILABLE,
     E_TRANSACTION_PRUNED

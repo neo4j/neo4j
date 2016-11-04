@@ -19,9 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -32,6 +29,9 @@ import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -70,6 +70,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -79,6 +80,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.function.Predicates.awaitEx;
@@ -140,20 +142,25 @@ public class ReadReplicaReplicationIT
         int nodesBeforeReadReplicaStarts = 1;
 
         // when
-        cluster.coreTx( ( db, tx ) ->
+        for ( int i = 0; i < 100; i++ )
         {
-            createData( db, nodesBeforeReadReplicaStarts );
-            tx.success();
-        } );
+            cluster.coreTx( ( db, tx ) ->
+            {
+                createData( db, nodesBeforeReadReplicaStarts );
+                tx.success();
+            } );
+        }
 
         cluster.addReadReplicaWithId( 0 ).start();
 
-        // when
-        cluster.coreTx( ( db, tx ) ->
+        for ( int i = 0; i < 100; i++ )
         {
-            db.createNode().setProperty( "foobar", "baz_bat" );
-            tx.success();
-        } );
+            cluster.coreTx( ( db, tx ) ->
+            {
+                createData( db, nodesBeforeReadReplicaStarts );
+                tx.success();
+            } );
+        }
 
         // then
         for ( final ReadReplica server : cluster.readReplicas() )
@@ -162,9 +169,7 @@ public class ReadReplicaReplicationIT
             try ( Transaction tx = readReplica.beginTx() )
             {
                 ThrowingSupplier<Long,Exception> nodeCount = () -> count( readReplica.getAllNodes() );
-                assertEventually( "node to appear on read replica", nodeCount, is( nodesBeforeReadReplicaStarts + 1L )
-                        , 1,
-                        MINUTES );
+                assertEventually( "node to appear on read replica", nodeCount, is( 200L ) , 1, MINUTES );
 
                 for ( Node node : readReplica.getAllNodes() )
                 {

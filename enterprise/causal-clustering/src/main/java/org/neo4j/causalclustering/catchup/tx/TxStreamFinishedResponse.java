@@ -23,6 +23,8 @@ import java.util.Objects;
 
 import org.neo4j.causalclustering.catchup.CatchupResult;
 
+import static java.lang.String.format;
+
 public class TxStreamFinishedResponse
 {
     private final CatchupResult status;
@@ -52,5 +54,11 @@ public class TxStreamFinishedResponse
     public int hashCode()
     {
         return Objects.hash( status );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "TxStreamFinishedResponse{status=%s}", status );
     }
 }

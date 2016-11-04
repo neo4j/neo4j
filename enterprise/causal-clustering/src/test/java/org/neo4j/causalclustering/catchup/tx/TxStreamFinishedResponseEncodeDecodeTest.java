@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS;
+import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
 public class TxStreamFinishedResponseEncodeDecodeTest
 {
@@ -34,7 +34,7 @@ public class TxStreamFinishedResponseEncodeDecodeTest
         // given
         EmbeddedChannel channel = new EmbeddedChannel(
                 new TxStreamFinishedResponseEncoder(), new TxStreamFinishedResponseDecoder() );
-        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( SUCCESS );
+        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM );
 
         // when
         channel.writeOutbound( sent );

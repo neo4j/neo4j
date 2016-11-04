@@ -45,7 +45,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
-import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS;
+import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
+import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 import static org.neo4j.kernel.impl.util.Cursors.cursor;
 import static org.neo4j.kernel.impl.util.Cursors.txCursor;
@@ -53,11 +54,12 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class TxPullRequestHandlerTest
 {
+    private static final int BATCH_SIZE = 3;
     private final ChannelHandlerContext context = mock( ChannelHandlerContext.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    public void shouldRespondWithStreamOfTransactions() throws Exception
+    public void shouldRespondWithCompleteStreamOfTransactions() throws Exception
     {
         // given
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
@@ -70,7 +72,7 @@ public class TxPullRequestHandlerTest
 
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(),
+                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(),
                         NullLogProvider.getInstance() );
 
         // when
@@ -82,7 +84,62 @@ public class TxPullRequestHandlerTest
         verify( context ).write( new TxPullResponse( storeId, tx( 15 ) ) );
 
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( SUCCESS ) );
+        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM ) );
+    }
+
+    @Test
+    public void shouldRespondWithBatchOfTransactions() throws Exception
+    {
+        // given
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
+
+        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+        when( logicalTransactionStore.getTransactions( 14L ) ).thenReturn( txCursor(
+                cursor( tx( 14 ), tx( 15 ), tx( 16 ), tx( 17 ) ) ) );
+
+        TxPullRequestHandler txPullRequestHandler =
+                new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
+                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(),
+                        NullLogProvider.getInstance() );
+
+        // when
+        txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
+
+        // then
+        verify( context, times( 3 ) ).write( ResponseMessageType.TX );
+        verify( context ).write( new TxPullResponse( storeId, tx( 14 ) ) );
+        verify( context ).write( new TxPullResponse( storeId, tx( 15 ) ) );
+        verify( context ).write( new TxPullResponse( storeId, tx( 16 ) ) );
+
+        verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
+        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_BATCH ) );
+    }
+
+    @Test
+    public void shouldRespondWithEndOfStreamIfThereAreNoTransactions() throws Exception
+    {
+        // given
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 14L );
+
+        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+
+        TxPullRequestHandler txPullRequestHandler =
+                new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
+                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(),
+                        NullLogProvider.getInstance() );
+
+        // when
+        txPullRequestHandler.channelRead0( context, new TxPullRequest( 14, storeId ) );
+
+        // then
+        verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
+        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM ) );
     }
 
     @Test
@@ -99,7 +156,7 @@ public class TxPullRequestHandlerTest
 
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
+                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(), logProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
@@ -124,7 +181,7 @@ public class TxPullRequestHandlerTest
 
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> serverStoreId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
+                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(), logProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, clientStoreId ) );
@@ -149,7 +206,7 @@ public class TxPullRequestHandlerTest
 
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> false,
-                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
+                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(), logProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, storeId ) );
