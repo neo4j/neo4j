@@ -34,19 +34,8 @@ public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Voi
     public static void publishError( MessageHandler<IOException> out, Neo4jError error )
             throws IOException
     {
-        if ( !error.status().code().classification().shouldRespondToClient() )
-        {
-            // If not intended for client, we only return an error reference. This must
-            // be cross-referenced with the log files for full error detail.
-            out.handleFailureMessage( error.status(), String.format(
-                    "An unexpected failure occurred, see details in the database " +
-                    "logs, reference number %s.", error.reference() ) );
-        }
-        else
-        {
-            // If intended for client, we forward the message as-is.
-            out.handleFailureMessage( error.status(), error.message() );
-        }
+
+        out.handleFailureMessage( error.status(), error.message() );
     }
 
     protected final Log log;
