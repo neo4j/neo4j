@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS;
+import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
 public class StoreFetcher
 {
@@ -97,7 +97,7 @@ public class StoreFetcher
             log.info( "Store files need to be recovered starting from: %d", pullTxIndex );
 
             CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, pullTxIndex );
-            if ( catchupResult != SUCCESS )
+            if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
             }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup.tx;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -34,15 +32,13 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.function.Predicates.awaitForever;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 /**
  * Accepts transactions and queues them up for being applied in batches.
  */
-public class BatchingTxApplier extends LifecycleAdapter implements Runnable
+public class BatchingTxApplier extends LifecycleAdapter
 {
     private final int maxBatchSize;
     private final Supplier<TransactionIdStore> txIdStoreSupplier;
@@ -52,13 +48,10 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
     private final PullRequestMonitor monitor;
     private final Log log;
 
-    private final ArrayBlockingQueue<CommittedTransactionRepresentation> txQueue;
-
-    private TransactionQueue txBatcher;
+    private TransactionQueue txQueue;
     private TransactionCommitProcess commitProcess;
 
     private volatile long lastQueuedTxId;
-    private volatile long lastAppliedTxId;
     private volatile boolean stopped;
 
     public BatchingTxApplier( int maxBatchSize, Supplier<TransactionIdStore> txIdStoreSupplier,
@@ -71,7 +64,6 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
         this.healthSupplier = healthSupplier;
         this.log = logProvider.getLog( getClass() );
         this.monitor = monitors.newMonitor( PullRequestMonitor.class );
-        this.txQueue = new ArrayBlockingQueue<>( maxBatchSize );
     }
 
     @Override
@@ -79,7 +71,7 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
     {
         stopped = false;
         refreshFromNewStore();
-        txBatcher =
+        txQueue =
                 new TransactionQueue( maxBatchSize, ( first, last ) -> commitProcess.commit( first, NULL, EXTERNAL ) );
     }
 
@@ -91,9 +83,8 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
 
     void refreshFromNewStore()
     {
-        assert txQueue.isEmpty();
-        assert txBatcher == null || txBatcher.isEmpty();
-        lastQueuedTxId = lastAppliedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
+        assert txQueue == null || txQueue.isEmpty();
+        lastQueuedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
         commitProcess = commitProcessSupplier.get();
     }
 
@@ -109,12 +100,20 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
 
         if ( receivedTxId != expectedTxId )
         {
-            log.warn( "[" + Thread.currentThread() + "] Out of order transaction. Received: " + receivedTxId +
-                    " Expected: " + expectedTxId );
+            log.warn( "Out of order transaction. Received: %d Expected: %d", receivedTxId, expectedTxId );
             return;
         }
 
-        awaitForever( () -> stopped || txQueue.offer( tx ), 100, TimeUnit.MILLISECONDS );
+        try
+        {
+            txQueue.queue( new TransactionToApply( tx.getTransactionRepresentation(), receivedTxId ) );
+        }
+        catch ( Exception e )
+        {
+            log.error( "Error while queueing transaction", e );
+            healthSupplier.get().panic( e );
+        }
+
         if ( !stopped )
         {
             lastQueuedTxId = receivedTxId;
@@ -122,55 +121,24 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
         }
     }
 
-    @Override
-    public void run()
+    void applyBatch()
     {
-        CommittedTransactionRepresentation tx = null;
         try
         {
-            tx = txQueue.poll( 1, SECONDS );
+            txQueue.empty();
         }
-        catch ( InterruptedException e )
+        catch ( Exception e )
         {
-            log.warn( "Not expecting to be interrupted", e );
+            log.error( "Error during transaction application", e );
+            healthSupplier.get().panic( e );
         }
-
-        if ( tx != null )
-        {
-            long txId;
-            try
-            {
-                do
-                {
-                    txId = tx.getCommitEntry().getTxId();
-                    txBatcher.queue( new TransactionToApply( tx.getTransactionRepresentation(), txId ) );
-                }
-                while ( (tx = txQueue.poll()) != null );
-
-                txBatcher.empty();
-                lastAppliedTxId = txId;
-            }
-            catch ( Exception e )
-            {
-                log.error( "Error during transaction application", e );
-                healthSupplier.get().panic( e );
-            }
-        }
-    }
-
-    /**
-     * @return True if there is pending work, and false otherwise.
-     */
-    boolean workPending()
-    {
-        return lastQueuedTxId > lastAppliedTxId;
     }
 
     /**
      * @return The id of the last transaction applied.
      */
-    long lastAppliedTxId()
+    long lastQueuedTxId()
     {
-        return lastAppliedTxId;
+        return lastQueuedTxId;
     }
 }

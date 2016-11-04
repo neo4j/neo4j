@@ -44,7 +44,6 @@ import org.neo4j.logging.NullLogProvider;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -89,7 +88,7 @@ public class TxPollingClientTest
     {
         // given
         long lastAppliedTxId = 99L;
-        when( txApplier.lastAppliedTxId() ).thenReturn( lastAppliedTxId );
+        when( txApplier.lastQueuedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
@@ -100,16 +99,21 @@ public class TxPollingClientTest
     }
 
     @Test
-    public void shouldNotScheduleNewPullIfThereIsWorkPending() throws Exception
+    public void shouldKeepMakingPullRequestsUntilEndOfStream() throws Throwable
     {
         // given
-        when( txApplier.workPending() ).thenReturn( true );
+        long lastAppliedTxId = 99L;
+        when( txApplier.lastQueuedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
+        when(catchUpClient.<CatchupResult>makeBlockingRequest(  any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class )  ))
+                .thenReturn( CatchupResult.SUCCESS_END_OF_BATCH, CatchupResult.SUCCESS_END_OF_STREAM );
+
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( catchUpClient, never() ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+        verify( catchUpClient, times( 2 ) ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) );
     }
 

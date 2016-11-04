@@ -38,7 +38,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
-import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS;
+import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
 public class CoreStateDownloader
 {
@@ -117,7 +117,7 @@ public class CoreStateDownloader
                     new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
                         copyWholeStoreFrom( source, localStoreId, storeFetcher );
                 }
-                else if ( catchupResult != SUCCESS )
+                else if ( catchupResult != SUCCESS_END_OF_STREAM )
                 {
                     throw new StoreCopyFailedException( "Failed to download store: " + catchupResult );
                 }
