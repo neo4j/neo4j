@@ -85,14 +85,19 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return newImpermanentDatabaseBuilder( ImpermanentGraphDatabase.PATH );
     }
 
-    private void configure( GraphDatabaseBuilder builder, File storeDir )
+    @Override
+    protected void configure( GraphDatabaseBuilder builder )
     {
-        super.configure( builder );
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-        builder.setConfig( GraphDatabaseSettings.logs_directory, new File( storeDir, "logs" ).getAbsolutePath() );
         builder.setConfig( boltConnector("bolt").type, BOLT.name() );
         builder.setConfig( boltConnector("bolt").enabled, "false" );
+    }
+
+    private void configure( GraphDatabaseBuilder builder, File storeDir )
+    {
+        configure( builder );
+        builder.setConfig( GraphDatabaseSettings.logs_directory, new File( storeDir, "logs" ).getAbsolutePath() );
     }
 
     @Override
