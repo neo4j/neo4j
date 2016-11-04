@@ -26,6 +26,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
+import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -76,5 +77,41 @@ public class Neo4jErrorTest
         // Then
         assertThat( error.status(), equalTo( Status.General.DatabaseUnavailable ) );
         assertThat( error.cause(), equalTo( ex ) );
+    }
+
+    @Test
+    public void shouldCombineErrors()
+    {
+       // Given
+        Neo4jError error1 = Neo4jError.from( new DeadlockDetectedException( "In my life" ) );
+        Neo4jError error2 = Neo4jError.from( new DeadlockDetectedException( "Why do I give valuable time" ) );
+        Neo4jError error3 = Neo4jError.from( new DeadlockDetectedException( "To people who don't care if I live or die?" ) );
+
+        // When
+        Neo4jError combine = Neo4jError.combine( asList( error1, error2, error3 ) );
+
+        // Then
+        assertThat( combine.status(), equalTo( Status.Transaction.DeadlockDetected ) );
+        assertThat( combine.message(), equalTo( String.format(
+                "The following errors has occurred:%n%n" +
+                "In my life%n" +
+                "Why do I give valuable time%n" +
+                "To people who don't care if I live or die?"
+        )));
+    }
+
+    @Test
+    public void shouldBeUnknownIfCombiningDifferentStatus()
+    {
+        // Given
+        Neo4jError error1 = Neo4jError.from( Status.General.DatabaseUnavailable,  "foo" );
+        Neo4jError error2 = Neo4jError.from( Status.Request.Invalid, "bar");
+        Neo4jError error3 = Neo4jError.from( Status.Schema.ConstraintAlreadyExists, "baz");
+
+        // When
+        Neo4jError combine = Neo4jError.combine( asList( error1, error2, error3 ) );
+
+        // Then
+        assertThat( combine.status(), equalTo( Status.General.UnknownError) );
     }
 }

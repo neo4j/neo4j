@@ -37,26 +37,15 @@ class MessageProcessingHandler implements BoltResponseHandler
     static void publishError( BoltResponseMessageHandler<IOException> out, Neo4jError error )
             throws IOException
     {
-        if ( !error.status().code().classification().shouldRespondToClient() )
+        if ( error.isFatal() )
         {
-            // If not intended for client, we only return an error reference. This must
-            // be cross-referenced with the log files for full error detail.
-            out.onFailure( error.status(), String.format(
-                    "An unexpected failure occurred, see details in the database " +
-                    "logs, reference number %s.", error.reference() ) );
+            out.onFatal( error.status(), error.message() );
         }
         else
         {
-            // If intended for client, we forward the message as-is.
-            if ( error.isFatal() )
-            {
-                out.onFatal( error.status(), error.message() );
-            }
-            else
-            {
-                out.onFailure( error.status(), error.message() );
-            }
+            out.onFailure( error.status(), error.message() );
         }
+
     }
 
     protected final Log log;

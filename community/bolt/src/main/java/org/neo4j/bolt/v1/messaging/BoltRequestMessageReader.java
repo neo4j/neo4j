@@ -20,11 +20,13 @@
 
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.kernel.api.exceptions.Status;
-
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
+
+import org.neo4j.bolt.v1.packstream.PackStream;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Reader for Bolt request messages made available via a {@link Neo4jPack.Unpacker}.
@@ -62,7 +64,7 @@ public class BoltRequestMessageReader
                 {
                 case INIT:
                     String clientName = unpacker.unpackString();
-                    Map<String, Object> credentials = unpacker.unpackMap();
+                    Map<String,Object> credentials = unpacker.unpackMap();
                     handler.onInit( clientName, credentials );
                     break;
                 case ACK_FAILURE:
@@ -73,8 +75,16 @@ public class BoltRequestMessageReader
                     break;
                 case RUN:
                     String statement = unpacker.unpackString();
-                    Map<String, Object> params = unpacker.unpackMap();
-                    handler.onRun( statement, params );
+                    Map<String,Object> params = unpacker.unpackMap();
+                    Optional<Neo4jError> error = unpacker.consumeError();
+                    if ( error.isPresent() )
+                    {
+                        handler.onExternalError( error.get() );
+                    }
+                    else
+                    {
+                        handler.onRun( statement, params );
+                    }
                     break;
                 case DISCARD_ALL:
                     handler.onDiscardAll();
@@ -96,8 +106,7 @@ public class BoltRequestMessageReader
         catch ( PackStream.PackStreamException e )
         {
             throw new BoltIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
-                    "Error was: " + e.getMessage(), e );
+                                                                     "Error was: " + e.getMessage(), e );
         }
     }
-
 }

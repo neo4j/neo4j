@@ -22,9 +22,9 @@ package org.neo4j.bolt.v1.transport.integration;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -421,7 +421,7 @@ public class TransportSessionIT
         return bytes;
     }
 
-    @Ignore
+    @Test
     public void shouldFailNicelyOnNullKeysInMap() throws Throwable
     {
         //Given
@@ -444,7 +444,36 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string.")) );
+                msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string."),
+                msgIgnored()));
+
+        client.send( TransportTestUtil.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgSuccess(),
+                msgRecord( eqRecord( equalTo( 1L ) ) ),
+                msgSuccess() ) );
+    }
+
+    @Test
+    public void shouldFailNicelyWhenDroppingUnknownIndex() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "DROP INDEX on :Movie12345(id)" ),
+                        pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgFailure( Status.Schema.IndexDropFailed, "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)."),
+                msgIgnored()) );
     }
 
     @Before

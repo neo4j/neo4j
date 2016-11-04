@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.logging.Log;
@@ -78,6 +79,12 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     public void onRun( String statement, Map<String,Object> params )
     {
         worker.enqueue( session -> session.run( statement, params, runHandler ) );
+    }
+
+    @Override
+    public void onExternalError( Neo4jError error)
+    {
+        worker.enqueue( session -> session.externalError( error, defaultHandler ) );
     }
 
     @Override
