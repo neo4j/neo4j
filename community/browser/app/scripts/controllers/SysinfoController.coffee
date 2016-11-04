@@ -115,6 +115,8 @@ angular.module('neo4jApp.controllers')
           (Settings.refreshInterval * 1000)
         )
 
+    $scope.$on '$destroy', () => $timeout.cancel(timer)
+
     $scope.isMaster = (member) ->
       return member.haRole is 'master'
 
