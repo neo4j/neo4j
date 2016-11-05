@@ -23,7 +23,7 @@ import java.time.Clock
 
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
-import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
@@ -116,8 +116,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       ),
       Clock.systemUTC(),
       GeneratedQueryStructure,
-      new WrappedMonitors3_2(kernelMonitors),
-      new StringInfoLogger3_2(NullLog.getInstance),
+      new WrappedMonitors(kernelMonitors),
+      new StringInfoLogger(NullLog.getInstance),
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
       updateStrategy = None,

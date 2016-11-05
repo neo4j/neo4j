@@ -23,9 +23,9 @@ import java.io.PrintWriter
 import java.util
 
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v2_3.{ExecutionResultWrapper => ExecutionResultWrapperFor2_3, exceptionHandler => exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compatibility.v3_1.{ExecutionResultWrapper => ExecutionResultWrapperFor3_1, exceptionHandler => exceptionHandlerFor3_1}
+import org.neo4j.cypher.internal.compatibility.v3_2.{ExecutionResultWrapper, exceptionHandler}
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, READ_WRITE, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
@@ -42,7 +42,7 @@ object RewindableExecutionResult {
   private def current(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName): InternalExecutionResult =
     inner match {
       case other: PipeExecutionResult =>
-        exceptionHandlerFor3_2.runSafely {
+        exceptionHandler.runSafely {
           new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
             other.executionMode, READ_WRITE) {
             override def executionPlanDescription(): InternalPlanDescription = super.executionPlanDescription()
@@ -50,7 +50,7 @@ object RewindableExecutionResult {
           }
         }
       case other: StandardInternalExecutionResult =>
-        exceptionHandlerFor3_2.runSafely {
+        exceptionHandler.runSafely {
           other.toEagerResultForTestingOnly(planner, runtime)
         }
 
@@ -93,8 +93,8 @@ object RewindableExecutionResult {
   }
 
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
-    case ExecutionResultWrapperFor3_2(inner, planner, runtime) =>
-      exceptionHandlerFor3_2.runSafely(current(inner, planner, runtime))
+    case ExecutionResultWrapper(inner, planner, runtime) =>
+      exceptionHandler.runSafely(current(inner, planner, runtime))
     case ExecutionResultWrapperFor3_1(inner, planner, runtime) =>
       exceptionHandlerFor3_1.runSafely(compatibility(inner, planner, runtime))
     case ExecutionResultWrapperFor2_3(inner, planner, runtime) =>

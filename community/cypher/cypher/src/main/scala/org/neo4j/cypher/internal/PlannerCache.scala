@@ -46,32 +46,28 @@ class PlannerFactory(graph: GraphDatabaseQueryService, kernelAPI: KernelAPI, ker
     case CypherPlanner.rule =>
       v2_3.RuleCompatibility(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI)
     case _ =>
-      v2_3.CostCompatibility(graph, as2_3(config),
-                                      Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime)
+      v2_3.CostCompatibility(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime)
   }
 
   def create(spec: PlannerSpec_v3_1) = spec.planner match {
     case CypherPlanner.rule =>
       v3_1.RuleCompatibility(graph, as3_1(config), CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
     case _ =>
-      v3_1.CostCompatibility(graph, as3_1(config),
-                                      CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime,
-                                      spec.updateStrategy)
+      v3_1.CostCompatibility(graph, as3_1(config), CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
 
   def create(spec: PlannerSpec_v3_2) = spec.planner match {
     case CypherPlanner.rule =>
-      CompatibilityFor3_2Rule(graph, config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
+      v3_2.RuleCompatibility(graph, config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
     case _ =>
-      CompatibilityFor3_2Cost(graph, config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner,
-      spec.runtime, spec.updateStrategy)
+      v3_2.CostCompatibility(graph, config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
 }
 
 class PlannerCache(factory: PlannerFactory)  {
   private val cache_v2_3 = new mutable.HashMap[PlannerSpec_v2_3, v2_3.Compatibility]
   private val cache_v3_1 = new mutable.HashMap[PlannerSpec_v3_1, v3_1.Compatibility]
-  private val cache_v3_2 = new mutable.HashMap[PlannerSpec_v3_2, CompatibilityFor3_2]
+  private val cache_v3_2 = new mutable.HashMap[PlannerSpec_v3_2, v3_2.Compatibility]
 
   def apply(spec: PlannerSpec_v2_3) = cache_v2_3.getOrElseUpdate(spec, factory.create(spec))
   def apply(spec: PlannerSpec_v3_1) = cache_v3_1.getOrElseUpdate(spec, factory.create(spec))

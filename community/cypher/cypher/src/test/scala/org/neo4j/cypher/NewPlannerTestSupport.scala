@@ -21,7 +21,8 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
-import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, ExecutionResultWrapperFor3_2, v2_3, v3_1}
+import org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper
+import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, v2_3, v3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, CantHandleQueryException}
@@ -285,7 +286,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   private def rewindableResult(result: ExecutionResult): InternalExecutionResult = {
     result match {
       case e: ClosingExecutionResult => e.inner match {
-        case _: ExecutionResultWrapperFor3_2 => RewindableExecutionResult(e)
+        case _: ExecutionResultWrapper => RewindableExecutionResult(e)
         case _: v3_1.ExecutionResultWrapper => RewindableExecutionResult(e)
         case _: v2_3.ExecutionResultWrapper => RewindableExecutionResult(e)
       }
