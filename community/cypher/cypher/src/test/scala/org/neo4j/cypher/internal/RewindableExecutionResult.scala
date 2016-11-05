@@ -24,7 +24,8 @@ import java.util
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compatibility.v2_3.{exceptionHandler, ExecutionResultWrapper => ExecutionResultWrapperFor2_3}
+import org.neo4j.cypher.internal.compatibility.v2_3.{ExecutionResultWrapper => ExecutionResultWrapperFor2_3, exceptionHandler => exceptionHandlerFor2_3}
+import org.neo4j.cypher.internal.compatibility.v3_1.{ExecutionResultWrapper => ExecutionResultWrapperFor3_1, exceptionHandler => exceptionHandlerFor3_1}
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, READ_WRITE, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
@@ -41,7 +42,7 @@ object RewindableExecutionResult {
   private def current(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName): InternalExecutionResult =
     inner match {
       case other: PipeExecutionResult =>
-        exceptionHandlerFor3_1.runSafely {
+        exceptionHandlerFor3_2.runSafely {
           new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
             other.executionMode, READ_WRITE) {
             override def executionPlanDescription(): InternalPlanDescription = super.executionPlanDescription()
@@ -49,7 +50,7 @@ object RewindableExecutionResult {
           }
         }
       case other: StandardInternalExecutionResult =>
-        exceptionHandlerFor3_1.runSafely {
+        exceptionHandlerFor3_2.runSafely {
           other.toEagerResultForTestingOnly(planner, runtime)
         }
 
@@ -60,7 +61,7 @@ object RewindableExecutionResult {
   private def compatibility(inner: v2_3.executionplan.InternalExecutionResult, planner: v2_3.PlannerName, runtime: v2_3.RuntimeName): InternalExecutionResult = {
     val result: v2_3.executionplan.InternalExecutionResult = inner match {
       case other: v2_3.PipeExecutionResult =>
-        exceptionHandler.runSafely {
+        exceptionHandlerFor2_3.runSafely {
           new v2_3.PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
             other.executionMode, QueryExecutionType.QueryType.READ_WRITE) {
             override def executionPlanDescription(): v2_3.planDescription.InternalPlanDescription = super.executionPlanDescription()
@@ -77,7 +78,7 @@ object RewindableExecutionResult {
   private def compatibility(inner: v3_1.executionplan.InternalExecutionResult, planner: v3_1.PlannerName, runtime: v3_1.RuntimeName): InternalExecutionResult = {
     val result: v3_1.executionplan.InternalExecutionResult = inner match {
       case other: v3_1.PipeExecutionResult =>
-        exceptionHandler.runSafely {
+        exceptionHandlerFor3_1.runSafely {
           new v3_1.PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
             other.executionMode, v3_1.executionplan.READ_WRITE) {
             override def executionPlanDescription(): v3_1.planDescription.InternalPlanDescription = super.executionPlanDescription()
@@ -91,14 +92,13 @@ object RewindableExecutionResult {
     InternalExecutionResultCompatibilityWrapperFor3_1(result)
   }
 
-
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
     case ExecutionResultWrapperFor3_2(inner, planner, runtime) =>
       exceptionHandlerFor3_2.runSafely(current(inner, planner, runtime))
     case ExecutionResultWrapperFor3_1(inner, planner, runtime) =>
       exceptionHandlerFor3_1.runSafely(compatibility(inner, planner, runtime))
     case ExecutionResultWrapperFor2_3(inner, planner, runtime) =>
-      exceptionHandler.runSafely(compatibility(inner, planner, runtime))
+      exceptionHandlerFor2_3.runSafely(compatibility(inner, planner, runtime))
     case _ =>
       throw new InternalException("Can't get the internal execution result of an older compiler")
   }

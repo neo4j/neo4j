@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility
+package org.neo4j.cypher.internal.compatibility.v3_1
 
 import java.net.URL
 
@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 
 import scala.collection.Iterator
 
-class ExceptionTranslatingQueryContextFor3_1(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
+class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
   override type EntityAccessor = inner.EntityAccessor
 
   override def entityAccessor = inner.entityAccessor
@@ -150,7 +150,7 @@ class ExceptionTranslatingQueryContextFor3_1(val inner: QueryContext) extends Qu
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
     inner.withAnyOpenQueryContext(qc =>
       translateException(
-        work(new ExceptionTranslatingQueryContextFor3_1(qc))
+        work(new ExceptionTranslatingQueryContext(qc))
       ))
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean =

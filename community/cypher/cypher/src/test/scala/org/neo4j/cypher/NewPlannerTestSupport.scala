@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
-import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, ExecutionResultWrapperFor3_1, ExecutionResultWrapperFor3_2, v2_3}
+import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, ExecutionResultWrapperFor3_2, v2_3, v3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, CantHandleQueryException}
@@ -286,7 +286,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     result match {
       case e: ClosingExecutionResult => e.inner match {
         case _: ExecutionResultWrapperFor3_2 => RewindableExecutionResult(e)
-        case _: ExecutionResultWrapperFor3_1 => RewindableExecutionResult(e)
+        case _: v3_1.ExecutionResultWrapper => RewindableExecutionResult(e)
         case _: v2_3.ExecutionResultWrapper => RewindableExecutionResult(e)
       }
     }
