@@ -127,8 +127,8 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
 
   @throws(classOf[SyntaxException])
   def parseQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
-    import helpers.wrappersFor2_3._
     import helpers.wrappersFor3_1._
+    import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
 
     val planner = preParsedQuery.planner
     val runtime = preParsedQuery.runtime
