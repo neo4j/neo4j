@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongFunction;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
@@ -838,6 +837,18 @@ public class PageListTest
     }
 
     @Test
+    public void pageListMustBeCopyableViaConstructor() throws Exception
+    {
+        assertThat( pageList.address( pageRef ), is( equalTo( 0L ) ) );
+        PageList pl = new PageList( pageList );
+        assertThat( pl.address( pageRef ), is( equalTo( 0L ) ) );
+
+        pageList.initBuffer( pageRef );
+        assertThat( pageList.address( pageRef ), is( not( equalTo( 0L ) ) ) );
+        assertThat( pl.address( pageRef ), is( not( equalTo( 0L ) ) ) );
+    }
+
+    @Test
     public void usageCounterMustBeZeroByDefault() throws Exception
     {
         assertTrue( pageList.decrementUsage( pageRef ) );
@@ -940,12 +951,12 @@ public class PageListTest
         PageSwapper swapper = new DummyPageSwapper( "some file" )
         {
             @Override
-            public long read( long fpId, Page page ) throws IOException
+            public long read( long fpId, long bufferAddress, int bufferSize ) throws IOException
             {
                 if ( fpId == filePageId )
                 {
-                    UnsafeUtil.setMemory( page.address(), page.size(), pageByteContents );
-                    return page.size();
+                    UnsafeUtil.setMemory( bufferAddress, bufferSize, pageByteContents );
+                    return bufferSize;
                 }
                 throw new IOException( "Did not expect this file page id = " + fpId );
             }
@@ -989,7 +1000,7 @@ public class PageListTest
         PageSwapper swapper = new DummyPageSwapper( "file" )
         {
             @Override
-            public long read( long filePageId, Page page ) throws IOException
+            public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
             {
                 throw new IOException( "boo" );
             }
@@ -1046,7 +1057,7 @@ public class PageListTest
         DummyPageSwapper swapper = new DummyPageSwapper( "" )
         {
             @Override
-            public long read( long filePageId, Page page ) throws IOException
+            public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
             {
                 throw new IOException( "boom" );
             }
@@ -1072,7 +1083,7 @@ public class PageListTest
         DummyPageSwapper swapper = new DummyPageSwapper( "" )
         {
             @Override
-            public long read( long filePageId, Page page ) throws IOException
+            public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
             {
                 return 333;
             }

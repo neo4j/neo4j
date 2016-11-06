@@ -32,7 +32,7 @@ public interface PageSwapper
 {
     /**
      * Read the page with the given filePageId, from the concrete file on the
-     * file system, into the given page.
+     * file system, into the page given by the bufferAddress and the bufferSize.
      * <p>
      * Returns the number of bytes read in from the file. May be zero if the
      * requested page was beyond the end of the file. If less than the file
@@ -43,10 +43,10 @@ public interface PageSwapper
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    long read( long filePageId, Page page ) throws IOException;
+    long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException;
 
     /**
-     * Read pages from the file into the given pages, starting from the given startFilePageId.
+     * Read pages from the file into the pages given by the bufferAddresses, starting from the given startFilePageId.
      * <p>
      * Returns the number of bytes read in from the file. May be zero if the
      * requested startFilePageId was beyond the end of the file. If the file does not have enough data
@@ -61,11 +61,12 @@ public interface PageSwapper
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    long read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException;
+    long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException;
 
     /**
-     * Write the contents of the given page, to the concrete file on the file
-     * system, at the located indicated by the given filePageId.
+     * Write the contents of the page given by the bufferAddress and the bufferSize,
+     * to the concrete file on the file system, at the located indicated by the given
+     * filePageId.
      * <p>
      * Returns the number of bytes written to the file.
      * <p>
@@ -74,7 +75,7 @@ public interface PageSwapper
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    long write( long filePageId, Page page ) throws IOException;
+    long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException;
 
     /**
      * Write the contents of the given pages, to the concrete file on the file system,
@@ -92,7 +93,7 @@ public interface PageSwapper
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    long write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException;
+    long write( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException;
 
     /**
      * Notification that a page has been evicted, used to clean up state in structures
@@ -141,8 +142,6 @@ public interface PageSwapper
      * Truncation may occur concurrently with writes, in which case both operations will appear to be atomic, such that
      * either the write happens before the truncation and is lost, or the file is truncated and the write then extends
      * the file with any zero padding and the written data.
-     *
-     * @throws IOException
      */
     void truncate() throws IOException;
 }

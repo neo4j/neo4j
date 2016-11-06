@@ -151,7 +151,7 @@ final class MuninnPage extends OnHeapSequenceLock implements Page
         FlushEvent event = flushOpportunity.beginFlush( filePageId, getCachePageId(), swapper );
         try
         {
-            long bytesWritten = swapper.write( filePageId, this );
+            long bytesWritten = swapper.write( filePageId, address(), size() );
             markAsClean();
             event.addBytesWritten( bytesWritten );
             event.done();
@@ -189,7 +189,7 @@ final class MuninnPage extends OnHeapSequenceLock implements Page
         // the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         this.filePageId = filePageId; // Page now considered isLoaded()
-        long bytesRead = swapper.read( filePageId, this );
+        long bytesRead = swapper.read( filePageId, address(), size() );
         faultEvent.addBytesRead( bytesRead );
         faultEvent.setCachePageId( getCachePageId() );
         this.swapper = swapper; // Page now considered isBoundTo( swapper, filePageId )

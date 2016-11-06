@@ -4102,18 +4102,18 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 return new DelegatingPageSwapper( swapper )
                 {
                     @Override
-                    public long write( long filePageId, Page page ) throws IOException
+                    public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
                     {
                         flushCounter.getAndIncrement();
-                        return super.write( filePageId, page );
+                        return super.write( filePageId, bufferAddress, bufferSize );
                     }
 
                     @Override
-                    public long write( long startFilePageId, Page[] pages, int arrayOffset, int length )
+                    public long write( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length )
                             throws IOException
                     {
                         flushCounter.getAndAdd( length );
-                        return super.write( startFilePageId, pages, arrayOffset, length );
+                        return super.write( startFilePageId, bufferAddresses, bufferSize, arrayOffset, length );
                     }
                 };
             }

@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
@@ -69,6 +68,22 @@ class PageList
         long bytes = pageCount * META_DATA_BYTES_PER_PAGE;
         this.baseAddress = memoryManager.allocateAligned( bytes );
         clearMemory( baseAddress, pageCount );
+    }
+
+    /**
+     * This copy-constructor is useful for classes that want to extend the {@code PageList} class to inline its fields.
+     * All data and state will be shared between this and the given {@code PageList}. This means that changing the page
+     * list state through one has the same effect as changing it through the other – they are both effectively the same
+     * object.
+     * @param pageList The {@code PageList} instance whose state to copy.
+     */
+    PageList( PageList pageList )
+    {
+        this.pageCount = pageList.pageCount;
+        this.cachePageSize = pageList.cachePageSize;
+        this.memoryManager = pageList.memoryManager;
+        this.victimPageAddress = pageList.victimPageAddress;
+        this.baseAddress = pageList.baseAddress;
     }
 
     private void clearMemory( long baseAddress, long pageCount )
@@ -286,8 +301,7 @@ class PageList
         // the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         setFilePageId( pageRef, filePageId ); // Page now considered isLoaded()
-        PageObj page = new PageObj( cachePageSize, address( pageRef ) ); // todo avoid this allocation
-        long bytesRead = swapper.read( filePageId, page );
+        long bytesRead = swapper.read( filePageId, address( pageRef ), cachePageSize );
         event.addBytesRead( bytesRead );
         event.setCachePageId( (int) pageRef );
         setSwapperId( pageRef, swapperId ); // Page now considered isBoundTo( swapper, filePageId )
@@ -302,31 +316,5 @@ class PageList
                 "%s, swapper id = %s}.",
                 filePageId, swapper, swapperId, pageRef, currentFilePageId, currentSwapper );
         return new IllegalStateException( msg );
-    }
-
-    private static class PageObj implements Page
-    {
-        // These fields are not static, because we don't need them to be, so we can elide the
-        // store barrier
-        private int size;
-        private long address;
-
-        private PageObj( int size, long address )
-        {
-            this.size = size;
-            this.address = address;
-        }
-
-        @Override
-        public int size()
-        {
-            return size;
-        }
-
-        @Override
-        public long address()
-        {
-            return address;
-        }
     }
 }

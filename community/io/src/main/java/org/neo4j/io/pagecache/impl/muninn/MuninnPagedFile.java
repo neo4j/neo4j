@@ -330,6 +330,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
     {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
+        long[] bufferAddresses = new long[translationTableChunkSize];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         long limiterStamp = IOLimiter.INITIAL_STAMP;
         Object[][] tt = this.translationTable;
@@ -385,14 +386,14 @@ final class MuninnPagedFile implements PagedFile, Flushable
                 }
                 if ( pagesGrabbed > 0 )
                 {
-                    vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
+                    vectoredFlush( pages, bufferAddresses, pagesGrabbed, flushOpportunity, forClosing );
                     limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
                     pagesGrabbed = 0;
                 }
             }
             if ( pagesGrabbed > 0 )
             {
-                vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
+                vectoredFlush( pages, bufferAddresses, pagesGrabbed, flushOpportunity, forClosing );
                 limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
             }
         }
@@ -401,7 +402,8 @@ final class MuninnPagedFile implements PagedFile, Flushable
     }
 
     private void vectoredFlush(
-            MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity, boolean forClosing )
+            MuninnPage[] pages, long[] bufferAddresses, int pagesGrabbed, FlushEventOpportunity flushOpportunity,
+            boolean forClosing )
             throws IOException
     {
         FlushEvent flush = null;
@@ -410,6 +412,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
             // Write the pages vector
             MuninnPage firstPage = pages[0];
             long startFilePageId = firstPage.getFilePageId();
+            int cachePageSize = firstPage.size();
 
             // Mark the flushed pages as clean before our flush, so concurrent page writes can mark it as dirty and
             // we'll be able to write those changes out on the next flush.
@@ -417,10 +420,12 @@ final class MuninnPagedFile implements PagedFile, Flushable
             {
                 // If the flush fails, we'll undo this
                 pages[j].markAsClean();
+                // copy over the native page memory address
+                bufferAddresses[j] = pages[j].address();
             }
 
             flush = flushOpportunity.beginFlush( startFilePageId, firstPage.getCachePageId(), swapper );
-            long bytesWritten = swapper.write( startFilePageId, pages, 0, pagesGrabbed );
+            long bytesWritten = swapper.write( startFilePageId, bufferAddresses, cachePageSize, 0, pagesGrabbed );
 
             // Update the flush event
             flush.addBytesWritten( bytesWritten );
