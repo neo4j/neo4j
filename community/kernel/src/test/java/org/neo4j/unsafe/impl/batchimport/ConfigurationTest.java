@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -32,6 +33,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY;
 
@@ -76,7 +78,8 @@ public class ConfigurationTest
         long memory = config.pageCacheMemory();
 
         // THEN
-        assertTrue( within( memory, Config.defaults().get( pagecache_memory ), MAX_PAGE_CACHE_MEMORY ) );
+        long heuristic = BYTES.apply( ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory() );
+        assertTrue( within( memory, heuristic, MAX_PAGE_CACHE_MEMORY ) );
     }
 
     @Test

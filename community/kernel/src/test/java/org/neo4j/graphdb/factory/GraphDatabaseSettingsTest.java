@@ -34,9 +34,8 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -46,11 +45,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class GraphDatabaseSettingsTest
 {
     @Test
-    public void mustHaveReasonableDefaultPageCacheMemorySizeInBytes() throws Exception
+    public void mustHaveNullDefaultPageCacheMemorySizeInBytes() throws Exception
     {
-        long bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
-        assertThat( bytes, greaterThanOrEqualTo( ByteUnit.mebiBytes( 32 ) ) );
-        assertThat( bytes, lessThanOrEqualTo( ByteUnit.tebiBytes( 1 ) ) );
+        Long bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
+        assertThat( bytes, is( nullValue() ) );
     }
 
     @Test

@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 
 import static java.lang.Math.min;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -126,8 +127,13 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         @Override
         public long pageCacheMemory()
         {
-            String defaultPageCacheMemory = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
-            return min( MAX_PAGE_CACHE_MEMORY, BYTES.apply( defaultPageCacheMemory ) );
+            Long pageCacheMemory = config.get( pagecache_memory );
+            if ( pageCacheMemory == null )
+            {
+                String defaultPageCacheMemory = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
+                pageCacheMemory = BYTES.apply( defaultPageCacheMemory );
+            }
+            return min( MAX_PAGE_CACHE_MEMORY, pageCacheMemory );
         }
 
         @Override
