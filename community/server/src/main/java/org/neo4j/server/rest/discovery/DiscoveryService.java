@@ -57,10 +57,11 @@ public class DiscoveryService
     {
         String managementUri = config.get( ServerSettings.management_api_path ).getPath() + "/";
         String dataUri = config.get( ServerSettings.rest_api_path ).getPath() + "/";
-        String boltAddress = boltConnectors( config ).stream().findFirst()
-                .map( boltConnector -> config.get( boltConnector.advertised_address ).toString() ).orElse( null );
+        Integer boltPort = boltConnectors( config ).stream().findFirst().map( boltConnector ->
+                config.get( boltConnector.advertised_address ).socketAddress().getPort() )
+                .orElse( null );
 
-        return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri, boltAddress ) );
+        return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri, boltPort ) );
     }
 
     @GET

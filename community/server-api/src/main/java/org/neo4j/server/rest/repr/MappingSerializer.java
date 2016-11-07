@@ -41,6 +41,11 @@ public class MappingSerializer extends Serializer
         writer.writeValue( RepresentationType.URI, key, relativeUri( path ) );
     }
 
+    public void putRelativeBoltUri( String key, int boltPort)
+    {
+        writer.writeValue( RepresentationType.URI, key, relativeBoltUri( boltPort ) );
+    }
+
     public void putRelativeUriTemplate( String key, String template )
     {
         writer.writeValue( RepresentationType.TEMPLATE, key, relativeTemplate( template ) );

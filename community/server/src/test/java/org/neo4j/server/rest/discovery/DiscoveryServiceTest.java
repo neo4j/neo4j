@@ -54,7 +54,7 @@ public class DiscoveryServiceTest
     public void setUp() throws URISyntaxException
     {
         baseUri = "http://www.example.com";
-        boltAddress = new AdvertisedSocketAddress( "example.com", 7687 );
+        boltAddress = new AdvertisedSocketAddress( "www.example.com", 7687 );
         dataUri = new URI( "/data" );
         managementUri = new URI( "/management" );
     }
@@ -99,7 +99,7 @@ public class DiscoveryServiceTest
     {
         Response response = testDiscoveryService().getDiscoveryDocument();
         String json = new String( (byte[]) response.getEntity() );
-        assertThat( json, containsString( "\"bolt\" : \"bolt://" + boltAddress + "\"" ) );
+        assertThat( json, containsString( "\"bolt\" : \"bolt://" + boltAddress ) );
     }
 
     @Test
