@@ -1222,11 +1222,13 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 return;
             }
 
-            // Double size each time, but after 1M only increase by 1M at a time, until required amount is reached.
             int newSize = buf.capacity();
+            long maxSize = ByteUnit.gibiBytes( 1 );
+            checkAllowedSize( totalAmount, maxSize );
             while ( newSize < totalAmount )
             {
                 newSize = newSize << 1;
+                checkAllowedSize( newSize, maxSize );
             }
             int oldPosition = buf.position();
 
@@ -1240,6 +1242,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             // re-assign buffer to new buffer
             newBuf.position( oldPosition );
             this.buf = newBuf;
+        }
+
+        private void checkAllowedSize( long size, long maxSize )
+        {
+            if ( size > maxSize )
+            {
+                throw new RuntimeException( "Requested file size is too big for ephemeral file system." );
+            }
         }
 
         public void clear()
