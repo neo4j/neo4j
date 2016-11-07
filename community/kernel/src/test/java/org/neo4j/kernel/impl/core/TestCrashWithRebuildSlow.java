@@ -66,11 +66,11 @@ import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
  */
 public class TestCrashWithRebuildSlow
 {
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     // for dumping data about failing build
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception

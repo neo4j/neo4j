@@ -534,7 +534,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     public long checksum()
     {
         Checksum checksum = new CRC32();
-        byte[] data = new byte[4096];
+        byte[] data = new byte[(int) ByteUnit.kibiBytes( 1 )];
 
         // Go through file name list in sorted order, so that checksum is consistent
         List<File> names = new ArrayList<>( files.size() );
