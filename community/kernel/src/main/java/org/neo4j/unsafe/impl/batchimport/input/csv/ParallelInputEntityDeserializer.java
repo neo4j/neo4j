@@ -46,7 +46,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.Deser
 import org.neo4j.unsafe.impl.batchimport.staging.TicketedProcessing;
 
 import static org.neo4j.csv.reader.Source.singleChunk;
-import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.impl.util.Validators.emptyValidator;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.noDecorator;
 
@@ -263,7 +262,14 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     @Override
     public void close()
     {
-        processing.shutdown();
+        if ( processingCompletion.isDone() )
+        {
+            processing.shutdown();
+        }
+        else
+        {
+            processing.panic( new IllegalStateException( "Processing not completed when closing, indicating panic" ) );
+        }
         try
         {
             source.close();

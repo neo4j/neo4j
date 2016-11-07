@@ -27,6 +27,7 @@ import java.util.function.BiFunction;
 import java.util.function.LongPredicate;
 import java.util.function.Supplier;
 
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.unsafe.impl.batchimport.Parallelizable;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
@@ -66,6 +67,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
 {
     private static final ParkStrategy park = new ParkStrategy.Park( 10, MILLISECONDS );
 
+    private final String name;
     private final TaskExecutor<STATE> executor;
     private final BiFunction<FROM,STATE,TO> processor;
     private final ArrayBlockingQueue<TO> processed;
@@ -94,6 +96,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     public TicketedProcessing( String name, int maxProcessors, BiFunction<FROM,STATE,TO> processor,
             Supplier<STATE> threadLocalStateSupplier )
     {
+        this.name = name;
         this.processor = processor;
         this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, maxProcessors, park, name,
                 threadLocalStateSupplier );
@@ -186,7 +189,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
                 executor.panic( e );
                 throw e;
             }
-        } );
+        }, NamedThreadFactory.named( name + "-slurper" ) );
     }
 
     /**
@@ -198,6 +201,11 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     public void shutdown()
     {
         executor.shutdown();
+    }
+
+    public void panic( Throwable panic )
+    {
+        executor.panic( panic );
     }
 
     /**

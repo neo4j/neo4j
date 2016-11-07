@@ -139,7 +139,7 @@ public class ParallelInputEntityDeserializerTest
             // somewhere, anywhere in the importer. At that point there are still batches that have been
             // processed and are there for the taking. One of the components in the hang scenario that we want
             // to test comes from a processor in TicketedProcessing forever trying to offer its processed
-            // result to the result queue (where the loop didn't care if it had been forcefully shut down.
+            // result to the result queue, where the loop didn't care if it had been forcefully shut down.
             // To get one of the processing threads into doing that we need to pull some of the already
             // processed items so that it wants to go ahead and offer its result.
             for ( int i = 0; i < 100 && deserializer.hasNext(); i++ )
