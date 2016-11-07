@@ -429,6 +429,7 @@ class RWLock
         {
             if ( lockAcquisitionTimeoutMillis > 0 )
             {
+                assertNotExpired( lockAcquisitionTimeBoundary );
                 wait( Math.abs( lockAcquisitionTimeBoundary - clock.millis() ) );
             }
             else
