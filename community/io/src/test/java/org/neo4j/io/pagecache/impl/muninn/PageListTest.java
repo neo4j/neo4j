@@ -64,6 +64,7 @@ public class PageListTest
     private static final int ALIGNMENT = 8;
 
     private static final long[] pageIds = new long[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    private static final DummyPageSwapper DUMMY_SWAPPER = new DummyPageSwapper( "" );
 
     @Parameterized.Parameters( name = "pageRef = {0}")
     public static Iterable<Object[]> parameters()
@@ -921,7 +922,7 @@ public class PageListTest
     {
         pageList.initBuffer( pageRef );
         exception.expect( IllegalStateException.class );
-        pageList.fault( pageRef, new DummyPageSwapper( "" ), 0, 0, PageFaultEvent.NULL );
+        pageList.fault( pageRef, DUMMY_SWAPPER, 0, 0, PageFaultEvent.NULL );
     }
 
     @Test
@@ -939,7 +940,7 @@ public class PageListTest
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
         exception.expect( IllegalStateException.class );
-        pageList.fault( pageRef, new DummyPageSwapper( "" ), 0, PageCursor.UNBOUND_PAGE_ID, PageFaultEvent.NULL );
+        pageList.fault( pageRef, DUMMY_SWAPPER, 0, PageCursor.UNBOUND_PAGE_ID, PageFaultEvent.NULL );
     }
 
     @Test
@@ -982,12 +983,11 @@ public class PageListTest
     @Test
     public void pageMustBeLoadedAndBoundAfterFault() throws Exception
     {
-        PageSwapper swapper = new DummyPageSwapper( "file" );
         int swapperId = 1;
         long filePageId = 42;
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
-        pageList.fault( pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL );
+        pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
         assertThat( pageList.getFilePageId( pageRef ), is( filePageId ) );
         assertThat( pageList.getSwapperId( pageRef ), is( swapperId ) );
         assertTrue( pageList.isLoaded( pageRef ) );
@@ -1030,11 +1030,10 @@ public class PageListTest
         long filePageId = 42;
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
-        DummyPageSwapper swapper = new DummyPageSwapper( "" );
-        pageList.fault( pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL );
+        pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
 
         exception.expect( IllegalStateException.class );
-        pageList.fault( pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL );
+        pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
     }
 
     @Test
@@ -1047,7 +1046,7 @@ public class PageListTest
         // After the failed page fault, the page is loaded but not bound.
         // We still can't fault into a loaded page, though.
         exception.expect( IllegalStateException.class );
-        pageList.fault( pageRef, new DummyPageSwapper( "" ), swapperId, filePageId, PageFaultEvent.NULL );
+        pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
     }
 
     private void doFailedFault( int swapperId, long filePageId )
@@ -1121,7 +1120,7 @@ public class PageListTest
     {
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
-        pageList.fault( pageRef, new DummyPageSwapper( "" ), swapperId, filePageId, PageFaultEvent.NULL );
+        pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
     }
 
     @Test
@@ -1161,8 +1160,41 @@ public class PageListTest
         assertFalse( pageList.isBoundTo( nextPageRef, 0, 0 ) );
     }
 
-    // xxx ---[ Page flush tests ]---
+    @Test
+    public void exclusiveLockMustStillBeHeldAfterFault() throws Exception
+    {
+        doFault( 1, 42 );
+        pageList.unlockExclusive( pageRef ); // will throw if lock is not held
+    }
 
-    // todo flush
+    // xxx ---[ Page eviction tests ]---
+
+    @Test
+    public void tryEvictMustFailIfPageIsAlreadyExclusivelyLocked() throws Exception
+    {
+        doFault( 1, 42 ); // page is now loaded
+        // pages are delivered from the fault routine with the exclusive lock already held!
+        assertFalse( pageList.tryEvict( pageRef, DUMMY_SWAPPER ) );
+    }
+
+    @Test
+    public void tryEvictMustFailIfPageIsNotLoaded() throws Exception
+    {
+        assertFalse( pageList.tryEvict( pageRef, DUMMY_SWAPPER ) );
+    }
+    // todo try evict must leave page exclusively locked on success
+    // todo try evict must flush page if modified
+    // todo page must not be loaded after successful eviction
+    // todo page must not be bound after successful eviction
+    // todo page must not be modified after successful eviction
+    // todo try evict must notify swapper on success
+    // todo try evict must leave page unlocked if flush throws
+    // todo try evict must leave page loaded if flush throws
+    // todo try evict must report to eviction event
+    // todo try evict that flushes must report to flush event
+    // todo try evict that fails must not interfere with adjacent pages
+    // todo try evict that succeeds must not interfere with adjacent pages
+
     // todo evict
+    // todo flush
 }

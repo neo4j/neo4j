@@ -52,6 +52,12 @@ class PageList
     private static final int OFFSET_FILE_PAGE_ID = 16; // 8 bytes
     private static final int OFFSET_SWAPPER_ID = 24; // 4 bytes
     private static final int OFFSET_USAGE_COUNTER = 28; // 1 byte
+    // todo it's possible to reduce the overhead of the individual page to just 24 bytes,
+    // todo because the file page id can be represented with 5 bytes (enough to address 8-4 PBs),
+    // todo and then the usage counter can use the high bits of that word, and the swapper id
+    // todo can use the rest (2 bytes or 20 bits).
+    // todo we can alternatively also make use of the lower 12 bits of the address field, because
+    // todo the addresses are page aligned, and we can assume them to be at least 4096 bytes in size.
 
     private final long pageCount;
     private final int cachePageSize;
@@ -316,5 +322,10 @@ class PageList
                 "%s, swapper id = %s}.",
                 filePageId, swapper, swapperId, pageRef, currentFilePageId, currentSwapper );
         return new IllegalStateException( msg );
+    }
+
+    public boolean tryEvict( long pageRef, PageSwapper swapper )
+    {
+        return false;
     }
 }
