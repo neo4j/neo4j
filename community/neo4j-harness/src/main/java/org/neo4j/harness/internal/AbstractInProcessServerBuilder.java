@@ -128,8 +128,9 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
             final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
-            dependencies = dependencies.kernelExtensions( append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() ) )
-                    .userLogProvider( userLogProvider );
+            Iterable<KernelExtensionFactory<?>> kernelExtensions =
+                    append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() );
+            dependencies = dependencies.kernelExtensions( kernelExtensions ).userLogProvider( userLogProvider );
 
             AbstractNeoServer neoServer = createNeoServer( config, dependencies, userLogProvider );
             InProcessServerControls controls = new InProcessServerControls( serverFolder, neoServer, logOutputStream );

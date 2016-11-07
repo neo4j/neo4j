@@ -22,6 +22,7 @@ package org.neo4j.unsafe.batchinsert.internal;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -45,16 +47,19 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class BatchInserterImplTest
 {
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final ExpectedException expected = ExpectedException.none();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public ExpectedException expected = ExpectedException.none();
+    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory )
+                                                .around( expected ).around( fileSystemRule );
 
     @Test
     public void testHonorsPassedInParams() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), stringMap(
-                GraphDatabaseSettings.pagecache_memory.name(), "280K",
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), fileSystemRule.get(),
+                stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K",
                 GraphDatabaseSettings.mapped_memory_page_size.name(), "1K" ) );
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
@@ -70,7 +75,7 @@ public class BatchInserterImplTest
         File file = testDirectory.graphDbDir();
 
         // When
-        BatchInserter inserter = BatchInserters.inserter( file.getAbsoluteFile() );
+        BatchInserter inserter = BatchInserters.inserter( file.getAbsoluteFile(), fileSystemRule.get() );
 
         // Then
         assertThat( new File( file, StoreLocker.STORE_LOCK_FILENAME ).exists(), equalTo( true ) );
@@ -91,7 +96,7 @@ public class BatchInserterImplTest
             expected.expect( StoreLockException.class );
             expected.expectMessage( "Unable to obtain lock on store lock file" );
             // When
-            BatchInserters.inserter( parent.getAbsoluteFile() );
+            BatchInserters.inserter( parent.getAbsoluteFile(), fileSystemAbstraction );
         }
     }
 }

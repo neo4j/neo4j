@@ -20,9 +20,11 @@
 package org.neo4j.cypher.performance
 
 import java.io.File
+
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.index.impl.lucene.legacy.LuceneBatchInserterIndexProviderNewImpl
+import org.neo4j.io.fs.DefaultFileSystemAbstraction
 import org.neo4j.unsafe.batchinsert.{BatchInserter, BatchInserterIndex, BatchInserters}
 
 import scala.collection.JavaConverters._
@@ -41,13 +43,14 @@ class DataImportTest extends CypherFunSuite {
 
     targetDir.exists() should equal(false)
 
-    val (inserter, moviesId, moviesTitles, indexProvider, typeIdx) = createInserters(targetDir)
+    val (fileSystem, inserter, moviesId, moviesTitles, indexProvider, typeIdx) = createInserters(targetDir)
 
     val movieMap = createMovies(sourceDir, inserter, moviesTitles, moviesId, typeIdx)
     addRatings(sourceDir, movieMap.toMap, inserter, typeIdx)
 
     indexProvider.shutdown()
     inserter.shutdown()
+    fileSystem.close()
   }
 
   private def addRatings(sourceDir: File, movies: Map[String, Long], inserter: BatchInserter, typeIdx: BatchInserterIndex) = {
@@ -82,14 +85,15 @@ class DataImportTest extends CypherFunSuite {
   }
 
   private def createInserters(targetDir: File) = {
-    val inserter = BatchInserters.inserter(targetDir)
+    val fileSystem = new DefaultFileSystemAbstraction()
+    val inserter = BatchInserters.inserter(targetDir, fileSystem)
     val indexProvider = new LuceneBatchInserterIndexProviderNewImpl(inserter)
 
     val moviesTitles = createNodeIdx(indexProvider, "movieTitles", "fulltext", "title")
     val moviesId = createNodeIdx(indexProvider, "movieIds", "exact", "id")
     val typeIdx = createNodeIdx(indexProvider, "type", "exact", "type")
 
-    (inserter, moviesId, moviesTitles, indexProvider, typeIdx)
+    (fileSystem, inserter, moviesId, moviesTitles, indexProvider, typeIdx)
   }
 
   private def createMovies(sourceDir: File, inserter: BatchInserter, moviesTitles: BatchInserterIndex, moviesId: BatchInserterIndex, typeIdx: BatchInserterIndex) = {

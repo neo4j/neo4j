@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
@@ -36,50 +35,24 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public final class BatchInserters
 {
-    /**
-     * Get a {@link BatchInserter} given a store directory.
-     *
-     * @param storeDir the store directory
-     * @return a new {@link BatchInserter}
-     * @throws IOException if there is an IO error
-     */
-    public static BatchInserter inserter( File storeDir ) throws IOException
-    {
-        return inserter( storeDir, stringMap() );
-    }
-
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fs ) throws IOException
     {
-        return inserter( storeDir, fs, stringMap(), (Iterable) Service.load( KernelExtensionFactory.class )  );
-    }
-
-    /**
-     * Get a {@link BatchInserter} given a store directory.
-     *
-     * @param storeDir the store directory
-     * @param config configuration settings to use
-     * @return a new {@link BatchInserter}
-     * @throws IOException if there is an IO error
-     */
-    public static BatchInserter inserter( File storeDir, Map<String,String> config ) throws IOException
-    {
-        return inserter( storeDir, new DefaultFileSystemAbstraction(), config, (Iterable) Service.load( KernelExtensionFactory.class ) );
+        return inserter( storeDir, fs, stringMap(), loadKernelExtension() );
     }
 
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fs, Map<String,String> config ) throws IOException
     {
-        return inserter( storeDir, fs, config, (Iterable) Service.load( KernelExtensionFactory.class )  );
-    }
-
-    public static BatchInserter inserter( File storeDir,
-                                          Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
-    {
-        return new BatchInserterImpl( storeDir, new DefaultFileSystemAbstraction(), config, kernelExtensions );
+        return inserter( storeDir, fs, config, loadKernelExtension() );
     }
 
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,
                                           Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         return new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
+    }
+
+    private static Iterable loadKernelExtension()
+    {
+        return Service.load( KernelExtensionFactory.class );
     }
 }

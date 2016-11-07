@@ -28,6 +28,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -47,7 +48,11 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.Connecto
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 /**
- * Test factory for graph databases
+ * Test factory for graph databases.
+ * Please be aware that since it's a database it will close filesystem as part of it lifecycle
+ * a real database.
+ * If you expect your file system to be open in the end use {@link UncloseableDelegatingFileSystemAbstraction}
+ *
  */
 public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {

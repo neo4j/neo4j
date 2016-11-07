@@ -632,7 +632,7 @@ public class BatchInsertTest
     public void messagesLogGetsClosed() throws Exception
     {
         File storeDir = this.storeDir.graphDbDir();
-        BatchInserter inserter = BatchInserters.inserter( storeDir, stringMap() );
+        BatchInserter inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(), stringMap() );
         inserter.shutdown();
         assertTrue( new File( storeDir, StoreLogService.INTERNAL_LOG_NAME ).delete() );
     }

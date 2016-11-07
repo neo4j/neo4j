@@ -79,7 +79,8 @@ public class HighAvailabilityBeanTest
     private final ClusterDatabaseInfoProvider dbInfoProvider =
             new ClusterDatabaseInfoProvider( clusterMembers, lastTxIdGetter, lastUpdateTime );
     private DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    private final KernelData kerneData = new HighlyAvailableKernelData( db, clusterMembers, dbInfoProvider, fileSystem, null, new File( "storeDir" ), Config.empty() )
+    private final KernelData kerneData = new HighlyAvailableKernelData( db, clusterMembers, dbInfoProvider,
+            fileSystem, null, new File( "storeDir" ), Config.empty() )
     {
         @Override
         public Version version()

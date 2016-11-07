@@ -24,8 +24,8 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
- * File system abstraction that wraps real file system and prevent it to be closed.
- * Useful for cases when we pass file system to db, shutdown it and verify file system content.
+ * File system abstraction that wraps real file system and prevent it from being closed.
+ * Useful for cases when we pass file system to db, shut it down and verify file system content.
  */
 public class UncloseableDelegatingFileSystemAbstraction extends DelegatingFileSystemAbstraction
 {

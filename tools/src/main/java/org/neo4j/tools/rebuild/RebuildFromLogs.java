@@ -135,7 +135,7 @@ class RebuildFromLogs
             }
         }
 
-        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction())
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
             new RebuildFromLogs( fileSystem ).rebuild( source, target, txId );
         }

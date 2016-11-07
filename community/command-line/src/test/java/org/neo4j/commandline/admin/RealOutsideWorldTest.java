@@ -32,7 +32,6 @@ import static org.mockito.Mockito.verify;
 
 public class RealOutsideWorldTest
 {
-
     @Rule
     public SystemExitRule systemExitRule = SystemExitRule.none();
 
@@ -61,5 +60,4 @@ public class RealOutsideWorldTest
 
         verify( fileSystemMock ).close();
     }
-
 }

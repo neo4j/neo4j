@@ -246,7 +246,6 @@ public class StoreCopyClientTest
         File initialStore = testDir.directory( "initialStore" );
         File backupStore = testDir.directory( "backupStore" );
 
-
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         createInitialDatabase( initialStore );
 

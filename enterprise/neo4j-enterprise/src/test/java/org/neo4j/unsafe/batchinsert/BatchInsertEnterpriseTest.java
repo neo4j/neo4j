@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -59,6 +60,8 @@ public class BatchInsertEnterpriseTest
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Parameter
     public String recordFormat;
@@ -73,10 +76,11 @@ public class BatchInsertEnterpriseTest
     public void shouldInsertDifferentTypesOfThings() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = BatchInserters.inserter( directory.directory(), stringMap(
-                GraphDatabaseSettings.log_queries.name(), "true",
-                GraphDatabaseSettings.record_format.name(), recordFormat,
-                GraphDatabaseSettings.log_queries_filename.name(), directory.file( "query.log" ).getAbsolutePath() ) );
+        BatchInserter inserter = BatchInserters.inserter( directory.directory(), fileSystemRule.get(),
+                stringMap( GraphDatabaseSettings.log_queries.name(), "true",
+                        GraphDatabaseSettings.record_format.name(), recordFormat,
+                        GraphDatabaseSettings.log_queries_filename.name(),
+                        directory.file( "query.log" ).getAbsolutePath() ) );
         long node1Id, node2Id, relationshipId;
         try
         {
@@ -127,7 +131,7 @@ public class BatchInsertEnterpriseTest
             db.shutdown();
         }
 
-        BatchInserter inserter = BatchInserters.inserter( storeDir );
+        BatchInserter inserter = BatchInserters.inserter( storeDir, fileSystemRule.get() );
         try
         {
             long start = inserter.createNode( someProperties( 5 ), Labels.One );

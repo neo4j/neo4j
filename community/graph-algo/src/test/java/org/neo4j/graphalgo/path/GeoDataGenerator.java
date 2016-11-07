@@ -30,6 +30,7 @@ import java.util.Random;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -68,23 +69,26 @@ public class GeoDataGenerator
 
     public void generate( File storeDir ) throws IOException
     {
-        BatchInserter inserter = BatchInserters.inserter( storeDir.getAbsoluteFile() );
-        Grid grid = new Grid();
-        try
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction())
         {
-            for ( int i = 0; i < numberOfNodes; i++ )
+            BatchInserter inserter = BatchInserters.inserter( storeDir.getAbsoluteFile(), fileSystem );
+            Grid grid = new Grid();
+            try
             {
-                grid.createNodeAtRandomLocation( random, inserter );
-            }
+                for ( int i = 0; i < numberOfNodes; i++ )
+                {
+                    grid.createNodeAtRandomLocation( random, inserter );
+                }
 
-            for ( int i = 0; i < numberOfConnections; i++ )
-            {
-                grid.createConnection( random, inserter );
+                for ( int i = 0; i < numberOfConnections; i++ )
+                {
+                    grid.createConnection( random, inserter );
+                }
             }
-        }
-        finally
-        {
-            inserter.shutdown();
+            finally
+            {
+                inserter.shutdown();
+            }
         }
     }
 

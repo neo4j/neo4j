@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -43,14 +44,16 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class BatchInsertionIT
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( BatchInsertionIT.class ).startLazily();
+    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( BatchInsertionIT.class ).startLazily();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void shouldIndexNodesWithMultipleLabels() throws Exception
     {
         // Given
         File path = new File( dbRule.getStoreDirAbsolutePath() );
-        BatchInserter inserter = BatchInserters.inserter( path );
+        BatchInserter inserter = BatchInserters.inserter( path, fileSystemRule.get() );
 
         inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
 
@@ -79,7 +82,7 @@ public class BatchInsertionIT
     {
         // Given
         File file = new File( dbRule.getStoreDirAbsolutePath() );
-        BatchInserter inserter = BatchInserters.inserter( file );
+        BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
 
         inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
 
@@ -105,7 +108,7 @@ public class BatchInsertionIT
     public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
     {
         File file = new File( dbRule.getStoreDirAbsolutePath() );
-        BatchInserter inserter = BatchInserters.inserter( file );
+        BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
         long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
 
         final Object finalValue = 87;
@@ -131,7 +134,7 @@ public class BatchInsertionIT
     public void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
     {
         File file = new File( dbRule.getStoreDirAbsolutePath() );
-        BatchInserter inserter = BatchInserters.inserter( file );
+        BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
         long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
 
         final Object finalValue1 = 87;
@@ -161,7 +164,7 @@ public class BatchInsertionIT
     {
         // given
         File path = new File( dbRule.getStoreDirAbsolutePath() );
-        BatchInserter inserter = BatchInserters.inserter( path );
+        BatchInserter inserter = BatchInserters.inserter( path, fileSystemRule.get() );
 
         try
         {

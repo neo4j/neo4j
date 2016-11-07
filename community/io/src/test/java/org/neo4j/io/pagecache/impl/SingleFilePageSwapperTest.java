@@ -104,7 +104,17 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     protected FileSystemAbstraction getFs()
     {
+        return getEphemeralFileSystem();
+    }
+
+    protected FileSystemAbstraction getEphemeralFileSystem()
+    {
         return ephemeralFileSystem;
+    }
+
+    protected FileSystemAbstraction getRealFileSystem()
+    {
+        return fileSystem;
     }
 
     protected void assumeFalse( String message, boolean test )
