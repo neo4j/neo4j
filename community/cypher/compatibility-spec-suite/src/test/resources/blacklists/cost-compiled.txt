@@ -1,7 +1,8 @@
 Many CREATE clauses
 
-// bugged in spec, awaiting update
-SKIP with an expression that depends on variables should fail
-LIMIT with an expression that depends on variables should fail
-Fail when returning type of deleted relationships
-Fail when returning properties of deleted relationships
+// unsupported comparability
+Fail when comparing nodes to parameters
+Fail when comparing parameters to nodes
+Comparing nodes to properties
+Fail when comparing nodes to relationships
+Fail when comparing relationships to nodes
