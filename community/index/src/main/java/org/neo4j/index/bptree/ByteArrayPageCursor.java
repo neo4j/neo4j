@@ -42,6 +42,11 @@ public class ByteArrayPageCursor extends PageCursor
         return new ByteArrayPageCursor( array, offset, length );
     }
 
+    public static PageCursor wrap( byte[] array )
+    {
+        return wrap( array, 0, array.length );
+    }
+
     private ByteArrayPageCursor( byte[] array, int offset, int length )
     {
         this.buffer = ByteBuffer.wrap( array, offset, length );
