@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 
 sealed trait BuildProbeTable extends Instruction {
 

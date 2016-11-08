@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.functions
 
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 
 sealed trait CodeGenFunction1 extends ((CodeGenExpression) => CodeGenExpression)

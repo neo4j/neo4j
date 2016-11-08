@@ -17,33 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.codegen
+package org.neo4j.cypher.internal.compiler.v3_2.codegen.spi
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-
-/**
- * This constitutes the SPI for code generation.
- */
-trait CodeStructure[T] {
-  def generateQuery(className: String, columns: Seq[String], operatorIds: Map[String, Id], conf: CodeGenConfiguration)
-                   (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext): CodeStructureResult[T]
-}
-
-trait CodeStructureResult[T] {
-  def query: T
-  def source: Option[(String, String)]
-}
-
-sealed trait JoinTableType
-sealed trait CountingJoinTableType extends JoinTableType
-sealed trait RecordingJoinTableType extends JoinTableType
-
-case object LongToCountTable extends CountingJoinTableType
-case object LongsToCountTable extends CountingJoinTableType
-case class LongToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
-case class LongsToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
 
 /**
   * Describes the SPI for generating a method.
@@ -174,3 +151,12 @@ case object LessThan extends Comparator
 case object LessThanEqual extends Comparator
 case object GreaterThan extends Comparator
 case object GreaterThanEqual extends Comparator
+
+sealed trait JoinTableType
+sealed trait CountingJoinTableType extends JoinTableType
+sealed trait RecordingJoinTableType extends JoinTableType
+
+case object LongToCountTable extends CountingJoinTableType
+case object LongsToCountTable extends CountingJoinTableType
+case class LongToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
+case class LongsToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType

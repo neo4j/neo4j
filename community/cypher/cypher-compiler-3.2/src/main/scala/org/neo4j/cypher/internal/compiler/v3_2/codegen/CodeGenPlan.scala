@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.Instruction
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.JoinTableType
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 
 trait CodeGenPlan {

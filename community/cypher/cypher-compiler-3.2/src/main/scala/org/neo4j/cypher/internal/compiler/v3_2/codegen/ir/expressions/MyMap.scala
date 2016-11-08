@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 //Named MyMap to avoid conflict with collection.Map which makes everything weird

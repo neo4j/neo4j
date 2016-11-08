@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
+package org.neo4j.cypher.internal.compiler.v3_2.codegen.spi
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenConfiguration, CodeGenContext}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-trait CodeGenExpression {
-  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
-  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E
-  def nullable(implicit context: CodeGenContext): Boolean
-  def codeGenType(implicit context: CodeGenContext): CodeGenType
+/**
+ * This constitutes the SPI for code generation.
+ */
+trait CodeStructure[T] {
+  def generateQuery(className: String, columns: Seq[String], operatorIds: Map[String, Id], conf: CodeGenConfiguration)
+                   (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext): CodeStructureResult[T]
 }

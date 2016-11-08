@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenExpression
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
 case class IndexSeek(opName: String, labelName: String, propName: String, descriptorVar: String,
                      expression: CodeGenExpression) extends LoopDataGenerator {

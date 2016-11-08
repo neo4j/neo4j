@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 
 /**
  * Generates instruction for for updating a provided flag before creating the inner instruction

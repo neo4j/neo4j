@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenExpression
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 
 case class AcceptVisitor(produceResultOpName: String, columns: Map[String, CodeGenExpression])
   extends Instruction {

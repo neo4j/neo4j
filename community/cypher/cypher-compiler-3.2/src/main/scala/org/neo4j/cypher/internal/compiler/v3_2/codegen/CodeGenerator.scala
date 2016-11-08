@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.codegen
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.{CodeStructure, CodeStructureResult}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{CompiledPlan, PlanFingerprint, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.SourceCode
