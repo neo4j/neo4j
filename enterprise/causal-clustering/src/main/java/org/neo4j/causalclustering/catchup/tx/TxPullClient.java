@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
-import org.neo4j.causalclustering.catchup.CatchupResult;
+import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -40,24 +40,29 @@ public class TxPullClient
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
-    public CatchupResult pullTransactions( MemberId from, StoreId storeId, long startTxId,
-            TxPullResponseListener txPullResponseListener ) throws CatchUpClientException
+    public TxPullRequestResult pullTransactions( MemberId from, StoreId storeId, long startTxId,
+                                                 TxPullResponseListener txPullResponseListener )
+            throws CatchUpClientException
     {
         pullRequestMonitor.txPullRequest( startTxId );
         return catchUpClient.makeBlockingRequest( from, new TxPullRequest( startTxId, storeId ),
-                new CatchUpResponseAdaptor<CatchupResult>()
+                new CatchUpResponseAdaptor<TxPullRequestResult>()
                 {
+                    private long lastTxIdReceived = startTxId;
+
                     @Override
-                    public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
+                    public void onTxPullResponse( CompletableFuture<TxPullRequestResult> signal,
+                                                  TxPullResponse response )
                     {
+                        this.lastTxIdReceived = response.tx().getCommitEntry().getTxId();
                         txPullResponseListener.onTxReceived( response );
                     }
 
                     @Override
-                    public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal,
+                    public void onTxStreamFinishedResponse( CompletableFuture<TxPullRequestResult> signal,
                             TxStreamFinishedResponse response )
                     {
-                        signal.complete( response.status() );
+                        signal.complete( new TxPullRequestResult(response.status(), lastTxIdReceived ));
                     }
                 } );
     }

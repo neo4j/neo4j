@@ -30,10 +30,10 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
-import org.neo4j.causalclustering.readreplica.CopyStoreSafely;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
+import org.neo4j.causalclustering.readreplica.CopyStoreSafely;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -101,57 +101,67 @@ public class TxPollingClient extends LifecycleAdapter
     private synchronized void onTimeout()
     {
         timeout.renew();
-        if ( applier.workPending() )
-        {
-            log.info( "Still applying old batch, delay pulling to the next interval. Up to tx %d",
-                    applier.lastAppliedTxId() );
-            return;
-        }
 
         try
         {
             MemberId core = connectionStrategy.coreMember();
-            long lastAppliedTxId = applier.lastAppliedTxId();
-            pullRequestMonitor.txPullRequest( lastAppliedTxId );
             StoreId localStoreId = localDatabase.storeId();
-            TxPullRequest txPullRequest = new TxPullRequest( lastAppliedTxId, localStoreId );
-            log.info( "[" + Thread.currentThread() + "] Starting transaction pull from " + lastAppliedTxId );
-            CatchupResult catchupResult =
-                    catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
-                    {
-                        @Override
-                        public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
-                        {
-                            applier.queue( response.tx() );
-                            timeout.renew();
-                        }
 
-                        @Override
-                        public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal,
-                                TxStreamFinishedResponse response )
-                        {
-                            signal.complete( response.status() );
-                        }
-                    } );
-
-            switch ( catchupResult )
+            boolean moreToPull = true;
+            while ( moreToPull )
             {
-            case SUCCESS:
-                log.debug( "[" + Thread.currentThread() + "] Successfully completed transaction pull from " + lastAppliedTxId );
-                break;
-            case E_TRANSACTION_PRUNED:
-                log.info( "[" + Thread.currentThread() + "] Tx pull unable to get transactions starting from " + lastAppliedTxId +
-                        " such transaction have been pruned. Attempting a store copy." );
-                downloadDatabase( core, localStoreId );
-                break;
-            default:
-                log.info( "[" + Thread.currentThread() + "] Tx pull unable to get transactions starting from " + lastAppliedTxId );
-                break;
+                moreToPull = pullAndApplyBatchOfTransactions( core, localStoreId );
             }
         }
         catch ( Throwable e )
         {
             log.warn( "Tx pull attempt failed, will retry at the next regularly scheduled polling attempt.", e );
+        }
+    }
+
+    private boolean pullAndApplyBatchOfTransactions( MemberId core, StoreId localStoreId ) throws Throwable
+    {
+        long lastQueuedTxId = applier.lastQueuedTxId();
+        pullRequestMonitor.txPullRequest( lastQueuedTxId );
+        TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId );
+        log.info( "Pull transactions where tx id > %d", lastQueuedTxId );
+        CatchupResult catchupResult =
+                catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
+                {
+                    @Override
+                    public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
+                    {
+                        applier.queue( response.tx() );
+                        // no applying here, just put it in the batch
+
+                        timeout.renew();
+                    }
+
+                    @Override
+                    public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal,
+                            TxStreamFinishedResponse response )
+                    {
+                        // apply the batch here
+                        applier.applyBatch();
+                        signal.complete( response.status() );
+                    }
+                } );
+
+        switch ( catchupResult )
+        {
+            case SUCCESS_END_OF_BATCH:
+                return true;
+            case SUCCESS_END_OF_STREAM:
+                log.debug( "Successfully pulled transactions from %d", lastQueuedTxId  );
+                return false;
+            case E_TRANSACTION_PRUNED:
+                log.info( "Tx pull unable to get transactions starting from %d since transactions " +
+                        "have been pruned. Attempting a store copy.", lastQueuedTxId ) ;
+                downloadDatabase( core, localStoreId );
+                return false;
+            default:
+                log.info( "Tx pull unable to get transactions > %d " + lastQueuedTxId );
+                return false;
         }
     }
 

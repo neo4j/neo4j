@@ -128,15 +128,25 @@ public class DumpLogicalLog
         LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
 
         IOCursor<LogEntry> entryCursor = new LogEntryCursor( entryReader, logChannel );
-        TransactionLogEntryCursor transactionCursor = new TransactionLogEntryCursor( entryCursor );
-        try ( IOCursor<LogEntry[]> cursor = regex == null ? transactionCursor :
-                new FilteringIOCursor<>( transactionCursor, new TransactionRegexCriteria( regex, timeZone ) ) )
+        if ( regex == null )
         {
-            while ( cursor.next() )
+            while ( entryCursor.next() )
             {
-                for ( LogEntry entry : cursor.get() )
+                out.println( entryCursor.get().toString( timeZone ) );
+            }
+        }
+        else
+        {
+            TransactionLogEntryCursor transactionCursor = new TransactionLogEntryCursor( entryCursor );
+            TransactionRegexCriteria transactionFilter = new TransactionRegexCriteria( regex, timeZone );
+            try ( IOCursor<LogEntry[]> cursor = new FilteringIOCursor<>( transactionCursor, transactionFilter ) )
+            {
+                while ( cursor.next() )
                 {
-                    out.println( entry.toString( timeZone ) );
+                    for ( LogEntry entry : cursor.get() )
+                    {
+                        out.println( entry.toString( timeZone ) );
+                    }
                 }
             }
         }

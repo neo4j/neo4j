@@ -42,7 +42,8 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
-import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS;
+import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
+import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
@@ -50,18 +51,21 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     private final CatchupServerProtocol protocol;
     private final Supplier<StoreId> storeIdSupplier;
     private final BooleanSupplier databaseAvailable;
+    private final int batchSize;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final TxPullRequestsMonitor monitor;
     private final Log log;
 
     public TxPullRequestHandler( CatchupServerProtocol protocol, Supplier<StoreId> storeIdSupplier,
-            BooleanSupplier databaseAvailable, Supplier<TransactionIdStore> transactionIdStoreSupplier,
-            Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier, Monitors monitors, LogProvider logProvider )
+                                 BooleanSupplier databaseAvailable, Supplier<TransactionIdStore> transactionIdStoreSupplier,
+
+                                 Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier, int batchSize, Monitors monitors, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.storeIdSupplier = storeIdSupplier;
         this.databaseAvailable = databaseAvailable;
+        this.batchSize = batchSize;
         this.transactionIdStore = transactionIdStoreSupplier.get();
         this.logicalTransactionStore = logicalTransactionStoreSupplier.get();
         this.monitor = monitors.newMonitor( TxPullRequestsMonitor.class );
@@ -73,7 +77,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     {
         long firstTxId = Math.max( msg.previousTxId(), BASE_TX_ID ) + 1;
         long lastTxId = firstTxId;
-        CatchupResult status = SUCCESS;
+        CatchupResult status = SUCCESS_END_OF_STREAM;
         StoreId localStoreId = storeIdSupplier.get();
 
         if ( localStoreId == null || !localStoreId.equals( msg.expectedStoreId() ) )
@@ -94,12 +98,21 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                           logicalTransactionStore.getTransactions( firstTxId ) )
             {
-                while ( cursor.next() )
+                status = SUCCESS_END_OF_BATCH;
+                for ( int i = 0; i < batchSize; i++ )
                 {
-                    ctx.write( ResponseMessageType.TX );
-                    CommittedTransactionRepresentation tx = cursor.get();
-                    lastTxId = tx.getCommitEntry().getTxId();
-                    ctx.write( new TxPullResponse( localStoreId, tx ) );
+                    if ( cursor.next() )
+                    {
+                        ctx.write( ResponseMessageType.TX );
+                        CommittedTransactionRepresentation tx = cursor.get();
+                        lastTxId = tx.getCommitEntry().getTxId();
+                        ctx.write( new TxPullResponse( localStoreId, tx ) );
+                    }
+                    else
+                    {
+                        status = SUCCESS_END_OF_STREAM;
+                        break;
+                    }
                 }
                 ctx.flush();
             }

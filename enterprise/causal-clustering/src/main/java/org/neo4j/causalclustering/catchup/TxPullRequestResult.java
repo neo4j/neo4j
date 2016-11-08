@@ -19,11 +19,24 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-public enum CatchupResult
+public class TxPullRequestResult
 {
-    SUCCESS_END_OF_BATCH,
-    SUCCESS_END_OF_STREAM,
-    E_STORE_ID_MISMATCH,
-    E_STORE_UNAVAILABLE,
-    E_TRANSACTION_PRUNED
+    private final CatchupResult catchupResult;
+    private final long lastTxId;
+
+    public TxPullRequestResult( CatchupResult catchupResult, long lastTxId )
+    {
+        this.catchupResult = catchupResult;
+        this.lastTxId = lastTxId;
+    }
+
+    public CatchupResult catchupResult()
+    {
+        return catchupResult;
+    }
+
+    public long lastTxId()
+    {
+        return lastTxId;
+    }
 }
