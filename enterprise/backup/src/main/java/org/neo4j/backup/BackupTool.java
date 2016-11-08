@@ -205,7 +205,7 @@ public class BackupTool
         }
         catch ( UnexpectedStoreVersionException e )
         {
-            throw new ToolFailureException( e.getMessage() );
+            throw new ToolFailureException( e.getMessage(), e );
         }
         catch ( MismatchingStoreIdException e )
         {

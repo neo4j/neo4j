@@ -74,7 +74,7 @@ public class BackupToolIT
     }
 
     @Test
-    public void oldIncompatibleBackupsAreMovedToSubDir() throws Exception
+    public void oldIncompatibleBackupsThrows() throws Exception
     {
         // Prepare an "old" backup
         prepareNeoStoreFile( StandardV2_3.STORE_VERSION );

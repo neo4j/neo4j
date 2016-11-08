@@ -25,11 +25,11 @@ public class UnexpectedStoreVersionException extends StoreFailureException
 
     public UnexpectedStoreVersionException( String actualStoreVersion, String expectedStoreVersion )
     {
-        this( String.format( MESSAGE, actualStoreVersion, expectedStoreVersion ) );
+        super( String.format( MESSAGE, actualStoreVersion, expectedStoreVersion ) );
     }
 
-    public UnexpectedStoreVersionException( String msg )
+    public UnexpectedStoreVersionException( String msg, Throwable originalError )
     {
-        super( msg );
+        super( msg, originalError );
     }
 }
