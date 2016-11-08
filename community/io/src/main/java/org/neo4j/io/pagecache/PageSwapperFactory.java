@@ -129,4 +129,6 @@ public interface PageSwapperFactory
      * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
     Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
+
+    void close();
 }

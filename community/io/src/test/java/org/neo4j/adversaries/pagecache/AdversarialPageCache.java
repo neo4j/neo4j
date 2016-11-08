@@ -98,9 +98,8 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
         delegate.close();
     }
 

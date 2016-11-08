@@ -89,9 +89,15 @@ public interface PageCache extends AutoCloseable
     void flushAndForce( IOLimiter limiter ) throws IOException;
 
     /**
-     * Flush all dirty pages and close the page cache.
+     * Close the page cache to prevent any future mapping of files.
+     * This also releases any internal resources, including the {@link PageSwapperFactory} through its
+     * {@link PageSwapperFactory#close() close} method.
+     * @throws IllegalStateException if not all files have been unmapped, with {@link PagedFile#close()}, prior to
+     * closing the page cache. In this case, the page cache <em>WILL NOT</em> be considered to be successfully closed.
+     * @throws RuntimeException if the {@link PageSwapperFactory#close()} method throws. In this case the page cache
+     * <em>WILL BE</em> considered to have been closed successfully.
      **/
-    void close() throws IOException;
+    void close() throws IllegalStateException;
 
     /**
      * The size in bytes of the pages managed by this cache.

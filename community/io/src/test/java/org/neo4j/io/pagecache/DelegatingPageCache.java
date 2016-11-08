@@ -50,7 +50,7 @@ public class DelegatingPageCache implements PageCache
         return delegate.pageSize();
     }
 
-    public void close() throws IOException
+    public void close()
     {
         delegate.close();
     }

@@ -53,13 +53,13 @@ public class ExternallyManagedPageCache implements PageCache
 {
     private final PageCache delegate;
 
-    public ExternallyManagedPageCache( PageCache delegate )
+    private ExternallyManagedPageCache( PageCache delegate )
     {
         this.delegate = delegate;
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         // Don't close the delegate, because we are not in charge of its life cycle.
     }
@@ -118,7 +118,7 @@ public class ExternallyManagedPageCache implements PageCache
     {
         private final PageCache delegatePageCache;
 
-        public GraphDatabaseFactoryWithPageCacheFactory( PageCache delegatePageCache )
+        GraphDatabaseFactoryWithPageCacheFactory( PageCache delegatePageCache )
         {
             this.delegatePageCache = delegatePageCache;
         }

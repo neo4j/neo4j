@@ -130,7 +130,7 @@ public class StoreMigration
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             throw new StoreUpgrader.UnableToUpgradeException( "Failure during upgrade", e );
         }
