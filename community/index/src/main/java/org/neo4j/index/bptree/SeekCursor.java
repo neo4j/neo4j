@@ -35,6 +35,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private final MutableHit<KEY,VALUE> hit;
     private final TreeNode<KEY,VALUE> bTreeNode;
     private final KEY prevKey;
+    private boolean first = true;
 
     // data structures for the current b-tree node
     private int pos;
@@ -43,7 +44,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private boolean reread;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
-            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int pos, int keyCount )
+            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int firstPosToRead, int keyCount )
     {
         this.cursor = leafCursor;
         this.mutableKey = mutableKey;
@@ -53,7 +54,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         this.layout = layout;
         this.hit = new MutableHit<>( mutableKey, mutableValue );
         this.bTreeNode = bTreeNode;
-        this.pos = pos;
+        this.pos = firstPosToRead - 1;
         this.prevKey = layout.newKey();
 
         this.keyCount = keyCount;
@@ -120,7 +121,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 if ( !currentContainsEnd || layout.compare( mutableKey, toExclusive ) < 0 )
                 {
                     if ( layout.compare( mutableKey, fromInclusive ) < 0 ||
-                         layout.compare( prevKey, mutableKey ) >= 0 )
+                         ( !first && layout.compare( prevKey, mutableKey ) >= 0 ) )
                     {
                         // We've come across a bad read in the middle of a split
                         // This is outlined in IndexModifier, skip this value (it's fine)
@@ -130,6 +131,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     }
 
                     // A hit
+                    if ( first )
+                    {
+                        first = false;
+                    }
                     layout.copyKey( mutableKey, prevKey );
                     return true;
                 }
