@@ -186,10 +186,11 @@ public class ImportCommandTest
                             "      groups must be enclosed in quotation marks. [default:]%n" +
                             "  --id-type=<STRING|INTEGER|ACTUAL>%n" +
                             "      Each node must provide a unique id. This is used to find the correct nodes%n" +
-                            "      when creating relationships. Possible values are STRING: arbitrary strings%n" +
-                            "      for identifying nodes, INTEGER: arbitrary integer values for identifying%n" +
-                            "      nodes, ACTUAL: (advanced) actual node ids. For more information on id%n" +
-                            "      handling, please see the Neo4j Manual:%n" +
+                            "      when creating relationships. Possible values are:%n" +
+                            "        STRING: arbitrary strings for identifying nodes,%n" +
+                            "        INTEGER: arbitrary integer values for identifying nodes,%n" +
+                            "        ACTUAL: (advanced) actual node ids.%n" +
+                            "      For more information on id handling, please see the Neo4j Manual:%n" +
                             "      http://neo4j.com/docs/operations-manual/current/deployment/#import-tool%n" +
                             "      [default:STRING]%n" +
                             "  --input-encoding=<character-set>%n" +
