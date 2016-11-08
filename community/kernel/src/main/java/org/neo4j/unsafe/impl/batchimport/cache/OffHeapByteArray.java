@@ -98,28 +98,54 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     @Override
     public short getShort( long index, int offset )
     {
-        return UnsafeUtil.getShort( address( index, offset ) );
+        return putShort( address( index, offset ) );
+    }
+
+    private short putShort( long p )
+    {
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            return UnsafeUtil.getShort( p );
+        }
+
+        return UnsafeUtil.getShortByteWise( p );
     }
 
     @Override
     public int getInt( long index, int offset )
     {
-        return UnsafeUtil.getInt( address( index, offset ) );
+        return getInt( address( index, offset ) );
+    }
+
+    private int getInt( long p )
+    {
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            return UnsafeUtil.getInt( p );
+        }
+
+        return UnsafeUtil.getIntByteWise( p );
     }
 
     @Override
     public long get6ByteLong( long index, int offset )
     {
         long address = address( index, offset );
-        long low4b = (UnsafeUtil.getInt( address )) & 0xFFFFFFFFL;
-        long high2b = UnsafeUtil.getShort( address + Integer.BYTES );
+        long low4b = getInt( address ) & 0xFFFFFFFFL;
+        long high2b = putShort( address + Integer.BYTES );
         return low4b | (high2b << 32);
     }
 
     @Override
     public long getLong( long index, int offset )
     {
-        return UnsafeUtil.getLong( address( index, offset ) );
+        long p = address( index, offset );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            return UnsafeUtil.getLong( p );
+        }
+
+        return UnsafeUtil.getLongByteWise( p );
     }
 
     @Override
@@ -141,27 +167,59 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     @Override
     public void setShort( long index, int offset, short value )
     {
-        UnsafeUtil.putShort( address( index, offset ), value );
+        putShort( address( index, offset ), value );
+    }
+
+    private void putShort( long p, short value )
+    {
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putShort( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putShortByteWise( p, value );
+        }
     }
 
     @Override
     public void setInt( long index, int offset, int value )
     {
-        UnsafeUtil.putInt( address( index, offset ), value );
+        putInt( address( index, offset ), value );
+    }
+
+    private void putInt( long p, int value )
+    {
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putInt( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putIntByteWise( p, value );
+        }
     }
 
     @Override
     public void set6ByteLong( long index, int offset, long value )
     {
         long address = address( index, offset );
-        UnsafeUtil.putInt( address, (int) value );
-        UnsafeUtil.putShort( address + Integer.BYTES, (short) (value >>> 32) );
+        putInt( address, (int) value );
+        putShort( address + Integer.BYTES, (short) (value >>> 32) );
     }
 
     @Override
     public void setLong( long index, int offset, long value )
     {
-        UnsafeUtil.putLong( address( index, offset ), value );
+        long p = address( index, offset );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putLong( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putLongByteWise( p, value );
+        }
     }
 
     private long address( long index, int offset )

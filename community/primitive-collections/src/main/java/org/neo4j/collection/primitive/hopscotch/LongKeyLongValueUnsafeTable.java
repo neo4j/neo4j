@@ -19,8 +19,6 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
-
 public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
 {
     public LongKeyLongValueUnsafeTable( int capacity )
@@ -31,21 +29,21 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
     @Override
     protected long internalKey( long keyAddress )
     {
-        return UnsafeUtil.getLong( keyAddress );
+        return alignmentSafeGetLongAsTwoInts( keyAddress );
     }
 
     @Override
     protected void internalPut( long keyAddress, long key, long[] value )
     {
-        UnsafeUtil.putLong( keyAddress, key );
-        UnsafeUtil.putLong( keyAddress+8, value[0] );
+        alignmentSafePutLongAsTwoInts( keyAddress, key );
+        alignmentSafePutLongAsTwoInts( keyAddress + 8, value[0] );
     }
 
     @Override
     protected long[] internalRemove( long keyAddress )
     {
-        valueMarker[0] = UnsafeUtil.getLong( keyAddress+8 );
-        UnsafeUtil.putLong( keyAddress, -1 );
+        valueMarker[0] = alignmentSafeGetLongAsTwoInts( keyAddress+8 );
+        alignmentSafePutLongAsTwoInts( keyAddress, -1 );
         return valueMarker;
     }
 
@@ -53,8 +51,8 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
     public long[] putValue( int index, long[] value )
     {
         long valueAddress = valueAddress( index );
-        long oldValue = UnsafeUtil.getLong( valueAddress );
-        UnsafeUtil.putLong( valueAddress, value[0] );
+        long oldValue = alignmentSafeGetLongAsTwoInts( valueAddress );
+        alignmentSafePutLongAsTwoInts( valueAddress, value[0] );
         return pack( oldValue );
     }
 
@@ -72,7 +70,7 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
     @Override
     public long[] value( int index )
     {
-        long value = UnsafeUtil.getLong( valueAddress( index ) );
+        long value = alignmentSafeGetLongAsTwoInts( valueAddress( index ) );
         return pack( value );
     }
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
@@ -27,6 +26,9 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     private final int bytesPerKey;
     private final int bytesPerEntry;
     private final long dataSize;
+    // address which should be free when closing
+    private final long allocatedAddress;
+    // address which should be used to access the table, the address where the table actually starts at
     private final long address;
     protected final VALUE valueMarker;
 
@@ -38,7 +40,39 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
         this.bytesPerEntry = 4+bytesPerKey;
         this.valueMarker = valueMarker;
         this.dataSize = (long)this.capacity*bytesPerEntry;
-        this.address = UnsafeUtil.allocateMemory( dataSize );
+
+        // Below is a piece of code which ensures that allocated memory is aligned to 4-byte boundary
+        // if memory system requires aligned memory access. The reason we pick 4-byte boundary is that
+        // it's the lowest common denominator and the size of our hop-bits field for every entry.
+        // So even for a table which would only deal with, say longs (8-byte), it would still need to
+        // read and write 4-byte hop-bits fields. Therefore this table can, if required to, read anything
+        // bigger than 4-byte fields as multiple 4-byte fields. This way it can play well with aligned
+        // memory access requirements.
+
+        assert bytesPerEntry % Integer.BYTES == 0 : "Bytes per entry needs to be divisible by 4, this constraint " +
+                "is checked because on memory systems requiring aligned memory access this would otherwise break.";
+
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            this.allocatedAddress = this.address = UnsafeUtil.allocateMemory( dataSize );
+        }
+        else
+        {
+            // There's an assertion above also verifying this, but it's only an actual problem if our memory system
+            // requires aligned access, which seems to be the case right here and now.
+            if ( (bytesPerEntry % Integer.BYTES) != 0 )
+            {
+                throw new IllegalArgumentException( "Memory system requires aligned memory access and " +
+                        getClass().getSimpleName() + " was designed to cope with this requirement by " +
+                        "being able to accessing data in 4-byte chunks, if needed to. " +
+                        "Although this table tried to be constructed with bytesPerKey:" + bytesPerKey +
+                        " yielding a bytesPerEntry:" + bytesPerEntry + ", which isn't 4-byte aligned." );
+            }
+
+            this.allocatedAddress = UnsafeUtil.allocateMemory( dataSize + Integer.BYTES - 1 );
+            this.address = UnsafeUtil.alignedMemory( allocatedAddress, Integer.BYTES );
+        }
+
         clearMemory();
     }
 
@@ -156,6 +190,33 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     @Override
     public void close()
     {
-        UnsafeUtil.free( address );
+        UnsafeUtil.free( allocatedAddress );
+    }
+
+    protected static void alignmentSafePutLongAsTwoInts( long address, long value )
+    {
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putLong( address, value );
+        }
+        else
+        {
+            // See javadoc in constructor as to why we do this
+            UnsafeUtil.putInt( address, (int) value );
+            UnsafeUtil.putInt( address + Integer.BYTES, (int) (value >>> Integer.SIZE) );
+        }
+    }
+
+    protected static long alignmentSafeGetLongAsTwoInts( long address )
+    {
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            return UnsafeUtil.getLong( address );
+        }
+
+        // See javadoc in constructor as to why we do this
+        long lsb = UnsafeUtil.getInt( address ) & 0xFFFFFFFFL;
+        long msb = UnsafeUtil.getInt( address + Integer.BYTES ) & 0xFFFFFFFFL;
+        return lsb | (msb << Integer.SIZE);
     }
 }
