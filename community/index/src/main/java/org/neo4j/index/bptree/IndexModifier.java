@@ -494,7 +494,6 @@ public class IndexModifier<KEY,VALUE>
         {
             return null;
         }
-        pos--;
 
         // Remove key/value
         bTreeNode.removeKeyAt( cursor, pos, keyCount, tmpForKeys );

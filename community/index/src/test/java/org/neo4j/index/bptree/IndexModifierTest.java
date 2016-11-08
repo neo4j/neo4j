@@ -250,6 +250,92 @@ public class IndexModifierTest
         assertSiblingOrderAndPointers( child0, child1, child2 );
     }
 
+    /* REMOVE */
+    @Test
+    public void modifierMustRemoveFirstInEmptyLeaf() throws Exception
+    {
+        // given
+        long key = 1L;
+        long value = 1L;
+        insert( key, value );
+
+        // when
+        remove( key );
+
+        // then
+        assertThat( node.keyCount( cursor ), is( 0 ) );
+    }
+
+    @Test
+    public void modifierMustRemoveFirstInFullLeaf() throws Exception
+    {
+        // given
+        int maxKeyCount = node.leafMaxKeyCount();
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            insert( i, i );
+        }
+
+        // when
+        remove( 0 );
+
+        // then
+        assertThat( node.keyCount( cursor ), is( maxKeyCount - 1) );
+        for ( int i = 0; i < maxKeyCount - 1; i++ )
+        {
+            assertThat( keyAt( i ), is( i + 1L ) );
+        }
+    }
+
+    @Test
+    public void modifierMustRemoveInMiddleInFullLeaf() throws Exception
+    {
+        // given
+        int maxKeyCount = node.leafMaxKeyCount();
+        int middle = maxKeyCount / 2;
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            insert( i, i );
+        }
+
+        // when
+        remove( middle );
+
+        // then
+        assertThat( node.keyCount( cursor ), is( maxKeyCount - 1) );
+        assertThat( keyAt( middle ), is( middle + 1L ) );
+        for ( int i = 0; i < maxKeyCount - 1; i++ )
+        {
+            long expected = i < middle ? i : i + 1L;
+            assertThat( keyAt( i ), is( expected ) );
+        }
+    }
+
+    @Test
+    public void modifierMustRemoveLastInFullLeaf() throws Exception
+    {
+        // given
+        int maxKeyCount = node.leafMaxKeyCount();
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            insert( i, i );
+        }
+
+        // when
+        remove( maxKeyCount - 1 );
+
+        // then
+        assertThat( node.keyCount( cursor ), is( maxKeyCount - 1) );
+        for ( int i = 0; i < maxKeyCount - 1; i++ )
+        {
+            Long actual = keyAt( i );
+            assertThat( actual, is( (long) i ) );
+        }
+    }
+
+    /* REBALANCE (when rebalance is implemented) */
+    /* MERGE (when merge is implemented) */
+
     @Test
     public void modifierMustProduceConsistentTreeWithRandomInserts() throws Exception
     {
@@ -307,6 +393,12 @@ public class IndexModifierTest
         insertKey.setValue( key );
         insertValue.setValue( value );
         return indexModifier.insert( cursor, insertKey, insertValue, overwrite(), DEFAULTS );
+    }
+
+    private void remove( long key ) throws IOException
+    {
+        insertKey.setValue( key );
+        indexModifier.remove( cursor, insertKey );
     }
 
     private class SimpleIdProvider implements IdProvider
