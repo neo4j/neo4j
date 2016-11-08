@@ -84,10 +84,10 @@ public class ImportCommand implements AdminCommand
                             "Note that file groups must be enclosed in quotation marks." ) )
             .withArgument( new OptionalNamedArg( "id-type", new String[]{"STRING", "INTEGER", "ACTUAL"},
                     "STRING", "Each node must provide a unique id. This is used to find the correct " +
-                    "nodes when creating relationships. Possible values are " +
-                    "STRING: arbitrary strings for identifying nodes, " +
-                    "INTEGER: arbitrary integer values for identifying nodes, " +
-                    "ACTUAL: (advanced) actual node ids. " +
+                    "nodes when creating relationships. Possible values are\n" +
+                    "  STRING: arbitrary strings for identifying nodes,\n" +
+                    "  INTEGER: arbitrary integer values for identifying nodes,\n" +
+                    "  ACTUAL: (advanced) actual node ids.\n" +
                     "For more information on id handling, please see the Neo4j Manual: " +
                     "http://neo4j.com/docs/operations-manual/current/deployment/#import-tool" ) )
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
@@ -115,10 +115,10 @@ public class ImportCommand implements AdminCommand
                             "Note that file groups must be enclosed in quotation marks." ) )
             .withArgument( new OptionalNamedArg( "id-type", new String[]{"STRING", "INTEGER", "ACTUAL"},
                     "STRING", "Each node must provide a unique id. This is used to find the correct " +
-                    "nodes when creating relationships. Possible values are " +
-                    "STRING: arbitrary strings for identifying nodes, " +
-                    "INTEGER: arbitrary integer values for identifying nodes, " +
-                    "ACTUAL: (advanced) actual node ids. " +
+                    "nodes when creating relationships. Possible values are:\n" +
+                    "  STRING: arbitrary strings for identifying nodes,\n" +
+                    "  INTEGER: arbitrary integer values for identifying nodes,\n" +
+                    "  ACTUAL: (advanced) actual node ids.\n" +
                     "For more information on id handling, please see the Neo4j Manual: " +
                     "http://neo4j.com/docs/operations-manual/current/deployment/#import-tool" ) )
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
