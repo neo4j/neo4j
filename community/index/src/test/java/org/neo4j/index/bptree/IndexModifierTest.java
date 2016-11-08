@@ -46,6 +46,7 @@ public class IndexModifierTest
     private final IndexModifier<MutableLong,MutableLong> indexModifier = new IndexModifier<>( id, node, layout );
 
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
+    private final int maxKeyCount = node.leafMaxKeyCount();
 
     private final MutableLong insertKey = new MutableLong();
     private final MutableLong insertValue = new MutableLong();
@@ -84,12 +85,9 @@ public class IndexModifierTest
     @Test
     public void modifierMustSortCorrectlyOnInsertFirstInLeaf() throws Exception
     {
-        // given
-        int maxKeyCount = node.leafMaxKeyCount();
-
         for ( int i = 0; i < maxKeyCount; i++ )
         {
-            // when
+            // given
             long key = maxKeyCount - i;
             insert( key, key );
 
@@ -102,12 +100,9 @@ public class IndexModifierTest
     @Test
     public void modifierMustSortCorrectlyOnInsertLastInLeaf() throws Exception
     {
-        // given
-        int maxKeyCount = node.leafMaxKeyCount();
-
         for ( int i = 0; i < maxKeyCount; i++ )
         {
-            // when
+            // given
             insert( (long) i, (long) i );
 
             // then
@@ -119,12 +114,9 @@ public class IndexModifierTest
     @Test
     public void modifierMustSortCorrectlyOnInsertInMiddleOfLeaf() throws Exception
     {
-        // given
-        int maxKeyCount = node.leafMaxKeyCount();
-
         for ( int i = 0; i < maxKeyCount; i++ )
         {
-            // when
+            // given
             long key = i % 2 == 0 ? i / 2 : maxKeyCount - i / 2;
             insert( key, key );
 
@@ -137,9 +129,6 @@ public class IndexModifierTest
     public void modifierMustSplitWhenInsertingMiddleOfFullLeaf() throws Exception
     {
         // given
-        int maxKeyCount = node.leafMaxKeyCount();
-
-        // when
         for ( int i = 0; i < maxKeyCount; i++ )
         {
             long key = i % 2 == 0 ? i / 2 : maxKeyCount - i / 2;
@@ -155,9 +144,6 @@ public class IndexModifierTest
     public void modifierMustSplitWhenInsertingLastInFullLeaf() throws Exception
     {
         // given
-        int maxKeyCount = node.leafMaxKeyCount();
-
-        // when
         long key = 0;
         while ( key < maxKeyCount )
         {
@@ -173,9 +159,6 @@ public class IndexModifierTest
     public void modifierMustSplitWhenInsertingFirstInFullLeaf() throws Exception
     {
         // given
-        int maxKeyCount = node.leafMaxKeyCount();
-
-        // when
         for ( int i = 0; i < maxKeyCount; i++ )
         {
             long key = i + 1;
@@ -190,7 +173,6 @@ public class IndexModifierTest
     public void modifierMustLeaveCursorOnSamePageAfterSplitInLeaf() throws Exception
     {
         // given
-        int maxKeyCount = node.leafMaxKeyCount();
         long pageId = cursor.getCurrentPageId();
         long key = 0;
         while ( key < maxKeyCount )
@@ -210,7 +192,6 @@ public class IndexModifierTest
     public void modifierMustUpdatePointersInSiblingsToSplit() throws Exception
     {
         // given
-        int maxKeyCount = node.leafMaxKeyCount();
         long someLargeNumber = maxKeyCount * 1000;
         long i = 0;
         while ( i < maxKeyCount )
@@ -270,7 +251,6 @@ public class IndexModifierTest
     public void modifierMustRemoveFirstInFullLeaf() throws Exception
     {
         // given
-        int maxKeyCount = node.leafMaxKeyCount();
         for ( int i = 0; i < maxKeyCount; i++ )
         {
             insert( i, i );
@@ -291,7 +271,6 @@ public class IndexModifierTest
     public void modifierMustRemoveInMiddleInFullLeaf() throws Exception
     {
         // given
-        int maxKeyCount = node.leafMaxKeyCount();
         int middle = maxKeyCount / 2;
         for ( int i = 0; i < maxKeyCount; i++ )
         {
@@ -315,7 +294,6 @@ public class IndexModifierTest
     public void modifierMustRemoveLastInFullLeaf() throws Exception
     {
         // given
-        int maxKeyCount = node.leafMaxKeyCount();
         for ( int i = 0; i < maxKeyCount; i++ )
         {
             insert( i, i );
