@@ -35,8 +35,6 @@
             <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-admin"/>
             <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
-                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-backup"/>
-            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-import"/>
             <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-shell"/>
@@ -97,10 +95,17 @@
         </sequential>
     </macrodef>
 
-    <target name="generate">
+    <target name="generate-community">
         <package name="community"/>
-        <package name="enterprise"/>
     </target>
+
+    <target name="generate-enterprise">
+        <package name="enterprise"/>
+        <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+              toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-backup"/>
+    </target>
+
+    <target name="generate" depends="generate-community,generate-enterprise" />
 
     <target name="publish_to_target" depends="generate">
         <!-- Copy installers from classes/ to target/ -->
