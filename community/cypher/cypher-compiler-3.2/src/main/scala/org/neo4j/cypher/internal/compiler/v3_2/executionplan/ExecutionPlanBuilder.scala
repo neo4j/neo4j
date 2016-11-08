@@ -37,8 +37,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ProfileMode, _}
 import org.neo4j.cypher.internal.frontend.v3_2.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
-import org.neo4j.kernel.GraphDatabaseQueryService
-
 
 trait RunnablePlan {
   def apply(queryContext: QueryContext,
@@ -94,8 +92,7 @@ trait ExecutablePlanBuilder {
                   createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseQueryService,
-                           clock: Clock,
+class ExecutionPlanBuilder(clock: Clock,
                            executionPlanBuilder: ExecutablePlanBuilder,
                            createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
   extends PatternGraphBuilder {

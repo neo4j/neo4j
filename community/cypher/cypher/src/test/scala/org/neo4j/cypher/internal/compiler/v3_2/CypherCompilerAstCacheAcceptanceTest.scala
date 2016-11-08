@@ -41,7 +41,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                      clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance) = {
 
     CypherCompilerFactory.costBasedCompiler(
-      graph,
       CypherCompilerConfiguration(
         queryCacheSize,
         statsDivergenceThreshold,

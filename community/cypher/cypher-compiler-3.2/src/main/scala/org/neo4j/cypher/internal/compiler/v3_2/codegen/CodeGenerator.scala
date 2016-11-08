@@ -42,12 +42,12 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], conf: CodeGenC
   type PlanDescriptionProvider =
           (InternalPlanDescription) => (Provider[InternalPlanDescription], Option[QueryExecutionTracer])
 
-  def generate(plan: LogicalPlan, planContext: PlanContext, semanticTable: SemanticTable, plannerName: PlannerName) = {
+  def generate(plan: LogicalPlan, planContext: PlanContext, semanticTable: SemanticTable, plannerName: PlannerName): CompiledPlan = {
     plan match {
       case res: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
 
-        val query = generateQuery(plan, semanticTable, idMap, res.columns, conf)
+        val query: CodeStructureResult[GeneratedQuery] = generateQuery(plan, semanticTable, idMap, res.columns, conf)
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
