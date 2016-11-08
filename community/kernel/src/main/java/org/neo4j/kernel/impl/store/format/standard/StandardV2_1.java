@@ -41,14 +41,8 @@ public class StandardV2_1 extends BaseRecordFormats
 
     public StandardV2_1()
     {
-        super( STORE_VERSION, 3, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_3,
-                Capability.VERSION_TRAILERS );
-    }
-
-    @Override
-    public String neo4jVersion()
-    {
-        return "2.1.0";
+        super( STORE_VERSION, StoreVersion.STANDARD_V2_1.firstNeo4jVersion(), 3, Capability.SCHEMA,
+                Capability.DENSE_NODES, Capability.LUCENE_3, Capability.VERSION_TRAILERS );
     }
 
     @Override

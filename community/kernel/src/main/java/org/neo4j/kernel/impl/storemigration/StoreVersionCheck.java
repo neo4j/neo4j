@@ -63,21 +63,12 @@ public class StoreVersionCheck
             return new Result( Outcome.missingStoreFile, null, neostoreFile.getName() );
         }
 
-        if ( storeVersion.isPresent() )
-        {
-            if ( expectedVersion.equals( storeVersion.get() ) )
-            {
-                return new Result( Outcome.ok, null, neostoreFile.getName() );
-            }
-            else
-            {
-                return new Result( Outcome.unexpectedStoreVersion, storeVersion.get(), neostoreFile.getName() );
-            }
-        }
-        else
-        {
-            return new Result( Outcome.storeVersionNotFound, null, neostoreFile.getName() );
-        }
+        return storeVersion
+                .map( v ->
+                        expectedVersion.equals( v ) ?
+                        new Result( Outcome.ok, null, neostoreFile.getName() ) :
+                        new Result( Outcome.unexpectedStoreVersion, v, neostoreFile.getName() ) )
+                .orElse( new Result( Outcome.storeVersionNotFound, null, neostoreFile.getName() ) );
     }
 
     public static class Result

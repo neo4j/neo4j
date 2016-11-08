@@ -42,13 +42,8 @@ public class StandardV3_0 extends BaseRecordFormats
 
     public StandardV3_0()
     {
-        super( STORE_VERSION, 6, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_5 );
-    }
-
-    @Override
-    public String neo4jVersion()
-    {
-        return "3.0.0";
+        super( STORE_VERSION, StoreVersion.STANDARD_V3_0.firstNeo4jVersion(), 6, Capability.SCHEMA,
+                Capability.DENSE_NODES, Capability.LUCENE_5 );
     }
 
     @Override

@@ -19,27 +19,29 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.function.Consumer;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
 public class VersionCommandEnterpriseTest
@@ -48,31 +50,25 @@ public class VersionCommandEnterpriseTest
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public ExpectedException expected = ExpectedException.none();
+    @Rule
+    public DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
 
     private Path databaseDirectory;
-    private ByteArrayOutputStream baos;
+    private ArgumentCaptor<String> outCaptor;
     private VersionCommand command;
-    private DefaultFileSystemAbstraction fs;
-    private PageCache pageCache;
+    private Consumer<String> out;
 
     @Before
     public void setUp() throws Exception
     {
-        fs = new DefaultFileSystemAbstraction();
-        pageCache = StandalonePageCacheFactory.createPageCache( fs );
         Path homeDir = testDirectory.directory( "home-dir" ).toPath();
         databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
-        baos = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( baos );
-        command = new VersionCommand( printStream::println );
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        baos.close();
-        pageCache.close();
+        outCaptor = ArgumentCaptor.forClass( String.class );
+        out = mock( Consumer.class );
+        command = new VersionCommand( out );
     }
 
     @Test
@@ -82,11 +78,14 @@ public class VersionCommandEnterpriseTest
 
         execute( databaseDirectory.toString() );
 
+        verify( out, times( 3 ) ).accept( outCaptor.capture() );
+
         assertEquals(
-                String.format( "Store version:      vE.H.0%n" +
-                        "Introduced in:      3.0.0%n" +
-                        "Superceded in:      3.0.6%n" ),
-                baos.toString() );
+                Arrays.asList(
+                        "Store version:      vE.H.0",
+                        "Introduced in:      3.0.0",
+                        "Superseded in:      3.0.6" ),
+                outCaptor.getAllValues() );
     }
 
     private void execute( String storePath ) throws Exception
@@ -98,14 +97,14 @@ public class VersionCommandEnterpriseTest
     {
         File neoStoreFile = createNeoStoreFile();
         long value = MetaDataStore.versionStringToLong( storeVersion );
-        MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value );
+        MetaDataStore.setRecord( pageCacheRule.getPageCache( fsRule.get() ), neoStoreFile, STORE_VERSION, value );
     }
 
     private File createNeoStoreFile() throws IOException
     {
-        fs.mkdir( databaseDirectory.toFile() );
+        fsRule.get().mkdir( databaseDirectory.toFile() );
         File neoStoreFile = new File( databaseDirectory.toFile(), MetaDataStore.DEFAULT_NAME );
-        fs.create( neoStoreFile ).close();
+        fsRule.get().create( neoStoreFile ).close();
         return neoStoreFile;
     }
 }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -32,21 +32,24 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.internal.Version;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.matches;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
 public class VersionCommandTest
@@ -55,31 +58,26 @@ public class VersionCommandTest
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public ExpectedException expected = ExpectedException.none();
+    @Rule
+    public DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
 
     private Path databaseDirectory;
-    private ByteArrayOutputStream baos;
+    private ArgumentCaptor<String> outCaptor;
     private VersionCommand command;
-    private DefaultFileSystemAbstraction fs;
-    private PageCache pageCache;
+    private Consumer<String> out;
 
     @Before
     public void setUp() throws Exception
     {
-        fs = new DefaultFileSystemAbstraction();
-        pageCache = StandalonePageCacheFactory.createPageCache( fs );
         Path homeDir = testDirectory.directory( "home-dir" ).toPath();
         databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
-        baos = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( baos );
-        command = new VersionCommand( printStream::println );
-    }
 
-    @After
-    public void tearDown() throws Exception
-    {
-        baos.close();
-        pageCache.close();
+        outCaptor = ArgumentCaptor.forClass( String.class );
+        out = mock( Consumer.class );
+        command = new VersionCommand( out );
     }
 
     @Test
@@ -124,7 +122,7 @@ public class VersionCommandTest
     public void nonExistingDatabaseShouldThrow() throws Exception
     {
         expected.expect( IllegalArgumentException.class );
-        expected.expectMessage( matches( "Directory '.+?' does not contain a database" ) );
+        expected.expectMessage( "does not contain a database" );
 
         execute( Paths.get( "yaba", "daba", "doo" ).toString() );
     }
@@ -137,12 +135,14 @@ public class VersionCommandTest
 
         execute( databaseDirectory.toString() );
 
+        verify( out, times( 3 ) ).accept( outCaptor.capture() );
+
         assertEquals(
-                String.format( "Store version:      %s%n" +
-                                "Introduced in:      %s%n",
-                        currentFormat.storeVersion(),
-                        currentFormat.neo4jVersion() ),
-                baos.toString() );
+                Arrays.asList(
+                        String.format( "Store version:      %s", currentFormat.storeVersion() ),
+                        String.format( "Introduced in:      %s", currentFormat.firstNeo4jVersion() ),
+                        String.format( "Used in:            %s (current)", Version.getNeo4jVersion() ) ),
+                outCaptor.getAllValues() );
     }
 
     @Test
@@ -152,11 +152,14 @@ public class VersionCommandTest
 
         execute( databaseDirectory.toString() );
 
+        verify( out, times( 3 ) ).accept( outCaptor.capture() );
+
         assertEquals(
-                String.format( "Store version:      v0.A.5%n" +
-                        "Introduced in:      2.2.0%n" +
-                        "Superceded in:      2.3.0%n" ),
-                baos.toString() );
+                Arrays.asList(
+                        "Store version:      v0.A.5",
+                        "Introduced in:      2.2.0",
+                        "Superseded in:      2.3.0" ),
+                outCaptor.getAllValues() );
     }
 
     @Test
@@ -179,14 +182,14 @@ public class VersionCommandTest
     {
         File neoStoreFile = createNeoStoreFile();
         long value = MetaDataStore.versionStringToLong( storeVersion );
-        MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value );
+        MetaDataStore.setRecord( pageCacheRule.getPageCache( fsRule.get() ), neoStoreFile, STORE_VERSION, value );
     }
 
     private File createNeoStoreFile() throws IOException
     {
-        fs.mkdir( databaseDirectory.toFile() );
+        fsRule.get().mkdir( databaseDirectory.toFile() );
         File neoStoreFile = new File( databaseDirectory.toFile(), MetaDataStore.DEFAULT_NAME );
-        fs.create( neoStoreFile ).close();
+        fsRule.get().create( neoStoreFile ).close();
         return neoStoreFile;
     }
 }

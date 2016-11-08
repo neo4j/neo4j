@@ -21,7 +21,6 @@ package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.kernel.internal.Version;
 
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
 
@@ -100,19 +100,19 @@ public class VersionCommand implements AdminCommand
             final String storeVersion = new StoreVersionCheck( pageCache )
                     .getVersion( storeDir.resolve( MetaDataStore.DEFAULT_NAME ).toFile() )
                     .orElseThrow(
-                            () -> new CommandFailed( String.format( "Could not find a version in '%s'", storeDir ) ) );
+                            () -> new CommandFailed( String.format( "Could not find version metadata in store '%s'",
+                                    storeDir ) ) );
 
             final String fmt = "%-20s%s";
             out.accept( String.format( fmt, "Store version:", storeVersion ) );
 
             RecordFormats format = RecordFormatSelector.selectForVersion( storeVersion );
-            out.accept( String.format( fmt, "Introduced in:", format.neo4jVersion() ) );
+            out.accept( String.format( fmt, "Introduced in:", format.firstNeo4jVersion() ) );
 
-            Optional<RecordFormats> nextFormat = findSuccessor( format );
-            if ( nextFormat.isPresent() )
-            {
-                out.accept( String.format( fmt, "Superceded in:", nextFormat.get().neo4jVersion() ) );
-            }
+            out.accept(
+                    findSuccessor( format )
+                            .map( next -> String.format( fmt, "Superseded in:", next.firstNeo4jVersion() ) )
+                            .orElse( String.format( fmt, "Used in:", Version.getNeo4jVersion() + " (current)" ) ) );
         }
         catch ( IOException e )
         {

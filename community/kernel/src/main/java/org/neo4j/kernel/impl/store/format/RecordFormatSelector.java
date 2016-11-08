@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.format;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -272,22 +273,10 @@ public class RecordFormatSelector
     @Nonnull
     public static Optional<RecordFormats> findSuccessor( @Nonnull final RecordFormats format )
     {
-        RecordFormats successor = null;
-
-        for ( RecordFormats candidate : RecordFormatSelector.allFormats() )
-        {
-            if ( !( FormatFamily.isSameFamily( format, candidate ) ) ||
-                    candidate.generation() <= format.generation() )
-            {
-                continue;
-            }
-            if ( successor == null || candidate.generation() < successor.generation() )
-            {
-                successor = candidate;
-            }
-        }
-
-        return Optional.ofNullable( successor );
+        return StreamSupport.stream( RecordFormatSelector.allFormats().spliterator(), false )
+                .filter( candidate -> FormatFamily.isSameFamily( format, candidate ) )
+                .filter( candidate -> candidate.generation() > format.generation() )
+                .reduce( ( a, b ) -> a.generation() < b.generation() ? a : b );
     }
 
     @Nonnull

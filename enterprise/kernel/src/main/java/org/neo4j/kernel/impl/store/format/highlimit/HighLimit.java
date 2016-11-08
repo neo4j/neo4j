@@ -56,14 +56,8 @@ public class HighLimit extends BaseRecordFormats
 
     public HighLimit()
     {
-        super( STORE_VERSION, 3, Capability.DENSE_NODES, Capability.RELATIONSHIP_TYPE_3BYTES, Capability.SCHEMA,
-                Capability.LUCENE_5 );
-    }
-
-    @Override
-    public String neo4jVersion()
-    {
-        return "3.1.0";
+        super( STORE_VERSION, StoreVersion.HIGH_LIMIT_V3_1_0.firstNeo4jVersion(), 3, Capability.DENSE_NODES,
+                Capability.RELATIONSHIP_TYPE_3BYTES, Capability.SCHEMA, Capability.LUCENE_5 );
     }
 
     @Override
