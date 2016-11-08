@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
@@ -43,7 +44,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS;
+import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
 public class StoreFetcherTest
 {
@@ -54,7 +55,7 @@ public class StoreFetcherTest
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         TxPullClient txPullClient = mock( TxPullClient.class );
-        when( txPullClient.pullTransactions( any(), any(), anyLong(), any() ) ).thenReturn( SUCCESS );
+        when( txPullClient.pullTransactions( any(), any(), anyLong(), any() ) ).thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13) );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         StoreFetcher fetcher = new StoreFetcher( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
@@ -83,7 +84,7 @@ public class StoreFetcherTest
 
         TxPullClient txPullClient = mock( TxPullClient.class );
         when( txPullClient.pullTransactions( eq( localhost ), eq( wantedStoreId ), anyLong(), any( TxPullResponseListener.class ) ) )
-                .thenReturn( SUCCESS );
+                .thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13) );
 
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 

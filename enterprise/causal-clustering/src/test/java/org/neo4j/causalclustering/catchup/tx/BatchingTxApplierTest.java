@@ -39,8 +39,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -78,18 +77,7 @@ public class BatchingTxApplierTest
     @Test
     public void shouldHaveCorrectDefaults() throws Throwable
     {
-        assertEquals( startTxId, txApplier.lastAppliedTxId() );
-        assertFalse( txApplier.workPending() );
-    }
-
-    @Test
-    public void shouldHaveWorkPendingAfterItHasBeenQueued() throws Exception
-    {
-        // when
-        txApplier.queue( createTxWithId( startTxId + 1 ) );
-
-        // then
-        assertTrue( txApplier.workPending() );
+        assertEquals( startTxId, txApplier.lastQueuedTxId() );
     }
 
     @Test
@@ -101,11 +89,10 @@ public class BatchingTxApplierTest
         txApplier.queue( createTxWithId( startTxId + 3 ) );
 
         // when
-        txApplier.run();
+        txApplier.applyBatch();
 
         // then
-        assertFalse( txApplier.workPending() );
-        assertEquals( startTxId + 3, txApplier.lastAppliedTxId() );
+        assertEquals( startTxId + 3, txApplier.lastQueuedTxId() );
         assertTransactionsCommitted( startTxId + 1, 3 );
     }
 
@@ -126,7 +113,7 @@ public class BatchingTxApplierTest
         txApplier.queue( createTxWithId( startTxId + 6 ) ); // ignored
 
         // when
-        txApplier.run();
+        txApplier.applyBatch();
 
         // then
         assertTransactionsCommitted( startTxId + 1, 4 );
@@ -143,7 +130,7 @@ public class BatchingTxApplierTest
         }
 
         // when
-        txApplier.run();
+        txApplier.applyBatch();
 
         // then
         assertTransactionsCommitted( startTxId + 1, maxBatchSize );
@@ -157,7 +144,7 @@ public class BatchingTxApplierTest
         txApplier.queue( createTxWithId( startTxId + 1 ) );
 
         // when
-        txApplier.run();
+        txApplier.applyBatch();
 
         // then
         verify( dbHealth ).panic( any() );

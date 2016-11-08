@@ -182,11 +182,16 @@ public class CausalClusteringSettings
     public static final Setting<Long> unknown_address_logging_throttle =
             setting( "causal_clustering.unknown_address_logging_throttle", DURATION, "10000ms" );
 
+    @Description("Maximum number of transactions to send in response to a TX pull request.")
+    @Internal
+    public static final Setting<Integer> tx_pull_batch_size =
+            setting( "causal_clustering.tx_pull_batch_size", INTEGER, "64" );
+
     @Description( "Maximum transaction batch size for read replicas when applying transactions pulled from core " +
             "servers." )
     @Internal
     public static Setting<Integer> read_replica_transaction_applier_batch_size =
-            setting( "causal_clustering.read_replica_transaction_applier_batch_size", INTEGER, "16" );
+            setting( "causal_clustering.read_replica_transaction_applier_batch_size", INTEGER, "64" );
 
     @Description( "Time To Live before read replica is considered unavailable" )
     public static final Setting<Long> read_replica_time_to_live =
