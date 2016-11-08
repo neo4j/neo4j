@@ -262,9 +262,7 @@ class BackupService
         }
         catch ( RuntimeException e )
         {
-            Throwable cause = e.getCause() == null ? e : rootCause( e );
-
-            if ( cause instanceof UpgradeNotAllowedByConfigurationException )
+            if ( rootCause( e ) instanceof UpgradeNotAllowedByConfigurationException )
             {
                 throw new UnexpectedStoreVersionException( "Failed to perform backup because existing backup is from " +
                         "a different version.", e );
