@@ -482,15 +482,15 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void shouldPutAndGetByteWiseShort() throws Exception
+    public void shouldPutAndGetByteWiseLittleEndianShort() throws Exception
     {
         // GIVEN
         long p = UnsafeUtil.allocateMemory( 2 );
         short value = (short) 0b11001100_10101010;
 
         // WHEN
-        UnsafeUtil.putShortByteWise( p, value );
-        short readValue = UnsafeUtil.getShortByteWise( p );
+        UnsafeUtil.putShortByteWiseLittleEndian( p, value );
+        short readValue = UnsafeUtil.getShortByteWiseLittleEndian( p );
 
         // THEN
         UnsafeUtil.free( p );
@@ -498,15 +498,15 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void shouldPutAndGetByteWiseInt() throws Exception
+    public void shouldPutAndGetByteWiseLittleEndianInt() throws Exception
     {
         // GIVEN
         long p = UnsafeUtil.allocateMemory( 4 );
         int value = 0b11001100_10101010_10011001_01100110;
 
         // WHEN
-        UnsafeUtil.putIntByteWise( p, value );
-        int readValue = UnsafeUtil.getIntByteWise( p );
+        UnsafeUtil.putIntByteWiseLittleEndian( p, value );
+        int readValue = UnsafeUtil.getIntByteWiseLittleEndian( p );
 
         // THEN
         UnsafeUtil.free( p );
@@ -514,15 +514,15 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void shouldPutAndGetByteWiseLong() throws Exception
+    public void shouldPutAndGetByteWiseLittleEndianLong() throws Exception
     {
         // GIVEN
         long p = UnsafeUtil.allocateMemory( 8 );
         long value = 0b11001100_10101010_10011001_01100110__10001000_01000100_00100010_00010001L;
 
         // WHEN
-        UnsafeUtil.putLongByteWise( p, value );
-        long readValue = UnsafeUtil.getLongByteWise( p );
+        UnsafeUtil.putLongByteWiseLittleEndian( p, value );
+        long readValue = UnsafeUtil.getLongByteWiseLittleEndian( p );
 
         // THEN
         UnsafeUtil.free( p );
