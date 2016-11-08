@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
@@ -66,7 +65,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val predicate1 = Equals(literalInt(10), literalInt(10))(pos)
     val predicate2 = Equals(literalInt(30), literalInt(10))(pos)
 
-    val selections = Selections.from(predicate1, predicate2)
+    val selections = Selections.from(Seq(predicate1, predicate2))
     val inner: LogicalPlan = newMockedLogicalPlanWithProjections("x")
 
     val qg = QueryGraph(selections = selections)

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{HasLabels, In, LabelName, MapExpression, Property, PropertyKeyName, RelTypeName, SignedDecimalIntegerLiteral, Variable}
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{DummyPosition, SemanticDirection}
 
@@ -72,9 +72,9 @@ class UpdateGraphTest extends CypherFunSuite {
 
   test("no overlap when properties don't overlap even though labels explicitly do") {
     //MATCH (a:L {foo: 42}) CREATE (a:L)
-    val selections = Selections.from(
+    val selections = Selections.from(Seq(
       In(Variable("a")(pos),Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
-      HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos))
+      HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)))
     val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
     val ug = QueryGraph(mutatingPatterns = Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
 
