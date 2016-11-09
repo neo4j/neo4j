@@ -25,6 +25,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.consistency.statistics.AccessStatistics;
@@ -84,7 +85,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
 {
@@ -104,6 +104,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private long arrayPropId;
     private int relTypeId;
     private int propKeyId;
+    private DefaultFileSystemAbstraction fileSystem;
 
     /**
      * Record format used to generate initial database.
@@ -121,6 +122,23 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         this( false, formatName );
     }
 
+    @Override
+    protected void after( boolean success )
+    {
+        super.after( success );
+        if (fileSystem != null)
+        {
+            try
+            {
+                fileSystem.close();
+            }
+            catch ( IOException e )
+            {
+                throw new AssertionError( "Failed to stop file system after test", e );
+            }
+        }
+    }
+
     public void apply( Transaction transaction ) throws TransactionFailureException
     {
         applyTransaction( transaction );
@@ -130,7 +148,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     {
         if ( directStoreAccess == null )
         {
-            DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+            fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             LogProvider logProvider = NullLogProvider.getInstance();
             StoreFactory storeFactory = new StoreFactory( directory, pageCache, fileSystem, logProvider );

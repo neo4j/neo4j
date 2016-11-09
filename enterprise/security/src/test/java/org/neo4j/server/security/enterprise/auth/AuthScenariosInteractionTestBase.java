@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.DoubleLatch;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -763,8 +764,9 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         void load() throws IOException
         {
             File securityLog = new File( AuthScenariosInteractionTestBase.this.securityLog.getAbsolutePath() );
-            try ( BufferedReader bufferedReader = new BufferedReader(
-                    neo.fileSystem().openAsReader( securityLog, Charsets.UTF_8 ) ) )
+            try ( FileSystemAbstraction fileSystem = neo.fileSystem();
+                  BufferedReader bufferedReader = new BufferedReader(
+                            fileSystem.openAsReader( securityLog, Charsets.UTF_8 ) ) )
             {
                 lines = bufferedReader.lines().collect( java.util.stream.Collectors.toList() );
             }

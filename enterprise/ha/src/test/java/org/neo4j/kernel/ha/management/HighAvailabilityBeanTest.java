@@ -78,28 +78,18 @@ public class HighAvailabilityBeanTest
     private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
     private final ClusterDatabaseInfoProvider dbInfoProvider =
             new ClusterDatabaseInfoProvider( clusterMembers, lastTxIdGetter, lastUpdateTime );
-    private DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    private final KernelData kerneData = new HighlyAvailableKernelData( db, clusterMembers, dbInfoProvider,
-            fileSystem, null, new File( "storeDir" ), Config.empty() )
-    {
-        @Override
-        public Version version()
-        {
-            return Version.getKernel();
-        }
-
-        @Override
-        public GraphDatabaseAPI graphDatabase()
-        {
-            return db;
-        }
-    };
-    private final ManagementData data = new ManagementData( bean, kerneData, ManagementSupport.load() );
+    private DefaultFileSystemAbstraction fileSystem;
+    private KernelData kernelData;
+    private ManagementData data;
     private HighAvailability haBean;
 
     @Before
     public void setup() throws NotCompliantMBeanException
     {
+        fileSystem = new DefaultFileSystemAbstraction();
+        kernelData = new TestHighlyAvailableKernelData();
+        data = new ManagementData( bean, kernelData, ManagementSupport.load() );
+
         when( db.getDependencyResolver() ).thenReturn( dependencies );
         haBean = (HighAvailability) new HighAvailabilityBean().createMBean( data );
     }
@@ -107,6 +97,7 @@ public class HighAvailabilityBeanTest
     @After
     public void tearDown() throws IOException
     {
+        kernelData.shutdown();
         fileSystem.close();
     }
 
@@ -325,5 +316,27 @@ public class HighAvailabilityBeanTest
         fail( "Couldn't find cluster member with cluster URI port " + instanceId + " among " + Arrays.toString(
                 members ) );
         return null; // it will never get here.
+    }
+
+    private class TestHighlyAvailableKernelData extends HighlyAvailableKernelData
+    {
+        TestHighlyAvailableKernelData()
+        {
+            super( HighAvailabilityBeanTest.this.db, HighAvailabilityBeanTest.this.clusterMembers,
+                    HighAvailabilityBeanTest.this.dbInfoProvider, HighAvailabilityBeanTest.this.fileSystem, null,
+                    new File( "storeDir" ), Config.empty() );
+        }
+
+        @Override
+        public Version version()
+        {
+            return Version.getKernel();
+        }
+
+        @Override
+        public GraphDatabaseAPI graphDatabase()
+        {
+            return db;
+        }
     }
 }

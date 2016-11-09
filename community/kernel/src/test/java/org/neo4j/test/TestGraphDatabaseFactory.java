@@ -47,12 +47,11 @@ import org.neo4j.logging.NullLogProvider;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
+
 /**
  * Test factory for graph databases.
- * Please be aware that since it's a database it will close filesystem as part of it lifecycle
- * a real database.
- * If you expect your file system to be open in the end use {@link UncloseableDelegatingFileSystemAbstraction}
- *
+ * Please be aware that since it's a database it will close filesystem as part of its lifecycle.
+ * If you expect your file system to be open after database is closed, use {@link UncloseableDelegatingFileSystemAbstraction}
  */
 public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
