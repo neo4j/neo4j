@@ -129,4 +129,13 @@ public interface PageSwapperFactory
      * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
     Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
+
+    /**
+     * Close and release any resources associated with this PageSwapperFactory, that it may have opened or acquired
+     * during its construction or use.
+     * <p>
+     * This method cannot be called before all of the opened {@link PageSwapper PageSwappers} have been closed,
+     * and it is guaranteed that no new page swappers will be created after this method has been called.
+     */
+    void close();
 }

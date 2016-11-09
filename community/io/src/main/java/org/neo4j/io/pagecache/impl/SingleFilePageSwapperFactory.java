@@ -83,6 +83,12 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         return streamFilesRecursive( directory.getCanonicalFile(), fs );
     }
 
+    @Override
+    public void close()
+    {
+        // We have nothing to close
+    }
+
     /**
      * Static implementation of {@link SingleFilePageSwapperFactory#streamFilesRecursive(File)} that does not require
      * any external state, other than what is presented through the given {@link FileSystemAbstraction}.
