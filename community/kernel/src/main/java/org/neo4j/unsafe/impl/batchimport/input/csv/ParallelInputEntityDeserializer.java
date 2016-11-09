@@ -24,7 +24,6 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
@@ -66,7 +65,6 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     private final TicketedProcessing<CharSeeker,Header,ENTITY[]> processing;
     private final ContinuableArrayCursor<ENTITY> cursor;
     private SourceTraceability last = SourceTraceability.EMPTY;
-    private final Future<Void> processingCompletion;
 
     @SuppressWarnings( "unchecked" )
     public ParallelInputEntityDeserializer( Data<ENTITY> data, Header.Factory headerFactory, Configuration config,
@@ -121,7 +119,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             cursor = new ContinuableArrayCursor<>( batchSupplier );
 
             // Start an asynchronous slurp of the chunks fed directly into the processors
-            processingCompletion = processing.slurp( seekers( firstSeeker, source, config ), true );
+            processing.slurp( seekers( firstSeeker, source, config ), true );
         }
         catch ( IOException e )
         {
@@ -262,14 +260,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     @Override
     public void close()
     {
-        if ( processingCompletion.isDone() )
-        {
-            processing.shutdown();
-        }
-        else
-        {
-            processing.panic( new IllegalStateException( "Processing not completed when closing, indicating panic" ) );
-        }
+        processing.shutdown( true );
         try
         {
             source.close();

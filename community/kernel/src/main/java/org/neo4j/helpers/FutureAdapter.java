@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -160,12 +159,7 @@ public abstract class FutureAdapter<V> implements Future<V>
 
     public static <T> Future<T> future( final Callable<T> task )
     {
-        return future( task, Executors.defaultThreadFactory() );
-    }
-
-    public static <T> Future<T> future( final Callable<T> task, ThreadFactory factory )
-    {
-        ExecutorService executor = Executors.newSingleThreadExecutor( factory );
+        ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<T> future = executor.submit( task );
         executor.shutdown();
         return future;

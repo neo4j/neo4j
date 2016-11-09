@@ -32,6 +32,9 @@ import org.neo4j.unsafe.impl.batchimport.Parallelizable;
  */
 public interface TaskExecutor<LOCAL> extends Parallelizable
 {
+    int SF_AWAIT_ALL_COMPLETED = 0x1;
+    int SF_ABORT_QUEUED = 0x2;
+
     /**
      * Submits a task to be executed by one of the processors in this {@link TaskExecutor}. Tasks will be
      * executed in the order of which they arrive.
@@ -43,23 +46,14 @@ public interface TaskExecutor<LOCAL> extends Parallelizable
     /**
      * Shuts down this {@link TaskExecutor}, disallowing new tasks to be {@link #submit(Task) submitted}.
      *
-     * submitted tasks will be processed before returning from this method.
+     * @param flags {@link #SF_AWAIT_ALL_COMPLETED} will wait for all queued or already executing tasks to be
+     * executed and completed, before returning from this method. {@link #SF_ABORT_QUEUED} will have
+     * submitted tasks which haven't started executing yet cancelled, never to be executed.
      */
-    void shutdown();
+    void shutdown( int flags );
 
     /**
-     * Puts this executor into panic mode. Call to {@link #shutdown()} has no effect after a panic.
-     * Call to {@link #assertHealthy()} will communicate the panic as well.
-     * This semantically includes something like a shutdown, but submitted tasks which haven't started
-     * being processed will be aborted and currently processing tasks will not be awaited for completion.
-     *
-     * @param panic cause of panic.
-     */
-    void panic( Throwable panic );
-
-    /**
-     * @return {@code true} if {@link #shutdown()} or {@link #panic(Throwable)} has been called,
-     * otherwise {@code false}.
+     * @return {@code true} if {@link #shutdown(int)} has been called, otherwise {@code false}.
      */
     boolean isShutdown();
 
@@ -67,8 +61,8 @@ public interface TaskExecutor<LOCAL> extends Parallelizable
      * Asserts that this {@link TaskExecutor} is healthy. Useful to call when deciding to wait on a condition
      * this executor is expected to fulfill.
      *
-     * @throws RuntimeException of some sort if this executor is in a bad state, containing the original error,
-     * if any, that made this executor fail.
+     * @throws RuntimeException of some sort if this executor is in a bad stage, the original error that
+     * made this executor fail.
      */
     void assertHealthy();
 }
