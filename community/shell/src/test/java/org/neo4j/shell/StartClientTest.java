@@ -36,13 +36,13 @@ import org.junit.Test;
 import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -99,7 +99,7 @@ public class StartClientTest
     }
 
     @Test
-    public void givenShellClientWhenReadFromStdinThenExecutePipedCommands() throws IOException
+    public void givenShellClientWhenReadFromStdinThenExecutePipedCommands()
     {
         // Given
         // an empty database
@@ -162,7 +162,7 @@ public class StartClientTest
                 .thenReturn( new Welcome( StringUtils.EMPTY, 1, StringUtils.EMPTY ) );
         when( databaseShellServer.interpretLine( any( Serializable.class ), any( String.class ), any( Output.class ) ) )
                 .thenReturn( new Response( StringUtils.EMPTY, Continuation.INPUT_COMPLETE ) );
-        StartClient startClient = new StartClient( out, err )
+        StartClient startClient = new StartClient( out, err, new TestGraphDatabaseFactory() )
         {
             @Override
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly, String configFile ) throws RemoteException
@@ -187,7 +187,7 @@ public class StartClientTest
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         CtrlCHandler ctrlCHandler = mock( CtrlCHandler.class );
         StartClient client = new StartClient(
-                new PrintStream( out ), new PrintStream( err ) );
+                new PrintStream( out ), new PrintStream( err ), new TestGraphDatabaseFactory() );
 
         // when
         client.start( new String[]{"-path", db.getGraphDatabaseAPI().getStoreDir(),
@@ -218,20 +218,20 @@ public class StartClientTest
     }
 
     @Test
-    public void shouldNotStartBolt() throws IOException
+    public void shouldNotStartBolt()
     {
         // Given
         AssertableLogProvider log = new AssertableLogProvider();
 
         // When
-        new StartClient( System.out, System.err )
+        new StartClient( System.out, System.err, new TestGraphDatabaseFactory() )
         {
             @Override
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly, String
                     configFile ) throws RemoteException
             {
                 return new GraphDatabaseShellServer(
-                        new GraphDatabaseFactory().setUserLogProvider( log ), path, readOnly, configFile );
+                        new TestGraphDatabaseFactory().setUserLogProvider( log ), path, readOnly, configFile );
             }
         }.start( new String[]{
                         "-c", "RETURN 1;",

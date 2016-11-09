@@ -48,6 +48,7 @@ import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
@@ -1303,7 +1304,7 @@ public class TestApps extends AbstractShellTest
 
     private StartClient getStartClient()
     {
-        return new StartClient( System.out, System.err )
+        return new StartClient( System.out, System.err, new TestGraphDatabaseFactory() )
         {
             @Override
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
@@ -1319,7 +1320,7 @@ public class TestApps extends AbstractShellTest
         return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
     }
 
-    private String createCsvFile( long size ) throws IOException, InterruptedException
+    private String createCsvFile( long size ) throws IOException
     {
         File tmpFile = File.createTempFile( "data", ".csv", null );
         tmpFile.deleteOnExit();

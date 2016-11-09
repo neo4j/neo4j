@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
+import org.neo4j.test.ConfigForTesting;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -77,7 +77,7 @@ public class PartialTransactionFailureIT
         adversary.disable();
 
         File storeDir = dir.graphDbDir();
-        final Map<String,String> params = stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        final Map<String,String> params = stringMap( ConfigForTesting.TEST_DEFAULTS.getParams() );
         final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, params )
         {
             @Override

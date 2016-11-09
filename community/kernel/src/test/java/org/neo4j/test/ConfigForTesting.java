@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.test;
 
-public class CommunityBootstrapperTest extends BaseBootstrapperTest
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+public class ConfigForTesting
 {
-    @Override
-    protected ServerBootstrapper newBootstrapper()
-    {
-        return new CommunityBootstrapper();
-    }
+    public static final Config TEST_DEFAULTS = Config.defaults().augment( stringMap(
+            GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
 }

@@ -38,8 +38,9 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.test.TargetDirectory;
 
-import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.test.ConfigForTesting.TEST_DEFAULTS;
 
 public class CommitContentionTests
 {
@@ -183,7 +184,7 @@ public class CommitContentionTests
                     }
                 };
             }
-        }.newFacade( storeLocation.graphDbDir(), emptyMap(), state.databaseDependencies() );
+        }.newFacade( storeLocation.graphDbDir(), TEST_DEFAULTS.getParams(), state.databaseDependencies() );
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException

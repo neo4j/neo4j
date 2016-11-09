@@ -23,16 +23,12 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
-
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.ConfigForTesting.TEST_DEFAULTS;
 
 public class StoreAssertions
 {
@@ -42,11 +38,9 @@ public class StoreAssertions
 
     public static void assertConsistentStore( File storeDir ) throws ConsistencyCheckIncompleteException, IOException
     {
-        Config configuration = new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ),
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         AssertableLogProvider logger = new AssertableLogProvider();
         ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                storeDir, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
+                storeDir, TEST_DEFAULTS, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
 
         assertTrue( "Consistency check for " + storeDir + " found inconsistencies:\n\n" + logger.serialize(),
                 result.isSuccessful() );

@@ -25,15 +25,15 @@ import java.io.IOException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class Inserter
 {
     public static void main( String[] args ) throws IOException
     {
         File path = new File( args[0] );
-        final GraphDatabaseService db = new GraphDatabaseFactory()
+        final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( path )
                 .newGraphDatabase();
         final Index<Node> index = getIndex( db );

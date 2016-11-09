@@ -20,12 +20,13 @@
 package org.neo4j.graphdb.factory;
 
 import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 public class EnterpriseDatabaseRule extends EmbeddedDatabaseRule
 {
     @Override
     protected GraphDatabaseFactory newFactory()
     {
-        return new EnterpriseGraphDatabaseFactory();
+        return new TestEnterpriseGraphDatabaseFactory();
     }
 }

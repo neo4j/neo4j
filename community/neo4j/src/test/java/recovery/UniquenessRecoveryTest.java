@@ -40,7 +40,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.collection.Iterables;
@@ -48,6 +47,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Boolean.getBoolean;
 
@@ -292,7 +292,7 @@ public class UniquenessRecoveryTest
 
     private static GraphDatabaseService graphdb( File path )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
     }
 
     private static void flushPageCache( GraphDatabaseService db )

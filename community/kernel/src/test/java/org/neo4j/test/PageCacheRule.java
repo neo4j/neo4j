@@ -20,14 +20,11 @@
 package org.neo4j.test;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -51,9 +48,7 @@ public class PageCacheRule extends ExternalResource
 
     public PageCache getPageCache( FileSystemAbstraction fs )
     {
-        Map<String,String> settings = new HashMap<>();
-        settings.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
-        return getPageCache( fs, new Config( settings ) );
+        return getPageCache( fs, ConfigForTesting.TEST_DEFAULTS );
     }
 
     public PageCache getPageCache( FileSystemAbstraction fs, Config config )

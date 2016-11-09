@@ -32,11 +32,11 @@ import java.nio.file.Files;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertNotNull;
@@ -162,7 +162,7 @@ public class HAClusterStartupIT
             GraphDatabaseService db = null;
             try
             {
-                db = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( seedDir );
+                db = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabase( seedDir );
                 createSomeData( db );
             }
             finally

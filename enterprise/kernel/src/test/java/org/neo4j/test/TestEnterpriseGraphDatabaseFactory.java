@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.enterprise.EnterpriseFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -100,5 +101,12 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
+    }
+
+    @Override
+    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        return new EnterpriseFacadeFactory().newFacade( storeDir, config, dependencies );
     }
 }

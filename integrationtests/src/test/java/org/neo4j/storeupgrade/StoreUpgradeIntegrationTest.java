@@ -187,7 +187,6 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
@@ -249,7 +248,6 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
@@ -321,7 +319,6 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             try
             {
                 builder.newGraphDatabase();

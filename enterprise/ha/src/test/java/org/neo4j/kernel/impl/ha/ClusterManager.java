@@ -92,13 +92,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.test.ConfigForTesting;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
 /**
@@ -135,8 +135,8 @@ public class ClusterManager
     }
 
     public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
-    public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
-            GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+    public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap(
+            ConfigForTesting.TEST_DEFAULTS.getParams() );
 
     public interface StoreDirInitializer
     {

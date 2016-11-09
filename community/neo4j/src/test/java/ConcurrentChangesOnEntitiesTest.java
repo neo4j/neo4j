@@ -35,15 +35,16 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.test.ConfigForTesting.TEST_DEFAULTS;
 
 public class ConcurrentChangesOnEntitiesTest
 {
@@ -56,7 +57,7 @@ public class ConcurrentChangesOnEntitiesTest
     @Before
     public void setup()
     {
-        db = new GraphDatabaseFactory()
+        db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .newGraphDatabase();
     }
@@ -200,7 +201,7 @@ public class ConcurrentChangesOnEntitiesTest
         try
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    testDirectory.graphDbDir(), Config.defaults(), ProgressMonitorFactory.textual( System.err ),
+                    testDirectory.graphDbDir(), TEST_DEFAULTS, ProgressMonitorFactory.textual( System.err ),
                     logProvider, false );
             assertTrue( result.isSuccessful() );
         }

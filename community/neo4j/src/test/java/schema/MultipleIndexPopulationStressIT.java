@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.TimeUtil;
@@ -58,6 +57,7 @@ import org.neo4j.test.RandomRule;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -78,8 +78,8 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
+import static org.neo4j.test.ConfigForTesting.TEST_DEFAULTS;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
@@ -167,17 +167,15 @@ public class MultipleIndexPopulationStressIT
         populateDbAndIndexes( nodeCount, multiThreaded );
         ConsistencyCheckService cc = new ConsistencyCheckService();
         Result result = cc.runFullConsistencyCheck( directory.graphDbDir(),
-                new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
-                NONE, NullLogProvider.getInstance(), false );
+                TEST_DEFAULTS, NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
         dropIndexes();
     }
 
     private void populateDbAndIndexes( int nodeCount, boolean multiThreaded ) throws InterruptedException
     {
-        final GraphDatabaseService db = new GraphDatabaseFactory()
+        final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
                 .setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreaded + "" )
                 .newGraphDatabase();
         try
@@ -212,9 +210,8 @@ public class MultipleIndexPopulationStressIT
 
     private void dropIndexes()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory()
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
                 .newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {

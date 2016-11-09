@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.ConfigForTesting;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -62,8 +63,7 @@ public class CommonAbstractStoreBehaviourTest
      * Note that tests MUST use the non-modifying {@link Config#with(Map, Class[])} method, to make alternate copies
      * of this settings class.
      */
-    private static final Config CONFIG = Config.empty().augment( stringMap(
-            GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
+    private static final Config CONFIG = ConfigForTesting.TEST_DEFAULTS;
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();

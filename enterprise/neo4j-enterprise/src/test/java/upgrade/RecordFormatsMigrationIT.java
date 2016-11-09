@@ -29,7 +29,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -44,14 +43,15 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.ConfigForTesting;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class RecordFormatsMigrationIT
@@ -124,7 +124,7 @@ public class RecordFormatsMigrationIT
 
     private GraphDatabaseService startDb( String recordFormatName )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
                 .newGraphDatabase();
@@ -142,7 +142,7 @@ public class RecordFormatsMigrationIT
 
     private void assertStoreFormat( RecordFormats expected ) throws IOException
     {
-        Config config = new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+        Config config = ConfigForTesting.TEST_DEFAULTS;
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, config ) )
         {
             RecordFormats actual = RecordFormatSelector.selectForStoreOrConfig( config, testDir.graphDbDir(), fs,

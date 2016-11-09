@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.ConfigForTesting;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -179,7 +179,7 @@ public class ConsistencyCheckServiceIntegrationTest
     private GraphDatabaseService getGraphDatabaseService()
     {
         GraphDatabaseBuilder builder =
-                new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.absolutePath() );
+                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.absolutePath() );
         builder.setConfig( settings(  ) );
 
         return builder.newGraphDatabase();
@@ -187,8 +187,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
     protected Map<String,String> settings( String... strings )
     {
-        Map<String, String> defaults = new HashMap<>();
-        defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        Map<String, String> defaults = new HashMap<>( ConfigForTesting.TEST_DEFAULTS.getParams() );
         defaults.put( GraphDatabaseSettings.record_format.name(), getRecordFormatName() );
         return stringMap( defaults, strings );
     }

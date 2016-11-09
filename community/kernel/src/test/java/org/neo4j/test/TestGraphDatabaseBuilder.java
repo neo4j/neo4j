@@ -19,14 +19,18 @@
  */
 package org.neo4j.test;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 public class TestGraphDatabaseBuilder extends GraphDatabaseBuilder
 {
     public TestGraphDatabaseBuilder( DatabaseCreator creator )
     {
         super( creator );
-        super.config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        for ( Map.Entry<String,String> testDefault : ConfigForTesting.TEST_DEFAULTS.getParams().entrySet() )
+        {
+            super.config.put( testDefault.getKey(), testDefault.getValue() );
+        }
     }
 }

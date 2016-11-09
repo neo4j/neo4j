@@ -34,7 +34,9 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -74,6 +76,7 @@ import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationPa
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.ConfigForTesting;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -98,6 +101,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
@@ -108,6 +112,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeChec
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAllFiles;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
+import static org.neo4j.test.ConfigForTesting.TEST_DEFAULTS;
 
 @RunWith(Parameterized.class)
 public class StoreUpgraderTest
@@ -536,7 +541,8 @@ public class StoreUpgraderTest
 
     private Config getTuningConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormatsName() ) );
+        return new Config( stringMap( TEST_DEFAULTS.getParams(), GraphDatabaseSettings.record_format.name(),
+                getRecordFormatsName() ) );
     }
 
     protected RecordFormats getRecordFormats()
