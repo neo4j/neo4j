@@ -63,11 +63,12 @@ public class DiscoveryServiceTest
     {
         Config config = Config.defaults();
 
-        HashMap<String, String> settings = new HashMap<>();
+        HashMap<String,String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
         settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
         settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAddress.toString() );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(),
+                boltAddress.toString() );
         settings.put( ServerSettings.management_api_path.name(), managementUri.toString() );
         settings.put( ServerSettings.rest_api_path.name(), dataUri.toString() );
 
@@ -78,14 +79,13 @@ public class DiscoveryServiceTest
     private DiscoveryService testDiscoveryService() throws URISyntaxException
     {
         Config mockConfig = mockConfig();
-        return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
-                baseUri ), null ) );
+        return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ) );
     }
 
     @Test
     public void shouldReturnValidJSON() throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument();
+        Response response = testDiscoveryService().getDiscoveryDocument( "localhost" );
         String json = new String( (byte[]) response.getEntity() );
 
         assertNotNull( json );
@@ -97,7 +97,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnBoltURI() throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument();
+        Response response = testDiscoveryService().getDiscoveryDocument( "localhost" );
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"bolt\" : \"bolt://" + boltAddress ) );
     }
@@ -105,7 +105,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnDataURI() throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument();
+        Response response = testDiscoveryService().getDiscoveryDocument( "localhost" );
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"data\" : \"" + baseUri + dataUri + "/\"" ) );
     }
@@ -113,7 +113,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnManagementURI() throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument();
+        Response response = testDiscoveryService().getDiscoveryDocument( "localhost" );
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"management\" : \"" + baseUri + managementUri + "/\"" ) );
     }
@@ -123,16 +123,15 @@ public class DiscoveryServiceTest
     {
         Config mockConfig = mock( Config.class );
         URI browserUri = new URI( "/browser/" );
-        when( mockConfig.get( ServerSettings.browser_path ) ).thenReturn(
-                browserUri );
+        when( mockConfig.get( ServerSettings.browser_path ) ).thenReturn( browserUri );
 
         String baseUri = "http://www.example.com:5435";
-        DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
-                baseUri ), null ) );
+        DiscoveryService ds = new DiscoveryService( mockConfig,
+                new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ) );
 
         Response response = ds.redirectToBrowser();
 
-        assertThat( response.getMetadata().getFirst( "Location" ), is( (Object) new URI( "http://www.example" +
-                ".com:5435/browser/" ) ) );
+        assertThat( response.getMetadata().getFirst( "Location" ),
+                is( new URI( "http://www.example" + ".com:5435/browser/" ) ) );
     }
 }

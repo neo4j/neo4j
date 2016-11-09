@@ -76,11 +76,6 @@ abstract class Serializer
         list.done();
     }
 
-    final String relativeBoltUri( int boltPort )
-    {
-        return "bolt://" + baseUri.getHost() + ":" + boltPort;
-    }
-
     final String relativeUri(String path)
     {
         return joinBaseWithRelativePath(baseUri, path);
@@ -109,7 +104,7 @@ abstract class Serializer
         return result.append(path).toString();
     }
 
-    protected void checkThatItIsBuiltInType( Object value )
+    void checkThatItIsBuiltInType( Object value )
     {
         if ( !"java.lang".equals( value.getClass().getPackage().getName() ) )
         {

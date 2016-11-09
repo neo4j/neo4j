@@ -60,12 +60,10 @@ public class BoltIT extends ExclusiveServerTestBase
     public void shouldLaunchBolt() throws Throwable
     {
         // When I run Neo4j with Bolt enabled
-        server = server()
-                .withProperty( boltConnector( "0" ).type.name(), "BOLT" )
+        server = server().withProperty( boltConnector( "0" ).type.name(), "BOLT" )
                 .withProperty( boltConnector( "0" ).enabled.name(), "true" )
                 .withProperty( boltConnector( "0" ).encryption_level.name(), "REQUIRED" )
-                .usingDataDir( tmpDir.getRoot().getAbsolutePath() )
-                .build();
+                .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
 
         // Then
@@ -96,18 +94,57 @@ public class BoltIT extends ExclusiveServerTestBase
 
         // Then
         Map<String,Object> map = JsonHelper.jsonToMap( response.getEntity() );
-        assertThat( String.valueOf( map.get( "bolt" ) ), containsString( "bolt://" + host + ":7687" ) );
+        assertThat( String.valueOf( map.get( "bolt" ) ), containsString( "bolt://" + host ) );
+    }
+
+    @Test
+    public void boltAddressShouldComeFromConfigWhenTheListenConfigIsNotLocalhost() throws Throwable
+    {
+        // Given
+        String host = "neo4j.com";
+
+        startServerWithBoltEnabled( host, 9999, "localhost", 7687 );
+        RestRequest request = new RestRequest( server.baseUri() ).host( host );
+
+        // When
+        JaxRsResponse response = request.get();
+
+        // Then
+        Map<String,Object> map = JsonHelper.jsonToMap( response.getEntity() );
+        assertThat( String.valueOf( map.get( "bolt" ) ), containsString( "bolt://" + host + ":" + 9999 ) );
+    }
+
+    @Test
+    public void boltPortShouldComeFromConfigButHostShouldMatchHttpHostHeaderWhenConfigIsLocalhostOrEmptyEvenThoughThisIsMorallyHazardous()
+            throws Throwable
+    {
+        // Given
+        String host = "neo4j.com";
+        startServerWithBoltEnabled( "localhost", 9999, "localhost", 7687 );
+        RestRequest request = new RestRequest( server.baseUri() ).host( host );
+
+        // When
+        JaxRsResponse response = request.get();
+
+        // Then
+        Map<String,Object> map = JsonHelper.jsonToMap( response.getEntity() );
+        assertThat( String.valueOf( map.get( "bolt" ) ), containsString( "bolt://" + host + ":9999" ) );
     }
 
     private void startServerWithBoltEnabled() throws IOException
     {
-        server = server()
-                .withProperty( boltConnector( "0" ).type.name(), "BOLT" )
+        startServerWithBoltEnabled( "localhost", 7687, "localhost", 7687 );
+    }
+
+    private void startServerWithBoltEnabled( String advertisedHost, int advertisedPort, String listenHost,
+            int listenPort ) throws IOException
+    {
+        server = server().withProperty( boltConnector( "0" ).type.name(), "BOLT" )
                 .withProperty( boltConnector( "0" ).enabled.name(), "true" )
                 .withProperty( boltConnector( "0" ).encryption_level.name(), "REQUIRED" )
-                .withProperty( boltConnector( "0" ).address.name(), "localhost:7687" )
-                .usingDataDir( tmpDir.getRoot().getAbsolutePath() )
-                .build();
+                .withProperty( boltConnector( "0" ).advertised_address.name(), advertisedHost + ":" + advertisedPort )
+                .withProperty( boltConnector( "0" ).listen_address.name(), listenHost + ":" + listenPort )
+                .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
     }
 
@@ -115,7 +152,9 @@ public class BoltIT extends ExclusiveServerTestBase
     {
         SecureSocketConnection conn = new SecureSocketConnection();
         conn.connect( new HostnamePort( host, port ) );
-        conn.send( new byte[]{(byte)0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
-        assertThat( conn.recv( 4 ), equalTo( new byte[]{0, 0, 0, 1} ));
+        conn.send(
+                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0} );
+        assertThat( conn.recv( 4 ), equalTo( new byte[]{0, 0, 0, 1} ) );
     }
 }
