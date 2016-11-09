@@ -25,17 +25,24 @@ import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Random;
 
 import org.neo4j.collection.primitive.Primitive;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
+
+import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 
 @RunWith( Parameterized.class )
 public class BasicTableTest
 {
     private final TableFactory factory;
+
+    private static final long seed = currentTimeMillis();
+    private static final Random random = new Random( seed );
 
     @Parameterized.Parameters
     public static Collection<Object[]> data()
@@ -138,7 +145,7 @@ public class BasicTableTest
             @Override
             public Object sampleValue()
             {
-                return new int[] {4};
+                return new int[] {random.nextInt( Integer.MAX_VALUE )};
             }
         } } );
         result.add( new Object[] { new TableFactory()
@@ -158,7 +165,7 @@ public class BasicTableTest
             @Override
             public Object sampleValue()
             {
-                return new long[] {1458489572354L};
+                return new long[] {Math.abs( random.nextLong() )};
             }
         } } );
         result.add( new Object[] { new TableFactory()
@@ -178,7 +185,7 @@ public class BasicTableTest
             @Override
             public Object sampleValue()
             {
-                return new long[] {1458489572354L};
+                return new long[] {Math.abs( random.nextLong() )};
             }
         } } );
         return result;
