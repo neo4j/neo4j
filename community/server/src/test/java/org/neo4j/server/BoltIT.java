@@ -37,6 +37,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
@@ -95,6 +96,7 @@ public class BoltIT extends ExclusiveServerTestBase
         // Then
         Map<String,Object> map = JsonHelper.jsonToMap( response.getEntity() );
         assertThat( String.valueOf( map.get( "bolt" ) ), containsString( "bolt://" + host ) );
+        assertFalse( String.valueOf( map.get( "bolt" ) ).contains( "bolt://bolt://" ) );
     }
 
     @Test

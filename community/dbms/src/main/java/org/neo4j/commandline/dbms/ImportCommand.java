@@ -147,7 +147,7 @@ public class ImportCommand implements AdminCommand
         public String description()
         {
             return "Import a collection of CSV files with --mode=csv (default), or a database from " +
-            "a pre-3.0 installation with --mode=database.";
+                    "a pre-3.0 installation with --mode=database.";
         }
 
         @Override

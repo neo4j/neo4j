@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.discovery;
 
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
 import javax.ws.rs.GET;
@@ -28,6 +29,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -56,7 +58,7 @@ public class DiscoveryService
 
     @GET
     @Produces( MediaType.APPLICATION_JSON )
-    public Response getDiscoveryDocument( @HeaderParam( "host" ) String host ) throws URISyntaxException
+    public Response getDiscoveryDocument( @Context UriInfo uriInfo ) throws URISyntaxException
     {
         String managementUri = config.get( ServerSettings.management_api_path ).getPath() + "/";
         String dataUri = config.get( ServerSettings.rest_api_path ).getPath() + "/";
@@ -71,7 +73,8 @@ public class DiscoveryService
             {
                 // Use the port specified in the config, but not the host
                 return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri,
-                        fabricateBoltAddress( host, advertisedSocketAddress.getPort() ) ) );
+                        new AdvertisedSocketAddress( uriInfo.getBaseUri().getHost(),
+                                advertisedSocketAddress.getPort() ) ) );
             }
             else
             {
@@ -84,14 +87,9 @@ public class DiscoveryService
         else
         {
             // There's no config, compute possible endpoint using host header and default bolt port.
-            return outputFormat
-                    .ok( new DiscoveryRepresentation( managementUri, dataUri, fabricateBoltAddress( host, 7687 ) ) );
+            return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri,
+                    new AdvertisedSocketAddress( uriInfo.getBaseUri().getHost(), 7687 ) ) );
         }
-    }
-
-    private AdvertisedSocketAddress fabricateBoltAddress( String host, int port )
-    {
-        return new AdvertisedSocketAddress( "bolt://" + host, port );
     }
 
     @GET

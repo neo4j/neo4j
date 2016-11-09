@@ -26,6 +26,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -85,7 +86,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnValidJSON() throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument( "localhost" );
+        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
         String json = new String( (byte[]) response.getEntity() );
 
         assertNotNull( json );
@@ -94,10 +95,18 @@ public class DiscoveryServiceTest
         assertThat( json, is( not( "null" ) ) );
     }
 
+    private UriInfo uriInfo( String host )
+    {
+        URI uri = URI.create( host );
+        UriInfo uriInfo = mock( UriInfo.class );
+        when( uriInfo.getBaseUri() ).thenReturn( uri );
+        return uriInfo;
+    }
+
     @Test
     public void shouldReturnBoltURI() throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument( "localhost" );
+        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"bolt\" : \"bolt://" + boltAddress ) );
     }
@@ -105,7 +114,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnDataURI() throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument( "localhost" );
+        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"data\" : \"" + baseUri + dataUri + "/\"" ) );
     }
@@ -113,7 +122,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnManagementURI() throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument( "localhost" );
+        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"management\" : \"" + baseUri + managementUri + "/\"" ) );
     }
