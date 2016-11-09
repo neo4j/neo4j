@@ -101,8 +101,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
   override def databaseConfig(): Map[Setting[_], String] =
-    Map(GraphDatabaseSettings.cypher_parser_version -> CypherVersion.v3_2.name, //TODO: This should not be specified here
-      GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
+    Map(GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
 
   val newPlannerMonitor = new NewPlannerMonitor
 
@@ -159,12 +158,10 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     } else {
       null
     }
-    val ruleResult = self.executeScalar[T](s"CYPHER planner=rule $queryText", params: _*)
     val idpResult = monitoringNewPlanner(self.executeScalar[T](queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
 
-    assert(ruleResult === idpResult, "Diverging results between rule and cost planners")
     if (enableCompatibility) {
-      assert(compatibilityResult === idpResult, "Diverging results between compatibility mode and cost/rule planners")
+      assert(compatibilityResult === idpResult, "Diverging results between compatibility mode and cost planners")
     }
 
     idpResult
@@ -176,7 +173,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     } else {
       null
     }
-    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
     //run with compiled to find new queries that are able to run with compiled runtime
     //we cannot set it to default at the db-level since we cannot combine compiled and rule
     val idpResult = executeWithCostPlannerOnly(s"CYPHER runtime=compiled $queryText", params: _*)
@@ -184,11 +180,9 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     if (enableCompatibility) {
       assertResultsAreSame(compatibilityResult, idpResult, queryText, "Diverging results between compatibility and current")
     }
-    assertResultsAreSame(ruleResult, idpResult, queryText, "Diverging results between rule and cost planners")
     if (enableCompatibility) {
       compatibilityResult.close()
     }
-    ruleResult.close()
     idpResult
   }
 
@@ -208,26 +202,20 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       } else {
         null
       }
-    val ruleResult = graph.rollback(innerExecute(s"CYPHER planner=rule $queryText", params: _*))
     val eagerCostResult = graph.rollback(innerExecute(s"CYPHER updateStrategy=eager $queryText", params: _*))
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)
     assertResultsAreSame(eagerCostResult, costResult, queryText,
       "Diverging results between eager and non-eager results")
-    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
     if (enableCompatibility) {
       assertResultsAreSame(compatibilityResult, costResult, queryText, "Diverging results between compatibility and current")
     }
 
-    withClue("Diverging statistics between rule and cost planners") {
-      ruleResult.queryStatistics() should equal(costResult.queryStatistics())
-    }
     withClue("Diverging statistics between eager and non-eager results") {
       eagerCostResult.queryStatistics() should equal(costResult.queryStatistics())
     }
     if (enableCompatibility) {
       compatibilityResult.close()
     }
-    ruleResult.close()
     eagerCostResult.close()
     costResult
   }
@@ -240,13 +228,10 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   def executeWithAllPlannersAndCompatibilityModeReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val compatibilityResult = innerExecute(s"CYPHER 2.3 $queryText", params: _*)
-    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
     val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
 
     assertResultsAreSame(compatibilityResult, idpResult, queryText, "Diverging results between compatibility and current", replaceNaNs = true)
-    assertResultsAreSame(ruleResult, idpResult, queryText, "Diverging results between rule and cost planners", replaceNaNs = true)
     compatibilityResult.close()
-    ruleResult.close()
     idpResult
   }
 
@@ -255,15 +240,12 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   def executeWithAllPlannersAndRuntimesAndCompatibilityMode(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val compatibilityResult = innerExecute(s"CYPHER 2.3 $queryText", params: _*)
-    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
     val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
     val compiledResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiled $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
 
     assertResultsAreSame(interpretedResult, compiledResult, queryText, "Diverging results between interpreted and compiled runtime")
     assertResultsAreSame(compatibilityResult, interpretedResult, queryText, "Diverging results between compatibility and current")
-    assertResultsAreSame(ruleResult, interpretedResult, queryText, "Diverging results between rule planner and interpreted runtime")
     compatibilityResult.close()
-    ruleResult.close()
     interpretedResult.close()
     compiledResult
   }
@@ -295,12 +277,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   override def execute(queryText: String, params: (String, Any)*) =
     fail("Don't use execute together with NewPlannerTestSupport")
-
-  def executeWithRulePlanner(queryText: String, params: (String, Any)*) = {
-    val plannerWatcher: (List[NewPlannerMonitorCall]) => Unit = unexpectedlyUsedNewPlanner(queryText)
-    val runtimeWatcher: (List[NewRuntimeMonitorCall]) => Unit = unexpectedlyUsedNewRuntime(queryText)
-    monitoringNewPlanner(innerExecute(queryText, params: _*))(plannerWatcher)(runtimeWatcher)
-  }
 
   def monitoringNewPlanner[T](action: => T)(testPlanner: List[NewPlannerMonitorCall] => Unit)(testRuntime: List[NewRuntimeMonitorCall] => Unit): T = {
     newPlannerMonitor.clear()

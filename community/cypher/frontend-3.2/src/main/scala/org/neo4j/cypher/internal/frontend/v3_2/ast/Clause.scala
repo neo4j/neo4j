@@ -239,7 +239,9 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
   override def name = "CREATE UNIQUE"
 
-  override def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.CreateUnique)
+  override def semanticCheck =
+    SemanticError("CREATE UNIQUE is no longer supported. You can achieve the same result using MERGE", position)
+
 }
 
 case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends UpdateClause {

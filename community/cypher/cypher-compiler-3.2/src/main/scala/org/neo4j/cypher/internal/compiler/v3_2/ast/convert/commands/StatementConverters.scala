@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{And, Predica
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{expressions => commandexpressions, values => commandvalues, _}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.SetAction
 import org.neo4j.cypher.internal.frontend.v3_2.ast.SetClause
-import org.neo4j.cypher.internal.frontend.v3_2.notification.JoinHintUnsupportedNotification
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, ast}
 
 object StatementConverters {
@@ -244,9 +243,6 @@ object StatementConverters {
       case ast.UsingScanHint(variable, label) =>
         Some(commands.NodeByLabel(variable.name, label.name))
       case ast.UsingJoinHint(variables) =>
-        if (PlannerName(plannerName) == RulePlannerName) {
-          notifications.log(JoinHintUnsupportedNotification(variables.map(_.name).toIndexedSeq))
-        }
         None
     }
   }

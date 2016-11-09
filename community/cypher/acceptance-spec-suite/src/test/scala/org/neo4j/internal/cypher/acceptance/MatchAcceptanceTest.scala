@@ -446,36 +446,6 @@ return p""")
     result.executionPlanDescription().toString should not include "NodeIndexScan"
   }
 
-  test("should use the index for property existence queries for rule when asked for it") {
-    // given
-    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
-    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
-    graph.createIndex("User", "email")
-
-    // when
-    val result = innerExecute("CYPHER planner=rule MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
-
-    // then
-    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
-    result.executionPlanDescription().toString should include("SchemaIndex")
-  }
-
-  test("should not use the index for property existence queries for rule when not asking for it") {
-    // given
-    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
-    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
-    graph.createIndex("User", "email")
-
-    // when
-    val result = innerExecute("CYPHER planner=rule MATCH (n:User) WHERE exists(n.email) RETURN n")
-
-    // then
-    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
-    result.executionPlanDescription().toString should not include "SchemaIndex"
-  }
-
   test("index hints should work in optional match") {
     //GIVEN
     val subnet = createLabeledNode("Subnet")

@@ -20,7 +20,6 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, QueryStatisticsTestSupport}
-import org.neo4j.kernel.impl.query.TransactionalContext
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -149,7 +148,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val init: () => Unit = () => createNode("prop" -> 0)
     val query = "MATCH (n) SET n.prop = n.prop + 1"
     val resultQuery = "MATCH (n) RETURN n.prop"
-    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+    testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
@@ -157,7 +156,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val init: () => Unit = () => createNode("prop" -> 0)
     val query = "MATCH (n) SET n.prop = 2 + (10 * n.prop) / 10 - 1"
     val resultQuery = "MATCH (n) RETURN n.prop"
-    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+    testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
@@ -165,7 +164,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val init: () => Unit = () => createNode("prop" -> 0)
     val query = "MATCH (n) SET n = {prop: n.prop + 1}"
     val resultQuery = "MATCH (n) RETURN n.prop"
-    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+    testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
@@ -173,7 +172,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val init: () => Unit = () => relate(createNode(), createNode(), "prop" -> 0)
     val query = "MATCH ()-[r]->() SET r.prop = r.prop + 1"
     val resultQuery = "MATCH ()-[r]->() RETURN r.prop"
-    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+    testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
@@ -181,7 +180,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val init: () => Unit = () => relate(createNode(), createNode(), "prop" -> 0)
     val query = "MATCH ()-[r]->() SET r.prop = 2 + (10 * r.prop) / 10 - 1"
     val resultQuery = "MATCH ()-[r]->() RETURN r.prop"
-    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+    testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
@@ -189,7 +188,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val init: () => Unit = () => relate(createNode(), createNode(), "prop" -> 0)
     val query = "MATCH ()-[r]->() SET r = {prop: r.prop + 1}"
     val resultQuery = "MATCH ()-[r]->() RETURN r.prop"
-    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+    testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   // Lost updates are still an issue, and it's hard to identify some cases.
@@ -204,7 +203,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val init: () => Unit = () => createNode("prop" -> 0)
     val query = "MATCH (n) WITH n.prop as p SET n.prop = p + 1"
     val resultQuery = "MATCH (n) RETURN n.prop"
-    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+    testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
@@ -212,32 +211,29 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val init: () => Unit = () => createNode("prop" -> 0, "prop2" -> 0)
     val query = "match (n) set n += { prop: n.prop2 + 1, prop2: n.prop + 1 }"
     val resultQuery = "MATCH (n) RETURN n.prop + n.prop2"
-    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 20)
+    testLostUpdates(init, query, resultQuery, 10, 20)
   }
 
-  private def testLostUpdatesWithBothPlanners(init: () => Unit,
-                                              query: String,
-                                              resultQuery: String,
-                                              updates: Int,
-                                              resultValue: Int) = {
-    Seq("rule", "cost").foreach { planner =>
-      init()
-      val queryWithPlanner = s"CYPHER planner=$planner $query"
-      val threads = (0 until updates).map { i =>
-        new Thread(new Runnable {
-          override def run(): Unit = {
-            eengine.execute(queryWithPlanner, Map.empty[String, Any])
-          }
-        })
-      }
-      threads.foreach(_.start())
-      threads.foreach(_.join())
-
-      val result = executeScalar[Long](resultQuery)
-      assert(result == resultValue, s": we lost updates with $planner planner!")
-
-      // Reset for run on next planner
-      eengine.execute("MATCH (n) DETACH DELETE n", Map.empty[String, Any])
+  private def testLostUpdates(init: () => Unit,
+                              query: String,
+                              resultQuery: String,
+                              updates: Int,
+                              resultValue: Int) = {
+    init()
+    val threads = (0 until updates).map { i =>
+      new Thread(new Runnable {
+        override def run(): Unit = {
+          eengine.execute(s"$query", Map.empty[String, Any])
+        }
+      })
     }
+    threads.foreach(_.start())
+    threads.foreach(_.join())
+
+    val result = executeScalar[Long](resultQuery)
+    assert(result == resultValue, s": we lost updates!")
+
+    // Reset for run on next planner
+    eengine.execute("MATCH (n) DETACH DELETE n", Map.empty[String, Any])
   }
 }

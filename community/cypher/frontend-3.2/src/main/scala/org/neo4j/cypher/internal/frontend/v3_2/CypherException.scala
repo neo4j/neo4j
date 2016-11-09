@@ -58,7 +58,7 @@ class ParameterWrongTypeException(message: String, cause: Throwable = null) exte
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.parameterWrongTypeException(message, this)
 }
 
-class InvalidArgumentException(message: String, cause: Throwable = null) extends CypherException(cause) {
+class InvalidArgumentException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.invalidArgumentException(message, this)
 }
 

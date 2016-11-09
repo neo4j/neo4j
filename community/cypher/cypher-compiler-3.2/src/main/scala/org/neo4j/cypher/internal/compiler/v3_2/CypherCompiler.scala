@@ -84,7 +84,6 @@ object CypherCompilerFactory {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
-    val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
@@ -107,34 +106,13 @@ object CypherCompilerFactory {
       publicTypeConverter = typeConverter.asPublicType
     )
     val procedurePlanProducer = DelegatingProcedureExecutablePlanBuilder(costPlanProducer, typeConverter.asPublicType)
-    val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
-      typeConverter = typeConverter)
 
     // Pick planner based on input
-    val planBuilder = ExecutablePlanBuilder.create(plannerName, rulePlanProducer,
-                                                   procedurePlanProducer, planBuilderMonitor, config.useErrorsOverWarnings)
+    val planBuilder: ExecutablePlanBuilder = procedurePlanProducer
 
     val execPlanBuilder = new ExecutionPlanBuilder(clock, planBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _) )
     val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
-    val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
-    val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
-
-    CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
-  }
-
-  def ruleBasedCompiler(config: CypherCompilerConfiguration, clock: Clock, monitors: Monitors,
-                        rewriterSequencer: (String) => RewriterStepSequencer,
-                        typeConverter: RuntimeTypeConverter): CypherCompiler = {
-    val parser = new CypherParser
-    val checker = new SemanticChecker
-    val rewriter = new ASTRewriter(rewriterSequencer)
-    val pipeBuilder = DelegatingProcedureExecutablePlanBuilder(
-      new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
-        typeConverter = typeConverter), typeConverter.asPublicType)
-
-    val execPlanBuilder = new ExecutionPlanBuilder(clock, pipeBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
-    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 

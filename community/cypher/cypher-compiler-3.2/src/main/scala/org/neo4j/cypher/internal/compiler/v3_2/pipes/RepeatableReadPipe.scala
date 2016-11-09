@@ -26,7 +26,9 @@ import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 /*
  * Caches the result of the source pipe in QueryContext.
  */
-case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe with RonjaPipe {
+case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)
+                             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor)
+  with NoEffectsPipe with RonjaPipe {
 
   def symbols: SymbolTable = src.symbols
 

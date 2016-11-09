@@ -74,17 +74,6 @@ trait NewRuntimeSuccessRateMonitor {
   def unableToHandlePlan(plan: LogicalPlan, origin: CantCompileQueryException)
 }
 
-object ExecutablePlanBuilder {
-
-  def create(plannerName: Option[PlannerName], rulePlanProducer: ExecutablePlanBuilder,
-             costPlanProducer: ExecutablePlanBuilder, planBuilderMonitor: NewLogicalPlanSuccessRateMonitor,
-             useErrorsOverWarnings: Boolean) = plannerName match {
-    case None => new SilentFallbackPlanBuilder(rulePlanProducer, costPlanProducer, planBuilderMonitor)
-    case Some(_) if useErrorsOverWarnings => new ErrorReportingExecutablePlanBuilder(costPlanProducer)
-    case Some(_) => new WarningFallbackPlanBuilder(rulePlanProducer, costPlanProducer, planBuilderMonitor)
-  }
-}
-
 trait ExecutablePlanBuilder {
 
   def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext,

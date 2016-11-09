@@ -37,14 +37,6 @@ object CostBasedPlannerName {
 }
 
 /**
- * Rule based query planner, default in all versions below 2.2
- */
-case object RulePlannerName extends PlannerName {
-  val name = "RULE"
-  override def toTextOutput = name
-}
-
-/**
  * Cost based query planner uses statistics from the running database to find good
  * query execution plans using limited exhaustive search based on the IDP algorithm.
  */
@@ -72,7 +64,6 @@ case object ProcedurePlannerName extends PlannerName {
 object PlannerName {
 
   def apply(name: String): PlannerName = name.toUpperCase match {
-    case RulePlannerName.name => RulePlannerName
     case IDPPlannerName.name => IDPPlannerName
     case DPPlannerName.name => DPPlannerName
     case "COST" => CostBasedPlannerName.default
@@ -80,7 +71,6 @@ object PlannerName {
 
     // Note that conservative planner is not exposed to end users.
     case n => throw new IllegalArgumentException(
-      s"""$n is not a a valid planner, valid options are
-         |${IDPPlannerName.name}, ${DPPlannerName.name} and ${RulePlannerName.name}""".stripMargin)
+      s"$n is not a a valid planner, valid options are COST, ${IDPPlannerName.name} and ${DPPlannerName.name}")
   }
 }

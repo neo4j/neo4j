@@ -48,8 +48,6 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
         acc => (LargeLabelFound, Some(identity))
       case NodeStartPipe(_, _, NodeByLabelEntityProducer(_, id), _) if cardinality(id) > threshold =>
         acc => (LargeLabelFound, Some(identity))
-      case ExecuteUpdateCommandsPipe(_, commands) if hasMergeOnLargeLabel(commands) =>
-        acc => (LargeLabelFound, Some(identity))
     }
 
     resultState match {

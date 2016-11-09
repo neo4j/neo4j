@@ -19,24 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders.prepare
 
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PartiallySolvedQuery, ExecutionPlanInProgress, PlanBuilder}
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{TokenContext, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.PipeMonitor
+import org.neo4j.cypher.internal.compiler.v3_2.spi.TokenContext
 
-class KeyTokenResolver extends PlanBuilder {
-
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
-    val newPlan = apply(plan, ctx)
-    plan != newPlan
-  }
-
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
-    val rewrittenQuery: PartiallySolvedQuery = plan.query.rewrite(resolveExpressions(_, ctx))
-    plan.copy(query = rewrittenQuery)
-  }
-
+class KeyTokenResolver {
   def resolveExpressions(expr: Expression, ctx: TokenContext) = expr match {
     case (keyToken: KeyToken) => keyToken.resolve(ctx)
     case _                    => expr

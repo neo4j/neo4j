@@ -21,7 +21,6 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Path
-import org.scalatest.prop.TableDrivenPropertyChecks._
 
 class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -84,11 +83,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
     result should have size 2
   }
 
-
-  val planners = Table("Prefix", "CYPHER planner=cost", "CYPHER planner=rule", "")
-
   test("should consider uniqueness when combining simple and variable length pattern in a match") {
-    forAll(planners) { planner =>
       // Given
       val leaf1 = createNode("leaf1")
       val leaf2 = createNode("leaf2")
@@ -97,15 +92,13 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
       relate(leaf2, leaf1) // r2
 
       // When
-      val result = executeScalar[Number](s"$planner MATCH (a)-->()-[*0..4]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
+      val result = executeScalar[Number](s"MATCH (a)-->()-[*0..4]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
 
       // Then find paths: leaf1-[r1]->(leaf2), leaf1-[r1]->(leaf2)<-[r2]-(leaf1)
       result should equal(2)
     }
-  }
 
   test("should consider uniqueness when combining variable and simple length pattern in a match") {
-    forAll(planners) { planner =>
 
       // Given
       val leaf1 = createNode("leaf1")
@@ -115,15 +108,13 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
       relate(leaf2, leaf1) // r2
 
       // When
-      val result = executeScalar[Number](s"$planner MATCH (a)-[*0..4]-()<--(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
+      val result = executeScalar[Number](s"MATCH (a)-[*0..4]-()<--(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
 
       // Then find paths: leaf1-[r1]->(leaf2), leaf1-[r1]->(leaf2)<-[r2]-(leaf1)
       result should equal(2)
     }
-  }
 
   test("should consider uniqueness when combining two variable length patterns in a match") {
-    forAll(planners) { planner =>
       // Given
       val leaf1 = createNode("leaf1")
       val leaf2 = createNode("leaf2")
@@ -132,7 +123,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
       relate(leaf2, leaf1) // r2
 
       // When
-      val result = executeScalar[Number](s"$planner MATCH (a)-[*1..4]->()-[*0..5]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
+      val result = executeScalar[Number](s"MATCH (a)-[*1..4]->()-[*0..5]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
 
       // Then find paths
       // r1
@@ -140,16 +131,14 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
       // r1-r2
       result should equal(3)
     }
-  }
 
   test("should consider uniqueness when doing cartesian products") {
     // Given
     val r1 = relate(createNode(), createNode())
     val r2 = relate(createNode(), createNode())
-    forAll(planners) { planner =>
 
       // When
-      val result = execute(s"$planner MATCH p=()-->(), q=()-->() RETURN p, q")
+      val result = execute("MATCH p=()-->(), q=()-->() RETURN p, q")
 
       // Then find paths
       val rels = result.toList.map(row => row("p").asInstanceOf[Path].lastRelationship())
@@ -157,5 +146,4 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
       rels should have size 2
       rels.toSet should equal(Set(r1, r2))
     }
-  }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.util
-
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AnonymousContext
@@ -215,17 +213,6 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     intercept[CypherTypeException](executeWithCostPlannerOnly("create ({params})", "params" -> maps))
   }
 
-  test("not allowed to create multiple nodes with parameter list in rule planner") {
-    val maps = List(
-      Map("name" -> "Andres", "prefers" -> "Scala"),
-      Map("name" -> "Michael", "prefers" -> "Java"),
-      Map("name" -> "Peter", "prefers" -> "Java"))
-
-    intercept[CypherTypeException](
-        executeWithCostPlannerOnly("cypher planner=rule create ({params})", "params" -> maps)
-    )
-  }
-
   test("fail to create from two iterables") {
     val maps1 = List(
       Map("name" -> "Andres"),
@@ -323,42 +310,6 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     contextBridge.getTopLevelTransactionBoundToThisThread( false ) should be(null)
   }
 
-  test("create unique twice with param map") {
-    createNode()
-    createNode()
-
-    val map1 = Map("name" -> "Anders")
-    val map2 = new util.HashMap[String, Any]()
-    map2.put("name", "Anders")
-
-    val r1 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique (a)-[r:FOO {param}]->(b) return r", "param" -> map1)
-    val r2 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique (a)-[r:FOO {param}]->(b) return r", "param" -> map2)
-
-    r1 should equal(r2)
-  }
-
-  test("create unique relationship and use created variable in set") {
-    createNode()
-    createNode()
-
-    val r1 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique (a)-[r:FOO]->(b) set r.foo = 'bar' return r")
-
-    graph.inTx {
-      r1.getProperty("foo") should equal("bar")
-    }
-  }
-
-  test("create unique twice with array prop") {
-    createNode()
-    createNode()
-
-    val query = "match (a) where id(a) = 0 create unique (a)-[:X]->({foo:[1,2,3]})"
-    innerExecute(query)
-    val result = innerExecute(query)
-
-    result.queryStatistics().containsUpdates should be(false)
-  }
-
   test("full path in one create") {
     createNode()
     createNode()
@@ -378,15 +329,6 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     val a = createNode()
     val b = createNode()
     val result = executeWithCostPlannerOnly("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = (a)<-[:X]-(b) return p").toList.head("p").asInstanceOf[Path]
-
-    result.startNode() should equal(a)
-    result.endNode() should equal(b)
-  }
-
-  test("create unique paths honor directions") {
-    val a = createNode()
-    val b = createNode()
-    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique p = (a)<-[:X]-(b) return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal(a)
     result.endNode() should equal(b)
@@ -414,10 +356,6 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
 
   test("cant set properties after node is already created") {
     intercept[SyntaxException](updateWithBothPlannersAndCompatibilityMode("create (a)-[:test]->(b), (a {name:'a'})-[:test2]->c"))
-  }
-
-  test("cant set properties after node is already created2") {
-    intercept[SyntaxException](executeWithRulePlanner("create (a)-[:test]->(b) create unique (a {name:'a'})-[:test2]->c"))
   }
 
   test("can create anonymous nodes inside foreach") {

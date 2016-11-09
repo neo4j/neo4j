@@ -171,13 +171,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("create with variable already existing2") {
-    expectError(
-      "match (a) where id(a) = 0 CREATE UNIQUE (a {name:'foo'})-[:KNOWS]->() RETURN a",
-      "Can't create `a` with properties or labels here. The variable is already declared in this context"
-    )
-  }
-
   test("fail when using exclamation mark") {
     expectError(
       "match (n) where id(n) = 0 and n.foo != 2 return n",

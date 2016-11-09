@@ -29,7 +29,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
 
   val QUERY = "MATCH (n:Label) RETURN n"
 
-  test("should match paths correctly with rule planner in 2.3") {
+  test("should match paths correctly with rule planner in compatiblity mode") {
     relate(createNode(), createNode(), "T")
 
     val query = "MATCH (n)-[r:T]->(m) RETURN count(*)"
@@ -38,8 +38,6 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     execute(s"CYPHER 2.3 $query").columnAs[Long]("count(*)").next() shouldBe 1
     execute(s"CYPHER 3.1 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
     execute(s"CYPHER 3.1 $query").columnAs[Long]("count(*)").next() shouldBe 1
-    execute(s"CYPHER 3.2 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
-    execute(s"CYPHER 3.2 $query").columnAs[Long]("count(*)").next() shouldBe 1
   }
 
   test("should be able to switch between versions") {
@@ -109,45 +107,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     }
   }
 
-  private val queryThatCannotRunWithCostPlanner = "MATCH (a), (b) CREATE UNIQUE (a)-[r:X]->(b)"
-
   private val querySupportedByCostButNotCompiledRuntime = "MATCH (n:Movie)--(b), (a:A)--(c:C)--(d:D) RETURN count(*)"
-
-  test("should not fail if cypher allowed to choose planner or we specify RULE for update query") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      db =>
-        db.execute(queryThatCannotRunWithCostPlanner)
-        db.execute(s"CYPHER planner=RULE $queryThatCannotRunWithCostPlanner")
-        shouldHaveNoWarnings(
-          db.execute(s"EXPLAIN CYPHER planner=RULE $queryThatCannotRunWithCostPlanner")
-        )
-    }
-  }
-
-  test("should fail if asked to execute query with COST instead of falling back to RULE if hint errors turned on") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      db =>
-        intercept[QueryExecutionException](
-          db.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner")
-        ).getStatusCode should equal("Neo.ClientError.Statement.ArgumentError")
-    }
-  }
-
-  test("should not fail if asked to execute query with COST and instead fallback to RULE and return a warning if hint errors turned off") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
-      db =>
-        val result = db.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner")
-        shouldHaveWarning(result, Status.Statement.PlannerUnsupportedWarning)
-    }
-  }
-
-  test("should not fail if asked to execute query with COST and instead fallback to RULE and return a warning by default") {
-    runWithConfig() {
-      db =>
-        val result = db.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner")
-        shouldHaveWarning(result, Status.Statement.PlannerUnsupportedWarning)
-    }
-  }
 
   test("should not fail if asked to execute query with runtime=compiled on simple query") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {

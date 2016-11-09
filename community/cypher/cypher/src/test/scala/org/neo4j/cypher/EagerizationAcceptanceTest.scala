@@ -1377,17 +1377,6 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
-  test("should not introduce eagerness for MATCH nodes and CREATE UNIQUE relationships") {
-    createNode()
-    createNode()
-    val query = "MATCH (a), (b) CREATE UNIQUE (a)-[r:KNOWS]->(b) RETURN count(*)"
-
-    val result = executeWithRulePlanner(query)
-    result.columnAs[Long]("count(*)").next shouldBe 4
-    assertStats(result, relationshipsCreated = 4)
-    assertNumberOfEagerness(query, 0)
-  }
-
   test("should not introduce eagerness for MATCH nodes and MERGE relationships") {
     createNode()
     createNode()
@@ -1695,19 +1684,6 @@ class EagerizationAcceptanceTest
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, labelsAdded = 0)
     assertNumberOfEagerness(query, 0)
-  }
-
-  test("matching label on right-hand side and setting same label should be eager") {
-    createLabeledNode("Lol")
-    createNode()
-    val query = "MATCH (n), (m:Lol) SET n:Lol RETURN count(*)"
-    val fullQuery = s"cypher planner=rule $query"
-    // this is intended for the rule planner only, since the assumption is made that
-    // the left-most node in the match pattern will become the 'stable leaf'
-    val result = eengine.execute(fullQuery, Map.empty[String, Object], graph.transactionalContext(query = fullQuery -> Map.empty))
-    result.columnAs[Long]("count(*)").next shouldBe 2
-    assertStatsResult(labelsAdded = 1)(result.queryStatistics)
-//    assertNumberOfEagerness(query, 1) -- not with rule planner
   }
 
   test("matching label on right-hand side and setting same label should be eager and get the count right") {

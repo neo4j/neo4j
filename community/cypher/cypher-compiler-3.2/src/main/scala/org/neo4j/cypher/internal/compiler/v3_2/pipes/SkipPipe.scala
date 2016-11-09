@@ -59,3 +59,18 @@ case class SkipPipe(source: Pipe, exp: Expression)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }
+
+class HeadAndTail[T](head: T, tail: Iterator[T]) extends Iterator[T] {
+  var usedHead: Boolean = false
+
+  def headUnused: Boolean = !usedHead
+
+  def hasNext: Boolean = headUnused || tail.hasNext
+
+  def next(): T = if (headUnused) {
+    usedHead = true
+    head
+  } else {
+    tail.next()
+  }
+}

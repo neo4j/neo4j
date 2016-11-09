@@ -56,17 +56,6 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("should report RULE if we ask it for UNION queries") {
-    given(
-      """MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-(m:Person)
-        |RETURN p UNION MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-()-[:FRIEND_OF]-(m:Person) RETURN p"""
-        .stripMargin)
-      .withCypherVersion(CypherVersion.v3_2)
-      .withPlanner(RulePlannerName)
-      .shouldHaveCypherVersion(CypherVersion.v3_2)
-      .shouldHavePlanner(RulePlannerName)
-  }
-
   test("troublesome query that should be run in cost") {
     given(
       """MATCH (person)-[:ACTED_IN]->(:Movie)<-[:ACTED_IN]-()-[:ACTED_IN]->(:Movie)<-[:ACTED_IN]-(coc)-[:DIRECTED]->()
@@ -161,9 +150,8 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     given("match (n) return n").planDescription.getArguments.get("EstimatedRows") should equal(1) // on missing statistics, we fake cardinality to one
   }
 
-  for(planner <- Seq(IDPPlannerName, DPPlannerName, RulePlannerName);
-      runtime <- Seq(CompiledRuntimeName, InterpretedRuntimeName)
-      if !(planner == RulePlannerName && runtime == CompiledRuntimeName)) {
+  for(planner <- Seq(IDPPlannerName, DPPlannerName);
+      runtime <- Seq(CompiledRuntimeName, InterpretedRuntimeName)) {
 
     test(s"Should report correct planner and runtime used $planner + $runtime") {
       given("match (n) return n")

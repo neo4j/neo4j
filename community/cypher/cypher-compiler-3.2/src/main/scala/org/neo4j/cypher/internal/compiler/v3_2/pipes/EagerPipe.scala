@@ -33,7 +33,8 @@ trait NoEffectsPipe {
   override val effects = Effects()
 }
 
-case class EagerPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe with RonjaPipe {
+case class EagerPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe with RonjaPipe {
   def symbols: SymbolTable = src.symbols
 
   override def planDescription = src.planDescription.andThen(this.id, "Eager", variables)

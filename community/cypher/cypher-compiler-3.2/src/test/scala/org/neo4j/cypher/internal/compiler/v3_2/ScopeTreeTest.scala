@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.StatementHelper._
+import org.neo4j.cypher.internal.compiler.v3_2.parser.ParserFixture.parse
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.TypeSpec
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class ScopeTreeTest extends CypherFunSuite {
 
   import org.neo4j.cypher.internal.compiler.v3_2.helpers.ScopeTestHelper._
-  import org.neo4j.cypher.internal.compiler.v3_2.helpers.StatementHelper._
-  import org.neo4j.cypher.internal.compiler.v3_2.parser.ParserFixture.parser
 
   /*
    * NOTE: when computing the scopeTree the normalization of return and with clauses has already taken place, so when
@@ -36,7 +36,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("match (n)return n as m => { { match (n)return n } { return n as m } }") {
-    val ast = parser.parse("match (n) return n as m")
+    val ast = parse("match (n) return n as m")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -48,7 +48,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("match (a) with a as b return b as b => { { match (a) with a } { as b return b } { return b as b } }") {
-    val ast = parser.parse("match (a) with a as b return b as b")
+    val ast = parse("match (a) with a as b return b as b")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -61,7 +61,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("match (a) with a as a order by a.name limit 1 match a-->b return a as a => { { match (a) with a } { as a order by a.name limit 1 match a-->b return a } { return a as a } }") {
-    val ast = parser.parse("match (a) with a as a order by a.name limit 1 match (a)-->(b) return a as a")
+    val ast = parse("match (a) with a as a order by a.name limit 1 match (a)-->(b) return a as a")
     val scopeTree = ast.scope
 
     // TODO This looks suspicious; since we only use aliased items for variableNamespacing, it should be ok though
@@ -81,7 +81,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("match (a:Party) return a as a union match (a:Animal) return a as a => { { match (a:Party) return a } { } union { match (a:Animal) return a } { } }") {
-    val ast = parser.parse("match (a:Party) return a as a union match (a:Animal) return a as a")
+    val ast = parse("match (a:Party) return a as a union match (a:Animal) return a as a")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -99,7 +99,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("match (a) with a as a where a:Foo with a as a return a as a => { { match (a) with a } { as a where a:Foo with a } { as a return a } { return a as a } }") {
-    val ast = parser.parse("match (a) with a as a where a:Foo with a as a return a as a")
+    val ast = parse("match (a) with a as a where a:Foo with a as a return a as a")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -113,7 +113,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("match (a) with a as a optional match (b) with b as b return b as b => { { match (a) with a } { as a optional match (b) with b } { as b return b } { return b as b } }") {
-    val ast = parser.parse("match (a) with a as a optional match (b) with b as b return b as b")
+    val ast = parse("match (a) with a as a optional match (b) with b as b return b as b")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -129,7 +129,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("return [ a in [1, 2, 3] | a ] as r => { { return { [ a in [1, 2, 3] | a ] } } { as r } }") {
-    val ast = parser.parse("return [ a in [1, 2, 3] | a ] as r")
+    val ast = parse("return [ a in [1, 2, 3] | a ] as r")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -143,7 +143,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("with 1 as c return [ a in [1, 2, 3] | a + c ] as r => { { with 1 } { as c return { [ a in [1, 2, 3] | a + c ] } } { } }") {
-    val ast = parser.parse("with 1 as c return [ a in [1, 2, 3] | a + c ] as r")
+    val ast = parse("with 1 as c return [ a in [1, 2, 3] | a + c ] as r")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -162,7 +162,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("return [ a in [1, 2, 3] | [ b in [4, 5, 6] | a + b ] ] as r => { { return { [ a in [1, 2, 3] | { [ b in [4, 5, 6] | a + b ] } ] } } { }") {
-    val ast = parser.parse("return [ a in [1, 2, 3] | [ b in [4, 5, 6] | a + b ] ] as r")
+    val ast = parse("return [ a in [1, 2, 3] | [ b in [4, 5, 6] | a + b ] ] as r")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -181,7 +181,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("match (a) where not a-->() return a as a => { { match (a) where not a-->() return a } { return a as a } }") {
-    val ast = parser.parse("match (a) where not (a)-->() return a as a")
+    val ast = parse("match (a) where not (a)-->() return a as a")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -192,22 +192,8 @@ class ScopeTreeTest extends CypherFunSuite {
 
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
-  test("MATCH root CREATE book FOREACH(name in ['a','b','c'] | CREATE UNIQUE root-[:tag]->(tag {name:name})<-[:tagged]-book) RETURN book as book") {
-    val ast = parser.parse("MATCH (root) CREATE (book) FOREACH(name in ['a','b','c'] | CREATE UNIQUE (root)-[:tag]->(tag {name:name})<-[:tagged]-(book)) RETURN book as book")
-    val scopeTree = ast.scope
-
-    scopeTree should equal(scope()(
-      scope(nodeSymbol("root", 7), nodeSymbol("book", 21, 132))(
-        scope(stringSymbol("name", 35, 99), nodeSymbol("root", 7, 74), nodeSymbol("tag", 89), nodeSymbol("book", 21, 118))()
-      ),
-      scope(nodeSymbol("book", 21, 132, 140))()
-    ))
-  }
-
-  //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
-  //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("MATCH (liker) WITH liker AS `liker`, (liker)-[]-() AS isNew WITH isNew as `isNew`, liker.time AS `freshId` ORDER BY `freshId` RETURN isNew as `isNew`") {
-    val ast = parser.parse("MATCH (liker) WITH liker AS `liker`, (liker)-[]-() AS isNew WITH isNew as `isNew`, liker.time AS `freshId` ORDER BY `freshId` RETURN isNew as `isNew`")
+    val ast = parse("MATCH (liker) WITH liker AS `liker`, (liker)-[]-() AS isNew WITH isNew as `isNew`, liker.time AS `freshId` ORDER BY `freshId` RETURN isNew as `isNew`")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -221,7 +207,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("match n, x with n as x match n, x return n as n, x as x => { { match n, x with n } { with n as x match n, x return n, x } { return n, x } }") {
-    val ast = parser.parse("match (n), (x) with n as x match (n), (x) return n as n, x as x")
+    val ast = parse("match (n), (x) with n as x match (n), (x) return n as n, x as x")
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
@@ -234,7 +220,7 @@ class ScopeTreeTest extends CypherFunSuite {
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   test("with 1 as p, count(*) as rng return p order by rng ==> { {} { with 1 as p, count(*) as rng return p } { order by rng } }") {
-    val ast = parser.parse("with 1 as p, count(*) as rng return p order by rng")
+    val ast = parse("with 1 as p, count(*) as rng return p order by rng")
 
     val actual = ast.scope
     val expected = scope()(

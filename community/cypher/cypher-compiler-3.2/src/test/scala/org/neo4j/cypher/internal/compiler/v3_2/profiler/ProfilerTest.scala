@@ -71,18 +71,6 @@ class ProfilerTest extends CypherFunSuite {
     assertRecorded(decoratedResult, "baz", expectedRows = 1, expectedDbHits = 2)
   }
 
-  test("should ignore null pipe in profile") {
-    // GIVEN
-    val pipes = UnionPipe(List(SingleRowPipe(), SingleRowPipe()), List())
-    val queryContext = mock[QueryContext]
-    val profiler = new Profiler
-    val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
-
-    // WHEN we create the results,
-    // THEN it should not throw an assertion about profiling the same pipe twice.
-    materialize(pipes.createResults(queryState))
-  }
-
   test("should count stuff going through Apply multiple times") {
     // GIVEN
     val lhs = new ProfilerTestPipe(SingleRowPipe(), "lhs", rows = 10, dbAccess = 10)

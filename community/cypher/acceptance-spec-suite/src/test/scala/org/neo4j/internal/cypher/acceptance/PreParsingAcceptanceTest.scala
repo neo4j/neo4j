@@ -51,12 +51,6 @@ class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
     eengine.execute(query, Map.empty[String,Any]) should havePlanner(DPPlannerName)
   }
 
-  test("specifying rule planner should provide RULE") {
-    val query = "PROFILE CYPHER planner=rule RETURN 1"
-
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(RulePlannerName)
-  }
-
   test("specifying cost planner should provide IDP using old syntax") {
     val query = "PROFILE CYPHER planner=cost RETURN 1"
 
@@ -73,12 +67,6 @@ class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
     val query = "PROFILE CYPHER planner=dp RETURN 1"
 
     eengine.execute(query, Map.empty[String,Any]) should havePlanner(DPPlannerName)
-  }
-
-  test("specifying rule planner should provide RULE using old syntax") {
-    val query = "PROFILE CYPHER planner=rule RETURN 1"
-
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(RulePlannerName)
   }
 
   private def havePlanner(expected: PlannerName): Matcher[ExecutionResult] = new Matcher[ExecutionResult] {

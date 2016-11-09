@@ -21,16 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.util
 
-import org.neo4j.cypher._
-import org.neo4j.kernel.api.proc.Neo4jTypes
-
 class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
-
-  test("should fail if calling procedure via rule planner") {
-    an [InternalException] shouldBe thrownBy(execute(
-      "CYPHER planner=rule CALL db.labels() YIELD label RETURN *"
-    ))
-  }
 
   test("should return correctly typed map result (even if converting to and from scala representation internally)") {
     val value = new util.HashMap[String, Any]()

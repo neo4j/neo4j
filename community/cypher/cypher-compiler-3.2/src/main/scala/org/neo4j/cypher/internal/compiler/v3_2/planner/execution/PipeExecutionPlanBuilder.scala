@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.StatementConverters
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_2.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{True, _}
