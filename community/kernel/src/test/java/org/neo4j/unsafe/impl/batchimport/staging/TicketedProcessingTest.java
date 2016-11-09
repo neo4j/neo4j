@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
@@ -29,11 +30,15 @@ import java.util.function.BiFunction;
 
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
 import org.neo4j.test.OtherThreadRule;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static java.lang.Integer.parseInt;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -83,10 +88,11 @@ public class TicketedProcessingTest
         {
             processing.submit( i );
         }
-        processing.shutdown( true );
+        processing.endOfSubmissions();
 
         // THEN
         assertions.get();
+        processing.shutdown();
     }
 
     @Test
@@ -126,7 +132,39 @@ public class TicketedProcessingTest
         assertEquals( 3, processing.next().intValue() );
 
         // THEN
-        processing.shutdown( true );
+        processing.shutdown();
+    }
+
+    @Test( timeout = 10_000 )
+    public void shouldShutdownWithAbortOnSlurpFailure() throws Exception
+    {
+        // GIVEN
+        TicketedProcessing<StringJob,Void,Integer> processing = new TicketedProcessing<>( "Slurper", 2,
+                (job,state) ->
+                {
+                    return parseInt( job.string );
+                }, () -> null );
+        @SuppressWarnings( "unchecked" )
+        Iterator<StringJob> jobs = mock( Iterator.class );
+        when( jobs.hasNext() ).thenReturn( true );
+        RuntimeException runtimeException = new RuntimeException( "Slurp failure" );
+        when( jobs.next() ).thenReturn( new StringJob( "1" ) ).thenThrow( runtimeException );
+        processing.slurp( jobs, true );
+
+        // WHEN
+        assertEquals( 1, processing.next().intValue() );
+
+        // THEN
+        try
+        {
+            processing.next();
+            fail( "Should have failed with the provided exception" );
+        }
+        catch ( TaskExecutionPanicException e )
+        {
+            // Good
+            assertEquals( runtimeException.getMessage(), e.getCause().getMessage() );
+        }
     }
 
     private static class StringJob

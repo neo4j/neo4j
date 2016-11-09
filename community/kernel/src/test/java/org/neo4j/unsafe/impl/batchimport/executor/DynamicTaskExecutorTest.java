@@ -33,7 +33,6 @@ import org.neo4j.test.Race;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy.Park;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -41,9 +40,6 @@ import static org.junit.Assert.fail;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_ABORT_QUEUED;
-import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_AWAIT_ALL_COMPLETED;
 
 public class DynamicTaskExecutorTest
 {
@@ -72,7 +68,7 @@ public class DynamicTaskExecutorTest
         while ( task1.executed == 0 )
         {   // Busy loop
         }
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.shutdown();
 
         // THEN
         assertEquals( 1, task1.executed );
@@ -100,7 +96,7 @@ public class DynamicTaskExecutorTest
         while ( task1.executed == 0 )
         {   // Busy loop
         }
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.shutdown();
 
         // THEN
         assertEquals( 1, task1.executed );
@@ -132,7 +128,7 @@ public class DynamicTaskExecutorTest
         Thread.sleep( 200 ); // gosh, a Thread.sleep...
         assertEquals( 0, task4.executed );
         task3.latch.finish();
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.shutdown();
 
         // THEN
         assertEquals( 1, task1.executed );
@@ -154,7 +150,7 @@ public class DynamicTaskExecutorTest
         {
             executor.submit( tasks[i] = new ExpensiveTask( 10 ) );
         }
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.shutdown();
 
         // THEN
         for ( ExpensiveTask task : tasks )
@@ -208,7 +204,6 @@ public class DynamicTaskExecutorTest
 
         // THEN
         assertExceptionOnSubmit( executor, exception );
-        executor.shutdown( SF_ABORT_QUEUED ); // call would block if the shutdown as part of failure doesn't complete properly
     }
 
     @Test
@@ -264,7 +259,7 @@ public class DynamicTaskExecutorTest
                 @Override
                 public Void doWork( Void state ) throws Exception
                 {
-                    executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+                    executor.shutdown();
                     return null;
                 }
             } );
@@ -301,7 +296,7 @@ public class DynamicTaskExecutorTest
         assertEquals( 1, executor.processors( -2 ) );
         assertEquals( 1, executor.processors( -2 ) );
         assertEquals( 1, executor.processors( 0 ) );
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.shutdown();
     }
 
     @Repeat( times = 100 )
@@ -311,7 +306,7 @@ public class DynamicTaskExecutorTest
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
         Race race = new Race( true );
-        race.addContestant( () -> executor.shutdown( SF_AWAIT_ALL_COMPLETED ) );
+        race.addContestant( () -> executor.shutdown() );
         race.addContestant( () -> executor.processors( 1 ) );
 
         // WHEN
@@ -319,6 +314,33 @@ public class DynamicTaskExecutorTest
 
         // THEN we should be able to do so, there was a recent fix here and before that fix
         // shutdown() would hang, that's why we wait for 10 seconds here to cap it if there's an issue.
+    }
+
+    @Test
+    public void shouldAddConsecutivePanicsAsSuppressed() throws Exception
+    {
+        // GIVEN
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
+        String firstMessage = "First";
+        String secondMessage = "Second";
+
+        // WHEN
+        executor.panic( new RuntimeException( firstMessage ) );
+        executor.panic( new RuntimeException( secondMessage ) );
+
+        // THEN
+        try
+        {
+            executor.submit( new EmptyTask() );
+            fail( "Should fail" );
+        }
+        catch ( TaskExecutionPanicException e )
+        {
+            Throwable first = e.getCause();
+            assertEquals( firstMessage, first.getMessage() );
+            assertEquals( 1, first.getSuppressed().length );
+            assertEquals( secondMessage, first.getSuppressed()[0].getMessage() );
+        }
     }
 
     private void assertExceptionOnSubmit( TaskExecutor<Void> executor, IOException exception )
