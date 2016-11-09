@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -127,6 +128,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final File clusterStateDirectory = createClusterStateDirectory( storeDir, fileSystem );
         final LifeSupport life = platformModule.life;
         final Monitors monitors = platformModule.monitors;
+
+        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
