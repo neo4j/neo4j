@@ -100,6 +100,7 @@ public class AdversarialPageCache implements PageCache
     @Override
     public void close()
     {
+        adversary.injectFailure( IllegalStateException.class );
         delegate.close();
     }
 
