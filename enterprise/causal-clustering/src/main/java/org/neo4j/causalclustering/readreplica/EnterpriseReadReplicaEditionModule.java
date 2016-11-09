@@ -203,6 +203,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+        txPulling.add( copiedStoreRecovery );
 
         TxPollingClient txPuller =
                 new TxPollingClient( logProvider, fileSystem, localDatabase, storeFetcher, catchUpClient,

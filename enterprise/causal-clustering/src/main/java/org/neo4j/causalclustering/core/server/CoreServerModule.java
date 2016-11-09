@@ -126,6 +126,7 @@ public class CoreServerModule
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+        life.add( copiedStoreRecovery );
 
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
         CoreStateDownloader downloader =

@@ -29,13 +29,18 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.NullLogProvider;
 
-public class CopiedStoreRecovery
+import static org.neo4j.com.storecopy.ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache;
+
+public class CopiedStoreRecovery extends LifecycleAdapter
 {
     private final Config config;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final PageCache pageCache;
+
+    private boolean shutdown;
 
     public CopiedStoreRecovery( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                 PageCache pageCache )
@@ -45,8 +50,19 @@ public class CopiedStoreRecovery
         this.pageCache = pageCache;
     }
 
-    public void recoverCopiedStore( File tempStore )
+    @Override
+    public synchronized void shutdown()
     {
+        shutdown = true;
+    }
+
+    public synchronized void recoverCopiedStore( File tempStore ) throws StoreCopyFailedException
+    {
+        if ( shutdown )
+        {
+            throw new StoreCopyFailedException( "Abort store-copied store recovery due to database shutdown" );
+        }
+
         try
         {
             GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
@@ -77,9 +93,7 @@ public class CopiedStoreRecovery
 
     private GraphDatabaseService newTempDatabase( File tempStore )
     {
-        ExternallyManagedPageCache.GraphDatabaseFactoryWithPageCacheFactory factory =
-                ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
-        return factory
+        return graphDatabaseFactoryWithPageCache( pageCache )
                 .setKernelExtensions( kernelExtensions )
                 .setUserLogProvider( NullLogProvider.getInstance() )
                 .newEmbeddedDatabaseBuilder( tempStore )
