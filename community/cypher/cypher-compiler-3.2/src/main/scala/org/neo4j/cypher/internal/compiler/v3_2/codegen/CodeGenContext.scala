@@ -32,6 +32,7 @@ case class Variable(name: String, codeGenType: CodeGenType, nullable: Boolean = 
 class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id], val namer: Namer = Namer()) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
+  private val projections: mutable.Map[String, Variable] = mutable.Map()
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
@@ -40,7 +41,13 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
     variables.put(queryVariable, variable)
   }
 
+  def addProjection(queryVariable: String, variable: Variable) {
+    projections.put(queryVariable, variable)
+  }
+
   def getVariable(queryVariable: String): Variable = variables(queryVariable)
+
+  def getProjection(queryVariable: String): Variable = projections.getOrElse(queryVariable, variables(queryVariable))
 
   def variableQueryVariables(): Set[String] = variables.keySet.toSet
 

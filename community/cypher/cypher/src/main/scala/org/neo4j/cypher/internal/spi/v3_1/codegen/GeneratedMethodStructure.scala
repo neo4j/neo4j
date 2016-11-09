@@ -182,11 +182,10 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   }
 
   override def declareCounter(name: String, initialValue: Expression): Unit = {
-    val variable = generator.declare(typeRef[Long], name)
+    val variable = generator.declare(typeRef[Int], name)
     locals += (name -> variable)
-    generator.assign(variable, invoke(mathCastToLong, initialValue))
+    generator.assign(variable, invoke(mathCastToInt, initialValue))
   }
-
 
   override def decreaseCounterAndCheckForZero(name: String): Expression = {
     val local = locals(name)
@@ -408,19 +407,6 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def toSet(value: Expression) =
     createNewInstance(typeRef[util.HashSet[Object]], (typeRef[util.Collection[_]], value))
-
-  override def newSet(name: String) = {
-    val local = generator.declare(typeRef[util.HashSet[Object]], name)
-    generator.assign(local, createNewInstance(typeRef[util.HashSet[Object]]))
-  }
-
-  override def setContains(name: String, value: Expression) = {
-    invoke(generator.load(name), Methods.setContains, value)
-  }
-
-  override def addToSet(name: String, value: Expression) = {
-    generator.expression(pop(invoke(loadVariable(name), Methods.setAdd, value)))
-  }
 
   override def castToCollection(value: Expression) = invoke(Methods.toCollection, value)
 

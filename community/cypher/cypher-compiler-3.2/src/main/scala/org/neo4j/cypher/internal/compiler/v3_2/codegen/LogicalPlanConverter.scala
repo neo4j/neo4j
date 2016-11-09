@@ -81,12 +81,12 @@ object LogicalPlanConverter {
         case (name, expr) =>
           val variable = Variable(context.namer.newVarName(), CodeGenType(expr.codeGenType(context).ct, ReferenceType),
                                   expr.nullable(context))
-          context.addVariable(name, variable)
+          context.addProjection(name, variable)
           variable -> expr
       }
-      val (methodHandle, action::tl) = context.popParent().consume(context, this)
+      val (methodHandle, action :: tl) = context.popParent().consume(context, this)
 
-      (methodHandle, ir.Projection(projectionOpName, vars, action)::tl)
+      (methodHandle, ir.Projection(projectionOpName, vars, action) :: tl)
     }
   }
 
@@ -118,9 +118,9 @@ object LogicalPlanConverter {
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
       context.addVariable(allNodesScan.idName.name, variable)
-      val (methodHandle, actions::tl) = context.popParent().consume(context, this)
+      val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
-      (methodHandle, WhileLoop(variable, ScanAllNodes(opName), actions)::tl)
+      (methodHandle, WhileLoop(variable, ScanAllNodes(opName), actions) :: tl)
     }
   }
 
@@ -131,9 +131,9 @@ object LogicalPlanConverter {
       val nodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
       val labelVar = context.namer.newVarName()
       context.addVariable(nodeByLabelScan.idName.name, nodeVar)
-      val (methodHandle, actions::tl) = context.popParent().consume(context, this)
+      val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
-      (methodHandle, WhileLoop(nodeVar, ScanForLabel(opName, nodeByLabelScan.label.name, labelVar), actions)::tl)
+      (methodHandle, WhileLoop(nodeVar, ScanForLabel(opName, nodeByLabelScan.label.name, labelVar), actions) :: tl)
     }
   }
 
@@ -150,7 +150,7 @@ object LogicalPlanConverter {
         val nodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
         context.addVariable(idName, nodeVar)
 
-        val (methodHandle, actions::tl) = context.popParent().consume(context, this)
+        val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
         val opName = context.registerOperator(logicalPlan)
         val indexSeekInstruction = valueExpr match {
           //single expression, do a index lookup for that value
@@ -191,7 +191,7 @@ object LogicalPlanConverter {
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val nodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
       context.addVariable(seek.idName.name, nodeVar)
-      val (methodHandle, actions::tl) = context.popParent().consume(context, this)
+      val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
       val seekOperation = seek.nodeIds match {
         case SingleSeekableArg(e) => SeekNodeById(opName, nodeVar,
@@ -217,7 +217,7 @@ object LogicalPlanConverter {
                               SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
         }
       }
-      (methodHandle, seekOperation::tl)
+      (methodHandle, seekOperation :: tl)
     }
   }
 
@@ -280,9 +280,9 @@ object LogicalPlanConverter {
         val joinData = context.getProbeTable(this)
         joinData.vars foreach { case (_, symbol) => context.addVariable(symbol.variable, symbol.outgoing) }
 
-        val (methodHandle, actions::tl) = context.popParent().consume(context, this)
+        val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
 
-        (methodHandle, GetMatchesFromProbeTable(joinNodes, joinData, actions)::tl)
+        (methodHandle, GetMatchesFromProbeTable(joinNodes, joinData, actions) :: tl)
       }
       else {
         throw new InternalException(s"Unexpected consume call by $child")
@@ -294,7 +294,8 @@ object LogicalPlanConverter {
 
     override val logicalPlan: LogicalPlan = expand
 
-    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = expand
+    override def consume(context: CodeGenContext,
+                         child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = expand
       .mode match {
       case ExpandAll => expandAllConsume(context, child)
       case ExpandInto => expandIntoConsume(context, child)
@@ -307,14 +308,14 @@ object LogicalPlanConverter {
       context.addVariable(expand.relName.name, relVar)
       context.addVariable(expand.to.name, toNodeVar)
 
-      val (methodHandle, action::tl) = context.popParent().consume(context, this)
+      val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val fromNodeVar = context.getVariable(expand.from.name)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(expand)
       val expandGenerator = ExpandAllLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar,
                                                        relVar)
 
-      (methodHandle, WhileLoop(relVar, expandGenerator, action)::tl)
+      (methodHandle, WhileLoop(relVar, expandGenerator, action) :: tl)
     }
 
     private def expandIntoConsume(context: CodeGenContext,
@@ -322,7 +323,7 @@ object LogicalPlanConverter {
       val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel)
       context.addVariable(expand.relName.name, relVar)
 
-      val (methodHandle, action::tl) = context.popParent().consume(context, this)
+      val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val fromNodeVar = context.getVariable(expand.from.name)
       val toNodeVar = context.getVariable(expand.to.name)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
@@ -330,7 +331,7 @@ object LogicalPlanConverter {
       val expandGenerator = ExpandIntoLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar,
                                                         relVar)
 
-      (methodHandle, WhileLoop(relVar, expandGenerator, action)::tl)
+      (methodHandle, WhileLoop(relVar, expandGenerator, action) :: tl)
     }
   }
 
@@ -357,7 +358,7 @@ object LogicalPlanConverter {
       context.addVariable(optionalExpand.relName.name, relVar)
       context.addVariable(optionalExpand.to.name, toNodeVar)
 
-      val (methodHandle, action::tl) = context.popParent().consume(context, this)
+      val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val fromNodeVar = context.getVariable(optionalExpand.from.name)
       val typeVar2TypeName = optionalExpand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(optionalExpand)
@@ -383,7 +384,7 @@ object LogicalPlanConverter {
 
       val loop = WhileLoop(relVar, expand, instructionWithPredicates)
 
-      (methodHandle, NullingInstruction(loop, yieldFlag, action, relVar, toNodeVar)::tl)
+      (methodHandle, NullingInstruction(loop, yieldFlag, action, relVar, toNodeVar) :: tl)
     }
 
     private def expandIntoConsume(context: CodeGenContext,
@@ -392,7 +393,7 @@ object LogicalPlanConverter {
       val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel, nullable = true)
       context.addVariable(optionalExpand.relName.name, relVar)
 
-      val (methodHandle, action::tl) = context.popParent().consume(context, this)
+      val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val fromNodeVar = context.getVariable(optionalExpand.from.name)
       val toNodeVar = context.getVariable(optionalExpand.to.name)
       val typeVar2TypeName = optionalExpand.types.map(t => context.namer.newVarName() -> t.name).toMap
@@ -419,7 +420,7 @@ object LogicalPlanConverter {
 
       val loop = WhileLoop(relVar, expand, instructionWithPredicates)
 
-      (methodHandle, NullingInstruction(loop, yieldFlag, action, relVar)::tl)
+      (methodHandle, NullingInstruction(loop, yieldFlag, action, relVar) :: tl)
     }
   }
 
@@ -440,8 +441,8 @@ object LogicalPlanConverter {
         (m, actions)
       } else if (child.logicalPlan eq cartesianProduct.rhs.get) {
         val opName = context.registerOperator(cartesianProduct)
-        val (m, instruction::tl) = context.popParent().consume(context, this)
-        (m, CartesianProductInstruction(opName, instruction)::tl)
+        val (m, instruction :: tl) = context.popParent().consume(context, this)
+        (m, CartesianProductInstruction(opName, instruction) :: tl)
       }
       else {
         throw new InternalException(s"Unexpected consume call by $child")
@@ -459,13 +460,13 @@ object LogicalPlanConverter {
         ExpressionConverter.createPredicate(_)(context)
       )
 
-      val (methodHandle, innerBlock::tl) = context.popParent().consume(context, this)
+      val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
 
       val instruction = predicates.reverse.foldLeft[Instruction](innerBlock) {
         case (acc, predicate) => If(predicate, acc)
       }
 
-      (methodHandle, SelectionInstruction(opName, instruction)::tl)
+      (methodHandle, SelectionInstruction(opName, instruction) :: tl)
     }
   }
 
@@ -478,10 +479,10 @@ object LogicalPlanConverter {
       val count = createExpression(limit.count)(context)
       val counterName = context.namer.newVarName()
 
-      val (methodHandle, innerBlock::tl) = context.popParent().consume(context, this)
+      val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
       val instruction = DecreaseAndReturnWhenZero(opName, counterName, innerBlock, count)
 
-      (methodHandle, instruction::tl)
+      (methodHandle, instruction :: tl)
     }
   }
 
@@ -494,10 +495,10 @@ object LogicalPlanConverter {
       val numberToSkip = createExpression(skip.count)(context)
       val counterName = context.namer.newVarName()
 
-      val (methodHandle, innerBlock::tl) = context.popParent().consume(context, this)
+      val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
       val instruction = SkipInstruction(opName, counterName, innerBlock, numberToSkip)
 
-      (methodHandle, instruction::tl)
+      (methodHandle, instruction :: tl)
     }
   }
 
@@ -506,36 +507,43 @@ object LogicalPlanConverter {
     override val logicalPlan: LogicalPlan = aggregation
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
+      if (aggregation.groupingExpressions.size > 1) throw new CantCompileQueryException("Not yet able to compile")
       implicit val codeGenContext = context
-
-      def aggregateExpressionConverter(e: ast.Expression) = e match {
-        case func: ast.FunctionInvocation => func.function match {
-          case ast.functions.Count =>
-            if (func.distinct) CountDistinct(createExpression(func.args(0)))
-            else Count(createExpression(func.args(0)))
-          case f => throw new CantCompileQueryException(s"$f is not supported")
-        }
-        case _ => throw new CantCompileQueryException(s"$e is not supported")
-      }
 
       val opName = context.registerOperator(aggregation)
 
+      val groupingVariables = aggregation.groupingExpressions.keys.map(context.getProjection)
+
+      def aggregateExpressionConverter(name: String, e: ast.Expression) = {
+        val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveInt)
+        context.addVariable(name, variable)
+        e match {
+          case func: ast.FunctionInvocation => func.function match {
+            case ast.functions.Count if groupingVariables.isEmpty =>
+              SimpleCount(variable, createExpression(func.args(0)), func.distinct)
+            case ast.functions.Count if groupingVariables.size == 1  =>
+              val arg = createExpression(func.args(0))
+              new DynamicCount(opName, variable, arg, groupingVariables, func.distinct)
+
+            case f => throw new CantCompileQueryException(s"$f is not supported")
+          }
+          case _ => throw new CantCompileQueryException(s"$e is not supported")
+        }
+      }
+
       val aggregationExpression =
-        immutableMapValues(aggregation.aggregationExpression, aggregateExpressionConverter).map {
-          case (name, e) =>
-            val variable = Variable(context.namer.newVarName(), e.codeGenType)
-            context.addVariable(name, variable)
-            variable -> e
+        if (aggregation.aggregationExpression.isEmpty) throw new CantCompileQueryException("not yet")
+        else aggregation.aggregationExpression.map {
+          case (name, e) => aggregateExpressionConverter(name, e)
         }
 
-      if (aggregation.groupingExpressions.nonEmpty) throw new CantCompileQueryException("Not yet able to compile")
-
-      val groupingExpression = immutableMapValues(aggregation.groupingExpressions, createExpression)
-
-      val (methodHandle, innerBlock::tl) = context.popParent().consume(context, this)
+      val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
       val instruction = AggregationInstruction(opName, aggregationExpression)
+      val continuation = aggregationExpression.foldLeft(innerBlock) {
+        case (acc, curr) => curr.continuation(acc)
+      }
 
-      (methodHandle, instruction::innerBlock::tl)
+      (methodHandle, instruction :: continuation :: tl)
     }
   }
 

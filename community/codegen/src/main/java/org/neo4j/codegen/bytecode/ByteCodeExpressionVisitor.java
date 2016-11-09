@@ -97,6 +97,7 @@ import static org.objectweb.asm.Opcodes.LSUB;
 import static org.objectweb.asm.Opcodes.NEW;
 import static org.objectweb.asm.Opcodes.NEWARRAY;
 import static org.objectweb.asm.Opcodes.POP;
+import static org.objectweb.asm.Opcodes.POP2;
 import static org.objectweb.asm.Opcodes.SASTORE;
 import static org.objectweb.asm.Opcodes.SIPUSH;
 import static org.objectweb.asm.Opcodes.T_BOOLEAN;
@@ -498,7 +499,16 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     public void pop( Expression expression )
     {
         expression.accept( this );
-        methodVisitor.visitInsn( POP );
+        switch ( expression.type().simpleName() )
+        {
+        case "long":
+        case "double":
+            methodVisitor.visitInsn( POP2 );
+            break;
+        default:
+            methodVisitor.visitInsn( POP );
+            break;
+        }
     }
 
     private void compareIntOrReferenceType( Expression lhs, Expression rhs, int opcode )

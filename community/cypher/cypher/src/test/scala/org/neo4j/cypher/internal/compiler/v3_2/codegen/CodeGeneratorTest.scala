@@ -927,6 +927,35 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toList should equal(List(Map("count(a.prop)" -> 1)))
   }
 
+  test("count node grouping key") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val property = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
+    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("count(a.prop)" -> invocation))(solved)
+    val plan = ProduceResult(List("count(a.prop)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "count(a.prop)")
+
+    //then
+    result.toList should equal(List(
+      Map("count(a.prop)" -> 1),
+      Map("count(a.prop)" -> 1),
+      Map("count(a.prop)" -> 1),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0))
+    )
+  }
+
   private def compile(plan: LogicalPlan) = {
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }

@@ -19,69 +19,102 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTInteger
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.Instruction
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure, Variable}
 
-trait AggregateExpression extends CodeGenExpression {
+trait AggregateExpression {
 
-  def initialValue[E](generator: MethodStructure[E])(implicit context: CodeGenContext): E
+  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
+
+  def update[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
+
+  def continuation(instruction: Instruction): Instruction = instruction
 }
 
-case class Count(expression: CodeGenExpression) extends AggregateExpression {
 
-  private var name: String = null
+
+case class SimpleCount(variable: Variable, expression: CodeGenExpression, distinct: Boolean) extends AggregateExpression {
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     expression.init(generator)
-    name = context.namer.newVarName()
-    generator.assign(name, CodeGenType.primitiveInt, generator.constantExpression(Long.box(0L)))
+    generator.assign(variable.name, CodeGenType.primitiveInt, generator.constantExpression(Long.box(0L)))
+    if (distinct) generator.newSet(setName(variable))
   }
 
-  def initialValue[E](generator: MethodStructure[E])(implicit context: CodeGenContext): E =
-    generator.constantExpression(Long.box(0L))
-
-  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-    structure.ifNonNullStatement(expression.generateExpression(structure)) { body =>
-      body.incrementInteger(name)
-    }
-    structure.loadVariable(name)
-  }
-
-  override def nullable(implicit context: CodeGenContext) = false
-
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTInteger, IntType)
-}
-
-case class CountDistinct(expression: CodeGenExpression) extends AggregateExpression {
-
-  private var name: String = null
-  private var setName: String = null
-
-  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    expression.init(generator)
-    name = context.namer.newVarName()
-    setName = context.namer.newVarName()
-    generator.assign(name, CodeGenType.primitiveInt, generator.constantExpression(Long.box(0L)))
-    generator.newSet(setName)
-  }
-
-  def initialValue[E](generator: MethodStructure[E])(implicit context: CodeGenContext): E =
-    generator.constantExpression(Long.box(0L))
-
-  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+  def update[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     val tmpName = context.namer.newVarName()
     structure.assign(tmpName, CodeGenType.Any, expression.generateExpression(structure))
     structure.ifNonNullStatement(structure.loadVariable(tmpName)) { body =>
-      body.ifNotStatement(body.setContains(setName, body.loadVariable(tmpName))) { inner => {
-          inner.addToSet(setName, inner.loadVariable(tmpName))
-          inner.incrementInteger(name)
+      condition(tmpName, body) { inner =>
+        inner.incrementInteger(variable.name)
+      }
+    }
+  }
+
+  private def condition[E](name: String, structure: MethodStructure[E])(block: MethodStructure[E] => Unit) = {
+    if (distinct) {
+      structure.ifNotStatement(structure.setContains(setName(variable), structure.loadVariable(name))) { inner =>
+        inner.addToSet(setName(variable), inner.loadVariable(name))
+        block(inner)
+      }
+    } else block(structure)
+  }
+
+  private def setName(variable: Variable) = variable.name + "Set"
+}
+
+class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpression,
+                   groupingKey: Iterable[Variable], distinct: Boolean) extends AggregateExpression {
+
+  private var mapName: String = null
+
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    expression.init(generator)
+    mapName = context.namer.newVarName()
+    generator.newAggregationMap(mapName, groupingKey.map(_.codeGenType).toIndexedSeq, distinct)
+  }
+
+  override def update[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    val localVar = context.namer.newVarName()
+    structure.aggregationMapGet(mapName, localVar, createKey(structure))
+    condition(structure, expression.generateExpression(structure)) { inner =>
+      inner.incrementInteger(localVar)
+    }
+    structure.aggregationMapPut(mapName, createKey(structure),
+                                structure.loadVariable(localVar))
+  }
+
+  private def condition[E](structure: MethodStructure[E], value: E)(block: MethodStructure[E] => Unit)(implicit context: CodeGenContext) = {
+    if (distinct) {
+      structure.ifNonNullStatement(value) { i1 =>
+        i1.checkDistinct(mapName, createKey(structure), value) { i2 =>
+          block(i2)
+        }
+      }
+    } else {
+      structure.ifNonNullStatement(value) { inner =>
+        block(inner)
+      }
+    }
+  }
+
+  private def createKey[E](body: MethodStructure[E])(implicit context: CodeGenContext): IndexedSeq[(CodeGenType, E)] = {
+    groupingKey.map(e => (e.codeGenType, body.loadVariable(e.name))).toIndexedSeq
+  }
+
+  override def continuation(instruction: Instruction): Instruction = new Instruction {
+
+    override protected def children: Seq[Instruction] = Seq(instruction)
+
+    override protected def operatorId = Set(opName)
+
+    override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
+      generator.trace(opName) { body =>
+        val keyArg = groupingKey.map(k => k.name -> k.codeGenType).toIndexedSeq
+        body.aggregationMapIterate(mapName, keyArg, variable.name) { inner =>
+          instruction.body(inner)
         }
       }
     }
-    structure.loadVariable(name)
   }
-
-  override def nullable(implicit context: CodeGenContext) = false
-
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTInteger, IntType)
 }

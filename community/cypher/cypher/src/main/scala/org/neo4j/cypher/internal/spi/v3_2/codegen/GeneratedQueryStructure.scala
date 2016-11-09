@@ -118,10 +118,12 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
                                                                                       typeParameter("E")), "visitor")).
         parameterizedWith("E", extending(typeRef[Exception])).
         throwsException(typeParameter("E")))) { method =>
+        val structure = new GeneratedMethodStructure(fields, method, new AuxGenerator(conf.packageName, generator), onClose =
+          Seq(block => block.expression(Expression.invoke(block.self(), fields.close))))
         method.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
-        block(GeneratedMethodStructure(fields, method, new AuxGenerator(conf.packageName, generator)))
+        block(structure)
         method.expression(invoke(method.self(), fields.success))
-        method.expression(invoke(method.self(), fields.close))
+        structure.finalizers.foreach(_(method))
       }
       clazz.handle()
     }
