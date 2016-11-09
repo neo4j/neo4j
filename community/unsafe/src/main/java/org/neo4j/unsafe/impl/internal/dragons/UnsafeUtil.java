@@ -337,6 +337,33 @@ public final class UnsafeUtil
     }
 
     /**
+     * Returns address pointer equal to or slightly after the given {@code pointer}.
+     * The returned pointer as aligned with {@code alignBy} such that {@code pointer % alignBy == 0}.
+     * The given pointer should be allocated with at least the requested size + {@code alignBy - 1},
+     * where the additional bytes will serve as padding for the worst case where the start of the usable
+     * area of the allocated memory will need to be shifted at most {@code alignBy - 1} bytes to the right.
+     *
+     * <pre><code>
+     * 0   4   8   12  16  20        ; 4-byte alignments
+     * |---|---|---|---|---|         ; memory
+     *        --------===            ; allocated memory (-required, =padding)
+     *         ^------^              ; used memory
+     * </code></pre>
+     *
+     * @param pointer pointer to allocated memory from {@link #allocateMemory(long)}.
+     * @param alignBy power-of-two size to align to, e.g. 4 or 8.
+     * @return pointer to place inside the allocated memory to consider the effective start of the
+     * memory, which from that point is aligned by {@code alignBy}.
+     */
+    public static long alignedMemory( long pointer, int alignBy )
+    {
+        assert Integer.bitCount( alignBy ) == 1 : "Requires alignment to be power of 2, but was " + alignBy;
+
+        long misalignment = pointer % alignBy;
+        return misalignment == 0 ? pointer : pointer + (alignBy - misalignment);
+    }
+
+    /**
      * Free the memory that was allocated with {@link #allocateMemory}.
      */
     public static void free( long pointer )
@@ -899,5 +926,114 @@ public final class UnsafeUtil
         boolean previousSetting = nativeAccessCheckEnabled;
         nativeAccessCheckEnabled = newSetting;
         return previousSetting;
+    }
+
+    /**
+     * Gets a {@code short} at memory address {@code p} by reading byte for byte, instead of the whole value
+     * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
+     * is {@code false} and {@code p} isn't aligned properly. Values read with this method should have been
+     * previously put using {@link #putShortByteWiseLittleEndian(long, short)}.
+     *
+     * @param p address pointer to start reading at.
+     * @return the read value, which was read byte for byte.
+     */
+    public static short getShortByteWiseLittleEndian( long p )
+    {
+        short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
+        short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
+        return (short) ((b << 8) | a);
+    }
+
+    /**
+     * Gets a {@code int} at memory address {@code p} by reading byte for byte, instead of the whole value
+     * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
+     * is {@code false} and {@code p} isn't aligned properly. Values read with this method should have been
+     * previously put using {@link #putIntByteWiseLittleEndian(long, int)}.
+     *
+     * @param p address pointer to start reading at.
+     * @return the read value, which was read byte for byte.
+     */
+    public static int getIntByteWiseLittleEndian( long p )
+    {
+        int a = UnsafeUtil.getByte( p     ) & 0xFF;
+        int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
+        int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
+        int d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
+        return (d << 24) | (c << 16) | (b << 8) | a;
+    }
+
+    /**
+     * Gets a {@code long} at memory address {@code p} by reading byte for byte, instead of the whole value
+     * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
+     * is {@code false} and {@code p} isn't aligned properly. Values read with this method should have been
+     * previously put using {@link #putLongByteWiseLittleEndian(long, long)}.
+     *
+     * @param p address pointer to start reading at.
+     * @return the read value, which was read byte for byte.
+     */
+    public static long getLongByteWiseLittleEndian( long p )
+    {
+        long a = UnsafeUtil.getByte( p     ) & 0xFF;
+        long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
+        long c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
+        long d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
+        long e = UnsafeUtil.getByte( p + 4 ) & 0xFF;
+        long f = UnsafeUtil.getByte( p + 5 ) & 0xFF;
+        long g = UnsafeUtil.getByte( p + 6 ) & 0xFF;
+        long h = UnsafeUtil.getByte( p + 7 ) & 0xFF;
+        return (h << 56) | (g << 48) | (f << 40) | (e << 32) | (d << 24) | (c << 16) | (b << 8) | a;
+    }
+
+    /**
+     * Puts a {@code short} at memory address {@code p} by writing byte for byte, instead of the whole value
+     * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
+     * is {@code false} and {@code p} isn't aligned properly. Values written with this method should be
+     * read using {@link #getShortByteWiseLittleEndian(long)}.
+     *
+     * @param p address pointer to start writing at.
+     * @param value value to write byte for byte.
+     */
+    public static void putShortByteWiseLittleEndian( long p, short value )
+    {
+        UnsafeUtil.putByte( p    , (byte)( value      ) );
+        UnsafeUtil.putByte( p + 1, (byte)( value >> 8 ) );
+    }
+
+    /**
+     * Puts a {@code int} at memory address {@code p} by writing byte for byte, instead of the whole value
+     * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
+     * is {@code false} and {@code p} isn't aligned properly. Values written with this method should be
+     * read using {@link #getIntByteWiseLittleEndian(long)}.
+     *
+     * @param p address pointer to start writing at.
+     * @param value value to write byte for byte.
+     */
+    public static void putIntByteWiseLittleEndian( long p, int value )
+    {
+        UnsafeUtil.putByte( p    , (byte)( value       ) );
+        UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
+        UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
+        UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
+    }
+
+    /**
+     * Puts a {@code long} at memory address {@code p} by writing byte for byte, instead of the whole value
+     * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
+     * is {@code false} and {@code p} isn't aligned properly. Values written with this method should be
+     * read using {@link #getShortByteWiseLittleEndian(long)}.
+     *
+     * @param p address pointer to start writing at.
+     * @param value value to write byte for byte.
+     */
+    public static void putLongByteWiseLittleEndian( long p, long value )
+    {
+        UnsafeUtil.putByte( p    , (byte)( value       ) );
+        UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
+        UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
+        UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
+        UnsafeUtil.putByte( p + 4, (byte)( value >> 32 ) );
+        UnsafeUtil.putByte( p + 5, (byte)( value >> 40 ) );
+        UnsafeUtil.putByte( p + 6, (byte)( value >> 48 ) );
+        UnsafeUtil.putByte( p + 7, (byte)( value >> 56 ) );
     }
 }
