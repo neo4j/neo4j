@@ -34,7 +34,6 @@ import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPollingClient;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.causalclustering.core.state.machines.tx.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
@@ -73,11 +72,11 @@ import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -89,7 +88,6 @@ import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -118,6 +116,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         File storeDir = platformModule.storeDir;
         LifeSupport life = platformModule.life;
         Monitors monitors = platformModule.monitors;
+
+        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
         this.accessCapability = new ReadOnly();
 
