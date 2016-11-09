@@ -117,7 +117,7 @@ public class ConsistencyCheckService
             {
                 pageCache.close();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 log.error( "Failure during shutdown of the page cache", e );
             }

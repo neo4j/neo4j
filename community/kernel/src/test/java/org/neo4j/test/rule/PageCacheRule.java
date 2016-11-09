@@ -69,7 +69,7 @@ public class PageCacheRule extends ExternalResource
             {
                 pageCache.close();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 throw new AssertionError(
                         "Failed to stop existing PageCache prior to creating a new one", e );
@@ -94,7 +94,7 @@ public class PageCacheRule extends ExternalResource
             {
                 pageCache.close();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 throw new AssertionError( "Failed to stop PageCache after test", e );
             }

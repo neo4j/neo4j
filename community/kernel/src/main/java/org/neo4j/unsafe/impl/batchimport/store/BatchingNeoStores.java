@@ -128,7 +128,7 @@ public class BatchingNeoStores implements AutoCloseable
             {
                 pageCache.close();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 // Oddly enough we can't close the page cache, how to communicate this? Here we add as suppressed
                 ise.addSuppressed( e );

@@ -143,6 +143,81 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, 2, pageCachePageSize, PageCacheTracer.NULL );
     }
 
+    @Test
+    public void mustClosePageSwapperFactoryOnPageCacheClose() throws Exception
+    {
+        AtomicBoolean closed = new AtomicBoolean();
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory()
+        {
+            @Override
+            public void close()
+            {
+                closed.set( true );
+            }
+        };
+        PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        Exception exception = null;
+        try
+        {
+            assertFalse( closed.get() );
+        }
+        catch ( Exception e )
+        {
+            exception = e;
+        }
+        finally
+        {
+            try
+            {
+                cache.close();
+                assertTrue( closed.get() );
+            }
+            catch ( Exception e )
+            {
+                if ( exception == null )
+                {
+                    exception = e;
+                }
+                else
+                {
+                    exception.addSuppressed( e );
+                }
+            }
+            if ( exception != null )
+            {
+                throw exception;
+            }
+        }
+    }
+
+    @Test
+    public void closingOfPageCacheMustBeConsideredSuccessfulEvenIfPageSwapperFactoryCloseThrows() throws Exception
+    {
+        AtomicInteger closed = new AtomicInteger();
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory()
+        {
+            @Override
+            public void close()
+            {
+                closed.getAndIncrement();
+                throw new RuntimeException( "boo" );
+            }
+        };
+        PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try
+        {
+            cache.close();
+            fail( "Should have thrown" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getMessage(), is( "boo" ) );
+        }
+
+        // We must still consider this a success, and not call PageSwapperFactory.close() again
+        cache.close();
+    }
+
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void mustReadExistingData() throws IOException
     {
