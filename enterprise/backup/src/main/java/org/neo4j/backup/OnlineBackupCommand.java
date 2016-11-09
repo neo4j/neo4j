@@ -79,9 +79,11 @@ public class OnlineBackupCommand implements AdminCommand
         @Override
         public String description()
         {
-            return "Perform a backup, over the network, from a running Neo4j server into a local copy of the " +
-                            "database store (the backup). Neo4j Server must be configured to run a backup service. " +
-                            "See http://neo4j.com/docs/operations-manual/current/backup/ for more details.";
+            return "Perform a backup, over the network, from a running Neo4j server into a local copy " +
+                    "of the database store (the backup). Neo4j Server must be configured to run a backup service. " +
+                    "See http://neo4j.com/docs/operations-manual/current/backup/ for more details.\n" +
+                    "\n" +
+                    "WARNING: this command is experimental and subject to change.";
         }
 
         @Override

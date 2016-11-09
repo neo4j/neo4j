@@ -19,17 +19,18 @@
  */
 package org.neo4j.commandline.arguments;
 
-import org.apache.commons.lang3.text.WordUtils;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.text.WordUtils;
 
 import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
@@ -113,7 +114,7 @@ public class Arguments
 
     public String description( String text )
     {
-        String wrappedText = WordUtils.wrap( text, LINE_LENGTH );
+        String wrappedText = wrapText( text, LINE_LENGTH );
         if ( namedArgs.isEmpty() )
         {
             return wrappedText;
@@ -130,6 +131,22 @@ public class Arguments
                 namedArgs.values().stream()
                         .map( c -> formatArgumentDescription( alignLength, c ) )
                         .collect( Collectors.joining( NEWLINE ) ) );
+    }
+
+    /**
+     * Original line-endings in the text are respected.
+     *
+     * @param text to wrap
+     * @param lineLength no line will exceed this length
+     * @return the text where no line exceeds the specified length
+     */
+    public static String wrapText( final String text, final int lineLength )
+    {
+        List<String> lines = Arrays.asList( text.split( "\r?\n" ) );
+
+        return lines.stream()
+                .map( l -> WordUtils.wrap( l, lineLength ) )
+                .collect( Collectors.joining( NEWLINE ) );
     }
 
     public String formatArgumentDescription( final int longestAlignmentLength, final NamedArgument argument )
@@ -160,7 +177,7 @@ public class Arguments
             rightWidth = LINE_LENGTH - newLineIndent;
         }
 
-        final String[] rightLines = WordUtils.wrap( rightText, rightWidth ).split( NEWLINE );
+        final String[] rightLines = wrapText( rightText, rightWidth ).split( NEWLINE );
 
         final String fmt = "%-" + (startOnNewLine ? newLineIndent : rightAlignIndex) + "s%s";
         String firstLine = String.format( fmt, leftText, startOnNewLine ? "" : rightLines[0] );

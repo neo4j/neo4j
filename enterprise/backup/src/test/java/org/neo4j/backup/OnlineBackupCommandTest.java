@@ -299,6 +299,8 @@ public class OnlineBackupCommandTest
                             "a backup service. See http://neo4j.com/docs/operations-manual/current/backup/%n" +
                             "for more details.%n" +
                             "%n" +
+                            "WARNING: this command is experimental and subject to change.%n" +
+                            "%n" +
                             "options:%n" +
                             "  --from=<address>                         Host and port of Neo4j.%n" +
                             "                                           [default:localhost:6362]%n" +

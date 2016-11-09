@@ -96,4 +96,35 @@ public class ArgumentsTest
                                         "names.") )
                         .description( "How to use" ) );
     }
+
+    @Test
+    public void descriptionShouldHandleExistingNewlines() throws Exception
+    {
+        assertEquals( String.format( "This is the first line%n" +
+                        "And this is the second line%n" +
+                        "The third line is so long that it requires some wrapping by the code itself%n" +
+                        "because as you can see it just keeps going ang going and going and going and%n" +
+                        "going and going." ),
+                builder.description( String.format(
+                        "This is the first line%n" + "And this is the second line%n" +
+                                "The third line is so long that it requires some wrapping by the code itself because " +
+                                "as you " +
+                                "can see it just keeps going ang going and going and going and going and going." ) ) );
+    }
+
+    @Test
+    public void wrappingHandlesBothKindsOfLineEndingsAndOutputsPlatformDependentOnes() throws Exception
+    {
+        assertEquals( String.format( "One with Linux%n" +
+                        "One with Windows%n" +
+                        "And one which is%n" +
+                        "just long and should%n" +
+                        "be wrapped by the%n" +
+                        "function" ),
+                Arguments.wrapText(
+                        "One with Linux\n" +
+                                "One with Windows\r\n" +
+                                "And one which is just long and should be wrapped by the function",
+                        20 ) );
+    }
 }
