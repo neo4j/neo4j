@@ -30,7 +30,6 @@ import java.util.NoSuchElementException;
 import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.com.ComException;
 import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
@@ -41,16 +40,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
-import org.neo4j.kernel.impl.storemigration.LogFiles;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.store.UnexpectedStoreVersionException;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 
 public class BackupTool
 {
@@ -195,46 +189,12 @@ public class BackupTool
         return executeBackup( hostnamePort, new File( to ), consistencyCheck, tuningConfiguration, timeout, forensics );
     }
 
-    private BackupOutcome executeBackup( HostnamePort hostnamePort, File to, ConsistencyCheck consistencyCheck,
-            Config tuningConfiguration, long timeout, boolean forensics ) throws ToolFailureException
-    {
-        try
-        {
-            systemOut.println( "Performing backup from '" + hostnamePort + "'" );
-            return doBackup( hostnamePort, to, consistencyCheck, tuningConfiguration, timeout, forensics );
-        }
-        catch ( TransactionFailureException tfe )
-        {
-            if ( tfe.getCause() instanceof UpgradeNotAllowedByConfigurationException )
-            {
-                try
-                {
-                    systemOut.println( "The database present in the target directory is of an older version. " +
-                            "Backing that up in target and performing a full backup from source" );
-                    moveExistingDatabase( fs, to );
-
-                }
-                catch ( IOException e )
-                {
-                    throw new ToolFailureException( "There was a problem moving the old database out of the way" +
-                            " - cannot continue, aborting.", e );
-                }
-
-                return doBackup( hostnamePort, to, consistencyCheck, tuningConfiguration, timeout, forensics );
-            }
-            else
-            {
-                throw new ToolFailureException( "TransactionFailureException " +
-                        "from existing backup at '" + hostnamePort + "'.", tfe );
-            }
-        }
-    }
-
-    private BackupOutcome doBackup( HostnamePort hostnamePort, File to, ConsistencyCheck consistencyCheck,
+    BackupOutcome executeBackup( HostnamePort hostnamePort, File to, ConsistencyCheck consistencyCheck,
             Config config, long timeout, boolean forensics ) throws ToolFailureException
     {
         try
         {
+            systemOut.println( "Performing backup from '" + hostnamePort + "'" );
             String host = hostnamePort.getHost();
             int port = hostnamePort.getPort();
 
@@ -242,6 +202,10 @@ public class BackupTool
                     config, timeout, forensics );
             systemOut.println( "Done" );
             return outcome;
+        }
+        catch ( UnexpectedStoreVersionException e )
+        {
+            throw new ToolFailureException( e.getMessage(), e );
         }
         catch ( MismatchingStoreIdException e )
         {
@@ -355,19 +319,6 @@ public class BackupTool
             port = BackupServer.DEFAULT_PORT;
         }
         return new HostnamePort( host, port );
-    }
-
-    private static void moveExistingDatabase( FileSystemAbstraction fs, File toDir ) throws IOException
-    {
-        File backupDir = new File( toDir, "old-version" );
-        if ( !fs.mkdir( backupDir ) )
-        {
-            throw new IOException( "Trouble making target backup directory " + backupDir.getAbsolutePath() );
-        }
-        StoreFile.fileOperation( MOVE, fs, toDir, backupDir, StoreFile.currentStoreFiles(), false,
-                ExistingTargetStrategy.FAIL,
-                StoreFileType.values() );
-        LogFiles.move( fs, toDir, backupDir );
     }
 
     private static String dash( String name )
