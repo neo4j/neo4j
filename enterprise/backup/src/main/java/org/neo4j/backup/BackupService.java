@@ -57,7 +57,9 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.UnexpectedStoreVersionException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -72,6 +74,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
+import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 /**
@@ -245,6 +248,16 @@ class BackupService
                 throw new RuntimeException( "Failed to perform incremental backup, fell back to full backup, " +
                         "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
             }
+        }
+        catch ( RuntimeException e )
+        {
+            if ( rootCause( e ) instanceof UpgradeNotAllowedByConfigurationException )
+            {
+                throw new UnexpectedStoreVersionException( "Failed to perform backup because existing backup is from " +
+                        "a different version.", e );
+            }
+
+            throw e;
         }
     }
 

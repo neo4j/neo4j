@@ -27,4 +27,9 @@ public class UnexpectedStoreVersionException extends StoreFailureException
     {
         super( String.format( MESSAGE, actualStoreVersion, expectedStoreVersion ) );
     }
+
+    public UnexpectedStoreVersionException( String msg, Throwable originalError )
+    {
+        super( msg, originalError );
+    }
 }
