@@ -552,7 +552,7 @@ public class SeekCursorTest
         }
         int fromInclusive = 0;
         int toExclusive = maxKeyCount;
-        
+
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor =
                       seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
