@@ -31,11 +31,12 @@ import org.neo4j.causalclustering.core.replication.session.OperationContext;
 import org.neo4j.causalclustering.core.state.machines.tx.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.util.Listener;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * A replicator implementation suitable in a RAFT context. Will handle resending due to timeouts and leader switches.
  */
-public class RaftReplicator implements Replicator, Listener<MemberId>
+public class RaftReplicator extends LifecycleAdapter implements Replicator, Listener<MemberId>
 {
     private final MemberId me;
     private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;
@@ -44,6 +45,7 @@ public class RaftReplicator implements Replicator, Listener<MemberId>
     private final RetryStrategy retryStrategy;
 
     private MemberId leader;
+    private volatile boolean shutdown;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
             Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
@@ -77,6 +79,7 @@ public class RaftReplicator implements Replicator, Listener<MemberId>
         RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
         do
         {
+            assertDatabaseNotShutdown();
             outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ) );
             try
             {
@@ -109,5 +112,19 @@ public class RaftReplicator implements Replicator, Listener<MemberId>
     {
         this.leader = leader;
         progressTracker.triggerReplicationEvent();
+    }
+
+    @Override
+    public void shutdown()
+    {
+        shutdown = true;
+    }
+
+    private void assertDatabaseNotShutdown() throws InterruptedException
+    {
+        if ( shutdown )
+        {
+            throw new InterruptedException( "Database has been shutdown, transaction cannot be replicated." );
+        }
     }
 }
