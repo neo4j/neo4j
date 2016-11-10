@@ -33,7 +33,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY;
 
@@ -78,7 +77,7 @@ public class ConfigurationTest
         long memory = config.pageCacheMemory();
 
         // THEN
-        long heuristic = BYTES.apply( ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory() );
+        long heuristic = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
         assertTrue( within( memory, heuristic, MAX_PAGE_CACHE_MEMORY ) );
     }
 

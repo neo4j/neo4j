@@ -122,21 +122,20 @@ public class ConfiguringPageCacheFactory
         {
             return pageCacheMemorySetting;
         }
-        String heuristic = defaultHeuristicPageCacheMemory();
+        long heuristic = defaultHeuristicPageCacheMemory();
         log.warn( "The " + pagecache_memory.name() + " setting has not been configured. It is recommended that this " +
                   "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
-                  "Until then, a computed heuristic value of '" + heuristic + "' will be used " +
-                  "instead. " );
-        return BYTES.apply( heuristic );
+                  "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " );
+        return heuristic;
     }
 
-    public static String defaultHeuristicPageCacheMemory()
+    public static long defaultHeuristicPageCacheMemory()
     {
         // First check if we have a default override...
         String defaultMemoryOverride = System.getProperty( "dbms.pagecache.memory.default.override" );
         if ( defaultMemoryOverride != null )
         {
-            return defaultMemoryOverride;
+            return BYTES.apply( defaultMemoryOverride );
         }
 
         double ratioOfFreeMem = 0.50;
@@ -166,7 +165,7 @@ public class ConfiguringPageCacheFactory
                     // of the system. This means that we won't heuristically try to create a page cache that is too
                     // large to fit on the heap.
                     long memory = Math.min( max, Math.max( min, heuristic ) );
-                    return String.valueOf( memory );
+                    return memory;
                 }
             }
             catch ( Exception ignore )
@@ -174,7 +173,7 @@ public class ConfiguringPageCacheFactory
             }
         }
         // ... otherwise we just go with 2 GiBs.
-        return "2g";
+        return ByteUnit.gibiBytes( 2 );
     }
 
     public int calculatePageSize( Config config, PageSwapperFactory swapperFactory )
