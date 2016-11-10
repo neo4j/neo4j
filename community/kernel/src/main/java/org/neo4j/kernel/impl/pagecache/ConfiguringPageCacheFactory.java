@@ -157,10 +157,14 @@ public class ConfiguringPageCacheFactory
                 {
                     long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
                     long min = ByteUnit.mebiBytes( 32 ); // We'd like at least 32 MiBs.
-                    long max = ByteUnit.gibiBytes( 20 ); // Don't heuristically take more than 20 GiBs.
+                    long max = Math.min( maxHeapMemory * 70, ByteUnit.gibiBytes( 20 ) );
+                    // Don't heuristically take more than 20 GiBs, and don't take more than 70 times our max heap.
                     // 20 GiBs of page cache memory is ~2.6 million 8 KiB pages. If each page has an overhead of
                     // 72 bytes, then this will take up ~175 MiBs of heap memory. We should be able to tolerate that
-                    // in most environments.
+                    // in most environments. The "no more than 70 times heap" heuristic is based on the page size over
+                    // the per page overhead, 8192 / 72 ~= 114, plus leaving some extra room on the heap for the rest
+                    // of the system. This means that we won't heuristically try to create a page cache that is too
+                    // large to fit on the heap.
                     long memory = Math.min( max, Math.max( min, heuristic ) );
                     return String.valueOf( memory );
                 }
