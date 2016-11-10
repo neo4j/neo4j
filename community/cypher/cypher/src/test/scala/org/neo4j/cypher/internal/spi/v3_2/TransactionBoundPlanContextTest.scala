@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_1
+package org.neo4j.cypher.internal.spi.v3_2
 
 import java.util.Collections
 
-import org.neo4j.cypher.internal.compiler.v3_1.devNullLogger
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Cardinality
-import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v3_2.devNullLogger
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Cardinality
+import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api.KernelTransaction.Type._

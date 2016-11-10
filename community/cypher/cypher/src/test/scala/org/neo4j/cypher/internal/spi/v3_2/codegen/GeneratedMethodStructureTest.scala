@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_1.codegen
+package org.neo4j.cypher.internal.spi.v3_2.codegen
 
 import java.util
 
 import org.neo4j.codegen.source.{Configuration, SourceCode}
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
-import org.neo4j.cypher.internal.compiler.v3_1.codegen._
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{CodeGenType, ReferenceType}
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Provider, SuccessfulCloseable}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers._
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, SemanticTable, symbols}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{CodeGenType, ReferenceType}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Provider, SuccessfulCloseable}
+import org.neo4j.cypher.internal.compiler.v3_2.helpers._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SemanticTable, symbols}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
