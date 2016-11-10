@@ -24,6 +24,9 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
 
+/**
+ * Note that SeekCursor assumes unique keys.
+ */
 class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
 {
     private final PageCursor cursor;
@@ -42,6 +45,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private int keyCount;
     private boolean currentContainsEnd;
     private boolean reread;
+    private boolean resetPosition;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
             KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int firstPosToRead, int keyCount )
@@ -82,6 +86,14 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     keyCount = bTreeNode.keyCount( cursor );
                     currentContainsEnd = layout.compare(
                             bTreeNode.keyAt( cursor, mutableKey, keyCount - 1 ), toExclusive ) >= 0;
+
+                    // Keys could have been moved to the left so we need to make sure we are not missing any keys by
+                    // moving position back until we find previously returned key
+                    if ( resetPosition )
+                    {
+                        int searchResult = IndexSearch.search( cursor, bTreeNode, prevKey, mutableKey, keyCount );
+                        pos = IndexSearch.positionOf( searchResult );
+                    }
                     reread = false;
                 }
                 // There's a condition in here, choosing between go to next sibling or value,
@@ -100,7 +112,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     bTreeNode.valueAt( cursor, mutableValue, pos );
                 }
             }
-            while ( reread = cursor.shouldRetry() );
+            while ( resetPosition = reread = cursor.shouldRetry() );
 
             if ( pos >= keyCount )
             {
