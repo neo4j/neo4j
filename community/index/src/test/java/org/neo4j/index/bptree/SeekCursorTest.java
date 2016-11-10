@@ -50,7 +50,6 @@ public class SeekCursorTest
     private final MutableLong from = layout.newKey();
     private final MutableLong to = layout.newKey();
 
-
     @Before
     public void setUp() throws IOException
     {
@@ -473,7 +472,6 @@ public class SeekCursorTest
         int fromInclusive = 0;
         int toExclusive = maxKeyCount;
 
-
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor =
                       seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
@@ -515,7 +513,6 @@ public class SeekCursorTest
         int fromInclusive = 0;
         int toExclusive = maxKeyCount;
 
-
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor =
                       seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
@@ -555,8 +552,7 @@ public class SeekCursorTest
         }
         int fromInclusive = 0;
         int toExclusive = maxKeyCount;
-
-
+        
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor =
                       seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
