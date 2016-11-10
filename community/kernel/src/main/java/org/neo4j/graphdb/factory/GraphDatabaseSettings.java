@@ -371,8 +371,8 @@ public abstract class GraphDatabaseSettings
                   "suffix, megabytes with 'm' and gigabytes with 'g'). If Neo4j is running on a dedicated server, " +
                   "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the " +
                   "JVM enough heap to hold all your transaction state and query context, and then leave the rest for " +
-                  "the page cache. The default page cache memory assumes the machine is dedicated to running " +
-                  "Neo4j, and is heuristically set to 50% of RAM minus the max Java heap size." )
+                  "the page cache. If no page cache memory is configured, then a heuristic setting is computed based " +
+                  "on available system resources." )
     public static final Setting<Long> pagecache_memory =
             setting( "dbms.memory.pagecache.size", BYTES, null, min( 8192 * 30L ) );
 
