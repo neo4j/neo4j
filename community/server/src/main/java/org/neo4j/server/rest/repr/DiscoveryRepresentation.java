@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.helpers.AdvertisedSocketAddress;
+
 public class DiscoveryRepresentation extends MappingRepresentation
 {
 
@@ -28,9 +30,9 @@ public class DiscoveryRepresentation extends MappingRepresentation
     private static final String DISCOVERY_REPRESENTATION_TYPE = "discovery";
     private final String managementUri;
     private final String dataUri;
-    private final String boltAddress;
+    private final AdvertisedSocketAddress boltAddress;
 
-    public DiscoveryRepresentation( String managementUri, String dataUri, String boltAddress )
+    public DiscoveryRepresentation( String managementUri, String dataUri, AdvertisedSocketAddress boltAddress )
     {
         super( DISCOVERY_REPRESENTATION_TYPE );
         this.managementUri = managementUri;
@@ -43,10 +45,6 @@ public class DiscoveryRepresentation extends MappingRepresentation
     {
         serializer.putRelativeUri( MANAGEMENT_URI_KEY, managementUri );
         serializer.putRelativeUri( DATA_URI_KEY, dataUri );
-        if ( boltAddress != null )
-        {
-            serializer.putAbsoluteUri( BOLT_URI_KEY, "bolt://" + boltAddress );
-        }
+        serializer.putAbsoluteUri( BOLT_URI_KEY, "bolt://" + boltAddress.getHostname() + ":" + boltAddress.getPort() );
     }
-
 }

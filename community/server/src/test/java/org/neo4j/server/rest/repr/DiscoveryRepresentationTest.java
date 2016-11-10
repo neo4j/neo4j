@@ -19,13 +19,15 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.junit.Test;
 
 import java.net.URI;
 import java.util.Map;
 
-import org.junit.Test;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class DiscoveryRepresentationTest
 {
@@ -34,11 +36,10 @@ public class DiscoveryRepresentationTest
     {
         String managementUri = "/management";
         String dataUri = "/data";
-        String boltAddress = "localhost:7687";
-        String boltUri = "bolt://" + boltAddress;
+        AdvertisedSocketAddress boltAddress = new AdvertisedSocketAddress( "localhost", 7687 );
         DiscoveryRepresentation dr = new DiscoveryRepresentation( managementUri, dataUri, boltAddress );
 
-        Map<String, Object> mapOfUris = RepresentationTestAccess.serialize( dr );
+        Map<String,Object> mapOfUris = RepresentationTestAccess.serialize( dr );
 
         Object mappedManagementUri = mapOfUris.get( "management" );
         Object mappedDataUri = mapOfUris.get( "data" );
@@ -52,6 +53,11 @@ public class DiscoveryRepresentationTest
 
         assertEquals( mappedManagementUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, managementUri ) );
         assertEquals( mappedDataUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, dataUri ) );
-        assertEquals( mappedBoltUri.toString(), boltUri );
+        assertEquals( mappedBoltUri.toString(), toBoltUri( boltAddress ) );
+    }
+
+    private String toBoltUri( AdvertisedSocketAddress boltAddress )
+    {
+        return "bolt://" + boltAddress.getHostname() + ":" + boltAddress.getPort();
     }
 }

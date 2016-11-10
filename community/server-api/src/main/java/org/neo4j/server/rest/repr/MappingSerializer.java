@@ -31,7 +31,7 @@ public class MappingSerializer extends Serializer
         this.writer = writer;
     }
 
-    public void putAbsoluteUri( String key, String path )
+    void putAbsoluteUri( String key, String path )
     {
         writer.writeValue( RepresentationType.URI, key, path );
     }
@@ -51,7 +51,7 @@ public class MappingSerializer extends Serializer
         writer.writeString( key, value );
     }
 
-    public void putBoolean( String key, boolean value )
+    void putBoolean( String key, boolean value )
     {
         writer.writeBoolean( key, value );
     }
@@ -66,7 +66,7 @@ public class MappingSerializer extends Serializer
         serialize( writer.newList( value.type, key ), value );
     }
 
-    public final void putNumber( String key, Number value )
+    final void putNumber( String key, Number value )
     {
         if ( value instanceof Double || value instanceof Float )
         {

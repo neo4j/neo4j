@@ -31,7 +31,7 @@ public class SocketAddress
     private final String hostname;
     private final int port;
 
-    SocketAddress( String hostname, int port )
+    public SocketAddress( String hostname, int port )
     {
         this.hostname = hostname;
         this.port = port;
@@ -73,8 +73,7 @@ public class SocketAddress
             return false;
         }
         SocketAddress that = (SocketAddress) o;
-        return port == that.port &&
-                Objects.equals( hostname, that.hostname );
+        return port == that.port && Objects.equals( hostname, that.hostname );
     }
 
     @Override

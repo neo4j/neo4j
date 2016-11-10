@@ -70,6 +70,11 @@ public class CommunityServerBuilder
     private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
 
+    static
+    {
+        System.setProperty( "sun.net.http.allowRestrictedHeaders", "true" );
+    }
+
     private static LifecycleManagingDatabase.GraphFactory  IN_MEMORY_DB = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         Map<String, String> params = config.getParams();

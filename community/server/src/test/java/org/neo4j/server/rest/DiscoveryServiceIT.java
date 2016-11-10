@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.rest;
 
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import com.sun.jersey.api.client.Client;
 import org.junit.Test;
 
+import java.util.Map;
+
 import org.neo4j.server.rest.domain.JsonHelper;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -47,8 +48,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument() throws Exception
     {
         JaxRsResponse response = getDiscoveryDocument();
-        assertNotNull( response.getHeaders()
-                .get( "Content-Length" ) );
+        assertNotNull( response.getHeaders().get( "Content-Length" ) );
         response.close();
     }
 
@@ -56,7 +56,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception
     {
         JaxRsResponse response = getDiscoveryDocument();
-        assertThat( response.getType().toString(), containsString(MediaType.APPLICATION_JSON) );
+        assertThat( response.getType().toString(), containsString( APPLICATION_JSON ) );
         response.close();
     }
 
@@ -65,7 +65,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     {
         JaxRsResponse response = getDiscoveryDocument();
 
-        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity() );
+        Map<String,Object> map = JsonHelper.jsonToMap( response.getEntity() );
 
         String managementKey = "management";
         assertTrue( map.containsKey( managementKey ) );
@@ -83,14 +83,14 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
 
-        JaxRsResponse clientResponse = new RestRequest(null,nonRedirectingClient).get(server().baseUri().toString(),MediaType.TEXT_HTML_TYPE);
+        JaxRsResponse clientResponse =
+                new RestRequest( null, nonRedirectingClient ).get( server().baseUri().toString(), TEXT_HTML_TYPE );
 
         assertEquals( 303, clientResponse.getStatus() );
     }
 
     private JaxRsResponse getDiscoveryDocument() throws Exception
     {
-        return new RestRequest(server().baseUri()).get();
+        return new RestRequest( server().baseUri() ).get();
     }
-
 }
