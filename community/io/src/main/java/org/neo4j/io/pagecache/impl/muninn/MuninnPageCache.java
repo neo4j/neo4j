@@ -602,7 +602,7 @@ public class MuninnPageCache implements PageCache
             {
                 int refCount = files.pagedFile.getRefCount();
                 msg.append( "\n\t" );
-                msg.append( files.file.getName() );
+                msg.append( files.file );
                 msg.append( " (" ).append( refCount );
                 msg.append( refCount == 1? " mapping)" : " mappings)" );
                 files = files.next;
