@@ -19,9 +19,9 @@ NOTE: This GitHub repository contains mixed GPL and AGPL code. Our Community edi
 
 == Dependencies ==
 
-Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.0.x and a recent version of supported VM. Bash and Make is also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m"`.
+Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.3 and a recent version of supported VM. Bash and Make are also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m"`.
 
-OSX users need to have http://brew.sh/[Homebrew] installed.
+OS X users need to have http://brew.sh/[Homebrew] installed.
 
 === With brew on OSX ===
 
