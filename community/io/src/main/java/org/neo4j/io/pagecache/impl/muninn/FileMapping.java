@@ -37,6 +37,6 @@ final class FileMapping
     public String toString()
     {
         return String.format( "FileMapping[fname = %s, refCount = %s] :: %s",
-                file.getName(), pagedFile.getRefCount(), next );
+                file, pagedFile.getRefCount(), next );
     }
 }
