@@ -206,5 +206,4 @@ class BPTreeConsistencyChecker<KEY>
             return new KeyRange( comparator, fromInclusive, toExclusive, layout );
         }
     }
-
 }
