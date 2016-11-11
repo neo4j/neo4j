@@ -27,16 +27,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
-import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -203,6 +199,83 @@ public class BoltCausalClusteringIT
         }
     }
 
+    /**
+     * Keeps the leader different than the initial leader.
+     */
+    private class LeaderSwitcher implements Runnable
+    {
+        private final Cluster cluster;
+        private CoreClusterMember initialLeader;
+        private CoreClusterMember currentLeader;
+
+        private Thread thread;
+        private boolean stopped;
+        private Throwable throwable;
+
+        LeaderSwitcher( Cluster cluster )
+        {
+            this.cluster = cluster;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                initialLeader = cluster.awaitLeader();
+
+                while ( !stopped )
+                {
+                    currentLeader = cluster.awaitLeader();
+                    if ( currentLeader == initialLeader )
+                    {
+                        switchLeader( initialLeader );
+                        currentLeader = cluster.awaitLeader();
+                    }
+
+                    Thread.sleep( 100 );
+                }
+            }
+            catch ( Throwable e )
+            {
+                throwable = e;
+            }
+        }
+
+        void start()
+        {
+            if ( thread == null )
+            {
+                thread = new Thread( this );
+                thread.start();
+            }
+        }
+
+        void stop() throws Throwable
+        {
+            if ( thread != null )
+            {
+                stopped = true;
+                thread.join();
+            }
+
+            assertNoException();
+        }
+
+        boolean hadLeaderSwitch()
+        {
+            return currentLeader != initialLeader;
+        }
+
+        void assertNoException() throws Throwable
+        {
+            if ( throwable != null )
+            {
+                throw throwable;
+            }
+        }
+    }
+
     @Test
     public void shouldPickANewServerToWriteToOnLeaderSwitch() throws Throwable
     {
@@ -211,26 +284,7 @@ public class BoltCausalClusteringIT
 
         CoreClusterMember leader = cluster.awaitLeader();
 
-        CountDownLatch startTheLeaderSwitching = new CountDownLatch( 1 );
-
-        AtomicBoolean successfullySwitchedLeader = new AtomicBoolean( false );
-
-        Thread thread = new Thread( () ->
-        {
-            try
-            {
-                startTheLeaderSwitching.await( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
-                CoreClusterMember theLeader = cluster.awaitLeader();
-                switchLeader( theLeader );
-                successfullySwitchedLeader.set( true );
-            }
-            catch ( TimeoutException | InterruptedException e )
-            {
-                // ignore
-            }
-        } );
-
-        thread.start();
+        LeaderSwitcher leaderSwitcher = new LeaderSwitcher( cluster );
 
         Config config = Config.build().withLogging( new JULogging( Level.OFF ) ).toConfig();
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
@@ -265,14 +319,17 @@ public class BoltCausalClusteringIT
                  * Having the latch release here ensures that we've done at least one pass through the loop, which means
                  * we've completed a connection before the forced master switch.
                  */
-                startTheLeaderSwitching.countDown();
+                if ( seenAddresses.size() >= 1 )
+                {
+                    leaderSwitcher.start();
+                }
             }
         }
         finally
         {
-            thread.join();
+            leaderSwitcher.stop();
+            assertTrue( leaderSwitcher.hadLeaderSwitch() );
             assertThat( seenAddresses.size(), greaterThanOrEqualTo( 2 ) );
-            assertTrue( successfullySwitchedLeader.get() );
         }
     }
 

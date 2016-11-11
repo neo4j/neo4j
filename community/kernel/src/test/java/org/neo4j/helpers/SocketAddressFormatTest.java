@@ -33,7 +33,7 @@ public class SocketAddressFormatTest
         String addressString = whitespace( 1 ) + "localhost:9999";
 
         // when
-        AdvertisedSocketAddress address = SocketAddressFormat.socketAddress( addressString, AdvertisedSocketAddress::new );
+        SocketAddress address = SocketAddressFormat.socketAddress( addressString, SocketAddress::new );
 
         // then
         assertEquals( "localhost", address.getHostname() );
@@ -47,7 +47,7 @@ public class SocketAddressFormatTest
         String addressString = "localhost:9999" + whitespace( 1 );
 
         // when
-        AdvertisedSocketAddress address = SocketAddressFormat.socketAddress( addressString, AdvertisedSocketAddress::new );
+        SocketAddress address = SocketAddressFormat.socketAddress( addressString, SocketAddress::new );
 
         // then
         assertEquals( "localhost", address.getHostname() );
@@ -60,7 +60,7 @@ public class SocketAddressFormatTest
         String addressString = "localhost" + whitespace( 1 ) + ":9999";
         try
         {
-            SocketAddressFormat.socketAddress( addressString, AdvertisedSocketAddress::new );
+            SocketAddressFormat.socketAddress( addressString, SocketAddress::new );
             fail( "Should have thrown an exception" );
         }
         catch ( IllegalArgumentException e )
@@ -75,7 +75,7 @@ public class SocketAddressFormatTest
         String addressString = "localhost:9999abc";
         try
         {
-            SocketAddressFormat.socketAddress( addressString, AdvertisedSocketAddress::new );
+            SocketAddressFormat.socketAddress( addressString, SocketAddress::new );
             fail( "Should have thrown an exception" );
         }
         catch ( IllegalArgumentException e )
@@ -90,7 +90,7 @@ public class SocketAddressFormatTest
         String addressString = "localhost:";
         try
         {
-            SocketAddressFormat.socketAddress( addressString, AdvertisedSocketAddress::new );
+            SocketAddressFormat.socketAddress( addressString, SocketAddress::new );
             fail( "Should have thrown an exception" );
         }
         catch ( IllegalArgumentException e )
