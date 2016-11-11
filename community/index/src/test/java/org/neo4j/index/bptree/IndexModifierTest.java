@@ -103,7 +103,7 @@ public class IndexModifierTest
         for ( int i = 0; i < maxKeyCount; i++ )
         {
             // given
-            insert( (long) i, (long) i );
+            insert( i, i );
 
             // then
             assertThat( keyAt( i ), is( (long) i ) );

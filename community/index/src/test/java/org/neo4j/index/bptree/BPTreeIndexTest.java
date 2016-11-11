@@ -60,7 +60,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static java.lang.Integer.max;
-import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -79,9 +78,9 @@ public class BPTreeIndexTest
     private File indexFile;
     private final SCIndexDescription description = new SCIndexDescription( "a", "b", "c", OUTGOING, "d", null );
     private final Layout<TwoLongs,TwoLongs> layout = new PathIndexLayout( description );
-    private Index<TwoLongs,TwoLongs> index;
+    private BPTreeIndex<TwoLongs,TwoLongs> index;
 
-    public Index<TwoLongs,TwoLongs> createIndex( int pageSize )
+    public BPTreeIndex<TwoLongs,TwoLongs> createIndex( int pageSize )
             throws IOException
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
@@ -96,6 +95,7 @@ public class BPTreeIndexTest
     {
         if ( index != null )
         {
+            assertTrue( index.consistencyCheck() );
             index.close();
         }
         pageCache.close();
@@ -327,18 +327,21 @@ public class BPTreeIndexTest
     public void shouldSplitCorrectly() throws Exception
     {
         // GIVEN
-        Index<TwoLongs,TwoLongs> index = createIndex( 128 );
+        BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 128 );
 
         // WHEN
-        long seed = currentTimeMillis();
-        Random random = new Random( seed );
         int count = 1_000;
         PrimitiveLongSet seen = Primitive.longSet( count );
         try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
         {
             for ( int i = 0; i < count; i++ )
             {
-                TwoLongs key = new TwoLongs( random.nextInt( 100_000 ), 0 );
+                TwoLongs key;
+                do
+                {
+                    key = new TwoLongs( random.nextInt( 100_000 ), 0 );
+                }
+                while ( !seen.add( key.first ) );
                 TwoLongs value = new TwoLongs();
                 inserter.insert( key, value, overwrite() );
                 seen.add( key.first );
@@ -355,7 +358,7 @@ public class BPTreeIndexTest
                 TwoLongs hit = cursor.get().key();
                 if ( hit.first < prev.first )
                 {
-                    fail( "Seed:" + seed + ", " + hit + " smaller than prev " + prev );
+                    fail( hit + " smaller than prev " + prev );
                 }
                 prev = new TwoLongs( hit.first, hit.other );
                 assertTrue( seen.remove( hit.first ) );
@@ -363,8 +366,7 @@ public class BPTreeIndexTest
 
             if ( !seen.isEmpty() )
             {
-                fail( "Seed:" + seed + ", expected hits " +
-                      Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
+                fail( "expected hits " + Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
             }
         }
     }

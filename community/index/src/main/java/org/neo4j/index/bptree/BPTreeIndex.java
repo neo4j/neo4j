@@ -290,6 +290,15 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
     }
 
+    public boolean consistencyCheck() throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            cursor.next();
+            return new BPTreeConsistencyChecker<>( bTreeNode, layout ).check( cursor );
+        }
+    }
+
     @Override
     public void flush() throws IOException
     {

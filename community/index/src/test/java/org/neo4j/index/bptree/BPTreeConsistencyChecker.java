@@ -26,6 +26,8 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
+
 /**
  * Check order of keys in isolated nodes
  * Check keys fit inside range given by parent node
@@ -37,7 +39,7 @@ class BPTreeConsistencyChecker<KEY>
     private final KEY readKey;
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
-    private final List<RightmostInChain> rightmostPerLevel = new ArrayList<>();
+    private final List<RightmostInChain<KEY>> rightmostPerLevel = new ArrayList<>();
 
     BPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout )
     {
@@ -53,7 +55,7 @@ class BPTreeConsistencyChecker<KEY>
         layout.minKey( leftSideOfRange );
         KEY rightSideOfRange = layout.newKey();
         layout.maxKey( rightSideOfRange );
-        KeyRange openRange = new KeyRange( comparator, leftSideOfRange, rightSideOfRange, layout );
+        KeyRange<KEY> openRange = new KeyRange<>( comparator, leftSideOfRange, rightSideOfRange, layout, null );
         boolean result = checkSubtree( cursor, openRange, 0 );
 
         // Assert that rightmost node on each level has empty right sibling.
@@ -61,7 +63,7 @@ class BPTreeConsistencyChecker<KEY>
         return result;
     }
 
-    private boolean checkSubtree( PageCursor cursor, KeyRange range, int level ) throws IOException
+    private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, int level ) throws IOException
     {
         long pageId = assertSiblings( cursor, level );
 
@@ -89,17 +91,17 @@ class BPTreeConsistencyChecker<KEY>
             RightmostInChain<KEY> first = new RightmostInChain<>( node );
             rightmostPerLevel.add( i, first );
         }
-        RightmostInChain rightmost = rightmostPerLevel.get( level );
+        RightmostInChain<KEY> rightmost = rightmostPerLevel.get( level );
 
         return rightmost.assertNext( cursor );
     }
 
-    private void assertKeyOrderAndSubtrees( PageCursor cursor, final long pageId, KeyRange range, int level )
+    private void assertKeyOrderAndSubtrees( PageCursor cursor, final long pageId, KeyRange<KEY> range, int level )
             throws IOException
     {
         int keyCount = node.keyCount( cursor );
         KEY prev = layout.newKey();
-        KeyRange childRange;
+        KeyRange<KEY> childRange;
 
         int pos = 0;
         while ( pos < keyCount )
@@ -137,7 +139,7 @@ class BPTreeConsistencyChecker<KEY>
         cursor.next( pageId );
     }
 
-    private void assertKeyOrder( PageCursor cursor, KeyRange range )
+    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range )
     {
         int keyCount = node.keyCount( cursor );
         KEY prev = layout.newKey();
@@ -145,7 +147,7 @@ class BPTreeConsistencyChecker<KEY>
         for ( int pos = 0; pos < keyCount; pos++ )
         {
             node.keyAt( cursor, readKey, pos );
-            assert range.inRange( readKey );
+            assert range.inRange( readKey ) : "Expected " + readKey + " to be in range " + range;
             if ( !first )
             {
                 assert comparator.compare( prev, readKey ) < 0; // Assume unique keys
@@ -158,16 +160,19 @@ class BPTreeConsistencyChecker<KEY>
         }
     }
 
-    private class KeyRange
+    private static class KeyRange<KEY>
     {
         private final Comparator<KEY> comparator;
         private final KEY fromInclusive;
         private final KEY toExclusive;
         private final Layout<KEY,?> layout;
+        private final KeyRange<KEY> superRange;
 
-        private KeyRange( Comparator<KEY> comparator, KEY fromInclusive, KEY toExclusive, Layout<KEY,?> layout )
+        private KeyRange( Comparator<KEY> comparator, KEY fromInclusive, KEY toExclusive, Layout<KEY,?> layout,
+                KeyRange<KEY> superRange )
         {
             this.comparator = comparator;
+            this.superRange = superRange;
             this.fromInclusive = layout.newKey();
             layout.copyKey( fromInclusive, this.fromInclusive );
             this.toExclusive = layout.newKey();
@@ -188,22 +193,28 @@ class BPTreeConsistencyChecker<KEY>
             return toExclusive == null || comparator.compare( key, toExclusive ) < 0;
         }
 
-        KeyRange restrictLeft( KEY left )
+        KeyRange<KEY> restrictLeft( KEY left )
         {
             if ( comparator.compare( fromInclusive, left ) < 0 )
             {
-                return new KeyRange( comparator, left, toExclusive, layout );
+                return new KeyRange<>( comparator, left, toExclusive, layout, this );
             }
-            return new KeyRange( comparator, fromInclusive, toExclusive, layout );
+            return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
         }
 
-        KeyRange restrictRight( KEY right )
+        KeyRange<KEY> restrictRight( KEY right )
         {
             if ( comparator.compare( toExclusive, right ) > 0 )
             {
-                return new KeyRange( comparator, fromInclusive, right, layout );
+                return new KeyRange<>( comparator, fromInclusive, right, layout, this );
             }
-            return new KeyRange( comparator, fromInclusive, toExclusive, layout );
+            return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+        }
+
+        @Override
+        public String toString()
+        {
+            return fromInclusive + " ≤ key < " + toExclusive + (superRange != null ? format( "%n%s", superRange ) : "");
         }
     }
 }
