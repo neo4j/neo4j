@@ -37,7 +37,23 @@ public class GenSafePointerTest
     }
 
     @Test
-    public void shouldDetectInvalidChecksumOnReadDueToChangedData() throws Exception
+    public void shouldWriteAndReadGspWithZeroValues() throws Exception
+    {
+        // GIVEN
+        int offset = 3;
+        GSP expected = gsp( 0, 0 );
+
+        // WHEN
+        write( cursor, offset, expected );
+
+        // THEN
+        boolean matches = read( cursor, offset, read );
+        assertTrue( matches );
+        assertEquals( expected, read );
+    }
+
+    @Test
+    public void shouldDetectInvalidChecksumOnReadDueToChangedGeneration() throws Exception
     {
         // GIVEN
         int offset = 0;
