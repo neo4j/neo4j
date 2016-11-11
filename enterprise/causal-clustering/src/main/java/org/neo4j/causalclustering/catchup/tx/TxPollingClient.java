@@ -35,6 +35,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.causalclustering.readreplica.CopyStoreSafely;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -60,6 +61,7 @@ public class TxPollingClient extends LifecycleAdapter
     private final FileSystemAbstraction fs;
     private final LocalDatabase localDatabase;
     private final Log log;
+    private final Lifecycle startStopOnStoreCopy;
     private final StoreFetcher storeFetcher;
     private final CopiedStoreRecovery copiedStoreRecovery;
     private final CatchUpClient catchUpClient;
@@ -72,13 +74,15 @@ public class TxPollingClient extends LifecycleAdapter
     private RenewableTimeout timeout;
 
     public TxPollingClient( LogProvider logProvider, FileSystemAbstraction fs, LocalDatabase localDatabase,
-            StoreFetcher storeFetcher, CatchUpClient catchUpClient, CoreMemberSelectionStrategy connectionStrategy,
-            RenewableTimeoutService timeoutService, long txPullIntervalMillis, BatchingTxApplier applier,
-            Monitors monitors, CopiedStoreRecovery copiedStoreRecovery )
+            Lifecycle startStopOnStoreCopy, StoreFetcher storeFetcher, CatchUpClient catchUpClient,
+            CoreMemberSelectionStrategy connectionStrategy, RenewableTimeoutService timeoutService,
+            long txPullIntervalMillis, BatchingTxApplier applier, Monitors monitors,
+            CopiedStoreRecovery copiedStoreRecovery )
     {
         this.fs = fs;
         this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
+        this.startStopOnStoreCopy = startStopOnStoreCopy;
         this.storeFetcher = storeFetcher;
         this.catchUpClient = catchUpClient;
         this.connectionStrategy = connectionStrategy;
@@ -171,9 +175,11 @@ public class TxPollingClient extends LifecycleAdapter
         try
         {
             localDatabase.stop();
+            startStopOnStoreCopy.stop();
             new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
                     copyWholeStoreFrom( core, localStoreId, storeFetcher );
             localDatabase.start();
+            startStopOnStoreCopy.start();
             applier.refreshFromNewStore();
         }
         finally
