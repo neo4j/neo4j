@@ -24,11 +24,13 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 
 class Workload extends RepeatUntilCallable
 {
     private Cluster cluster;
+    private static final Label label = Label.label( "Label" );
 
     Workload( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
     {
@@ -43,15 +45,12 @@ class Workload extends RepeatUntilCallable
         {
             cluster.coreTx( ( db, tx ) ->
             {
-                Node node = db.createNode();
-                node.setProperty( "prop1", "let's add some data here so the transaction logs rotate more often..." );
-                node.setProperty( "prop2", "let's add some data here so the transaction logs rotate more often..." );
-                node.setProperty( "prop3", "let's add some data here so the transaction logs rotate more often..." );
-                node.setProperty( "prop4", "let's add some data here so the transaction logs rotate more often..." );
-                node.setProperty( "prop5", "let's add some data here so the transaction logs rotate more often..." );
-                node.setProperty( "prop6", "let's add some data here so the transaction logs rotate more often..." );
-                node.setProperty( "prop7", "let's add some data here so the transaction logs rotate more often..." );
-                node.setProperty( "prop8", "let's add some data here so the transaction logs rotate more often..." );
+                Node node = db.createNode( label );
+                for ( int i = 1; i <= 8; i++ )
+                {
+                    node.setProperty( prop( i ),
+                            "let's add some data here so the transaction logs rotate more often..." );
+                }
                 tx.success();
             } );
         }
@@ -68,5 +67,29 @@ class Workload extends RepeatUntilCallable
         {
             throw new RuntimeException( e );
         }
+    }
+
+    public static void setupIndexes( Cluster cluster )
+    {
+        try
+        {
+            cluster.coreTx( ( db, tx ) ->
+            {
+                for ( int i = 1; i <= 8; i++ )
+                {
+                    db.schema().indexFor( label ).on( prop( i ) ).create();
+                }
+                tx.success();
+            } );
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( t );
+        }
+    }
+
+    private static String prop( int i )
+    {
+        return "prop" + i;
     }
 }

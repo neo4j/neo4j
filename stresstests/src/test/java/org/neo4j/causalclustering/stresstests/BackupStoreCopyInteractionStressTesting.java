@@ -107,6 +107,8 @@ public class BackupStoreCopyInteractionStressTesting
         try
         {
             cluster.start();
+            Workload.setupIndexes( cluster );
+
             Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
             Future<Throwable> startStopWorker =
                     service.submit( new StartStopLoad( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
