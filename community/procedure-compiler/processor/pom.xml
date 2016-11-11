@@ -77,8 +77,10 @@
     <build>
         <testResources>
             <testResource>
-                <directory>src/test/resources</directory>
-                <filtering>true</filtering>
+                <directory>src/test/java</directory>
+                <includes>
+                    <include>org/neo4j/tooling/procedure/procedures/**/*.java</include>
+                </includes>
             </testResource>
         </testResources>
         <plugins>

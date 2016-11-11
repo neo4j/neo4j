@@ -19,59 +19,22 @@
  */
 package org.neo4j.tooling.procedure.testutils;
 
-import com.google.testing.compile.JavaFileObjects;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Properties;
 import javax.tools.JavaFileObject;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.google.testing.compile.JavaFileObjects;
 
 public enum JavaFileObjectUtils
 {
     INSTANCE;
-
-    private final String baseDirectory;
-
-    JavaFileObjectUtils()
-    {
-        Properties properties = loadProperties( "/procedures.properties" );
-        baseDirectory = properties.getProperty( "base_directory" );
-        assertThat( new File( baseDirectory ) ).exists();
-    }
 
     public JavaFileObject procedureSource( String relativePath )
     {
         return JavaFileObjects.forResource( resolveUrl( relativePath ) );
     }
 
-    private final Properties loadProperties( String name )
-    {
-        try ( InputStream paths = this.getClass().getResourceAsStream( name ) )
-        {
-            Properties properties = new Properties();
-            properties.load( paths );
-            return properties;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
     private URL resolveUrl( String relativePath )
     {
-        try
-        {
-            return new File( baseDirectory, relativePath ).toURI().toURL();
-        }
-        catch ( MalformedURLException e )
-        {
-            throw new RuntimeException( e.getMessage(), e );
-        }
+        return this.getClass().getResource( "/org/neo4j/tooling/procedure/procedures/" + relativePath );
     }
 }
