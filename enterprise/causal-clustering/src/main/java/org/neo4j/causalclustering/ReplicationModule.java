@@ -67,8 +67,8 @@ public class ReplicationModule
         LocalSessionPool sessionPool = new LocalSessionPool( myGlobalSession );
         progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
-        replicator = new RaftReplicator( consensusModule.raftMachine(), myself, outbound, sessionPool, progressTracker,
-                new ExponentialBackoffStrategy( 10, SECONDS ) );
+        replicator = life.add( new RaftReplicator( consensusModule.raftMachine(), myself, outbound, sessionPool,
+            progressTracker, new ExponentialBackoffStrategy( 10, SECONDS ) ) );
 
     }
 

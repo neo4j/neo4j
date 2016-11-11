@@ -24,10 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -153,48 +155,6 @@ public class CoreReplicationIT
         }
     }
 
-    @Test
-    public void shouldNotAllowTokenCreationFromAFollower() throws Exception
-    {
-        // given
-        Label personLabel = Label.label( "Person" );
-
-        CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
-        {
-            db.createNode( personLabel );
-            tx.success();
-        } );
-
-        awaitForDataToBeApplied( leader );
-        dataMatchesEventually( leader, cluster.coreMembers() );
-
-        CoreClusterMember followerMember = cluster.getDbWithRole( Role.FOLLOWER );
-        CoreGraphDatabase follower = followerMember.database();
-
-        try(Transaction tx = follower.beginTx())
-        {
-            System.out.println( "all labels = " + asList( follower.getAllLabels() ) );
-
-            for ( Node node : follower.getAllNodes() )
-            {
-                System.out.println( "node = " + node + ", " + node.getLabels().toString());
-            }
-        }
-
-        // when
-        try ( Transaction tx = follower.beginTx() )
-        {
-            follower.findNodes(personLabel).next().setProperty( "name", "Mark" );
-            tx.success();
-            fail( "Should have thrown exception" );
-        }
-        catch ( WriteOperationsNotAllowedException ignored )
-        {
-            // expected
-            assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
-        }
-    }
-
     private void awaitForDataToBeApplied( CoreClusterMember leader ) throws InterruptedException, TimeoutException
     {
         await( () -> countNodes(leader) > 0, 10, TimeUnit.SECONDS);
@@ -300,6 +260,54 @@ public class CoreReplicationIT
         // then
         assertEquals( 1, countNodes( leader ) );
         dataMatchesEventually( leader, cluster.coreMembers() );
+    }
+
+    @Test
+    public void shouldBeAbleToShutdownWhenTheLeaderIsTryingToReplicateTransaction() throws Exception
+    {
+        // given
+        cluster.coreTx( ( db, tx ) ->
+        {
+            Node node = db.createNode( label( "boo" ) );
+            node.setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } );
+
+        CountDownLatch latch = new CountDownLatch( 1 );
+
+        // when
+        Thread thread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    cluster.coreTx( ( db, tx ) ->
+                    {
+                        db.createNode();
+                        tx.success();
+
+                        cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
+                        cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
+                        latch.countDown();
+                    } );
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
+
+        thread.start();
+
+        latch.await();
+
+        // then the cluster can shutdown...
+        cluster.shutdown();
+        // ... and the thread running the tx does not get stuck
+        thread.join( TimeUnit.MINUTES.toMillis( 1 ) );
     }
 
     private long countNodes( CoreClusterMember member )
