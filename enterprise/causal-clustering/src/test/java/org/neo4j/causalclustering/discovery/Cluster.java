@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.discovery;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +61,7 @@ import org.neo4j.test.DbRepresentation;
 
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.function.Predicates.await;
 import static org.neo4j.function.Predicates.awaitEx;
@@ -254,9 +256,15 @@ public class Cluster
 
     public CoreClusterMember getDbWithRole( Role role )
     {
+        return getDbWithAnyRole( role );
+    }
+
+    public CoreClusterMember getDbWithAnyRole( Role... roles )
+    {
+        Set<Role> roleSet = Arrays.stream( roles ).collect( toSet() );
         for ( CoreClusterMember coreClusterMember : coreMembers.values() )
         {
-            if ( coreClusterMember.database() != null && coreClusterMember.database().getRole().equals( role ) )
+            if ( coreClusterMember.database() != null && roleSet.contains( coreClusterMember.database().getRole() ) )
             {
                 return coreClusterMember;
             }
