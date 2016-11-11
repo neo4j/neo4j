@@ -65,6 +65,7 @@
     <module>licensecheck-config</module>
     <module>dbms</module>
     <module>command-line</module>
+    <module>procedure-compiler</module>
   </modules>
 
   <licenses>
@@ -198,6 +199,11 @@ the relevant Commercial Agreement.
           <groupId>org.neo4j</groupId>
           <artifactId>neo4j-slf4j</artifactId>
           <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>procedure-compiler</artifactId>
+          <version>3.1.0-SNAPSHOT</version>
         </dependency>
       </dependencies>
     </profile>
