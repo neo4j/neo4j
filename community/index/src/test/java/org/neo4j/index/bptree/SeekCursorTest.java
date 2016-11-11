@@ -245,7 +245,7 @@ public class SeekCursorTest
             int readKeys = 0;
             while ( readKeys < stopPoint && cursor.next() )
             {
-                assertKeyAndValue( cursor, readKeys, readKeys );
+                assertKeyAndValue( cursor, readKeys );
                 readKeys++;
             }
 
@@ -256,7 +256,7 @@ public class SeekCursorTest
             // Seeker continue
             while ( cursor.next() )
             {
-                assertKeyAndValue( cursor, readKeys, readKeys );
+                assertKeyAndValue( cursor, readKeys );
                 readKeys++;
             }
             assertEquals( toExclusive, readKeys );
@@ -287,7 +287,7 @@ public class SeekCursorTest
             while ( readKeys < stopPoint && cursor.next() )
             {
                 long key = expected.get( readKeys );
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
 
@@ -300,7 +300,7 @@ public class SeekCursorTest
             while ( cursor.next() )
             {
                 long key = expected.get( readKeys );
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
             assertEquals( expected.size(), readKeys );
@@ -331,7 +331,7 @@ public class SeekCursorTest
             while ( readKeys < stopPoint && cursor.next() )
             {
                 long key = expected.get( readKeys );
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
 
@@ -343,7 +343,7 @@ public class SeekCursorTest
             while ( cursor.next() )
             {
                 long key = expected.get( readKeys );
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
             assertEquals( expected.size(), readKeys );
@@ -376,7 +376,7 @@ public class SeekCursorTest
             while ( readKeys < stopPoint && cursor.next() )
             {
                 long key = expected.get( readKeys );
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
 
@@ -398,7 +398,7 @@ public class SeekCursorTest
             while ( cursor.next() )
             {
                 long key = expected.get( readKeys );
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
             assertEquals( expected.size(), readKeys );
@@ -429,7 +429,7 @@ public class SeekCursorTest
             while ( readKeys < stopPoint && cursor.next() )
             {
                 long key = expected.get( readKeys );
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
 
@@ -451,7 +451,7 @@ public class SeekCursorTest
             while ( cursor.next() )
             {
                 long key = expected.get( readKeys );
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
             assertEquals( expected.size(), readKeys );
@@ -482,7 +482,7 @@ public class SeekCursorTest
             while ( readKeys < middle && cursor.next() )
             {
                 long key = readKeys;
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
 
@@ -494,7 +494,7 @@ public class SeekCursorTest
             while ( cursor.next() )
             {
                 long key = readKeys;
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
             assertEquals( maxKeyCount - 1, readKeys );
@@ -523,7 +523,7 @@ public class SeekCursorTest
             while ( readKeys < middle && cursor.next() )
             {
                 long key = readKeys;
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
 
@@ -535,7 +535,7 @@ public class SeekCursorTest
             while ( cursor.next() )
             {
                 long key = readKeys;
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
             assertEquals( maxKeyCount, readKeys );
@@ -563,7 +563,7 @@ public class SeekCursorTest
             while ( readKeys < middle && cursor.next() )
             {
                 long key = readKeys;
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
 
@@ -574,7 +574,7 @@ public class SeekCursorTest
             while ( cursor.next() )
             {
                 long key = readKeys;
-                assertKeyAndValue( cursor, key, key );
+                assertKeyAndValue( cursor, key );
                 readKeys++;
             }
             assertEquals( maxKeyCount, readKeys );
@@ -594,7 +594,6 @@ public class SeekCursorTest
     // todo mustFindRangeWhenRemoveInSeekNodeCauseMergeWithRight
     // todo mustFindRangeWhenRemoveTwoNodesToRightCauseMergeWithNodeOneToTheRight
 
-    @SuppressWarnings( "unchecked" )
     @Test
     public void mustRereadHeadersOnRetry() throws Exception
     {
@@ -671,10 +670,15 @@ public class SeekCursorTest
         long expectedKey = fromInclusive;
         while ( cursor.next() )
         {
-            assertKeyAndValue( cursor, expectedKey, expectedKey );
+            assertKeyAndValue( cursor, expectedKey );
             expectedKey++;
         }
         assertEquals( toExclusive, expectedKey );
+    }
+
+    private void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor, long expectedKey )
+    {
+        assertKeyAndValue( cursor, expectedKey, valueForKey( expectedKey ) );
     }
 
     private void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor, long expectedKey, long expectedValue )
