@@ -298,18 +298,17 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 
         private long rotate( boolean force ) throws IOException
         {
-            final long version = rotation.rotationVersion();
-            ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, rotationTimerFactory,
-                    value -> updateHeaders( value, version ) );
-            try ( LockWrapper ignored = writeLock( updateLock ) )
+            try( RotationState<Key> rotation = this.rotation )
             {
-                state = next;
+                final long version = rotation.rotationVersion();
+                ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, rotationTimerFactory,
+                        value -> updateHeaders( value, version ) );
+                try ( LockWrapper ignored = writeLock( updateLock ) )
+                {
+                    state = next;
+                }
+                return version;
             }
-            finally
-            {
-                rotation.close();
-            }
-            return version;
         }
     }
 

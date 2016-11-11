@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -44,10 +45,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -56,6 +59,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
+import org.neo4j.kernel.impl.store.kvstore.RotationTimeoutException;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
@@ -144,6 +148,36 @@ public class CountsRotationTest
             assertEquals( 0, store.totalEntriesStored() );
             assertEquals( 0, allRecords( store ).size() );
         }
+    }
+
+    @Test
+    public void shouldUnMapThePrestateFileWhenTimingOutOnRotation() throws IOException
+    {
+        // Given
+        dbBuilder.newGraphDatabase().shutdown();
+        CountsTracker store = createCountsTracker( pageCache, Config.defaults().augment( Collections
+                .singletonMap( GraphDatabaseSettings.counts_store_rotation_timeout.name(), "100ms" ) ) );
+        store.init();
+        store.start();
+
+        try ( CountsAccessor.Updater updater = store.apply( 2 ).get() )
+        {
+            updater.incrementNodeCount( 0, 1 );
+        }
+
+        try
+        {
+            // when
+            store.rotate( 3 );
+            fail( "should have thrown" );
+        }
+        catch ( RotationTimeoutException ex )
+        {
+            // good
+        }
+
+        // then no exceptions closing the page cache
+        pageCache.close();
     }
 
     @Test
@@ -343,7 +377,12 @@ public class CountsRotationTest
 
     private CountsTracker createCountsTracker( PageCache pageCache )
     {
-        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, Config.empty(),
+        return createCountsTracker( pageCache, Config.defaults() );
+    }
+
+    private CountsTracker createCountsTracker( PageCache pageCache, Config config )
+    {
+        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, config,
                 new File( dir.getPath(), COUNTS_STORE_BASE ) );
     }
 

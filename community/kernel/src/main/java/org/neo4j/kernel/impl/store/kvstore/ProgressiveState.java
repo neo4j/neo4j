@@ -67,7 +67,7 @@ abstract class ProgressiveState<Key> extends WritableState<Key>
     }
 
     @Override
-    void close() throws IOException
+    public void close() throws IOException
     {
         throw new IllegalStateException( "Cannot close() in state: " + stateName() );
     }

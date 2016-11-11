@@ -103,9 +103,6 @@ public abstract class ActiveState<Key> extends ProgressiveState<Key>
 
     protected abstract PrototypeState<Key> prototype( long version );
 
-    @Override
-    protected abstract void close() throws IOException;
-
     protected abstract Factory factory();
 
     protected abstract long applied();
