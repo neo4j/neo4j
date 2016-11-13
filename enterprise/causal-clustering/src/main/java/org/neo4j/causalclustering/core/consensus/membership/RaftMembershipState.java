@@ -70,7 +70,7 @@ public class RaftMembershipState extends LifecycleAdapter
 {
     private MembershipEntry committed;
     private MembershipEntry appended;
-    long ordinal; // persistence ordinal must be increased each time we change committed or appended
+    private long ordinal; // persistence ordinal must be increased each time we change committed or appended
 
     public RaftMembershipState()
     {
@@ -86,6 +86,8 @@ public class RaftMembershipState extends LifecycleAdapter
 
     public boolean append( long logIndex, Set<MemberId> members )
     {
+        if ( appended != null && logIndex <= appended.logIndex() ) { return false; }
+
         if ( committed != null && logIndex <= committed.logIndex() )
         {
             return false;
@@ -140,8 +142,9 @@ public class RaftMembershipState extends LifecycleAdapter
         return appended != null;
     }
 
-    public Set<MemberId> getLatest()
+    Set<MemberId> getLatest()
     {
+
         return appended != null ? appended.members() :
                committed != null ? committed.members() : new HashSet<>();
     }
@@ -183,6 +186,11 @@ public class RaftMembershipState extends LifecycleAdapter
     public MembershipEntry committed()
     {
         return committed;
+    }
+
+    public long getOrdinal()
+    {
+        return ordinal;
     }
 
     public static class Marshal extends SafeStateMarshal<RaftMembershipState>
