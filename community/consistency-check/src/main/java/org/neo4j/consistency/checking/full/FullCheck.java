@@ -143,14 +143,7 @@ public class FullCheck
                     multiPass, reporter, threads );
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
-            TaskExecutor.execute( tasks, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    decorator.prepare();
-                }
-            } );
+            TaskExecutor.execute( tasks, decorator::prepare );
         }
         catch ( Exception e )
         {

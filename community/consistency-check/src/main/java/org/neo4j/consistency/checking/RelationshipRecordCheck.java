@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.NEXT;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.PREV;
+import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_IN_USE;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_REFERENCE;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_RELATIONSHIP_ID;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_SOURCE_OR_TARGET;
@@ -168,6 +169,7 @@ public class RelationshipRecordCheck extends
                 {
                     rel.setSecondNextRel( cacheAccess.getFromCache( nodeId, SLOT_REFERENCE ) );
                 }
+                rel.setInUse( cacheAccess.getBooleanFromCache( nodeId, SLOT_IN_USE ) );
                 return rel;
             }
 
@@ -222,6 +224,7 @@ public class RelationshipRecordCheck extends
                 {
                     rel.setSecondPrevRel( cacheAccess.getFromCache( nodeId, SLOT_REFERENCE ) );
                 }
+                rel.setInUse( cacheAccess.getBooleanFromCache( nodeId, SLOT_IN_USE ) );
                 return rel;
             }
 
@@ -276,6 +279,7 @@ public class RelationshipRecordCheck extends
                 {
                     rel.setSecondNextRel( cacheAccess.getFromCache( nodeId, SLOT_REFERENCE ) );
                 }
+                rel.setInUse( cacheAccess.getBooleanFromCache( nodeId, SLOT_IN_USE ) );
                 return rel;
             }
 
@@ -330,6 +334,7 @@ public class RelationshipRecordCheck extends
                 {
                     rel.setSecondPrevRel( cacheAccess.getFromCache( nodeId, SLOT_REFERENCE ) );
                 }
+                rel.setInUse( cacheAccess.getBooleanFromCache( nodeId, SLOT_IN_USE ) );
                 return rel;
             }
 
@@ -406,13 +411,13 @@ public class RelationshipRecordCheck extends
                     if ( cacheAccess.withinBounds( relationship.getFirstNode() ) )
                     {
                         cacheAccess.putToCache( relationship.getFirstNode(), SOURCE, PREV,
-                                relationship.getId(), relationship.getFirstPrevRel() );
+                                relationship.getId(), relationship.getFirstPrevRel(), 1 );
                         updateCacheCounts( cache1Free, cacheAccess );
                     }
                     if ( cacheAccess.withinBounds( relationship.getSecondNode() ) )
                     {
                         cacheAccess.putToCache( relationship.getSecondNode(), TARGET, PREV,
-                                relationship.getId(), relationship.getSecondPrevRel() );
+                                relationship.getId(), relationship.getSecondPrevRel(), 1 );
                         updateCacheCounts( cache2Free, cacheAccess );
                     }
                 }
@@ -421,13 +426,13 @@ public class RelationshipRecordCheck extends
                     if ( cacheAccess.withinBounds( relationship.getFirstNode() ) )
                     {
                         cacheAccess.putToCache( relationship.getFirstNode(), SOURCE, NEXT,
-                                relationship.getId(), relationship.getFirstNextRel() );
+                                relationship.getId(), relationship.getFirstNextRel() , 1 );
                         updateCacheCounts( cache1Free, cacheAccess );
                     }
                     if ( cacheAccess.withinBounds( relationship.getSecondNode() ) )
                     {
                         cacheAccess.putToCache( relationship.getSecondNode(), TARGET, NEXT,
-                                relationship.getId(), relationship.getSecondNextRel() );
+                                relationship.getId(), relationship.getSecondNextRel() , 1 );
                         updateCacheCounts( cache2Free, cacheAccess );
                     }
                 }
@@ -453,7 +458,7 @@ public class RelationshipRecordCheck extends
         };
         protected final NodeField NODE;
 
-        private RelationshipField( NodeField node )
+        RelationshipField( NodeField node )
         {
             this.NODE = node;
         }
@@ -598,7 +603,12 @@ public class RelationshipRecordCheck extends
                     }
                 }
                 else
-                {   // successfully checked
+                {
+                    if ( !referenceShouldBeSkipped( record, referred.getId(), records ) && !referred.inUse() )
+                    {
+                        engine.report().notUsedRelationshipReferencedInChain( referred );
+                    }
+                    // successfully checked
                     // clear cache only if cache is used - meaning referred was built using cache.
                     if ( referred.isCreated() )
                     {

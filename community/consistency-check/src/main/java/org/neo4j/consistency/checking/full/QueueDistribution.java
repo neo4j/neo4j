@@ -35,7 +35,7 @@ public interface QueueDistribution
     /**
      * Distributes records into {@link RecordConsumer}.
      */
-    public interface QueueDistributor<RECORD>
+    interface QueueDistributor<RECORD>
     {
         void distribute( RECORD record, RecordConsumer<RECORD> consumer ) throws InterruptedException;
     }
@@ -43,7 +43,7 @@ public interface QueueDistribution
     /**
      * Distributes records round-robin style to all queues.
      */
-    public static final QueueDistribution ROUND_ROBIN = new QueueDistribution()
+    QueueDistribution ROUND_ROBIN = new QueueDistribution()
     {
         @Override
         public <RECORD> QueueDistributor<RECORD> distributor( long recordsPerCpu, int numberOfThreads )
@@ -55,7 +55,7 @@ public interface QueueDistribution
     /**
      * Distributes {@link RelationshipRecord} depending on the start/end node ids.
      */
-    public static final QueueDistribution RELATIONSHIPS = new QueueDistribution()
+    QueueDistribution RELATIONSHIPS = new QueueDistribution()
     {
         @Override
         public QueueDistributor<RelationshipRecord> distributor( long recordsPerCpu, int numberOfThreads )
@@ -64,12 +64,12 @@ public interface QueueDistribution
         }
     };
 
-    static class RoundRobinQueueDistributor<RECORD> implements QueueDistributor<RECORD>
+    class RoundRobinQueueDistributor<RECORD> implements QueueDistributor<RECORD>
     {
         private final int numberOfThreads;
         private int nextQIndex;
 
-        public RoundRobinQueueDistributor( int numberOfThreads )
+        RoundRobinQueueDistributor( int numberOfThreads )
         {
             this.numberOfThreads = numberOfThreads;
         }
@@ -88,11 +88,11 @@ public interface QueueDistribution
         }
     }
 
-    static class RelationshipNodesQueueDistributor implements QueueDistributor<RelationshipRecord>
+    class RelationshipNodesQueueDistributor implements QueueDistributor<RelationshipRecord>
     {
         private final long recordsPerCpu;
 
-        public RelationshipNodesQueueDistributor( long recordsPerCpu )
+        RelationshipNodesQueueDistributor( long recordsPerCpu )
         {
             this.recordsPerCpu = recordsPerCpu;
         }

@@ -274,7 +274,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                 {
                     CacheAccess.Client cacheAccess = records.cacheAccess().client();
                     Set<Long> firstNodeLabels = null, secondNodeLabels = null;
-                    long firstLabelsField = cacheAccess.getFromCache( record.getFirstNode(), 1 );
+                    long firstLabelsField = cacheAccess.getFromCache( record.getFirstNode(), SLOT_LABEL_FIELD );
                     if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( firstLabelsField ) )
                     {
                         firstNodeLabels = labelsFor( nodeStore, engine, records, record.getFirstNode() );
@@ -283,7 +283,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                     {
                         firstNodeLabels = NodeLabelReader.getListOfLabels( firstLabelsField );
                     }
-                    long secondLabelsField = cacheAccess.getFromCache( record.getSecondNode(), 1 );
+                    long secondLabelsField = cacheAccess.getFromCache( record.getSecondNode(), SLOT_LABEL_FIELD );
                     if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( secondLabelsField ) )
                     {
                         secondNodeLabels = labelsFor( nodeStore, engine, records, record.getSecondNode() );

@@ -51,7 +51,7 @@ public interface ConsistencyReport
     {
     }
 
-    public interface Reporter
+    interface Reporter
     {
         void forSchema( DynamicRecord schema,
                         RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
@@ -204,6 +204,9 @@ public interface ConsistencyReport
     interface RelationshipConsistencyReport
             extends PrimitiveConsistencyReport
     {
+        @Documented( "The relationship record is not in use, but referenced from relationships chain." )
+        void notUsedRelationshipReferencedInChain( RelationshipRecord relationshipRecord );
+
         @Documented( "The relationship type field has an illegal value." )
         void illegalRelationshipType();
 
@@ -490,7 +493,7 @@ public interface ConsistencyReport
         void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 
-    public interface CountsConsistencyReport extends ConsistencyReport
+    interface CountsConsistencyReport extends ConsistencyReport
     {
         @Documented( "The node count does not correspond with the expected count." )
         void inconsistentNodeCount( long expectedCount );

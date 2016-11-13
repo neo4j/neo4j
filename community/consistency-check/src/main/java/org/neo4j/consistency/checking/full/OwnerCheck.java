@@ -66,7 +66,7 @@ class OwnerCheck implements CheckDecorator
 
     OwnerCheck( boolean active, DynamicStore... stores )
     {
-        this.owners = active ? new ConcurrentHashMap<Long, PropertyOwner>( 16, 0.75f, 4 ) : null;
+        this.owners = active ? new ConcurrentHashMap<>( 16, 0.75f, 4 ) : null;
         this.dynamics = active ? initialize( stores ) : null;
     }
 
@@ -76,7 +76,7 @@ class OwnerCheck implements CheckDecorator
                 new EnumMap<>( RecordType.class );
         for ( DynamicStore store : stores )
         {
-            map.put( store.type, new ConcurrentHashMap<Long, DynamicOwner>( 16, 0.75f, 4 ) );
+            map.put( store.type, new ConcurrentHashMap<>( 16, 0.75f, 4 ) );
         }
         return unmodifiableMap( map );
     }
@@ -448,14 +448,5 @@ class OwnerCheck implements CheckDecorator
     }
 
     private static final ComparativeRecordChecker<PropertyRecord, PrimitiveRecord, ConsistencyReport.PropertyConsistencyReport> ORPHAN_CHECKER =
-            new ComparativeRecordChecker<PropertyRecord, PrimitiveRecord, ConsistencyReport.PropertyConsistencyReport>()
-            {
-                @Override
-                public void checkReference( PropertyRecord record, PrimitiveRecord primitiveRecord,
-                                            CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                                            RecordAccess records )
-                {
-                    engine.report().orphanPropertyChain();
-                }
-            };
+            ( record, primitiveRecord, engine, records ) -> engine.report().orphanPropertyChain();
 }
