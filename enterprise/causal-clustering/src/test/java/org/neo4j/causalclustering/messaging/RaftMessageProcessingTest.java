@@ -31,12 +31,12 @@ import java.util.UUID;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.messaging.marshalling.RaftMessageDecoder;
-import org.neo4j.causalclustering.messaging.marshalling.RaftMessageEncoder;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.RaftMessageDecoder;
+import org.neo4j.causalclustering.messaging.marshalling.RaftMessageEncoder;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -106,7 +106,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( request );
-        channel.writeInbound( channel.readOutbound() );
+        channel.writeInbound( new Object[]{channel.readOutbound()} );
 
         // then
         assertEquals( request, channel.readInbound() );
@@ -121,7 +121,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( response );
-        channel.writeInbound( channel.readOutbound() );
+        channel.writeInbound( new Object[]{channel.readOutbound()} );
 
         // then
         assertEquals( response, channel.readInbound() );
@@ -138,7 +138,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( request );
-        channel.writeInbound( channel.readOutbound() );
+        channel.writeInbound( new Object[]{channel.readOutbound()} );
 
         // then
         assertEquals( request, channel.readInbound() );
@@ -154,7 +154,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( response );
-        channel.writeInbound( channel.readOutbound() );
+        channel.writeInbound( new Object[]{channel.readOutbound()} );
 
         // then
         assertEquals( response, channel.readInbound() );
@@ -170,7 +170,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( request );
-        channel.writeInbound( channel.readOutbound() );
+        channel.writeInbound( new Object[]{channel.readOutbound()} );
 
         // then
         assertEquals( request, channel.readInbound() );

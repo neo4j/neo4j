@@ -38,7 +38,7 @@ public class TxStreamFinishedResponseEncodeDecodeTest
 
         // when
         channel.writeOutbound( sent );
-        channel.writeInbound( channel.readOutbound() );
+        channel.writeInbound( new Object[]{channel.readOutbound()} );
 
         // then
         TxStreamFinishedResponse received = (TxStreamFinishedResponse) channel.readInbound();

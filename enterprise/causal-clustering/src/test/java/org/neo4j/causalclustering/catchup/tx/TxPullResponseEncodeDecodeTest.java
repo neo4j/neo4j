@@ -47,7 +47,7 @@ public class TxPullResponseEncodeDecodeTest
 
         // when
         channel.writeOutbound( sent );
-        channel.writeInbound( channel.readOutbound() );
+        channel.writeInbound( new Object[]{channel.readOutbound()} );
 
         // then
         TxPullResponse received = (TxPullResponse) channel.readInbound();
