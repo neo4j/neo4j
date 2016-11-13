@@ -46,7 +46,7 @@ public class RaftMachineLogTest
     RaftMachineBuilder.CommitListener commitListener;
 
     private MemberId myself = member( 0 );
-    private ReplicatedContent content = ReplicatedInteger.valueOf( 1 );
+    private ReplicatedContent content = valueOf( 1 );
     private RaftLog testEntryLog;
 
     private RaftMachine raft;
@@ -93,9 +93,9 @@ public class RaftMachineLogTest
     @Test
     public void shouldRemoveLaterEntryFromLogConflictingWithNewEntry() throws Exception
     {
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 4 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 7 ) ) ); /* conflicting entry */
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 1 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 4 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 7 ) ) ); /* conflicting entry */
 
         // when
         ReplicatedInteger newData = valueOf( 11 );
@@ -110,17 +110,17 @@ public class RaftMachineLogTest
     @Test
     public void shouldNotTouchTheLogIfWeDoMatchEverywhere() throws Exception
     {
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) ); // 0
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) ); // 1
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) ); // 5
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) ); // 10
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) ); // 0
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) ); // 1
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) ); // 5
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) ); // 10
 
         // when instance A as leader
         ReplicatedInteger newData = valueOf( 99 );
@@ -142,17 +142,17 @@ public class RaftMachineLogTest
     @Test
     public void shouldNotTouchTheLogIfWeDoNotMatchAnywhere() throws Exception
     {
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
 
         // when instance A as leader
         ReplicatedInteger newData = valueOf( 99 );
@@ -174,17 +174,17 @@ public class RaftMachineLogTest
     @Test
     public void shouldTruncateOnFirstMismatchAndThenAppendOtherEntries() throws Exception
     {
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
 
         // when instance A as leader
         ReplicatedInteger newData = valueOf( 99 );
@@ -219,17 +219,17 @@ public class RaftMachineLogTest
     @Test
     public void shouldNotTruncateLogIfHistoryDoesNotMatch() throws Exception
     {
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
 
         // when instance A as leader
         ReplicatedInteger newData = valueOf( 99 );
@@ -249,17 +249,17 @@ public class RaftMachineLogTest
     @Test
     public void shouldTruncateLogIfFirstEntryMatchesAndSecondEntryMismatchesOnTerm() throws Exception
     {
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
-        testEntryLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 1, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 2, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
+        testEntryLog.append( new RaftLogEntry( 3, valueOf( 99 ) ) );
 
         // when instance A as leader
         ReplicatedInteger newData = valueOf( 99 );

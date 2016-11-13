@@ -25,9 +25,9 @@ import org.junit.Test;
 
 import java.util.Set;
 
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
@@ -65,7 +65,7 @@ public class RaftMembershipStateTest
 
         // then
         assertEquals( state.getLatest(), membersB );
-        assertEquals( 1, state.ordinal );
+        assertEquals( 1, state.getOrdinal() );
     }
 
     @Test
@@ -81,7 +81,7 @@ public class RaftMembershipStateTest
         // then
         assertEquals( state.getLatest(), membersB );
         assertTrue( state.uncommittedMemberChangeInLog() );
-        assertEquals( 1, state.ordinal );
+        assertEquals( 1, state.getOrdinal() );
     }
 
     @Test
@@ -112,7 +112,7 @@ public class RaftMembershipStateTest
 
         // then
         assertEquals( state.getLatest(), membersA );
-        assertEquals( 3, state.ordinal );
+        assertEquals( 3, state.getOrdinal() );
     }
 
     @Test
@@ -128,7 +128,7 @@ public class RaftMembershipStateTest
 
         // then
         assertEquals( state.getLatest(), membersB );
-        assertEquals( 1, state.ordinal );
+        assertEquals( 1, state.getOrdinal() );
     }
 
     @Test
@@ -145,5 +145,23 @@ public class RaftMembershipStateTest
 
         // then
         assertEquals( state, recovered );
+    }
+
+    @Test
+    public void shouldRefuseToAppendToTheSameIndexTwice() throws Exception
+    {
+        // given
+        state.append( 0, membersA );
+        state.append( 1, membersB );
+
+        // when
+        boolean reAppendA = state.append( 0, membersA );
+        boolean reAppendB = state.append( 1, membersB );
+
+        // then
+        assertFalse( reAppendA );
+        assertFalse( reAppendB );
+        assertEquals( membersA, state.committed().members() );
+        assertEquals( membersB, state.getLatest() );
     }
 }

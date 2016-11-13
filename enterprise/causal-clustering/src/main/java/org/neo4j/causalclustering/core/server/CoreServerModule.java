@@ -99,9 +99,7 @@ public class CoreServerModule
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        StateStorage<Long> lastFlushedStorage;
-
-        lastFlushedStorage = life.add(
+        StateStorage<Long> lastFlushedStorage = life.add(
                 new DurableStateStorage<>( fileSystem, clusterStateDirectory, LAST_FLUSHED_NAME,
                         new LongIndexMarshal(), config.get( CausalClusteringSettings.last_flushed_state_size ),
                         logProvider ) );
