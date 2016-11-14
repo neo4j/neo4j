@@ -19,29 +19,25 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
-import org.neo4j.causalclustering.catchup.CatchupClientProtocol;
+import java.util.List;
 
-public class FileContentHandler extends SimpleChannelInboundHandler<FileContent>
+import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+
+/**
+ * This class does not consume bytes during the decode method. Instead, it puts a {@link FileChunk} object with
+ * a reference to the buffer, to be consumed later. This is the reason it does not extend
+ * {@link io.netty.handler.codec.ByteToMessageDecoder}, since that class fails if an object is added in the out
+ * list but no bytes have been consumed.
+ */
+public class FileChunkDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupClientProtocol protocol;
-    private CatchUpResponseHandler handler;
-
-    public FileContentHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler )
-    {
-        this.protocol = protocol;
-        this.handler = handler;
-    }
-
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, FileContent fileContent ) throws Exception
+    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( handler.onFileContent( fileContent ) )
-        {
-            protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
-        }
+        out.add( FileChunk.marshal().unmarshal( new NetworkReadableClosableChannelNetty4( msg ) ) );
     }
 }

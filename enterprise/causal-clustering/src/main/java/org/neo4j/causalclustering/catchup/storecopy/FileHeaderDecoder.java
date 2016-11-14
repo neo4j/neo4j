@@ -25,15 +25,17 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
+import org.neo4j.string.UTF8;
+
 public class FileHeaderDecoder extends ByteToMessageDecoder
 {
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        int nameLength = msg.readInt();
-        byte[] name = new byte[nameLength];
-        msg.readBytes( name );
-        long fileLength = msg.readLong();
-        out.add( new FileHeader( new String( name ), fileLength ) );
+        int length = msg.readInt();
+        byte[] bytes = new byte[length];
+        msg.readBytes( bytes );
+        String name = UTF8.decode( bytes );
+        out.add( new FileHeader( name ) );
     }
 }

@@ -45,27 +45,23 @@ public class StoreCopyClient
             return catchUpClient.makeBlockingRequest( from, new GetStoreRequest( expectedStoreId ),
                     new CatchUpResponseAdaptor<Long>()
                     {
-                        private long expectedBytes = 0;
                         private String destination;
 
                         @Override
                         public void onFileHeader( CompletableFuture<Long> requestOutcomeSignal, FileHeader fileHeader )
                         {
-                            this.expectedBytes = fileHeader.fileLength();
                             this.destination = fileHeader.fileName();
                         }
 
                         @Override
-                        public boolean onFileContent( CompletableFuture<Long> signal, FileContent fileContent )
+                        public boolean onFileContent( CompletableFuture<Long> signal, FileChunk fileChunk )
                                 throws IOException
                         {
-                            try ( FileContent content = fileContent;
-                                  OutputStream outputStream = storeFileStreams.createStream( destination ) )
+                            try ( OutputStream outputStream = storeFileStreams.createStream( destination ) )
                             {
-                                expectedBytes -= content.writeTo( outputStream );
+                                outputStream.write( fileChunk.bytes() );
                             }
-
-                            return expectedBytes <= 0;
+                            return fileChunk.isLast();
                         }
 
                         @Override

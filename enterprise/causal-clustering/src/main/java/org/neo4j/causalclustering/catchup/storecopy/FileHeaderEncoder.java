@@ -23,15 +23,16 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+import org.neo4j.string.UTF8;
+
 public class FileHeaderEncoder extends MessageToByteEncoder<FileHeader>
 {
     @Override
     protected void encode( ChannelHandlerContext ctx, FileHeader msg, ByteBuf out ) throws Exception
     {
         String name = msg.fileName();
-
-        out.writeInt( name.length() );
-        out.writeBytes( name.getBytes() );
-        out.writeLong( msg.fileLength() );
+        byte[] bytes = UTF8.encode( name );
+        out.writeInt( bytes.length );
+        out.writeBytes( bytes );
     }
 }
