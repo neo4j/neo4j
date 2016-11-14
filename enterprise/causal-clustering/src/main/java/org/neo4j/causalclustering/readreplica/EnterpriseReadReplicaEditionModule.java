@@ -23,6 +23,8 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.backup.OnlineBackupKernelExtension;
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
@@ -45,6 +47,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
@@ -77,6 +80,7 @@ import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -205,11 +209,35 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
         txPulling.add( copiedStoreRecovery );
 
+        LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
+        if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
+        {
+            platformModule.dataSourceManager.addListener( new DataSourceManager.Listener()
+            {
+                @Override
+                public void registered( NeoStoreDataSource dataSource )
+                {
+                    servicesToStopOnStoreCopy.add( pickBackupExtension( dataSource ) );
+                }
+
+                @Override
+                public void unregistered( NeoStoreDataSource dataSource )
+                {
+                    servicesToStopOnStoreCopy.remove( pickBackupExtension( dataSource ) );
+                }
+
+                private OnlineBackupKernelExtension pickBackupExtension( NeoStoreDataSource dataSource )
+                {
+                    return dataSource.getDependencyResolver().resolveDependency( OnlineBackupKernelExtension.class );
+                }
+            } );
+        }
+
         TxPollingClient txPuller =
-                new TxPollingClient( logProvider, fileSystem, localDatabase, storeFetcher, catchUpClient,
-                        new ConnectToRandomCoreMember( discoveryService ), txPullerTimeoutService,
-                        config.get( CausalClusteringSettings.pull_interval ), batchingTxApplier, platformModule.monitors,
-                        copiedStoreRecovery );
+                new TxPollingClient( logProvider, fileSystem, localDatabase, servicesToStopOnStoreCopy, storeFetcher,
+                        catchUpClient, new ConnectToRandomCoreMember( discoveryService ), txPullerTimeoutService,
+                        config.get( CausalClusteringSettings.pull_interval ), batchingTxApplier,
+                        platformModule.monitors, copiedStoreRecovery );
 
         dependencies.satisfyDependencies( txPuller );
 

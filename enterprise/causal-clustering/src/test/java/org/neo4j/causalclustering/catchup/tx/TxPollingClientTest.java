@@ -38,6 +38,7 @@ import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
@@ -69,10 +70,11 @@ public class TxPollingClientTest
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
     }
+    private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );
 
     private final TxPollingClient txPuller =
-            new TxPollingClient( NullLogProvider.getInstance(), fs, localDatabase, storeFetcher, catchUpClient,
-                    serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
+            new TxPollingClient( NullLogProvider.getInstance(), fs, localDatabase, startStopOnStoreCopy, storeFetcher,
+                    catchUpClient, serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
                     copiedStoreRecovery );
 
     @Before
@@ -157,8 +159,10 @@ public class TxPollingClientTest
         // then
         verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).cancel();
         verify( localDatabase ).stop();
+        verify( startStopOnStoreCopy ).stop();
         verify( storeFetcher ).copyStore( any( MemberId.class ), eq( storeId ), any( File.class ) );
         verify( localDatabase ).start();
+        verify( startStopOnStoreCopy ).start();
         verify( txApplier ).refreshFromNewStore();
         verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ),
                 times( 2 ) /* at the beginning and after store copy */ ).renew();
