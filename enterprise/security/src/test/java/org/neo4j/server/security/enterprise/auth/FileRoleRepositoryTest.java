@@ -21,6 +21,7 @@ package org.neo4j.server.security.enterprise.auth;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -95,6 +96,12 @@ public class FileRoleRepositoryTest
     public void setup()
     {
         roleRepository = new FileRoleRepository( fs, roleFile, logProvider );
+    }
+
+    @After
+    public void tearDown() throws IOException
+    {
+        fs.close();
     }
 
     @Test

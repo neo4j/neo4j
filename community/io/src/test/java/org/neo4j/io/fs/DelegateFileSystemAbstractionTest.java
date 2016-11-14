@@ -45,11 +45,11 @@ public class DelegateFileSystemAbstractionTest
         TrackableFileSystem fileSystem = new TrackableFileSystem();
         CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
 
-        DelegateFileSystemAbstraction fileSystemAbstraction = new DelegateFileSystemAbstraction( fileSystem );
-        fileSystemAbstraction.getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
-                closeTrackingFileSystemClass -> closeTrackingFileSystem );
-
-        fileSystemAbstraction.close();
+        try ( DelegateFileSystemAbstraction fileSystemAbstraction = new DelegateFileSystemAbstraction( fileSystem ) )
+        {
+            fileSystemAbstraction.getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
+                    closeTrackingFileSystemClass -> closeTrackingFileSystem );
+        }
 
         assertFalse( fileSystem.isOpen() );
         assertTrue( closeTrackingFileSystem.isClosed() );
