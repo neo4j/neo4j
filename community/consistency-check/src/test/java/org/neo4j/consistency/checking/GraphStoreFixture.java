@@ -126,7 +126,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     protected void after( boolean success )
     {
         super.after( success );
-        if (fileSystem != null)
+        if ( fileSystem != null )
         {
             try
             {

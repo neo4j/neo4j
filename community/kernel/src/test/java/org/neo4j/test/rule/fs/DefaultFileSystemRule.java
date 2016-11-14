@@ -44,23 +44,4 @@ public class DefaultFileSystemRule extends ExternalResource
     {
         return fs;
     }
-
-    public DefaultFileSystemAbstraction snapshot( Runnable action )
-    {
-        DefaultFileSystemAbstraction snapshot = fs;
-        try
-        {
-            action.run();
-        }
-        finally
-        {
-            fs = snapshot;
-        }
-        return fs;
-    }
-
-    public void clear()
-    {
-        fs = new DefaultFileSystemAbstraction();
-    }
 }

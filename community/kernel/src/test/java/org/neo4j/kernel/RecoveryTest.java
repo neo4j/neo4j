@@ -30,8 +30,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
@@ -63,6 +61,7 @@ import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -78,8 +77,9 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 
 public class RecoveryTest
 {
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
@@ -93,10 +93,11 @@ public class RecoveryTest
     private LogEntry expectedCommitEntry;
     private LogEntry expectedCheckPointEntry;
 
+
     @Test
     public void shouldRecoverExistingData() throws Exception
     {
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fs );
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
 
         writeSomeData( file, new Visitor<Pair<LogEntryWriter, Consumer<LogPositionMarker>>,IOException>()
@@ -139,17 +140,17 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fileSystemRule.get(), reader );
 
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
-            LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
+            LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
                     () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine,
-                    logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore )
+                    logFiles, fileSystemRule.get(), logVersionRepository, finder, transactionIdStore, txStore )
             {
                 private int nr = 0;
 
@@ -198,7 +199,7 @@ public class RecoveryTest
     @Test
     public void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
     {
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fs );
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
 
         writeSomeData( file, new Visitor<Pair<LogEntryWriter, Consumer<LogPositionMarker>>,IOException>()
@@ -229,17 +230,17 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fileSystemRule.get(), reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-            LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
+            LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
                     () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine,
-                  logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore )
+                  logFiles, fileSystemRule.get(), logVersionRepository, finder, transactionIdStore, txStore )
             {
                 @Override
                 public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
@@ -263,7 +264,7 @@ public class RecoveryTest
     public void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfullRecovery() throws Exception
     {
         // GIVEN
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fs );
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
@@ -299,7 +300,7 @@ public class RecoveryTest
     public void shouldTellTransactionIdStoreAfterSuccessfullRecovery() throws Exception
     {
         // GIVEN
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fs );
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
@@ -348,17 +349,17 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fileSystemRule.get(), reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-            LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
+            LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
                     () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine,
-                    logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore )
+                    logFiles, fileSystemRule.get(), logVersionRepository, finder, transactionIdStore, txStore )
             {
                 @Override
                 public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
@@ -381,7 +382,7 @@ public class RecoveryTest
     {
 
         try (  LogVersionedStoreChannel versionedStoreChannel =
-                       new PhysicalLogVersionedStoreChannel( fs.open( file, "rw" ), logVersion, CURRENT_LOG_VERSION );
+                       new PhysicalLogVersionedStoreChannel( fileSystemRule.get().open( file, "rw" ), logVersion, CURRENT_LOG_VERSION );
               final PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel ) )
         {
             writeLogHeader( writableLogChannel, logVersion, 2L );

@@ -129,7 +129,7 @@ public class MigrationTestUtils
     public static void prepareSampleLegacyDatabase( String version, EphemeralFileSystemAbstraction workingFs,
             File workingDirectory, File realDirForPreparingDatabase ) throws IOException
     {
-        try (DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction())
+        try ( DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction() )
         {
             File resourceDirectory = findFormatStoreDirectoryForVersion( version, realDirForPreparingDatabase );
             workingFs.copyRecursivelyFromOtherFs( resourceDirectory, fileSystemAbstraction,

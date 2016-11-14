@@ -171,8 +171,8 @@ public class DatabaseRebuildToolTest
 
     private long lastAppliedTx( File storeDir )
     {
-        try ( FileSystemAbstraction fileSyste = new DefaultFileSystemAbstraction();
-              PageCache pageCache = createPageCache( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              PageCache pageCache = createPageCache( fileSystem ) )
         {
             return MetaDataStore.getRecord( pageCache, new File( storeDir, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.LAST_TRANSACTION_ID );

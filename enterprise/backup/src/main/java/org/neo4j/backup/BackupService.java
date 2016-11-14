@@ -164,7 +164,7 @@ class BackupService
         try ( PageCache pageCache = createPageCache( fileSystem, tuningConfiguration ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration,
-                    loadKernelExtensions(), logProvider, new DefaultFileSystemAbstraction(), pageCache,
+                    loadKernelExtensions(), logProvider, fileSystem, pageCache,
                     monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ), forensics );
             FullBackupStoreCopyRequester storeCopyRequester =
                     new FullBackupStoreCopyRequester( sourceHostNameOrIp, sourcePort, timeout, forensics, monitors );
