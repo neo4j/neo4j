@@ -34,6 +34,7 @@ import org.neo4j.logging.Log;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
 
 public class ConfiguringPageCacheFactory
 {
@@ -102,7 +103,8 @@ public class ConfiguringPageCacheFactory
 
     public int calculateMaxPages( Config config, int cachePageSize )
     {
-        long pageCacheMemory = config.get( pagecache_memory );
+        Long pageCacheMemorySetting = config.get( pagecache_memory );
+        long pageCacheMemory = interpretMemorySetting( pageCacheMemorySetting );
         long maxHeap = Runtime.getRuntime().maxMemory();
         if ( pageCacheMemory / maxHeap > 100 )
         {
@@ -112,6 +114,66 @@ public class ConfiguringPageCacheFactory
         }
         long pageCount = pageCacheMemory / cachePageSize;
         return (int) Math.min( Integer.MAX_VALUE - 2000, pageCount );
+    }
+
+    private long interpretMemorySetting( Long pageCacheMemorySetting )
+    {
+        if ( pageCacheMemorySetting != null )
+        {
+            return pageCacheMemorySetting;
+        }
+        long heuristic = defaultHeuristicPageCacheMemory();
+        log.warn( "The " + pagecache_memory.name() + " setting has not been configured. It is recommended that this " +
+                  "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
+                  "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " );
+        return heuristic;
+    }
+
+    public static long defaultHeuristicPageCacheMemory()
+    {
+        // First check if we have a default override...
+        String defaultMemoryOverride = System.getProperty( "dbms.pagecache.memory.default.override" );
+        if ( defaultMemoryOverride != null )
+        {
+            return BYTES.apply( defaultMemoryOverride );
+        }
+
+        double ratioOfFreeMem = 0.50;
+        String defaultMemoryRatioOverride = System.getProperty( "dbms.pagecache.memory.ratio.default.override" );
+        if ( defaultMemoryRatioOverride != null )
+        {
+            ratioOfFreeMem = Double.parseDouble( defaultMemoryRatioOverride );
+        }
+
+        // Try to compute (RAM - maxheap) * 0.50 if we can get reliable numbers...
+        long maxHeapMemory = Runtime.getRuntime().maxMemory();
+        if ( 0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE )
+        {
+            try
+            {
+                long physicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+                if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
+                {
+                    long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
+                    long min = ByteUnit.mebiBytes( 32 ); // We'd like at least 32 MiBs.
+                    long max = Math.min( maxHeapMemory * 70, ByteUnit.gibiBytes( 20 ) );
+                    // Don't heuristically take more than 20 GiBs, and don't take more than 70 times our max heap.
+                    // 20 GiBs of page cache memory is ~2.6 million 8 KiB pages. If each page has an overhead of
+                    // 72 bytes, then this will take up ~175 MiBs of heap memory. We should be able to tolerate that
+                    // in most environments. The "no more than 70 times heap" heuristic is based on the page size over
+                    // the per page overhead, 8192 / 72 ~= 114, plus leaving some extra room on the heap for the rest
+                    // of the system. This means that we won't heuristically try to create a page cache that is too
+                    // large to fit on the heap.
+                    long memory = Math.min( max, Math.max( min, heuristic ) );
+                    return memory;
+                }
+            }
+            catch ( Exception ignore )
+            {
+            }
+        }
+        // ... otherwise we just go with 2 GiBs.
+        return ByteUnit.gibiBytes( 2 );
     }
 
     public int calculatePageSize( Config config, PageSwapperFactory swapperFactory )

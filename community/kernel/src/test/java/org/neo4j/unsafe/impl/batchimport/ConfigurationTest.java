@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -76,7 +77,8 @@ public class ConfigurationTest
         long memory = config.pageCacheMemory();
 
         // THEN
-        assertTrue( within( memory, Config.defaults().get( pagecache_memory ), MAX_PAGE_CACHE_MEMORY ) );
+        long heuristic = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
+        assertTrue( within( memory, heuristic, MAX_PAGE_CACHE_MEMORY ) );
     }
 
     @Test

@@ -37,7 +37,6 @@ import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Level;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
@@ -372,50 +371,10 @@ public abstract class GraphDatabaseSettings
                   "suffix, megabytes with 'm' and gigabytes with 'g'). If Neo4j is running on a dedicated server, " +
                   "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the " +
                   "JVM enough heap to hold all your transaction state and query context, and then leave the rest for " +
-                  "the page cache. The default page cache memory assumes the machine is dedicated to running " +
-                  "Neo4j, and is heuristically set to 50% of RAM minus the max Java heap size." )
+                  "the page cache. If no page cache memory is configured, then a heuristic setting is computed based " +
+                  "on available system resources." )
     public static final Setting<Long> pagecache_memory =
-            setting( "dbms.memory.pagecache.size", BYTES, defaultPageCacheMemory(), min( 8192 * 30L ) );
-
-    private static String defaultPageCacheMemory()
-    {
-        // First check if we have a default override...
-        String defaultMemoryOverride = System.getProperty( "dbms.pagecache.memory.default.override" );
-        if ( defaultMemoryOverride != null )
-        {
-            return defaultMemoryOverride;
-        }
-
-        double ratioOfFreeMem = 0.50;
-        String defaultMemoryRatioOverride = System.getProperty( "dbms.pagecache.memory.ratio.default.override" );
-        if ( defaultMemoryRatioOverride != null )
-        {
-            ratioOfFreeMem = Double.parseDouble( defaultMemoryRatioOverride );
-        }
-
-        // Try to compute (RAM - maxheap) * 0.50 if we can get reliable numbers...
-        long maxHeapMemory = Runtime.getRuntime().maxMemory();
-        if ( 0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE )
-        {
-            try
-            {
-                long physicalMemory = OsBeanUtil.getTotalPhysicalMemory();
-                if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
-                {
-                    long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
-                    long min = ByteUnit.mebiBytes( 32 ); // We'd like at least 32 MiBs.
-                    long max = ByteUnit.tebiBytes( 1 ); // Don't heuristically take more than 1 TiB.
-                    long memory = Math.min( max, Math.max( min, heuristic ) );
-                    return String.valueOf( memory );
-                }
-            }
-            catch ( Exception ignore )
-            {
-            }
-        }
-        // ... otherwise we just go with 2 GiBs.
-        return "2g";
-    }
+            setting( "dbms.memory.pagecache.size", BYTES, null, min( 8192 * 30L ) );
 
     @Description( "Specify which page swapper to use for doing paged IO. " +
                   "This is only used when integrating with proprietary storage technology." )
