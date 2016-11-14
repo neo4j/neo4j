@@ -300,7 +300,7 @@ public class DumpLogicalLog
         Args arguments = Args.withFlags( TO_FILE ).parse( args );
         TimeZone timeZone = parseTimeZoneConfig( arguments );
         Predicate<LogEntry[]> filter = parseFilter( arguments, timeZone );
-        Function<LogEntry,String> serializer = parseSerializer( arguments, filter, timeZone );
+        Function<LogEntry,String> serializer = parseSerializer( filter, timeZone );
         try ( Printer printer = getPrinter( arguments ) )
         {
             for ( String fileAsString : arguments.orphans() )
@@ -312,8 +312,7 @@ public class DumpLogicalLog
     }
 
     @SuppressWarnings( "unchecked" )
-    private static Function<LogEntry,String> parseSerializer( Args arguments, Predicate<LogEntry[]> filter,
-            TimeZone timeZone )
+    private static Function<LogEntry,String> parseSerializer( Predicate<LogEntry[]> filter, TimeZone timeZone )
     {
         if ( filter instanceof Function )
         {

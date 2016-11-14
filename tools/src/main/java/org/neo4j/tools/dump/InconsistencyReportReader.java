@@ -81,28 +81,28 @@ public class InconsistencyReportReader
             }
             else if ( state == 1 )
             {
-                String entityType = entityType( line );
-                long id = id( line );
-                if ( entityType != null && id != -1 )
-                {
-                    propagate( entityType, id );
-                }
+                tryPropagate( line );
             }
-            else if ( state == 1 || state == 2 )
+            else if ( state == 2 )
             {
                 if ( line.startsWith( "Inconsistent with: " ) )
                 {
                     line = line.substring( "Inconsistent with: ".length() );
                 }
 
-                String entityType = entityType( line );
-                long id = id( line );
-                if ( entityType != null && id != -1 )
-                {
-                    propagate( entityType, id );
-                }
+                tryPropagate( line );
             }
             state = (state + 1) % 3;
+        }
+    }
+
+    private void tryPropagate( String line )
+    {
+        String entityType = entityType( line );
+        long id = id( line );
+        if ( entityType != null && id != -1 )
+        {
+            propagate( entityType, id );
         }
     }
 
