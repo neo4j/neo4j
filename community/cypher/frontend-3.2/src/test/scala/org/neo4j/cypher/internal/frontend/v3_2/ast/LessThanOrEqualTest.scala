@@ -38,6 +38,6 @@ class LessThanOrEqualTest extends InfixExpressionTestBase(LessThanOrEqual(_, _)(
 
   test("shouldReturnErrorIfInvalidArgumentTypes") {
     testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Float, Integer or String but was Node")
-    testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Integer but was Node")
+    testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Float or Integer but was Node")
   }
 }
