@@ -69,9 +69,9 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
-    public String firstNeo4jVersion()
+    public String introductionVersion()
     {
-        return actual.firstNeo4jVersion();
+        return actual.introductionVersion();
     }
 
     @Override

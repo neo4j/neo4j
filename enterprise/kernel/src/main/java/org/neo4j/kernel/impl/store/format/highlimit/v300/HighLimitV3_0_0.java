@@ -64,7 +64,7 @@ public class HighLimitV3_0_0 extends BaseRecordFormats
 
     public HighLimitV3_0_0()
     {
-        super( STORE_VERSION, StoreVersion.HIGH_LIMIT_V3_0_0.firstNeo4jVersion(), 1, Capability.DENSE_NODES,
+        super( STORE_VERSION, StoreVersion.HIGH_LIMIT_V3_0_0.introductionVersion(), 1, Capability.DENSE_NODES,
                 Capability.SCHEMA, Capability.LUCENE_5 );
     }
 

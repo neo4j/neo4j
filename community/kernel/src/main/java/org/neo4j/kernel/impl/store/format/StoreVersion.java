@@ -35,12 +35,12 @@ public enum StoreVersion
     HIGH_LIMIT_V3_1_0( "vE.H.2", "3.1.0" );
 
     private final String versionString;
-    private final String firstNeo4jVersion;
+    private final String introductionVersion;
 
-    StoreVersion( String versionString, String firstNeo4jVersion )
+    StoreVersion( String versionString, String introductionVersion )
     {
         this.versionString = versionString;
-        this.firstNeo4jVersion = firstNeo4jVersion;
+        this.introductionVersion = introductionVersion;
     }
 
     public String versionString()
@@ -48,8 +48,8 @@ public enum StoreVersion
         return versionString;
     }
 
-    public String firstNeo4jVersion()
+    public String introductionVersion()
     {
-        return firstNeo4jVersion;
+        return introductionVersion;
     }
 }

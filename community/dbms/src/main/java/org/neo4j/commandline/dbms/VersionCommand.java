@@ -103,16 +103,17 @@ public class VersionCommand implements AdminCommand
                             () -> new CommandFailed( String.format( "Could not find version metadata in store '%s'",
                                     storeDir ) ) );
 
-            final String fmt = "%-20s%s";
-            out.accept( String.format( fmt, "Store version:", storeVersion ) );
+            final String fmt = "%-25s%s";
+            out.accept( String.format( fmt, "Store format version:", storeVersion ) );
 
             RecordFormats format = RecordFormatSelector.selectForVersion( storeVersion );
-            out.accept( String.format( fmt, "Introduced in:", format.firstNeo4jVersion() ) );
+            out.accept( String.format( fmt, "Introduced in version:", format.introductionVersion() ) );
 
-            out.accept(
-                    findSuccessor( format )
-                            .map( next -> String.format( fmt, "Superseded in:", next.firstNeo4jVersion() ) )
-                            .orElse( String.format( fmt, "Used in:", Version.getNeo4jVersion() + " (current)" ) ) );
+            findSuccessor( format )
+                    .map( next -> String.format( fmt, "Superseded in version:", next.introductionVersion() ) )
+                    .ifPresent( out );
+
+            out.accept( String.format( fmt, "Current version:", Version.getNeo4jVersion() ) );
         }
         catch ( IOException e )
         {

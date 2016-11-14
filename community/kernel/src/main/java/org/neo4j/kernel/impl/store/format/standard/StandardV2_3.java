@@ -41,7 +41,7 @@ public class StandardV2_3 extends BaseRecordFormats
 
     public StandardV2_3()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V2_3.firstNeo4jVersion(), 5, Capability.SCHEMA,
+        super( STORE_VERSION, StoreVersion.STANDARD_V2_3.introductionVersion(), 5, Capability.SCHEMA,
                 Capability.DENSE_NODES, Capability.LUCENE_3 );
     }
 

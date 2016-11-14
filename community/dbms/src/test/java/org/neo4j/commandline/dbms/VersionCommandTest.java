@@ -139,9 +139,9 @@ public class VersionCommandTest
 
         assertEquals(
                 Arrays.asList(
-                        String.format( "Store version:      %s", currentFormat.storeVersion() ),
-                        String.format( "Introduced in:      %s", currentFormat.firstNeo4jVersion() ),
-                        String.format( "Used in:            %s (current)", Version.getNeo4jVersion() ) ),
+                        String.format( "Store format version:    %s", currentFormat.storeVersion() ),
+                        String.format( "Introduced in version:   %s", currentFormat.introductionVersion() ),
+                        String.format( "Current version:         %s", Version.getNeo4jVersion() ) ),
                 outCaptor.getAllValues() );
     }
 
@@ -152,13 +152,14 @@ public class VersionCommandTest
 
         execute( databaseDirectory.toString() );
 
-        verify( out, times( 3 ) ).accept( outCaptor.capture() );
+        verify( out, times( 4 ) ).accept( outCaptor.capture() );
 
         assertEquals(
                 Arrays.asList(
-                        "Store version:      v0.A.5",
-                        "Introduced in:      2.2.0",
-                        "Superseded in:      2.3.0" ),
+                        "Store format version:    v0.A.5",
+                        "Introduced in version:   2.2.0",
+                        "Superseded in version:   2.3.0",
+                        String.format( "Current version:         %s", Version.getNeo4jVersion() ) ),
                 outCaptor.getAllValues() );
     }
 

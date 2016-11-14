@@ -34,6 +34,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -78,13 +79,14 @@ public class VersionCommandEnterpriseTest
 
         execute( databaseDirectory.toString() );
 
-        verify( out, times( 3 ) ).accept( outCaptor.capture() );
+        verify( out, times( 4 ) ).accept( outCaptor.capture() );
 
         assertEquals(
                 Arrays.asList(
-                        "Store version:      vE.H.0",
-                        "Introduced in:      3.0.0",
-                        "Superseded in:      3.0.6" ),
+                        "Store format version:    vE.H.0",
+                        "Introduced in version:   3.0.0",
+                        "Superseded in version:   3.0.6",
+                        String.format( "Current version:         %s", Version.getNeo4jVersion() ) ),
                 outCaptor.getAllValues() );
     }
 

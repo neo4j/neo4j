@@ -52,7 +52,7 @@ public interface RecordFormats
      * @return the neo4j version where this format was introduced. It is almost certainly NOT the only version of
      * neo4j where this format is used.
      */
-    String firstNeo4jVersion();
+    String introductionVersion();
 
     /**
      * Generation of this format, format family local int value which should be incrementing along with

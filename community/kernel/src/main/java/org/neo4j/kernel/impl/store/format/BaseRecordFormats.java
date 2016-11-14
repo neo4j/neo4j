@@ -36,15 +36,15 @@ public abstract class BaseRecordFormats implements RecordFormats
     private final int generation;
     private final Capability[] capabilities;
     private final String storeVersion;
-    private final String firstNeo4jVersion;
+    private final String introductionVersion;
 
-    protected BaseRecordFormats( String storeVersion, String firstNeo4jVersion, int generation,
+    protected BaseRecordFormats( String storeVersion, String introductionVersion, int generation,
             Capability... capabilities )
     {
         this.storeVersion = storeVersion;
         this.generation = generation;
         this.capabilities = capabilities;
-        this.firstNeo4jVersion = firstNeo4jVersion;
+        this.introductionVersion = introductionVersion;
     }
 
     @Override
@@ -54,9 +54,9 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public String firstNeo4jVersion()
+    public String introductionVersion()
     {
-        return firstNeo4jVersion;
+        return introductionVersion;
     }
 
     @Override
