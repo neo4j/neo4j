@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.apache.commons.lang3.StringUtils;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -262,6 +264,22 @@ public class RecordFormatSelector
         }
     }
 
+    /**
+     * Finds which format, if any, succeeded the specified format. Only formats in the same family are considered.
+     *
+     * @param format to find successor to.
+     * @return the format with the lowest generation > format.generation, or None if no such format is known.
+     */
+    @Nonnull
+    public static Optional<RecordFormats> findSuccessor( @Nonnull final RecordFormats format )
+    {
+        return StreamSupport.stream( RecordFormatSelector.allFormats().spliterator(), false )
+                .filter( candidate -> FormatFamily.isSameFamily( format, candidate ) )
+                .filter( candidate -> candidate.generation() > format.generation() )
+                .reduce( ( a, b ) -> a.generation() < b.generation() ? a : b );
+    }
+
+    @Nonnull
     private static Iterable<RecordFormats> allFormats()
     {
         Iterable<RecordFormats.Factory> loadableFormatFactories = Service.load( RecordFormats.Factory.class );
