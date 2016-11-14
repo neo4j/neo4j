@@ -319,7 +319,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     }
 
     @Override
-    protected void close() throws IOException
+    public void close() throws IOException
     {
         store.close();
     }
