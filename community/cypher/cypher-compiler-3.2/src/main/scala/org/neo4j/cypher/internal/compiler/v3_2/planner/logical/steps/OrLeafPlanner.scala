@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, Ors}
+import org.neo4j.cypher.internal.compiler.v3_2.planner._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Ors}
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpression]) extends LeafPlanner {
 

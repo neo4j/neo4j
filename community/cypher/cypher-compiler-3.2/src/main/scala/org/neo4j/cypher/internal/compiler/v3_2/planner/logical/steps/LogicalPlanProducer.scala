@@ -482,7 +482,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
         * There is no need to report the predicates that are inside the OR (exprs),
         * since we will add the OR itself instead.
         */
-      val newSelections = Selections.from((predicates -- orPredicate.exprs + orPredicate).toSeq: _*)
+      val newSelections = Selections.from((predicates -- orPredicate.exprs + orPredicate).toSeq)
       that.amendQueryGraph(qg => qg.withSelections(newSelections))
     }
     val cardinality = context.cardinality.apply(solved, context.input, context.semanticTable)

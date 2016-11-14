@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LeafPlanFromExpression, LeafPlansForVariable}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Ors, Variable}
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanFromExpression, LeafPlansForVariable}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Ors, Variable}
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
