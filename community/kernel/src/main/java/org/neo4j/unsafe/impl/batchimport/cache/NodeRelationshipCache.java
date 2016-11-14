@@ -639,8 +639,14 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
     public void close()
     {
-        array.close();
-        relGroupCache.close();
+        if ( array != null )
+        {
+            array.close();
+        }
+        if ( relGroupCache != null )
+        {
+            relGroupCache.close();
+        }
     }
 
     @Override
