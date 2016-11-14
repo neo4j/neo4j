@@ -37,6 +37,8 @@ import static org.junit.Assert.assertTrue;
 
 public class SeekCursorTest
 {
+    private static final int STABLE_GENERATION = 1;
+    private static final int UNSTABLE_GENERATION = 2;
     private static final int PAGE_SIZE = 256;
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> treeNode = new TreeNode<>( PAGE_SIZE, layout );
@@ -55,7 +57,7 @@ public class SeekCursorTest
     {
         delegate.initialize();
         pageCursor.next( 0L );
-        treeNode.initializeLeaf( pageCursor );
+        treeNode.initializeLeaf( pageCursor, STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 
     /* NO CONCURRENT INSERT */
@@ -607,7 +609,7 @@ public class SeekCursorTest
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( pageCursor, key, value,
-                treeNode, from, to, layout, 2, keyCount ) )
+                treeNode, from, to, layout, STABLE_GENERATION, UNSTABLE_GENERATION, 2, keyCount ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -644,7 +646,8 @@ public class SeekCursorTest
     {
         from.setValue( fromInclusive );
         to.setValue( toExclusive );
-        return new SeekCursor<>( pageCursor, key, value, treeNode, from, to, layout, pos, keyCount );
+        return new SeekCursor<>( pageCursor, key, value, treeNode, from, to, layout,
+                STABLE_GENERATION, UNSTABLE_GENERATION, pos, keyCount );
     }
 
     /**
@@ -656,11 +659,11 @@ public class SeekCursorTest
         long left = pageCursor.getCurrentPageId();
         long right = left + 1;
 
-        treeNode.setRightSibling( pageCursor, right );
+        treeNode.setRightSibling( pageCursor, right, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         pageCursor.next( right );
-        treeNode.initializeLeaf( pageCursor );
-        treeNode.setLeftSibling( pageCursor, left );
+        treeNode.initializeLeaf( pageCursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        treeNode.setLeftSibling( pageCursor, left, STABLE_GENERATION, UNSTABLE_GENERATION );
         return left;
     }
 

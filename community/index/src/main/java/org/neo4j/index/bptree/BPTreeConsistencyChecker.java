@@ -40,13 +40,17 @@ class BPTreeConsistencyChecker<KEY>
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
     private final List<RightmostInChain<KEY>> rightmostPerLevel = new ArrayList<>();
+    private final int stableGeneration;
+    private final int unstableGeneration;
 
-    BPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout )
+    BPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, int stableGeneration, int unstableGeneration )
     {
         this.node = node;
         this.readKey = layout.newKey();
         this.comparator = node.keyComparator();
         this.layout = layout;
+        this.stableGeneration = stableGeneration;
+        this.unstableGeneration = unstableGeneration;
     }
 
     public boolean check( PageCursor cursor ) throws IOException
@@ -88,7 +92,7 @@ class BPTreeConsistencyChecker<KEY>
         // If this is the first time on this level, we will add a new entry
         for ( int i = rightmostPerLevel.size(); i <= level; i++ )
         {
-            RightmostInChain<KEY> first = new RightmostInChain<>( node );
+            RightmostInChain<KEY> first = new RightmostInChain<>( node, stableGeneration, unstableGeneration );
             rightmostPerLevel.add( i, first );
         }
         RightmostInChain<KEY> rightmost = rightmostPerLevel.get( level );
@@ -113,7 +117,7 @@ class BPTreeConsistencyChecker<KEY>
                 assert comparator.compare( prev, readKey ) < 0; // Assume unique keys
             }
 
-            long child = node.childAt( cursor, pos );
+            long child = node.childAt( cursor, pos, stableGeneration, unstableGeneration );
             cursor.next( child );
 
             if ( pos == 0 )
@@ -132,7 +136,7 @@ class BPTreeConsistencyChecker<KEY>
         }
 
         // Check last child
-        long child = node.childAt( cursor, pos );
+        long child = node.childAt( cursor, pos, stableGeneration, unstableGeneration );
         cursor.next( child );
         childRange = range.restrictLeft( prev );
         checkSubtree( cursor, childRange, level + 1 );

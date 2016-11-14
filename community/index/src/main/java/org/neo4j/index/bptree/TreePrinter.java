@@ -32,11 +32,14 @@ public class TreePrinter
      * @param cursor {@link PageCursor} placed at root.
      * @param treeNode {@link TreeNode} knowing about how to read keys, values and children.
      * @param layout {@link Layout} for key/value.
+     * @param stableGeneration stable generation.
+     * @param unstableGeneration unstable generation.
      * @param out target to print tree at.
      * @throws IOException on page cache access error.
      */
     public static <KEY,VALUE> void printTree( PageCursor cursor, TreeNode<KEY,VALUE> treeNode,
-            Layout<KEY,VALUE> layout, PrintStream out ) throws IOException
+            Layout<KEY,VALUE> layout, int stableGeneration, int unstableGeneration, PrintStream out )
+                    throws IOException
     {
         int level = 0;
         long firstId = cursor.getCurrentPageId();
@@ -45,26 +48,27 @@ public class TreePrinter
         {
             out.println( "Level " + level++ );
             leftmostOnLevel = cursor.getCurrentPageId();
-            printKeysOfSiblings( cursor, treeNode, layout, out );
+            printKeysOfSiblings( cursor, treeNode, layout, stableGeneration, unstableGeneration, out );
             out.println();
             cursor.next( leftmostOnLevel );
 
-            cursor.next( treeNode.childAt( cursor, 0 ) );
+            cursor.next( treeNode.childAt( cursor, 0, stableGeneration, unstableGeneration ) );
         }
 
         out.println( "Level " + level );
-        printKeysOfSiblings( cursor, treeNode, layout, out );
+        printKeysOfSiblings( cursor, treeNode, layout, stableGeneration, unstableGeneration, out );
         out.println();
         cursor.next( firstId );
     }
 
     private static <KEY,VALUE> void printKeysOfSiblings( PageCursor cursor,
-            TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout, PrintStream out ) throws IOException
+            TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout, int stableGeneration, int unstableGeneration,
+            PrintStream out ) throws IOException
     {
         while ( true )
         {
-            printKeys( cursor, bTreeNode, layout, out );
-            long rightSibling = bTreeNode.rightSibling( cursor );
+            printKeys( cursor, bTreeNode, layout, stableGeneration, unstableGeneration, out );
+            long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
             if ( !bTreeNode.isNode( rightSibling ) )
             {
                 break;
@@ -74,7 +78,7 @@ public class TreePrinter
     }
 
     private static <KEY,VALUE> void printKeys( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode,
-            Layout<KEY,VALUE> layout, PrintStream out )
+            Layout<KEY,VALUE> layout, int stableGeneration, int unstableGeneration, PrintStream out )
     {
         boolean isLeaf = bTreeNode.isLeaf( cursor );
         int keyCount = bTreeNode.keyCount( cursor );
@@ -97,14 +101,15 @@ public class TreePrinter
             else
             {
                 out.print( "#" + i + ":" +
-                        "|" + bTreeNode.childAt( cursor, i ) + "|" +
+                        "|" + bTreeNode.childAt( cursor, i, stableGeneration, unstableGeneration ) + "|" +
                         bTreeNode.keyAt( cursor, key, i ) + "|" );
 
             }
         }
         if ( !isLeaf )
         {
-            out.print( "#" + keyCount + ":|" + bTreeNode.childAt( cursor, keyCount ) + "|" );
+            out.print( "#" + keyCount + ":|" +
+                    bTreeNode.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) + "|" );
         }
         out.println( (isLeaf ? "]" : "|") );
     }

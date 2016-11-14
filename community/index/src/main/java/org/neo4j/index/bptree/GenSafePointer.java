@@ -30,43 +30,9 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 public class GenSafePointer
 {
-    /**
-     * Data for a GSP, i.e. generation and pointer. Checksum is generated from those two fields and
-     * so isn't a field in this struct - ahem class. The reason this class exists is that we, when reading,
-     * want to read two fields and a checksum and match the two fields with the checksum. This class
-     * is designed to be mutable and should be reused in as many places as possible.
-     */
-    public static class GSP
-    {
-        public long generation; // unsigned int
-        public long pointer;
-
-        @Override
-        public int hashCode()
-        {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + (int) (generation ^ (generation >>> 32));
-            result = prime * result + (int) (pointer ^ (pointer >>> 32));
-            return result;
-        }
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( this == obj )
-                return true;
-            if ( obj == null )
-                return false;
-            if ( getClass() != obj.getClass() )
-                return false;
-            GSP other = (GSP) obj;
-            if ( generation != other.generation )
-                return false;
-            if ( pointer != other.pointer )
-                return false;
-            return true;
-        }
-    }
+    public static final long MIN_GENERATION = 1L;
+    // unsigned int
+    public static final long MAX_GENERATION = 0xFFFFFFFFL;
 
     static final int CHECKSUM_SIZE = 2;
     static final int SIZE =
@@ -78,31 +44,51 @@ public class GenSafePointer
      * Writes GSP at the given {@code offset}, the two fields (generation, pointer) + a checksum will be written.
      *
      * @param cursor {@link PageCursor} to write into.
-     * @param gsp data to write.
+     * @param generation generation to write.
+     * @param pointer pointer to write.
      */
-    public static void write( PageCursor cursor, GSP gsp )
+    public static void write( PageCursor cursor, long generation, long pointer )
     {
-        assert (gsp.generation & ~0xFFFFFFFF) == 0;
-        cursor.putInt( (int) gsp.generation );
-        put6BLong( cursor, gsp.pointer );
-        cursor.putShort( checksumOf( gsp ) );
+        assert generation >= MIN_GENERATION && generation <= MAX_GENERATION : generation;
+        cursor.putInt( (int) generation );
+        put6BLong( cursor, pointer );
+        cursor.putShort( checksumOf( generation, pointer ) );
     }
 
-    /**
-     * Reads GSP from the given {@code offset}, the two fields (generation, pointer) + a checksum will be read.
-     * Generation and pointer will be matched against the read checksum.
+    /* ===========================================================================
+     * Due to how java has one a single return type and objects produce/is garbage
+     * the design of the methods below for reading GSP requires some documentation
+     * to be used properly.
      *
-     * @param cursor {@link PageCursor} to read from.
-     * @param gsp data structure to read into.
-     * @return {@code true} if read checksum matches the read data, otherwise {@code false}. In any case
-     * the fields in the given {@code gsp} may be changed as part of this call.
-     */
-    public static boolean read( PageCursor cursor, GSP gsp )
+     * Caller is responsible for initially setting cursor offset at the start of
+     * the GSP to read, then follows a couple of calls, each advancing the cursor
+     * offset themselves:
+     * - #readGeneration(PageCursor)
+     * - #readPointer(PageCursor)
+     * - #verifyChecksum(PageCursor, generation, pointer)
+     * =========================================================================== */
+
+    public static long readGeneration( PageCursor cursor )
     {
-        gsp.generation = cursor.getInt() & 0xFFFFFFFF;
-        gsp.pointer = get6BLong( cursor );
-        int checksum = cursor.getShort();
-        return checksum == checksumOf( gsp );
+        return cursor.getInt() & 0xFFFFFFFFL;
+    }
+
+    public static long readPointer( PageCursor cursor )
+    {
+        long result = get6BLong( cursor );
+        // TODO Could we change NULL to 0 instead?
+        return result == 0xFFFF_FFFFFFFFL ? -1 : result;
+    }
+
+    public static short readChecksum( PageCursor cursor )
+    {
+        return cursor.getShort();
+    }
+
+    public static boolean verifyChecksum( PageCursor cursor, long generation, long pointer )
+    {
+        short checksum = cursor.getShort();
+        return checksum == checksumOf( generation, pointer );
     }
 
     private static long get6BLong( PageCursor cursor )
@@ -123,17 +109,24 @@ public class GenSafePointer
     /**
      * Calculates a 2-byte checksum from GSP data.
      *
-     * @param gsp data to calculate checksum for.
-     * @return a {@code short} which is the checksum of the data in {@code gsp}.
+     * @param generation generation of the pointer.
+     * @param pointer pointer itself.
+     *
+     * @return a {@code short} which is the checksum of the gen-pointer.
      */
-    public static short checksumOf( GSP gsp )
+    public static short checksumOf( long generation, long pointer )
     {
         short result = 0;
-        result ^= ((short) gsp.generation) & 0xFFFF;
-        result ^= ((short) (gsp.generation >>> Short.SIZE)) & 0xFFFF;
-        result ^= ((short) gsp.pointer) & 0xFFFF;
-        result ^= ((short) (gsp.pointer >>> Short.SIZE)) & 0xFFFF;
-        result ^= ((short) (gsp.pointer >>> Integer.SIZE)) & 0xFFFF;
+        result ^= ((short) generation) & 0xFFFF;
+        result ^= ((short) (generation >>> Short.SIZE)) & 0xFFFF;
+        result ^= ((short) pointer) & 0xFFFF;
+        result ^= ((short) (pointer >>> Short.SIZE)) & 0xFFFF;
+        result ^= ((short) (pointer >>> Integer.SIZE)) & 0xFFFF;
         return result;
+    }
+
+    public static boolean isEmpty( long generation, long pointer )
+    {
+        return generation == 0 && pointer == 0;
     }
 }

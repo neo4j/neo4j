@@ -33,21 +33,26 @@ import static org.neo4j.index.bptree.TreeNode.NO_NODE_FLAG;
 class RightmostInChain<KEY>
 {
     private final TreeNode<KEY,?> node;
+    private final int stableGeneration;
+    private final int unstableGeneration;
+
     private long currentRightmost;
     private long expectedNextRightmost;
 
-    RightmostInChain( TreeNode<KEY,?> node )
+    RightmostInChain( TreeNode<KEY,?> node, int stableGeneration, int unstableGeneration )
     {
         this.node = node;
-        currentRightmost = TreeNode.NO_NODE_FLAG;
-        expectedNextRightmost = TreeNode.NO_NODE_FLAG;
+        this.stableGeneration = stableGeneration;
+        this.unstableGeneration = unstableGeneration;
+        this.currentRightmost = TreeNode.NO_NODE_FLAG;
+        this.expectedNextRightmost = TreeNode.NO_NODE_FLAG;
     }
 
     long assertNext( PageCursor cursor )
     {
         long pageId = cursor.getCurrentPageId();
-        long leftSibling = node.leftSibling( cursor );
-        long rightSibling = node.rightSibling( cursor );
+        long leftSibling = node.leftSibling( cursor, stableGeneration, unstableGeneration );
+        long rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
 
         // Assert we have reached expected node and that we agree about being siblings
         assert leftSibling == currentRightmost :

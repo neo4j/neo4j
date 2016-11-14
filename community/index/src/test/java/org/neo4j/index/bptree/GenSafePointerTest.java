@@ -22,7 +22,6 @@ package org.neo4j.index.bptree;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.index.bptree.GenSafePointer.GSP;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
@@ -101,7 +100,7 @@ public class GenSafePointerTest
 
         // WHEN
         cursor.putShort( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE,
-                (short) (GenSafePointer.checksumOf( initial ) - 2) );
+                (short) (checksumOf( initial ) - 2) );
 
         // THEN
         boolean matches = read( cursor, offset, read );
@@ -112,7 +111,7 @@ public class GenSafePointerTest
     public void shouldWriteAndReadGspCloseToGenerationMax() throws Exception
     {
         // GIVEN
-        long generation = 0xFFFFFFFF;
+        long generation = 0xFFFFFFFEL;
         GSP expected = gsp( generation, 12345 );
         write( cursor, 0, expected );
 
@@ -130,7 +129,7 @@ public class GenSafePointerTest
     public void shouldWriteAndReadGspCloseToPointerMax() throws Exception
     {
         // GIVEN
-        long pointer = 0xFFFF_FFFFFFFFL;
+        long pointer = 0xFFFF_FFFFFFFEL;
         GSP expected = gsp( 12345, pointer );
         write( cursor, 0, expected );
 
@@ -148,8 +147,8 @@ public class GenSafePointerTest
     public void shouldWriteAndReadGspCloseToGenerationAndPointerMax() throws Exception
     {
         // GIVEN
-        int generation = 0xFFFFFFFF;
-        long pointer = 0xFFFF_FFFFFFFFL;
+        long generation = 0xFFFFFFFEL;
+        long pointer = 0xFFFF_FFFFFFFEL;
         GSP expected = gsp( generation, pointer );
         write( cursor, 0, expected );
 
@@ -161,6 +160,24 @@ public class GenSafePointerTest
         assertTrue( matches );
         assertEquals( expected, read );
         assertEquals( generation, read.generation );
+        assertEquals( pointer, read.pointer );
+    }
+
+    @Test
+    public void shouldWriteAndReadMinusOnePointer() throws Exception
+    {
+        // GIVEN
+        long pointer = -1;
+        GSP expected = gsp( 12345, pointer );
+        write( cursor, 0, expected );
+
+        // WHEN
+        GSP read = new GSP();
+        boolean matches = read( cursor, 0, read );
+
+        // THEN
+        assertTrue( matches );
+        assertEquals( expected, read );
         assertEquals( pointer, read.pointer );
     }
 
@@ -178,7 +195,7 @@ public class GenSafePointerTest
         {
             gsp.generation = random.nextLong( 0xFFFFFFFFL );
             gsp.pointer = random.nextLong( 0xFFFF_FFFFFFFFL );
-            short checksum = GenSafePointer.checksumOf( gsp );
+            short checksum = checksumOf( gsp );
             if ( i == 0 )
             {
                 reference = checksum;
@@ -205,12 +222,63 @@ public class GenSafePointerTest
     private boolean read( PageCursor cursor, int offset, GSP into )
     {
         cursor.setOffset( offset );
-        return GenSafePointer.read( cursor, into );
+        into.generation = GenSafePointer.readGeneration( cursor );
+        into.pointer = GenSafePointer.readPointer( cursor );
+        return GenSafePointer.verifyChecksum( cursor, into.generation, into.pointer );
     }
 
-    private void write( PageCursor cursor, int offset, GSP expected )
+    private void write( PageCursor cursor, int offset, GSP gsp )
     {
         cursor.setOffset( offset );
-        GenSafePointer.write( cursor, expected );
+        GenSafePointer.write( cursor, gsp.generation, gsp.pointer );
+    }
+
+    private static short checksumOf( GSP gsp )
+    {
+        return GenSafePointer.checksumOf( gsp.generation, gsp.pointer );
+    }
+
+    /**
+     * Data for a GSP, i.e. generation and pointer. Checksum is generated from those two fields and
+     * so isn't a field in this struct - ahem class. The reason this class exists is that we, when reading,
+     * want to read two fields and a checksum and match the two fields with the checksum. This class
+     * is designed to be mutable and should be reused in as many places as possible.
+     */
+    private static class GSP
+    {
+        long generation; // unsigned int
+        long pointer;
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + (int) (generation ^ (generation >>> 32));
+            result = prime * result + (int) (pointer ^ (pointer >>> 32));
+            return result;
+        }
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( this == obj )
+                return true;
+            if ( obj == null )
+                return false;
+            if ( getClass() != obj.getClass() )
+                return false;
+            GSP other = (GSP) obj;
+            if ( generation != other.generation )
+                return false;
+            if ( pointer != other.pointer )
+                return false;
+            return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "[gen:" + generation + ",p:" + pointer + "]";
+        }
     }
 }

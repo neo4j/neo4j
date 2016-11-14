@@ -48,7 +48,9 @@ public class IndexModifierTest
         return base;
     };
 
-    private final int pageSize = 128;
+    private static final int STABLE_GENERATION = 1;
+    private static final int UNSTABLE_GENERATION = 2;
+    private final int pageSize = 256;
 
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
@@ -74,7 +76,7 @@ public class IndexModifierTest
         cursor.initialize();
         long newId = id.acquireNewId();
         cursor.next( newId );
-        node.initializeLeaf( cursor );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 
     @Test
@@ -218,8 +220,8 @@ public class IndexModifierTest
         newRootFromSplit( split );
 
         // Assert child pointers and sibling pointers are intact after split in root
-        long child0 = node.childAt( cursor, 0 );
-        long child1 = node.childAt( cursor, 1 );
+        long child0 = node.childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        long child1 = node.childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
         assertSiblingOrderAndPointers( child0, child1 );
 
         // Insert until we have another split in leftmost leaf
@@ -235,9 +237,9 @@ public class IndexModifierTest
 
         // Assert child pointers and sibling pointers are intact
         // AND that node not involved in split also has its left sibling pointer updated
-        child0 = node.childAt( cursor, 0 );
-        child1 = node.childAt( cursor, 1 );
-        long child2 = node.childAt( cursor, 2 ); // <- right sibling to split-node before split
+        child0 = node.childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        child1 = node.childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
+        long child2 = node.childAt( cursor, 2, STABLE_GENERATION, UNSTABLE_GENERATION ); // <- right sibling to split-node before split
 
         assertSiblingOrderAndPointers( child0, child1, child2 );
     }
@@ -472,7 +474,8 @@ public class IndexModifierTest
             }
         }
 
-        BPTreeConsistencyChecker<MutableLong> consistencyChecker = new BPTreeConsistencyChecker<>( node, layout );
+        BPTreeConsistencyChecker<MutableLong> consistencyChecker =
+                new BPTreeConsistencyChecker<>( node, layout, STABLE_GENERATION, UNSTABLE_GENERATION );
         consistencyChecker.check( cursor );
     }
 
@@ -626,7 +629,7 @@ public class IndexModifierTest
     // KEEP even if unused
     private void printTree() throws IOException
     {
-        TreePrinter.printTree( cursor, node, layout, System.out );
+        TreePrinter.printTree( cursor, node, layout, STABLE_GENERATION, UNSTABLE_GENERATION, System.out );
     }
 
     private MutableLong key( long key )
@@ -638,18 +641,19 @@ public class IndexModifierTest
     {
         long rootId = id.acquireNewId();
         cursor.next( rootId );
-        node.initializeInternal( cursor );
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
         node.setKeyCount( cursor, 1 );
-        node.setChildAt( cursor, split.left, 0 );
-        node.setChildAt( cursor, split.right, 1 );
+        node.setChildAt( cursor, split.left, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.setChildAt( cursor, split.right, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
         return rootId;
     }
 
     private void assertSiblingOrderAndPointers( long... children ) throws IOException
     {
         long currentPageId = cursor.getCurrentPageId();
-        RightmostInChain<MutableLong> rightmost = new RightmostInChain<>( node );
+        RightmostInChain<MutableLong> rightmost =
+                new RightmostInChain<>( node, STABLE_GENERATION, UNSTABLE_GENERATION );
         for ( long child : children )
         {
             cursor.next( child );
@@ -679,13 +683,14 @@ public class IndexModifierTest
     {
         insertKey.setValue( key );
         insertValue.setValue( value );
-        return indexModifier.insert( cursor, insertKey, insertValue, amender, DEFAULTS );
+        return indexModifier.insert( cursor, insertKey, insertValue, amender, DEFAULTS,
+                STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 
     private MutableLong remove( long key, MutableLong into ) throws IOException
     {
         insertKey.setValue( key );
-        return indexModifier.remove( cursor, insertKey, into );
+        return indexModifier.remove( cursor, insertKey, into, STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 
     private class SimpleIdProvider implements IdProvider

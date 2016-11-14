@@ -61,6 +61,8 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private int pageSize;
     private volatile long rootId = META_PAGE_ID + 1;
     private volatile long lastId = rootId;
+    private volatile int stableGeneration = 0; // really?
+    private volatile int unstableGeneration = 1;
     private boolean created;
 
     /**
@@ -95,7 +97,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
-                bTreeNode.initializeLeaf( cursor );
+                bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
             }
         }
     }
@@ -240,7 +242,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
                 if ( isInternal )
                 {
-                    childId = bTreeNode.childAt( cursor, pos );
+                    childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -256,6 +258,11 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 // TODO perhaps detect being too far to the left and so follow right siblings,
                 // to reduce unnecessary seek in leafs (concurrent splits would be the cause)
 
+                if ( childId < 0 )
+                {
+                    communicateUndecidedPointer( childId );
+                }
+
                 if ( !cursor.next( childId ) )
                 {
                     throw new IllegalStateException( "Couldn't go to child " + childId );
@@ -270,7 +277,30 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
-        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout, pos, keyCount );
+        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout,
+                stableGeneration, unstableGeneration, pos, keyCount );
+    }
+
+    /**
+     * Arriving here is actually quite bad is it signals some sort of inconsistency/corruption in the tree.
+     * TODO Can we do something here, repair perhaps?
+     */
+    private void communicateUndecidedPointer( long signal )
+    {
+        // TODO: include information on current page and perhaps path here
+        if ( signal == TreeNode.NO_NODE_FLAG )
+        {
+            throw new IllegalStateException( "Generally uninitialized GSPP" );
+        }
+        if ( signal == GenSafePointerPair.POINTER_UNDECIDED_SAME_GENERATION )
+        {
+            throw new IllegalStateException( "Undecided GSPP due to same generation" );
+        }
+        if ( signal == GenSafePointerPair.POINTER_UNDECIDED_NONE_CORRECT )
+        {
+            throw new IllegalStateException( "Undecided GSPP due to none being correct" );
+        }
+        throw new IllegalStateException( "Unknown signal " + signal );
     }
 
     @Override
@@ -286,7 +316,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             cursor.next();
-            TreePrinter.printTree( cursor, bTreeNode, layout, System.out );
+            TreePrinter.printTree( cursor, bTreeNode, layout, stableGeneration, unstableGeneration, System.out );
         }
     }
 
@@ -295,7 +325,8 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             cursor.next();
-            return new BPTreeConsistencyChecker<>( bTreeNode, layout ).check( cursor );
+            return new BPTreeConsistencyChecker<>( bTreeNode, layout, stableGeneration, unstableGeneration )
+                    .check( cursor );
         }
     }
 
@@ -306,6 +337,8 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             cursor.putLong( 4, rootId );
             cursor.putLong( 12, lastId );
+            stableGeneration = unstableGeneration;
+            unstableGeneration++;
         }
     }
 
@@ -352,7 +385,8 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             cursor.next( rootId );
 
-            SplitResult<KEY> split = indexModifier.insert( cursor, key, value, ammender, options );
+            SplitResult<KEY> split = indexModifier.insert( cursor, key, value, ammender, options,
+                    stableGeneration, unstableGeneration );
 
             if ( cursor.checkAndClearBoundsFlag() )
             {
@@ -365,11 +399,11 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 long newRootId = acquireNewId();
                 cursor.next( newRootId );
 
-                bTreeNode.initializeInternal( cursor );
+                bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                 bTreeNode.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
                 bTreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, split.left, 0 );
-                bTreeNode.setChildAt( cursor, split.right, 1 );
+                bTreeNode.setChildAt( cursor, split.left, 0, stableGeneration, unstableGeneration );
+                bTreeNode.setChildAt( cursor, split.right, 1, stableGeneration, unstableGeneration );
                 rootId = newRootId;
             }
         }
@@ -379,7 +413,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             cursor.next( rootId );
 
-            return indexModifier.remove( cursor, key, layout.newValue() );
+            return indexModifier.remove( cursor, key, layout.newValue(), stableGeneration, unstableGeneration );
         }
 
         @Override

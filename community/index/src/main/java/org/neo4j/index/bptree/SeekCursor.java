@@ -46,9 +46,12 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private boolean currentContainsEnd;
     private boolean reread;
     private boolean resetPosition;
+    private final int stableGeneration;
+    private final int unstableGeneration;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
-            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int firstPosToRead, int keyCount )
+            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int stableGeneration, int unstableGeneration,
+            int firstPosToRead, int keyCount )
     {
         this.cursor = leafCursor;
         this.mutableKey = mutableKey;
@@ -56,6 +59,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         this.fromInclusive = fromInclusive;
         this.toExclusive = toExclusive;
         this.layout = layout;
+        this.stableGeneration = stableGeneration;
+        this.unstableGeneration = unstableGeneration;
         this.hit = new MutableHit<>( mutableKey, mutableValue );
         this.bTreeNode = bTreeNode;
         this.pos = firstPosToRead - 1;
@@ -103,7 +108,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 if ( pos >= keyCount )
                 {
                     // Go to next sibling
-                    rightSibling = bTreeNode.rightSibling( cursor );
+                    rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
                 }
                 else
                 {
