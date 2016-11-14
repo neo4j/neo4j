@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -49,6 +46,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -507,36 +505,4 @@ public class TransactionEventsIT
         }
     }
 
-    private class RootCauseMatcher<T extends Throwable> extends TypeSafeMatcher<T>
-    {
-        private final Class<T> rootCause;
-        private final String message;
-        private Throwable cause;
-
-        RootCauseMatcher( Class<T> rootCause, String message )
-        {
-            this.rootCause = rootCause;
-            this.message = message;
-        }
-
-        @Override
-        protected boolean matchesSafely( T item )
-        {
-            cause = ExceptionUtils.getRootCause( item );
-            return rootCause.isInstance( cause ) && cause.getMessage().equals( message );
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendText( "Expected root cause of " )
-                    .appendValue( rootCause )
-                    .appendText( " with message: " )
-                    .appendValue( message )
-                    .appendText( ", but was " )
-                    .appendValue( cause.getClass() )
-                    .appendText( " with message: " )
-                    .appendValue( cause.getMessage() );
-        }
-    }
 }
