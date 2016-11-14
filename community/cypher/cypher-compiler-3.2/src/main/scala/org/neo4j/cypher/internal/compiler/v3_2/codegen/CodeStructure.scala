@@ -91,11 +91,11 @@ trait MethodStructure[E] {
   def loadVariable(varName: String): E
 
   // arithmetic
-  def add(lhs: E, rhs: E): E
-  def subtract(lhs: E, rhs: E): E
-  def multiply(lhs: E, rhs: E): E
-  def divide(lhs: E, rhs: E): E
-  def modulus(lhs: E, rhs: E): E
+  def addExpression(lhs: E, rhs: E): E
+  def subtractExpression(lhs: E, rhs: E): E
+  def multiplyExpression(lhs: E, rhs: E): E
+  def divideExpression(lhs: E, rhs: E): E
+  def modulusExpression(lhs: E, rhs: E): E
 
   // predicates
   def threeValuedNotExpression(value: E): E
