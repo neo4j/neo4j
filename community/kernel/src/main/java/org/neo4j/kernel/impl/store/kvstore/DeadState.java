@@ -74,7 +74,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
     }
 
     @Override
-    void close() throws IOException
+    public void close() throws IOException
     {
         throw new IllegalStateException( "Cannot close() in state: " + stateName() );
     }
@@ -219,7 +219,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 }
 
                 @Override
-                void close() throws IOException
+                public void close() throws IOException
                 {
                 }
 
@@ -282,7 +282,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 }
 
                 @Override
-                void close() throws IOException
+                public void close() throws IOException
                 {
                     state.close();
                 }

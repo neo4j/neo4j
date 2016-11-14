@@ -40,9 +40,6 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
         return "rotating";
     }
 
-    @Override
-    abstract void close() throws IOException;
-
     abstract long rotationVersion();
 
     static final class Rotation<Key> extends RotationState<Key>
@@ -88,7 +85,7 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
         }
 
         @Override
-        void close() throws IOException
+        public void close() throws IOException
         {
             preState.close();
         }
