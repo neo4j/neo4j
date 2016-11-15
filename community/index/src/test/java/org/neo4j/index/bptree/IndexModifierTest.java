@@ -248,7 +248,7 @@ public class IndexModifierTest
         insert( key, value );
 
         // when
-        remove( key );
+        remove( key, readValue );
 
         // then
         assertThat( node.keyCount( cursor ), is( 0 ) );
@@ -264,7 +264,7 @@ public class IndexModifierTest
         }
 
         // when
-        remove( 0 );
+        remove( 0, readValue );
 
         // then
         assertThat( node.keyCount( cursor ), is( maxKeyCount - 1) );
@@ -285,7 +285,7 @@ public class IndexModifierTest
         }
 
         // when
-        remove( middle );
+        remove( middle, readValue );
 
         // then
         assertThat( node.keyCount( cursor ), is( maxKeyCount - 1) );
@@ -307,7 +307,7 @@ public class IndexModifierTest
         }
 
         // when
-        remove( maxKeyCount - 1 );
+        remove( maxKeyCount - 1, readValue );
 
         // then
         assertThat( node.keyCount( cursor ), is( maxKeyCount - 1) );
@@ -316,6 +316,140 @@ public class IndexModifierTest
             Long actual = keyAt( i );
             assertThat( actual, is( (long) i ) );
         }
+    }
+
+    @Test
+    public void modifierMustRemoveFromLeftChild() throws Exception
+    {
+        // given
+        SplitResult<MutableLong> split = null;
+        for ( int i = 0; split == null; i++ )
+        {
+            split = insert( i, i );
+        }
+        long rootId = newRootFromSplit( split );
+
+        // when
+        cursor.next( split.left );
+        assertThat( keyAt( 0 ), is( 0L ) );
+        cursor.next( rootId );
+        remove( 0, readValue );
+
+        // then
+        cursor.next( split.left );
+        assertThat( keyAt( 0 ), is( 1L ) );
+    }
+
+    @Test
+    public void modifierMustRemoveFromRightChildButNotFromInternalWithHitOnInternalSearch() throws Exception
+    {
+        // given
+        SplitResult<MutableLong> split = null;
+        for ( int i = 0; split == null; i++ )
+        {
+            split = insert( i, i );
+        }
+        long rootId = newRootFromSplit( split );
+
+        // when key to remove exists in internal
+        Long keyToRemove = split.primKey.getValue();
+        assertThat( keyAt( 0 ), is( keyToRemove ) );
+
+        // and as first key in right child
+        cursor.next( split.right );
+        int keyCountInRightChild = node.keyCount( cursor );
+        assertThat( keyAt( 0 ), is( keyToRemove ) );
+
+        // and we remove it
+        cursor.next( rootId );
+        remove( keyToRemove, readValue );
+
+        // then we should still find it in internal
+        assertThat( node.keyCount( cursor ), is( 1 ) );
+        assertThat( keyAt( 0 ), is( keyToRemove ) );
+
+        // but not in right leaf
+        cursor.next( split.right );
+        assertThat( node.keyCount( cursor ), is( keyCountInRightChild - 1 ) );
+        assertThat( keyAt( 0 ), is( keyToRemove + 1 ) );
+    }
+
+    @Test
+    public void modifierMustLeaveCursorOnInitialPageAfterRemove() throws Exception
+    {
+        // given
+        SplitResult<MutableLong> split = null;
+        for ( int i = 0; split == null; i++ )
+        {
+            split = insert( i, i );
+        }
+        long rootId = newRootFromSplit( split );
+
+        // when
+        assertThat( cursor.getCurrentPageId(), is( rootId) );
+        remove( split.primKey.getValue(), readValue );
+
+        // then
+        assertThat( cursor.getCurrentPageId(), is( rootId ) );
+    }
+
+    @Test
+    public void modifierMustNotRemoveWhenKeyDoesNotExist() throws Exception
+    {
+        // given
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            insert( i, i );
+        }
+
+        // when
+        assertNull( remove( maxKeyCount, readValue ) );
+
+        // then
+        assertThat( node.keyCount( cursor ), is( maxKeyCount ) );
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            Long actual = keyAt( i );
+            assertThat( actual, is( (long) i ) );
+        }
+    }
+
+    @Test
+    public void modifierMustNotRemoveWhenKeyOnlyExistInInternal() throws Exception
+    {
+        // given
+        SplitResult<MutableLong> split = null;
+        for ( int i = 0; split == null; i++ )
+        {
+            split = insert( i, i );
+        }
+        long rootId = newRootFromSplit( split );
+
+        // when key to remove exists in internal
+        Long keyToRemove = split.primKey.getValue();
+        assertThat( keyAt( 0 ), is( keyToRemove ) );
+
+        // and as first key in right child
+        cursor.next( split.right );
+        int keyCountInRightChild = node.keyCount( cursor );
+        assertThat( keyAt( 0 ), is( keyToRemove ) );
+
+        // and we remove it
+        cursor.next( rootId );
+        remove( keyToRemove, readValue );
+
+        // then we should still find it in internal
+        assertThat( node.keyCount( cursor ), is( 1 ) );
+        assertThat( keyAt( 0 ), is( keyToRemove ) );
+
+        // but not in right leaf
+        cursor.next( split.right );
+        assertThat( node.keyCount( cursor ), is( keyCountInRightChild - 1 ) );
+        assertThat( keyAt( 0 ), is( keyToRemove + 1 ) );
+
+        // and when we remove same key again, nothing should change
+        cursor.next( rootId );
+        assertNull( remove( keyToRemove, readValue ) );
     }
 
     /* REBALANCE (when rebalance is implemented) */
@@ -506,10 +640,10 @@ public class IndexModifierTest
         return indexModifier.insert( cursor, insertKey, insertValue, amender, DEFAULTS );
     }
 
-    private void remove( long key ) throws IOException
+    private MutableLong remove( long key, MutableLong into ) throws IOException
     {
         insertKey.setValue( key );
-        indexModifier.remove( cursor, insertKey );
+        return indexModifier.remove( cursor, insertKey, into );
     }
 
     private class SimpleIdProvider implements IdProvider

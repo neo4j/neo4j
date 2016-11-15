@@ -379,7 +379,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             cursor.next( rootId );
 
-            return indexModifier.remove( cursor, key );
+            return indexModifier.remove( cursor, key, layout.newValue() );
         }
 
         @Override

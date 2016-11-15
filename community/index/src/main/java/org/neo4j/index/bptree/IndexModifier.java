@@ -459,21 +459,32 @@ public class IndexModifier<KEY,VALUE>
         return split;
     }
 
-    public VALUE remove( PageCursor cursor, KEY key ) throws IOException
+    public VALUE remove( PageCursor cursor, KEY key, VALUE into ) throws IOException
     {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return removeFromLeaf( cursor, key );
+            return removeFromLeaf( cursor, key, into );
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
         int search = search( cursor, bTreeNode, key, readKey, keyCount );
         int pos = positionOf( search );
+        if ( isHit( search ) )
+        {
+            pos++;
+        }
+
+        long currentId = cursor.getCurrentPageId();
         cursor.next( bTreeNode.childAt( cursor, pos ) );
-        return remove( cursor, key );
+
+        VALUE result = remove( cursor, key, into );
+
+        cursor.next( currentId );
+
+        return result;
     }
 
-    private VALUE removeFromLeaf( PageCursor cursor, KEY key )
+    private VALUE removeFromLeaf( PageCursor cursor, KEY key, VALUE into )
     {
         int keyCount = bTreeNode.keyCount( cursor );
 
@@ -488,12 +499,12 @@ public class IndexModifier<KEY,VALUE>
 
         // Remove key/value
         bTreeNode.removeKeyAt( cursor, pos, keyCount, tmpForKeys );
-        bTreeNode.valueAt( cursor, readValue, pos );
+        bTreeNode.valueAt( cursor, into, pos );
         bTreeNode.removeValueAt( cursor, pos, keyCount, tmpForValues );
 
         // Decrease key count
         bTreeNode.setKeyCount( cursor, keyCount - 1 );
 
-        return readValue;
+        return into;
     }
 }
