@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
@@ -38,18 +39,25 @@ import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.OnDemandJobScheduler;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.tx.TxPollingClient.Timeouts.TX_PULLER_TIMEOUT;
+import static org.neo4j.causalclustering.catchup.tx.TxPollingClient.txPolling;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.checkPoint;
 
 public class TxPollingClientTest
 {
@@ -67,15 +75,17 @@ public class TxPollingClientTest
     private final CopiedStoreRecovery copiedStoreRecovery = mock( CopiedStoreRecovery.class );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
+
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
     }
     private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );
 
+    private final OnDemandJobScheduler scheduler = spy(  new OnDemandJobScheduler());
     private final TxPollingClient txPuller =
             new TxPollingClient( NullLogProvider.getInstance(), fs, localDatabase, startStopOnStoreCopy, storeFetcher,
-                    catchUpClient, serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
-                    copiedStoreRecovery );
+                    catchUpClient, serverSelection, txPullIntervalMillis, txApplier, new Monitors(),
+                    copiedStoreRecovery, scheduler );
 
     @Before
     public void before() throws Throwable
@@ -93,7 +103,7 @@ public class TxPollingClientTest
         when( txApplier.lastQueuedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        scheduler.runJob();
 
         // then
         verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
@@ -112,7 +122,7 @@ public class TxPollingClientTest
                 any( CatchUpResponseCallback.class )  ))
                 .thenReturn( CatchupResult.SUCCESS_END_OF_BATCH, CatchupResult.SUCCESS_END_OF_STREAM );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        scheduler.runJob();
 
         // then
         verify( catchUpClient, times( 2 ) ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
@@ -120,30 +130,19 @@ public class TxPollingClientTest
     }
 
     @Test
-    public void shouldResetTxReceivedTimeoutOnTxReceived() throws Throwable
+    public void shouldRescheduleTheJobAfterARun() throws Throwable
     {
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        // given
+        Runnable scheduledJob = scheduler.getJob();
+        assertNotNull( scheduledJob );
 
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
-        ArgumentCaptor<CatchUpResponseCallback> captor = ArgumentCaptor.forClass( CatchUpResponseCallback.class );
-
-        verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
-                captor.capture() );
-
-        captor.getValue().onTxPullResponse( null,
-                new TxPullResponse( storeId, mock( CommittedTransactionRepresentation.class ) ) );
-
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), times( 2 ) ).renew();
-    }
-
-    @Test
-    public void shouldRenewTxPullTimeoutOnTick() throws Throwable
-    {
         // when
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        scheduler.runJob();
 
         // then
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).renew();
+        verify( scheduler, times( 2 ) ).schedule( eq( txPolling ), any( Runnable.class ),
+                eq( 100L ), eq( TimeUnit.MILLISECONDS ) );
+        assertEquals( scheduledJob, scheduler.getJob() );
     }
 
     @Test
@@ -154,17 +153,14 @@ public class TxPollingClientTest
                 any( CatchUpResponseCallback.class ) ) ).thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
 
         // when
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        scheduler.runJob();;
 
         // then
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).cancel();
         verify( localDatabase ).stop();
         verify( startStopOnStoreCopy ).stop();
         verify( storeFetcher ).copyStore( any( MemberId.class ), eq( storeId ), any( File.class ) );
         verify( localDatabase ).start();
         verify( startStopOnStoreCopy ).start();
         verify( txApplier ).refreshFromNewStore();
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ),
-                times( 2 ) /* at the beginning and after store copy */ ).renew();
     }
 }
