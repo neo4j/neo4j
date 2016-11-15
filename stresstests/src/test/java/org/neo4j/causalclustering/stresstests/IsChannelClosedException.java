@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.function.Predicate;
 
 import org.neo4j.com.ComException;
@@ -32,6 +33,11 @@ class IsChannelClosedException implements Predicate<Throwable>
         if ( e == null )
         {
             return false;
+        }
+
+        if ( e instanceof ClosedChannelException )
+        {
+            return true;
         }
 
         if ( e instanceof ComException && e.getMessage() != null &&
