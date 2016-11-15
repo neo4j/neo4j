@@ -116,15 +116,9 @@ public class IndexModifier<KEY,VALUE>
     public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
             Modifier.Options options ) throws IOException
     {
-        return insert( cursor, key, value, amender, options, 0 );
-    }
-
-    private SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
-            Modifier.Options options, int level ) throws IOException
-    {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return insertInLeaf( cursor, key, value, amender, options, level );
+            return insertInLeaf( cursor, key, value, amender, options );
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
@@ -138,13 +132,13 @@ public class IndexModifier<KEY,VALUE>
         long currentId = cursor.getCurrentPageId();
         cursor.next( bTreeNode.childAt( cursor, pos ) );
 
-        SplitResult<KEY> split = insert( cursor, key, value, amender, options, level + 1 );
+        SplitResult<KEY> split = insert( cursor, key, value, amender, options );
 
         cursor.next( currentId );
 
         if ( split != null )
         {
-            return insertInInternal( cursor, currentId, keyCount, split.primKey, split.right, options, level );
+            return insertInInternal( cursor, currentId, keyCount, split.primKey, split.right, options );
         }
         return null;
     }
@@ -165,7 +159,7 @@ public class IndexModifier<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> insertInInternal( PageCursor cursor, long nodeId, int keyCount,
-            KEY primKey, long rightChild, Modifier.Options options, int level ) throws IOException
+            KEY primKey, long rightChild, Modifier.Options options ) throws IOException
     {
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
         {
@@ -184,7 +178,7 @@ public class IndexModifier<KEY,VALUE>
         }
 
         // Overflow
-        return splitInternal( cursor, nodeId, primKey, rightChild, keyCount, options, level );
+        return splitInternal( cursor, nodeId, primKey, rightChild, keyCount, options );
     }
 
     /**
@@ -202,10 +196,9 @@ public class IndexModifier<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> splitInternal( PageCursor cursor, long fullNode, KEY primKey, long newRightChild,
-            int keyCount, Modifier.Options options, int level ) throws IOException
+            int keyCount, Modifier.Options options ) throws IOException
     {
         long current = cursor.getCurrentPageId();
-        long oldLeft = bTreeNode.leftSibling( cursor );
         long newLeft = current;
         long oldRight = bTreeNode.rightSibling( cursor );
         long newRight = idProvider.acquireNewId();
@@ -292,12 +285,11 @@ public class IndexModifier<KEY,VALUE>
      * @param value         value to be associated with key
      * @param amender       {@link ValueAmender} for deciding what to do with existing keys
      * @param options       options for this insert
-     * @param level
      * @return              {@link SplitResult} from insert to be used caller.
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
-            Modifier.Options options, int level ) throws IOException
+            Modifier.Options options ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
         int search = search( cursor, bTreeNode, key, readKey, keyCount );
@@ -327,7 +319,7 @@ public class IndexModifier<KEY,VALUE>
         }
 
         // Overflow, split leaf
-        return splitLeaf( cursor, key, value, amender, keyCount, options, level );
+        return splitLeaf( cursor, key, value, amender, keyCount, options );
     }
 
     /**
@@ -343,7 +335,7 @@ public class IndexModifier<KEY,VALUE>
      * @throws IOException  if cursor.next( newRight ) fails
      */
     private SplitResult<KEY> splitLeaf( PageCursor cursor, KEY newKey, VALUE newValue, ValueAmender<VALUE> amender,
-            int keyCount, Modifier.Options options, int level ) throws IOException
+            int keyCount, Modifier.Options options ) throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.
@@ -361,7 +353,6 @@ public class IndexModifier<KEY,VALUE>
         //
 
         long current = cursor.getCurrentPageId();
-        long oldLeft = bTreeNode.leftSibling( cursor );
         long newLeft = current;
         long oldRight = bTreeNode.rightSibling( cursor );
         long newRight = idProvider.acquireNewId();
@@ -470,24 +461,19 @@ public class IndexModifier<KEY,VALUE>
 
     public VALUE remove( PageCursor cursor, KEY key ) throws IOException
     {
-        return remove( cursor, key, 0 );
-    }
-
-    private VALUE remove( PageCursor cursor, KEY key, int level ) throws IOException
-    {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return removeFromLeaf( cursor, key, level + 1 );
+            return removeFromLeaf( cursor, key );
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
         int search = search( cursor, bTreeNode, key, readKey, keyCount );
         int pos = positionOf( search );
         cursor.next( bTreeNode.childAt( cursor, pos ) );
-        return remove( cursor, key, level + 1 );
+        return remove( cursor, key );
     }
 
-    private VALUE removeFromLeaf( PageCursor cursor, KEY key, int level )
+    private VALUE removeFromLeaf( PageCursor cursor, KEY key )
     {
         int keyCount = bTreeNode.keyCount( cursor );
 

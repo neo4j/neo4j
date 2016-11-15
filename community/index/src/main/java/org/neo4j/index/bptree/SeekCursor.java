@@ -93,6 +93,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     {
                         int searchResult = IndexSearch.search( cursor, bTreeNode, prevKey, mutableKey, keyCount );
                         pos = IndexSearch.positionOf( searchResult );
+                        resetPosition = false;
                     }
                     reread = false;
                 }
