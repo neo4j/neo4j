@@ -49,11 +49,13 @@ public class NativeLabelScanStore implements LabelScanStore
     private final FullStoreChangeStream fullStoreChangeStream;
 
     private BPTreeIndex<LabelScanKey,LabelScanValue> index;
+    private final int pageSize;
 
-    public NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize,
+    public NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize, int pageSize,
             FullStoreChangeStream fullStoreChangeStream )
     {
         this.pageCache = pageCache;
+        this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.indexFile = new File( storeDir, "labelscanstore.db" );
         this.rangeSize = rangeSize;
@@ -109,7 +111,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void init() throws IOException
     {
-        index = new BPTreeIndex<>( pageCache, indexFile, new LabelScanLayout( rangeSize ), 0 );
+        index = new BPTreeIndex<>( pageCache, indexFile, new LabelScanLayout( rangeSize ), pageSize );
     }
 
     @Override
@@ -139,5 +141,10 @@ public class NativeLabelScanStore implements LabelScanStore
     public void shutdown() throws IOException
     {
         index.close();
+    }
+
+    public void printIndexTree() throws IOException
+    {
+        index.printTree();
     }
 }

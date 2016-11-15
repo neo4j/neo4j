@@ -49,6 +49,6 @@ public class NativeLabelScanStoreExtension extends
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return new LabelScanStoreProvider( new NativeLabelScanStore( dependencies.pageCache(),
-                context.storeDir(), 64, fullStoreLabelUpdateStream( dependencies.indexStoreView() ) ), 100 );
+                context.storeDir(), Long.SIZE, 0, fullStoreLabelUpdateStream( dependencies.indexStoreView() ) ), 100 );
     }
 }

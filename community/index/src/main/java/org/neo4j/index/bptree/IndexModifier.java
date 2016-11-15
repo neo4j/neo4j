@@ -128,7 +128,12 @@ public class IndexModifier<KEY,VALUE>
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
-        int pos = positionOf( search( cursor, bTreeNode, key, readKey, keyCount ) );
+        int searchResult = search( cursor, bTreeNode, key, readKey, keyCount );
+        int pos = positionOf( searchResult );
+        if ( isHit( searchResult ) )
+        {
+            pos++;
+        }
 
         long currentId = cursor.getCurrentPageId();
         cursor.next( bTreeNode.childAt( cursor, pos ) );
@@ -300,12 +305,12 @@ public class IndexModifier<KEY,VALUE>
         if ( isHit( search ) )
         {
             // this key already exists, what shall we do? ask the amender
-            bTreeNode.valueAt( cursor, readValue, pos-1 );
+            bTreeNode.valueAt( cursor, readValue, pos );
             VALUE amendedValue = amender.amend( readValue, value );
             if ( amendedValue != null )
             {
                 // simple, just write the amended value right in there
-                bTreeNode.setValueAt( cursor, amendedValue, pos-1 );
+                bTreeNode.setValueAt( cursor, amendedValue, pos );
                 return null; // No split has occurred
             }
             // else fall-through to normal insert

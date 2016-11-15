@@ -62,7 +62,12 @@ public class NativeLabelScanStoreTest
     public void before()
     {
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        store = life.add( new NativeLabelScanStore( pageCache, directory.absolutePath(), Integer.SIZE, EMPTY ) );
+        store = life.add( new NativeLabelScanStore( pageCache, directory.absolutePath(),
+                // a bit of random rangeSize
+                8 << random.nextInt( 4 ),
+                // a bit of random pageSize
+                Math.min( pageCache.pageSize(), 256 << random.nextInt( 5 ) ),
+                EMPTY ) );
     }
 
     @Test
