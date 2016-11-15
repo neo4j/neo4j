@@ -39,14 +39,15 @@ public class TreePrinter
             Layout<KEY,VALUE> layout, PrintStream out ) throws IOException
     {
         int level = 0;
-        long id;
+        long firstId = cursor.getCurrentPageId();
+        long leftmostOnLevel;
         while ( treeNode.isInternal( cursor ) )
         {
             out.println( "Level " + level++ );
-            id = cursor.getCurrentPageId();
+            leftmostOnLevel = cursor.getCurrentPageId();
             printKeysOfSiblings( cursor, treeNode, layout, out );
             out.println();
-            cursor.next( id );
+            cursor.next( leftmostOnLevel );
 
             cursor.next( treeNode.childAt( cursor, 0 ) );
         }
@@ -54,6 +55,7 @@ public class TreePrinter
         out.println( "Level " + level );
         printKeysOfSiblings( cursor, treeNode, layout, out );
         out.println();
+        cursor.next( firstId );
     }
 
     private static <KEY,VALUE> void printKeysOfSiblings( PageCursor cursor,
