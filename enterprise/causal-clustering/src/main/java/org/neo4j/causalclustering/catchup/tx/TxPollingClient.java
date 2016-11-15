@@ -105,6 +105,7 @@ public class TxPollingClient extends LifecycleAdapter
     private synchronized void onTimeout()
     {
         timeout.renew();
+        applier.emptyQueueAndResetLastQueuedTxId();
 
         try
         {
@@ -112,9 +113,11 @@ public class TxPollingClient extends LifecycleAdapter
             StoreId localStoreId = localDatabase.storeId();
 
             boolean moreToPull = true;
+            int batchCount = 1;
             while ( moreToPull )
             {
-                moreToPull = pullAndApplyBatchOfTransactions( core, localStoreId );
+                moreToPull = pullAndApplyBatchOfTransactions( core, localStoreId, batchCount );
+                batchCount++;
             }
         }
         catch ( Throwable e )
@@ -123,12 +126,12 @@ public class TxPollingClient extends LifecycleAdapter
         }
     }
 
-    private boolean pullAndApplyBatchOfTransactions( MemberId core, StoreId localStoreId ) throws Throwable
+    private boolean pullAndApplyBatchOfTransactions( MemberId core, StoreId localStoreId, int batchCount ) throws Throwable
     {
         long lastQueuedTxId = applier.lastQueuedTxId();
         pullRequestMonitor.txPullRequest( lastQueuedTxId );
         TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId );
-        log.info( "Pull transactions where tx id > %d", lastQueuedTxId );
+        log.debug( "Pull transactions where tx id > %d [batch #%d]", lastQueuedTxId, batchCount );
         CatchupResult catchupResult =
                 catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
                 {
