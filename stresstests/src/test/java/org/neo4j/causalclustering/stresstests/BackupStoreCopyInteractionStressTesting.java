@@ -39,6 +39,7 @@ import org.neo4j.helpers.SocketAddress;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
@@ -58,6 +59,7 @@ public class BackupStoreCopyInteractionStressTesting
     private static final String DEFAULT_NUMBER_OF_CORES = "3";
     private static final String DEFAULT_NUMBER_OF_EDGES = "1";
     private static final String DEFAULT_DURATION_IN_MINUTES = "30";
+    private static final String DEFAULT_ENABLE_INDEXES = "false";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
     private static final String DEFAULT_BASE_CORE_BACKUP_PORT = "8000";
     private static final String DEFAULT_BASE_EDGE_BACKUP_PORT = "9000";
@@ -77,6 +79,8 @@ public class BackupStoreCopyInteractionStressTesting
                 DEFAULT_BASE_CORE_BACKUP_PORT ) );
         int baseEdgeBackupPort = parseInt( fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_BASE_EDGE_BACKUP_PORT",
                 DEFAULT_BASE_EDGE_BACKUP_PORT ) );
+        boolean enableIndexes = parseBoolean(
+                fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_ENABLE_INDEXES", DEFAULT_ENABLE_INDEXES ) );
 
         File clusterDirectory = ensureExistsAndEmpty( new File( workingDirectory, "cluster" ) );
         File backupDirectory = ensureExistsAndEmpty( new File( workingDirectory, "backups" ) );
@@ -107,7 +111,10 @@ public class BackupStoreCopyInteractionStressTesting
         try
         {
             cluster.start();
-            Workload.setupIndexes( cluster );
+            if ( enableIndexes )
+            {
+                Workload.setupIndexes( cluster );
+            }
 
             Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
             Future<Throwable> startStopWorker =
