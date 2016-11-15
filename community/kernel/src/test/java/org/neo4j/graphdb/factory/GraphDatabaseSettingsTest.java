@@ -42,7 +42,7 @@ public class GraphDatabaseSettingsTest
     public void mustHaveReasonableDefaultPageCacheMemorySizeInBytes() throws Exception
     {
         long bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
-        assertThat( bytes, greaterThanOrEqualTo( ByteUnit.mebiBytes( 32 ) ) );
+        assertThat( bytes, greaterThanOrEqualTo( ByteUnit.mebiBytes( 8 ) ) );
         assertThat( bytes, lessThanOrEqualTo( ByteUnit.tebiBytes( 1 ) ) );
     }
 

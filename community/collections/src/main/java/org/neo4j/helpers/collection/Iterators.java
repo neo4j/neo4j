@@ -724,4 +724,17 @@ public abstract class Iterators
         }
         return sb.toString();
     }
+
+    public static <T> PrefetchingIterator<T> prefetching( Iterator<T> iterator )
+    {
+        return iterator instanceof PrefetchingIterator ? (PrefetchingIterator<T>) iterator :
+            new PrefetchingIterator<T>()
+            {
+                @Override
+                protected T fetchNextOrNull()
+                {
+                    return iterator.hasNext() ? iterator.next() : null;
+                }
+            };
+    }
 }

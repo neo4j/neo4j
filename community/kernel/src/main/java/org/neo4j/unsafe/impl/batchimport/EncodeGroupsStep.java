@@ -74,6 +74,7 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
                 groupStartIndex = i + 1;
             }
         }
+        assert groupStartIndex == batch.length;
 
         sender.send( batch );
     }
