@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.causalclustering.catchup.storecopy.FileContent;
+import org.neo4j.causalclustering.catchup.storecopy.FileChunk;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeader;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponse;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse;
@@ -64,12 +64,12 @@ class TrackingResponseHandler implements CatchUpResponseHandler
     }
 
     @Override
-    public boolean onFileContent( FileContent fileContent ) throws IOException
+    public boolean onFileContent( FileChunk fileChunk ) throws IOException
     {
         if ( !requestOutcomeSignal.isCancelled() )
         {
             recordLastResponse();
-            return delegate.onFileContent( requestOutcomeSignal, fileContent );
+            return delegate.onFileContent( requestOutcomeSignal, fileChunk );
         }
         return false;
     }

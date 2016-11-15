@@ -30,7 +30,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.stream.ChunkedWriteHandler;
 
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +39,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
+import org.neo4j.causalclustering.catchup.storecopy.FileChunkEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeaderEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequestHandler;
@@ -62,6 +62,7 @@ import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -84,6 +85,7 @@ public class CatchupServer extends LifecycleAdapter
     private final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier;
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
     private final BooleanSupplier dataSourceAvailabilitySupplier;
+    private final FileSystemAbstraction fs;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
     private final CoreState coreState;
@@ -98,7 +100,8 @@ public class CatchupServer extends LifecycleAdapter
             Supplier<TransactionIdStore> transactionIdStoreSupplier,
             Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
             Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
-            CoreState coreState, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier )
+            CoreState coreState, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
+            FileSystemAbstraction fs )
     {
         this.coreState = coreState;
         this.listenAddress = config.get( CausalClusteringSettings.transaction_listen_address );
@@ -113,6 +116,7 @@ public class CatchupServer extends LifecycleAdapter
         this.userLog = userLogProvider.getLog( getClass() );
         this.dataSourceSupplier = dataSourceSupplier;
         this.checkPointerSupplier = checkPointerSupplier;
+        this.fs = fs;
     }
 
     @Override
@@ -151,6 +155,7 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new GetStoreIdResponseEncoder() );
                         pipeline.addLast( new StoreCopyFinishedResponseEncoder() );
                         pipeline.addLast( new TxStreamFinishedResponseEncoder() );
+                        pipeline.addLast( new FileChunkEncoder() );
                         pipeline.addLast( new FileHeaderEncoder() );
 
                         pipeline.addLast( new ServerMessageTypeHandler( protocol, logProvider ) );
@@ -161,9 +166,8 @@ public class CatchupServer extends LifecycleAdapter
                                 new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
                                         transactionIdStoreSupplier, logicalTransactionStoreSupplier, txPullBatchSize,
                                         monitors, logProvider ) );
-                        pipeline.addLast( new ChunkedWriteHandler() );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
-                                checkPointerSupplier ) );
+                                checkPointerSupplier, fs ) );
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
                         pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
 

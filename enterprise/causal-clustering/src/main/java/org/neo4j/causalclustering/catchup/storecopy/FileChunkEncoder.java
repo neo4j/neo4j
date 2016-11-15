@@ -21,21 +21,15 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-import java.util.List;
+import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 
-/**
- * This class does not consume bytes during the decode method. Instead, it puts a {@link FileContent} object with
- * a reference to the buffer, to be consumed later. This is the reason it does not extend
- * {@link io.netty.handler.codec.ByteToMessageDecoder}, since that class fails if an object is added in the out
- * list but no bytes have been consumed.
- */
-public class FileContentDecoder extends MessageToMessageDecoder<ByteBuf>
+public class FileChunkEncoder extends MessageToByteEncoder<FileChunk>
 {
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, FileChunk chunk, ByteBuf out ) throws Exception
     {
-        out.add( new FileContent( msg ) );
+        FileChunk.marshal().marshal( chunk, new NetworkFlushableByteBuf( out ) );
     }
 }

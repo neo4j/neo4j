@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.catchup;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.causalclustering.catchup.storecopy.FileContent;
+import org.neo4j.causalclustering.catchup.storecopy.FileChunk;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeader;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponse;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse;
@@ -34,7 +34,7 @@ public interface CatchUpResponseCallback<T>
 {
     void onFileHeader( CompletableFuture<T> signal, FileHeader fileHeader );
 
-    boolean onFileContent( CompletableFuture<T> signal, FileContent fileContent ) throws IOException;
+    boolean onFileContent( CompletableFuture<T> signal, FileChunk fileChunk ) throws IOException;
 
     void onFileStreamingComplete( CompletableFuture<T> signal, StoreCopyFinishedResponse response );
 
