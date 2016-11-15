@@ -93,7 +93,6 @@ public class RecoveryTest
     private LogEntry expectedCommitEntry;
     private LogEntry expectedCheckPointEntry;
 
-
     @Test
     public void shouldRecoverExistingData() throws Exception
     {

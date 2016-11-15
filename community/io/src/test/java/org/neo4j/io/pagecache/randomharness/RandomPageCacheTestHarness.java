@@ -339,7 +339,6 @@ public class RandomPageCacheTestHarness implements Closeable
         }
     }
 
-
     @Override
     public void close() throws IOException
     {
