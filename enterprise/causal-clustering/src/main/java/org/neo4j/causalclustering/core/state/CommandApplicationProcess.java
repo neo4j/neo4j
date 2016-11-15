@@ -120,11 +120,12 @@ public class CommandApplicationProcess extends LifecycleAdapter
 
     private void submitApplyJob( long lastToApply )
     {
+        final long snapshotLastSeenCommitIndex = this.lastSeenCommitIndex;
         boolean success = applier.submit( ( status ) -> () ->
         {
             try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, true ) )
             {
-                for ( long logIndex = lastApplied + 1; !status.isCancelled() && logIndex <= lastSeenCommitIndex; logIndex++ )
+                for ( long logIndex = lastApplied + 1; !status.isCancelled() && logIndex <= snapshotLastSeenCommitIndex; logIndex++ )
                 {
                     RaftLogEntry entry = logEntrySupplier.get( logIndex );
                     if ( entry == null )
