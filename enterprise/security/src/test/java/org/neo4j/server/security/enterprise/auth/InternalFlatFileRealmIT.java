@@ -91,9 +91,10 @@ public class InternalFlatFileRealmIT
     }
 
     @After
-    public void teardown() throws Throwable
+    public void tearDown() throws Throwable
     {
         realm.shutdown();
+        fs.close();
     }
 
     @Test

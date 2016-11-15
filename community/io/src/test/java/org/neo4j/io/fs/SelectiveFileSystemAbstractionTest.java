@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.fs;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 
@@ -40,12 +40,16 @@ public class SelectiveFileSystemAbstractionTest
         FileSystemAbstraction special = mock( FileSystemAbstraction.class );
 
         // when
-        new SelectiveFileSystemAbstraction( specialFile, special, normal ).open( specialFile, "r" );
+        try ( SelectiveFileSystemAbstraction systemAbstraction = new SelectiveFileSystemAbstraction( specialFile,
+                special, normal ) )
+        {
+            systemAbstraction.open( specialFile, "r" );
 
-        // then
-        verify( special).open( specialFile, "r" ) ;
-        verifyNoMoreInteractions( special );
-        verifyNoMoreInteractions( normal );
+            // then
+            verify( special ).open( specialFile, "r" );
+            verifyNoMoreInteractions( special );
+            verifyNoMoreInteractions( normal );
+        }
     }
 
     @Test
@@ -59,14 +63,16 @@ public class SelectiveFileSystemAbstractionTest
         FileSystemAbstraction special = mock( FileSystemAbstraction.class );
 
         // when
-        SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile, special, normal );
-        fs.create( otherFile );
-        fs.open( otherFile, "r" );
+        try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile, special, normal ) )
+        {
+            fs.create( otherFile );
+            fs.open( otherFile, "r" );
 
-        // then
-        verify( normal ).create( otherFile ) ;
-        verify( normal ).open( otherFile, "r" ) ;
-        verifyNoMoreInteractions( special );
-        verifyNoMoreInteractions( normal );
+            // then
+            verify( normal ).create( otherFile );
+            verify( normal ).open( otherFile, "r" );
+            verifyNoMoreInteractions( special );
+            verifyNoMoreInteractions( normal );
+        }
     }
 }
