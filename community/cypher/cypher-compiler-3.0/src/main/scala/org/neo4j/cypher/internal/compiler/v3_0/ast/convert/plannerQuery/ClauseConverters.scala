@@ -420,7 +420,7 @@ object ClauseConverters {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables
 
     val setOfNodeVariables =
-      if (builder.semanticTable.isNode(clause.variable))
+      if (builder.semanticTable.isNode(clause.variable.name))
         Set(IdName.fromVariable(clause.variable))
       else Set.empty
 
