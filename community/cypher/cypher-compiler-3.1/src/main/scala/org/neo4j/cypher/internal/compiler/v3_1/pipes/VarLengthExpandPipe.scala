@@ -116,7 +116,8 @@ case class VarLengthExpandPipe(source: Pipe,
     row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
 
   def planDescriptionWithoutCardinality = source.planDescription.
-    andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", variables, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
+    andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", variables, ExpandExpression(fromName,
+      relName, types.names, toName, dir, varLength = true))
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTList(CTRelationship))
 

@@ -307,7 +307,8 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("Var length expand contains information about its relations") {
-    val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", SemanticDirection.INCOMING, SemanticDirection.OUTGOING, LazyTypes.empty, 0, None, nodeInScope = false)(Some(1L))(mock[PipeMonitor])
+    val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", SemanticDirection.OUTGOING,
+      SemanticDirection.OUTGOING, LazyTypes.empty, 0, None, nodeInScope = false)(Some(1L))(mock[PipeMonitor])
 
     renderAsTreeTable(expandPipe.planDescription) should equal(
       """+-----------------------+----------------+-----------+----------------------+
