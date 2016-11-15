@@ -272,6 +272,13 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             );
 
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+
+            // todo This test is flaky and hard to reproduce.
+            // todo Printing response for easier debug next time it fails
+            // todo System.out is suppressed and will only be printed in case of test failure
+            System.out.println( "RESPONSE:" );
+            System.out.println( response );
+
             assertThat( response.status(), equalTo( 200 ) );
             assertThat( response, containsNoErrors() );
             assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
