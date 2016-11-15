@@ -35,6 +35,7 @@ import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
@@ -54,6 +55,7 @@ public class CatchupStoreCopyInteractionStressTesting
     private static final String DEFAULT_NUMBER_OF_CORES = "3";
     private static final String DEFAULT_NUMBER_OF_EDGES = "1";
     private static final String DEFAULT_DURATION_IN_MINUTES = "30";
+    private static final String DEFAULT_ENABLE_INDEXES = "false";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
 
     @Test
@@ -67,6 +69,8 @@ public class CatchupStoreCopyInteractionStressTesting
                 parseLong( fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
         String workingDirectory =
                 fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_WORKING_DIRECTORY", DEFAULT_WORKING_DIR );
+        boolean enableIndexes = parseBoolean(
+                fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_ENABLE_INDEXES", DEFAULT_ENABLE_INDEXES ) );
 
         File clusterDirectory = ensureExistsAndEmpty( new File( workingDirectory, "cluster" ) );
 
@@ -88,7 +92,10 @@ public class CatchupStoreCopyInteractionStressTesting
         try
         {
             cluster.start();
-            Workload.setupIndexes( cluster );
+            if ( enableIndexes )
+            {
+                Workload.setupIndexes( cluster );
+            }
 
             Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
             Future<Throwable> startStopWorker =
