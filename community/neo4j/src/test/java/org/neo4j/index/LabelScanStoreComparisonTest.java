@@ -81,7 +81,7 @@ public class LabelScanStoreComparisonTest
         File storeDir = testDirectory.directory();
         final PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction(),
                 Config.defaults().augment( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "50M" ) ) );
-        LabelScanStore labelScanStore = life.add( new NativeLabelScanStore( pageCache, storeDir, Long.SIZE, EMPTY ) );
+        LabelScanStore labelScanStore = life.add( new NativeLabelScanStore( pageCache, storeDir, Long.SIZE, 0, EMPTY ) );
 
         testLabelScanStore( labelScanStore );
     }
