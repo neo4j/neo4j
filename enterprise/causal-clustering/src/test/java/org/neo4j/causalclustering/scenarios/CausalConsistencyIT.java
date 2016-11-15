@@ -70,7 +70,7 @@ public class CausalConsistencyIT
         ReadReplicaGraphDatabase readReplicaGraphDatabase = cluster.findAnyReadReplica().database();
         TxPollingClient pollingClient = readReplicaGraphDatabase.getDependencyResolver()
                 .resolveDependency( TxPollingClient.class );
-        pollingClient.pause();
+//        pollingClient.pause();
 
         cluster.coreTx( ( coreGraphDatabase, transaction ) -> {
             coreGraphDatabase.createNode();
@@ -92,7 +92,7 @@ public class CausalConsistencyIT
         }
 
         // when the poller is resumed, it does make it to the read replica
-        pollingClient.resume();
+//        pollingClient.resume();
         transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
     }
 
