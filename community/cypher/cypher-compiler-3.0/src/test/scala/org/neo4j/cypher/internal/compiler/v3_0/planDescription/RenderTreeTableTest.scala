@@ -313,7 +313,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       """+-----------------------+----------------+-----------+----------------------+
         || Operator              | Estimated Rows | Variables | Other                |
         |+-----------------------+----------------+-----------+----------------------+
-        || +VarLengthExpand(All) |              1 | rel, to   | (from)-[rel:*]->(to) |
+        || +VarLengthExpand(All) |              1 | rel, to   | (from)<-[rel:*]-(to) |
         |+-----------------------+----------------+-----------+----------------------+
         |""".stripMargin)
   }
