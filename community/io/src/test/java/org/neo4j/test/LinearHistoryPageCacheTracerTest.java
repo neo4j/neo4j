@@ -35,15 +35,18 @@ public class LinearHistoryPageCacheTracerTest
     public void makeSomeTestOutput() throws Exception
     {
         final LinearHistoryPageCacheTracer tracer = new LinearHistoryPageCacheTracer();
-        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
-        harness.setUseAdversarialIO( true );
-        harness.setTracer( tracer );
-        harness.setCommandCount( 100 );
-        harness.setConcurrencyLevel( 2 );
-        harness.setPreparation( ( pageCache, fs, files ) -> tracer.processHistory( hEvent -> {} ) );
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
+        {
+            harness.setUseAdversarialIO( true );
+            harness.setTracer( tracer );
+            harness.setCommandCount( 100 );
+            harness.setConcurrencyLevel( 2 );
+            harness.setPreparation( ( pageCache, fs, files ) -> tracer.processHistory( hEvent -> {} ) );
 
-        harness.run( 1, TimeUnit.MINUTES );
+            harness.run( 1, TimeUnit.MINUTES );
 
-        tracer.printHistory( System.out );
+            tracer.printHistory( System.out );
+        }
+
     }
 }

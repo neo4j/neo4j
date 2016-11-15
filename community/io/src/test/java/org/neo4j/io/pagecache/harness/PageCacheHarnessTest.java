@@ -55,17 +55,19 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     public void readsAndWritesMustBeMutuallyConsistent() throws Exception
     {
         int filePageCount = 100;
-        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
-        harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile );
-        harness.setCommandProbabilityFactor( ReadRecord, 0.5 );
-        harness.setCommandProbabilityFactor( WriteRecord, 0.5 );
-        harness.setConcurrencyLevel( 8 );
-        harness.setFilePageCount( filePageCount );
-        harness.setInitialMappedFiles( 1 );
-        harness.setCachePageSize( pageCachePageSize );
-        harness.setFilePageSize( pageCachePageSize );
-        harness.setVerification( filesAreCorrectlyWrittenVerification( new StandardRecordFormat(), filePageCount ) );
-        harness.run( SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
+        {
+            harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile );
+            harness.setCommandProbabilityFactor( ReadRecord, 0.5 );
+            harness.setCommandProbabilityFactor( WriteRecord, 0.5 );
+            harness.setConcurrencyLevel( 8 );
+            harness.setFilePageCount( filePageCount );
+            harness.setInitialMappedFiles( 1 );
+            harness.setCachePageSize( pageCachePageSize );
+            harness.setFilePageSize( pageCachePageSize );
+            harness.setVerification( filesAreCorrectlyWrittenVerification( new StandardRecordFormat(), filePageCount ) );
+            harness.run( SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
+        }
     }
 
     @Test( timeout = LONG_TIMEOUT_MILLIS )
@@ -73,32 +75,35 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     {
         final int filePageCount = 11;
         final RecordFormat recordFormat = new PageCountRecordFormat();
-        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
-        harness.setConcurrencyLevel( 11 );
-        harness.setUseAdversarialIO( false );
-        harness.setCachePageCount( 3 );
-        harness.setCachePageSize( pageCachePageSize );
-        harness.setFilePageCount( filePageCount );
-        harness.setFilePageSize( pageCachePageSize );
-        harness.setInitialMappedFiles( 1 );
-        harness.setCommandCount( 10000 );
-        harness.setRecordFormat( recordFormat );
-        harness.setFileSystem( fs );
-        harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
-        harness.setPreparation( ( pageCache1, fs1, filesTouched ) -> {
-            File file = filesTouched.iterator().next();
-            try ( PagedFile pf = pageCache1.map( file, pageCachePageSize );
-                  PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
+        {
+            harness.setConcurrencyLevel( 11 );
+            harness.setUseAdversarialIO( false );
+            harness.setCachePageCount( 3 );
+            harness.setCachePageSize( pageCachePageSize );
+            harness.setFilePageCount( filePageCount );
+            harness.setFilePageSize( pageCachePageSize );
+            harness.setInitialMappedFiles( 1 );
+            harness.setCommandCount( 10000 );
+            harness.setRecordFormat( recordFormat );
+            harness.setFileSystem( fs );
+            harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
+            harness.setPreparation( ( pageCache1, fs1, filesTouched ) ->
             {
-                for ( int pageId = 0; pageId < filePageCount; pageId++ )
+                File file = filesTouched.iterator().next();
+                try ( PagedFile pf = pageCache1.map( file, pageCachePageSize );
+                        PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
                 {
-                    cursor.next();
-                    recordFormat.fillWithRecords( cursor );
+                    for ( int pageId = 0; pageId < filePageCount; pageId++ )
+                    {
+                        cursor.next();
+                        recordFormat.fillWithRecords( cursor );
+                    }
                 }
-            }
-        } );
+            } );
 
-        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+            harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        }
     }
 
     @Test( timeout = LONG_TIMEOUT_MILLIS )
@@ -106,20 +111,22 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
         final int filePageCount = 2_000;
-        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
-        harness.setConcurrencyLevel( 16 );
-        harness.setUseAdversarialIO( false );
-        harness.setCachePageCount( filePageCount / 2 );
-        harness.setFilePageCount( filePageCount );
-        harness.setCachePageSize( pageCachePageSize );
-        harness.setFilePageSize( pageCachePageSize );
-        harness.setInitialMappedFiles( 3 );
-        harness.setCommandCount( 15_000 );
-        harness.setFileSystem( fs );
-        harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
-        harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
+        {
+            harness.setConcurrencyLevel( 16 );
+            harness.setUseAdversarialIO( false );
+            harness.setCachePageCount( filePageCount / 2 );
+            harness.setFilePageCount( filePageCount );
+            harness.setCachePageSize( pageCachePageSize );
+            harness.setFilePageSize( pageCachePageSize );
+            harness.setInitialMappedFiles( 3 );
+            harness.setCommandCount( 15_000 );
+            harness.setFileSystem( fs );
+            harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
+            harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+            harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        }
     }
 
     @Test( timeout = LONG_TIMEOUT_MILLIS )
@@ -127,23 +134,25 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
         final int filePageCount = 2_000;
-        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
-        harness.setConcurrencyLevel( 16 );
-        harness.setUseAdversarialIO( true );
-        harness.setMischiefRate( 0.5 );
-        harness.setFailureRate( 0.0 );
-        harness.setErrorRate( 0.0 );
-        harness.setCachePageCount( filePageCount / 2 );
-        harness.setFilePageCount( filePageCount );
-        harness.setCachePageSize( pageCachePageSize );
-        harness.setFilePageSize( pageCachePageSize );
-        harness.setInitialMappedFiles( 3 );
-        harness.setCommandCount( 15_000 );
-        harness.setFileSystem( fs );
-        harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
-        harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
+        {
+            harness.setConcurrencyLevel( 16 );
+            harness.setUseAdversarialIO( true );
+            harness.setMischiefRate( 0.5 );
+            harness.setFailureRate( 0.0 );
+            harness.setErrorRate( 0.0 );
+            harness.setCachePageCount( filePageCount / 2 );
+            harness.setFilePageCount( filePageCount );
+            harness.setCachePageSize( pageCachePageSize );
+            harness.setFilePageSize( pageCachePageSize );
+            harness.setInitialMappedFiles( 3 );
+            harness.setCommandCount( 15_000 );
+            harness.setFileSystem( fs );
+            harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
+            harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+            harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        }
     }
 
     @Test( timeout = LONG_TIMEOUT_MILLIS )
@@ -151,23 +160,25 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
         final int filePageCount = 20_000;
-        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
-        harness.setConcurrencyLevel( 16 );
-        harness.setUseAdversarialIO( true );
-        harness.setMischiefRate( 0.0 );
-        harness.setFailureRate( 0.5 );
-        harness.setErrorRate( 0.0 );
-        harness.setCachePageCount( filePageCount / 2 );
-        harness.setFilePageCount( filePageCount );
-        harness.setCachePageSize( pageCachePageSize );
-        harness.setFilePageSize( pageCachePageSize );
-        harness.setInitialMappedFiles( 3 );
-        harness.setCommandCount( 150_000 );
-        harness.setFileSystem( fs );
-        harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
-        harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
+        {
+            harness.setConcurrencyLevel( 16 );
+            harness.setUseAdversarialIO( true );
+            harness.setMischiefRate( 0.0 );
+            harness.setFailureRate( 0.5 );
+            harness.setErrorRate( 0.0 );
+            harness.setCachePageCount( filePageCount / 2 );
+            harness.setFilePageCount( filePageCount );
+            harness.setCachePageSize( pageCachePageSize );
+            harness.setFilePageSize( pageCachePageSize );
+            harness.setInitialMappedFiles( 3 );
+            harness.setCommandCount( 150_000 );
+            harness.setFileSystem( fs );
+            harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
+            harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+            harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        }
     }
 
     private Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
