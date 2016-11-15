@@ -25,10 +25,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-
+import org.neo4j.index.ValueAmender;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -38,6 +39,11 @@ import static org.neo4j.index.ValueAmenders.overwrite;
 
 public class IndexModifierTest
 {
+    private static final ValueAmender<MutableLong> ADDER = (base,add) -> {
+        base.add( add.longValue() );
+        return base;
+    };
+
     private final int pageSize = 128;
 
     private final SimpleIdProvider id = new SimpleIdProvider();
@@ -52,6 +58,7 @@ public class IndexModifierTest
     private final MutableLong insertValue = new MutableLong();
     private final MutableLong readKey = new MutableLong();
     private final MutableLong readValue = new MutableLong();
+    private final byte[] tmp = new byte[pageSize];
 
     @Rule
     public RandomRule random = new RandomRule();
@@ -61,7 +68,8 @@ public class IndexModifierTest
     {
         id.reset();
         cursor.initialize();
-        cursor.next( id.acquireNewId() );
+        long newId = id.acquireNewId();
+        cursor.next( newId );
         node.initializeLeaf( cursor );
     }
 
@@ -203,8 +211,7 @@ public class IndexModifierTest
         // First split
         SplitResult<MutableLong> split = insert( someLargeNumber - i, i );
         i++;
-        byte[] tmp = new byte[pageSize];
-        newRootFromSplit( tmp, split );
+        newRootFromSplit( split );
 
         // Assert child pointers and sibling pointers are intact after split in root
         long child0 = node.childAt( cursor, 0 );
@@ -317,15 +324,13 @@ public class IndexModifierTest
     @Test
     public void modifierMustProduceConsistentTreeWithRandomInserts() throws Exception
     {
-        byte[] tmp = new byte[pageSize];
-
         int numberOfEntries = 100_000;
         for ( int i = 0; i < numberOfEntries; i++ )
         {
             SplitResult<MutableLong> split = insert( random.nextLong(), random.nextLong() );
             if ( split != null )
             {
-                newRootFromSplit( tmp, split );
+                newRootFromSplit( split );
             }
         }
 
@@ -333,14 +338,136 @@ public class IndexModifierTest
         consistencyChecker.check( cursor );
     }
 
-    private void newRootFromSplit( byte[] tmp, SplitResult<MutableLong> split ) throws IOException
+    @Test
+    public void shouldAmendValueInRootLeaf() throws Exception
     {
-        cursor.next( id.acquireNewId() );
+        // GIVEN
+        long key = 10;
+        long baseValue = 100;
+        insert( key, baseValue );
+
+        // WHEN
+        int toAdd = 5;
+        insert( key, toAdd, ADDER );
+
+        // THEN
+        int searchResult = IndexSearch.search( cursor, node, key( key ), new MutableLong(), node.keyCount( cursor ) );
+        assertTrue( IndexSearch.isHit( searchResult ) );
+        int pos = IndexSearch.positionOf( searchResult );
+        assertEquals( 0, pos );
+        assertEquals( key, keyAt( pos ).longValue() );
+        assertEquals( baseValue + toAdd, valueAt( pos ).longValue() );
+    }
+
+    @Test
+    public void shouldAmendValueInLeafLeftOfParentKey() throws Exception
+    {
+        // GIVEN
+        SplitResult<MutableLong> split = null;
+        for ( int i = 0; split == null; i++ )
+        {
+            split = insert( i, i );
+        }
+        newRootFromSplit( split );
+
+        // WHEN
+        long key = 1;
+        long baseValue = key;
+        int toAdd = 5;
+        insert( key, toAdd, ADDER );
+
+        // THEN
+        cursor.next( split.left );
+        int searchResult = IndexSearch.search( cursor, node, key( key ), new MutableLong(), node.keyCount( cursor ) );
+        assertTrue( IndexSearch.isHit( searchResult ) );
+        int pos = IndexSearch.positionOf( searchResult );
+        assertEquals( 1, pos );
+        assertEquals( key, keyAt( pos ).longValue() );
+        assertEquals( baseValue + toAdd, valueAt( pos ).longValue() );
+    }
+
+    @Test
+    public void shouldAmendValueInLeafAtParentKey() throws Exception
+    {
+        // GIVEN
+        SplitResult<MutableLong> split = null;
+        for ( int i = 0; split == null; i++ )
+        {
+            split = insert( i, i );
+        }
+        newRootFromSplit( split );
+
+        // WHEN
+        long key = split.primKey.longValue();
+        long baseValue = key;
+        int toAdd = 5;
+        insert( key, toAdd, ADDER );
+
+        // THEN
+        cursor.next( split.right );
+        int searchResult = IndexSearch.search( cursor, node, key( key ), new MutableLong(), node.keyCount( cursor ) );
+        assertTrue( IndexSearch.isHit( searchResult ) );
+        int pos = IndexSearch.positionOf( searchResult );
+        assertEquals( 0, pos );
+        assertEquals( key, keyAt( pos ).longValue() );
+        assertEquals( baseValue + toAdd, valueAt( pos ).longValue() );
+    }
+
+    @Test
+    public void shouldAmendValueInLeafBetweenTwoParentKeys() throws Exception
+    {
+        // GIVEN
+        long rootId = -1;
+        long middle = -1;
+        long firstSplitPrimKey = -1;
+        for ( int i = 0; rootId == -1 || node.keyCount( cursor ) == 1; i++ )
+        {
+            SplitResult<MutableLong> split = insert( i, i );
+            if ( split != null )
+            {
+                rootId = newRootFromSplit( split );
+                middle = split.right;
+                firstSplitPrimKey = split.primKey.longValue();
+            }
+        }
+
+        // WHEN
+        long key = firstSplitPrimKey + 1;
+        long baseValue = key;
+        int toAdd = 5;
+        insert( key, toAdd, ADDER );
+
+        // THEN
+        cursor.next( middle );
+        int searchResult = IndexSearch.search( cursor, node, key( key ), new MutableLong(), node.keyCount( cursor ) );
+        assertTrue( IndexSearch.isHit( searchResult ) );
+        int pos = IndexSearch.positionOf( searchResult );
+        assertEquals( 1, pos );
+        assertEquals( key, keyAt( pos ).longValue() );
+        assertEquals( baseValue + toAdd, valueAt( pos ).longValue() );
+    }
+
+    // KEEP even if unused
+    private void printTree() throws IOException
+    {
+        TreePrinter.printTree( cursor, node, layout, System.out );
+    }
+
+    private MutableLong key( long key )
+    {
+        return new MutableLong( key );
+    }
+
+    private long newRootFromSplit( SplitResult<MutableLong> split ) throws IOException
+    {
+        long rootId = id.acquireNewId();
+        cursor.next( rootId );
         node.initializeInternal( cursor );
         node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
         node.setKeyCount( cursor, 1 );
         node.setChildAt( cursor, split.left, 0 );
         node.setChildAt( cursor, split.right, 1 );
+        return rootId;
     }
 
     private void assertSiblingOrderAndPointers( long... children ) throws IOException
@@ -368,9 +495,15 @@ public class IndexModifierTest
 
     private SplitResult<MutableLong> insert( long key, long value ) throws IOException
     {
+        return insert( key, value, overwrite() );
+    }
+
+    private SplitResult<MutableLong> insert( long key, long value, ValueAmender<MutableLong> amender )
+            throws IOException
+    {
         insertKey.setValue( key );
         insertValue.setValue( value );
-        return indexModifier.insert( cursor, insertKey, insertValue, overwrite(), DEFAULTS );
+        return indexModifier.insert( cursor, insertKey, insertValue, amender, DEFAULTS );
     }
 
     private void remove( long key ) throws IOException
