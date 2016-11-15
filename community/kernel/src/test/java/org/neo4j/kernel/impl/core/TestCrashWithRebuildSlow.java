@@ -139,6 +139,7 @@ public class TestCrashWithRebuildSlow
         finally
         {
             newDb.shutdown();
+            snapshot.close();
         }
     }
 

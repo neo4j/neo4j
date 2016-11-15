@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.mockfs;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,6 +53,12 @@ public class EphemeralFileSystemAbstractionTest
     public void setUp()
     {
         fs = new EphemeralFileSystemAbstraction();
+    }
+
+    @After
+    public void tearDown() throws IOException
+    {
+        fs.close();
     }
 
     @Test

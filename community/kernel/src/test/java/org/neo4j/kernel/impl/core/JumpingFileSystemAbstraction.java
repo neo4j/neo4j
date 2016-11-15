@@ -46,7 +46,6 @@ import org.neo4j.test.impl.ChannelOutputStream;
 
 public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstraction
 {
-    private final EphemeralFileSystemAbstraction ephemeralFileSystem;
     private final int sizePerJump;
 
     public JumpingFileSystemAbstraction( int sizePerJump )
@@ -57,7 +56,6 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     private JumpingFileSystemAbstraction( EphemeralFileSystemAbstraction ephemeralFileSystem, int sizePerJump )
     {
         super( ephemeralFileSystem );
-        this.ephemeralFileSystem = ephemeralFileSystem;
         this.sizePerJump = sizePerJump;
     }
 

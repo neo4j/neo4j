@@ -73,28 +73,31 @@ public class RecoveryRequiredCheckerTest
     @Test
     public void shouldWantToRecoverBrokenStore() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem );
+        try ( FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem ) )
+        {
 
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-        RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
 
-        assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+        }
     }
 
     @Test
     public void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+        try ( FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem ) )
+        {
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
 
-        RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
 
-        assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
 
-        new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction )
-                .newImpermanentDatabase( storeDir ).shutdown();
+            new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction ).newImpermanentDatabase( storeDir ).shutdown();
 
-        assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
+            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
+        }
     }
 
     private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem )

@@ -219,7 +219,6 @@ public class IdGeneratorRebuildFailureEmulationTest
         @Override
         public void close()
         {
-            // no-op, it's pretty odd to have EphemeralFileSystemAbstraction implement Lifecycle by default
         }
     }
 

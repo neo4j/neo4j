@@ -59,6 +59,9 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class TestGraphProperties
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
@@ -234,13 +237,17 @@ public class TestGraphProperties
     public void twoUncleanInARow() throws Exception
     {
         File storeDir = new File("dir");
-        EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fs.get(), storeDir );
-        snapshot = produceUncleanStore( snapshot, storeDir );
-        snapshot = produceUncleanStore( snapshot, storeDir );
-
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir );
-        assertThat( properties( db ), inTx( db, hasProperty( "prop" ).withValue( "Some value" ) ) );
-        db.shutdown();
+        try ( EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fs.get(), storeDir ) )
+        {
+            try ( EphemeralFileSystemAbstraction snapshot2 = produceUncleanStore( snapshot, storeDir ) )
+            {
+                GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                        .setFileSystem( produceUncleanStore( snapshot2, storeDir ) )
+                        .newImpermanentDatabase( storeDir );
+                assertThat( properties( db ), inTx( db, hasProperty( "prop" ).withValue( "Some value" ) ) );
+                db.shutdown();
+            }
+        }
     }
 
     @Test
@@ -332,53 +339,34 @@ public class TestGraphProperties
 
         public boolean hasProperty( final String key ) throws Exception
         {
-            return execute( new WorkerCommand<State, Boolean>()
-            {
-                @Override
-                public Boolean doWork( State state )
-                {
-                    return state.properties.hasProperty( key );
-                }
-            } );
+            return execute( state -> state.properties.hasProperty( key ) );
         }
 
         public void commitTx() throws Exception
         {
-            execute( new WorkerCommand<State, Void>()
+            execute( (WorkerCommand<State,Void>) state ->
             {
-                @Override
-                public Void doWork( State state )
-                {
-                    state.tx.success();
-                    state.tx.close();
-                    return null;
-                }
+                state.tx.success();
+                state.tx.close();
+                return null;
             } );
         }
 
         void beginTx() throws Exception
         {
-            execute( new WorkerCommand<State, Void>()
+            execute( (WorkerCommand<State,Void>) state ->
             {
-                @Override
-                public Void doWork( State state )
-                {
-                    state.tx = state.db.beginTx();
-                    return null;
-                }
+                state.tx = state.db.beginTx();
+                return null;
             } );
         }
 
         Future<Void> setProperty( final String key, final Object value ) throws Exception
         {
-            return executeDontWait( new WorkerCommand<State, Void>()
+            return executeDontWait( state ->
             {
-                @Override
-                public Void doWork( State state )
-                {
-                    state.properties.setProperty( key, value );
-                    return null;
-                }
+                state.properties.setProperty( key, value );
+                return null;
             } );
         }
     }
@@ -397,7 +385,4 @@ public class TestGraphProperties
         db.shutdown();
         return snapshot;
     }
-
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
 }
