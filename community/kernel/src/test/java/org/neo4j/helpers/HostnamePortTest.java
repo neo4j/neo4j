@@ -209,7 +209,7 @@ public class HostnamePortTest
     {
         // Given
 
-        String hostname1 = InetAddress.getLocalHost().getHostName();
+        String hostname1 = InetAddress.getLocalHost().getHostName().replace( '.', '-' );
         String host1 = InetAddress.getLocalHost().getHostAddress();
         // Building fake IP for host2
         StringBuilder host2 = new StringBuilder();
@@ -338,7 +338,7 @@ public class HostnamePortTest
     {
         // Given
 
-        String host1 = InetAddress.getLocalHost().getHostName();
+        String host1 = InetAddress.getLocalHost().getHostName().replace( '.', '-' );
         // any other hostname?
         String host2 = "neo4j.org";
 
