@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.catchup.tx;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
@@ -28,20 +29,23 @@ import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.causalclustering.readreplica.CopyStoreSafely;
+import org.neo4j.function.Predicates;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.causalclustering.catchup.tx.TxPollingClient.Timeouts.TX_PULLER_TIMEOUT;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * This class is responsible for pulling transactions from a core server and queuing
@@ -66,18 +70,33 @@ public class TxPollingClient extends LifecycleAdapter
     private final CopiedStoreRecovery copiedStoreRecovery;
     private final CatchUpClient catchUpClient;
     private final CoreMemberSelectionStrategy connectionStrategy;
-    private final RenewableTimeoutService timeoutService;
     private final long txPullIntervalMillis;
     private final BatchingTxApplier applier;
     private final PullRequestMonitor pullRequestMonitor;
 
-    private RenewableTimeout timeout;
+    private volatile JobScheduler.JobHandle handle;
+    private final JobScheduler scheduler;
+    private volatile boolean stopped;
+    private volatile boolean polling;
+
+    public static final JobScheduler.Group txPolling = new JobScheduler.Group( "TxPolling", POOLED );
+
+    private final BooleanSupplier txPollingCondition = new BooleanSupplier()
+    {
+        @Override
+        public boolean getAsBoolean()
+        {
+            return !polling;
+        }
+    };
+
 
     public TxPollingClient( LogProvider logProvider, FileSystemAbstraction fs, LocalDatabase localDatabase,
-            Lifecycle startStopOnStoreCopy, StoreFetcher storeFetcher, CatchUpClient catchUpClient,
-            CoreMemberSelectionStrategy connectionStrategy, RenewableTimeoutService timeoutService,
-            long txPullIntervalMillis, BatchingTxApplier applier, Monitors monitors,
-            CopiedStoreRecovery copiedStoreRecovery )
+                            Lifecycle startStopOnStoreCopy, StoreFetcher storeFetcher, CatchUpClient catchUpClient,
+                            CoreMemberSelectionStrategy connectionStrategy,
+                            long txPullIntervalMillis, BatchingTxApplier applier, Monitors monitors,
+                            CopiedStoreRecovery copiedStoreRecovery,
+                            JobScheduler scheduler )
     {
         this.fs = fs;
         this.localDatabase = localDatabase;
@@ -86,45 +105,71 @@ public class TxPollingClient extends LifecycleAdapter
         this.storeFetcher = storeFetcher;
         this.catchUpClient = catchUpClient;
         this.connectionStrategy = connectionStrategy;
-        this.timeoutService = timeoutService;
         this.txPullIntervalMillis = txPullIntervalMillis;
         this.applier = applier;
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
         this.copiedStoreRecovery = copiedStoreRecovery;
+
+        this.scheduler = scheduler;
     }
 
     @Override
     public synchronized void start() throws Throwable
     {
-        timeout = timeoutService.create( TX_PULLER_TIMEOUT, txPullIntervalMillis, 0, timeout -> onTimeout() );
+        handle = scheduler.schedule( txPolling, job, txPullIntervalMillis, MILLISECONDS );
     }
 
-    /**
-     * Time to pull!
-     */
-    private synchronized void onTimeout()
+    @Override
+    public void stop() throws Throwable
     {
-        timeout.renew();
-        applier.emptyQueueAndResetLastQueuedTxId();
-
-        try
+        stopped = true;
+        if ( handle != null )
         {
-            MemberId core = connectionStrategy.coreMember();
-            StoreId localStoreId = localDatabase.storeId();
+            handle.cancel( false );
+        }
+    }
 
-            boolean moreToPull = true;
-            int batchCount = 1;
-            while ( moreToPull )
+    private final Runnable job = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            try
             {
-                moreToPull = pullAndApplyBatchOfTransactions( core, localStoreId, batchCount );
-                batchCount++;
+                polling = true;
+                if ( stopped )
+                {
+                    return;
+                }
+
+                applier.emptyQueueAndResetLastQueuedTxId();
+                MemberId core = connectionStrategy.coreMember();
+                StoreId localStoreId = localDatabase.storeId();
+
+                boolean moreToPull = true;
+                int batchCount = 1;
+                while ( moreToPull )
+                {
+                    moreToPull = pullAndApplyBatchOfTransactions( core, localStoreId, batchCount );
+                    batchCount++;
+                }
+            }
+            catch ( Throwable e )
+            {
+                log.warn( "Tx pull attempt failed, will retry at the next regularly scheduled polling attempt.", e );
+            }
+            finally
+            {
+                polling = false;
+            }
+
+            // reschedule only if it is not stopped
+            if ( !stopped )
+            {
+                handle = scheduler.schedule( txPolling, job, txPullIntervalMillis, MILLISECONDS );
             }
         }
-        catch ( Throwable e )
-        {
-            log.warn( "Tx pull attempt failed, will retry at the next regularly scheduled polling attempt.", e );
-        }
-    }
+    };
 
     private boolean pullAndApplyBatchOfTransactions( MemberId core, StoreId localStoreId, int batchCount ) throws Throwable
     {
@@ -139,9 +184,6 @@ public class TxPollingClient extends LifecycleAdapter
                     public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
                     {
                         applier.queue( response.tx() );
-                        // no applying here, just put it in the batch
-
-                        timeout.renew();
                     }
 
                     @Override
@@ -167,16 +209,13 @@ public class TxPollingClient extends LifecycleAdapter
                 downloadDatabase( core, localStoreId );
                 return false;
             default:
-                log.info( "Tx pull unable to get transactions > %d " + lastQueuedTxId );
+                log.info( "Tx pull unable to get transactions > %d ", lastQueuedTxId );
                 return false;
         }
     }
 
     private void downloadDatabase( MemberId core, StoreId localStoreId ) throws Throwable
     {
-        pause();
-        try
-        {
             localDatabase.stop();
             startStopOnStoreCopy.stop();
             new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
@@ -184,20 +223,5 @@ public class TxPollingClient extends LifecycleAdapter
             localDatabase.start();
             startStopOnStoreCopy.start();
             applier.refreshFromNewStore();
-        }
-        finally
-        {
-            resume();
-        }
-    }
-
-    public void pause()
-    {
-        timeout.cancel();
-    }
-
-    public void resume()
-    {
-        timeout.renew();
     }
 }
