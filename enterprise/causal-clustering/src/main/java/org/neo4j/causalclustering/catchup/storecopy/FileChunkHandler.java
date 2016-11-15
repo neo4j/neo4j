@@ -19,31 +19,29 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
+import org.neo4j.causalclustering.catchup.CatchupClientProtocol;
 
-public class FileContent implements AutoCloseable
+public class FileChunkHandler extends SimpleChannelInboundHandler<FileChunk>
 {
-    private final ByteBuf msg;
+    private final CatchupClientProtocol protocol;
+    private CatchUpResponseHandler handler;
 
-    FileContent( ByteBuf msg )
+    public FileChunkHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler )
     {
-        msg.retain();
-        this.msg = msg;
-    }
-
-    int writeTo( OutputStream stream ) throws IOException
-    {
-        int bytes = msg.readableBytes();
-        msg.readBytes( stream, bytes );
-        return bytes;
+        this.protocol = protocol;
+        this.handler = handler;
     }
 
     @Override
-    public void close()
+    protected void channelRead0( ChannelHandlerContext ctx, FileChunk fileChunk ) throws Exception
     {
-        msg.release();
+        if ( handler.onFileContent( fileChunk ) )
+        {
+            protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
+        }
     }
 }

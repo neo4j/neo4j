@@ -21,18 +21,14 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.stream.ChunkedNioStream;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse.Status;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -45,16 +41,16 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
 {
     private final CatchupServerProtocol protocol;
     private final Supplier<NeoStoreDataSource> dataSource;
+    private final Supplier<CheckPointer> checkPointerSupplier;
+    private final FileSystemAbstraction fs;
 
-    private Supplier<CheckPointer> checkPointerSupplier;
-
-    public GetStoreRequestHandler( CatchupServerProtocol protocol,
-                                   Supplier<NeoStoreDataSource> dataSource,
-                                   Supplier<CheckPointer> checkPointerSupplier )
+    public GetStoreRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
+            Supplier<CheckPointer> checkPointerSupplier, FileSystemAbstraction fs )
     {
         this.protocol = protocol;
         this.dataSource = dataSource;
         this.checkPointerSupplier = checkPointerSupplier;
+        this.fs = fs;
     }
 
     @Override
@@ -67,30 +63,17 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
         else
         {
             long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) );
-            sendFiles( ctx );
+            FileSender fileSender = new FileSender( fs, ctx );
+            try ( ResourceIterator<StoreFileMetadata> files = dataSource.get().listStoreFiles( false ) )
+            {
+                while ( files.hasNext() )
+                {
+                    fileSender.sendFile( files.next().file() );
+                }
+            }
             endStoreCopy( SUCCESS, ctx, lastCheckPointedTx );
         }
         protocol.expect( State.MESSAGE_TYPE );
-    }
-
-    private void sendFiles( ChannelHandlerContext ctx ) throws IOException
-    {
-        try ( ResourceIterator<StoreFileMetadata> files = dataSource.get().listStoreFiles( false ) )
-        {
-            while ( files.hasNext() )
-            {
-                sendFile( ctx, files.next().file() );
-            }
-        }
-    }
-
-    private void sendFile( ChannelHandlerContext ctx, File file ) throws FileNotFoundException
-    {
-        ctx.writeAndFlush( ResponseMessageType.FILE );
-        long initialLength = file.length();
-        ctx.writeAndFlush( new FileHeader( file.getName(), initialLength ) );
-        ctx.writeAndFlush( new ChunkedNioStream( new LimitedLengthReadableByteChannel(
-                new FileInputStream( file ).getChannel(), initialLength ) ) );
     }
 
     private void endStoreCopy( Status status, ChannelHandlerContext ctx, long lastCommittedTxBeforeStoreCopy )

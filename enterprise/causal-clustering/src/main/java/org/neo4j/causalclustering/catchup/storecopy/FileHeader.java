@@ -19,20 +19,15 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import java.util.Objects;
+
 public class FileHeader
 {
     private final String fileName;
-    private final long fileLength;
 
-    public FileHeader( String fileName, long fileLength )
+    public FileHeader( String fileName )
     {
         this.fileName = fileName;
-        this.fileLength = fileLength;
-    }
-
-    public long fileLength()
-    {
-        return fileLength;
     }
 
     public String fileName()
@@ -43,6 +38,27 @@ public class FileHeader
     @Override
     public String toString()
     {
-        return String.format( "FileHeader{fileName='%s', fileLength=%d}", fileName, fileLength );
+        return String.format( "FileHeader{fileName='%s'}", fileName );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        FileHeader that = (FileHeader) o;
+        return Objects.equals( fileName, that.fileName );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( fileName );
     }
 }

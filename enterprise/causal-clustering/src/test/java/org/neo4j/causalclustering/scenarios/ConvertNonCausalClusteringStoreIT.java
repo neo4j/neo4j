@@ -19,14 +19,14 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -35,17 +35,14 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.causalclustering.backup.RestoreClusterUtils.createClassicNeo4jStore;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
@@ -55,10 +52,9 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 @RunWith(Parameterized.class)
 public class ConvertNonCausalClusteringStoreIT
 {
-    private static final int CLUSTER_SIZE = 3;
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreMembers( CLUSTER_SIZE )
+            .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 );
 
     @Parameterized.Parameter()
@@ -78,14 +74,14 @@ public class ConvertNonCausalClusteringStoreIT
         // given
         File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
         int classicNodeCount = 1024;
-        File classicNeo4jStore = createClassicNeo4jStore( dbDir, new DefaultFileSystemAbstraction(), classicNodeCount, recordFormat );
+        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        File classicNeo4jStore = createClassicNeo4jStore( dbDir, fileSystem, classicNodeCount, recordFormat );
 
         Cluster cluster = this.clusterRule.withRecordFormat( recordFormat ).createCluster();
 
-        for ( int serverId = 0; serverId < CLUSTER_SIZE; serverId++ )
+        for ( CoreClusterMember core : cluster.coreMembers() )
         {
-            File destination = cluster.getCoreMemberById( serverId ).storeDir();
-            FileUtils.copyRecursively( classicNeo4jStore, destination );
+            fileSystem.copyRecursively( classicNeo4jStore, core.storeDir() );
         }
 
         cluster.start();

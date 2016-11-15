@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.catchup;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.catchup.storecopy.FileContent;
+import org.neo4j.causalclustering.catchup.storecopy.FileChunk;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeader;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponse;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse;
@@ -34,10 +34,10 @@ public interface CatchUpResponseHandler
     void onFileHeader( FileHeader fileHeader );
 
     /**
-     * @param fileContent Part of a file.
+     * @param fileChunk Part of a file.
      * @return <code>true</code> if this is the last part of the file that is currently being transferred.
      */
-    boolean onFileContent( FileContent fileContent ) throws IOException;
+    boolean onFileContent( FileChunk fileChunk ) throws IOException;
 
     void onFileStreamingComplete( StoreCopyFinishedResponse response );
 
