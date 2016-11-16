@@ -49,6 +49,8 @@ public class TestClusterIndexDeletion
             tx.success();
         }
 
+        cluster.sync();
+
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
         try ( Transaction tx = aSlave.beginTx() )
         {
@@ -62,6 +64,8 @@ public class TestClusterIndexDeletion
             master.index().forNodes( "Test" ).delete();
             tx.success();
         }
+
+        cluster.sync();
 
         // Then
         HighlyAvailableGraphDatabase anotherSlave = cluster.getAnySlave();
