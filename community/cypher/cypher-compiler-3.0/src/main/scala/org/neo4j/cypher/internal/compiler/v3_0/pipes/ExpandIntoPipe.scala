@@ -72,8 +72,10 @@ case class ExpandIntoPipe(source: Pipe,
     }
   }
 
-  def planDescriptionWithoutCardinality =
-    source.planDescription.andThen(this.id, "Expand(Into)", variables, ExpandExpression(fromName, relName, lazyTypes.names, toName, dir))
+  def planDescriptionWithoutCardinality = {
+    val expandDescr = ExpandExpression(fromName, relName, lazyTypes.names, toName, dir, minLength = 1, Some(1))
+    source.planDescription.andThen(this.id, "Expand(Into)", variables, expandDescr)
+  }
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

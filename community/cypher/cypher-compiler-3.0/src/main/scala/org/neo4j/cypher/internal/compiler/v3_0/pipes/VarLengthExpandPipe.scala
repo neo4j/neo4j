@@ -115,9 +115,11 @@ case class VarLengthExpandPipe(source: Pipe,
   def fetchFromContext(row: ExecutionContext, name: String): Any =
     row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
 
-  def planDescriptionWithoutCardinality = source.planDescription.
-    andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", variables, ExpandExpression(fromName,
-      relName, types.names, toName, dir, varLength = true))
+  def planDescriptionWithoutCardinality = {
+    val expandExpr = ExpandExpression(fromName, relName, types.names, toName, dir, minLength = min, maxLength = max)
+    source.planDescription.
+      andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", variables, expandExpr)
+  }
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTList(CTRelationship))
 

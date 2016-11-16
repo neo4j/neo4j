@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalExecutionResult, READ_WRITE, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, Children, Id, InternalPlanDescription, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v2_3.{notification => notification_2_3}
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, notification}
@@ -149,7 +149,8 @@ object RewindableExecutionResult {
         case v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(value) => Arguments.Runtime(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.RuntimeImpl(value) => Arguments.RuntimeImpl(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression(from, relName, relTypes, to, _, varLength) =>
-          Arguments.ExpandExpression(from, relName, relTypes, to, null, varLength)
+          val (min,max) = if(varLength) (1, None) else (1, Some(1))
+          Arguments.ExpandExpression(from, relName, relTypes, to, null, min, max)
         case v2_3.planDescription.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
       }

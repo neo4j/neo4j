@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.ManyQueryExpression
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression, Index, KeyNames, LabelName}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
@@ -66,10 +66,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren, Seq(Index("Lebal", "Porp"), EstimatedRows(95)), Set("x"))
 
       , Expand(lhsLP, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(95) ->
-        PlanDescriptionImpl(id, "Expand(All)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "b", SemanticDirection.OUTGOING), EstimatedRows(95)), Set("a", "r1", "b"))
+        PlanDescriptionImpl(id, "Expand(All)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "b", SemanticDirection.OUTGOING, 1, Some(1)), EstimatedRows(95)), Set("a", "r1", "b"))
 
       , Expand(lhsLP, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("a"), IdName("r1"), ExpandInto)(113) ->
-        PlanDescriptionImpl(id, "Expand(Into)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "a", SemanticDirection.OUTGOING), EstimatedRows(113)), Set("a", "r1"))
+        PlanDescriptionImpl(id, "Expand(Into)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "a", SemanticDirection.OUTGOING, 1, Some(1)), EstimatedRows(113)), Set("a", "r1"))
 
       , NodeHashJoin(Set(IdName("a")), lhsLP, rhsLP)(2345) ->
         PlanDescriptionImpl(id, "NodeHashJoin", TwoChildren(lhsPD, rhsPD), Seq(KeyNames(Seq("a")), EstimatedRows(2345)), Set("a", "b"))
