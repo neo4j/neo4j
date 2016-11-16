@@ -195,6 +195,7 @@ public class MultiPaxosServerFactory
                         internal( SnapshotMessage.join ) )
 
                 .rule( ClusterState.discovery, ClusterMessage.configurationResponse, ClusterState.joining,
+                        internal( ProposerMessage.join ),
                         internal( AcceptorMessage.join ),
                         internal( LearnerMessage.join ),
                         internal( AtomicBroadcastMessage.join ) )
