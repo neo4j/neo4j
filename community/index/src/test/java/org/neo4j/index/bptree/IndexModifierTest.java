@@ -26,9 +26,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 import org.neo4j.index.ValueAmender;
+import org.neo4j.index.ValueAmenders;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -470,6 +474,44 @@ public class IndexModifierTest
 
         BPTreeConsistencyChecker<MutableLong> consistencyChecker = new BPTreeConsistencyChecker<>( node, layout );
         consistencyChecker.check( cursor );
+    }
+
+    /* TEST AMENDER */
+
+    @Test
+    public void modifierMustOverwriteWithOverwriteAmender() throws Exception
+    {
+        // given
+        long key = random.nextLong();
+        long firstValue = random.nextLong();
+        insert( key, firstValue );
+
+        // when
+        long secondValue = random.nextLong();
+        insert( key, secondValue, ValueAmenders.overwrite() );
+
+        // then
+        assertThat( node.keyCount( cursor ), is( 1 ) );
+        assertThat( valueAt( 0 ), is( secondValue ) );
+    }
+
+    @Test
+    public void modifierMustInsertNewWithInsertNewAmender() throws Exception
+    {
+        // given
+        long key = random.nextLong();
+        long firstValue = random.nextLong();
+        insert( key, firstValue );
+
+        // when
+        long secondValue = random.nextLong();
+        insert( key, secondValue, ValueAmenders.insertNew() );
+
+        // then
+        assertThat( node.keyCount( cursor ), is( 2 ) );
+        Long actualFirst = valueAt( 0 );
+        assertThat( actualFirst, anyOf( is( firstValue ), is( secondValue ) ) );
+        assertThat( valueAt( 1 ), allOf( not( is( actualFirst ) ), anyOf( is( firstValue ), is( secondValue ) ) ) );
     }
 
     @Test
