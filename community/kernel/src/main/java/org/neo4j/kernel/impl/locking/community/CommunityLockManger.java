@@ -19,12 +19,20 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import java.time.Clock;
+
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
 
 public class CommunityLockManger implements Locks
 {
-    private final LockManagerImpl manager = new LockManagerImpl( new RagManager() );
+    private final LockManagerImpl manager;
     private volatile boolean closed;
+
+    public CommunityLockManger( Config config, Clock clock )
+    {
+        manager = new LockManagerImpl( new RagManager(), config, clock );
+    }
 
     @Override
     public Client newClient()

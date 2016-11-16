@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,10 +105,13 @@ public class PlatformModule
 
     public final TransactionStats transactionMonitor;
 
+    public final Clock clock;
+
     public PlatformModule( File providedStoreDir, Map<String, String> params, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.databaseInfo = databaseInfo;
+        clock = createClock();
         this.dataSourceManager = new DataSourceManager();
         dependencies = new org.neo4j.kernel.impl.util.Dependencies(
                 new DataSourceManager.DependencyResolverSupplier( dataSourceManager ) );
@@ -168,7 +172,7 @@ public class PlatformModule
         // Anyways please fix this.
         dependencies.satisfyDependency( dataSourceManager );
 
-        availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), logging.getInternalLog(
+        availabilityGuard = new AvailabilityGuard( clock, logging.getInternalLog(
                 AvailabilityGuard.class ) );
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
@@ -180,6 +184,11 @@ public class PlatformModule
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
+    }
+
+    protected Clock createClock()
+    {
+        return Clocks.systemClock();
     }
 
     private void publishPlatformInfo( UsageData sysInfo )

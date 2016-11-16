@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
+import java.time.Clock;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -90,7 +91,7 @@ public class CommunityEditionModule extends EditionModule
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
-        lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
+        lockManager = dependencies.satisfyDependency( createLockManager( config, platformModule.clock, logging ) );
         statementLocksFactory = createStatementLocksFactory( lockManager, config, logging );
 
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
@@ -199,7 +200,7 @@ public class CommunityEditionModule extends EditionModule
         return new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
     }
 
-    public static Locks createLockManager( Config config, LogService logging )
+    public static Locks createLockManager( Config config, Clock clock, LogService logging )
     {
         String key = config.get( GraphDatabaseFacadeFactory.Configuration.lock_manager );
         for ( Locks.Factory candidate : Service.load( Locks.Factory.class ) )
@@ -207,25 +208,25 @@ public class CommunityEditionModule extends EditionModule
             String candidateId = candidate.getKeys().iterator().next();
             if ( candidateId.equals( key ) )
             {
-                return candidate.newInstance( ResourceTypes.values() );
+                return candidate.newInstance( config, clock, ResourceTypes.values() );
             }
             else if ( key.equals( "" ) )
             {
                 logging.getInternalLog( CommunityEditionModule.class )
                         .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
-                return candidate.newInstance( ResourceTypes.values() );
+                return candidate.newInstance( config, clock, ResourceTypes.values() );
             }
         }
 
         if ( key.equals( "community" ) )
         {
-            return new CommunityLockManger();
+            return new CommunityLockManger( config, clock );
         }
         else if ( key.equals( "" ) )
         {
             logging.getInternalLog( CommunityEditionModule.class )
                     .info( "No locking implementation specified, defaulting to 'community'" );
-            return new CommunityLockManger();
+            return new CommunityLockManger( config, clock );
         }
 
         throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );

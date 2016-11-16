@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import java.time.Clock;
+
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.OtherThreadExecutor.WaitDetails;
@@ -26,9 +29,9 @@ import org.neo4j.test.OtherThreadExecutor.WaitDetails;
 public class CommunityLocksTest extends LockingCompatibilityTestSuite
 {
     @Override
-    protected Locks createLockManager()
+    protected Locks createLockManager(Config config, Clock clock)
     {
-        return new CommunityLockManger();
+        return new CommunityLockManger( config, clock );
     }
 
     @Override

@@ -185,6 +185,10 @@ public abstract class GraphDatabaseSettings
     @Description("The maximum time interval of a transaction within which it should be completed.")
     public static final Setting<Long> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String.valueOf( UNSPECIFIED_TIMEOUT ) );
 
+    @Description( "The maximum time interval within which lock should be acquired." )
+    public static final Setting<Long> lock_acquisition_timeout = setting( "dbms.lock.acquisition.timeout", DURATION,
+            String.valueOf( UNSPECIFIED_TIMEOUT ) );
+
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )
     @Internal

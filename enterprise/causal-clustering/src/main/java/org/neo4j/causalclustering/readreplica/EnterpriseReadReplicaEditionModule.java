@@ -127,7 +127,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
-        lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
+        lockManager = dependencies.satisfyDependency( createLockManager( config, platformModule.clock, logging ) );
 
         statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 

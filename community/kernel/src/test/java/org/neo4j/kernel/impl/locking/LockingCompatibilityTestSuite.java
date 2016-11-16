@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor;
@@ -40,6 +42,7 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
+import org.neo4j.time.Clocks;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.fail;
@@ -54,11 +57,12 @@ import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
         LockReentrancyCompatibility.class,
         RWLockCompatibility.class,
         StopCompatibility.class,
-        CloseCompatibility.class
+        CloseCompatibility.class,
+        AcquisitionTimeoutCompatibility.class
 })
 public abstract class LockingCompatibilityTestSuite
 {
-    protected abstract Locks createLockManager();
+    protected abstract Locks createLockManager(Config config, Clock clock);
 
     /**
      * Implementing this requires intricate knowledge of implementation of the particular locks client.
@@ -104,7 +108,7 @@ public abstract class LockingCompatibilityTestSuite
         @Before
         public void before()
         {
-            this.locks = suite.createLockManager();
+            this.locks = suite.createLockManager( Config.defaults(), Clocks.systemClock() );
             clientA = this.locks.newClient();
             clientB = this.locks.newClient();
             clientC = this.locks.newClient();

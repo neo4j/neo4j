@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.time.Clock;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -169,7 +170,6 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -478,7 +478,7 @@ public class HighlyAvailableEditionModule
         // Create HA services
         lockManager = dependencies.satisfyDependency(
                 createLockManager( componentSwitcherContainer, config, masterDelegateInvocationHandler,
-                        requestContextFactory, platformModule.availabilityGuard, logging ) );
+                        requestContextFactory, platformModule.availabilityGuard, platformModule.clock, logging ) );
 
         statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 
@@ -518,7 +518,7 @@ public class HighlyAvailableEditionModule
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
-        eligibleForIdReuse = new HaIdReuseEligibility( members, Clocks.systemClock(), idReuseSafeZone );
+        eligibleForIdReuse = new HaIdReuseEligibility( members, platformModule.clock, idReuseSafeZone );
 
         registerRecovery( platformModule.databaseInfo, dependencies, logging );
 
@@ -637,17 +637,15 @@ public class HighlyAvailableEditionModule
         return idGeneratorFactory;
     }
 
-    private Locks createLockManager( ComponentSwitcherContainer componentSwitcherContainer,
-            Config config,
+    private Locks createLockManager( ComponentSwitcherContainer componentSwitcherContainer, Config config,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory,
-            AvailabilityGuard availabilityGuard, LogService logService )
+            RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard, Clock clock, LogService logService )
     {
         DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
         Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(), new Class[]{Locks.class},
                 lockManagerDelegate );
 
-        Factory<Locks> locksFactory = () -> CommunityEditionModule.createLockManager( config, logService );
+        Factory<Locks> locksFactory = () -> CommunityEditionModule.createLockManager( config, clock, logService );
 
         LockManagerSwitcher lockManagerModeSwitcher = new LockManagerSwitcher(
                 lockManagerDelegate, masterDelegateInvocationHandler, requestContextFactory, availabilityGuard,

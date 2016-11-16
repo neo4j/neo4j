@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
@@ -76,7 +77,7 @@ public class SlaveLocksClientConcurrentTest
     public void setUp()
     {
         master = mock( Master.class, new LockedOnMasterAnswer() );
-        lockManager = new ForsetiLockManager( ResourceTypes.values() );
+        lockManager = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(), ResourceTypes.values() );
         requestContextFactory = mock( RequestContextFactory.class );
         availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), mock( Log.class ) );
 

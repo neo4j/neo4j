@@ -17,27 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.enterprise.lock.forseti;
+package org.neo4j.lock;
 
-import java.time.Clock;
+import java.util.function.Predicate;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.test.OtherThreadExecutor.WaitDetails;
+import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiClient;
+import org.neo4j.locking.CommunityLockAcquisitionTimeoutIT;
+import org.neo4j.test.OtherThreadExecutor;
 
-public class ForsetiLocksTest extends LockingCompatibilityTestSuite
+public class EnterpriseLockAcquisitionTimeoutIT extends CommunityLockAcquisitionTimeoutIT
 {
     @Override
-    protected Locks createLockManager(Config config, Clock clock)
+    protected Predicate<OtherThreadExecutor.WaitDetails> exclusiveLockWaitingPredicate()
     {
-        return new ForsetiLockManager( config, clock, ResourceTypes.values() );
+        return waitDetails -> waitDetails.isAt( ForsetiClient.class, "acquireExclusive" );
     }
 
     @Override
-    protected boolean isAwaitingLockAcquisition( WaitDetails details )
+    protected Predicate<OtherThreadExecutor.WaitDetails> sharedLockWaitingPredicate()
     {
-        return details.isAt( ForsetiClient.class, "applyWaitStrategy" );
+        return waitDetails -> waitDetails.isAt( ForsetiClient.class, "acquireShared" );
     }
 }

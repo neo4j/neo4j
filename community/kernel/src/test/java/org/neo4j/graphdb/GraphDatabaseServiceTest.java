@@ -384,40 +384,25 @@ public class GraphDatabaseServiceTest
 
     private WorkerCommand<Void, Transaction> beginTx( final GraphDatabaseService db )
     {
-        return new WorkerCommand<Void, Transaction>()
-        {
-            @Override
-            public Transaction doWork( Void state ) throws Exception
-            {
-                return db.beginTx();
-            }
-        };
+        return state -> db.beginTx();
     }
 
     private WorkerCommand<Void, Object> setProperty( final PropertyContainer entity,
             final String key, final String value )
     {
-        return new WorkerCommand<Void, Object>()
+        return state ->
         {
-            @Override
-            public Object doWork( Void state ) throws Exception
-            {
-                entity.setProperty( key, value );
-                return null;
-            }
+            entity.setProperty( key, value );
+            return null;
         };
     }
 
     private WorkerCommand<Void, Void> close( final Transaction tx )
     {
-        return new WorkerCommand<Void,Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
-            {
-                tx.close();
-                return null;
-            }
+            tx.close();
+            return null;
         };
     }
 

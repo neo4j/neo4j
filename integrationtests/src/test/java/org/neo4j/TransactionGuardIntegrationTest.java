@@ -100,8 +100,8 @@ public class TransactionGuardIntegrationTest
     @ClassRule
     public static TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    private static final FakeClock clock = Clocks.fakeClock();
-    private TickingGuard tickingGuard = new TickingGuard( clock, NullLog.getInstance(), 1, TimeUnit.SECONDS );
+    private static final FakeClock fakeClock = Clocks.fakeClock();
+    private TickingGuard tickingGuard = new TickingGuard( fakeClock, NullLog.getInstance(), 1, TimeUnit.SECONDS );
     private static GraphDatabaseAPI databaseWithTimeout;
     private static GraphDatabaseAPI databaseWithTimeoutAndGuard;
     private static GraphDatabaseAPI databaseWithoutTimeout;
@@ -115,7 +115,7 @@ public class TransactionGuardIntegrationTest
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         try ( Transaction transaction = database.beginTx() )
         {
-            clock.forward( 3, TimeUnit.SECONDS );
+            fakeClock.forward( 3, TimeUnit.SECONDS );
             transaction.success();
             database.createNode();
             fail( "Transaction should be already terminated." );
@@ -151,14 +151,14 @@ public class TransactionGuardIntegrationTest
         GraphDatabaseAPI database = startDatabaseWithoutTimeout();
         try ( Transaction transaction = database.beginTx( 27, TimeUnit.SECONDS ) )
         {
-            clock.forward( 26, TimeUnit.SECONDS );
+            fakeClock.forward( 26, TimeUnit.SECONDS );
             database.createNode();
             transaction.failure();
         }
 
         try ( Transaction transaction = database.beginTx( 27, TimeUnit.SECONDS ) )
         {
-            clock.forward( 28, TimeUnit.SECONDS );
+            fakeClock.forward( 28, TimeUnit.SECONDS );
             database.createNode();
             fail( "Transaction should be already terminated." );
         }
@@ -176,7 +176,7 @@ public class TransactionGuardIntegrationTest
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         try ( Transaction transaction = database.beginTx() )
         {
-            clock.forward( 3, TimeUnit.SECONDS );
+            fakeClock.forward( 3, TimeUnit.SECONDS );
             transaction.success();
             database.execute( "create (n)" );
             fail( "Transaction should be already terminated." );
@@ -195,14 +195,14 @@ public class TransactionGuardIntegrationTest
         GraphDatabaseAPI database = startDatabaseWithoutTimeout();
         try ( Transaction transaction = database.beginTx( 5, TimeUnit.SECONDS ) )
         {
-            clock.forward( 4, TimeUnit.SECONDS );
+            fakeClock.forward( 4, TimeUnit.SECONDS );
             database.execute( "create (n)" );
             transaction.failure();
         }
 
         try ( Transaction transaction = database.beginTx( 6, TimeUnit.SECONDS ) )
         {
-            clock.forward( 7, TimeUnit.SECONDS );
+            fakeClock.forward( 7, TimeUnit.SECONDS );
             transaction.success();
             database.execute( "create (n)" );
             fail( "Transaction should be already terminated." );
@@ -225,7 +225,7 @@ public class TransactionGuardIntegrationTest
             SameJvmClient client = getShellClient( shellServer );
             CollectingOutput commandOutput = new CollectingOutput();
             execute( shellServer, commandOutput, client.getId(), "begin Transaction" );
-            clock.forward( 3, TimeUnit.SECONDS );
+            fakeClock.forward( 3, TimeUnit.SECONDS );
             execute( shellServer, commandOutput, client.getId(), "create (n);" );
             execute( shellServer, commandOutput, client.getId(), "commit" );
             fail( "Transaction should be already terminated." );
@@ -266,7 +266,7 @@ public class TransactionGuardIntegrationTest
         CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         String transactionEndPoint = HTTP.POST( transactionUri(neoServer) ).location();
 
-        clock.forward( 3, TimeUnit.SECONDS );
+        fakeClock.forward( 3, TimeUnit.SECONDS );
 
         HTTP.Response response = HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertEquals( "Response should be successful.", 200, response.status() );
@@ -291,12 +291,12 @@ public class TransactionGuardIntegrationTest
         assertEquals( "Response should be successful.", 201, beginResponse.status() );
 
         String transactionEndPoint = beginResponse.location();
-        clock.forward( 3, TimeUnit.SECONDS );
+        fakeClock.forward( 3, TimeUnit.SECONDS );
 
         HTTP.Response response = HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertEquals( "Response should be successful.", 200, response.status() );
 
-        clock.forward( 11, TimeUnit.SECONDS );
+        fakeClock.forward( 11, TimeUnit.SECONDS );
 
         response = HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertEquals( "Response should be successful.", 200, response.status() );
@@ -323,7 +323,7 @@ public class TransactionGuardIntegrationTest
             org.neo4j.driver.v1.Transaction transaction = session.beginTransaction();
             transaction.run( "create (n)" ).consume();
             transaction.success();
-            clock.forward( 3, TimeUnit.SECONDS );
+            fakeClock.forward( 3, TimeUnit.SECONDS );
             try
             {
                 transaction.run( "create (n)" ).consume();
@@ -582,6 +582,19 @@ public class TransactionGuardIntegrationTest
         }
 
         @Override
+        protected PlatformModule createPlatform( File storeDir, Map<String,String> params, Dependencies dependencies,
+                GraphDatabaseFacade graphDatabaseFacade )
+        {
+            return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade ) {
+                @Override
+                protected Clock createClock()
+                {
+                    return fakeClock;
+                }
+            };
+        }
+
+        @Override
         protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
                 Supplier<QueryExecutionEngine> queryEngine )
         {
@@ -596,12 +609,6 @@ public class TransactionGuardIntegrationTest
                 Supplier<QueryExecutionEngine> queryEngine  )
         {
             super( platformModule, editionModule, queryEngine );
-        }
-
-        @Override
-        protected Clock getClock()
-        {
-            return clock;
         }
 
     }

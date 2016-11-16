@@ -85,19 +85,6 @@ public enum ResourceTypes implements ResourceType
         long hob = hash( labelId + hash( propertyKeyId ) );
         hob <<= 32;
         return hob + propertyValue.hashCode();
-
-        // The previous schema index entry hashing method used up until and
-        // including Neo4j 2.1.x looks like the following:
-        //
-        //   long result = labelId;
-        //   result = 31 * result + propertyKeyId;
-        //   result = 31 * result + propertyValue.hashCode();
-        //   return result;
-        //
-        // It was replaced because it was prone to collisions. I left it in
-        // this comment in case we need it for supporting rolling upgrades.
-        // This comment can be deleted once RU from 2.1 to 2.2 is no longer a
-        // concern.
     }
 
     private static int hash( long value )

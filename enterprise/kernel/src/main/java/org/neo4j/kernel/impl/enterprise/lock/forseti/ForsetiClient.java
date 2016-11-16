@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
+import java.time.Clock;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.IntFunction;
 
@@ -27,8 +28,10 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager.DeadlockResolutionStrategy;
+import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -41,7 +44,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import static java.lang.String.format;
 
 // Please note. Except separate test cases for particular classes related to community locking
-// see also org.neo4j.kernel.ha.lock.forseti.ForsetiLocksCompatibility test suite
+// see also LockingCompatibilityTestSuite test suite
 
 /**
  * These clients act as agents against the lock manager. The clients hold and release locks.
@@ -84,6 +87,13 @@ public class ForsetiClient implements Locks.Client
     /** @see {@link #sharedLockCounts} */
     private final PrimitiveLongIntMap[] exclusiveLockCounts;
 
+    /**
+     * Time within which any particular lock should be acquired.
+     * @see GraphDatabaseSettings#lock_acquisition_timeout
+     */
+    private final long lockAcquisitionTimeoutMillis;
+    private final Clock clock;
+
     /** List of other clients this client is waiting for. */
     private final SimpleBitSet waitList = new SimpleBitSet( 64 );
 
@@ -103,12 +113,9 @@ public class ForsetiClient implements Locks.Client
 
     private volatile boolean hasLocks;
 
-    public ForsetiClient( int id,
-                          ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps,
-                          WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
-                          Pool<ForsetiClient> clientPool,
-                          DeadlockResolutionStrategy deadlockResolutionStrategy,
-                          IntFunction<ForsetiClient> clientById )
+    public ForsetiClient( int id, ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps, WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
+            Pool<ForsetiClient> clientPool, DeadlockResolutionStrategy deadlockResolutionStrategy, IntFunction<ForsetiClient> clientById,
+            long lockAcquisitionTimeoutMillis, Clock clock )
     {
         this.clientId = id;
         this.lockMaps = lockMaps;
@@ -118,6 +125,8 @@ public class ForsetiClient implements Locks.Client
         this.clientById = clientById;
         this.sharedLockCounts = new PrimitiveLongIntMap[lockMaps.length];
         this.exclusiveLockCounts = new PrimitiveLongIntMap[lockMaps.length];
+        this.lockAcquisitionTimeoutMillis = lockAcquisitionTimeoutMillis;
+        this.clock = clock;
 
         for ( int i = 0; i < sharedLockCounts.length; i++ )
         {
@@ -174,11 +183,12 @@ public class ForsetiClient implements Locks.Client
                 // We don't hold the lock, so we need to grab it via the global lock map
                 int tries = 0;
                 SharedLock mySharedLock = null;
+                long waitStartMillis = clock.millis();
 
                 // Retry loop
                 while ( true )
                 {
-                    assertNotStopped();
+                    assertValid( waitStartMillis, resourceType, resourceId );
 
                     // Check if there is a lock for this entity in the map
                     ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
@@ -266,9 +276,10 @@ public class ForsetiClient implements Locks.Client
                 // Grab the global lock
                 ForsetiLockManager.Lock existingLock;
                 int tries = 0;
+                long waitStartMillis = clock.millis();
                 while ( (existingLock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null )
                 {
-                    assertNotStopped();
+                    assertValid( waitStartMillis, resourceType, resourceId );
 
                     // If this is a shared lock:
                     // Given a grace period of tries (to try and not starve readers), grab an update lock and wait
@@ -277,7 +288,8 @@ public class ForsetiClient implements Locks.Client
                     {
                         // Then we should upgrade that lock
                         SharedLock sharedLock = (SharedLock) existingLock;
-                        if ( tryUpgradeSharedToExclusive( resourceType, lockMap, resourceId, sharedLock ) )
+                        if ( tryUpgradeSharedToExclusive( resourceType, lockMap, resourceId, sharedLock,
+                                waitStartMillis ) )
                         {
                             break;
                         }
@@ -332,7 +344,7 @@ public class ForsetiClient implements Locks.Client
                         }
                         else
                         {
-                            sharedLock.releaseUpdateLock( this );
+                            sharedLock.releaseUpdateLock();
                             return false;
                         }
                     }
@@ -377,9 +389,10 @@ public class ForsetiClient implements Locks.Client
                 return true;
             }
 
+            long waitStartMillis = clock.millis();
             while ( true )
             {
-                assertNotStopped();
+                assertValid( waitStartMillis, resourceType, resourceId );
 
                 ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
                 if ( existingLock == null )
@@ -470,7 +483,7 @@ public class ForsetiClient implements Locks.Client
                     SharedLock sharedLock = (SharedLock) lock;
                     if ( sharedLock.isUpdateLock() )
                     {
-                        sharedLock.releaseUpdateLock( this );
+                        sharedLock.releaseUpdateLock();
                     }
                     else
                     {
@@ -676,9 +689,8 @@ public class ForsetiClient implements Locks.Client
     /**
      * Attempt to upgrade a share lock to an exclusive lock, grabbing the share lock if we don't hold it.
      **/
-    private boolean tryUpgradeSharedToExclusive( ResourceType resourceType,
-                                                 ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap,
-                                                 long resourceId, SharedLock sharedLock )
+    private boolean tryUpgradeSharedToExclusive( ResourceType resourceType, ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap,
+            long resourceId, SharedLock sharedLock, long waitStartMillis )
             throws AcquireLockTimeoutException
     {
         int tries = 0;
@@ -693,7 +705,8 @@ public class ForsetiClient implements Locks.Client
 
             try
             {
-                if ( tryUpgradeToExclusiveWithShareLockHeld( resourceType, resourceId, sharedLock, tries ) )
+                if ( tryUpgradeToExclusiveWithShareLockHeld( resourceType, resourceId, sharedLock, tries,
+                        waitStartMillis ) )
                 {
                     return true;
                 }
@@ -712,16 +725,14 @@ public class ForsetiClient implements Locks.Client
         else
         {
             // We do hold the shared lock, so no reason to deal with the complexity in the case above.
-            return tryUpgradeToExclusiveWithShareLockHeld( resourceType, resourceId, sharedLock, tries );
+            return tryUpgradeToExclusiveWithShareLockHeld( resourceType, resourceId, sharedLock, tries,
+                    waitStartMillis );
         }
     }
 
     /** Attempt to upgrade a share lock that we hold to an exclusive lock. */
-    private boolean tryUpgradeToExclusiveWithShareLockHeld(
-            ResourceType resourceType,
-            long resourceId,
-            SharedLock sharedLock,
-            int tries ) throws AcquireLockTimeoutException
+    private boolean tryUpgradeToExclusiveWithShareLockHeld( ResourceType resourceType, long resourceId,
+            SharedLock sharedLock, int tries, long waitStartMillis ) throws AcquireLockTimeoutException
     {
         if ( sharedLock.tryAcquireUpdateLock( this ) )
         {
@@ -730,6 +741,7 @@ public class ForsetiClient implements Locks.Client
                 // Now we just wait for all clients to release the the share lock
                 while ( sharedLock.numberOfHolders() > 1 )
                 {
+                    assertValid( waitStartMillis, resourceType, resourceId );
                     applyWaitStrategy( resourceType, tries++ );
                     markAsWaitingFor( sharedLock, resourceType, resourceId );
                 }
@@ -739,7 +751,7 @@ public class ForsetiClient implements Locks.Client
             }
             catch ( DeadlockDetectedException e )
             {
-                sharedLock.releaseUpdateLock( this );
+                sharedLock.releaseUpdateLock();
                 // wait list is not cleared here as in other catch blocks because it is cleared in
                 // markAsWaitingFor() before throwing DeadlockDetectedException
                 throw e;
@@ -760,7 +772,7 @@ public class ForsetiClient implements Locks.Client
 
     private void handleUpgradeToExclusiveFailure( SharedLock sharedLock )
     {
-        sharedLock.releaseUpdateLock( this );
+        sharedLock.releaseUpdateLock();
         clearWaitList();
     }
 
@@ -843,8 +855,12 @@ public class ForsetiClient implements Locks.Client
     {
         WaitStrategy<AcquireLockTimeoutException> waitStrategy = waitStrategies[resourceType.typeId()];
         waitStrategy.apply( tries );
+    }
 
+    private void assertValid( long waitStartMillis, ResourceType resourceType, long resourceId )
+    {
         assertNotStopped();
+        assertNotExpired( waitStartMillis, resourceType, resourceId );
     }
 
     private void assertNotStopped()
@@ -852,6 +868,17 @@ public class ForsetiClient implements Locks.Client
         if ( stateHolder.isStopped() )
         {
             throw new LockClientStoppedException( this );
+        }
+    }
+
+    private void assertNotExpired( long waitStartMillis, ResourceType resourceType, long resourceId )
+    {
+        if ( lockAcquisitionTimeoutMillis > 0 )
+        {
+            if ( (lockAcquisitionTimeoutMillis + waitStartMillis) < clock.millis() )
+            {
+                throw new LockAcquisitionTimeoutException( resourceType, resourceId, lockAcquisitionTimeoutMillis );
+            }
         }
     }
 
