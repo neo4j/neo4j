@@ -139,7 +139,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule.dataSourceManager,
                 platformModule.pageCache,
                 fileSystem,
-                databaseHealthSupplier );
+                databaseHealthSupplier,
+                logProvider );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory );
 

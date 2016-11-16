@@ -33,6 +33,8 @@ import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class LocalDatabase implements Lifecycle
 {
@@ -43,6 +45,7 @@ public class LocalDatabase implements Lifecycle
     private final PageCache pageCache;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
+    private final Log log;
 
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
@@ -51,7 +54,7 @@ public class LocalDatabase implements Lifecycle
     public LocalDatabase( File storeDir, StoreFiles storeFiles,
             DataSourceManager dataSourceManager,
             PageCache pageCache, FileSystemAbstraction fileSystemAbstraction,
-            Supplier<DatabaseHealth> databaseHealthSupplier )
+            Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.storeFiles = storeFiles;
@@ -59,6 +62,7 @@ public class LocalDatabase implements Lifecycle
         this.pageCache = pageCache;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.databaseHealthSupplier = databaseHealthSupplier;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -71,6 +75,7 @@ public class LocalDatabase implements Lifecycle
     public synchronized void start() throws Throwable
     {
         storeId = readStoreIdFromDisk();
+        log.info( "Starting with storeId: " + storeId );
         dataSourceManager.start();
         started = true;
     }
@@ -78,6 +83,7 @@ public class LocalDatabase implements Lifecycle
     @Override
     public synchronized void stop() throws Throwable
     {
+        log.info( "Stopping" );
         this.databaseHealth = null;
         dataSourceManager.stop();
         started = false;
