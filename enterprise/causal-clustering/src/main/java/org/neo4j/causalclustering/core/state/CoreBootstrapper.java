@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME;
@@ -95,19 +95,21 @@ public class CoreBootstrapper
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
     private final Config config;
+    private final LogProvider logProvider;
 
-    CoreBootstrapper( File storeDir, PageCache pageCache, FileSystemAbstraction fs, Config config )
+    CoreBootstrapper( File storeDir, PageCache pageCache, FileSystemAbstraction fs, Config config, LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.pageCache = pageCache;
         this.fs = fs;
         this.config = config;
+        this.logProvider = logProvider;
     }
 
     public CoreSnapshot bootstrap( Set<MemberId> members ) throws IOException
     {
         StoreFactory factory = new StoreFactory( storeDir, config,
-                new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance() );
+                new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider );
 
         NeoStores neoStores = factory.openAllNeoStores( true );
         neoStores.close();

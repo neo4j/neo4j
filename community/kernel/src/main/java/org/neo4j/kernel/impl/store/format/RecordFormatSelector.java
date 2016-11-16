@@ -187,7 +187,7 @@ public class RecordFormatSelector
         RecordFormats configuredFormat = loadRecordFormat( configuredRecordFormat( config ) );
         boolean formatConfigured = configuredFormat != null;
 
-        RecordFormats currentFormat = selectForStore( storeDir, fs, pageCache, NullLogProvider.getInstance() );
+        RecordFormats currentFormat = selectForStore( storeDir, fs, pageCache, logProvider );
         boolean storeWithFormatExists = currentFormat != null;
 
         if ( formatConfigured && storeWithFormatExists )

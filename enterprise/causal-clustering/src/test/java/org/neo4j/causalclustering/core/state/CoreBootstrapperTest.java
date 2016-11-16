@@ -72,7 +72,7 @@ public class CoreBootstrapperTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fsa );
         CoreBootstrapper bootstrapper = new CoreBootstrapper(
-                classicNeo4jStore, pageCache, fsa, Config.defaults() );
+                classicNeo4jStore, pageCache, fsa, Config.defaults(), NullLogProvider.getInstance() );
 
         // when
         Set<MemberId> membership = asSet( randomMember(), randomMember(), randomMember() );
