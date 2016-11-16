@@ -135,7 +135,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + swapper.file().getName() + "]";
+        return getClass().getSimpleName() + "[" + swapper.file() + "]";
     }
 
     @Override
