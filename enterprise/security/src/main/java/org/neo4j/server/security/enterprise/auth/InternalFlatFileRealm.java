@@ -570,23 +570,16 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
     {
-        boolean result = false;
         synchronized ( this )
         {
-            User user = getUser( username );
-            if ( userRepository.delete( user ) )
-            {
-                removeUserFromAllRoles( username );
-                result = true;
-            }
-            else
-            {
-                // We should not get here, but if we do the assert will fail and give a nice error msg
-                getUser( username );
-            }
+            User user = getUser( username );    // throws if user does not exists
+            removeUserFromAllRoles( username ); // performed first to always maintain auth-roles repo consistency
+            userRepository.delete( user );      // this will not fail as we know the user exists in this lock
+                                                // assuming no one messes with the user and role repositories
+                                                // outside this instance
         }
         clearCacheForUser( username );
-        return result;
+        return true;
     }
 
     @Override

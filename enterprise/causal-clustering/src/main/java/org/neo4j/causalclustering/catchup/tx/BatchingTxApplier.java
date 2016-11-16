@@ -84,8 +84,19 @@ public class BatchingTxApplier extends LifecycleAdapter
     void refreshFromNewStore()
     {
         assert txQueue == null || txQueue.isEmpty();
-        lastQueuedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
+        resetLastQueuedTxId();
         commitProcess = commitProcessSupplier.get();
+    }
+
+    public void emptyQueueAndResetLastQueuedTxId()
+    {
+        applyBatch();
+        resetLastQueuedTxId();
+    }
+
+    private void resetLastQueuedTxId()
+    {
+        lastQueuedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
     }
 
     /**

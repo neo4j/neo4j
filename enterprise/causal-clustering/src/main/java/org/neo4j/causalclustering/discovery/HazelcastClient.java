@@ -19,13 +19,10 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.function.Function;
-
-import com.hazelcast.client.HazelcastClientNotActiveException;
-import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
-import com.hazelcast.spi.exception.RetryableIOException;
+
+import java.util.function.Function;
 
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.kernel.configuration.Config;
@@ -34,7 +31,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP_NAME;
 
 class HazelcastClient extends LifecycleAdapter implements TopologyService
@@ -107,23 +103,11 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
                 hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME ).remove( uuid );
                 hazelcastInstance.shutdown();
             }
-            catch ( HazelcastException | HazelcastClientNotActiveException | HazelcastInstanceNotActiveException e )
+            catch ( Throwable t )
             {
-                /* Sometimes on shutdown hazelcast throws a Hazelcast exception with a RetryableIOException as a cause
-                 * because it failed to send some packets on the network, since we are shutting it down we don't really
-                 * care
-                 */
-                if ( e instanceof HazelcastException && !(e.getCause() instanceof RetryableIOException) )
-                {
-                    throw e;
-                }
-                log.warn( "Unable to shutdown Hazelcast", e );
-            }
-            catch ( NullPointerException e )
-            {
-                // Hazelcast is not able to stop correctly sometimes and throws a NPE
-                // let's log it but go on with our shutdown
-                log.warn( "Stopping Hazelcast failed with a NPE", e );
+                // Hazelcast is not able to stop correctly sometimes and throws a bunch of different exceptions
+                // let's simply log the current problem but go on with our shutdown
+                log.warn( "Unable to shutdown Hazelcast", t );
             }
         }
 
