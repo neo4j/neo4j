@@ -20,6 +20,7 @@
 package org.neo4j.locking;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -85,6 +86,12 @@ public class CommunityLockAcquisitionTimeoutIT
                 .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" ).newGraphDatabase();
 
         createTestNode( marker );
+    }
+
+    @AfterClass
+    public static void tearDownClass()
+    {
+        database.shutdown();
     }
 
     @After
