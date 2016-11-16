@@ -94,7 +94,7 @@ public class LocalDatabase implements Lifecycle
         dataSourceManager.shutdown();
     }
 
-    public synchronized StoreId storeId()
+    public synchronized StoreId storeId() throws IOException
     {
         if ( started )
         {
@@ -106,19 +106,12 @@ public class LocalDatabase implements Lifecycle
         }
     }
 
-    private StoreId readStoreIdFromDisk()
+    private StoreId readStoreIdFromDisk() throws IOException
     {
-        try
-        {
-            File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-            org.neo4j.kernel.impl.store.StoreId kernelStoreId = MetaDataStore.getStoreId( pageCache, neoStoreFile );
-            return new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
-                    kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
-        }
-        catch ( IOException e )
-        {
-            return null;
-        }
+        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        org.neo4j.kernel.impl.store.StoreId kernelStoreId = MetaDataStore.getStoreId( pageCache, neoStoreFile );
+        return new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
+                kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
     }
 
     public void panic( Throwable cause )
