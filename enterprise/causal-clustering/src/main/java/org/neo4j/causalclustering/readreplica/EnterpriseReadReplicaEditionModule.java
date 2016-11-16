@@ -198,7 +198,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 platformModule.dataSourceManager,
                 pageCache,
                 fileSystem,
-                databaseHealthSupplier );
+                databaseHealthSupplier,
+                logProvider );
 
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
                 fileSystem, platformModule.pageCache,
