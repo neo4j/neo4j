@@ -79,6 +79,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.LabelItem;
@@ -1117,6 +1118,11 @@ public class StateHandlingStatementOperations implements
         IndexDescriptor descriptor = indexGetForLabelAndPropertyKey( state, labelId, propertyKey );
         if ( descriptor != null )
         {
+            if (after != null)
+            {
+                Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
+            }
+
             state.txState().indexDoUpdateProperty( descriptor, nodeId, before, after );
         }
     }

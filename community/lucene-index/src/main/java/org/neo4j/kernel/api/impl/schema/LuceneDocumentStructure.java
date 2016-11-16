@@ -25,7 +25,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FilteredTermsEnum;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -62,12 +61,6 @@ public class LuceneDocumentStructure
             FeatureToggles.flag( LuceneDocumentStructure.class, "lucene.standard.prefix.query", false );
 
     public static final String NODE_ID_KEY = "id";
-
-    //  Absolute hard maximum length for a term, in bytes once
-    //  encoded as UTF8.  If a term arrives from the analyzer
-    //  longer than this length, an IllegalArgumentException
-    //  when lucene writer trying to add or update document
-    private static final int MAX_FIELD_LENGTH = IndexWriter.MAX_TERM_LENGTH;
 
     private static final ThreadLocal<DocWithId> perThreadDocument = new ThreadLocal<DocWithId>()
     {
@@ -286,28 +279,7 @@ public class LuceneDocumentStructure
         {
             removeAllValueFields();
             Field reusableField = getFieldWithValue( encoding, value );
-            if ( isArrayOrString( reusableField ) )
-            {
-                if ( isShorterThenMaximum( reusableField ) )
-                {
-                    document.add( reusableField );
-                }
-            }
-            else
-            {
-                document.add( reusableField );
-            }
-        }
-
-        private boolean isShorterThenMaximum( Field reusableField )
-        {
-            return reusableField.stringValue().getBytes().length <= MAX_FIELD_LENGTH;
-        }
-
-        private boolean isArrayOrString( Field reusableField )
-        {
-            return ValueEncoding.Array.key().equals( reusableField.name() ) ||
-                   ValueEncoding.String.key().equals( reusableField.name() );
+            document.add( reusableField );
         }
 
         private void removeAllValueFields()

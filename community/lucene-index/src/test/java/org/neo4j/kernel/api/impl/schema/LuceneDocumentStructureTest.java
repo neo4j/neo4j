@@ -28,9 +28,10 @@ import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -43,21 +44,9 @@ import static org.neo4j.kernel.api.impl.schema.ValueEncoding.String;
 
 public class LuceneDocumentStructureTest
 {
-    @Test
-    public void tooLongStringShouldBeSkipped()
-    {
-        String string = RandomStringUtils.randomAscii( 358749 );
-        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, string );
-        assertNull( document.getField( String.key() ) );
-    }
 
-    @Test
-    public void tooLongArrayShouldBeSkipped()
-    {
-        byte[] bytes = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH + 10 ).getBytes();
-        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, bytes );
-        assertNull( document.getField( Array.key() ) );
-    }
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void stringWithMaximumLengthShouldBeAllowed()
