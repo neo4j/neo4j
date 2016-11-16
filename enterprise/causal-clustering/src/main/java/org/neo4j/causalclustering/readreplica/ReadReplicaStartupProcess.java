@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
+import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
@@ -139,7 +140,7 @@ class ReadReplicaStartupProcess implements Lifecycle
         txPulling.start();
     }
 
-    private void ensureSameStoreIdAs( MemberId remoteCore ) throws StoreIdDownloadFailedException
+    private void ensureSameStoreIdAs( MemberId remoteCore ) throws StoreIdDownloadFailedException, IOException
     {
         StoreId localStoreId = localDatabase.storeId();
         StoreId remoteStoreId = storeFetcher.getStoreIdOf( remoteCore );

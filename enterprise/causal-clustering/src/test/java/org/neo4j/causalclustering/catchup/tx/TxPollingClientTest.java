@@ -67,9 +67,7 @@ public class TxPollingClientTest
     private final CopiedStoreRecovery copiedStoreRecovery = mock( CopiedStoreRecovery.class );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
-    {
-        when( localDatabase.storeId() ).thenReturn( storeId );
-    }
+
     private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );
 
     private final TxPollingClient txPuller =
@@ -82,6 +80,7 @@ public class TxPollingClientTest
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( BASE_TX_ID );
         when( serverSelection.coreMember() ).thenReturn( coreMemberId );
+        when( localDatabase.storeId() ).thenReturn( storeId );
         txPuller.start();
     }
 

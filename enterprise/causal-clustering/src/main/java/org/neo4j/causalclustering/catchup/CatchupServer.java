@@ -31,6 +31,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
+import java.io.IOException;
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -60,6 +61,7 @@ import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -80,7 +82,7 @@ public class CatchupServer extends LifecycleAdapter
     private final Log userLog;
     private final Monitors monitors;
 
-    private final Supplier<StoreId> storeIdSupplier;
+    private final ThrowingSupplier<StoreId,IOException> storeIdSupplier;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier;
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
@@ -96,7 +98,7 @@ public class CatchupServer extends LifecycleAdapter
     private Supplier<CheckPointer> checkPointerSupplier;
     private int txPullBatchSize;
 
-    public CatchupServer( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> storeIdSupplier,
+    public CatchupServer( LogProvider logProvider, LogProvider userLogProvider, ThrowingSupplier<StoreId,IOException> storeIdSupplier,
             Supplier<TransactionIdStore> transactionIdStoreSupplier,
             Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
             Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,

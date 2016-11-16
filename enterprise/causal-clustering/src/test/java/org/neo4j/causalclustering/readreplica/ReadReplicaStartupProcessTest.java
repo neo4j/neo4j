@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
@@ -66,7 +67,7 @@ public class ReadReplicaStartupProcessTest
     private File storeDir = new File( "store-dir" );
 
     @Before
-    public void commonMocking() throws StoreIdDownloadFailedException
+    public void commonMocking() throws StoreIdDownloadFailedException, IOException
     {
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );

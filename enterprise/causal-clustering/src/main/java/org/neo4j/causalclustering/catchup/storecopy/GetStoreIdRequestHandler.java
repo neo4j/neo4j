@@ -22,20 +22,22 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.function.ThrowingSupplier;
 
 import static org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
 
 public class GetStoreIdRequestHandler extends SimpleChannelInboundHandler<GetStoreIdRequest>
 {
     private final CatchupServerProtocol protocol;
-    private final Supplier<StoreId> storeIdSupplier;
+    private final ThrowingSupplier<StoreId,IOException> storeIdSupplier;
 
-    public GetStoreIdRequestHandler( CatchupServerProtocol protocol, Supplier<StoreId> storeIdSupplier )
+    public GetStoreIdRequestHandler( CatchupServerProtocol protocol, ThrowingSupplier<StoreId,IOException> storeIdSupplier )
     {
         this.protocol = protocol;
         this.storeIdSupplier = storeIdSupplier;

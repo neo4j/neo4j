@@ -36,6 +36,7 @@ import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -83,7 +84,7 @@ public class ConnectionInfoIT
                 .with( singletonMap( transaction_listen_address.name(), ":" + testSocket.getLocalPort() ) );
 
         CatchupServer catchupServer =
-                new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(),
+                new CatchupServer( logProvider, userLogProvider, mockThrowingSupplier(), mockSupplier(), mockSupplier(),
                         mockSupplier(), mock( BooleanSupplier.class ), coreState, config, new Monitors(),
                         mockSupplier(), mock( FileSystemAbstraction.class ) );
 
@@ -104,6 +105,12 @@ public class ConnectionInfoIT
     private <T> Supplier<T> mockSupplier()
     {
         return mock( Supplier.class );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <T,E extends Exception> ThrowingSupplier<T,E> mockThrowingSupplier()
+    {
+        return mock( ThrowingSupplier.class );
     }
 
     @Test
