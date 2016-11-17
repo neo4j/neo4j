@@ -66,7 +66,7 @@ public class ClusteringModule
                         logProvider );
 
         CoreBootstrapper coreBootstrapper =
-                new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config );
+                new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
 
         clusterIdentity = new ClusterIdentity( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
                 () -> sleep( 100 ), 300_000, coreBootstrapper );

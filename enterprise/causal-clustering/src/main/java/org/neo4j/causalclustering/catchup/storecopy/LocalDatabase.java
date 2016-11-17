@@ -75,6 +75,7 @@ public class LocalDatabase implements Lifecycle
     public synchronized void start() throws Throwable
     {
         storeId = readStoreIdFromDisk();
+        log.info( "Starting with storeId: " + storeId );
         dataSourceManager.start();
         started = true;
     }
@@ -82,6 +83,7 @@ public class LocalDatabase implements Lifecycle
     @Override
     public synchronized void stop() throws Throwable
     {
+        log.info( "Stopping" );
         this.databaseHealth = null;
         dataSourceManager.stop();
         started = false;
