@@ -694,22 +694,20 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
                             "coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}. (line 1, column 14 (offset: 13))")
   }
 
-  def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
-    import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper._
+  private def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
 
     import scala.collection.JavaConverters._
 
-    val fixedExpected = expected.fixPosition
     try {
       val jParams = new util.HashMap[String, Object]()
       params.foreach(kv => jParams.put(kv._1, kv._2.asInstanceOf[AnyRef]))
 
-      graph.execute(query, jParams).asScala.size
-      fail(s"Did not get the expected syntax error, expected: $fixedExpected")
+      graph.execute(query.replaceAll("\n\r", "\n"), jParams).asScala.size
+      fail(s"Did not get the expected syntax error, expected: $expected")
     } catch {
       case x: QueryExecutionException =>
         val actual = x.getMessage.lines.next().trim
-        actual should equal(fixedExpected)
+        actual should equal(expected)
     }
   }
 }
