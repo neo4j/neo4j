@@ -151,7 +151,8 @@ object RewindableExecutionResult {
         case v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(value) => Arguments.Runtime(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.RuntimeImpl(value) => Arguments.RuntimeImpl(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression(from, relName, relTypes, to, _, varLength) =>
-          Arguments.ExpandExpression(from, relName, relTypes, to, null, varLength)
+          val (min,max) = if(varLength) (1, None) else (1, Some(1))
+          Arguments.ExpandExpression(from, relName, relTypes, to, null, min, max)
         case v2_3.planDescription.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
       }

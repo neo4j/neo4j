@@ -70,9 +70,11 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
     }
   }
 
-  def planDescriptionWithoutCardinality =
+  def planDescriptionWithoutCardinality = {
+    val expandExpr = ExpandExpression(fromName, relName, types.names, toName, dir, minLength = 1, maxLength = Some(1))
     source.planDescription.
-      andThen(this.id, "OptionalExpand(Into)", variables, ExpandExpression(fromName, relName, types.names, toName, dir))
+      andThen(this.id, "OptionalExpand(Into)", variables, expandExpr)
+  }
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

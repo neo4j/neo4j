@@ -112,7 +112,7 @@ object InternalPlanDescription {
       override def name = "runtime-impl"
     }
     case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String,
-                                direction: SemanticDirection, varLength: Boolean = false) extends Argument
+                                direction: SemanticDirection, minLength: Int, maxLength: Option[Int]) extends Argument
     case class CountNodesExpression(ident: String, label: Option[LazyLabel]) extends Argument
     case class CountRelationshipsExpression(ident: String, startLabel: Option[LazyLabel],
                                             typeNames: LazyTypes, endLabel: Option[LazyLabel]) extends Argument

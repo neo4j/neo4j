@@ -337,7 +337,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
 
     executionPlanDescription.cd("Argument").arguments should equal(List(EstimatedRows(1)))
     executionPlanDescription.cd("Expand(All)").arguments.toSet should equal(Set(
-      ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, varLength = false),
+      ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, 1, Some(1)),
       EstimatedRows(0.25)
     ))
   }

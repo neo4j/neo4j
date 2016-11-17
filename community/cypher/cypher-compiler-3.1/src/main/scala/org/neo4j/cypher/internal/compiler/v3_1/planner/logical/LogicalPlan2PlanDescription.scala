@@ -49,7 +49,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
         PlanDescriptionImpl(id = idMap(plan), "ProduceResults", SingleChild(apply(inner, idMap)), Seq(), symbols)
 
       case Expand(inner, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode) =>
-        val expression = ExpandExpression( fromName, relName, typeNames.map( _.name ), toName, dir )
+        val expression = ExpandExpression(fromName, relName, typeNames.map(_.name), toName, dir, 1, Some(1))
         val modeText = mode match {
           case ExpandAll => "Expand(All)"
           case ExpandInto => "Expand(Into)"
@@ -58,7 +58,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
 
       case OptionalExpand(inner, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode, predicates) =>
         val expressions = predicates.map(Expression.apply) :+
-          ExpandExpression( fromName, relName, typeNames.map( _.name ), toName, dir )
+          ExpandExpression(fromName, relName, typeNames.map(_.name), toName, dir, 1, Some(1))
         val modeText = mode match {
           case ExpandAll => "OptionalExpand(All)"
           case ExpandInto => "OptionalExpand(Into)"

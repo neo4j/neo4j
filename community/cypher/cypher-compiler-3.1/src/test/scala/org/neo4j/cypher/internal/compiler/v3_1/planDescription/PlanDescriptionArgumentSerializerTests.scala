@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.ProjectedPath.{nilProjector, singleNodeProjector}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{ArgumentPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.PlanDescriptionArgumentSerializer.serialize
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
-
-  val serialize = PlanDescriptionArgumentSerializer.serialize _
 
   test("serialization should leave numeric arguments as numbers") {
     serialize(DbHits(12)) shouldBe a [java.lang.Number]
@@ -38,7 +37,16 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("ExpandExpression should look like Cypher syntax") {
-    serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, varLength = false)) should equal ("(a)-[r:LIKES|:LOVES]->(b)")
+    serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 1, Some(1))) should
+      equal("(a)-[r:LIKES|:LOVES]->(b)")
+    serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 1, Some(5))) should
+      equal("(a)-[r:LIKES|:LOVES*..5]->(b)")
+    serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 1, None)) should
+      equal("(a)-[r:LIKES|:LOVES*]->(b)")
+    serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 3, Some(5))) should
+      equal("(a)-[r:LIKES|:LOVES*3..5]->(b)")
+    serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 3, None)) should
+      equal("(a)-[r:LIKES|:LOVES*3..]->(b)")
   }
 
   test("serialize nested pipe expression") {
