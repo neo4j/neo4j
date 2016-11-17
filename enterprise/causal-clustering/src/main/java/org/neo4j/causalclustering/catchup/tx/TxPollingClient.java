@@ -104,11 +104,17 @@ public class TxPollingClient extends LifecycleAdapter
      */
     private synchronized void onTimeout()
     {
-        timeout.renew();
-        applier.emptyQueueAndResetLastQueuedTxId();
-
         try
         {
+            timeout.renew();
+
+            if ( !localDatabase.isAvailable() )
+            {
+                localDatabase.start();
+            }
+
+            applier.emptyQueueAndResetLastQueuedTxId();
+
             MemberId core = connectionStrategy.coreMember();
             StoreId localStoreId = localDatabase.storeId();
 
