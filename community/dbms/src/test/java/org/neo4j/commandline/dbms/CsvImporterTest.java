@@ -52,12 +52,14 @@ public class CsvImporterTest
         List<String> lines = Arrays.asList( "foo,bar,baz" );
         Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
 
-        CsvImporter csvImporter = new CsvImporter(
-                Args.parse( String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
-                        String.format( "--nodes=%s", inputFile.getAbsolutePath() ) ), Config.defaults(),
-                new RealOutsideWorld() );
-
-        csvImporter.doImport();
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        {
+            CsvImporter csvImporter = new CsvImporter(
+                    Args.parse( String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
+                            String.format( "--nodes=%s", inputFile.getAbsolutePath() ) ), Config.defaults(),
+                    outsideWorld );
+            csvImporter.doImport();
+        }
 
         assertTrue( reportLocation.exists() );
     }

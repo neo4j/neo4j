@@ -41,7 +41,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -94,8 +93,8 @@ public class StoreMigratorFrom20IT
     public RuleChain ruleChain = RuleChain.outerRule( storeDir )
                                           .around( fileSystemRule ).around( pageCacheRule );
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
+    private FileSystemAbstraction fs;
     private PageCache pageCache;
     private final LifeSupport life = new LifeSupport();
     private UpgradableDatabase upgradableDatabase;
@@ -118,6 +117,7 @@ public class StoreMigratorFrom20IT
     @Before
     public void setUp()
     {
+        fs = fileSystemRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
 
         schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory(),

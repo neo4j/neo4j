@@ -46,10 +46,8 @@ public class BackupToolIT
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory( getClass());
-
     @Rule
     public ExpectedException expected = ExpectedException.none();
-
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
 
@@ -68,7 +66,7 @@ public class BackupToolIT
     }
 
     @After
-    public void teardown() throws Exception
+    public void tearDown() throws Exception
     {
         pageCache.close();
         fs.close();
