@@ -28,6 +28,7 @@ LIMIT with an expression that does not depend on variables
 `toInteger()` handling Any type
 `toInteger()` on a list of strings
 `toInteger()` failing on invalid arguments
+`toInteger()` on a complex-typed expression
 
 // missing properties()
 `properties()` on a node
@@ -56,6 +57,8 @@ Failing when performing property access on a non-map 1
 `toFloat()` failing on invalid arguments
 `toString()` should work on Any type
 `toString()` failing on invalid arguments
+`max()` should aggregate strings
+`min()` should aggregate strings
 
 // other
 Combine MATCH, WITH and CREATE
@@ -78,6 +81,10 @@ Fail when returning type of deleted relationships
 `toString()` handling boolean properties
 `toString()` handling inlined boolean
 `toString()` handling boolean literal
+IN should work with nested list subscripting
+IN should work with nested literal list subscripting
+IN should work with list slices
+IN should work with literal list slices
 
 // new parameter syntax $
 Delete node from a list
@@ -128,6 +135,9 @@ Get node degree via size of pattern comprehension that specifies multiple relati
 Introducing new node variable in pattern comprehension
 Introducing new relationship variable in pattern comprehension
 
-// bugged in spec, awaiting update
-SKIP with an expression that depends on variables should fail
-LIMIT with an expression that depends on variables should fail
+// unsupported comparability
+Fail when comparing nodes to parameters
+Fail when comparing parameters to nodes
+Comparing nodes to properties
+Fail when comparing nodes to relationships
+Fail when comparing relationships to nodes

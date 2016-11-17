@@ -48,7 +48,7 @@
     <version-package>cypher.internal</version-package>
     <scala.version>2.11.8</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
-    <opencypher.version>1.0.0-M02</opencypher.version>
+    <opencypher.version>1.0.0-M03</opencypher.version>
   </properties>
 
   <repositories>
