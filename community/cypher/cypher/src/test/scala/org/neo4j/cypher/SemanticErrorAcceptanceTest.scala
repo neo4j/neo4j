@@ -697,12 +697,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   private def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
 
     import scala.collection.JavaConverters._
+    import internal.frontend.v3_0.helpers.StringHelper._
 
     try {
       val jParams = new util.HashMap[String, Object]()
       params.foreach(kv => jParams.put(kv._1, kv._2.asInstanceOf[AnyRef]))
 
-      graph.execute(query.replaceAll("\n\r", "\n"), jParams).asScala.size
+      graph.execute(query.fixNewLines, jParams).asScala.size
       fail(s"Did not get the expected syntax error, expected: $expected")
     } catch {
       case x: QueryExecutionException =>

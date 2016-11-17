@@ -449,6 +449,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   }
 
   private def executeQuery(query: String) {
-    execute(query.replaceAll("\n\r", "\n")).toList
+    import internal.frontend.v3_0.helpers.StringHelper._
+
+    execute(query.fixNewLines).toList
   }
 }

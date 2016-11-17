@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 import org.apache.commons.lang3.SystemUtils
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compiler.v3_0.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{AstRewritingTestSupport, CantHandleQueryException}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -365,22 +366,23 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("match (n) where id(n) IN [0,1,2,3] with n.division AS `n.division`, max(n.age) AS `max(n.age)` with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`") {
+    import internal.frontend.v3_0.helpers.StringHelper._
+
     val result = projectionInlinedAst(
       """match (n) where id(n) IN [0,1,2,3]
         |with n.division AS `n.division`, max(n.age) AS `max(n.age)`
         |with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)`
         |RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`
-      """.stripMargin)
+      """.stripMargin.fixNewLines)
 
-    // TODO: this is a temporary solution we should rethink how to generated fresh ids on windows
-    val freshIdName = if (SystemUtils.IS_OS_WINDOWS) "`  FRESHID199`" else "`  FRESHID196`"
+    val freshIdName = "`  FRESHID196`"
     result should equal(ast(
       s"""match (n) where id(n) IN [0,1,2,3]
         |with n.division AS `n.division`, max(n.age) AS `max(n.age)`
         |with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)`
         |with `n.division` AS `n.division`, `max(n.age)` AS $freshIdName order by $freshIdName
         |RETURN `n.division` AS `n.division`, $freshIdName AS `max(n.age)`
-      """.stripMargin))
+      """.stripMargin.fixNewLines))
   }
 
   test("should not inline expressions used many times: WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x => WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x") {
