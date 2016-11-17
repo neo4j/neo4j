@@ -41,10 +41,10 @@ Feature: MatchAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE (:X   {foo: 1})
-      CREATE (:Y   {foo: 2})
-      CREATE (:Y   {id: 42, foo: 3})
-      CREATE (:Y:X {id: 42, foo: 4})
+      CREATE (:X   {foo: 1}),
+             (:Y   {foo: 2}),
+             (:Y   {id: 42, foo: 3}),
+             (:Y:X {id: 42, foo: 4})
       """
     When executing query:
       """

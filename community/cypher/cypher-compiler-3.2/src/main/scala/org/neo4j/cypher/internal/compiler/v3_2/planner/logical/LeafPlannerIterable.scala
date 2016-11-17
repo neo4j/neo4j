@@ -23,11 +23,13 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 
 trait LeafPlannerIterable {
-  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )(implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
+  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )
+                (implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
 }
 
-case class LeafPlannerList(leafPlanners: Seq[LeafPlanner]) extends LeafPlannerIterable {
-  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )(implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
+case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPlannerIterable {
+  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )
+                (implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
     val logicalPlans = leafPlanners.flatMap(_(qg)).map(f(_,qg))
     logicalPlans.groupBy(_.availableSymbols).values
   }

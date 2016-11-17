@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.{UpdateStrategy, defaultUpdateStr
 
 object QueryPlannerConfiguration {
 
-  private val leafPlanFromExpressions = Seq(
+  private val leafPlanFromExpressions = IndexedSeq(
     // MATCH (n) WHERE id(n) IN ... RETURN n
     idSeekLeafPlanner,
 
@@ -45,7 +45,7 @@ object QueryPlannerConfiguration {
     labelScanLeafPlanner
   )
 
-  val allLeafPlanners = leafPlanFromExpressions ++ Seq(
+  val allLeafPlanners = leafPlanFromExpressions ++ IndexedSeq(
     argumentLeafPlanner,
 
     // MATCH (n) RETURN n
