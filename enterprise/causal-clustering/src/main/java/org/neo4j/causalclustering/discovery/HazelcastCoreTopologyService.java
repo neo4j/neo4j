@@ -48,10 +48,12 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
 {
+    private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private final Config config;
     private final MemberId myself;
     private final Log log;
@@ -115,7 +117,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         {
             refreshCoreTopology();
             refreshReadReplicaTopology();
-        }, config.get( CausalClusteringSettings.cluster_topology_refresh ), TimeUnit.MILLISECONDS );
+        }, config.get( CausalClusteringSettings.cluster_topology_refresh ), MILLISECONDS );
     }
 
     @Override
@@ -164,7 +166,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         networkConfig.setJoin( joinConfig );
         networkConfig.setPortAutoIncrement( false );
         com.hazelcast.config.Config c = new com.hazelcast.config.Config();
-        c.setProperty( GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS, "10000" );
+        c.setProperty( GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS, String.valueOf( 10_000) );
         c.setProperty( GroupProperties.PROP_INITIAL_MIN_CLUSTER_SIZE,
                 String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
         c.setProperty( GroupProperties.PROP_LOGGING_TYPE, "none" );
@@ -175,9 +177,19 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         c.setMemberAttributeConfig( memberAttributeConfig );
         userLog.info( "Waiting for other members to join cluster before continuing..." );
+
+        DelayedLog delayedLog = new DelayedLog( "The server has not been able to connect in a timely fashion to the " +
+                "cluster. Please consult the logs for more details. Rebooting the server may solve the problem", log );
+        JobScheduler.JobHandle jobHandle = scheduler
+                .schedule( new JobScheduler.Group( getClass().toString(), JobScheduler.SchedulingStrategy.POOLED ),
+                        delayedLog, HAZELCAST_IS_HEALTHY_TIMEOUT_MS, MILLISECONDS );
+
+        delayedLog.setJobHandle( jobHandle );
+
         try
         {
             hazelcastInstance = Hazelcast.newHazelcastInstance( c );
+            delayedLog.stop();
         }
         catch ( HazelcastException e )
         {
@@ -241,6 +253,42 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         @Override
         public void memberAttributeChanged( MemberAttributeEvent memberAttributeEvent )
         {
+        }
+    }
+
+    private class DelayedLog implements Runnable
+    {
+        private final String message;
+        private final Log log;
+        private boolean performLogging = true;
+        private JobScheduler.JobHandle jobHandle;
+
+        DelayedLog( String message, Log log )
+        {
+            this.message = message;
+            this.log = log;
+        }
+
+        @Override
+        public void run()
+        {
+            if ( performLogging )
+            {
+                log.warn( message );
+                stop();
+            }
+
+            jobHandle.cancel( true );
+        }
+
+        public void stop()
+        {
+            this.performLogging = false;
+        }
+
+        void setJobHandle( JobScheduler.JobHandle jobHandle )
+        {
+            this.jobHandle = jobHandle;
         }
     }
 }
