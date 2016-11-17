@@ -83,6 +83,7 @@ public class ClusterIdentity
             {
                 commonClusterId = new ClusterId( UUID.randomUUID() );
                 CoreSnapshot snapshot = coreBootstrapper.bootstrap( topology.members() );
+                log.info( String.format( "Bootstrapped with snapshot: %s and clusterId: %s", snapshot, commonClusterId ) );
 
                 snapshotInstaller.accept( snapshot );
                 publishClusterId( commonClusterId );
