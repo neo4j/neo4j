@@ -203,7 +203,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
                 fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
+                new StoreCopyClient( catchUpClient, logProvider ),
+                new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory() );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,

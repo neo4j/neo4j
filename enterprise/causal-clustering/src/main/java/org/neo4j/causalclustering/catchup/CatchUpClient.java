@@ -95,7 +95,7 @@ public class CatchUpClient extends LifecycleAdapter
         String operation = String.format( "Timed out executing operation %s on %s (%s)",
                 request, target, catchUpAddress.get() );
 
-        return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis );
+        return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
     }
 
     private class CatchUpChannel implements CatchUpChannelPool.Channel

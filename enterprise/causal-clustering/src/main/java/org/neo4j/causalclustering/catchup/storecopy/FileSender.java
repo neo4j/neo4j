@@ -19,64 +19,89 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import io.netty.channel.ChannelHandlerContext;
-
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.causalclustering.catchup.ResponseMessageType;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.stream.ChunkedInput;
+
 import org.neo4j.io.fs.StoreChannel;
 
-class FileSender
+class FileSender implements ChunkedInput<FileChunk>
 {
-    private FileSystemAbstraction fs;
-    private final ChannelHandlerContext ctx;
+    private final StoreChannel channel;
+    private final ByteBuffer byteBuffer;
+    private boolean endOfInput = false;
+    private boolean sentChunk = false;
+    private byte[] preFetchedBytes;
 
-    FileSender( FileSystemAbstraction fs, ChannelHandlerContext ctx )
+    public FileSender( StoreChannel channel ) throws IOException
     {
-        this.fs = fs;
-        this.ctx = ctx;
+        this.channel = channel;
+        byteBuffer = ByteBuffer.allocateDirect( FileChunk.MAX_SIZE );
+        preFetchedBytes = prefetch();
     }
 
-    void sendFile( File file ) throws IOException
+    @Override
+    public boolean isEndOfInput() throws Exception
     {
-        ctx.writeAndFlush( ResponseMessageType.FILE );
-        ctx.writeAndFlush( new FileHeader( file.getName() ) );
-        ByteBuffer buffer = ByteBuffer.allocateDirect( FileChunk.MAX_SIZE );
-        byte[] bytes = null;
-        try ( StoreChannel channel = fs.open( file, "r" ) )
+        return endOfInput && preFetchedBytes == null && sentChunk;
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        channel.close();
+    }
+
+    @Override
+    public FileChunk readChunk( ByteBufAllocator allocator ) throws Exception
+    {
+        if ( isEndOfInput() )
         {
-            boolean fileEmpty = true;
-            while ( channel.read( buffer ) != -1 )
-            {
-                fileEmpty = false;
-                // send out the previous chunk if there is any
-                perhapsWriteAndFlush( ctx, bytes, false );
-                // let's set the bytes to null in case we are not able to create another full array and overwrite it
-                bytes = null;
-
-                // if the buffer is full...
-                if ( !buffer.hasRemaining() )
-                {
-                    // create the next chunk
-                    bytes = createByteArray( buffer );
-                }
-            }
-
-            // if there are some more bytes left or the file is empty...
-            if ( buffer.position() > 0 || fileEmpty )
-            {
-                // send out the previous chunk if there is any
-                perhapsWriteAndFlush( ctx, bytes, false );
-                // and create a new one for the remaining bytes (or an empty byte array in case the file is empty)
-                bytes = createByteArray( buffer );
-            }
-
-            // send out whatever is left to send as the last chunk
-            perhapsWriteAndFlush( ctx, bytes, true );
+            return null;
         }
+        else
+        {
+            sentChunk = true;
+        }
+
+        byte[] next = prefetch();
+        FileChunk fileChunk = FileChunk.create( preFetchedBytes == null ? new byte[0] : preFetchedBytes, next == null );
+
+        preFetchedBytes = next;
+
+        return fileChunk;
+    }
+
+    @Override
+    public FileChunk readChunk( ChannelHandlerContext ctx ) throws Exception
+    {
+        return readChunk( ctx.alloc() );
+    }
+
+    @Override
+    public long length()
+    {
+        return -1;
+    }
+
+    @Override
+    public long progress()
+    {
+        return 0;
+    }
+
+    private byte[] prefetch() throws IOException
+    {
+        int bytesRead = channel.read( byteBuffer );
+        if ( bytesRead == -1 )
+        {
+            endOfInput = true;
+            return null;
+        }
+        return createByteArray( byteBuffer );
     }
 
     private byte[] createByteArray( ByteBuffer buffer )
@@ -86,13 +111,5 @@ class FileSender
         buffer.get( bytes );
         buffer.clear();
         return bytes;
-    }
-
-    private void perhapsWriteAndFlush( ChannelHandlerContext ctx, byte[] bytes, boolean last )
-    {
-        if ( bytes != null )
-        {
-            ctx.writeAndFlush( FileChunk.create( bytes, last ) );
-        }
     }
 }

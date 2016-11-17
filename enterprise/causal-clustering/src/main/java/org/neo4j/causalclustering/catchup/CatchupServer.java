@@ -30,6 +30,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.stream.ChunkedWriteHandler;
 
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
@@ -166,8 +167,9 @@ public class CatchupServer extends LifecycleAdapter
                                 new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
                                         transactionIdStoreSupplier, logicalTransactionStoreSupplier, txPullBatchSize,
                                         monitors, logProvider ) );
+                        pipeline.addLast( new ChunkedWriteHandler() );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
-                                checkPointerSupplier, fs ) );
+                                checkPointerSupplier, fs, logProvider ) );
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
                         pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
 
