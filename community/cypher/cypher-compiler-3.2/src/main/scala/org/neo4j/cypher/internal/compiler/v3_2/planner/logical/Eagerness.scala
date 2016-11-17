@@ -107,7 +107,8 @@ object Eagerness {
   def headWriteReadEagerize(inputPlan: LogicalPlan, query: PlannerQuery)
                        (implicit context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    if (alwaysEager || query.tail.isDefined && writeReadConflictInHead(query, query.tail.get))
+    val conflictInHorizon = query.queryGraph.horizonOverlap(query.horizon)
+    if (alwaysEager || conflictInHorizon || query.tail.isDefined && writeReadConflictInHead(query, query.tail.get))
       context.logicalPlanProducer.planEager(inputPlan)
     else
       inputPlan

@@ -29,7 +29,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       val from = fromPipe.effects
       val to = toPipe.localEffects
       if (wouldConflict(from, to)) {
-        new EagerPipe(fromPipe)()(fromPipe.monitor)
+        EagerPipe(fromPipe)()(fromPipe.monitor)
       } else {
         fromPipe
       }
@@ -179,6 +179,14 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
   }
 
   private def nodePropertiesConflict(from: Effects, to: Effects): Boolean = {
+    nodeReadWriteProps(from, to) || nodeWriteReadProps(from, to)
+  }
+
+  private def nodeWriteReadProps(from: Effects, to: Effects) = {
+    nodeReadWriteProps(to, from)
+  }
+
+  private def nodeReadWriteProps(from: Effects, to: Effects): Boolean = {
     val propertyReads = from.effectsSet.collect {
       case property: ReadsNodeProperty => property
     }
