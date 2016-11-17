@@ -79,7 +79,7 @@ object ClauseConverters {
 
   implicit class ReturnConverter(val clause: Return) extends AnyVal {
     def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
-      case Return(distinct, ri, optOrderBy, skip, limit) if !ri.includeExisting =>
+      case Return(distinct, ri, optOrderBy, skip, limit, _) if !ri.includeExisting =>
 
         val shuffle = optOrderBy.asQueryShuffle.
           withSkip(skip).

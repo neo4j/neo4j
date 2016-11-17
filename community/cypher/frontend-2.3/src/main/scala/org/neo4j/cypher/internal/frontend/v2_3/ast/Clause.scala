@@ -368,7 +368,8 @@ case class Return(
     returnItems: ReturnItems,
     orderBy: Option[OrderBy],
     skip: Option[Skip],
-    limit: Option[Limit])(val position: InputPosition) extends ProjectionClause {
+    limit: Option[Limit],
+    excludedNames: Set[String] = Set.empty)(val position: InputPosition) extends ProjectionClause {
 
   def name = "RETURN"
 
