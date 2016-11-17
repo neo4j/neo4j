@@ -19,12 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.{NewPlannerTestSupport, QueryStatisticsTestSupport, ExecutionEngineFunSuite}
-import org.scalatest.matchers.{MatchResult, Matcher}
 
-class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport{
+class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
+  with NewPlannerTestSupport with QueryPlanTestSupport {
 
   test("Compact very long query containing consecutive update operations") {
     val query =
@@ -867,22 +865,5 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
       """.stripMargin
 
     replaceAnonVariables(plan1) should be(replaceAnonVariables(plan2))
-  }
-
-  private final val anonPattern = "([^\\w])anon\\[\\d+\\]".r
-
-  private def replaceAnonVariables(planText: String) =
-    anonPattern.replaceAllIn(planText, "$1anon[*]")
-
-  def havePlanLike(expectedPlan: String): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
-      val planText = replaceAnonVariables(plan.toString.trim)
-      val expectedText = replaceAnonVariables(expectedPlan.trim)
-      MatchResult(
-        matches = planText.startsWith(expectedText),
-        rawFailureMessage = s"Plan does not match expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText",
-        rawNegatedFailureMessage = s"Plan unexpected matches expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText")
-    }
   }
 }
