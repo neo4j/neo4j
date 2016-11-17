@@ -55,14 +55,11 @@ public class GenSafePointerTest
     }
 
     @Test
-    public void shouldWriteAndReadGspWithZeroValues() throws Exception
+    public void shouldReadGspWithZeroValues() throws Exception
     {
         // GIVEN
         int offset = 3;
         GSP expected = gsp( 0, 0 );
-
-        // WHEN
-        write( cursor, offset, expected );
 
         // THEN
         boolean matches = read( cursor, offset, read );
