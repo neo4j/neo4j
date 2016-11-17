@@ -440,10 +440,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     Sort(inner, descriptions)(solved)
   }
 
-  def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])
+  def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression],
+                       withFallBack: Boolean)
                       (implicit context: LogicalPlanningContext) = {
     val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths).addPredicates(predicates: _*))
-    FindShortestPaths(inner, shortestPaths, predicates)(solved)
+    FindShortestPaths(inner, shortestPaths, predicates, withFallBack)(solved)
   }
 
   def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship)
