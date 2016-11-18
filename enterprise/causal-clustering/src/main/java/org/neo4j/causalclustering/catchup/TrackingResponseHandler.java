@@ -71,7 +71,8 @@ class TrackingResponseHandler implements CatchUpResponseHandler
             recordLastResponse();
             return delegate.onFileContent( requestOutcomeSignal, fileChunk );
         }
-        return false;
+        // true means stop
+        return true;
     }
 
     @Override

@@ -26,11 +26,8 @@ package org.neo4j.causalclustering.messaging;
  */
 public class EndOfStreamException extends Exception
 {
-    @SuppressWarnings( "ThrowableInstanceNeverThrown" )
-    public static final EndOfStreamException INSTANCE = new EndOfStreamException();
-
-    private EndOfStreamException()
+    public EndOfStreamException(Throwable e)
     {
-        // consider using the INSTANCE
+        this.initCause( e );
     }
 }

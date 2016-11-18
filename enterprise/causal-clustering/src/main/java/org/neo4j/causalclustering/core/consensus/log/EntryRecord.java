@@ -64,7 +64,7 @@ public class EntryRecord
         }
         catch ( ReadPastEndException e )
         {
-            throw EndOfStreamException.INSTANCE;
+            throw new EndOfStreamException( e );
         }
     }
 

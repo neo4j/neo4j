@@ -25,10 +25,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.neo4j.logging.Log;
+
 class TimeoutLoop
 {
     static <T> T waitForCompletion( Future<T> future, String operation, Supplier<Long> millisSinceLastResponseSupplier,
-            long inactivityTimeoutMillis ) throws CatchUpClientException
+                                    long inactivityTimeoutMillis, Log log ) throws CatchUpClientException
     {
         long remainingTimeoutMillis = inactivityTimeoutMillis;
         while ( true )
@@ -49,6 +51,7 @@ class TimeoutLoop
             catch ( TimeoutException e )
             {
                 long millisSinceLastResponse = millisSinceLastResponseSupplier.get();
+                log.info( "Request timed out. Time since last response: " + millisSinceLastResponse );
                 if ( millisSinceLastResponse < inactivityTimeoutMillis )
                 {
                     remainingTimeoutMillis = inactivityTimeoutMillis - millisSinceLastResponse;

@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
@@ -55,6 +58,11 @@ public class FileChunk
     public byte[] bytes()
     {
         return bytes;
+    }
+
+    public int length()
+    {
+        return encodedLength;
     }
 
     @Override

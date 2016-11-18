@@ -26,6 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
+
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -45,7 +48,7 @@ public class TimeoutLoopTest
         Supplier<Long> lastResponseSupplier = () -> 1L;
 
         // when
-        long value = TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 2 );
+        long value = TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 2, NullLog.getInstance() );
 
         // then
         assertEquals( 12L, value );
@@ -64,7 +67,7 @@ public class TimeoutLoopTest
         try
         {
             // when
-            TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 1 );
+            TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 1, NullLog.getInstance() );
             fail( "Should have timed out" );
         }
         catch ( CatchUpClientException e )
@@ -86,7 +89,7 @@ public class TimeoutLoopTest
         Supplier<Long> lastResponseSupplier = () -> 1L;
 
         // when
-        long value = TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 2 );
+        long value = TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 2, NullLog.getInstance() );
 
         // then
         assertEquals( 12L, value );
@@ -102,7 +105,7 @@ public class TimeoutLoopTest
         // when
         try
         {
-            TimeoutLoop.<Long>waitForCompletion( future, "", () -> 1L, 2 );
+            TimeoutLoop.<Long>waitForCompletion( future, "", () -> 1L, 2, NullLog.getInstance() );
             fail( "Should have thrown exception" );
         }
         catch ( CatchUpClientException e )

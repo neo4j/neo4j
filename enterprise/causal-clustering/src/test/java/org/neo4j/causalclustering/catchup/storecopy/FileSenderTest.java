@@ -19,25 +19,30 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Rule;
 import org.junit.Test;
+import scala.Byte;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
-import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.copyOfRange;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 import static org.neo4j.causalclustering.catchup.storecopy.FileChunk.MAX_SIZE;
 
 public class FileSenderTest
@@ -47,100 +52,92 @@ public class FileSenderTest
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory( fsRule.get());
 
-    private final ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
     private final FileSystemAbstraction fs = fsRule.get();
     private final Random random = new Random();
+    private ByteBufAllocator allocator = mock( ByteBufAllocator.class );
 
     @Test
-    public void sendEmptyFile() throws IOException
+    public void sendEmptyFile() throws Exception
     {
         // given
-        FileSender fileSender = new FileSender( fs, ctx );
-        File smallFile = testDirectory.file( "smallFile" );
-        fs.create( smallFile ).close();
+        File emptyFile = testDirectory.file( "emptyFile" );
+        fs.create( emptyFile ).close();
+        FileSender fileSender = new FileSender(fs.open( emptyFile, "r" ));
 
-        // when
-        fileSender.sendFile( smallFile );
-
-        // then
-        verify( ctx ).writeAndFlush( ResponseMessageType.FILE );
-        verify( ctx ).writeAndFlush( new FileHeader( smallFile.getName() ) );
-        verify( ctx ).writeAndFlush( FileChunk.create( new byte[0], true ) );
-        verifyNoMoreInteractions( ctx );
+        // when + then
+        assertFalse( fileSender.isEndOfInput() );
+        assertEquals( FileChunk.create( new byte[0], true ), fileSender.readChunk( allocator ) );
+        assertNull( fileSender.readChunk( allocator ) );
+        assertTrue( fileSender.isEndOfInput() );
     }
 
     @Test
-    public void sendSmallFile() throws IOException
+    public void sendSmallFile() throws Exception
     {
         // given
         byte[] bytes = new byte[10];
         random.nextBytes( bytes );
-        FileSender fileSender = new FileSender( fs, ctx );
+
         File smallFile = testDirectory.file( "smallFile" );
         try( StoreChannel storeChannel = fs.create( smallFile ) )
         {
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        // when
-        fileSender.sendFile( smallFile );
+        FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
 
-        // then
-        verify( ctx ).writeAndFlush( ResponseMessageType.FILE );
-        verify( ctx ).writeAndFlush( new FileHeader( smallFile.getName() ) );
-        verify( ctx ).writeAndFlush( FileChunk.create( bytes, true ) );
-        verifyNoMoreInteractions( ctx );
+        // when + then
+        assertFalse( fileSender.isEndOfInput() );
+        assertEquals( FileChunk.create( bytes, true ), fileSender.readChunk( allocator ) );
+        assertNull( fileSender.readChunk( allocator ) );
+        assertTrue( fileSender.isEndOfInput() );
     }
 
     @Test
-    public void sendLargeFile() throws IOException
+    public void sendLargeFile() throws Exception
     {
         // given
         int dataSize = MAX_SIZE + (MAX_SIZE / 2);
         byte[] bytes = new byte[dataSize];
         random.nextBytes( bytes );
 
-        FileSender fileSender = new FileSender( fs, ctx );
         File smallFile = testDirectory.file( "smallFile" );
         try( StoreChannel storeChannel = fs.create( smallFile ) )
         {
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        // when
-        fileSender.sendFile( smallFile );
+        FileSender fileSender = new FileSender(fs.open( smallFile, "r" ));
 
-        // then
-        verify( ctx ).writeAndFlush( ResponseMessageType.FILE );
-        verify( ctx ).writeAndFlush( new FileHeader( smallFile.getName() ) );
-        verify( ctx ).writeAndFlush( FileChunk.create( copyOfRange( bytes, 0, MAX_SIZE ), false ) );
-        verify( ctx ).writeAndFlush( FileChunk.create( copyOfRange( bytes, MAX_SIZE, bytes.length ), true ) );
-        verifyNoMoreInteractions( ctx );
+        // when + then
+        assertFalse( fileSender.isEndOfInput() );
+        assertEquals( FileChunk.create( copyOfRange( bytes, 0, MAX_SIZE ), false ), fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, bytes.length ), true ), fileSender.readChunk( allocator ) );
+        assertNull( fileSender.readChunk( allocator ) );
+        assertTrue( fileSender.isEndOfInput() );
     }
 
     @Test
-    public void sendLargeFileWithSizeMultipleOfTheChunkSize() throws IOException
+    public void sendLargeFileWithSizeMultipleOfTheChunkSize() throws Exception
     {
         // given
         byte[] bytes = new byte[MAX_SIZE * 3];
         random.nextBytes( bytes );
 
-        FileSender fileSender = new FileSender( fs, ctx );
         File smallFile = testDirectory.file( "smallFile" );
         try( StoreChannel storeChannel = fs.create( smallFile ) )
         {
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        // when
-        fileSender.sendFile( smallFile );
+        FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
 
-        // then
-        verify( ctx ).writeAndFlush( ResponseMessageType.FILE );
-        verify( ctx ).writeAndFlush( new FileHeader( smallFile.getName() ) );
-        verify( ctx ).writeAndFlush( FileChunk.create( copyOfRange( bytes, 0, MAX_SIZE ), false ) );
-        verify( ctx ).writeAndFlush( FileChunk.create( copyOfRange( bytes, MAX_SIZE, MAX_SIZE * 2 ), false ) );
-        verify( ctx ).writeAndFlush( FileChunk.create( copyOfRange( bytes, MAX_SIZE * 2, bytes.length ), true ) );
-        verifyNoMoreInteractions( ctx );
+        // when + then
+        assertFalse( fileSender.isEndOfInput() );
+        assertEquals( FileChunk.create( copyOfRange( bytes, 0, MAX_SIZE ), false ), fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, MAX_SIZE * 2 ), false ), fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE * 2, bytes.length ), true ), fileSender.readChunk( allocator ) );
+        assertNull( fileSender.readChunk( allocator ) );
+        assertTrue( fileSender.isEndOfInput() );
     }
 }

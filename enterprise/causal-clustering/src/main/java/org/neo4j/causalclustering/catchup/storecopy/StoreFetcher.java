@@ -76,8 +76,7 @@ public class StoreFetcher
         try
         {
             log.info( "Copying store from %s", from );
-            long lastFlushedTxId =
-                    storeCopyClient.copyStoreFiles( from, expectedStoreId, new StreamToDisk( destDir, fs ) );
+            long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, expectedStoreId, new StreamToDisk( destDir, fs ) );
 
             // We require at least one transaction for extracting the log index of the consensus log.
             // Given there might not have been any activity on the source server we need to ask for the

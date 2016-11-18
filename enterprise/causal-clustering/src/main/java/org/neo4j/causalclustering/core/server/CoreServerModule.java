@@ -117,7 +117,7 @@ public class CoreServerModule
                 Clocks.systemClock(), inactivityTimeoutMillis, monitors ) );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
+                new StoreCopyClient( catchUpClient, logProvider ), new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory() );
 
         CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );
