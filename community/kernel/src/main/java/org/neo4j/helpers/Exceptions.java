@@ -19,19 +19,14 @@
  */
 package org.neo4j.helpers;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.lang.Thread.State;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Exceptions
 {
@@ -269,6 +264,17 @@ public class Exceptions
     {
         setMessage( cause, message );
         return cause;
+    }
+
+    public static <T extends Throwable> T chain( T initial, T current )
+    {
+        if ( initial == null )
+        {
+            return current;
+        }
+
+        initial.addSuppressed( current );
+        return initial;
     }
 
 }

@@ -29,6 +29,7 @@ import java.util.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -160,9 +161,22 @@ public class NeoStores implements AutoCloseable
     @Override
     public void close()
     {
+        RuntimeException ex = null;
         for ( StoreType type : STORE_TYPES )
         {
-            closeStore( type );
+            try
+            {
+                closeStore( type );
+            }
+            catch ( RuntimeException t )
+            {
+                ex = Exceptions.chain( ex, t );
+            }
+        }
+
+        if ( ex != null )
+        {
+            throw ex;
         }
     }
 
@@ -202,8 +216,14 @@ public class NeoStores implements AutoCloseable
         int i = type.ordinal();
         if ( stores[i] != null )
         {
-            type.close( this, stores[i] );
-            stores[i] = null;
+            try
+            {
+                type.close( this, stores[i] );
+            }
+            finally
+            {
+                stores[i] = null;
+            }
         }
     }
 
