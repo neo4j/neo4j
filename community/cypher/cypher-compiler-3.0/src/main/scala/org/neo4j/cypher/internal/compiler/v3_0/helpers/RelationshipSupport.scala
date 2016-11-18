@@ -17,18 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v3_0.helpers
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
+import org.neo4j.graphdb.Relationship
+import scala.annotation.tailrec
 
-case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern,
-                             predicates: Seq[Expression] = Seq.empty, withFallBack: Boolean = false)
-                            (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
-
-  val lhs = Some(left)
-  def rhs = None
-
-  def availableSymbols = left.availableSymbols ++ shortestPath.availableSymbols
+object RelationshipSupport {
+  @tailrec
+  def areRelationshipsUnique(relationships: List[Relationship]): Boolean = relationships match {
+    case List() => true
+    case head :: Nil => true
+    case head :: tail => !tail.contains(head) && areRelationshipsUnique(tail)
+  }
 }
