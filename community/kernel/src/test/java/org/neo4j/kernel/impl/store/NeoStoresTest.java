@@ -58,10 +58,12 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.kvstore.RotationTimeoutException;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -84,12 +86,15 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
@@ -713,6 +718,46 @@ public class NeoStoresTest
             assertEquals( new TransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
             assertArrayEquals( store.getLastClosedTransaction(), new long[]{40,0,LogHeader.LOG_HEADER_SIZE} );
+        }
+    }
+
+    @Test
+    public void shouldCloseAllTheStoreEvenIfExceptionsAreThrown() throws Exception
+    {
+        // given
+        FileSystemAbstraction fileSystem = fs.get();
+        Config defaults = Config.defaults().with( singletonMap( counts_store_rotation_timeout.name(), "10ms" ) );
+        StoreFactory factory =
+                new StoreFactory( storeDir, defaults, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
+                        fileSystem, NullLogProvider.getInstance() );
+        NeoStores neoStore = factory.openAllNeoStores( true );
+
+        // let's hack the counts store so it fails to rotate and hence it fails to close as well...
+        final CountsTracker counts = neoStore.getCounts();
+        counts.start();
+        try
+        {
+            long nextTxId = neoStore.getMetaDataStore().getLastCommittedTransactionId() + 1;
+            counts.rotate( nextTxId );
+            fail( "should have thrown" );
+        }
+        catch ( RotationTimeoutException ex )
+        {
+            // expected
+        }
+
+        try
+        {
+            // when we close the stores...
+            neoStore.close();
+            fail( "should have thrown" );
+        }
+        catch ( IllegalStateException ex )
+        {
+            // then
+            assertEquals( "Cannot stop in state: rotating", ex.getMessage() );
+            // and the page cache closes with no errors
+            pageCache.close();
         }
     }
 
