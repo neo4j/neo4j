@@ -58,6 +58,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -103,8 +104,6 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
-import static java.lang.Integer.parseInt;
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -121,6 +120,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
+import static java.util.Collections.singletonList;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.addToCollection;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -1457,7 +1460,7 @@ public class BatchInsertTest
         }
 
         @Override
-        public void force() throws UnderlyingStorageException
+        public void force( IOLimiter limiter ) throws UnderlyingStorageException
         {
         }
 
@@ -1500,7 +1503,7 @@ public class BatchInsertTest
         }
 
         @Override
-        public LabelScanWriter newWriter()
+        public LabelScanWriter newWriter( boolean batching )
         {
             writersCreated++;
             return new LabelScanWriter()

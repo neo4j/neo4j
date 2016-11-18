@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -91,8 +92,22 @@ public interface LabelScanStore extends Lifecycle
 
     /**
      * Acquire a writer for updating the store.
+     *
+     * @return {@link LabelScanWriter} which can modify the {@link LabelScanStore}.
      */
-    LabelScanWriter newWriter();
+    default LabelScanWriter newWriter()
+    {
+        return newWriter( false );
+    }
+
+    /**
+     * Acquire a writer for updating the store.
+     *
+     * @param batching {@code true} means that the writes to this writer will be in batch-style,
+     * typically a store scan, so sequentially ordered and lots of them.
+     * @return {@link LabelScanWriter} which can modify the {@link LabelScanStore}.
+     */
+    LabelScanWriter newWriter( boolean batching );
 
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when
@@ -101,7 +116,7 @@ public interface LabelScanStore extends Lifecycle
      *
      * @throws UnderlyingStorageException if there was a problem forcing the state to persistent storage.
      */
-    void force() throws UnderlyingStorageException;
+    void force( IOLimiter limiter ) throws UnderlyingStorageException;
 
     /**
      * Acquire a reader for all {@link NodeLabelRange node label} ranges.

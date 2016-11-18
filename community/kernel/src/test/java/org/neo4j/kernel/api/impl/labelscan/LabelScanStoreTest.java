@@ -46,6 +46,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
@@ -123,7 +124,7 @@ public abstract class LabelScanStoreTest
     public void forceShouldNotForceWriterOnReadOnlyScanStore()
     {
         createAndStartReadOnly();
-        store.force();
+        store.force( IOLimiter.unlimited() );
     }
 
     @Test

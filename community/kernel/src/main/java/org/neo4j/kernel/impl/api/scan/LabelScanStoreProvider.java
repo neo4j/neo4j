@@ -91,11 +91,21 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
         long applyTo( LabelScanWriter writer ) throws IOException;
     }
 
+    public static final FullStoreChangeStream EMPTY = writer -> 0;
+
     public static FullStoreChangeStream fullStoreLabelUpdateStream( Supplier<IndexStoreView> lazyIndexStoreView )
     {
         // IndexStoreView provided as supplier because we only actually have that dependency available
         // when it's time to rebuilt, not when we construct this object
         return new FullLabelStream( lazyIndexStoreView );
+    }
+
+    public static long rebuild( LabelScanStore store, FullStoreChangeStream fullStoreStream ) throws IOException
+    {
+        try ( LabelScanWriter writer = store.newWriter( true ) )
+        {
+            return fullStoreStream.applyTo( writer );
+        }
     }
 
     private static class FullLabelStream implements FullStoreChangeStream, Visitor<NodeLabelUpdate,IOException>
