@@ -42,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -50,7 +51,10 @@ import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -153,8 +157,12 @@ public class PlatformModule
         tracers = dependencies.satisfyDependency(
                 new Tracers( desiredImplementationName, logging.getInternalLog( Tracers.class ) ) );
         dependencies.satisfyDependency( tracers.pageCacheTracer );
-        dependencies.satisfyDependency( tracers.transactionTracer );
-        dependencies.satisfyDependency( tracers.checkPointTracer );
+        TransactionTracer transactionTracer = tracers.transactionTracer;
+        dependencies.satisfyDependency(
+                transactionTracer instanceof LogRotationMonitor? transactionTracer : LogRotationMonitor.NULL );
+        CheckPointTracer checkPointTracer = tracers.checkPointTracer;
+        dependencies.satisfyDependency(
+                checkPointTracer instanceof CheckPointerMonitor? checkPointTracer : CheckPointerMonitor.NULL );
 
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers ) );
         life.add( new PageCacheLifecycle( pageCache ) );
