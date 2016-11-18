@@ -30,8 +30,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
-import com.hazelcast.instance.GroupProperties;
-import com.hazelcast.instance.GroupProperty;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +46,12 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static com.hazelcast.spi.properties.GroupProperty.INITIAL_MIN_CLUSTER_SIZE;
+import static com.hazelcast.spi.properties.GroupProperty.LOGGING_TYPE;
+import static com.hazelcast.spi.properties.GroupProperty.MERGE_FIRST_RUN_DELAY_SECONDS;
+import static com.hazelcast.spi.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SECONDS;
+import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS;
+import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOIN;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
@@ -142,10 +146,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
     private HazelcastInstance createHazelcastInstance()
     {
-        System.setProperty( GroupProperties.PROP_WAIT_SECONDS_BEFORE_JOIN, "1" );
+        System.setProperty( WAIT_SECONDS_BEFORE_JOIN.getName(), "1" );
 
         JoinConfig joinConfig = new JoinConfig();
         joinConfig.getMulticastConfig().setEnabled( false );
+        joinConfig.getAwsConfig().setEnabled( false );
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
         tcpIpConfig.setEnabled( true );
 
@@ -156,20 +161,24 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         }
         log.info( "Discovering cluster with initial members: " + initialMembers );
 
-        NetworkConfig networkConfig = new NetworkConfig();
         Setting<ListenSocketAddress> discovery_listen_address = CausalClusteringSettings.discovery_listen_address;
         ListenSocketAddress hazelcastAddress = config.get( discovery_listen_address );
         InterfacesConfig interfaces = new InterfacesConfig();
         interfaces.addInterface( hazelcastAddress.getHostname() );
+
+        NetworkConfig networkConfig = new NetworkConfig();
         networkConfig.setInterfaces( interfaces );
         networkConfig.setPort( hazelcastAddress.getPort() );
         networkConfig.setJoin( joinConfig );
         networkConfig.setPortAutoIncrement( false );
+
         com.hazelcast.config.Config c = new com.hazelcast.config.Config();
-        c.setProperty( GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS, String.valueOf( 10_000) );
-        c.setProperty( GroupProperties.PROP_INITIAL_MIN_CLUSTER_SIZE,
+        c.setProperty( OPERATION_CALL_TIMEOUT_MILLIS.getName(), String.valueOf( 10_000 ) );
+        c.setProperty( MERGE_NEXT_RUN_DELAY_SECONDS.getName(), "10" );
+        c.setProperty( MERGE_FIRST_RUN_DELAY_SECONDS.getName(), "10" );
+        c.setProperty( INITIAL_MIN_CLUSTER_SIZE.getName(),
                 String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
-        c.setProperty( GroupProperties.PROP_LOGGING_TYPE, "none" );
+        c.setProperty( LOGGING_TYPE.getName(), "none" );
 
         c.setNetworkConfig( networkConfig );
 
