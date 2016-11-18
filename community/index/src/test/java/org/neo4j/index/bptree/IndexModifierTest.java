@@ -39,6 +39,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.Modifier.Options.DEFAULTS;
+import static org.neo4j.index.ValueAmenders.insertNew;
 import static org.neo4j.index.ValueAmenders.overwrite;
 
 public class IndexModifierTest
@@ -151,7 +152,7 @@ public class IndexModifierTest
 
         // then
         long middle = maxKeyCount / 2;
-        assertNotNull( insert( middle, middle ) );
+        assertNotNull( insert( middle, middle, insertNew() ) );
     }
 
     @Test

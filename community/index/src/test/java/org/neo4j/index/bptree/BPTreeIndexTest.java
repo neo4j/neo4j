@@ -73,7 +73,7 @@ public class BPTreeIndexTest
     @Rule
     public final TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
     @Rule
-    public final RandomRule random = new RandomRule();
+    public final RandomRule random = new RandomRule().withSeed( 1 );
     private PageCache pageCache;
     private File indexFile;
     private final SCIndexDescription description = new SCIndexDescription( "a", "b", "c", OUTGOING, "d", null );
@@ -233,7 +233,7 @@ public class BPTreeIndexTest
     @Test
     public void shouldSeeSimpleInsertions() throws Exception
     {
-        index = createIndex( 128 );
+        index = createIndex( 256 );
         int count = 1000;
         try ( Modifier<TwoLongs,TwoLongs> inserter = index.modifier( DEFAULTS ) )
         {
@@ -327,7 +327,7 @@ public class BPTreeIndexTest
     public void shouldSplitCorrectly() throws Exception
     {
         // GIVEN
-        BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 128 );
+        BPTreeIndex<TwoLongs,TwoLongs> index = createIndex( 256 );
 
         // WHEN
         int count = 1_000;

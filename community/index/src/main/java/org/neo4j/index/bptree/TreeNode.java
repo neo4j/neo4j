@@ -68,7 +68,8 @@ class TreeNode<KEY,VALUE>
     private static final int BYTE_POS_KEYCOUNT = BYTE_POS_TYPE + 1;
     private static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
     private static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
-    private static final int HEADER_LENGTH = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
+    private static final int BYTE_POS_NEWGEN = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
+    private static final int HEADER_LENGTH = BYTE_POS_NEWGEN + SIZE_PAGE_REFERENCE;
 
     private static final byte LEAF_FLAG = 1;
     private static final byte INTERNAL_FLAG = 0;
@@ -89,6 +90,11 @@ class TreeNode<KEY,VALUE>
         this.internalMaxKeyCount = Math.floorDiv( pageSize - (HEADER_LENGTH + SIZE_PAGE_REFERENCE),
                 keySize + SIZE_PAGE_REFERENCE);
         this.leafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
+
+        assert internalMaxKeyCount >= 2 : "A page size of " + pageSize + " would only fit " +
+                internalMaxKeyCount + " internal keys, minimum is 2";
+        assert leafMaxKeyCount >= 2 : "A page size of " + pageSize + " would only fit " +
+                leafMaxKeyCount + " leaf keys, minimum is 2";
     }
 
     // ROUTINES
@@ -99,6 +105,7 @@ class TreeNode<KEY,VALUE>
         setKeyCount( cursor, 0 );
         setRightSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setLeftSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
+        setNewGen( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
     }
 
     void initializeLeaf( PageCursor cursor, int stableGeneration, int unstableGeneration )
@@ -140,6 +147,12 @@ class TreeNode<KEY,VALUE>
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
     }
 
+    long newGen( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    {
+        cursor.setOffset( BYTE_POS_NEWGEN );
+        return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
+    }
+
     void setKeyCount( PageCursor cursor, int count )
     {
         cursor.putInt( BYTE_POS_KEYCOUNT, count );
@@ -155,6 +168,12 @@ class TreeNode<KEY,VALUE>
     {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
         GenSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
+    }
+
+    void setNewGen( PageCursor cursor, long pageId, int stableGeneration, int unstableGeneration )
+    {
+        cursor.setOffset( BYTE_POS_NEWGEN );
+        GenSafePointerPair.write( cursor, pageId, stableGeneration, unstableGeneration );
     }
 
     // BODY METHODS

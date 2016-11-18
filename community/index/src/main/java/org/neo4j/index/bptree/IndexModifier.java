@@ -132,7 +132,10 @@ public class IndexModifier<KEY,VALUE>
         }
 
         long currentId = cursor.getCurrentPageId();
-        cursor.next( bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration ) );
+        long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
+        BadPointerChecking.communicateBadPointer( childId );
+
+        cursor.next( childId );
 
         SplitResult<KEY> split = insert( cursor, key, value, amender, options, stableGeneration, unstableGeneration );
 

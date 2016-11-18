@@ -258,7 +258,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 // TODO perhaps detect being too far to the left and so follow right siblings,
                 // to reduce unnecessary seek in leafs (concurrent splits would be the cause)
 
-                communicateBadPointer( childId );
+                BadPointerChecking.communicateBadPointer( childId );
 
                 if ( !cursor.next( childId ) )
                 {
@@ -276,28 +276,6 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout,
                 stableGeneration, unstableGeneration, pos, keyCount );
-    }
-
-    /**
-     * Arriving here is actually quite bad is it signals some sort of inconsistency/corruption in the tree.
-     * TODO Can we do something here, repair perhaps?
-     */
-    private void communicateBadPointer( long result )
-    {
-        // TODO: The NO_NODE_FLAG being -1 generally conflicts with how GSPP results are built up,
-        // most notably -1 sets all bits to 1 and so any additional flags are overwritten.
-        // As a work-around we can for the time being check -1 explicitly before checking flags.
-
-        // TODO: include information on current page and perhaps path here
-        if ( result == TreeNode.NO_NODE_FLAG )
-        {
-            throw new IllegalStateException( "Generally uninitialized GSPP" );
-        }
-
-        if ( !GenSafePointerPair.isSuccess( result ) )
-        {
-            throw new IllegalStateException( GenSafePointerPair.failureDescription( result ) );
-        }
     }
 
     @Override

@@ -32,6 +32,7 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.contains;
 import static org.neo4j.index.bptree.ByteArrayPageCursor.wrap;
+import static org.neo4j.index.bptree.TreeNode.NO_NODE_FLAG;
 
 public class TreeNodeTest
 {
@@ -56,6 +57,10 @@ public class TreeNodeTest
         // THEN
         assertTrue( node.isLeaf( cursor ) );
         assertFalse( node.isInternal( cursor ) );
+        assertEquals( 0, node.keyCount( cursor ) );
+        assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -67,6 +72,10 @@ public class TreeNodeTest
         // THEN
         assertFalse( node.isLeaf( cursor ) );
         assertTrue( node.isInternal( cursor ) );
+        assertEquals( 0, node.keyCount( cursor ) );
+        assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     private void shouldSetAndGetKey() throws Exception
@@ -274,6 +283,19 @@ public class TreeNodeTest
         // THEN
         assertEquals( 123, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( 456, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+    }
+
+    @Test
+    public void shouldSetAndNewGen() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+
+        // WHEN
+        node.setNewGen( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
+
+        // THEN
+        assertEquals( 123, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
