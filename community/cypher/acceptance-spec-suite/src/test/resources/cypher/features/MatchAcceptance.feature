@@ -36,3 +36,25 @@ Feature: MatchAcceptance
       | pB                |
       | (:D {foo: 'bar'}) |
     And no side effects
+
+  Scenario: Filter with AND/OR
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:X   {foo: 1}),
+             (:Y   {foo: 2}),
+             (:Y   {id: 42, foo: 3}),
+             (:Y:X {id: 42, foo: 4})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      WHERE n:X OR (n:Y AND n.id = 42)
+      RETURN n.foo ORDER BY n.foo
+      """
+    Then the result should be:
+      | n.foo |
+      | 1     |
+      | 3     |
+      | 4     |
+    And no side effects

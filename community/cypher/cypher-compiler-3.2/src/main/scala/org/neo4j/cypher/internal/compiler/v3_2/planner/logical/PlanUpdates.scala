@@ -30,7 +30,8 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.{ContainerIndex, PathExpressi
 case object PlanUpdates
   extends LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] {
 
-  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean)
+                    (implicit context: LogicalPlanningContext): LogicalPlan = {
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
     val plan = if (firstPlannerQuery)
       Eagerness.headReadWriteEagerize(in, query)
@@ -159,8 +160,8 @@ case object PlanUpdates
     val producer = context.logicalPlanProducer
 
     //Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
-    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
-      context.config.leafPlanners)
+    val leafPlannerList = LeafPlannerList(IndexedSeq(mergeUniqueIndexSeekLeafPlanner))
+    val leafPlanners = PriorityLeafPlannerList(leafPlannerList, context.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =
       context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))

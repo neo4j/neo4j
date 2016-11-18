@@ -540,4 +540,49 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan shouldBe using[NodeIndexSeek]
   }
+
+  test("should be able to OR together two index seeks") {
+    val x = (new given {
+      indexOn("Awesome", "prop1")
+      indexOn("Awesome", "prop2")
+    } planFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n").plan
+
+    x should beLike {
+      case Aggregation(
+        Union(
+          NodeIndexSeek(
+            IdName("n"),
+            LabelToken("Awesome", _),
+            PropertyKeyToken("prop2", _),
+            SingleQueryExpression(StringLiteral("apa")), _),
+          NodeIndexSeek(
+            IdName("n"),
+            LabelToken("Awesome", _),
+            PropertyKeyToken("prop1", _),
+            SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _)),
+      _,
+      _)
+      => ()
+    }
+  }
+
+  test("should be able to OR together two label scans") {
+    val x = (new given {
+      knownLabels = Set("X", "Y")
+    } planFor "MATCH (n) WHERE n:X OR n:Y RETURN n").plan
+
+    x should beLike {
+      case Aggregation(
+        Union(
+          NodeByLabelScan(
+            IdName("n"),
+            LabelName("X"), _),
+          NodeByLabelScan(
+            IdName("n"),
+            LabelName("Y"), _)),
+      _,
+      _)
+      => ()
+    }
+  }
 }

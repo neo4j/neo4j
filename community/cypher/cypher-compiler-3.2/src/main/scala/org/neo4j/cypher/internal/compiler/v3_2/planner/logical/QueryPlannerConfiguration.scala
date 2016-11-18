@@ -26,6 +26,38 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.solveOption
 import org.neo4j.cypher.internal.compiler.v3_2.{UpdateStrategy, defaultUpdateStrategy}
 
 object QueryPlannerConfiguration {
+
+  private val leafPlanFromExpressions = IndexedSeq(
+    // MATCH (n) WHERE id(n) IN ... RETURN n
+    idSeekLeafPlanner,
+
+    // MATCH (n) WHERE n.prop IN ... RETURN n
+    uniqueIndexSeekLeafPlanner,
+
+    // MATCH (n) WHERE n.prop IN ... RETURN n
+    indexSeekLeafPlanner,
+
+    // MATCH (n) WHERE has(n.prop) RETURN n
+    // MATCH (n:Person) WHERE n.prop CONTAINS ...
+    indexScanLeafPlanner,
+
+    // MATCH (n:Person) RETURN n
+    labelScanLeafPlanner
+  )
+
+  val allLeafPlanners = leafPlanFromExpressions ++ IndexedSeq(
+    argumentLeafPlanner,
+
+    // MATCH (n) RETURN n
+    allNodesLeafPlanner,
+
+    // Legacy indices
+    legacyHintLeafPlanner,
+
+    // Handles OR between other leaf planners
+    OrLeafPlanner(leafPlanFromExpressions))
+
+
   val default: QueryPlannerConfiguration = QueryPlannerConfiguration(
     pickBestCandidate = pickBestPlanUsingHintsAndCost,
     applySelections = Selector(pickBestPlanUsingHintsAndCost,
@@ -38,31 +70,7 @@ object QueryPlannerConfiguration {
       applyOptional,
       outerHashJoin
     ),
-    leafPlanners = LeafPlannerList(
-      argumentLeafPlanner,
-
-      // MATCH (n) WHERE id(n) IN ... RETURN n
-      idSeekLeafPlanner,
-
-      // MATCH (n) WHERE n.prop IN ... RETURN n
-      uniqueIndexSeekLeafPlanner,
-
-      // MATCH (n) WHERE n.prop IN ... RETURN n
-      indexSeekLeafPlanner,
-
-      // MATCH (n) WHERE has(n.prop) RETURN n
-      // MATCH (n:Person) WHERE n.prop CONTAINS ...
-      indexScanLeafPlanner,
-
-      // MATCH (n:Person) RETURN n
-      labelScanLeafPlanner,
-
-      // MATCH (n) RETURN n
-      allNodesLeafPlanner,
-
-      // Legacy indices
-      legacyHintLeafPlanner
-    ),
+    leafPlanners = LeafPlannerList(allLeafPlanners),
   updateStrategy = defaultUpdateStrategy
   )
 }

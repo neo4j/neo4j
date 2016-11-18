@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{SingleQueryExpression, QueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
@@ -28,20 +29,58 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.notification.IndexLookupUnfulfillableNotification
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
+abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    implicit val semanticTable = context.semanticTable
-    val predicates: Seq[Expression] = qg.selections.flatPredicates
+  override def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+    val arguments: Set[Variable] = qg.argumentIds.map(n => Variable(n.name)(null))
     val labelPredicateMap: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
+    val hints = qg.hints
 
-    val resultPlans = collectPlans(predicates, qg.argumentIds, labelPredicateMap, qg.hints)
+    implicit val semanticTable = context.semanticTable
 
-    if (resultPlans.isEmpty) {
-      DynamicPropertyNotifier.process(findNonSeekableIdentifiers(predicates), IndexLookupUnfulfillableNotification, qg)
+    e match {
+      case predicate@AsPropertySeekable(seekable: PropertySeekable)
+        if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
+        val plans = producePlansFor(seekable.name, seekable.propertyKey, predicate,
+          seekable.args.asQueryExpression, labelPredicateMap, hints, qg.argumentIds)
+        maybeLeafPlans(seekable.name, plans)
+
+      // ... = n.prop
+      // In some rare cases, we can't rewrite these predicates cleanly,
+      // and so planning needs to search for these cases explicitly
+      case predicate@Equals(a, Property(seekable@Variable(name), propKeyName))
+        if a.dependencies.forall(arguments) && !arguments(seekable) =>
+        val expr = SingleQueryExpression(a)
+        val plans = producePlansFor(seekable.name, propKeyName, predicate, expr, labelPredicateMap, hints, qg.argumentIds)
+        maybeLeafPlans(seekable.name, plans)
+
+      // n.prop STARTS WITH "prefix%..."
+      case predicate@AsStringRangeSeekable(seekable) =>
+        val plans = producePlansFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate),
+          seekable.asQueryExpression, labelPredicateMap, hints, qg.argumentIds)
+        maybeLeafPlans(seekable.name, plans)
+
+      // n.prop <|<=|>|>= value
+      case predicate@AsValueRangeSeekable(seekable) =>
+        val plans = producePlansFor(seekable.name, seekable.propertyKeyName, predicate, seekable.asQueryExpression,
+          labelPredicateMap, hints, qg.argumentIds)
+        maybeLeafPlans(seekable.name, plans)
+
+      case _ =>
+        None
+    }
+  }
+
+  override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    val resultPlans = qg.selections.flatPredicates.flatMap {
+      e => producePlanFor(e, qg).toSeq.flatMap(_.plans)
     }
 
-    resultPlans.flatMap(_._2)
+    if (resultPlans.isEmpty) {
+      DynamicPropertyNotifier.process(findNonSeekableIdentifiers(qg.selections.flatPredicates), IndexLookupUnfulfillableNotification, qg)
+    }
+
+    resultPlans
   }
 
   protected def findNonSeekableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
@@ -71,7 +110,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       // n.prop IN [ ... ]
       case predicate@AsPropertySeekable(seekable: PropertySeekable)
         if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
-        (seekable.name, producePlanFor(seekable.name, seekable.propertyKey, predicate,
+        (seekable.name, producePlansFor(seekable.name, seekable.propertyKey, predicate,
           seekable.args.asQueryExpression, labelPredicateMap, hints, argumentIds))
 
       // ... = n.prop
@@ -80,26 +119,26 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       case predicate@Equals(a, Property(seekable@Variable(name), propKeyName))
         if a.dependencies.forall(arguments) && !arguments(seekable) =>
         val expr = SingleQueryExpression(a)
-        (seekable.name, producePlanFor(seekable.name, propKeyName, predicate,
+        (seekable.name, producePlansFor(seekable.name, propKeyName, predicate,
           expr, labelPredicateMap, hints, argumentIds))
 
       // n.prop STARTS WITH "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) =>
-        (seekable.name, producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate),
+        (seekable.name, producePlansFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate),
           seekable.asQueryExpression, labelPredicateMap, hints, argumentIds))
 
       // n.prop <|<=|>|>= value
       case predicate@AsValueRangeSeekable(seekable) =>
-        (seekable.name, producePlanFor(seekable.name, seekable.propertyKeyName, predicate,
+        (seekable.name, producePlansFor(seekable.name, seekable.propertyKeyName, predicate,
           seekable.asQueryExpression, labelPredicateMap, hints, argumentIds))
     }
   }
 
-  private def producePlanFor(name: String, propertyKeyName: PropertyKeyName,
-                             propertyPredicate: Expression, queryExpression: QueryExpression[Expression],
-                             labelPredicateMap: Map[IdName, Set[HasLabels]],
-                             hints: Set[Hint], argumentIds: Set[IdName])
-                            (implicit semanticTable: SemanticTable, context: LogicalPlanningContext): Set[LogicalPlan] = {
+  private def producePlansFor(name: String, propertyKeyName: PropertyKeyName,
+                              propertyPredicate: Expression, queryExpression: QueryExpression[Expression],
+                              labelPredicateMap: Map[IdName, Set[HasLabels]],
+                              hints: Set[Hint], argumentIds: Set[IdName])
+                             (implicit semanticTable: SemanticTable, context: LogicalPlanningContext): Set[LogicalPlan] = {
     val idName = IdName(name)
     for (labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
          labelName <- labelPredicate.labels;

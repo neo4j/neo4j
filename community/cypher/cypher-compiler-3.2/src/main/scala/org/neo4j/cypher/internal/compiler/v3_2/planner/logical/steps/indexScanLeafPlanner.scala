@@ -20,38 +20,48 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanner, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.notification.IndexLookupUnfulfillableNotification
 
-object indexScanLeafPlanner extends LeafPlanner {
-  override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
+
+  override def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     implicit val semanticTable = context.semanticTable
-    val predicates: Seq[Expression] = qg.selections.flatPredicates
     val lpp = context.logicalPlanProducer
 
-    val resultPlans = predicates.collect {
+    e match {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
       case predicate@Contains(prop@Property(Variable(name), propertyKey), expr) =>
-        produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _))
+        val plans = produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _))
+        maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
       case predicate@EndsWith(prop@Property(Variable(name), propertyKey), expr) =>
-        produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _))
+        val plans = produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _))
+        maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) =>
         val name = scannable.name
         val propertyKeyName = scannable.propertyKey.name
 
-        produce(name, propertyKeyName, qg, scannable.property, scannable.expr, lpp.planNodeIndexScan)
+        val plans = produce(name, propertyKeyName, qg, scannable.property, scannable.expr, lpp.planNodeIndexScan)
+        maybeLeafPlans(name, plans)
 
-    }.flatten
+      case _ =>
+        None
+    }
+  }
+
+  override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    val resultPlans = qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg).toSeq.flatMap(_.plans))
 
     if (resultPlans.isEmpty) {
-      DynamicPropertyNotifier.process(findNonScannableVariables(predicates), IndexLookupUnfulfillableNotification, qg)
+      DynamicPropertyNotifier.process(findNonScannableVariables(qg.selections.flatPredicates), IndexLookupUnfulfillableNotification, qg)
     }
 
     resultPlans
