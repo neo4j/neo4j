@@ -42,7 +42,7 @@ public class CypherQueriesIT extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
                 .payload( quotedJson(
-                        "{ 'statements': [ { 'statement': 'CYPHER runtime=compiled MATCH (n) RETURN n' } ] }" ) )
+                        "{ 'statements': [ { 'statement': 'CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n) RETURN n' } ] }" ) )
                 .post( getDataUri() + "transaction/commit" );
 
         // Then

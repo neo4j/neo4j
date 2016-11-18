@@ -179,7 +179,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
     //run with compiled to find new queries that are able to run with compiled runtime
     //we cannot set it to default at the db-level since we cannot combine compiled and rule
-    val idpResult = executeWithCostPlannerOnly(s"CYPHER runtime=compiled $queryText", params: _*)
+    val idpResult = executeWithCostPlannerOnly(s"CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse $queryText", params: _*)
 
     if (enableCompatibility) {
       assertResultsAreSame(compatibilityResult, idpResult, queryText, "Diverging results between compatibility and current")
@@ -257,7 +257,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     val compatibilityResult = innerExecute(s"CYPHER 2.3 $queryText", params: _*)
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
     val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
-    val compiledResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiled $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
+    val compiledResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
 
     assertResultsAreSame(interpretedResult, compiledResult, queryText, "Diverging results between interpreted and compiled runtime")
     assertResultsAreSame(compatibilityResult, interpretedResult, queryText, "Diverging results between compatibility and current")

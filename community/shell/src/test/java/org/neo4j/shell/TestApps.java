@@ -1179,7 +1179,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void shouldBeAbleToSwitchBetweenRuntimes() throws Exception
     {
-        executeCommand( "CYPHER runtime=compiled MATCH (n)-[:T]-(n) RETURN n;" );
+        executeCommand( "CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n)-[:T]-(n) RETURN n;" );
         executeCommand( "CYPHER runtime=interpreted MATCH (n)-[:T]-(n) RETURN n;" );
     }
 
