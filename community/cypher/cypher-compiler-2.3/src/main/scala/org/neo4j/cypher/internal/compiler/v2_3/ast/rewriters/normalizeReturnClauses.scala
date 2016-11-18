@@ -78,7 +78,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
         case exp: Expression if rewrites.contains(exp) => rewrites(exp).copyId
       }))
 
-      val introducedVariables = aliasProjection.map(_.identifier.name).toSet
+      val introducedVariables = if (ri.includeExisting) aliasProjection.map(_.identifier.name).toSet else Set.empty[String]
 
       Seq(
         With(distinct = distinct, returnItems = ri.copy(items = aliasProjection)(ri.position),
