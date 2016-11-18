@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
-import org.neo4j.causalclustering.catchup.tx.TxPollingClient;
+import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
@@ -188,7 +188,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         int maxBatchSize = config.get( CausalClusteringSettings.read_replica_transaction_applier_batch_size );
         BatchingTxApplier batchingTxApplier = new BatchingTxApplier( maxBatchSize,
                 dependencies.provideDependency( TransactionIdStore.class ),
-                writableCommitProcess, databaseHealthSupplier, platformModule.monitors, logProvider );
+                writableCommitProcess, platformModule.monitors, logProvider );
 
         DelayedRenewableTimeoutService txPullerTimeoutService =
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
@@ -235,11 +235,11 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
             } );
         }
 
-        TxPollingClient txPuller =
-                new TxPollingClient( logProvider, fileSystem, localDatabase, servicesToStopOnStoreCopy, storeFetcher,
+        CatchupPollingProcess txPuller =
+                new CatchupPollingProcess( logProvider, fileSystem, localDatabase, servicesToStopOnStoreCopy, storeFetcher,
                         catchUpClient, new ConnectToRandomCoreMember( discoveryService ), txPullerTimeoutService,
                         config.get( CausalClusteringSettings.pull_interval ), batchingTxApplier,
-                        platformModule.monitors, copiedStoreRecovery );
+                        platformModule.monitors, copiedStoreRecovery, databaseHealthSupplier );
 
         dependencies.satisfyDependencies( txPuller );
 

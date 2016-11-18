@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
 
-import org.neo4j.causalclustering.catchup.tx.TxPollingClient;
+import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -118,9 +118,9 @@ public class ReadReplica implements ClusterMember
         database = null;
     }
 
-    public TxPollingClient txPollingClient()
+    public CatchupPollingProcess txPollingClient()
     {
-        return database.getDependencyResolver().resolveDependency( TxPollingClient.class );
+        return database.getDependencyResolver().resolveDependency( CatchupPollingProcess.class );
     }
 
     @Override

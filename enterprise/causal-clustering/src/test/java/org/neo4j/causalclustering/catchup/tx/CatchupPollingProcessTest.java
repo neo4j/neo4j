@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
@@ -38,20 +39,29 @@ import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.causalclustering.catchup.tx.TxPollingClient.Timeouts.TX_PULLER_TIMEOUT;
+
+import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
+import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
+import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.TX_PULLING;
+import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timeouts.TX_PULLER_TIMEOUT;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-public class TxPollingClientTest
+public class CatchupPollingProcessTest
 {
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final CoreMemberSelectionStrategy serverSelection = mock( CoreMemberSelectionStrategy.class );
@@ -72,10 +82,10 @@ public class TxPollingClientTest
     }
     private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );
 
-    private final TxPollingClient txPuller =
-            new TxPollingClient( NullLogProvider.getInstance(), fs, localDatabase, startStopOnStoreCopy, storeFetcher,
+    private final CatchupPollingProcess txPuller =
+            new CatchupPollingProcess( NullLogProvider.getInstance(), fs, localDatabase, startStopOnStoreCopy, storeFetcher,
                     catchUpClient, serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
-                    copiedStoreRecovery );
+                    copiedStoreRecovery, () -> mock( DatabaseHealth.class) );
 
     @Before
     public void before() throws Throwable
@@ -120,26 +130,13 @@ public class TxPollingClientTest
     }
 
     @Test
-    public void shouldResetTxReceivedTimeoutOnTxReceived() throws Throwable
-    {
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
-
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
-        ArgumentCaptor<CatchUpResponseCallback> captor = ArgumentCaptor.forClass( CatchUpResponseCallback.class );
-
-        verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
-                captor.capture() );
-
-        captor.getValue().onTxPullResponse( null,
-                new TxPullResponse( storeId, mock( CommittedTransactionRepresentation.class ) ) );
-
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), times( 2 ) ).renew();
-    }
-
-    @Test
-    public void shouldRenewTxPullTimeoutOnTick() throws Throwable
+    public void shouldRenewTxPullTimeoutOnSuccessfulTxPulling() throws Throwable
     {
         // when
+        when( catchUpClient .makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any(CatchUpResponseCallback.class)))
+                .thenReturn( CatchupResult.SUCCESS_END_OF_STREAM );
+
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
@@ -147,24 +144,58 @@ public class TxPollingClientTest
     }
 
     @Test
-    public void shouldCopyStoreIfCatchUpClientFails() throws Throwable
+    public void nextStateShouldBeStoreCopyingIfRequestedTransactionHasBeenPrunedAway() throws Exception
+    {
+        // when
+        when( catchUpClient.makeBlockingRequest(
+                any( MemberId.class ), any( TxPullRequest.class ), any( CatchUpResponseCallback.class ) ) )
+                .thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
+
+        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+
+        // then
+        assertEquals( STORE_COPYING, txPuller.state() );
+    }
+
+    @Test
+    public void nextStateShouldBeTxPullingAfterASuccessfulStoreCopy() throws Throwable
     {
         // given
         when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) ).thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
 
-        // when
+        // when (tx pull)
+        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+
+        // when (store copy)
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).cancel();
         verify( localDatabase ).stop();
         verify( startStopOnStoreCopy ).stop();
         verify( storeFetcher ).copyStore( any( MemberId.class ), eq( storeId ), any( File.class ) );
         verify( localDatabase ).start();
         verify( startStopOnStoreCopy ).start();
         verify( txApplier ).refreshFromNewStore();
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ),
-                times( 2 ) /* at the beginning and after store copy */ ).renew();
+
+        // then
+        assertEquals( TX_PULLING, txPuller.state() );
+    }
+
+    @Test
+    public void shouldNotRenewTheTimeoutIfInPanicState() throws Exception
+    {
+        // given
+        CatchUpResponseCallback callback = mock( CatchUpResponseCallback.class );
+
+        doThrow( new RuntimeException( "Panic all the things" ) ).when( callback )
+                .onTxPullResponse( any( CompletableFuture.class ), any( TxPullResponse.class ) );
+
+        // when
+        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+
+        // then
+        assertEquals( PANIC, txPuller.state() );
+        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), never() ).renew();
     }
 }

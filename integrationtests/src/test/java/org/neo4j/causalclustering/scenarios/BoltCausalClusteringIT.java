@@ -525,7 +525,7 @@ public class BoltCausalClusteringIT
     }
 
     @Test
-    public void shouldUseBookmarkFromAWriteSessionInAReadSession() throws Exception
+    public void shouldUseBookmarkFromAWriteSessionInAReadSession() throws Throwable
     {
         // given
         cluster = clusterRule.withNumberOfReadReplicas( 1 ).startCluster();
@@ -533,7 +533,7 @@ public class BoltCausalClusteringIT
         CoreClusterMember leader = cluster.awaitLeader();
         ReadReplica readReplica = cluster.getReadReplicaById( 0 );
 
-        readReplica.txPollingClient().pause();
+        readReplica.txPollingClient().stop();
 
         Driver driver = GraphDatabase.driver( leader.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
@@ -552,7 +552,7 @@ public class BoltCausalClusteringIT
         } );
 
         assertNotNull( bookmark );
-        readReplica.txPollingClient().resume();
+        readReplica.txPollingClient().start();
 
         driver = GraphDatabase.driver( readReplica.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
