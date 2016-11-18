@@ -28,6 +28,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.logging.Log;
@@ -175,18 +176,10 @@ public class LuceneLabelScanStore implements LabelScanStore
             // neostore has been properly started.
             monitor.rebuilding();
             log.info( "Rebuilding lucene scan store, this may take a while" );
-            long numberOfNodes = rebuild();
+            long numberOfNodes = LabelScanStoreProvider.rebuild( this, fullStoreStream );
             monitor.rebuilt( numberOfNodes );
             log.info( "Lucene scan store rebuilt (roughly " + numberOfNodes + " nodes)" );
             needsRebuild = false;
-        }
-    }
-
-    private long rebuild() throws IOException
-    {
-        try ( LabelScanWriter writer = newWriter() )
-        {
-            return fullStoreStream.applyTo( writer );
         }
     }
 
@@ -202,7 +195,7 @@ public class LuceneLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public LabelScanWriter newWriter()
+    public LabelScanWriter newWriter( boolean batching )
     {
         return luceneIndex.getLabelScanWriter();
     }
