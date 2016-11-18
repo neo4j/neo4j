@@ -161,7 +161,7 @@ public class TxPollingClientTest
         verify( localDatabase ).stop();
         verify( startStopOnStoreCopy ).stop();
         verify( storeFetcher ).copyStore( any( MemberId.class ), eq( storeId ), any( File.class ) );
-        verify( localDatabase ).start();
+        verify( localDatabase, times(2) ).start();
         verify( startStopOnStoreCopy ).start();
         verify( txApplier ).refreshFromNewStore();
         verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ),
