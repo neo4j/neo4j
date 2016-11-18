@@ -21,6 +21,8 @@ package org.neo4j.index.bptree;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
+
 import static org.neo4j.index.bptree.GenSafePointer.MIN_GENERATION;
 import static org.neo4j.index.bptree.GenSafePointer.checksumOf;
 import static org.neo4j.index.bptree.GenSafePointer.readChecksum;
@@ -35,15 +37,11 @@ public class GenSafePointerPair
     // - invalid = broken or crash gen
     // - valid = correct checksum and not empty
 
-    public static final long POINTER_UNDECIDED_SAME_GENERATION = -2;
-    public static final long POINTER_UNDECIDED_NONE_CORRECT = -3;
-    public static final long POINTER_UNDECIDED_BOTH_EMPTY = -4;
-
-    public static final byte STABLE = 0;
-    public static final byte UNSTABLE = 1;
-    public static final byte CRASH = 2;
-    public static final byte BROKEN = 3;
-    public static final byte EMPTY = 4;
+    static final byte STABLE = 0;
+    static final byte UNSTABLE = 1;
+    static final byte CRASH = 2;
+    static final byte BROKEN = 3;
+    static final byte EMPTY = 4;
 
     // todo make nice
     // [    ,    ][    ,    ][    ,    ][    ,    ]  [    ,    ][    ,    ][    ,    ][    ,    ]
@@ -61,23 +59,30 @@ public class GenSafePointerPair
     // WRITE IF FAIL
     // state of A and B, generation comparison between A and B
 
-    private static final long SUCCESS      = 0x00000000_00000000L;
-    private static final long FAIL         = 0x80000000_00000000L;
-    private static final long READ         = 0x00000000_00000000L;
-    private static final long WRITE        = 0x40000000_00000000L;
-    private static final long GEN_EQUAL    = 0x00000000_00000000L;
-    private static final long GEN_A_BIG    = 0x10000000_00000000L;
-    private static final long GEN_B_BIG    = 0x20000000_00000000L;
-    private static final long WRITE_TO_A   = 0x00000000_00000000L;
-    private static final long WRITE_TO_B   = 0x00200000_00000000L;
-    private static final int STATE_SHIFT_A = 60;
-    private static final int STATE_SHIFT_B = 57;
+    static final long SUCCESS      = 0x00000000_00000000L;
+    static final long FAIL         = 0x80000000_00000000L;
+    static final long READ         = 0x00000000_00000000L;
+    static final long WRITE        = 0x40000000_00000000L;
+    static final long GEN_EQUAL    = 0x00000000_00000000L;
+    static final long GEN_A_BIG    = 0x10000000_00000000L;
+    static final long GEN_B_BIG    = 0x20000000_00000000L;
+    static final long WRITE_TO_A   = 0x00000000_00000000L;
+    static final long WRITE_TO_B   = 0x00200000_00000000L;
+    static final int STATE_SHIFT_A = 57;
+    static final int STATE_SHIFT_B = 54;
 
-    private static final long SUCCESS_WRITE_TO_B = SUCCESS | WRITE | WRITE_TO_B; // Aggregation
-    private static final long SUCCESS_WRITE_TO_A = SUCCESS | WRITE | WRITE_TO_A; // Aggregation
+    // Aggregations
+    static final long SUCCESS_WRITE_TO_B = SUCCESS | WRITE | WRITE_TO_B;
+    static final long SUCCESS_WRITE_TO_A = SUCCESS | WRITE | WRITE_TO_A;
+    static final long SUCCESS_MASK  = SUCCESS | FAIL;
+    static final long READ_OR_WRITE_MASK = READ | WRITE;
+    static final long WRITE_TO_MASK = WRITE_TO_A | WRITE_TO_B;
+    static final long STATE_MASK = 0x7; // After shift
+    static final long GEN_COMPARISON_MASK = GEN_EQUAL | GEN_A_BIG | GEN_B_BIG;
 
-    private static final long SUCCESS_MASK  = SUCCESS | FAIL;
-    private static final long WRITE_TO_MASK = WRITE_TO_A | WRITE_TO_B;
+    static final String GEN_COMPARISON_NAME_B_BIG = "A < B";
+    static final String GEN_COMPARISON_NAME_A_BIG = "A > B";
+    static final String GEN_COMPARISON_NAME_EQUAL = "A == B";
 
     /**
      * @param cursor {@link PageCursor} to read from.
@@ -381,6 +386,75 @@ public class GenSafePointerPair
 
     public static boolean isSuccess( long result )
     {
-        return (result & SUCCESS_MASK) == 0;
+        return (result & SUCCESS_MASK) == SUCCESS;
+    }
+
+    /**
+     * Calling {@link #read(PageCursor, int, int)} (potentially also {@link #write(PageCursor, long, int, int)})
+     * can fail due to seeing an unexpected state of the two GSPs. Failing right there and then isn't an option
+     * due to how the page cache works and that something read from a {@link PageCursor} must not be interpreted
+     * until after passing a {@link PageCursor#shouldRetry()} returning {@code false}. This creates a need for
+     * including failure information in result returned from these methods so that, if failed, can have
+     * the caller which interprets the result fail in a proper place. That place can make use of this method
+     * by getting a human-friendly description about the failure.
+     *
+     * @param result result from {@link #read(PageCursor, int, int)} or
+     * {@link #write(PageCursor, long, int, int)}.
+     * @return a human-friendly description of the failure.
+     */
+    public static String failureDescription( long result )
+    {
+        StringBuilder builder =
+                new StringBuilder( "GSPP " + (isRead( result ) ? "READ" : "WRITE") + " failure" );
+        builder.append( format( "%n  Pointer state A: %s",
+                pointerStateName( pointerStateFromResult( result, STATE_SHIFT_A ) ) ) );
+        builder.append( format( "%n  Pointer state B: %s",
+                pointerStateName( pointerStateFromResult( result, STATE_SHIFT_B ) ) ) );
+        builder.append( format( "%n  Generations: " + generationComparisonFromResult( result ) ) );
+        return builder.toString();
+    }
+
+    static String generationComparisonFromResult( long result )
+    {
+        long bits = result & GEN_COMPARISON_MASK;
+        if ( bits == GEN_EQUAL )
+        {
+            return GEN_COMPARISON_NAME_EQUAL;
+        }
+        else if ( bits == GEN_A_BIG )
+        {
+            return GEN_COMPARISON_NAME_A_BIG;
+        }
+        else if ( bits == GEN_B_BIG )
+        {
+            return GEN_COMPARISON_NAME_B_BIG;
+        }
+        else
+        {
+            return "Unknown[" + bits + "]";
+        }
+    }
+
+    static String pointerStateName( byte pointerState )
+    {
+        switch ( pointerState )
+        {
+        case STABLE: return "STABLE";
+        case UNSTABLE: return "UNSTABLE";
+        case CRASH: return "CRASH";
+        case BROKEN: return "BROKEN";
+        case EMPTY: return "EMPTY";
+        default: return "Unknown[" + pointerState + "]";
+        }
+    }
+
+    static byte pointerStateFromResult( long result, int shift )
+    {
+        return (byte) ((result >>> shift) & STATE_MASK);
+    }
+
+    static boolean isRead( long result )
+    {
+        return (result & READ_OR_WRITE_MASK) == READ;
     }
 }

@@ -23,10 +23,28 @@ import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.index.bptree.GenSafePointerPair.BROKEN;
+import static org.neo4j.index.bptree.GenSafePointerPair.CRASH;
+import static org.neo4j.index.bptree.GenSafePointerPair.EMPTY;
+import static org.neo4j.index.bptree.GenSafePointerPair.GEN_COMPARISON_MASK;
+import static org.neo4j.index.bptree.GenSafePointerPair.READ;
+import static org.neo4j.index.bptree.GenSafePointerPair.READ_OR_WRITE_MASK;
+import static org.neo4j.index.bptree.GenSafePointerPair.STABLE;
+import static org.neo4j.index.bptree.GenSafePointerPair.STATE_SHIFT_A;
+import static org.neo4j.index.bptree.GenSafePointerPair.STATE_SHIFT_B;
+import static org.neo4j.index.bptree.GenSafePointerPair.UNSTABLE;
+import static org.neo4j.index.bptree.GenSafePointerPair.WRITE;
+import static org.neo4j.index.bptree.GenSafePointerPair.failureDescription;
+import static org.neo4j.index.bptree.GenSafePointerPair.isRead;
+import static org.neo4j.index.bptree.GenSafePointerPair.pointerStateFromResult;
+import static org.neo4j.index.bptree.GenSafePointerPair.pointerStateName;
 
 public class GenSafePointerPairTest
 {
@@ -36,15 +54,22 @@ public class GenSafePointerPairTest
     private static final int OLDER_CRASH_GENERATION = 3;
     private static final int CRASH_GENERATION = 4;
     private static final int UNSTABLE_GENERATION = 5;
-    private static final long EMPTY = 0L;
+    private static final long EMPTY_POINTER = 0L;
 
     private static final long POINTER_A = 5;
     private static final long POINTER_B = 6;
     private static final long WRITTEN_POINTER = 10;
 
+    private static final int EXPECTED_GEN_DISREGARD = -2;
+    private static final int EXPECTED_GEN_B_BIG = -1;
+    private static final int EXPECTED_GEN_EQUAL = 0;
+    private static final int EXPECTED_GEN_A_BIG = 1;
+
+    private static final boolean SLOT_A = true;
+    private static final boolean SLOT_B = false;
+
     private final PageCursor cursor = ByteArrayPageCursor.wrap( new byte[PAGE_SIZE] );
 
-    // todo Unexpected state
     @Test
     public void readEmptyEmptyShouldFail() throws Exception
     {
@@ -52,7 +77,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, EMPTY, EMPTY );
     }
 
     @Test
@@ -62,9 +87,9 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_A, written );
         assertEquals( WRITTEN_POINTER, readSlotA() );
-        assertEquals( EMPTY, readSlotB() );
+        assertEquals( EMPTY_POINTER, readSlotB() );
     }
 
     @Test
@@ -77,7 +102,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_B, result );
+        assertReadSuccess( POINTER_B, result );
     }
 
     @Test
@@ -90,8 +115,8 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
-        assertEquals( EMPTY, readSlotA() );
+        assertWriteSuccess( SLOT_B, written );
+        assertEquals( EMPTY_POINTER, readSlotA() );
         assertEquals( WRITTEN_POINTER, readSlotB() );
     }
 
@@ -105,7 +130,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_B, result );
+        assertReadSuccess( POINTER_B, result );
     }
 
     @Test
@@ -118,7 +143,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_A, written );
         assertEquals( WRITTEN_POINTER, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -133,10 +158,9 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, EMPTY, CRASH );
     }
 
-    // todo Unexpected state
     @Test
     public void writeEmptyCrashShouldFail() throws Exception
     {
@@ -147,10 +171,12 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
-        assertEquals( EMPTY, readSlotA() );
+        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, EMPTY, CRASH );
+        assertEquals( EMPTY_POINTER, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
+
+    // TODO: On all writes, verify slot result
 
     @Test
     public void readEmptyBrokenShouldFail() throws Exception
@@ -162,7 +188,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, EMPTY, BROKEN );
     }
 
     @Test
@@ -175,8 +201,8 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
-        assertEquals( EMPTY, readSlotA() );
+        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, EMPTY, BROKEN );
+        assertEquals( EMPTY_POINTER, readSlotA() );
         assertBrokenB();
     }
 
@@ -190,7 +216,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_A, result );
+        assertReadSuccess( POINTER_A, result );
     }
 
     @Test
@@ -203,9 +229,9 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_A, written );
         assertEquals( WRITTEN_POINTER, readSlotA() );
-        assertEquals( EMPTY, readSlotB() );
+        assertEquals( EMPTY_POINTER, readSlotB() );
     }
 
     @Test
@@ -219,10 +245,9 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_EQUAL, UNSTABLE, UNSTABLE );
     }
 
-    // todo Unexpected state
     @Test
     public void writeUnstableUnstableShouldFail() throws Exception
     {
@@ -234,7 +259,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_EQUAL, UNSTABLE, UNSTABLE );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -250,7 +275,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_A_BIG, UNSTABLE, CRASH );
     }
 
     @Test
@@ -264,7 +289,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_A_BIG, UNSTABLE, CRASH );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -280,7 +305,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, UNSTABLE, BROKEN );
     }
 
     @Test
@@ -294,7 +319,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, UNSTABLE, BROKEN );
         assertEquals( POINTER_A, readSlotA() );
         assertBrokenB();
     }
@@ -309,7 +334,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_A, result );
+        assertReadSuccess( POINTER_A, result );
     }
 
     @Test
@@ -322,7 +347,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_B, written );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( WRITTEN_POINTER, readSlotB() );
     }
@@ -338,7 +363,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_B, result );
+        assertReadSuccess( POINTER_B, result );
     }
 
     @Test
@@ -352,7 +377,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_B, written );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( WRITTEN_POINTER, readSlotB() );
     }
@@ -368,10 +393,9 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_EQUAL, STABLE, STABLE );
     }
 
-    // todo Unexpected state
     @Test
     public void writeStableStableShouldFail() throws Exception
     {
@@ -383,7 +407,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_EQUAL, STABLE, STABLE );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -399,7 +423,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_A, result );
+        assertReadSuccess( POINTER_A, result );
     }
 
     @Test
@@ -413,7 +437,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_B, written );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( WRITTEN_POINTER, readSlotB() );
     }
@@ -429,7 +453,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_B, result );
+        assertReadSuccess( POINTER_B, result );
     }
 
     @Test
@@ -443,7 +467,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_A, written );
         assertEquals( WRITTEN_POINTER, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -459,7 +483,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_A, result );
+        assertReadSuccess( POINTER_A, result );
     }
 
     @Test
@@ -473,7 +497,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_B, written );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( WRITTEN_POINTER, readSlotB() );
     }
@@ -489,7 +513,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_A, result );
+        assertReadSuccess( POINTER_A, result );
     }
 
     @Test
@@ -503,7 +527,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_B, written );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( WRITTEN_POINTER, readSlotB() );
     }
@@ -518,10 +542,9 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, CRASH, EMPTY );
     }
 
-    // todo Unexpected state
     @Test
     public void writeCrashEmptyShouldFail() throws Exception
     {
@@ -532,12 +555,11 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, CRASH, EMPTY );
         assertEquals( POINTER_A, readSlotA() );
-        assertEquals( EMPTY, readSlotB() );
+        assertEquals( EMPTY_POINTER, readSlotB() );
     }
 
-    // todo Unexpected state
     @Test
     public void readCrashUnstableShouldFail() throws Exception
     {
@@ -549,10 +571,9 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_B_BIG, CRASH, UNSTABLE );
     }
 
-    // todo Unexpected state
     @Test
     public void writeCrashUnstableShouldFail() throws Exception
     {
@@ -564,7 +585,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_B_BIG, CRASH, UNSTABLE );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -580,7 +601,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_B, result );
+        assertReadSuccess( POINTER_B, result );
     }
 
     @Test
@@ -594,7 +615,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_A, written );
         assertEquals( WRITTEN_POINTER, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -610,7 +631,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_EQUAL, CRASH, CRASH );
     }
 
     @Test
@@ -624,7 +645,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_EQUAL, CRASH, CRASH );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -640,7 +661,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_A_BIG, CRASH, CRASH );
     }
 
     @Test
@@ -654,7 +675,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_A_BIG, CRASH, CRASH );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -670,7 +691,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_B_BIG, CRASH, CRASH );
     }
 
     @Test
@@ -684,7 +705,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_B_BIG, CRASH, CRASH );
         assertEquals( POINTER_A, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -700,7 +721,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, CRASH, BROKEN );
     }
 
     @Test
@@ -714,7 +735,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, CRASH, BROKEN );
         assertEquals( POINTER_A, readSlotA() );
         assertBrokenB();
     }
@@ -729,10 +750,9 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, BROKEN, EMPTY );
     }
 
-    // todo Unexpected state
     @Test
     public void writeBrokenEmptyShouldFail() throws Exception
     {
@@ -743,9 +763,9 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, BROKEN, EMPTY );
         assertBrokenA();
-        assertEquals( EMPTY, readSlotB() );
+        assertEquals( EMPTY_POINTER, readSlotB() );
     }
 
     @Test
@@ -759,7 +779,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, BROKEN, UNSTABLE );
     }
 
     @Test
@@ -773,7 +793,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, BROKEN, UNSTABLE );
         assertBrokenA();
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -789,7 +809,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertEquals( POINTER_B, result );
+        assertReadSuccess( POINTER_B, result );
     }
 
     @Test
@@ -803,7 +823,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertSuccess( written );
+        assertWriteSuccess( SLOT_A, written );
         assertEquals( WRITTEN_POINTER, readSlotA() );
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -819,7 +839,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, BROKEN, CRASH );
     }
 
     @Test
@@ -833,7 +853,7 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, BROKEN, CRASH );
         assertBrokenA();
         assertEquals( POINTER_B, readSlotB() );
     }
@@ -849,7 +869,7 @@ public class GenSafePointerPairTest
         long result = read();
 
         // THEN
-        assertFail( result );
+        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, BROKEN, BROKEN );
     }
 
     @Test
@@ -863,9 +883,56 @@ public class GenSafePointerPairTest
         long written = write( WRITTEN_POINTER );
 
         // THEN
-        assertFail( written );
+        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, BROKEN, BROKEN );
         assertBrokenA();
         assertBrokenB();
+    }
+
+    private void assertFailure( long result, long readOrWrite, int genComparison,
+            byte pointerStateA, byte pointerStateB )
+    {
+        assertFalse( GenSafePointerPair.isSuccess( result ) );
+
+        // Raw failure bits
+        assertEquals( readOrWrite, result & READ_OR_WRITE_MASK );
+        if ( genComparison != EXPECTED_GEN_DISREGARD )
+        {
+            assertEquals( genComparisonBits( genComparison ), result & GEN_COMPARISON_MASK );
+        }
+        assertEquals( pointerStateA, pointerStateFromResult( result, STATE_SHIFT_A ) );
+        assertEquals( pointerStateB, pointerStateFromResult( result, STATE_SHIFT_B ) );
+
+        // Failure description
+        String failureDescription = failureDescription( result );
+        assertThat( failureDescription, containsString( isRead( result ) ? "READ" : "WRITE" ) );
+        if ( genComparison != EXPECTED_GEN_DISREGARD )
+        {
+            assertThat( failureDescription, containsString( genComparisonName( genComparison ) ) );
+        }
+        assertThat( failureDescription, containsString( pointerStateName( pointerStateA ) ) );
+        assertThat( failureDescription, containsString( pointerStateName( pointerStateB ) ) );
+    }
+
+    private String genComparisonName( int genComparison )
+    {
+        switch ( genComparison )
+        {
+        case EXPECTED_GEN_B_BIG: return GenSafePointerPair.GEN_COMPARISON_NAME_B_BIG;
+        case EXPECTED_GEN_EQUAL: return GenSafePointerPair.GEN_COMPARISON_NAME_EQUAL;
+        case EXPECTED_GEN_A_BIG: return GenSafePointerPair.GEN_COMPARISON_NAME_A_BIG;
+        default: throw new UnsupportedOperationException( String.valueOf( genComparison ) );
+        }
+    }
+
+    private long genComparisonBits( int genComparison )
+    {
+        switch ( genComparison )
+        {
+        case EXPECTED_GEN_B_BIG: return GenSafePointerPair.GEN_B_BIG;
+        case EXPECTED_GEN_EQUAL: return GenSafePointerPair.GEN_EQUAL;
+        case EXPECTED_GEN_A_BIG: return GenSafePointerPair.GEN_A_BIG;
+        default: throw new UnsupportedOperationException( String.valueOf( genComparison ) );
+        }
     }
 
     private long readSlotA()
@@ -965,8 +1032,17 @@ public class GenSafePointerPairTest
         assertTrue( GenSafePointerPair.isSuccess( result ) );
     }
 
-    private void assertFail( long result )
+    private void assertWriteSuccess( boolean expectedSlot, long result )
     {
-        assertFalse( GenSafePointerPair.isSuccess( result ) );
+        assertSuccess( result );
+        boolean actuallyWrittenSlot =
+                (result & GenSafePointerPair.WRITE_TO_MASK) == GenSafePointerPair.WRITE_TO_A ? SLOT_A : SLOT_B;
+        assertEquals( expectedSlot, actuallyWrittenSlot );
+    }
+
+    private void assertReadSuccess( long expectedPointer, long result )
+    {
+        assertSuccess( result );
+        assertEquals( result, expectedPointer );
     }
 }

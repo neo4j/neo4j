@@ -292,14 +292,14 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             throw new IllegalStateException( "Generally uninitialized GSPP" );
         }
-        if ( signal == GenSafePointerPair.POINTER_UNDECIDED_SAME_GENERATION )
-        {
-            throw new IllegalStateException( "Undecided GSPP due to same generation" );
-        }
-        if ( signal == GenSafePointerPair.POINTER_UNDECIDED_NONE_CORRECT )
-        {
-            throw new IllegalStateException( "Undecided GSPP due to none being correct" );
-        }
+//        if ( signal == GenSafePointerPair.POINTER_UNDECIDED_SAME_GENERATION )
+//        {
+//            throw new IllegalStateException( "Undecided GSPP due to same generation" );
+//        }
+//        if ( signal == GenSafePointerPair.POINTER_UNDECIDED_NONE_CORRECT )
+//        {
+//            throw new IllegalStateException( "Undecided GSPP due to none being correct" );
+//        }
         throw new IllegalStateException( "Unknown signal " + signal );
     }
 
