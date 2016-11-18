@@ -258,10 +258,7 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 // TODO perhaps detect being too far to the left and so follow right siblings,
                 // to reduce unnecessary seek in leafs (concurrent splits would be the cause)
 
-                if ( childId < 0 )
-                {
-                    communicateUndecidedPointer( childId );
-                }
+                communicateBadPointer( childId );
 
                 if ( !cursor.next( childId ) )
                 {
@@ -285,22 +282,22 @@ public class BPTreeIndex<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      * Arriving here is actually quite bad is it signals some sort of inconsistency/corruption in the tree.
      * TODO Can we do something here, repair perhaps?
      */
-    private void communicateUndecidedPointer( long signal )
+    private void communicateBadPointer( long result )
     {
+        // TODO: The NO_NODE_FLAG being -1 generally conflicts with how GSPP results are built up,
+        // most notably -1 sets all bits to 1 and so any additional flags are overwritten.
+        // As a work-around we can for the time being check -1 explicitly before checking flags.
+
         // TODO: include information on current page and perhaps path here
-        if ( signal == TreeNode.NO_NODE_FLAG )
+        if ( result == TreeNode.NO_NODE_FLAG )
         {
             throw new IllegalStateException( "Generally uninitialized GSPP" );
         }
-//        if ( signal == GenSafePointerPair.POINTER_UNDECIDED_SAME_GENERATION )
-//        {
-//            throw new IllegalStateException( "Undecided GSPP due to same generation" );
-//        }
-//        if ( signal == GenSafePointerPair.POINTER_UNDECIDED_NONE_CORRECT )
-//        {
-//            throw new IllegalStateException( "Undecided GSPP due to none being correct" );
-//        }
-        throw new IllegalStateException( "Unknown signal " + signal );
+
+        if ( !GenSafePointerPair.isSuccess( result ) )
+        {
+            throw new IllegalStateException( GenSafePointerPair.failureDescription( result ) );
+        }
     }
 
     @Override
