@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{Pattern, ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.RelationshipSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
@@ -30,9 +31,11 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 
+import scala.collection.JavaConverters._
 import scala.collection.Map
 
-case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty) extends Expression {
+case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty,
+                                  withFallBack: Boolean = false) extends Expression {
   val pathPattern: Seq[Pattern] = Seq(shortestPathPattern)
   val pathVariables = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
 
@@ -74,7 +77,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
           incomingCtx += shortestPathPattern.pathName -> path
           incomingCtx += shortestPathPattern.relIterator.get -> path.relationships()
           predicate.isTrue(incomingCtx)
-      }
+      } && (!withFallBack || RelationshipSupport.areRelationshipsUnique(path.relationships.asScala.toList))
     }
 
   private def getEndPoint(m: Map[String, Any], start: SingleNode): Node = m.getOrElse(start.name,
