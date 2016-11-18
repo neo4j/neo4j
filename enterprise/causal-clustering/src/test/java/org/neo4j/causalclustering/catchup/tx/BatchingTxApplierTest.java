@@ -59,7 +59,7 @@ public class BatchingTxApplierTest
     private final int maxBatchSize = 16;
 
     private final BatchingTxApplier txApplier = new BatchingTxApplier( maxBatchSize, () -> idStore, () -> commitProcess,
-            () -> dbHealth, new Monitors(), NullLogProvider.getInstance() );
+            new Monitors(), NullLogProvider.getInstance() );
 
     @Before
     public void before() throws Throwable
@@ -136,20 +136,6 @@ public class BatchingTxApplierTest
         assertTransactionsCommitted( startTxId + 1, maxBatchSize );
     }
 
-    @Test
-    public void shouldPanicIfTransactionFailsToApply() throws Throwable
-    {
-        // given
-        doThrow( Exception.class ).when( commitProcess ).commit( any(), any(), any() );
-        txApplier.queue( createTxWithId( startTxId + 1 ) );
-
-        // when
-        txApplier.applyBatch();
-
-        // then
-        verify( dbHealth ).panic( any() );
-    }
-
     @Test( timeout = 3_000 )
     public void shouldGiveUpQueueingOnStop() throws Throwable
     {
@@ -167,7 +153,14 @@ public class BatchingTxApplierTest
             public void run()
             {
                 latch.countDown();
-                txApplier.queue( createTxWithId( startTxId + maxBatchSize + 1 ) );
+                try
+                {
+                    txApplier.queue( createTxWithId( startTxId + maxBatchSize + 1 ) );
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         };
 

@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -43,7 +42,6 @@ public class BatchingTxApplier extends LifecycleAdapter
     private final int maxBatchSize;
     private final Supplier<TransactionIdStore> txIdStoreSupplier;
     private final Supplier<TransactionCommitProcess> commitProcessSupplier;
-    private final Supplier<DatabaseHealth> healthSupplier;
 
     private final PullRequestMonitor monitor;
     private final Log log;
@@ -55,13 +53,12 @@ public class BatchingTxApplier extends LifecycleAdapter
     private volatile boolean stopped;
 
     public BatchingTxApplier( int maxBatchSize, Supplier<TransactionIdStore> txIdStoreSupplier,
-            Supplier<TransactionCommitProcess> commitProcessSupplier, Supplier<DatabaseHealth> healthSupplier,
+            Supplier<TransactionCommitProcess> commitProcessSupplier,
             Monitors monitors, LogProvider logProvider )
     {
         this.maxBatchSize = maxBatchSize;
         this.txIdStoreSupplier = txIdStoreSupplier;
         this.commitProcessSupplier = commitProcessSupplier;
-        this.healthSupplier = healthSupplier;
         this.log = logProvider.getLog( getClass() );
         this.monitor = monitors.newMonitor( PullRequestMonitor.class );
     }
@@ -71,8 +68,7 @@ public class BatchingTxApplier extends LifecycleAdapter
     {
         stopped = false;
         refreshFromNewStore();
-        txQueue =
-                new TransactionQueue( maxBatchSize, ( first, last ) -> commitProcess.commit( first, NULL, EXTERNAL ) );
+        txQueue = new TransactionQueue( maxBatchSize, ( first, last ) -> commitProcess.commit( first, NULL, EXTERNAL ) );
     }
 
     @Override
@@ -84,19 +80,8 @@ public class BatchingTxApplier extends LifecycleAdapter
     void refreshFromNewStore()
     {
         assert txQueue == null || txQueue.isEmpty();
-        resetLastQueuedTxId();
-        commitProcess = commitProcessSupplier.get();
-    }
-
-    public void emptyQueueAndResetLastQueuedTxId()
-    {
-        applyBatch();
-        resetLastQueuedTxId();
-    }
-
-    private void resetLastQueuedTxId()
-    {
         lastQueuedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
+        commitProcess = commitProcessSupplier.get();
     }
 
     /**
@@ -104,7 +89,7 @@ public class BatchingTxApplier extends LifecycleAdapter
      *
      * @param tx The transaction to be queued for application.
      */
-    public void queue( CommittedTransactionRepresentation tx )
+    public void queue( CommittedTransactionRepresentation tx ) throws Exception
     {
         long receivedTxId = tx.getCommitEntry().getTxId();
         long expectedTxId = lastQueuedTxId + 1;
@@ -115,15 +100,7 @@ public class BatchingTxApplier extends LifecycleAdapter
             return;
         }
 
-        try
-        {
-            txQueue.queue( new TransactionToApply( tx.getTransactionRepresentation(), receivedTxId ) );
-        }
-        catch ( Exception e )
-        {
-            log.error( "Error while queueing transaction", e );
-            healthSupplier.get().panic( e );
-        }
+        txQueue.queue( new TransactionToApply( tx.getTransactionRepresentation(), receivedTxId ) );
 
         if ( !stopped )
         {
@@ -132,17 +109,9 @@ public class BatchingTxApplier extends LifecycleAdapter
         }
     }
 
-    void applyBatch()
+    void applyBatch() throws Exception
     {
-        try
-        {
-            txQueue.empty();
-        }
-        catch ( Exception e )
-        {
-            log.error( "Error during transaction application", e );
-            healthSupplier.get().panic( e );
-        }
+        txQueue.empty();
     }
 
     /**
