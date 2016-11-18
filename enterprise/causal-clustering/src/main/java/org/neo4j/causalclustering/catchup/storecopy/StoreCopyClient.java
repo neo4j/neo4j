@@ -28,14 +28,18 @@ import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class StoreCopyClient
 {
     private final CatchUpClient catchUpClient;
+    private final Log log;
 
-    public StoreCopyClient( CatchUpClient catchUpClient )
+    public StoreCopyClient( CatchUpClient catchUpClient, LogProvider logProvider )
     {
         this.catchUpClient = catchUpClient;
+        log = logProvider.getLog( getClass() );
     }
 
     long copyStoreFiles( MemberId from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
@@ -68,6 +72,7 @@ public class StoreCopyClient
                         public void onFileStreamingComplete( CompletableFuture<Long> signal,
                                                              StoreCopyFinishedResponse response )
                         {
+                            log.info( "Finished streaming %s", destination );
                             signal.complete( response.lastCommittedTxBeforeStoreCopy() );
                         }
                     } );
