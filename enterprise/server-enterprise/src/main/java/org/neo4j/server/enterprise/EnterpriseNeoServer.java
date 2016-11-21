@@ -120,7 +120,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
             return lifecycleManagingDatabase( CORE_FACTORY );
         case READ_REPLICA:
             return lifecycleManagingDatabase( READ_REPLICA_FACTORY );
-        default: // Anything else gives community, including Mode.SINGLE
+        default:
             return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
         }
     }
