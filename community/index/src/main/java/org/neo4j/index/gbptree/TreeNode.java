@@ -392,7 +392,6 @@ class TreeNode<KEY,VALUE>
         cursor.getBytes( into, 0, insertPosition * recordSize );
 
         // Read newRecord
-        // TODO: A bit expensive to wrap in a PageCursor tin foil just to write this middle key
         PageCursor buffer = ByteArrayPageCursor.wrap( into, insertPosition * recordSize, recordSize );
         newRecordWriter.accept( buffer );
 
