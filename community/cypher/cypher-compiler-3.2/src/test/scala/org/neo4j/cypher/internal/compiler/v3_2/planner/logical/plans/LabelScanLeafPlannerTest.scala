@@ -23,11 +23,11 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Cost
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_2.LabelId
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_2.Cost
 
 import scala.collection.mutable
 

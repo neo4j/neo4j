@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Variable
+import org.neo4j.cypher.internal.ir.v3_2.Cardinality
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   logicalPlanProducer: LogicalPlanProducer,

@@ -25,11 +25,11 @@ import java.math.RoundingMode
 import org.neo4j.cypher.internal.compiler.v3_2.PrefixRange
 import org.neo4j.cypher.internal.compiler.v3_2.planner.Selections
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, _}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
 
 trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity

@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
+package org.neo4j.cypher.internal.ir.v3_2
 
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
-class MetricsTest extends CypherFunSuite {
+class SelectivityTest extends CypherFunSuite {
 
   test("negating a selectivity behaves as expected") {
     Selectivity.of(.1).get.negate should not equal Selectivity.ONE

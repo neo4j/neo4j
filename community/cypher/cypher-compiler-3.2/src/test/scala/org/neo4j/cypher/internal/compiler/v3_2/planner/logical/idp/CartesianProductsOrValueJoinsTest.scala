@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, Equals}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_2.Cardinality
 
 class CartesianProductsOrValueJoinsTest
   extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {

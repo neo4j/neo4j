@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.spi
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.frontend.v3_2.{PropertyKeyId, RelTypeId, LabelId}
+import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, RelTypeId}
 
 import scala.collection.mutable
 import java.lang.Math.abs
 import java.lang.Math.max
+
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
 
 sealed trait StatisticsKey
 case class NodesWithLabelCardinality(labelId: Option[LabelId]) extends StatisticsKey

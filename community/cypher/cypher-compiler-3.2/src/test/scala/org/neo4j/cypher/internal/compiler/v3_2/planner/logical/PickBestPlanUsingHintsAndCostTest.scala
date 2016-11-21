@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{LogicalPla
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelName, PropertyKeyName, UsingIndexHint}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_2.Cost
 
 class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

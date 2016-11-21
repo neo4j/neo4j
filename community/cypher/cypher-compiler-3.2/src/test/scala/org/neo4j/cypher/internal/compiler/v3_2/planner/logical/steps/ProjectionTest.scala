@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{Ascending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, LogicalPlan, Projection}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Cardinality, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast.AscSortItem
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_2.Cardinality
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
