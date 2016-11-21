@@ -75,7 +75,6 @@ import org.neo4j.io.pagecache.PagedFile;
  */
 public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 {
-
     /**
      * Paged file in a {@link PageCache} providing the means of storage.
      */
@@ -315,6 +314,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             }
             while ( cursor.shouldRetry() );
             checkOutOfBounds( cursor );
+
             if ( isInternal )
             {
                 PointerChecking.checkChildPointer( childId );
