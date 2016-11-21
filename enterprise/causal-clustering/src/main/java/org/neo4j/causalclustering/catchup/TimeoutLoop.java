@@ -51,13 +51,13 @@ class TimeoutLoop
             catch ( TimeoutException e )
             {
                 long millisSinceLastResponse = millisSinceLastResponseSupplier.get();
-                log.info( "Request timed out. Time since last response: " + millisSinceLastResponse );
                 if ( millisSinceLastResponse < inactivityTimeoutMillis )
                 {
                     remainingTimeoutMillis = inactivityTimeoutMillis - millisSinceLastResponse;
                 }
                 else
                 {
+                    log.info( "Request timed out. Time since last response: " + millisSinceLastResponse );
                     throw exception( future, operation, e );
                 }
             }
