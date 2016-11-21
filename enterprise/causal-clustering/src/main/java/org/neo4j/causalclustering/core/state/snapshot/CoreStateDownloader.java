@@ -70,10 +70,9 @@ public class CoreStateDownloader
         {
             /* Extract some key properties before shutting it down. */
             boolean isEmptyStore = localDatabase.isEmpty();
-            StoreId localStoreId = localDatabase.storeId();
 
             StoreId remoteStoreId = storeFetcher.getStoreIdOf( source );
-            if ( !isEmptyStore && !remoteStoreId.equals( localStoreId ) )
+            if ( !isEmptyStore && !remoteStoreId.equals( localDatabase.storeId() ) )
             {
                 throw new StoreCopyFailedException( "StoreId mismatch and not empty" );
             }
@@ -107,6 +106,7 @@ public class CoreStateDownloader
             }
             else
             {
+                StoreId localStoreId = localDatabase.storeId();
                 CatchupResult catchupResult =
                         storeFetcher.tryCatchingUp( source, localStoreId, localDatabase.storeDir() );
 
@@ -115,7 +115,7 @@ public class CoreStateDownloader
                     log.info( "Failed to pull transactions from " + source + ". They may have been pruned away." );
                     localDatabase.delete();
                     new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
-                        copyWholeStoreFrom( source, localStoreId, storeFetcher );
+                            copyWholeStoreFrom( source, localStoreId, storeFetcher );
                 }
                 else if ( catchupResult != SUCCESS_END_OF_STREAM )
                 {
