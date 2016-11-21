@@ -89,7 +89,7 @@ object ClauseConverters {
 
   private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder,
                                           clause: Return): PlannerQueryBuilder = clause match {
-    case Return(distinct, ri, optOrderBy, skip, limit) if !ri.includeExisting =>
+    case Return(distinct, ri, optOrderBy, skip, limit, _) if !ri.includeExisting =>
 
       val shuffle = asQueryShuffle(optOrderBy).
         withSkip(skip).
