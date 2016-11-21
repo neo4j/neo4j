@@ -19,15 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.PatternComprehension
-import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, SemanticState, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{MapProjection, PatternComprehension}
+import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, SemanticState, topDown}
 
 case class recordScopes(semanticState: SemanticState) extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
     case x: PatternComprehension =>
       x.withOuterScope(semanticState.recordedScopes(x).symbolDefinitions.map(_.asVariable))
+    case x: MapProjection =>
+      x.withOuterScope(semanticState.recordedScopes(x))
   }
 }
