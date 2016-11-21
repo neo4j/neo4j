@@ -420,12 +420,12 @@ case class With(
   }
 }
 
-case class Return(
-                   distinct: Boolean,
-                   returnItems: ReturnItems,
-                   orderBy: Option[OrderBy],
-                   skip: Option[Skip],
-                   limit: Option[Limit])(val position: InputPosition) extends ProjectionClause {
+case class Return(distinct: Boolean,
+                  returnItems: ReturnItems,
+                  orderBy: Option[OrderBy],
+                  skip: Option[Skip],
+                  limit: Option[Limit],
+                  excludedNames: Set[String] = Set.empty)(val position: InputPosition) extends ProjectionClause {
 
   override def name = "RETURN"
 
