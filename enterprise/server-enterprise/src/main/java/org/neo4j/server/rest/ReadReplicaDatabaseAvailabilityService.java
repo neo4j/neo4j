@@ -31,14 +31,15 @@ import org.neo4j.server.rest.repr.OutputFormat;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.status;
 
 @Path( ReadReplicaDatabaseAvailabilityService.BASE_PATH)
 public class ReadReplicaDatabaseAvailabilityService implements AdvertisableService
 {
-    public static final String BASE_PATH = "server/read-replica";
-    public static final String IS_AVAILABLE_PATH = "/available";
+    static final String BASE_PATH = "server/read-replica";
+    private static final String IS_AVAILABLE_PATH = "/available";
 
     private final ReadReplicaGraphDatabase readReplica;
 
