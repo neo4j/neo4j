@@ -34,9 +34,9 @@ import org.neo4j.io.pagecache.PageCursor;
  * <pre>
  * # = empty space
  *
- * [                    HEADER   77B                 ]|[      KEYS     ]|[     CHILDREN             ]
- * [TYPE][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[CHILD][CHILD][CHILD]...##]
- *  0     1         5             29           53
+ * [                      HEADER   81B                    ]|[      KEYS     ]|[     CHILDREN             ]
+ * [TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[CHILD][CHILD][CHILD]...##]
+ *  0     1    5         9             33           57
  * </pre>
  * Calc offset for key i (starting from 0)
  * HEADER_LENGTH + i * SIZE_KEY
@@ -47,9 +47,9 @@ import org.neo4j.io.pagecache.PageCursor;
  * Using Separate design the leaf nodes should look like
  *
  * <pre>
- * [                    HEADER   77B                 ]|[      KEYS     ]|[     VALUES        ]
- * [TYPE][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
- *  0     1         5             29           53
+ * [                      HEADER   81B                    ]|[      KEYS     ]|[     VALUES        ]
+ * [TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
+ *  0     1    5         9             33           57
  * </pre>
  *
  * Calc offset for key i (starting from 0)
@@ -65,7 +65,8 @@ class TreeNode<KEY,VALUE>
 {
     private static final int SIZE_PAGE_REFERENCE = GenSafePointerPair.SIZE;
     private static final int BYTE_POS_TYPE = 0;
-    private static final int BYTE_POS_KEYCOUNT = BYTE_POS_TYPE + 1;
+    private static final int BYTE_POS_GEN = BYTE_POS_TYPE + 1;
+    private static final int BYTE_POS_KEYCOUNT = BYTE_POS_GEN + 4;
     private static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
     private static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
     private static final int BYTE_POS_NEWGEN = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
@@ -106,6 +107,7 @@ class TreeNode<KEY,VALUE>
     private void initialize( PageCursor cursor, byte type, int stableGeneration, int unstableGeneration )
     {
         cursor.putByte( BYTE_POS_TYPE, type );
+        setGen( cursor, unstableGeneration );
         setKeyCount( cursor, 0 );
         setRightSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setLeftSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
@@ -134,6 +136,11 @@ class TreeNode<KEY,VALUE>
         return cursor.getByte( BYTE_POS_TYPE ) == INTERNAL_FLAG;
     }
 
+    long gen( PageCursor cursor )
+    {
+        return cursor.getInt( BYTE_POS_GEN ) & 0xFFFFFFFFL;
+    }
+
     int keyCount( PageCursor cursor )
     {
         return cursor.getInt( BYTE_POS_KEYCOUNT );
@@ -155,6 +162,11 @@ class TreeNode<KEY,VALUE>
     {
         cursor.setOffset( BYTE_POS_NEWGEN );
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
+    }
+
+    void setGen( PageCursor cursor, long unstableGeneration )
+    {
+        cursor.putInt( BYTE_POS_GEN, (int) (unstableGeneration & 0xFFFF_FFFFFFFFL) );
     }
 
     void setKeyCount( PageCursor cursor, int count )

@@ -57,10 +57,25 @@ public class TreeNodeTest
         // THEN
         assertTrue( node.isLeaf( cursor ) );
         assertFalse( node.isInternal( cursor ) );
+        assertEquals( UNSTABLE_GENERATION, node.gen( cursor ) );
         assertEquals( 0, node.keyCount( cursor ) );
         assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+    }
+
+    @Test
+    public void shouldWriteAndReadMaxGen() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+
+        // WHEN
+        node.setGen( cursor, 0xFFFFFFFFL );
+
+        // THEN
+        long gen = node.gen( cursor );
+        assertEquals( 0xFFFFFFFFL, gen );
     }
 
     @Test
@@ -72,6 +87,7 @@ public class TreeNodeTest
         // THEN
         assertFalse( node.isLeaf( cursor ) );
         assertTrue( node.isInternal( cursor ) );
+        assertEquals( UNSTABLE_GENERATION, node.gen( cursor ) );
         assertEquals( 0, node.keyCount( cursor ) );
         assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
