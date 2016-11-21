@@ -693,9 +693,14 @@ public class InternalTreeLogicTest
         return treeLogic.remove( cursor, insertKey, into, STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 
-    private class SimpleIdProvider implements IdProvider
+    private static class SimpleIdProvider implements IdProvider
     {
-        private long lastId = -1;
+        private long lastId;
+
+        private SimpleIdProvider()
+        {
+            reset();
+        }
 
         @Override
         public long acquireNewId()
@@ -706,7 +711,7 @@ public class InternalTreeLogicTest
 
         private void reset()
         {
-            lastId = -1;
+            lastId = IdSpace.MIN_TREE_NODE_ID - 1;
         }
     }
 }

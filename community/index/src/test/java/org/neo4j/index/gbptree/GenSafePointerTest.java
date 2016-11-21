@@ -161,24 +161,6 @@ public class GenSafePointerTest
     }
 
     @Test
-    public void shouldWriteAndReadMinusOnePointer() throws Exception
-    {
-        // GIVEN
-        long pointer = -1;
-        GSP expected = gsp( 12345, pointer );
-        write( cursor, 0, expected );
-
-        // WHEN
-        GSP read = new GSP();
-        boolean matches = read( cursor, 0, read );
-
-        // THEN
-        assertTrue( matches );
-        assertEquals( expected, read );
-        assertEquals( pointer, read.pointer );
-    }
-
-    @Test
     public void shouldHaveLowAccidentalChecksumCollision() throws Exception
     {
         // GIVEN

@@ -75,11 +75,6 @@ import org.neo4j.io.pagecache.PagedFile;
  */
 public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 {
-    /**
-     * Page id of the meta page holding information about root id and custom user meta information.
-     * This page id is statically allocated throughout the life of a tree.
-     */
-    private static final int META_PAGE_ID = 0;
 
     /**
      * Paged file in a {@link PageCache} providing the means of storage.
@@ -120,7 +115,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     /**
      * Current page id which contains the root of the tree.
      */
-    private volatile long rootId = META_PAGE_ID + 1;
+    private volatile long rootId = IdSpace.MIN_TREE_NODE_ID;
 
     /**
      * Last allocated page id, used for allocating new ids as more data gets inserted into the tree.
@@ -277,10 +272,10 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
     private PageCursor openMetaPageCursor( PagedFile pagedFile ) throws IOException
     {
-        PageCursor metaCursor = pagedFile.io( META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
+        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
         if ( !metaCursor.next() )
         {
-            throw new IllegalStateException( "Could not go to meta data page " + META_PAGE_ID );
+            throw new IllegalStateException( "Couldn't go to meta data page " + IdSpace.META_PAGE_ID );
         }
         return metaCursor;
     }
