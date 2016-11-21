@@ -78,8 +78,7 @@ class GenSafePointer
     public static long readPointer( PageCursor cursor )
     {
         long result = get6BLong( cursor );
-        // TODO Could we change NULL to 0 instead?
-        return result == 0xFFFF_FFFFFFFFL ? -1 : result;
+        return result;
     }
 
     public static short readChecksum( PageCursor cursor )
