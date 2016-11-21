@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v2_3.SemanticState
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, replace}
+import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, SemanticState, replace}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class expandStar(state: SemanticState) extends Rewriter {
@@ -40,8 +39,8 @@ case class expandStar(state: SemanticState) extends Rewriter {
         case clause: PragmaWithout =>
           With(distinct = false, returnItems = returnItems(clause, Seq.empty, clause.excludedNames), orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
-        case clause@Return(_, ri, _, _, _) if ri.includeExisting =>
-          clause.copy(returnItems = returnItems(clause, ri.items))(clause.position)
+        case clause@Return(_, ri, _, _, _, excludedNames) if ri.includeExisting =>
+          clause.copy(returnItems = returnItems(clause, ri.items, excludedNames), excludedNames = Set.empty)(clause.position)
 
         case expandedAstNode =>
           expandedAstNode

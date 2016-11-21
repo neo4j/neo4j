@@ -48,7 +48,7 @@ object Namespacer {
     statement.treeFold(Set.empty[Ref[Identifier]]) {
 
       // ignore identifier in StartItem that represents index names and key names
-      case Return(_, ReturnItems(_, items), _, _, _) =>
+      case Return(_, ReturnItems(_, items), _, _, _, _) =>
         val identifiers = items.map(_.alias.map(Ref[Identifier]).get)
         (acc, children) => children(acc ++ identifiers)
     }
