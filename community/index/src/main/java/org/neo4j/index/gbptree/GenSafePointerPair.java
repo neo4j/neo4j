@@ -387,9 +387,8 @@ class GenSafePointerPair
         }
         if ( generation < MIN_GENERATION )
         {
-            // todo Better error message?
             throw new UnsupportedOperationException( "Generation was less than MIN_GENERATION " + MIN_GENERATION +
-                                                     " but checksum was correct. This should not happen." );
+                    " and but checksum was correct. Pointer was " + generation + "," + pointer );
         }
         if ( generation <= stableGeneration )
         {

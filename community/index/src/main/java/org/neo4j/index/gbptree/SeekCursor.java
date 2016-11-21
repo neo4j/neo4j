@@ -124,7 +124,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 else
                 {
                     // Read the next value in this leaf
-                    // TODO this is a hack for caching item order for unsorted tree node thingie
                     bTreeNode.keyAt( cursor, mutableKey, pos );
                     bTreeNode.valueAt( cursor, mutableValue, pos );
                 }
@@ -141,6 +140,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 {
                     if ( !cursor.next( rightSibling ) )
                     {
+                        // TODO: Check if rightSibling is within expected range before calling next.
+                        // TODO: Possibly by getting highest expected from IdProvider
                         throw new IllegalStateException( "Could not go to right sibling " + rightSibling );
                     }
                     pos = -1;
@@ -156,8 +157,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                          ( !first && layout.compare( prevKey, mutableKey ) >= 0 ) )
                     {
                         // We've come across a bad read in the middle of a split
-                        // This is outlined in IndexModifier, skip this value (it's fine)
-                        // TODO: perhaps describe the circumstances here quickly as well
+                        // This is outlined in InternalTreeLogic, skip this value (it's fine)
                         reread = true;
                         continue;
                     }

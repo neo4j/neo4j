@@ -175,8 +175,6 @@ public class GenSafePointerPairTest
         assertEquals( POINTER_B, readSlotB() );
     }
 
-    // TODO: On all writes, verify slot result
-
     @Test
     public void readEmptyBrokenShouldFail() throws Exception
     {
