@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, PatternRelationship, StrictnessMode}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{PatternRelationship, StrictnessMode}
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Hint, LabelName, PeriodicCommitHint, Variable}
-import org.neo4j.cypher.internal.ir.v3_2.Cardinality
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName}
 
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce

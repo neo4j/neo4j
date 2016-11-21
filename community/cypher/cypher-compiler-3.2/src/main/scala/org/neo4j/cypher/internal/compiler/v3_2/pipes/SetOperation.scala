@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.makeValueNeoSafe
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{Operations, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgumentException, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.Map

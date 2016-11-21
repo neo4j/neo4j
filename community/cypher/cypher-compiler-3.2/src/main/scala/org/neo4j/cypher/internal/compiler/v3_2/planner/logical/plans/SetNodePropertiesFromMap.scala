@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 case class SetNodePropertiesFromMap(source: LogicalPlan, idName: IdName, expression: Expression, removeOtherProps: Boolean)
                     (val solved: PlannerQuery with CardinalityEstimation)

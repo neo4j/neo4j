@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.assu
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.{ABCDCardinalityData, RandomizedCardinalityModelTestSuite}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
 

@@ -17,21 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Variable
 
-/*
- * Repeatable reads are enforcing that the encapsulated logical plan is only read once within a query execution.
- */
-case class RepeatableRead(inner: LogicalPlan)
-                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with EagerLogicalPlan {
+final case class IdName(name: String)
 
-  override def availableSymbols: Set[IdName] = inner.availableSymbols
+object IdName {
+  implicit val byName = Ordering[String].on[IdName](_.name)
 
-  override def lhs: Option[LogicalPlan] = Some(inner)
-
-  override def rhs: Option[LogicalPlan] = None
+  def fromVariable(variable: Variable) = IdName(variable.name)
 }

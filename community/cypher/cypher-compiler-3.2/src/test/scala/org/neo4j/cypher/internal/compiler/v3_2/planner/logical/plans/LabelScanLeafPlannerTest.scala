@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_2.LabelId
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.Cost
+import org.neo4j.cypher.internal.ir.v3_2.{Cost, IdName}
 
 import scala.collection.mutable
 

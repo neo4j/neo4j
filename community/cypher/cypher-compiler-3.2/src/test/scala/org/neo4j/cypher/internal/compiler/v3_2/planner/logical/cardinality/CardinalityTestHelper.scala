@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.SemanticTableHelper
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, StrictnessMode}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.StrictnessMode
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.Cardinality.NumericCardinality
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName, Selectivity}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable

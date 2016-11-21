@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.PatternConve
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_2.commands.EntityProducerFactory
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{AggregationExpression, Expression => CommandExpression, Literal}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders.prepare.KeyTokenResolver
@@ -36,10 +36,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Limit => L
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantHandleQueryException, PeriodicCommit, logical}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, Monitors, ast => compilerAst, pipes}
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, Monitors, pipes, ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.mutable

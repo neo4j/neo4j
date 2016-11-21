@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, P
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelName => AstLabelName, _}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.Cardinality
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName}
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {

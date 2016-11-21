@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.Cardinality
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName}
 import org.scalatest.exceptions.TestFailedException
 
 import scala.collection.immutable

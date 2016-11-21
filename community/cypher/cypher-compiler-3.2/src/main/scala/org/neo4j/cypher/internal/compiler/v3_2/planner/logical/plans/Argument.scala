@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 // Argument is used inside of an Apply to feed the row from the LHS of the Apply to the leaf of the RHS
 case class Argument(argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)

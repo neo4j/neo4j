@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{ExclusiveBound, InclusiveBound, LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.ir.v3_2.Cost
+import org.neo4j.cypher.internal.ir.v3_2.{Cost, IdName}
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

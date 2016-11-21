@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer, addUniquenessPredicates}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, PatternLength, SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{PatternLength, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, topDown}
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)

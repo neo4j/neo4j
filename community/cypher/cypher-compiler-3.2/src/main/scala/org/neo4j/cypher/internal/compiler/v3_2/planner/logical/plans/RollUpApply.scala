@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 /*
 RollUp is the inverse of the Unwind operator. For each row passed in from the LHS, the whole RHS is executed.

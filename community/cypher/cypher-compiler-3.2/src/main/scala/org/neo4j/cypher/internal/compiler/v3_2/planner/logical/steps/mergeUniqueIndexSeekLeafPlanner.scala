@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_2.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, LogicalPlan, NodeUniqueIndexSeek}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, NodeUniqueIndexSeek}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, HasLabels, LabelToken, PropertyKeyToken, UsingIndexHint}
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 /*

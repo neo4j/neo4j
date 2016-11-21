@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, ast}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.RelTypeName
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: SemanticDirection,
                                      types: Seq[RelTypeName], length: PatternLength) {
