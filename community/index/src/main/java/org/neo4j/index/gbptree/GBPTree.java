@@ -29,7 +29,8 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
-import org.neo4j.index.ValueAmender;
+import org.neo4j.index.ValueMerger;
+import org.neo4j.index.ValueMergers;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -420,11 +421,17 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
 
         @Override
-        public void insert( KEY key, VALUE value, ValueAmender<VALUE> amender ) throws IOException
+        public void put( KEY key, VALUE value ) throws IOException
+        {
+            merge( key, value, ValueMergers.overwrite() );
+        }
+
+        @Override
+        public void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException
         {
             cursor.next( rootId );
 
-            SplitResult<KEY> split = treeLogic.insert( cursor, key, value, amender, options,
+            SplitResult<KEY> split = treeLogic.insert( cursor, key, value, valueMerger, options,
                     stableGeneration, unstableGeneration );
 
             if ( cursor.checkAndClearBoundsFlag() )

@@ -22,43 +22,39 @@ package org.neo4j.index;
 import java.io.Closeable;
 import java.io.IOException;
 
-import static org.neo4j.index.ValueAmenders.overwrite;
-
 /**
- * Able to {@link #insert(Object, Object, ValueAmender)} and {@link #remove(Object)} key/value pairs
+ * Able to {@link #merge(Object, Object, ValueMerger)} and {@link #remove(Object)} key/value pairs
  * into an {@link Index}. After all modifications have taken place the writer must be {@link #close() closed},
  * typically using try-with-resource clause.
  *
- * @param <KEY> type of keys to insert/remove
- * @param <VALUE> type of values to insert/removed
+ * @param <KEY> type of keys
+ * @param <VALUE> type of values
  */
 public interface IndexWriter<KEY,VALUE> extends Closeable
 {
     /**
-     * Defaults to {@link ValueAmenders#overwrite() overwriting values} for existing key.
+     * Associate given {@code key} with given {@code value}.
+     * Any existing {@code value} associated with {@code key} will be overwritten.
      *
-     * @param key key to insert.
-     * @param value value to insert for the {@code key}.
+     * @param key key to associate with value
+     * @param value value to associate with key
      * @throws IOException on index access error.
-     *
-     * @see #insert(Object, Object, ValueAmender)
      */
-    default void insert( KEY key, VALUE value ) throws IOException
-    {
-        insert( key, value, overwrite() );
-    }
+    void put( KEY key, VALUE value ) throws IOException;
 
     /**
-     * Inserts a key/value pair. In the event where {@code key} already exists the {@link ValueAmender}
-     * gets consulted, which can choose e.g. to insert a new key/value pair, overwrite or somehow modify
-     * the existing value.
+     * If the {@code key} doesn't already exist in the index the {@code key} will be added and the {@code value}
+     * associated with it. If the {@code key} already exists then its existing {@code value} will be merged with
+     * the given {@code value}, using the {@link ValueMerger}. If the {@link ValueMerger} returns a non-null
+     * value that value will be associated with the {@code key}, otherwise (if it returns {@code null}) nothing will
+     * be written.
      *
-     * @param key key to insert.
-     * @param value value to insert for the {@code key}.
-     * @param amender {@link ValueAmender} to consult if key already exists.
+     * @param key key for which to merge values.
+     * @param value value to merge with currently associated value for the {@code key}.
+     * @param valueMerger {@link ValueMerger} to consult if key already exists.
      * @throws IOException on index access error.
      */
-    void insert( KEY key, VALUE value, ValueAmender<VALUE> amender ) throws IOException;
+    void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException;
 
     /**
      * Removes a key, returning it's associated value, if found.

@@ -20,47 +20,47 @@
 package org.neo4j.index;
 
 /**
- * Common {@link ValueAmender} implementations.
+ * Common {@link ValueMerger} implementations.
  */
-public class ValueAmenders
+public class ValueMergers
 {
     @SuppressWarnings( "rawtypes" )
-    private static final ValueAmender OVERWRITE = new ValueAmender()
+    private static final ValueMerger OVERWRITE = new ValueMerger()
     {
         @Override
-        public Object amend( Object value, Object withValue )
+        public Object merge( Object value, Object withValue )
         {
             return withValue;
         }
     };
 
     @SuppressWarnings( "rawtypes" )
-    private static final ValueAmender INSERT_NEW = new ValueAmender()
+    private static final ValueMerger KEEP_EXISTING = new ValueMerger()
     {
         @Override
-        public Object amend( Object value, Object withValue )
+        public Object merge( Object value, Object withValue )
         {
             return null;
         }
     };
 
     /**
-     * @return {@link ValueAmender} which overwrites value for existing key when inserting.
-     * This makes an index have unique keys.
+     * @return {@link ValueMerger} which overwrites value for existing key when inserting.
+     * This merger guarantees unique keys in index.
      */
     @SuppressWarnings( "unchecked" )
-    public static <VALUE> ValueAmender<VALUE> overwrite()
+    public static <VALUE> ValueMerger<VALUE> overwrite()
     {
         return OVERWRITE;
     }
 
     /**
-     * @return {@link ValueAmender} which inserts new key/value even for existing keys.
-     * This makes an index have non-unique keys.
+     * @return {@link ValueMerger} which keeps existing key/value otherwise adds new key/value pair.
+     * This merger guarantees unique keys in index.
      */
     @SuppressWarnings( "unchecked" )
-    public static <VALUE> ValueAmender<VALUE> insertNew()
+    public static <VALUE> ValueMerger<VALUE> keepExisting()
     {
-        return INSERT_NEW;
+        return KEEP_EXISTING;
     }
 }

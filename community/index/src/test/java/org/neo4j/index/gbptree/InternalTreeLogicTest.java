@@ -26,27 +26,22 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.index.ValueAmender;
-import org.neo4j.index.ValueAmenders;
+import org.neo4j.index.ValueMerger;
+import org.neo4j.index.ValueMergers;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
-import static org.neo4j.index.ValueAmenders.insertNew;
-import static org.neo4j.index.ValueAmenders.overwrite;
+import static org.neo4j.index.ValueMergers.overwrite;
 
 public class InternalTreeLogicTest
 {
-    private static final ValueAmender<MutableLong> ADDER = (base,add) -> {
+    private static final ValueMerger<MutableLong> ADDER = (base,add) -> {
         base.add( add.longValue() );
         return base;
     };
@@ -148,13 +143,13 @@ public class InternalTreeLogicTest
         // given
         for ( int i = 0; i < maxKeyCount; i++ )
         {
-            long key = i % 2 == 0 ? i / 2 : maxKeyCount - i / 2;
+            long key = i % 2 == 0 ? i : maxKeyCount * 2 - i;
             insert( key, key );
         }
 
         // then
-        long middle = maxKeyCount / 2;
-        assertNotNull( insert( middle, middle, insertNew() ) );
+        long middle = maxKeyCount;
+        assertNotNull( insert( middle, middle ) );
     }
 
     @Test
@@ -482,10 +477,10 @@ public class InternalTreeLogicTest
         consistencyChecker.check( cursor );
     }
 
-    /* TEST AMENDER */
+    /* TEST VALUE MERGER */
 
     @Test
-    public void modifierMustOverwriteWithOverwriteAmender() throws Exception
+    public void modifierMustOverwriteWithOverwriteMerger() throws Exception
     {
         // given
         long key = random.nextLong();
@@ -494,7 +489,7 @@ public class InternalTreeLogicTest
 
         // when
         long secondValue = random.nextLong();
-        insert( key, secondValue, ValueAmenders.overwrite() );
+        insert( key, secondValue, ValueMergers.overwrite() );
 
         // then
         assertThat( node.keyCount( cursor ), is( 1 ) );
@@ -502,26 +497,28 @@ public class InternalTreeLogicTest
     }
 
     @Test
-    public void modifierMustInsertNewWithInsertNewAmender() throws Exception
+    public void modifierMustKeepExistingWithKeepExistingMerger() throws Exception
     {
         // given
         long key = random.nextLong();
         long firstValue = random.nextLong();
-        insert( key, firstValue );
+        insert( key, firstValue, ValueMergers.keepExisting() );
+        assertThat( node.keyCount( cursor ), is( 1 ) );
+        Long actual = valueAt( 0 );
+        assertThat( actual, is( firstValue ) );
 
         // when
         long secondValue = random.nextLong();
-        insert( key, secondValue, ValueAmenders.insertNew() );
+        insert( key, secondValue, ValueMergers.keepExisting() );
 
         // then
-        assertThat( node.keyCount( cursor ), is( 2 ) );
-        Long actualFirst = valueAt( 0 );
-        assertThat( actualFirst, anyOf( is( firstValue ), is( secondValue ) ) );
-        assertThat( valueAt( 1 ), allOf( not( is( actualFirst ) ), anyOf( is( firstValue ), is( secondValue ) ) ) );
+        assertThat( node.keyCount( cursor ), is( 1 ) );
+        actual = valueAt( 0 );
+        assertThat( actual, is( firstValue ) );
     }
 
     @Test
-    public void shouldAmendValueInRootLeaf() throws Exception
+    public void shouldMergeValueInRootLeaf() throws Exception
     {
         // GIVEN
         long key = 10;
@@ -542,7 +539,7 @@ public class InternalTreeLogicTest
     }
 
     @Test
-    public void shouldAmendValueInLeafLeftOfParentKey() throws Exception
+    public void shouldMergeValueInLeafLeftOfParentKey() throws Exception
     {
         // GIVEN
         SplitResult<MutableLong> split = null;
@@ -569,7 +566,7 @@ public class InternalTreeLogicTest
     }
 
     @Test
-    public void shouldAmendValueInLeafAtParentKey() throws Exception
+    public void shouldMergeValueInLeafAtParentKey() throws Exception
     {
         // GIVEN
         SplitResult<MutableLong> split = null;
@@ -596,7 +593,7 @@ public class InternalTreeLogicTest
     }
 
     @Test
-    public void shouldAmendValueInLeafBetweenTwoParentKeys() throws Exception
+    public void shouldMergeValueInLeafBetweenTwoParentKeys() throws Exception
     {
         // GIVEN
         long rootId = -1;
@@ -681,12 +678,12 @@ public class InternalTreeLogicTest
         return insert( key, value, overwrite() );
     }
 
-    private SplitResult<MutableLong> insert( long key, long value, ValueAmender<MutableLong> amender )
+    private SplitResult<MutableLong> insert( long key, long value, ValueMerger<MutableLong> valueMerger )
             throws IOException
     {
         insertKey.setValue( key );
         insertValue.setValue( value );
-        return treeLogic.insert( cursor, insertKey, insertValue, amender, DEFAULTS,
+        return treeLogic.insert( cursor, insertKey, insertValue, valueMerger, DEFAULTS,
                 STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 

@@ -22,7 +22,7 @@ package org.neo4j.index.gbptree;
 import java.io.IOException;
 
 import org.neo4j.index.IndexWriter;
-import org.neo4j.index.ValueAmender;
+import org.neo4j.index.ValueMerger;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
@@ -108,19 +108,19 @@ class InternalTreeLogic<KEY,VALUE>
      * @param cursor        {@link org.neo4j.io.pagecache.PageCursor} pinned to page where insertion is to be done.
      * @param key           key to be inserted
      * @param value         value to be associated with key
-     * @param amender       {@link ValueAmender} for deciding what to do with existing keys
+     * @param valueMerger   {@link ValueMerger} for deciding what to do with existing keys
      * @param options       options for this insert
      * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
      * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
      * @return              {@link SplitResult} from insert to be used caller.
      * @throws IOException  on cursor failure
      */
-    public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
+    public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueMerger<VALUE> valueMerger,
             IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
     {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return insertInLeaf( cursor, key, value, amender, options, stableGeneration, unstableGeneration );
+            return insertInLeaf( cursor, key, value, valueMerger, options, stableGeneration, unstableGeneration );
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
@@ -137,7 +137,8 @@ class InternalTreeLogic<KEY,VALUE>
 
         cursor.next( childId );
 
-        SplitResult<KEY> split = insert( cursor, key, value, amender, options, stableGeneration, unstableGeneration );
+        SplitResult<KEY> split = insert( cursor, key, value, valueMerger, options, stableGeneration,
+                unstableGeneration );
 
         cursor.next( currentId );
 
@@ -293,12 +294,12 @@ class InternalTreeLogic<KEY,VALUE>
      *                      insertion.
      * @param key           key to be inserted
      * @param value         value to be associated with key
-     * @param amender       {@link ValueAmender} for deciding what to do with existing keys
+     * @param valueMerger   {@link ValueMerger} for deciding what to do with existing keys
      * @param options       options for this insert
      * @return              {@link SplitResult} from insert to be used caller.
      * @throws IOException  on cursor failure
      */
-    private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
+    private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value, ValueMerger<VALUE> valueMerger,
             IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
@@ -306,16 +307,15 @@ class InternalTreeLogic<KEY,VALUE>
         int pos = positionOf( search );
         if ( isHit( search ) )
         {
-            // this key already exists, what shall we do? ask the amender
+            // this key already exists, what shall we do? ask the valueMerger
             bTreeNode.valueAt( cursor, readValue, pos );
-            VALUE amendedValue = amender.amend( readValue, value );
-            if ( amendedValue != null )
+            VALUE mergedValue = valueMerger.merge( readValue, value );
+            if ( mergedValue != null )
             {
-                // simple, just write the amended value right in there
-                bTreeNode.setValueAt( cursor, amendedValue, pos );
-                return null; // No split has occurred
+                // simple, just write the merged value right in there
+                bTreeNode.setValueAt( cursor, mergedValue, pos );
             }
-            // else fall-through to normal insert
+            return null; // No split has occurred
         }
 
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
@@ -329,7 +329,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // Overflow, split leaf
-        return splitLeaf( cursor, key, value, amender, keyCount, options, stableGeneration, unstableGeneration );
+        return splitLeaf( cursor, key, value, keyCount, options, stableGeneration, unstableGeneration );
     }
 
     /**
@@ -338,14 +338,13 @@ class InternalTreeLogic<KEY,VALUE>
      * @param cursor        cursor pointing into full (left) leaf that should be split in two.
      * @param newKey        key to be inserted
      * @param newValue      value to be inserted (in association with key)
-     * @param amender       {@link ValueAmender} for deciding what to do with existing keys
      * @param keyCount      number of keys in this leaf (it was already read anyway)
      * @param options       options for this insert
      * @return              {@link SplitResult} with necessary information to inform parent
      * @throws IOException  if cursor.next( newRight ) fails
      */
-    private SplitResult<KEY> splitLeaf( PageCursor cursor, KEY newKey, VALUE newValue, ValueAmender<VALUE> amender,
-            int keyCount, IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
+    private SplitResult<KEY> splitLeaf( PageCursor cursor, KEY newKey, VALUE newValue, int keyCount,
+            IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.

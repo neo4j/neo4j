@@ -317,7 +317,7 @@ public class GBPTreeTest
         {
             for ( int i = 0; i < count; i++ )
             {
-                writer.insert( new MutableLong( i ), new MutableLong( i ) );
+                writer.put( new MutableLong( i ), new MutableLong( i ) );
             }
         }
 
@@ -353,7 +353,7 @@ public class GBPTreeTest
         {
             for ( Map.Entry<MutableLong,MutableLong> entry : data.entrySet() )
             {
-                writer.insert( entry.getKey(), entry.getValue() );
+                writer.put( entry.getKey(), entry.getValue() );
             }
         }
 
@@ -421,7 +421,7 @@ public class GBPTreeTest
                 }
                 while ( !seen.add( key.longValue() ) );
                 MutableLong value = new MutableLong( i );
-                writer.insert( key, value );
+                writer.put( key, value );
                 seen.add( key.longValue() );
             }
         }
@@ -545,7 +545,7 @@ public class GBPTreeTest
                     for ( int i = 0; i < groupCount; i++, inserted++ )
                     {
                         MutableLong thing = new MutableLong( inserted );
-                        writer.insert( thing, thing );
+                        writer.put( thing, thing );
                         highestId.set( inserted );
                     }
                     // Sleep a little in between update groups (transactions, sort of)
@@ -586,10 +586,10 @@ public class GBPTreeTest
                     assertEquals( "For " + key, value, removedValue );
                 }
                 else
-                {   // insert
+                {   // put
                     MutableLong key = randomKey( random );
                     MutableLong value = randomKey( random );
-                    writer.insert( key, value );
+                    writer.put( key, value );
                     data.put( key, value );
                 }
             }
