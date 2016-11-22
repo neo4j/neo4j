@@ -24,4 +24,19 @@ public interface CheckPointerMonitor
     long numberOfCheckPointEvents();
 
     long checkPointAccumulatedTotalTimeMillis();
+
+    CheckPointerMonitor NULL = new CheckPointerMonitor()
+    {
+        @Override
+        public long numberOfCheckPointEvents()
+        {
+            return 0;
+        }
+
+        @Override
+        public long checkPointAccumulatedTotalTimeMillis()
+        {
+            return 0;
+        }
+    };
 }

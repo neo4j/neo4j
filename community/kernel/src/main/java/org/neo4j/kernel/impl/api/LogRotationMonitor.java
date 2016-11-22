@@ -24,4 +24,19 @@ public interface LogRotationMonitor
     long numberOfLogRotationEvents();
 
     long logRotationAccumulatedTotalTimeMillis();
+
+    LogRotationMonitor NULL = new LogRotationMonitor()
+    {
+        @Override
+        public long numberOfLogRotationEvents()
+        {
+            return 0;
+        }
+
+        @Override
+        public long logRotationAccumulatedTotalTimeMillis()
+        {
+            return 0;
+        }
+    };
 }
