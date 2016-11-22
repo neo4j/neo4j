@@ -138,7 +138,7 @@ class TreeNode<KEY,VALUE>
 
     long gen( PageCursor cursor )
     {
-        return cursor.getInt( BYTE_POS_GEN ) & 0xFFFFFFFFL;
+        return cursor.getInt( BYTE_POS_GEN ) & GenSafePointer.GENERATION_MASK;
     }
 
     int keyCount( PageCursor cursor )
@@ -166,7 +166,7 @@ class TreeNode<KEY,VALUE>
 
     void setGen( PageCursor cursor, long unstableGeneration )
     {
-        cursor.putInt( BYTE_POS_GEN, (int) (unstableGeneration & 0xFFFF_FFFFFFFFL) );
+        cursor.putInt( BYTE_POS_GEN, (int) (unstableGeneration & GenSafePointer.GENERATION_MASK) );
     }
 
     void setKeyCount( PageCursor cursor, int count )
