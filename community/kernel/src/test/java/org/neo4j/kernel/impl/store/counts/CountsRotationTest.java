@@ -155,32 +155,33 @@ public class CountsRotationTest
     }
 
     @Test
-    public void shouldUnMapThePrestateFileWhenTimingOutOnRotation() throws IOException
+    public void shouldUnMapThePrestateFileWhenTimingOutOnRotationAndAllowForShutdownInTheFailedRotationState()
+            throws Throwable
     {
         // Given
         dbBuilder.newGraphDatabase().shutdown();
         CountsTracker store = createCountsTracker( pageCache, Config.defaults().augment( Collections
                 .singletonMap( GraphDatabaseSettings.counts_store_rotation_timeout.name(), "100ms" ) ) );
-        store.init();
-        store.start();
-
-        try ( CountsAccessor.Updater updater = store.apply( 2 ).get() )
+        try ( Lifespan lifespan = new Lifespan( store ) )
         {
-            updater.incrementNodeCount( 0, 1 );
+            try ( CountsAccessor.Updater updater = store.apply( 2 ).get() )
+            {
+                updater.incrementNodeCount( 0, 1 );
+            }
+
+            try
+            {
+                // when
+                store.rotate( 3 );
+                fail( "should have thrown" );
+            }
+            catch ( RotationTimeoutException ex )
+            {
+                // good
+            }
         }
 
-        try
-        {
-            // when
-            store.rotate( 3 );
-            fail( "should have thrown" );
-        }
-        catch ( RotationTimeoutException ex )
-        {
-            // good
-        }
-
-        // then no exceptions closing the page cache
+        // and also no exceptions closing the page cache
         pageCache.close();
     }
 
